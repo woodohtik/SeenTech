@@ -1,0 +1,6 @@
+{
+  "name": "نظام سين الذكي",
+  "description": "نظام سين الذكي - نظام كاشير سحابي (SaaS) متكامل للخياطين لإدارة العملاء والطلبات والقياسات، Seen Smart System.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

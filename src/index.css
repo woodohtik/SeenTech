@@ -1,0 +1,387 @@
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@theme {
+  --font-sans: "Tajawal", "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Tajawal", serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --color-brand: var(--brand);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-dark: var(--dark);
+  --color-light: var(--light);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-content: var(--content);
+  --color-content-muted: var(--content-muted);
+  --color-border: var(--border);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+
+  --size-input-height: 44px;
+  --size-button-height: 44px;
+  --size-input-padding: 0.75rem 1rem;
+  --size-text-sm: 0.875rem;
+  --size-text-base: 1rem;
+  --radius-md: 0.5rem;
+}
+
+:root {
+  --primary: #1C8FFF; /* Primary Blue */
+  --secondary: #F5F7FA; /* Light Secondary background/button */
+  --accent: #22C55E; /* Bright Green Accent */
+  --dark: #6B7280; /* Gray Dark Text */
+  --light: #FFFFFF; /* White Background */
+  --brand: var(--primary); /* Sync brand with primary */
+  --surface: #FFFFFF;
+  --surface-muted: var(--secondary);
+  --content: var(--dark);
+  --content-muted: #555555;
+  --border: #E0E0E0;
+  --success: #22C55E;
+  --danger: #EF4444;
+  --warning: #F59E0B;
+  --info: var(--primary);
+  --radius-card: 1.5rem;
+}
+
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.dark {
+  --brand: #3B82F6;
+  --primary: #3B82F6;
+  --secondary: #38BDF8;
+  --surface: #0F172A;
+  --surface-muted: #1E293B;
+  --content: #F8FAFC;
+  --content-muted: #94A3B8;
+  --border: #334155;
+  --success: #10B981;
+  --danger: #EF4444;
+  --warning: #F59E0B;
+  --info: #60A5FA;
+}
+
+.elegant {
+  --brand: #5A5A40;
+  --surface: #F5F2ED;
+  --surface-muted: #EBE8E0;
+  --content: #1A1A1A;
+  --content-muted: #5A5A40;
+  --border: #D1CDC2;
+  --radius-card: 2rem;
+  font-family: var(--font-serif);
+}
+
+.elegant h1, .elegant h2, .elegant h3 {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+}
+
+.modern {
+  --brand: #000000;
+  --surface: #F3F4F6;
+  --surface-muted: #E5E7EB;
+  --content: #000000;
+  --content-muted: #4B5563;
+  --border: #000000;
+  --radius-card: 0;
+  font-family: var(--font-mono);
+}
+
+.modern h1, .modern h2, .modern h3 {
+  font-family: var(--font-sans);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.05em;
+}
+
+body {
+  background-color: var(--surface);
+  color: var(--content);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Base Select Styles - Modern & High-end */
+select {
+  appearance: none;
+  background-repeat: no-repeat;
+  background-size: 1.25rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  border-width: 1.5px !important;
+  border-style: solid !important;
+  font-weight: 500;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* RTL Support for Select Arrow & Padding */
+[dir="rtl"] select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-position: left 0.875rem center;
+  padding-left: 3rem !important;
+  padding-right: 1.25rem !important;
+}
+
+/* LTR Support for Select Arrow & Padding */
+[dir="ltr"] select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 0.875rem center;
+  padding-right: 3rem !important;
+  padding-left: 1.25rem !important;
+}
+
+/* Hover & Focus States */
+select:hover {
+  border-color: var(--brand) !important;
+  background-color: var(--surface);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+select:focus {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%231C8FFF' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(28, 143, 255, 0.15), 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+  border-color: var(--brand) !important;
+  background-color: var(--surface);
+  transform: translateY(-1px);
+}
+
+/* Styled option groups and options */
+optgroup {
+  font-weight: 700;
+  color: var(--brand);
+  padding: 0.5rem;
+}
+
+option {
+  padding: 1rem;
+  font-weight: 500;
+  background-color: var(--surface);
+  color: var(--content);
+}
+
+/* Fix for existing border-none utilities in the shadow/focus state */
+.border-none {
+  border-width: 1.5px !important;
+  border-style: solid !important;
+  border-color: transparent !important;
+}
+
+.border-none:hover, .border-none:focus {
+  border-color: var(--brand) !important;
+}
+
+/* Custom Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--brand);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  #pos-invoice-print-area, #pos-invoice-print-area *,
+  #print-area, #print-area * {
+    visibility: visible;
+  }
+  
+  #pos-invoice-print-area, #print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+}
+
+/* Responsive Modal Base */
+.modal-overlay {
+  @apply fixed inset-0 z-50 flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.modal-container {
+  @apply relative w-full my-auto rounded-[var(--radius-card)] bg-[var(--surface)] shadow-2xl flex flex-col;
+  max-height: min(90vh, 100%);
+  max-width: clamp(300px, 95vw, 900px);
+}
+
+/* Prevent layout shift on all screens */
+* { box-sizing: border-box; }
+img, video { max-width: 100%; height: auto; }
+
+/* Safe area for mobile */
+body {
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Global Form Controls & Buttons Standard Sizing and Radii */
+button, input, select, textarea {
+  border-radius: var(--radius-md, 0.5rem) !important;
+}
+
+/* Force standard height for inputs and selects */
+input[type="text"]:not([class*="h-"]), 
+input[type="number"]:not([class*="h-"]), 
+input[type="password"]:not([class*="h-"]), 
+input[type="email"]:not([class*="h-"]), 
+input[type="tel"]:not([class*="h-"]), 
+select:not([multiple]):not([class*="h-"]) {
+  height: var(--size-input-height) !important;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* Map existing utility heights to modern design system heights */
+.h-10, .h-11, .h-12 {
+  height: var(--size-input-height) !important;
+}
+
+/* Base table typography and vertical density */
+table th {
+  height: 3rem !important; /* h-12 is 48px/3rem */
+  font-size: var(--size-text-sm) !important;
+}
+
+table td {
+  padding-top: 0.75rem !important; /* py-3 */
+  padding-bottom: 0.75rem !important; /* py-3 */
+  font-size: var(--size-text-base) !important;
+}
+
+/* Compact Mode Styles & Padding/Spacing Overrides */
+.compact-mode {
+  --size-input-height: 36px !important;
+  --size-button-height: 36px !important;
+  --size-text-base: 0.85rem !important;
+  --size-text-sm: 0.72rem !important;
+}
+
+.compact-mode table th {
+  height: 2rem !important;
+  font-size: 11px !important;
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+}
+
+.compact-mode table td {
+  padding-top: 0.3rem !important;
+  padding-bottom: 0.3rem !important;
+  font-size: 13px !important;
+}
+
+.compact-mode input[type="text"]:not([class*="h-"]), 
+.compact-mode input[type="number"]:not([class*="h-"]), 
+.compact-mode input[type="password"]:not([class*="h-"]), 
+.compact-mode input[type="email"]:not([class*="h-"]), 
+.compact-mode input[type="tel"]:not([class*="h-"]), 
+.compact-mode select:not([multiple]):not([class*="h-"]) {
+  height: 36px !important;
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+  font-size: 13px !important;
+}
+
+.compact-mode .p-8, 
+.compact-mode .p-6, 
+.compact-mode .p-5, 
+.compact-mode .p-4 {
+  padding: 0.5rem !important;
+}
+
+.compact-mode .py-8, 
+.compact-mode .py-6, 
+.compact-mode .py-4 {
+  padding-top: 0.4rem !important;
+  padding-bottom: 0.4rem !important;
+}
+
+.compact-mode .px-8, 
+.compact-mode .px-6, 
+.compact-mode .px-4 {
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+}
+
+.compact-mode .gap-6, 
+.compact-mode .gap-5, 
+.compact-mode .gap-4, 
+.compact-mode .gap-3 {
+  gap: 0.3rem !important;
+}
+
+.compact-mode h1, 
+.compact-mode .text-3xl, 
+.compact-mode .text-4xl {
+  font-size: 1.4rem !important;
+}
+
+.compact-mode h2, 
+.compact-mode .text-2xl {
+  font-size: 1.15rem !important;
+}
+
+.compact-mode h3, 
+.compact-mode .text-xl {
+  font-size: 1rem !important;
+}
+
+.compact-mode .h-20 {
+  height: 3.5rem !important;
+}
+
+.compact-mode .h-16 {
+  height: 2.75rem !important;
+}
+
+.compact-mode .rounded-3xl,
+.compact-mode .rounded-2xl {
+  border-radius: 0.75rem !important;
+}
+
+
+
