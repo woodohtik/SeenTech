@@ -31,6 +31,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
 import Branding from './Branding';
+import { IconInput } from './ui/IconInput';
 
 type ViewMode = 'login' | 'register' | 'pending' | 'forgot-password';
 
@@ -628,30 +629,20 @@ export default function Login() {
                 onSubmit={handleEmailLogin}
                 className="space-y-5"
               >
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-content mx-1">{t('login.email_or_phone')}</label>
-                  <div className="relative group">
-                    <Mail className={cn(
-                      "absolute top-1/2 -translate-y-1/2 text-content-muted group-focus-within:text-brand transition-colors",
-                      i18n.language === 'en' ? "left-4" : "right-4"
-                    )} size={20} />
-                    <input 
-                      required
-                      type="text"
-                      value={loginId}
-                      onChange={(e) => setLoginId(e.target.value)}
-                      placeholder={i18n.language === 'en' ? "example@mail.com or 05xxxxxxxx" : "example@mail.com أو 05xxxxxxxx"}
-                      className={cn(
-                        "w-full bg-surface border-2 border-border rounded-2xl py-4 focus:border-brand focus:ring-0 outline-none transition-all font-medium text-content",
-                        i18n.language === 'en' ? "pl-12 pr-4" : "pr-12 pl-4"
-                      )}
-                    />
-                  </div>
-                </div>
+                <IconInput
+                  required
+                  type="text"
+                  value={loginId}
+                  onChange={(e) => setLoginId(e.target.value)}
+                  placeholder={i18n.language === 'en' ? "example@mail.com or 05xxxxxxxx" : "example@mail.com أو 05xxxxxxxx"}
+                  startIcon={Mail}
+                  label={t('login.email_or_phone')}
+                  wrapperClassName="h-11"
+                />
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <div className="flex justify-between items-center px-1">
-                    <label className="text-sm font-bold text-content">{t('login.password')}</label>
+                    <label className="text-xs font-black uppercase tracking-widest text-content-muted hover:text-content select-none">{t('login.password')}</label>
                     <button 
                       type="button"
                       onClick={() => setView('forgot-password')}
@@ -660,33 +651,24 @@ export default function Login() {
                       {t('login.forgot_password_link')}
                     </button>
                   </div>
-                  <div className="relative group">
-                    <Lock className={cn(
-                      "absolute top-1/2 -translate-y-1/2 text-content-muted group-focus-within:text-brand transition-colors",
-                      i18n.language === 'en' ? "left-4" : "right-4"
-                    )} size={20} />
-                    <input 
-                      required
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className={cn(
-                        "w-full bg-surface border-2 border-border rounded-2xl py-4 focus:border-brand focus:ring-0 outline-none transition-all font-medium text-content",
-                        i18n.language === 'en' ? "pl-12 pr-12" : "pr-12 pl-12"
-                      )}
-                    />
-                    <button 
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className={cn(
-                        "absolute top-1/2 -translate-y-1/2 text-content-muted hover:text-content",
-                        i18n.language === 'en' ? "right-4" : "left-4"
-                      )}
-                    >
-                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
-                  </div>
+                  <IconInput
+                    required
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    startIcon={Lock}
+                    wrapperClassName="h-11"
+                    endIcon={
+                      <button 
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="text-content-muted hover:text-content flex items-center justify-center p-1 focus:outline-none"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    }
+                  />
                 </div>
 
                 <div className="flex items-center gap-2 px-1">
@@ -754,99 +736,59 @@ export default function Login() {
                 onSubmit={handleRegister}
                 className="space-y-4"
               >
-                <div className="space-y-1">
-                  <label className="text-sm font-bold text-content mx-1">{t('login.tailor_name')}</label>
-                  <div className="relative group">
-                    <User className={cn(
-                      "absolute top-1/2 -translate-y-1/2 text-content-muted group-focus-within:text-brand transition-colors",
-                      i18n.language === 'en' ? "left-4" : "right-4"
-                    )} size={20} />
-                    <input 
-                      required
-                      type="text"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder={t('login.full_name')}
-                      className={cn(
-                        "w-full bg-surface border-2 border-border rounded-2xl py-3 focus:border-brand focus:ring-0 outline-none transition-all font-medium text-content",
-                        i18n.language === 'en' ? "pl-12 pr-4" : "pr-12 pl-4"
-                      )}
-                    />
-                  </div>
-                </div>
+                <IconInput
+                  required
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder={t('login.full_name')}
+                  startIcon={User}
+                  label={t('login.tailor_name')}
+                  wrapperClassName="h-11"
+                />
 
-                <div className="space-y-1">
-                  <label className="text-sm font-bold text-content mx-1">{t('login.phone')}</label>
-                  <div className="relative group">
-                    <Phone className={cn(
-                      "absolute top-1/2 -translate-y-1/2 text-content-muted group-focus-within:text-brand transition-colors",
-                      i18n.language === 'en' ? "left-4" : "right-4"
-                    )} size={20} />
-                    <input 
-                      required
-                      type="tel"
-                      value={regPhone}
-                      onChange={(e) => setRegPhone(e.target.value)}
-                      onBlur={() => setRegPhone(formatSaudiPhone(regPhone))}
-                      placeholder="05xxxxxxxx"
-                      className={cn(
-                        "w-full bg-surface border-2 border-border rounded-2xl py-3 focus:border-brand focus:ring-0 outline-none transition-all font-medium text-content",
-                        i18n.language === 'en' ? "pl-12 pr-4" : "pr-12 pl-4"
-                      )}
-                    />
-                  </div>
-                </div>
+                <IconInput
+                  required
+                  type="tel"
+                  value={regPhone}
+                  onChange={(e) => setRegPhone(e.target.value)}
+                  onBlur={() => setRegPhone(formatSaudiPhone(regPhone))}
+                  placeholder="05xxxxxxxx"
+                  startIcon={Phone}
+                  label={t('login.phone')}
+                  wrapperClassName="h-11"
+                />
 
-                <div className="space-y-1">
-                  <label className="text-sm font-bold text-content mx-1">{t('login.email')}</label>
-                  <div className="relative group">
-                    <Mail className={cn(
-                      "absolute top-1/2 -translate-y-1/2 text-content-muted group-focus-within:text-brand transition-colors",
-                      i18n.language === 'en' ? "left-4" : "right-4"
-                    )} size={20} />
-                    <input 
-                      required
-                      type="email"
-                      value={regEmail}
-                      onChange={(e) => setRegEmail(e.target.value)}
-                      placeholder="example@mail.com"
-                      className={cn(
-                        "w-full bg-surface border-2 border-border rounded-2xl py-3 focus:border-brand focus:ring-0 outline-none transition-all font-medium text-content",
-                        i18n.language === 'en' ? "pl-12 pr-4" : "pr-12 pl-4"
-                      )}
-                    />
-                  </div>
-                </div>
+                <IconInput
+                  required
+                  type="email"
+                  value={regEmail}
+                  onChange={(e) => setRegEmail(e.target.value)}
+                  placeholder="example@mail.com"
+                  startIcon={Mail}
+                  label={t('login.email')}
+                  wrapperClassName="h-11"
+                />
 
-                <div className="space-y-1">
-                  <label className="text-sm font-bold text-content mx-1">{t('login.password')}</label>
-                  <div className="relative group">
-                    <Lock className={cn(
-                      "absolute top-1/2 -translate-y-1/2 text-content-muted group-focus-within:text-brand transition-colors",
-                      i18n.language === 'en' ? "left-4" : "right-4"
-                    )} size={20} />
-                    <input 
-                      required
-                      type={showPassword ? 'text' : 'password'}
-                      value={regPassword}
-                      onChange={(e) => setRegPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className={cn(
-                        "w-full bg-surface border-2 border-border rounded-2xl py-3 focus:border-brand focus:ring-0 outline-none transition-all font-medium text-content",
-                        i18n.language === 'en' ? "pl-12 pr-12" : "pr-12 pl-12"
-                      )}
-                    />
+                <IconInput
+                  required
+                  type={showPassword ? 'text' : 'password'}
+                  value={regPassword}
+                  onChange={(e) => setRegPassword(e.target.value)}
+                  placeholder="••••••••"
+                  startIcon={Lock}
+                  label={t('login.password')}
+                  wrapperClassName="h-11"
+                  endIcon={
                     <button 
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className={cn(
-                        "absolute top-1/2 -translate-y-1/2 text-content-muted hover:text-content",
-                        i18n.language === 'en' ? "right-4" : "left-4"
-                      )}
+                      className="text-content-muted hover:text-content flex items-center justify-center p-1 focus:outline-none"
                     >
-                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
-                  </div>
+                  }
+                />
                   {/* Strength Indicator */}
                   <div className="px-1 pt-2">
                     <div className="flex justify-between text-[10px] font-bold mb-1">
@@ -867,7 +809,6 @@ export default function Login() {
                       ))}
                     </div>
                   </div>
-                </div>
 
                 <button 
                   disabled={loading}

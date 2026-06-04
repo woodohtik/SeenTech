@@ -130,7 +130,7 @@ export async function deductStock(
     await supabase.from('stock_ledger').insert({
       item_id: inventoryItem.id,
       branch_id: targetBranchId,
-      type: 'reduction',
+      type: 'deduction',
       previous_quantity: currentQty,
       new_quantity: newQty,
       change: -deductionAmount,

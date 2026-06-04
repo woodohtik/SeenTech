@@ -876,7 +876,6 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           .from('orders')
           .update({
             paid_amount: newPaidAmount,
-            remaining_amount: newRemainingAmount,
             history: updatedHistory
           })
           .eq('id', order.id);
@@ -1225,7 +1224,6 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           .from('orders')
           .update({
             paid_amount: newPaidAmount,
-            remaining_amount: newRemainingAmount,
             payment_method: method,
             history: updatedHistory
           })

@@ -52,6 +52,17 @@ export default function UserPreferencesMenu({
     return (localStorage.getItem('app-density') as 'comfortable' | 'compact') || 'comfortable';
   });
 
+  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+
+  // Determine dynamic alignment to prevent clipping when direction is LTR
+  let alignmentClass = '';
+  if (layoutMode === 'sidebar') {
+    alignmentClass = isRtl ? 'right-0' : 'left-0';
+  } else {
+    // grid mode
+    alignmentClass = isRtl ? 'left-0' : 'right-0';
+  }
+
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Apply global density mode
@@ -99,10 +110,10 @@ export default function UserPreferencesMenu({
 
   const getThemeLabel = (themeVal: string) => {
     switch (themeVal) {
-      case 'light': return 'فاتح | Light';
-      case 'dark': return 'داكن | Dark';
-      case 'elegant': return 'كلاسيكي | Elegant';
-      case 'modern': return 'عصري | Modern';
+      case 'light': return t('common.theme_light', 'فاتح');
+      case 'dark': return t('common.theme_dark', 'داكن');
+      case 'elegant': return t('common.theme_elegant', 'كلاسيكي');
+      case 'modern': return t('common.theme_modern', 'عصري');
       default: return themeVal;
     }
   };
@@ -123,16 +134,16 @@ export default function UserPreferencesMenu({
         
         {!isCollapsed && (
           <>
-            <div className="flex flex-col text-right flex-1 truncate">
+            <div className={cn("flex flex-col flex-1 truncate", isRtl ? "text-right" : "text-left")}>
               <span className="text-sm font-black text-content truncate">
-                {currentStaff?.name || 'مستخدم النظام'}
+                {currentStaff?.name || t('common.system_user', 'مستخدم النظام')}
               </span>
               <span className="text-[10px] font-bold text-brand uppercase tracking-widest mt-0.5">
                 {currentStaff?.role === 'owner' 
-                  ? 'مالك | Owner' 
+                  ? t('common.roles.owner', 'مالك') 
                   : currentStaff?.role === 'cashier' 
-                    ? 'كاشير | Cashier' 
-                    : 'خياط | Tailor'}
+                    ? t('common.roles.cashier', 'كاشير') 
+                    : t('common.roles.tailor', 'خياط')}
               </span>
             </div>
             <ChevronDown size={16} className={cn("text-content-muted transition-transform duration-300", isOpen && "rotate-180")} />
@@ -151,8 +162,9 @@ export default function UserPreferencesMenu({
             className={cn(
               "absolute z-[150] w-72 bg-surface border border-border rounded-3xl shadow-2xl p-4 flex flex-col gap-1.5",
               (dropdownPosition === 'bottom' || (dropdownPosition === undefined && layoutMode === 'grid'))
-                ? "top-full mt-2 right-0 lg:left-auto" 
-                : "bottom-full mb-3 right-0"
+                ? "top-full mt-2" 
+                : "bottom-full mb-3",
+              alignmentClass
             )}
           >
             {/* Context Header */}
@@ -165,13 +177,16 @@ export default function UserPreferencesMenu({
             {/* 1. View Mode (Density Toggle) */}
             <button
               onClick={handleDensityToggle}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-muted text-content-muted hover:text-content text-right text-sm transition-all cursor-pointer focus:outline-none"
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-muted text-content-muted hover:text-content text-sm transition-all cursor-pointer focus:outline-none w-full",
+                isRtl ? "text-right" : "text-left"
+              )}
             >
               <Scaling size={18} className="text-brand" />
-              <div className="flex-1 flex flex-col">
+              <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
                 <span className="font-bold">{t('common.view_density', 'طريقة العرض')}</span>
                 <span className="text-[10px] text-content-muted">
-                  {density === 'compact' ? 'مكثف ومضغوط | Compact' : 'مريح وفضفاض | Comfortable'}
+                  {density === 'compact' ? t('common.compact', 'مكثف ومضغوط') : t('common.comfortable', 'مريح وفضفاض')}
                 </span>
               </div>
             </button>
@@ -215,14 +230,17 @@ export default function UserPreferencesMenu({
             {/* 3. Theme Mode */}
             <button
               onClick={handleThemeToggle}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-muted text-content-muted hover:text-content text-right text-sm transition-all cursor-pointer focus:outline-none"
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-muted text-content-muted hover:text-content text-sm transition-all cursor-pointer focus:outline-none w-full",
+                isRtl ? "text-right" : "text-left"
+              )}
             >
               {theme === 'dark' ? (
                 <Moon size={18} className="text-brand" />
               ) : (
                 <Sun size={18} className="text-brand" />
               )}
-              <div className="flex-1 flex flex-col">
+              <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
                 <span className="font-bold">{t('common.theme_mode', 'مظهر الواجهة')}</span>
                 <span className="text-[10px] text-content-muted">
                   {getThemeLabel(theme)}
@@ -237,13 +255,16 @@ export default function UserPreferencesMenu({
                   onToggleLayout();
                   setIsOpen(false);
                 }}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-muted text-content-muted hover:text-content text-right text-sm transition-all cursor-pointer focus:outline-none"
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-muted text-content-muted hover:text-content text-sm transition-all cursor-pointer focus:outline-none w-full",
+                  isRtl ? "text-right" : "text-left"
+                )}
               >
                 <LayoutGrid size={18} className="text-brand" />
-                <div className="flex-1 flex flex-col">
+                <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
                   <span className="font-bold">{t('common.navigation_style', 'نمط التنقل')}</span>
                   <span className="text-[10px] text-content-muted">
-                    {layoutMode === 'grid' ? 'شبكة لوحة القيادة | Grid' : 'شريط جانبي | Sidebar'}
+                    {layoutMode === 'grid' ? t('common.layout_grid', 'شبكة لوحة القيادة') : t('common.layout_sidebar', 'شريط جانبي')}
                   </span>
                 </div>
               </button>
@@ -257,10 +278,13 @@ export default function UserPreferencesMenu({
                 setIsOpen(false);
                 onLock();
               }}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-brand/5 text-brand hover:text-brand-dark text-right text-sm font-bold transition-all cursor-pointer focus:outline-none"
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-brand/5 text-brand hover:text-brand-dark text-sm font-bold transition-all cursor-pointer focus:outline-none w-full",
+                isRtl ? "text-right" : "text-left"
+              )}
             >
               <Lock size={18} />
-              <div className="flex-1 flex flex-col text-right">
+              <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
                 <span>{t('common.lock_screen', 'قفل الشاشة مؤقتاً')}</span>
                 <span className="text-[9px] font-bold opacity-80 uppercase tracking-widest">{t('common.lock_desc', 'SCREEN LOCK')}</span>
               </div>
@@ -272,10 +296,13 @@ export default function UserPreferencesMenu({
                 setIsOpen(false);
                 onLogout();
               }}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-500/5 text-red-500 hover:text-red-600 text-right text-sm font-bold transition-all cursor-pointer focus:outline-none"
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-500/5 text-red-500 hover:text-red-600 text-sm font-bold transition-all cursor-pointer focus:outline-none w-full",
+                isRtl ? "text-right" : "text-left"
+              )}
             >
               <LogOut size={18} />
-              <div className="flex-1 flex flex-col text-right">
+              <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
                 <span>{t('common.logout_account', 'تسجيل خروج آمن')}</span>
                 <span className="text-[9px] font-bold opacity-80 uppercase tracking-widest">{t('common.logout_desc', 'LOG OUT')}</span>
               </div>

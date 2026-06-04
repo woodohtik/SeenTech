@@ -29,6 +29,56 @@ export default function Sales({ tenantId }: { tenantId: string }) {
   const [activeShift, setActiveShift] = useState<Shift | null>(null);
   const [activeTopTab, setActiveTopTab] = useState<'pos' | 'returns' | 'shifts'>('pos');
   const [activeSubTab, setActiveSubTab] = useState<string>('pos_main');
+  const [loadingShift, setLoadingShift] = useState(true);
+
+  // Check active shift on mount of Sales
+  useEffect(() => {
+    const checkActiveShift = async () => {
+      if (!currentStaff || !tenantId) return;
+      try {
+        const { data, error } = await supabase
+          .from('shifts')
+          .select('*')
+          .eq('tenant_id', tenantId)
+          .eq('staff_id', currentStaff.id)
+          .eq('status', 'open')
+          .maybeSingle();
+
+        if (error) throw error;
+        if (data) {
+          setActiveShift({
+            ...data,
+            tenantId: data.tenant_id,
+            staffId: data.staff_id,
+            staffName: data.staff_name,
+            openingBalance: data.opening_balance,
+            closingBalance: data.closing_balance,
+            actualCash: data.actual_cash,
+            expectedCash: data.expected_cash,
+            discrepancy: data.discrepancy,
+            discrepancyReason: data.discrepancy_reason,
+            startTime: data.start_time,
+            endTime: data.end_time
+          } as Shift);
+          setActiveSubTab('pos_main');
+        } else {
+          // Default to sales_record so they don't see open shift window by default on entry
+          setActiveSubTab('sales_record');
+        }
+      } catch (err) {
+        console.error('Error fetching initial active shift in Sales:', err);
+        setActiveSubTab('sales_record');
+      } finally {
+        setLoadingShift(false);
+      }
+    };
+    checkActiveShift();
+  }, [tenantId, currentStaff]);
+
+  const handleShiftOpen = (shift: Shift) => {
+    setActiveShift(shift);
+    setActiveSubTab('pos_main');
+  };
   
   const [isClosingModalOpen, setIsClosingModalOpen] = useState(false);
   const [isCashOperationsModalOpen, setIsCashOperationsModalOpen] = useState(false);
@@ -262,7 +312,19 @@ export default function Sales({ tenantId }: { tenantId: string }) {
   const handleShiftClosed = () => {
     setIsClosingModalOpen(false);
     setActiveShift(null);
+    setActiveSubTab('sales_record');
   };
+
+  if (loadingShift) {
+    return (
+      <div className="flex-1 flex h-full items-center justify-center bg-background font-sans p-12" dir={isRtl ? 'rtl' : 'ltr'}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-brand/20 border-t-brand rounded-full animate-spin" />
+          <span className="text-sm font-bold text-content-muted">{t('common.loading', 'جاري التحميل...')}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full font-sans bg-background" dir={isRtl ? 'rtl' : 'ltr'} style={{ fontFamily: 'IBM Plex Sans, sans-serif' }}>
@@ -451,7 +513,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
         {/* POS Tab Content */}
         {activeTopTab === 'pos' && activeSubTab === 'pos_main' && (
           !activeShift ? (
-            <ShiftManager tenantId={tenantId} onShiftOpen={setActiveShift} />
+            <ShiftManager tenantId={tenantId} onShiftOpen={handleShiftOpen} />
           ) : (
             <POS tenantId={tenantId} shiftId={activeShift.id} />
           )

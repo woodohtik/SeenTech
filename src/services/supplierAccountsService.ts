@@ -115,8 +115,8 @@ export async function addSupplierTransaction(
     currentBalance
   );
   
-  // Filter out sample seeded transactions if we are saving a brand-new REAL write
-  const activeTransactions = existing.filter(t => !t.id.startsWith('mock-'));
+  // Keep all transactions including seeded/mock history to preserve full mathematical coherence
+  const activeTransactions = existing;
   
   const updatedTransactions = [...activeTransactions, fullTransaction].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()

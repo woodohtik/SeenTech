@@ -174,13 +174,13 @@ const DrillDownModal = ({
                              val === 'partial' ? t('common.payment_methods.partial') : String(val)
                            ) : key === t('common.status', 'الحالة') ? (
                              val === 'pending' ? t('common.status_pending', 'معلق') :
-                             val === 'measurements_taken' ? t('common.status_measurements_taken', 'قياسات') :
-                             val === 'cutting' ? t('common.status_cutting', 'قص') :
+                             val === 'measurements_taken' ? t('common.status_measurements_taken', 'أخذ المقاسات') :
+                             val === 'cutting' ? t('common.status_cutting', 'قص القماش') :
                              val === 'sewing' ? t('common.status_sewing', 'خياطة') :
                              val === 'embroidery' ? t('common.status_embroidery', 'تطريز') :
-                             val === 'ironing_packaging' ? t('common.status_ironing_packaging', 'تجهيز') :
-                             val === 'ready' ? t('common.status_ready', 'جاهز') :
-                             val === 'delivered' ? t('common.status_delivered', 'تم التسليم') :
+                             val === 'ironing_packaging' ? t('common.status_ironing_packaging', 'كوي وتغليف') :
+                             val === 'ready' ? t('common.status_ready', 'جاهز للاستلام') :
+                             val === 'delivered' ? t('common.status_delivered', 'تم التسليم') : val === 'partial_delivered' ? t('common.status_partial_delivered', 'تسليم جزئي') : val === 'cancelled' ? t('common.status_cancelled', 'ملغي') :
                              val === 'in_progress' ? t('common.status_in_progress', 'قيد التنفيذ') : String(val)
                            ) : String(val)}
                         </td>
@@ -473,12 +473,12 @@ export default function Dashboard({ tenantId }: DashboardProps) {
 
         const dist = [
           { id: 'pending', name: t('common.status_pending', 'معلق'), value: statusCounts['pending'] || 0, color: 'var(--content-muted)' },
-          { id: 'measurements_taken', name: t('common.status_measurements_taken', 'قياسات'), value: statusCounts['measurements_taken'] || 0, color: 'var(--color-info)' },
-          { id: 'cutting', name: t('common.status_cutting', 'قص'), value: statusCounts['cutting'] || 0, color: 'var(--color-warning)' },
+          { id: 'measurements_taken', name: t('common.status_measurements_taken', 'أخذ المقاسات'), value: statusCounts['measurements_taken'] || 0, color: 'var(--color-info)' },
+          { id: 'cutting', name: t('common.status_cutting', 'قص القماش'), value: statusCounts['cutting'] || 0, color: 'var(--color-warning)' },
           { id: 'sewing', name: t('common.status_sewing', 'خياطة'), value: statusCounts['sewing'] || 0, color: 'var(--color-brand)' },
           { id: 'embroidery', name: t('common.status_embroidery', 'تطريز'), value: statusCounts['embroidery'] || 0, color: 'var(--color-brand)' },
-          { id: 'ironing_packaging', name: t('common.status_ironing_packaging', 'تجهيز'), value: statusCounts['ironing_packaging'] || 0, color: 'var(--color-info)' },
-          { id: 'ready', name: t('common.status_ready', 'جاهز'), value: statusCounts['ready'] || 0, color: 'var(--color-success)' },
+          { id: 'ironing_packaging', name: t('common.status_ironing_packaging', 'كوي وتغليف'), value: statusCounts['ironing_packaging'] || 0, color: 'var(--color-info)' },
+          { id: 'ready', name: t('common.status_ready', 'جاهز للاستلام'), value: statusCounts['ready'] || 0, color: 'var(--color-success)' },
         ];
         setStatusDistribution(dist);
         setIsLoading(false);
@@ -1033,15 +1033,17 @@ export default function Dashboard({ tenantId }: DashboardProps) {
                 <h3 className="text-xl font-black text-content">{t('dashboard.revenue_analysis')}</h3>
                 <p className="text-sm text-content-muted font-medium">{t('dashboard.revenue_analysis_desc', 'مقارنة الدخل خلال الفترة المختارة')}</p>
               </div>
-              <SmartSelect 
-                value={revenueRange.toString()}
-                onChange={(val) => setRevenueRange(Number(val))}
-                className="w-auto"
-                options={[
-                  { value: '7', label: t('dashboard.last_7_days') },
-                  { value: '30', label: t('dashboard.last_30_days') }
-                ]}
-              />
+              <div className="w-40 sm:w-48 shrink-0">
+                <SmartSelect 
+                  value={revenueRange.toString()}
+                  onChange={(val) => setRevenueRange(Number(val))}
+                  className="w-auto"
+                  options={[
+                    { value: '7', label: t('dashboard.last_7_days') },
+                    { value: '30', label: t('dashboard.last_30_days') }
+                  ]}
+                />
+              </div>
             </div>
             <div className="h-80 relative flex-1">
               {(chartData.length === 0 || chartData.every(d => d.revenue === 0)) && (
@@ -1254,12 +1256,12 @@ export default function Dashboard({ tenantId }: DashboardProps) {
                               "bg-warning/10 text-warning"
                             )}>
                               {order.status === 'delivered' ? t('common.status_delivered', 'تم التسليم') :
-                               order.status === 'ready' ? t('common.status_ready', 'جاهز') :
-                               order.status === 'measurements_taken' ? t('common.status_measurements_taken', 'قياسات') :
-                               order.status === 'cutting' ? t('common.status_cutting', 'قص') :
+                               order.status === 'ready' ? t('common.status_ready', 'جاهز للاستلام') :
+                               order.status === 'measurements_taken' ? t('common.status_measurements_taken', 'أخذ المقاسات') :
+                               order.status === 'cutting' ? t('common.status_cutting', 'قص القماش') :
                                order.status === 'sewing' ? t('common.status_sewing', 'خياطة') :
                                order.status === 'embroidery' ? t('common.status_embroidery', 'تطريز') :
-                               order.status === 'ironing_packaging' ? t('common.status_ironing_packaging', 'تجهيز') :
+                               order.status === 'ironing_packaging' ? t('common.status_ironing_packaging', 'كوي وتغليف') :
                                order.status === 'partial_delivered' ? t('common.status_partial_delivered', 'تسليم جزئي') :
                                order.status === 'cancelled' ? t('common.status_cancelled', 'ملغي') :
                                t('common.status_in_progress', 'قيد التنفيذ')}

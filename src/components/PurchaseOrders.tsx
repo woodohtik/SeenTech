@@ -3,6 +3,7 @@ import { Plus, Package, CheckCircle2, Clock, Trash2, X, Search, Eye, Filter, Arr
 import { supabase } from '../lib/supabase/client';
 import { Supplier, PurchaseOrder, InventoryItem, PurchaseOrderItem } from '../types';
 import { cn } from '../lib/utils';
+import { addSupplierTransaction } from '../services/supplierAccountsService';
 import { SmartSelect } from './ui/SmartSelect';
 import { PriceDisplay } from './PriceDisplay';
 import { useTranslation } from 'react-i18next';
@@ -13,13 +14,15 @@ export default function PurchaseOrders({
   suppliers, 
   purchaseOrders, 
   inventory,
-  defaultTypeFilter = 'all'
+  defaultTypeFilter = 'all',
+  onRefresh
 }: { 
   tenantId: string, 
   suppliers: Supplier[], 
   purchaseOrders: PurchaseOrder[],
   inventory: InventoryItem[],
-  defaultTypeFilter?: 'all' | 'purchase' | 'return'
+  defaultTypeFilter?: 'all' | 'purchase' | 'return',
+  onRefresh?: () => void
 }) {
   const { t } = useTranslation();
   const { error: toastError, success: toastSuccess } = useToast();
@@ -133,7 +136,6 @@ export default function PurchaseOrders({
           po_number: orderNumber,
           total_amount: totalAmount,
           paid_amount: 0,
-          remaining_amount: totalAmount,
           status: 'draft',
           order_date: new Date().toISOString(),
           notes: notes || null,
@@ -169,10 +171,12 @@ export default function PurchaseOrders({
 
       toastSuccess(modalType === 'purchase' ? 'تم إنشاء السند كمسودة' : 'تم إنشاء مرتجع المشتريات كمسودة');
 
+      const foundSupplier = suppliers.find(s => (s.id || '').toLowerCase().trim() === (poData.supplier_id || '').toLowerCase().trim());
+
       const finalOrderObject = {
         ...poData,
         supplierId: poData.supplier_id,
-        supplierName: suppliers.find(s => s.id === poData.supplier_id)?.name || 'مورد معروف',
+        supplierName: foundSupplier?.name || 'مورد معروف',
         totalAmount: poData.total_amount,
         paidAmount: 0,
         remainingAmount: poData.total_amount,
@@ -189,7 +193,9 @@ export default function PurchaseOrders({
 
       // If confirm immediately was chosen:
       if (isConfirmImmediately) {
-        await handleConfirmOrder(finalOrderObject);
+        await handleConfirmOrder(finalOrderObject, true);
+      } else {
+        onRefresh?.();
       }
     } catch (error: any) {
       toastError(error.message || 'فشل بناء السند');
@@ -198,8 +204,15 @@ export default function PurchaseOrders({
     }
   };
 
-  const handleConfirmOrder = async (order: any) => {
-    if (!confirm('هل أنت متأكد من تأكيد هذه العملية؟ سيتم تحديث المخزون ورصيد حساب المورد تلقائياً.')) return;
+  const handleConfirmOrder = async (order: any, skipConfirmationAlert = false) => {
+    if (!order || !order.id) {
+      toastError('خطأ: لم يتم تلقي معرّف السند بشكل صحيح.');
+      return;
+    }
+
+    if (!skipConfirmationAlert) {
+      if (!confirm('هل أنت متأكد من تأكيد هذه العملية؟ سيتم تحديث المخزون ورصيد حساب المورد تلقائياً.')) return;
+    }
     setIsConfirming(true);
     try {
       // 1. Fetch current items of the purchase order to prevent any client-state mismatch
@@ -210,14 +223,42 @@ export default function PurchaseOrders({
         .single();
       
       if (fetchErr) throw fetchErr;
+      if (!orderDetails) throw new Error('لم يتم العثور على تفاصيل أمر الشراء في قاعدة البيانات.');
 
       const orderItems = orderDetails.purchase_order_items || [];
       if (orderItems.length === 0) {
         throw new Error('لا توجد أصناف في هذا الأمر لتأكيد العملية.');
       }
 
-      // 2. Loop and perform atomic stock, ledger updates
+      // Determine order type dynamically and robustly (RET- prefix represents return/refund)
+      const orderNumberStr = orderDetails.po_number || order.po_number || order.poNumber || '';
+      const finalOrderType = orderNumberStr.startsWith('RET') ? 'return' : 'purchase';
+
+      // 2. Resolve active branch ID dynamically with a fallback to ensure we never have a null branch_id
+      let activeBranchId = orderDetails.branch_id || order.branch_id || order.branchId || realBranchId;
+      if (!activeBranchId) {
+        const { data: fallbackBranches } = await supabase
+          .from('branches')
+          .select('id')
+          .eq('tenant_id', tenantId)
+          .limit(1);
+        if (fallbackBranches && fallbackBranches.length > 0) {
+          activeBranchId = fallbackBranches[0].id;
+        }
+      }
+
+      if (!activeBranchId) {
+        throw new Error('فشل تحديد المستودع/الفرع المسؤول لتحديث مخزونة. يرجى تهيئة الفروع أولاً.');
+      }
+
+      // 3. Loop and perform atomic stock, ledger updates
       for (const item of orderItems) {
+        // Skip updating inventory for custom items that don't have a database inventory reference
+        if (!item.item_id) {
+          console.warn(`Skipping stock update for item "${item.name}" because it does not map to a database inventory item ID.`);
+          continue;
+        }
+
         // Fetch current stock from inventory_items
         const { data: invItem, error: invErr } = await supabase
           .from('inventory_items')
@@ -225,18 +266,22 @@ export default function PurchaseOrders({
           .eq('id', item.item_id)
           .single();
         
-        if (invErr) throw invErr;
+        if (invErr) {
+          console.error(`Error fetching inventory item for item ID ${item.item_id}:`, invErr);
+          throw new Error(`تعذر العثور على الصنف "${item.name}" في قائمة المخزون الرئيسية.`);
+        }
+
         const currentQty = Number(invItem.quantity || 0);
-        const baseQty = Number(item.base_quantity || item.quantity);
+        const baseQty = Number(item.base_quantity || item.quantity || 0);
 
         let newQty = currentQty;
-        if (order.orderType === 'purchase' || order.order_type === 'purchase') {
+        if (finalOrderType === 'purchase') {
           newQty = currentQty + baseQty;
-        } else if (order.orderType === 'return' || order.order_type === 'return') {
+        } else if (finalOrderType === 'return') {
           newQty = currentQty - baseQty;
         }
 
-        // Update inventory_items
+        // Update central inventory_items
         const { error: updInvErr } = await supabase
           .from('inventory_items')
           .update({
@@ -248,92 +293,107 @@ export default function PurchaseOrders({
         if (updInvErr) throw updInvErr;
 
         // Update branch_inventory
-        const activeBranchId = order.branch_id || order.branchId || realBranchId;
-        if (activeBranchId) {
-          const { data: bInv } = await supabase
+        const { data: bInv } = await supabase
+          .from('branch_inventory')
+          .select('quantity')
+          .eq('branch_id', activeBranchId)
+          .eq('item_id', item.item_id)
+          .maybeSingle();
+
+        const currentBranchQty = Number(bInv?.quantity || 0);
+        let newBranchQty = currentBranchQty;
+        if (finalOrderType === 'purchase') {
+          newBranchQty = currentBranchQty + baseQty;
+        } else if (finalOrderType === 'return') {
+          newBranchQty = currentBranchQty - baseQty;
+        }
+
+        if (bInv) {
+          const { error: updBInvErr } = await supabase
             .from('branch_inventory')
-            .select('quantity')
+            .update({
+              quantity: newBranchQty,
+              updated_at: new Date().toISOString()
+            })
             .eq('branch_id', activeBranchId)
-            .eq('item_id', item.item_id)
-            .maybeSingle();
+            .eq('item_id', item.item_id);
 
-          const currentBranchQty = Number(bInv?.quantity || 0);
-          let newBranchQty = currentBranchQty;
-          if (order.orderType === 'purchase' || order.order_type === 'purchase') {
-            newBranchQty = currentBranchQty + baseQty;
-          } else if (order.orderType === 'return' || order.order_type === 'return') {
-            newBranchQty = currentBranchQty - baseQty;
-          }
-
-          if (bInv) {
-            await supabase
-              .from('branch_inventory')
-              .update({
-                quantity: newBranchQty,
-                updated_at: new Date().toISOString()
-              })
-              .eq('branch_id', activeBranchId)
-              .eq('item_id', item.item_id);
-          } else {
-            await supabase
-              .from('branch_inventory')
-              .insert({
-                branch_id: activeBranchId,
-                item_id: item.item_id,
-                quantity: newBranchQty,
-                tenant_id: tenantId,
-                updated_at: new Date().toISOString()
-              });
-          }
-
-          // Insert into stock_ledger log
-          await supabase.from('stock_ledger').insert({
-            item_id: item.item_id,
-            branch_id: activeBranchId,
-            type: order.order_type === 'purchase' || order.orderType === 'purchase' ? 'addition' : 'reduction',
-            previous_quantity: currentBranchQty,
-            new_quantity: newBranchQty,
-            change: order.order_type === 'purchase' || order.orderType === 'purchase' ? baseQty : -baseQty,
-            reference_id: order.id,
-            staff_id: currentStaff?.id || null,
-            staff_name: currentStaff?.name || 'Staff',
-            tenant_id: tenantId,
-            created_at: new Date().toISOString()
-          });
-        }
-      }
-
-      // 3. Update Supplier balance
-      const { data: supplier, error: sErr } = await supabase
-        .from('suppliers')
-        .select('balance')
-        .eq('id', order.supplier_id || order.supplierId)
-        .single();
-      
-      if (!sErr && supplier) {
-        const currentBalance = Number(supplier.balance || 0);
-        const orderTotal = Number(order.total_amount || order.totalAmount || 0);
-        let newBalance = currentBalance;
-        if (order.order_type === 'purchase' || order.orderType === 'purchase') {
-          newBalance = currentBalance + orderTotal; // outstanding debt increases
+          if (updBInvErr) throw updBInvErr;
         } else {
-          newBalance = currentBalance - orderTotal; // return reduces our debt
+          const { error: insBInvErr } = await supabase
+            .from('branch_inventory')
+            .insert({
+              branch_id: activeBranchId,
+              item_id: item.item_id,
+              quantity: newBranchQty,
+              tenant_id: tenantId,
+              updated_at: new Date().toISOString()
+            });
+
+          if (insBInvErr) throw insBInvErr;
         }
 
-        await supabase
-          .from('suppliers')
-          .update({
-            balance: newBalance,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', order.supplier_id || order.supplierId);
+        // Insert into stock_ledger log
+        const { error: ledgerErr } = await supabase.from('stock_ledger').insert({
+          item_id: item.item_id,
+          branch_id: activeBranchId,
+          type: finalOrderType === 'purchase' ? 'addition' : 'deduction',
+          previous_quantity: currentBranchQty,
+          new_quantity: newBranchQty,
+          change: finalOrderType === 'purchase' ? baseQty : -baseQty,
+          reference_id: order.id,
+          reference_type: finalOrderType === 'purchase' ? 'purchase' : 'return',
+          staff_id: currentStaff?.id || null,
+          staff_name: currentStaff?.name || 'Staff',
+          tenant_id: tenantId,
+          created_at: new Date().toISOString()
+        });
+
+        if (ledgerErr) {
+          console.warn('Could not write into stock ledger log:', ledgerErr);
+        }
       }
 
-      // 4. Update order status to confirmed
+      // 4. Update Supplier balance and write to transaction ledger
+      const supplierIdResolved = orderDetails.supplier_id || order.supplier_id || order.supplierId;
+      if (supplierIdResolved) {
+        const { data: supplier, error: sErr } = await supabase
+          .from('suppliers')
+          .select('balance')
+          .eq('id', supplierIdResolved)
+          .single();
+        
+        if (!sErr && supplier) {
+          const currentBalance = Number(supplier.balance || 0);
+          const orderTotal = Number(orderDetails.total_amount || order.total_amount || order.totalAmount || 0);
+          const isPurchase = finalOrderType === 'purchase';
+          
+          await addSupplierTransaction(
+            tenantId,
+            {
+              supplier_id: supplierIdResolved,
+              type: isPurchase ? 'purchase' : 'adjustment',
+              credit: isPurchase ? orderTotal : 0,
+              debit: isPurchase ? 0 : orderTotal,
+              reference_number: orderNumberStr || `PO-${order.id.slice(-6).toUpperCase()}`,
+              date: new Date().toISOString(),
+              notes: isPurchase 
+                ? `شراء بضائع ومواد بموجب أمر الشراء رقم ${orderNumberStr || order.id.slice(-6).toUpperCase()}`
+                : `مرتجع بضائع ومواد بموجب سند إرجاع رقم ${orderNumberStr || order.id.slice(-6).toUpperCase()}`,
+              tenant_id: tenantId,
+            },
+            currentBalance
+          );
+        }
+      }
+
+      // 5. Update order status to confirmed (received or returned for database ENUM compatibility)
+      const targetStatus = finalOrderType === 'purchase' ? 'received' : 'returned';
+
       const { error: poUpdErr } = await supabase
         .from('purchase_orders')
         .update({
-          status: 'confirmed',
+          status: targetStatus,
           received_date: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -341,10 +401,14 @@ export default function PurchaseOrders({
 
       if (poUpdErr) throw poUpdErr;
 
-      toastSuccess(order.order_type === 'return' || order.orderType === 'return' ? 'تم تأكيد المرتجع وخصم المخزون بنجاح' : 'تم تأكيد أمر الشراء وإدخال الكميات للمخازن بنجاح');
+      toastSuccess(finalOrderType === 'return' ? 'تم تأكيد المرتجع وخصم المخزون وموازنة رصيد المورد بنجاح' : 'تم تأكيد أمر الشراء وإدخال الكميات للمخازن وزيادة مستحقات المورد بنجاح');
       setSelectedOrder(null);
+      if (onRefresh) {
+        onRefresh();
+      }
     } catch (error: any) {
-      toastError(error.message || 'فشل تأكيد السند');
+      console.error('Error in handleConfirmOrder:', error);
+      toastError(error.message || 'فشل تأكيد المستند بشكل تام ومزامنته.');
     } finally {
       setIsConfirming(false);
     }
@@ -363,7 +427,12 @@ export default function PurchaseOrders({
 
     // 3. Status filter
     const poStatus = po.status || 'draft';
-    const matchesStatus = statusFilter === 'all' || poStatus === statusFilter;
+    let matchesStatus = statusFilter === 'all' || poStatus === statusFilter;
+    if (statusFilter === 'confirmed') {
+      matchesStatus = poStatus === 'confirmed' || poStatus === 'received' || poStatus === 'returned';
+    } else if (statusFilter === 'draft') {
+      matchesStatus = poStatus === 'draft';
+    }
 
     return matchesSearch && matchesType && matchesStatus;
   });
@@ -512,7 +581,7 @@ export default function PurchaseOrders({
                     <td className="px-6 py-4 font-black text-sm text-brand"><PriceDisplay amount={po.totalAmount} /></td>
                     <td className="px-6 py-4 text-xs font-bold text-content-muted">{new Date(po.orderDate).toLocaleDateString('ar-SA')}</td>
                     <td className="px-6 py-4">
-                      {poStatus === 'confirmed' || poStatus === 'received' ? (
+                      {poStatus === 'confirmed' || poStatus === 'received' || poStatus === 'returned' ? (
                         <div className="flex items-center gap-1.5 text-success bg-success/10 px-3 py-1 rounded-full w-fit border border-success/10">
                           <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
                           <span className="text-[10px] font-black">مؤكد ومرحل</span>

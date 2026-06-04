@@ -160,7 +160,7 @@ export default function ShiftManager({ tenantId, onShiftOpen }: ShiftManagerProp
             </label>
             <div className="relative">
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-content-muted font-bold self-center">
-                <DollarSign size={20} />
+                <Coins size={20} className="text-brand" />
               </span>
               <input 
                 type="number" 
@@ -169,12 +169,12 @@ export default function ShiftManager({ tenantId, onShiftOpen }: ShiftManagerProp
                   const val = e.target.value;
                   setOpeningBalance(val === '' ? '' : Number(val));
                 }}
-                className="w-full pr-12 pl-16 py-3.5 bg-surface-muted/50 border border-border rounded-xl focus:ring-2 focus:ring-brand focus:border-brand outline-none text-xl font-black text-content text-left"
+                className="w-full px-20 py-4 bg-surface-muted/50 border border-border rounded-xl focus:ring-2 focus:ring-brand focus:border-brand outline-none text-2xl font-black text-content text-center tracking-tight"
                 placeholder="0"
                 min="0"
                 step="any"
               />
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-extrabold text-content-muted bg-surface/80 px-2 py-1 rounded-md border border-border">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-content-muted bg-surface px-3 py-1.5 rounded-lg border border-border shadow-xs">
                 {getCurrencySymbol()}
               </span>
             </div>

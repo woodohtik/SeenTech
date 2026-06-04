@@ -1,10 +1,12 @@
-import React from 'react';
-import { FileText, Download, Printer, ShoppingBag, DollarSign, RotateCcw, CreditCard, Calculator, ArrowRightLeft } from 'lucide-react';
+import React, { useState } from 'react';
+import { FileText, Download, Printer, ShoppingBag, DollarSign, RotateCcw, CreditCard, Calculator, ArrowRightLeft, MessageCircle, ArrowLeft } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
 import { Shift, ShiftTotals } from '../types';
 import Branding from './Branding';
 import * as XLSX from 'xlsx';
+import { jsPDF } from 'jspdf';
+import { toPng } from 'html-to-image';
 
 interface ZReportProps {
   data: Shift | {
@@ -25,6 +27,11 @@ interface ZReportProps {
 
 export default function ZReport({ data, onClose }: ZReportProps) {
   const isDaily = 'type' in data && data.type === 'daily';
+  
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
+  const [recipientPhone, setRecipientPhone] = useState(localStorage.getItem('last_zreport_whatsapp_phone') || '');
+
   const totals = data.totals || {
     cash: 0,
     card: 0,
@@ -39,6 +46,77 @@ export default function ZReport({ data, onClose }: ZReportProps) {
     totalSales: 0,
     grossSales: 0,
     discounts: 0
+  };
+
+  const handleWhatsAppExport = async () => {
+    setExportingPdf(true);
+    try {
+      const element = document.getElementById('zreport-pdf-capture');
+      if (!element) {
+        throw new Error('Capture area not found');
+      }
+
+      const dataUrl = await toPng(element, {
+        backgroundColor: '#ffffff',
+        quality: 1.0,
+        pixelRatio: 2
+      });
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210;
+      const pageHeight = 295;
+      
+      const imgProps = pdf.getImageProperties(dataUrl);
+      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+      
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const fileName = `تقرير_إغلاق_${isDaily ? 'اليومي' : 'الوردية'}_#${data.id.slice(0, 8).toUpperCase()}.pdf`;
+      pdf.save(fileName);
+
+      setWhatsappModalOpen(true);
+    } catch (err) {
+      console.error('Failed to export Z-Report to PDF:', err);
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
+  const proceedToWhatsApp = () => {
+    let phone = recipientPhone.replace(/\D/g, '');
+    if (phone.startsWith('05')) {
+      phone = '966' + phone.substring(1);
+    } else if (phone.startsWith('5')) {
+      phone = '966' + phone;
+    }
+
+    if (phone) {
+      localStorage.setItem('last_zreport_whatsapp_phone', recipientPhone);
+    }
+
+    const today = new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+    let message = `*تقرير إغلاق ${isDaily ? 'المبيعات اليومي (Z-Report)' : 'الوردية'}*\n`;
+    message += `*الرقم المرجعي:* #${data.id.slice(0, 8).toUpperCase()}\n`;
+    message += `*المسئول:* ${data.staffName}\n`;
+    message += `*التاريخ:* ${today}\n\n`;
+    message += `يرجى الاطلاع على ملف التقرير المرفق بصيغة PDF.\n\n`;
+    message += `وشكراً جزيلاً لكم.`;
+
+    const encodedText = encodeURIComponent(message);
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodedText}`;
+    window.open(whatsappUrl, '_blank');
+    setWhatsappModalOpen(false);
   };
 
   const handlePrint = () => {
@@ -102,6 +180,18 @@ export default function ZReport({ data, onClose }: ZReportProps) {
         </h1>
         <div className="flex gap-3">
           <button 
+            onClick={handleWhatsAppExport}
+            disabled={exportingPdf}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white rounded-xl transition-colors font-bold text-sm shadow-lg shadow-emerald-500/20 cursor-pointer"
+          >
+            {exportingPdf ? (
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <MessageCircle size={18} />
+            )}
+            <span>{exportingPdf ? 'جاري التحضير...' : 'إرسال واتساب (PDF)'}</span>
+          </button>
+          <button 
             onClick={exportToExcel}
             className="flex items-center gap-2 px-4 py-2 bg-success/10 text-success rounded-xl hover:bg-success/20 transition-colors font-bold text-sm"
           >
@@ -127,7 +217,7 @@ export default function ZReport({ data, onClose }: ZReportProps) {
       </div>
 
       {/* Report Container */}
-      <div className="max-w-2xl mx-auto bg-surface border border-border shadow-sm rounded-3xl overflow-hidden print:border-none print:shadow-none p-8 print:p-0">
+      <div id="zreport-pdf-capture" className="max-w-2xl mx-auto bg-surface border border-border shadow-sm rounded-3xl overflow-hidden print:border-none print:shadow-none p-8 print:p-0">
         {/* Branch Info */}
         <div className="text-center mb-10 border-b border-border pb-8">
           <div className="bg-brand/10 w-16 h-16 rounded-2xl flex items-center justify-center text-brand mx-auto mb-4">
@@ -296,6 +386,50 @@ export default function ZReport({ data, onClose }: ZReportProps) {
           <Branding collapsed={false} className="opacity-90 transition-all" />
         </div>
       </div>
+
+      {/* WhatsApp Modal Dialog with instructions */}
+      {whatsappModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-md flex items-center justify-center p-4 z-50 print:hidden animate-fade-in" dir="rtl">
+          <div className="bg-white border border-slate-100 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-6">
+            <div className="text-center space-y-2">
+              <div className="mx-auto w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center animate-bounce">
+                <MessageCircle size={24} />
+              </div>
+              <h3 className="text-lg font-black text-slate-900">تم تجهيز كشف إغلاق الوردية PDF!</h3>
+              <p className="text-xs font-bold text-slate-500 leading-relaxed">
+                تم حفظ التقرير بنجاح على جهازك. يرجى كتابة رقم واتساب المستلم بالأسفل (المندوب أو المدير أو المالك) ومن ثم إرساله.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-xs font-black text-slate-700">رقم جوال المستلم (مثال: 0501234567)</label>
+              <input
+                type="text"
+                placeholder="أدخل رقم الجوال هنا"
+                value={recipientPhone}
+                onChange={(e) => setRecipientPhone(e.target.value)}
+                className="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm font-bold text-slate-950 focus:outline-none focus:border-emerald-500 bg-slate-50 focus:bg-white transition-all"
+              />
+            </div>
+
+            <div className="flex gap-2 font-black">
+              <button
+                onClick={proceedToWhatsApp}
+                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-600/15 flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <span>متابعة إلى واتساب</span>
+                <ArrowLeft size={14} className="rotate-180" />
+              </button>
+              <button
+                onClick={() => setWhatsappModalOpen(false)}
+                className="px-4 py-3 bg-slate-150 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black transition-colors cursor-pointer"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
