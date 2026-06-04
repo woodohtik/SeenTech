@@ -606,7 +606,6 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         total_amount: totalAmount,
         paid_amount: paidAmount,
         discount_amount: calculatedDiscountAmount,
-        remaining_amount: totalAmount - paidAmount,
         payment_method: paymentMethod,
         status: orderStatus,
         order_date: timestamp,
@@ -1007,18 +1006,25 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       {/* Main Pane (70% width on Desktop) */}
       <div className="w-full lg:w-[70%] flex flex-col gap-4 lg:gap-6 overflow-x-hidden transition-all duration-300 p-4 lg:p-6 overflow-y-auto h-[calc(100vh-4rem)] lg:h-full shrink-0">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 text-[#6B7280]" size={20} />
+          <div className="group flex-1 flex items-center bg-[#FFFFFF] dark:bg-[#1D1D1D] border border-border rounded-xl focus-within:ring-2 focus-within:ring-[#1C8FFF] focus-within:border-[#1C8FFF] transition-all shadow-sm overflow-hidden h-11">
+            <div className="flex items-center justify-center px-3.5 border-e border-border/60 text-[#6B7280] group-focus-within:text-[#1C8FFF] h-full shrink-0">
+              <Search size={18} />
+            </div>
             <input
               type="text"
               placeholder={t('pos.search_placeholder', 'ابحث عن منتج أو باركود...')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full ltr:pl-10 ltr:pr-4 rtl:pr-10 rtl:pl-4 py-3 bg-[#FFFFFF] dark:bg-[#1D1D1D] text-content border border-border rounded-xl focus:ring-2 focus:ring-[#1C8FFF] focus:border-[#1C8FFF] transition-all shadow-sm"
+              className="flex-1 min-w-0 bg-transparent border-none py-2 px-3 text-sm text-content outline-none ring-0 placeholder:text-gray-400 font-semibold"
             />
-            <button className="absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2 text-[#6B7280] hover:text-[#1C8FFF] transition-colors">
-              <Barcode size={20} />
-            </button>
+            <div className="flex items-center justify-center px-3 border-s border-border/60 h-full shrink-0">
+              <button 
+                type="button"
+                className="text-[#6B7280] hover:text-[#1C8FFF] transition-colors flex items-center justify-center focus:outline-none"
+              >
+                <Barcode size={18} />
+              </button>
+            </div>
           </div>
 
           <button

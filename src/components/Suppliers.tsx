@@ -101,39 +101,56 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
       .subscribe();
 
     const fetchPO = async () => {
+      const { data: supsData } = await supabase
+        .from('suppliers')
+        .select('id, name')
+        .eq('tenant_id', tenantId);
+
+      const supsMap = new Map();
+      if (supsData) {
+        supsData.forEach(s => {
+          if (s.id && s.name) {
+            supsMap.set(s.id.toLowerCase().trim(), s.name);
+          }
+        });
+      }
+
       const { data } = await supabase
         .from('purchase_orders')
         .select('*, purchase_order_items(*)')
         .eq('tenant_id', tenantId);
       if (data) {
-        setPurchaseOrders(data.map(d => ({
-          ...d,
-          supplierId: d.supplier_id,
-          supplierName: suppliers.find(s => s.id === d.supplier_id)?.name || d.supplier_name || 'مورد غير معروف',
-          poNumber: d.po_number,
-          tenantId: d.tenant_id,
-          branchId: d.branch_id,
-          totalAmount: d.total_amount,
-          paidAmount: d.paid_amount,
-          remainingAmount: d.remaining_amount,
-          orderDate: d.order_date,
-          orderType: d.po_number?.startsWith('RET') ? 'return' : 'purchase',
-          expectedDate: d.expected_date,
-          receivedDate: d.received_date,
-          createdBy: d.created_by,
-          createdAt: d.created_at,
-          updatedAt: d.updated_at,
-          items: (d.purchase_order_items || []).map((item: any) => ({
-            itemId: item.item_id,
-            name: item.name,
-            quantity: Number(item.quantity),
-            unit: item.unit,
-            conversionRate: Number(item.conversion_rate || 1),
-            baseQuantity: Number(item.base_quantity || item.quantity),
-            pricePerUnit: Number(item.price_per_unit || 0),
-            total: Number(item.total || 0)
-          }))
-        }) as unknown as PurchaseOrder));
+        setPurchaseOrders(data.map(d => {
+          const sId = (d.supplier_id || '').toLowerCase().trim();
+          return {
+            ...d,
+            supplierId: d.supplier_id,
+            supplierName: supsMap.get(sId) || d.supplier_name || 'مورد غير معروف',
+            poNumber: d.po_number,
+            tenantId: d.tenant_id,
+            branchId: d.branch_id,
+            totalAmount: d.total_amount,
+            paidAmount: d.paid_amount,
+            remainingAmount: d.remaining_amount,
+            orderDate: d.order_date,
+            orderType: d.po_number?.startsWith('RET') ? 'return' : 'purchase',
+            expectedDate: d.expected_date,
+            receivedDate: d.received_date,
+            createdBy: d.created_by,
+            createdAt: d.created_at,
+            updatedAt: d.updated_at,
+            items: (d.purchase_order_items || []).map((item: any) => ({
+              itemId: item.item_id,
+              name: item.name,
+              quantity: Number(item.quantity),
+              unit: item.unit,
+              conversionRate: Number(item.conversion_rate || 1),
+              baseQuantity: Number(item.base_quantity || item.quantity),
+              pricePerUnit: Number(item.price_per_unit || 0),
+              total: Number(item.total || 0)
+            }))
+          };
+        }) as unknown as PurchaseOrder[]);
       }
     };
     fetchPO();
@@ -491,6 +508,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
           purchaseOrders={purchaseOrders}
           inventory={inventory}
           defaultTypeFilter="purchase"
+          onRefresh={() => setSupplierReloadTrigger(prev => prev + 1)}
         />
       )}
 
@@ -501,6 +519,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
           purchaseOrders={purchaseOrders}
           inventory={inventory}
           defaultTypeFilter="return"
+          onRefresh={() => setSupplierReloadTrigger(prev => prev + 1)}
         />
       )}
 
@@ -866,10 +885,10 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                                   <span>أمر شراء رقم: {po.poNumber}</span>
                                   <span className={cn(
                                     "text-[10px] font-black px-2 py-0.5 rounded-full",
-                                    po.status === 'confirmed' ? "bg-success/10 text-success" :
+                                    (po.status === 'confirmed' || po.status === 'received' || po.status === 'returned') ? "bg-success/10 text-success" :
                                     po.status === 'draft' ? "bg-surface-muted text-content-muted" : "bg-warning/10 text-warning"
                                   )}>
-                                    {po.status === 'confirmed' ? 'معتمد ومستلم' : po.status === 'draft' ? 'مسودة' : 'معلق'}
+                                    {(po.status === 'confirmed' || po.status === 'received' || po.status === 'returned') ? 'معتمد ومستلم' : po.status === 'draft' ? 'مسودة' : 'معلق'}
                                   </span>
                                 </div>
                                 <div className="text-xs text-content-muted mt-1">تاريخ الطلب: {new Date(po.orderDate).toLocaleDateString('ar-EG')}</div>

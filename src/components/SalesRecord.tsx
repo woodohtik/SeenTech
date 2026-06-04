@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase/client';
-import { handleError, OperationType } from '../lib/firebase';
+import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
 import { Order } from '../types';
 import { cn } from '../lib/utils';
 import { decodeOrderB2BNotes } from '../utils/b2bHelper';
@@ -12,6 +12,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
   const { t } = useTranslation();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const handleDownloadPDF = async () => {
@@ -40,63 +41,67 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
     }
   };
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        let query = supabase
-          .from('orders')
-          .select('*')
-          .eq('tenant_id', tenantId);
-        
-        if (shiftId) {
-          query = query.eq('shift_id', shiftId);
-        }
-        
-        if (filterStatus) {
-          query = query.eq('status', filterStatus);
-        }
-
-        const { data, error } = await query.order('created_at', { ascending: false });
-        
-        if (error) throw error;
-
-        const mappedOrders = data.map(d => {
-          const b2bMeta = decodeOrderB2BNotes(d.notes);
-          return {
-            ...d,
-            orderNumber: d.order_number,
-            customerId: d.customer_id,
-            customerName: d.customer_name,
-            tenantId: d.tenant_id,
-            shiftId: d.shift_id,
-            subtotalAmount: d.subtotal_amount,
-            totalAmount: d.total_amount,
-            paidAmount: d.paid_amount,
-            discountAmount: d.discount_amount,
-            remainingAmount: d.remaining_amount,
-            paymentMethod: d.payment_method,
-            orderDate: d.order_date,
-            deliveryDate: d.delivery_date,
-            createdBy: d.created_by,
-            taxAmount: d.tax_amount,
-            taxRate: d.tax_rate,
-            isB2B: b2bMeta.isB2B,
-            b2bCompanyName: b2bMeta.b2bCompanyName,
-            b2bTRN: b2bMeta.b2bTRN,
-            notes: b2bMeta.originalNotes || d.notes,
-            qrCode: d.qr_code,
-            createdAt: d.created_at,
-            updatedAt: d.updated_at
-          } as Order;
-        });
-
-        setOrders(mappedOrders);
-      } catch (error) {
-        handleError(error as any, OperationType.LIST, 'orders');
-      } finally {
-        setLoading(false);
+  const fetchOrders = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      let query = supabase
+        .from('orders')
+        .select('*')
+        .eq('tenant_id', tenantId);
+      
+      if (shiftId) {
+        query = query.eq('shift_id', shiftId);
       }
-    };
+      
+      if (filterStatus) {
+        query = query.eq('status', filterStatus);
+      }
+
+      const { data, error: fetchError } = await query.order('created_at', { ascending: false });
+      
+      if (fetchError) throw fetchError;
+
+      const mappedOrders = data ? data.map(d => {
+        const b2bMeta = decodeOrderB2BNotes(d.notes);
+        return {
+          ...d,
+          orderNumber: d.order_number,
+          customerId: d.customer_id,
+          customerName: d.customer_name,
+          tenantId: d.tenant_id,
+          shiftId: d.shift_id,
+          subtotalAmount: d.subtotal_amount,
+          totalAmount: d.total_amount,
+          paidAmount: d.paid_amount,
+          discountAmount: d.discount_amount,
+          remainingAmount: d.remaining_amount,
+          paymentMethod: d.payment_method,
+          orderDate: d.order_date,
+          deliveryDate: d.delivery_date,
+          createdBy: d.created_by,
+          taxAmount: d.tax_amount,
+          taxRate: d.tax_rate,
+          isB2B: b2bMeta.isB2B,
+          b2bCompanyName: b2bMeta.b2bCompanyName,
+          b2bTRN: b2bMeta.b2bTRN,
+          notes: b2bMeta.originalNotes || d.notes,
+          qrCode: d.qr_code,
+          createdAt: d.created_at,
+          updatedAt: d.updated_at
+        } as Order;
+      }) : [];
+
+      setOrders(mappedOrders);
+    } catch (err: any) {
+      console.error('[SalesRecord] Error fetching orders:', err);
+      setError(getFriendlyErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchOrders();
   }, [tenantId, shiftId, filterStatus]);
 
@@ -104,6 +109,22 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 font-sans flex flex-col items-center justify-center h-64 text-center bg-surface border border-border rounded-2xl max-w-md mx-auto my-12 shadow-sm animate-fade-in" dir="rtl">
+        <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4 font-black text-xl">⚠️</div>
+        <h3 className="text-sm font-black text-content mb-2">فشل تحميل سجل المبيعات</h3>
+        <p className="text-xs text-content-muted mb-4 font-bold max-w-[280px] leading-relaxed">{error}</p>
+        <button
+          onClick={fetchOrders}
+          className="px-5 py-2 bg-brand text-white text-xs font-black rounded-xl hover:bg-brand/90 transition-colors shadow-md shadow-brand/10 cursor-pointer"
+        >
+          إعادة المحاولة
+        </button>
       </div>
     );
   }

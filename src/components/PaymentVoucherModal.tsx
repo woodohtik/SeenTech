@@ -157,8 +157,9 @@ export default function PaymentVoucherModal({
                 المبلغ المراد صرفه / Payout Amount <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 font-bold text-sm">
-                  ر.س
+                {/* Currency badge positioned safely on the far left */}
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 bg-slate-100 border border-slate-200 text-slate-600 font-extrabold text-[11px] rounded-lg px-2.5 py-1.5 pointer-events-none select-none z-10">
+                  ريال سعودي
                 </div>
                 <input
                   type="number"
@@ -168,7 +169,8 @@ export default function PaymentVoucherModal({
                   max={supplier.balance > 0 ? supplier.balance : undefined}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full pr-14 pl-4 py-3.5 bg-slate-50 hover:bg-slate-100/50 focus:bg-white border border-slate-200 focus:border-red-500 rounded-xl outline-none transition-all font-black text-base focus:ring-4 focus:ring-red-100"
+                  style={{ paddingLeft: '6.5rem', paddingRight: '1rem', textAlign: 'right' }}
+                  className="w-full h-12 bg-slate-50 hover:bg-slate-100/50 focus:bg-white border border-slate-200 focus:border-red-500 rounded-xl outline-none transition-all font-black text-base focus:ring-4 focus:ring-red-100 text-slate-800"
                   placeholder="0.00"
                   autoFocus
                 />

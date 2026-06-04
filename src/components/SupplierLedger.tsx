@@ -15,13 +15,18 @@ import {
   CheckCircle2, 
   AlertCircle,
   Clock,
-  ChevronDown
+  ChevronDown,
+  Share2,
+  MessageCircle
 } from 'lucide-react';
 import { getSupplierTransactions } from '../services/supplierAccountsService';
 import { SupplierTransaction } from '../types/supplierLedger';
+import { supabase } from '../lib/supabase/client';
 import PaymentVoucherModal from './PaymentVoucherModal';
 import { PriceDisplay } from './PriceDisplay';
 import { cn } from '../lib/utils';
+import { jsPDF } from 'jspdf';
+import { toPng } from 'html-to-image';
 
 interface SupplierLedgerProps {
   supplier: {
@@ -53,6 +58,8 @@ export default function SupplierLedger({
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [isVoucherOpen, setIsVoucherOpen] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
 
   // Load Transactions
   const fetchLedger = async () => {
@@ -74,6 +81,39 @@ export default function SupplierLedger({
 
   useEffect(() => {
     fetchLedger();
+
+    if (!tenantId) return;
+
+    // Real-time subscription to update ledger dynamically when transactions or suppliers change
+    const channelName = `supplier-ledger-${supplier.id}`;
+    const ledgerChannel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'supplier_transactions', filter: `tenant_id=eq.${tenantId}` },
+        (payload: any) => {
+          // If transaction belongs to this supplier or is modified, reload ledger
+          if (payload.new && payload.new.supplier_id === supplier.id) {
+            fetchLedger();
+          } else {
+            // Fallback: update on general events for completeness
+            fetchLedger();
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'suppliers', filter: `id=eq.${supplier.id}` },
+        () => {
+          fetchLedger();
+          onReloadSupplier();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ledgerChannel);
+    };
   }, [supplier.id, tenantId]);
 
   const handleVoucherSuccess = () => {
@@ -81,13 +121,27 @@ export default function SupplierLedger({
     onReloadSupplier();
   };
 
+  // Sort the full set of transactions chronologically to compute standard ledger running balances
+  const sortedAllTransactions = [...transactions].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+
+  let runningBalanceAccumulator = 0;
+  const transactionsWithCorrectBalances = sortedAllTransactions.map((tx) => {
+    runningBalanceAccumulator = runningBalanceAccumulator + Number(tx.credit || 0) - Number(tx.debit || 0);
+    return {
+      ...tx,
+      running_balance: Number(runningBalanceAccumulator.toFixed(2))
+    };
+  });
+
   // Accounting aggregates calculation
-  const totalCredit = transactions.reduce((sum, tx) => sum + Number(tx.credit || 0), 0);
-  const totalDebit = transactions.reduce((sum, tx) => sum + Number(tx.debit || 0), 0);
+  const totalCredit = transactionsWithCorrectBalances.reduce((sum, tx) => sum + Number(tx.credit || 0), 0);
+  const totalDebit = transactionsWithCorrectBalances.reduce((sum, tx) => sum + Number(tx.debit || 0), 0);
   const balanceCheck = totalCredit - totalDebit;
 
   // Filter transactions
-  const filteredTransactions = transactions.filter((tx) => {
+  const filteredTransactions = transactionsWithCorrectBalances.filter((tx) => {
     // 1. Search notes or references
     const text = (tx.notes || '').toLowerCase() + (tx.reference_number || '').toLowerCase();
     const matchesSearch = text.includes(searchTerm.toLowerCase());
@@ -106,6 +160,74 @@ export default function SupplierLedger({
 
   const handlePrintA4 = () => {
     window.print();
+  };
+
+  const handleWhatsAppShare = async () => {
+    setExportingPdf(true);
+    try {
+      const element = document.getElementById('supplier-ledger-pdf-capture');
+      if (!element) {
+        throw new Error('Capture area not found');
+      }
+
+      const dataUrl = await toPng(element, {
+        backgroundColor: '#ffffff',
+        quality: 1.0,
+        pixelRatio: 2
+      });
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210;
+      const pageHeight = 295;
+      
+      const imgProps = pdf.getImageProperties(dataUrl);
+      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+      
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const fileName = `كشف_حساب_${supplier.name.replace(/\s+/g, '_')}.pdf`;
+      pdf.save(fileName);
+
+      setWhatsappModalOpen(true);
+    } catch (err) {
+      console.error('Failed to export ledger to PDF:', err);
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
+  const proceedToWhatsApp = () => {
+    let phone = supplier.phone || '';
+    phone = phone.replace(/\D/g, '');
+    if (phone.startsWith('05')) {
+      phone = '966' + phone.substring(1);
+    } else if (phone.startsWith('5')) {
+      phone = '966' + phone;
+    }
+
+    const today = new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+    
+    let message = `*كشف حساب المورد لدى ${tenantName}*\n`;
+    message += `*المورد:* ${supplier.name}\n`;
+    message += `*التاريخ:* ${today}\n\n`;
+    message += `يرجى الاطلاع على ملف كشف الحساب المرفق بصيغة PDF.\n\n`;
+    message += `وشكراً جزيلاً لكم.`;
+
+    const encodedText = encodeURIComponent(message);
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodedText}`;
+    window.open(whatsappUrl, '_blank');
+    setWhatsappModalOpen(false);
   };
 
   return (
@@ -129,10 +251,23 @@ export default function SupplierLedger({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 w-full md:w-auto">
+        <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
+          <button
+            onClick={handleWhatsAppShare}
+            disabled={exportingPdf}
+            className="h-10 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-600/10 flex items-center justify-center gap-2 transition-all cursor-pointer"
+          >
+            {exportingPdf ? (
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <MessageCircle size={16} />
+            )}
+            <span>{exportingPdf ? 'جاري إنشاء ملف PDF...' : 'إرسال كشف حساب PDF واتساب'}</span>
+          </button>
+
           <button
             onClick={() => setIsVoucherOpen(true)}
-            className="flex-1 md:flex-none px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black shadow-md shadow-rose-600/10 flex items-center justify-center gap-2 transition-all cursor-pointer"
+            className="h-10 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black shadow-md shadow-rose-600/10 flex items-center justify-center gap-2 transition-all cursor-pointer"
           >
             <Plus size={16} />
             <span>إصدار سند صرف (سداد)</span>
@@ -140,7 +275,7 @@ export default function SupplierLedger({
 
           <button
             onClick={handlePrintA4}
-            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-black shadow-md shadow-slate-900/10 flex items-center justify-center gap-2 transition-all cursor-pointer"
+            className="h-10 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-md shadow-blue-600/10 flex items-center justify-center gap-2 transition-all cursor-pointer"
           >
             <Printer size={16} />
             <span>طباعة كشف A4</span>
@@ -208,14 +343,14 @@ export default function SupplierLedger({
         </div>
 
         {/* Metric Column 3 */}
-        <div className="bg-white border border-slate-200 p-5 rounded-3xl shadow-sm flex items-center justify-between col-span-1 md:col-span-2 bg-gradient-to-l from-slate-900 via-slate-800 to-slate-950 text-white border-none shadow-lg">
+        <div className="bg-white border border-slate-200 p-5 rounded-3xl shadow-sm flex items-center justify-between col-span-1 md:col-span-2">
           <div>
             <span className="text-[10px] font-black text-slate-400 block uppercase mb-1">الرصيد النهائي المستحق للمورد</span>
-            <span className="text-2xl font-black font-mono">
+            <span className="text-2xl font-black text-slate-900 font-mono">
               <PriceDisplay amount={supplier.balance} />
             </span>
           </div>
-          <div className="p-3.5 bg-white/10 text-white rounded-2xl">
+          <div className="p-3.5 bg-indigo-50 text-indigo-600 rounded-2xl">
             <BookOpen size={22} className="stroke-[2.5]" />
           </div>
         </div>
@@ -226,31 +361,37 @@ export default function SupplierLedger({
         <div className="flex flex-col md:flex-row gap-3">
           
           {/* Text search bar */}
-          <div className="flex-1 relative">
-            <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+          <div className="group flex-1 flex items-center bg-slate-50 hover:bg-slate-100/30 border border-slate-200 focus-within:border-slate-900 focus-within:bg-white rounded-xl transition-all overflow-hidden h-10">
+            <div className="flex items-center justify-center px-3.5 border-e border-slate-200/60 text-slate-400 group-focus-within:text-slate-900 h-full shrink-0">
+              <Search size={14} />
+            </div>
             <input
               type="text"
               placeholder="بحث برقم السند، الفاتورة أو الملاحظات..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pr-10 pl-4 py-2.5 bg-slate-50 hover:bg-slate-100/50 focus:bg-white text-xs font-semibold rounded-xl border border-slate-200 focus:border-slate-900 outline-none transition-all"
+              className="flex-1 min-w-0 bg-transparent border-none py-2 px-3 text-xs text-slate-800 outline-none ring-0 placeholder:text-slate-400 font-semibold"
             />
           </div>
 
           {/* Type drop down */}
-          <div className="w-full md:w-56 relative">
-            <Filter className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+          <div className="group w-full md:w-56 flex items-center bg-slate-50 hover:bg-slate-100/30 border border-slate-200 focus-within:border-slate-900 focus-within:bg-white rounded-xl transition-all overflow-hidden h-10">
+            <div className="flex items-center justify-center px-3.5 border-e border-slate-200/60 text-slate-400 group-focus-within:text-slate-900 h-full shrink-0 font-bold">
+              <Filter size={12} />
+            </div>
             <select
               value={typeFilter}
               onChange={(e: any) => setTypeFilter(e.target.value)}
-              className="w-full pr-10 pl-8 py-2.5 bg-slate-50 hover:bg-slate-100/50 text-xs font-semibold rounded-xl border border-slate-200 focus:border-slate-900 outline-none transition-all appearance-none cursor-pointer text-slate-700"
+              className="flex-1 min-w-0 bg-transparent border-none py-2 px-3 text-xs text-slate-700 outline-none ring-0 font-semibold appearance-none cursor-pointer focus:outline-none"
             >
               <option value="all">كل الحركات المالية (دائن وملف)</option>
               <option value="purchase">عمليات المشتريات (متأخرات في فواتير)</option>
               <option value="payment">سندات الصرف والمدفوعات</option>
               <option value="adjustment">تسويات الأرصدة والافتتاحي</option>
             </select>
-            <ChevronDown className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
+            <div className="flex items-center justify-center px-2.5 text-slate-400 pointer-events-none">
+              <ChevronDown size={14} />
+            </div>
           </div>
         </div>
 
@@ -399,6 +540,150 @@ export default function SupplierLedger({
           onSuccess={handleVoucherSuccess}
         />
       )}
+
+      {/* WhatsApp Modal Dialog with instructions */}
+      {whatsappModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 print:hidden animate-fade-in" dir="rtl">
+          <div className="bg-white border border-slate-100 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-6">
+            <div className="text-center space-y-2">
+              <div className="mx-auto w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center">
+                <MessageCircle size={24} />
+              </div>
+              <h3 className="text-lg font-black text-slate-900">تم تنزيل كشف الحساب بصيغة PDF!</h3>
+              <p className="text-xs font-bold text-slate-500 leading-relaxed">
+                تم حفظ ملف الـ PDF بنجاح في جهازك باسم: <br />
+                <span className="font-mono text-slate-900 bg-slate-100 px-2 py-1 rounded inline-block mt-1 font-bold">
+                  كشف_حساب_{supplier.name.replace(/\s+/g, '_')}.pdf
+                </span>
+                <br /><br />
+                سنقوم الآن بفتح محادثة الواتساب مع المورد. يرجى إرسال الرسالة ثم إرفاق ملف الـ PDF المُنزّل من جهازك لإرساله مباشرة.
+              </p>
+            </div>
+            <div className="flex gap-2 font-black">
+              <button
+                onClick={proceedToWhatsApp}
+                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-600/15 flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <span>فتح واتساب الآن</span>
+                <ArrowLeft size={14} className="rotate-180" />
+              </button>
+              <button
+                onClick={() => setWhatsappModalOpen(false)}
+                className="px-4 py-3 bg-slate-150 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black transition-colors cursor-pointer"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden container specifically styled for PDF captures */}
+      <div 
+        className="absolute left-[-9999px] top-[-9999px] w-[800px] bg-white p-8 space-y-6 text-right" 
+        dir="rtl" 
+        id="supplier-ledger-pdf-capture" 
+        style={{ fontFamily: 'IBM Plex Sans, sans-serif' }}
+      >
+        {/* Headings */}
+        <div className="border-b-2 border-slate-950 pb-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-black text-slate-950">{tenantName}</h1>
+              <p className="text-xs font-bold text-slate-500 mt-1">كشف حركـات الحساب التفصيلي للشركاء والموردين</p>
+            </div>
+            <div className="text-left font-mono text-[9px] text-slate-400">
+              <p>تاريخ الاستخراج: {new Date().toLocaleString('ar-SA')}</p>
+              <p>النظام: Seen-POS</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-slate-100 text-xs">
+            <div>
+              <p className="font-extrabold text-slate-400 uppercase tracking-wider mb-1">بيانات المورد:</p>
+              <p className="text-sm font-black text-slate-950">{supplier.name}</p>
+              {supplier.phone && <p className="font-semibold text-slate-600">هاتف: <span className="font-mono">{supplier.phone}</span></p>}
+              {supplier.taxNumber && <p className="font-semibold text-slate-600">الرقم الضريبي للمورد: <span className="font-mono">{supplier.taxNumber}</span></p>}
+              {supplier.address && <p className="font-semibold text-slate-500">العنوان: {supplier.address}</p>}
+            </div>
+            <div className="bg-slate-50 p-4 rounded-2xl flex flex-col justify-between items-end text-left h-full border border-slate-200">
+              <span className="font-black text-slate-400 text-[10px] uppercase">إجمالي الرصيد المستحق في الذمة:</span>
+              <span className="text-2xl font-black text-red-600 font-mono mt-1">
+                {supplier.balance.toFixed(2)} ر.س
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Accounting aggregates */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <span className="text-[9px] font-black text-slate-400 block mb-1">إجمالي المشتريات (دائن)</span>
+            <span className="text-sm font-black text-slate-900 font-mono">
+              {totalCredit.toFixed(2)} ر.س
+            </span>
+          </div>
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <span className="text-[9px] font-black text-slate-400 block mb-1">إجمالي المدفوعات (مدين)</span>
+            <span className="text-sm font-black text-red-600 font-mono">
+              {totalDebit.toFixed(2)} ر.س
+            </span>
+          </div>
+          <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-100">
+            <span className="text-[9px] font-black text-indigo-500 block mb-1">الرصيد النهائي المستحق للمورد</span>
+            <span className="text-sm font-black text-slate-950 font-mono">
+              {supplier.balance.toFixed(2)} ر.س
+            </span>
+          </div>
+        </div>
+
+        {/* Transactions */}
+        <div className="border border-slate-200 rounded-2xl overflow-hidden mt-4">
+          <table className="w-full text-right border-collapse text-xs whitespace-nowrap">
+            <thead>
+              <tr className="bg-slate-100/80 text-[10px] font-black text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                <th className="p-3 text-right">التاريخ</th>
+                <th className="p-3 text-right">المرجع</th>
+                <th className="p-3 text-right">الوصف والبيان</th>
+                <th className="p-3 text-center">المدفوعات (مدين)</th>
+                <th className="p-3 text-center">المطلوبات (دائن)</th>
+                <th className="p-3 text-center bg-slate-50 border-r border-slate-200 text-slate-950 font-black">الرصيد المستحق</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredTransactions.map((tx) => {
+                const txDate = new Date(tx.date);
+                return (
+                  <tr key={tx.id} className="bg-white">
+                    <td className="p-3 text-slate-600 font-medium">
+                      {txDate.toLocaleDateString('ar-SA')}
+                    </td>
+                    <td className="p-3 font-mono font-black text-slate-950">
+                      {tx.reference_number}
+                    </td>
+                    <td className="p-3 font-semibold text-slate-700 whitespace-normal leading-relaxed max-w-xs text-[11px]">
+                      {tx.notes}
+                    </td>
+                    <td className="p-3 text-center font-mono font-bold text-red-600">
+                      {tx.debit > 0 ? `-${tx.debit.toFixed(2)}` : '—'}
+                    </td>
+                    <td className="p-3 text-center font-mono font-bold text-slate-800">
+                      {tx.credit > 0 ? `+${tx.credit.toFixed(2)}` : '—'}
+                    </td>
+                    <td className="p-3 bg-slate-50/50 font-mono font-black text-center text-slate-950 border-r border-slate-200">
+                      {tx.running_balance.toFixed(2)} ر.س
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        
+        <div className="text-[10px] text-slate-400 font-bold text-center mt-6 pt-4 border-t border-slate-100">
+          نشكركم لتعاملكم معنا. تم استخراج هذا المستند آلياً ويدوياً عبر مكتب المحاسبة والمستندات الرسمية.
+        </div>
+      </div>
     </div>
   );
 }

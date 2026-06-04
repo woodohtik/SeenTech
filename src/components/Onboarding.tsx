@@ -430,16 +430,20 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                         <label className="text-sm font-black text-slate-700 uppercase tracking-widest flex items-center gap-2">
                           {t('onboarding.fields.shop_name')}
                         </label>
-                        <div className="relative group">
-                          <Store className="absolute inset-y-0 end-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-brand transition-colors" size={24} />
+                        <div className={cn(
+                          "group flex items-center bg-white border-2 rounded-[2.5rem] overflow-hidden focus-within:border-brand transition-all shadow-sm focus-within:shadow-xl focus-within:shadow-brand/5",
+                          errors.shopName ? "border-rose-500 bg-rose-50/30" : "border-slate-200"
+                        )}>
+                          <div className={cn(
+                            "flex items-center justify-center p-6 border-e transition-colors shrink-0",
+                            errors.shopName ? "text-rose-500 border-rose-500/20" : "text-slate-300 border-slate-100 group-focus-within:border-brand/40 group-focus-within:text-brand"
+                          )}>
+                            <Store size={24} />
+                          </div>
                           <input 
                             {...register('shopName')}
                             placeholder={t('onboarding.fields.shop_name_placeholder')}
-                            className={cn(
-                              "w-full bg-white border-2 border-slate-200 focus:border-brand rounded-[2.5rem] py-6 pe-8 ps-16 text-lg font-bold outline-none transition-all shadow-sm focus:shadow-xl focus:shadow-brand/5",
-                              i18n.language === 'en' ? "ps-16 pe-8" : "pe-16 ps-8",
-                              errors.shopName && "border-rose-500 bg-rose-50/30"
-                            )}
+                            className="flex-1 w-full bg-transparent border-none py-6 px-4 text-lg font-bold outline-none ring-0 placeholder:text-slate-300 text-content"
                           />
                         </div>
                         {errors.shopName && <p className="text-xs text-rose-500 font-bold mt-2 ps-4">{errors.shopName.message as string}</p>}
@@ -504,27 +508,24 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                         <label className="text-sm font-black text-slate-700 uppercase tracking-widest flex items-center gap-2">
                           {t('onboarding.fields.tax_number')}
                         </label>
-                        <div className="relative group">
-                          <ShieldCheck className={cn(
-                            "absolute inset-y-0 end-6 top-1/2 -translate-y-1/2 transition-colors z-10",
-                            checkVatValid(watch('taxNumber')) ? "text-emerald-500" : "text-slate-300 group-focus-within:text-brand"
-                          )} size={24} />
+                        <div className={cn(
+                          "group flex items-center bg-white border-2 rounded-[2.5rem] overflow-hidden transition-all shadow-sm focus-within:shadow-xl focus-within:shadow-brand/5",
+                          errors.taxNumber ? "border-rose-500 bg-rose-50/30" : checkVatValid(watch('taxNumber')) ? "border-emerald-500" : "border-slate-200 focus-within:border-brand"
+                        )}>
+                          <div className={cn(
+                            "flex items-center justify-center p-6 border-e transition-colors shrink-0",
+                            errors.taxNumber ? "text-rose-500 border-rose-500/20" : checkVatValid(watch('taxNumber')) ? "text-emerald-500 border-emerald-500/20" : "text-slate-300 border-slate-100 group-focus-within:border-brand/40 group-focus-within:text-brand"
+                          )}>
+                            <ShieldCheck size={24} />
+                          </div>
                           <input 
                             {...register('taxNumber')}
                             placeholder={t('onboarding.fields.tax_number_placeholder')}
                             maxLength={15}
-                            className={cn(
-                              "w-full bg-white border-2 border-slate-200 focus:border-brand rounded-[2.5rem] py-6 pe-16 ps-10 text-lg font-bold outline-none transition-all shadow-sm",
-                              i18n.language === 'en' ? "ps-10 pe-16" : "pe-16 ps-10",
-                              errors.taxNumber && "border-rose-500 bg-rose-50/30",
-                              checkVatValid(watch('taxNumber')) && "border-emerald-500 bg-emerald-50/10 focus:border-emerald-500"
-                            )}
+                            className="flex-1 min-w-0 bg-transparent border-none py-6 px-4 text-lg font-bold outline-none ring-0 placeholder:text-slate-300 text-content"
                           />
                           {checkVatValid(watch('taxNumber')) && (
-                            <div className={cn(
-                              "absolute top-1/2 -translate-y-1/2 bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-xs font-black flex items-center gap-1",
-                              i18n.language === 'en' ? "right-16" : "left-4"
-                            )}>
+                            <div className="mx-4 bg-emerald-100 text-emerald-600 px-3 py-1.5 rounded-full text-xs font-black flex items-center gap-1 shrink-0">
                               <Check size={14} /> {t('common.verified', 'موثق')}
                             </div>
                           )}
@@ -573,16 +574,20 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
                       <div className="md:col-span-2 space-y-5">
                         <label className={cn("text-sm font-black text-slate-700 uppercase tracking-widest", i18n.language === 'en' ? "ps-2" : "pe-2")}>{t('onboarding.fields.address')}</label>
-                        <div className="relative group">
-                          <MapPin className="absolute inset-y-0 end-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-500 transition-colors" size={24} />
+                        <div className={cn(
+                          "group flex items-center bg-white border-2 rounded-[2.5rem] overflow-hidden focus-within:border-indigo-500 transition-all shadow-sm focus-within:shadow-xl focus-within:shadow-indigo-500/5",
+                          errors.address ? "border-rose-500 bg-rose-50/30" : "border-slate-200"
+                        )}>
+                          <div className={cn(
+                            "flex items-center justify-center p-6 border-e transition-colors shrink-0",
+                            errors.address ? "text-rose-500 border-rose-500/20" : "text-slate-300 border-slate-100 group-focus-within:border-indigo-500/40 group-focus-within:text-indigo-500"
+                          )}>
+                            <MapPin size={24} />
+                          </div>
                           <input 
                             {...register('address')}
                             placeholder={t('onboarding.fields.address_placeholder')}
-                            className={cn(
-                              "w-full bg-white border-2 border-slate-200 focus:border-indigo-500 rounded-[2.5rem] py-6 pe-16 ps-8 text-lg font-bold outline-none transition-all shadow-sm",
-                              i18n.language === 'en' ? "ps-8 pe-16" : "pe-16 ps-8",
-                              errors.address && "border-rose-500 bg-rose-50/30"
-                            )}
+                            className="flex-1 w-full bg-transparent border-none py-6 px-4 text-lg font-bold outline-none ring-0 placeholder:text-slate-300 text-content"
                           />
                         </div>
                         {errors.address && <p className="text-xs text-rose-500 font-bold mt-2 ps-4">{errors.address.message as string}</p>}

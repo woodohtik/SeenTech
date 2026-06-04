@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Store, MapPin, Phone, Globe, Bell, Shield, CreditCard, MessageSquare, CheckCircle2, AlertCircle, ChevronRight, ExternalLink, Zap, Upload, X as CloseIcon, Database, Trash2, ShieldCheck, Palette, FileText, HelpCircle, Layout } from 'lucide-react';
+import { Store, MapPin, Phone, Globe, Bell, Shield, CreditCard, MessageSquare, CheckCircle2, AlertCircle, ChevronRight, ExternalLink, Zap, Upload, X as CloseIcon, Database, Trash2, ShieldCheck, Palette, FileText, HelpCircle, Layout, Mail } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
 import { motion, AnimatePresence } from 'motion/react';
@@ -12,6 +12,7 @@ import Header from './Header';
 import { useStaff } from '../contexts/StaffContext';
 import { usePermissions } from '../hooks/usePermissions';
 import ThemeSwitcher from './ThemeSwitcher';
+import { IconInput } from './ui/IconInput';
 
 import WarehouseManagement from './Inventory/WarehouseManagement';
 import Staff from './Staff';
@@ -30,7 +31,27 @@ export default function Settings({ tenantId }: SettingsProps) {
   const [activeTab, setActiveTab] = useState<TabType>('profile');
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isDeletingTestData, setIsDeletingTestData] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>('');
   const { currentStaff } = useStaff();
+
+  useEffect(() => {
+    const fetchUserEmail = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.email) {
+          setUserEmail(user.email);
+        } else if (currentStaff?.email) {
+          setUserEmail(currentStaff.email);
+        }
+      } catch (err) {
+        console.error('Failed to fetch user email:', err);
+        if (currentStaff?.email) {
+          setUserEmail(currentStaff.email);
+        }
+      }
+    };
+    fetchUserEmail();
+  }, [currentStaff]);
   const { hasPermission } = usePermissions(currentStaff);
 
   const canEdit = hasPermission('settings.edit');
@@ -89,6 +110,9 @@ export default function Settings({ tenantId }: SettingsProps) {
             }
           });
           setLogoPreview(data.logo_url || null);
+          if (data.owner_email) {
+            setUserEmail(prev => prev || data.owner_email || '');
+          }
         }
       } catch (error) {
         handleError(error, OperationType.GET, 'tenants');
@@ -287,72 +311,63 @@ export default function Settings({ tenantId }: SettingsProps) {
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                    <div className="space-y-3">
+                    <div className="space-y-1.5">
                       <div className="flex items-center justify-between px-1">
                         <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em]">اسم المنشأة التجاري</label>
                         <HelpCircle size={14} className="text-content-muted/40 cursor-help" />
                       </div>
-                      <div className="relative group">
-                        <Store className="absolute right-4 top-1/2 -translate-y-1/2 text-content-muted group-focus-within:text-brand transition-colors" size={20} />
-                        <input 
-                          type="text" 
-                          {...register('name')}
-                          className={cn(
-                            "w-full bg-surface-muted border-2 border-transparent focus:border-brand/30 focus:bg-surface rounded-2xl p-4 pr-12 font-bold transition-all outline-none text-content shadow-inner",
-                            errors.name && "border-danger"
-                          )} 
-                        />
-                      </div>
-                      {errors.name && <p className="text-xs text-danger font-bold mt-1 px-1">{errors.name.message}</p>}
+                      <IconInput 
+                        type="text" 
+                        {...register('name')}
+                        startIcon={Store}
+                        error={errors.name?.message}
+                      />
                     </div>
-                    <div className="space-y-3">
+                    <div className="space-y-1.5">
                       <div className="flex items-center justify-between px-1">
                         <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em]">رقم التواصل الموحد</label>
                         <HelpCircle size={14} className="text-content-muted/40 cursor-help" />
                       </div>
-                      <div className="relative group">
-                        <Phone className="absolute right-4 top-1/2 -translate-y-1/2 text-content-muted group-focus-within:text-brand transition-colors" size={20} />
-                        <input 
-                          type="text" 
-                          {...register('phone')}
-                          className={cn(
-                            "w-full bg-surface-muted border-2 border-transparent focus:border-brand/30 focus:bg-surface rounded-2xl p-4 pr-12 font-bold transition-all outline-none text-content shadow-inner",
-                            errors.phone && "border-danger"
-                          )} 
-                        />
-                      </div>
-                      {errors.phone && <p className="text-xs text-danger font-bold mt-1 px-1">{errors.phone.message}</p>}
+                      <IconInput 
+                        type="text" 
+                        {...register('phone')}
+                        startIcon={Phone}
+                        error={errors.phone?.message}
+                      />
                     </div>
-                    <div className="md:col-span-2 space-y-3">
-                      <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">العنوان الجغرافي للمقر الرئيسي</label>
-                      <div className="relative group">
-                        <MapPin className="absolute right-4 top-1/2 -translate-y-1/2 text-content-muted group-focus-within:text-brand transition-colors" size={20} />
-                        <input 
-                          type="text" 
-                          {...register('address')}
-                          className={cn(
-                            "w-full bg-surface-muted border-2 border-transparent focus:border-brand/30 focus:bg-surface rounded-2xl p-4 pr-12 font-bold transition-all outline-none text-content shadow-inner",
-                            errors.address && "border-danger"
-                          )} 
-                        />
+                    <div className="md:col-span-2 space-y-1.5">
+                      <div className="flex items-center justify-between px-1">
+                        <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em]">البريد الإلكتروني (غير قابل للتعديل)</label>
+                        <span className="text-[10px] text-slate-400 font-black bg-slate-100 dark:bg-slate-800 rounded px-2 py-0.5 select-none" dir="rtl">رسمي ومحمي</span>
                       </div>
-                      {errors.address && <p className="text-xs text-danger font-bold mt-1 px-1">{errors.address.message}</p>}
+                      <IconInput 
+                        type="email" 
+                        value={userEmail || ''}
+                        readOnly
+                        disabled
+                        startIcon={Mail}
+                        placeholder="لا يوجد بريد إلكتروني مسجل"
+                      />
+                    </div>
+                    <div className="md:col-span-2 space-y-1.5">
+                      <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">العنوان الجغرافي للمقر الرئيسي</label>
+                      <IconInput 
+                        type="text" 
+                        {...register('address')}
+                        startIcon={MapPin}
+                        error={errors.address?.message}
+                      />
                     </div>
 
                     <div className="md:col-span-2 space-y-3 p-6 bg-surface-muted/50 rounded-3xl border border-border/50">
                       <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">رمز العملة الرسمي</label>
-                      <div className="relative group max-w-xs">
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-brand/10 text-brand rounded-lg flex items-center justify-center font-black">
-                          <CheckCircle2 size={16} />
-                        </div>
-                        <input 
+                      <div className="max-w-xs">
+                        <IconInput 
                           type="text" 
                           placeholder="SR أو ﷼"
                           {...register('currencySymbol')}
-                          className={cn(
-                            "w-full bg-surface border-2 border-border/50 focus:border-brand/30 rounded-xl p-3 pr-14 font-black transition-all outline-none text-content",
-                            errors.currencySymbol && "border-red-500"
-                          )} 
+                          startIcon={CheckCircle2}
+                          error={errors.currencySymbol?.message}
                         />
                       </div>
                       <p className="text-[10px] text-content-muted font-bold mt-1 px-1 opacity-60">سيتم استخدامه في جميع شاشات البيع والتقارير المالية.</p>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plus, ExternalLink, Trash2, X } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
+import { addSupplierTransaction } from '../services/supplierAccountsService';
 import { Supplier, PurchaseReturn, InventoryItem, PurchaseOrderItem } from '../types';
 import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
@@ -75,12 +76,29 @@ export default function PurchaseReturns({
       
       if (returnError) throw returnError;
 
-      // 2. Reduce Supplier Balance
-      const { error: balanceError } = await supabase.rpc('update_supplier_balance', {
-        p_supplier_id: selectedSupplier,
-        p_amount: -totalAmount
-      });
-      if (balanceError) throw balanceError;
+      // 2. Reduce Supplier Balance & write ledger transaction
+      const { data: supplier, error: sErr } = await supabase
+        .from('suppliers')
+        .select('balance')
+        .eq('id', selectedSupplier)
+        .single();
+      
+      const currentBalance = (!sErr && supplier) ? Number(supplier.balance || 0) : 0;
+      
+      await addSupplierTransaction(
+        tenantId,
+        {
+          supplier_id: selectedSupplier,
+          type: 'adjustment',
+          credit: 0,
+          debit: totalAmount,
+          reference_number: `PR-${Math.floor(100000 + Math.random() * 900000)}`,
+          date: new Date().toISOString(),
+          notes: `مرتجع بضائع ومشتريات للمورد: ${reason || 'إرجاع بضائع'}`,
+          tenant_id: tenantId,
+        },
+        currentBalance
+      );
 
       // 3. Deduct Inventory
       for (const item of items) {

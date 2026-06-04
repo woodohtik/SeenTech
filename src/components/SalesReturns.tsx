@@ -95,15 +95,17 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
         <div>
           <h2 className="text-xl font-bold text-gray-800 mb-4">إرجاع فاتورة مبيعات</h2>
           <div className="flex gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <div className="group flex-1 flex items-center bg-gray-50 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-[#1C8FFF] transition-all overflow-hidden h-12">
+              <div className="flex items-center justify-center px-4 border-e border-gray-200/60 text-gray-400 group-focus-within:text-[#1C8FFF] h-full shrink-0 bg-gray-100/50">
+                <Search size={18} />
+              </div>
               <input 
                 type="text"
                 placeholder="أدخل رقم الفاتورة للبحث..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="w-full pr-12 pl-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#1C8FFF] outline-none"
+                className="flex-1 min-w-0 bg-transparent border-none py-3 px-4 text-sm text-gray-800 outline-none ring-0 placeholder:text-gray-400 font-semibold"
               />
             </div>
             <button 
