@@ -1,8 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
-import { storage } from '../../lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { uploadImageToSupabase } from '../../lib/supabase/storage';
 import { cn } from '../../lib/utils';
 
 interface ProductImageUploaderProps {
@@ -67,30 +66,20 @@ export default function ProductImageUploader({
 
       let publicUrl = '';
 
-      if (storage) {
-        try {
-          const fileExt = compressedFile.name.split('.').pop() || 'jpg';
-          const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
-          const filePath = `products/${tenantId}/${fileName}`;
-          const storageRef = ref(storage, filePath);
+      try {
+        const uploadPromise = (async () => {
+          const url = await uploadImageToSupabase(compressedFile, `products/${tenantId}`);
+          setProgress(80);
+          return url;
+        })();
 
-          const uploadPromise = (async () => {
-            await uploadBytes(storageRef, compressedFile);
-            setProgress(80);
-            return await getDownloadURL(storageRef);
-          })();
+        const timeoutPromise = new Promise<string>((_, reject) => {
+          setTimeout(() => reject(new Error('TIMEOUT')), 3000);
+        });
 
-          const timeoutPromise = new Promise<string>((_, reject) => {
-            setTimeout(() => reject(new Error('TIMEOUT')), 3000);
-          });
-
-          publicUrl = await Promise.race([uploadPromise, timeoutPromise]);
-        } catch (uploadErr: any) {
-          console.warn('Firebase Storage upload timed out or failed, falling back to Base64:', uploadErr);
-          publicUrl = await convertToBase64(compressedFile);
-        }
-      } else {
-        console.warn('Firebase Storage not initialized, using Base64 directly');
+        publicUrl = await Promise.race([uploadPromise, timeoutPromise]);
+      } catch (uploadErr: any) {
+        console.warn('Supabase Storage upload timed out or failed, falling back to Base64:', uploadErr);
         publicUrl = await convertToBase64(compressedFile);
       }
 

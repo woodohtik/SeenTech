@@ -25,6 +25,7 @@ export default function AdminTailors() {
   const [requests, setRequests] = useState<TailorRequest[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(false);
+  const [requestFilter, setRequestFilter] = useState<'pending' | 'approved' | 'all'>('pending');
   const [platformStats, setPlatformStats] = useState({
     totalTenants: 0,
     totalOrders: 0,
@@ -127,12 +128,12 @@ export default function AdminTailors() {
       
       if (reqError) throw reqError;
       
-      // 2. Activate Tenant Workspace to 'onboarding' if it exists
+      // 2. Activate Tenant Workspace to 'active' if it exists
       if (tenantFound) {
         const { error: tenantError } = await supabase
           .from('tenants')
           .update({
-            status: 'onboarding',
+            status: 'active',
             updated_at: new Date().toISOString()
           })
           .eq('id', tenantFound.id);
@@ -212,46 +213,116 @@ export default function AdminTailors() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        {/* Pending Requests */}
+        {/* Onboarding Subscription Requests */}
         <div className="xl:col-span-1 space-y-4">
-          <h3 className="text-xl font-bold text-content flex items-center gap-2">
-            <Activity className="text-warning" size={20} />
-            طلبات جديدة
-          </h3>
+          <div className="flex justify-between items-center">
+            <h3 className="text-xl font-bold text-content flex items-center gap-2">
+              <Activity className="text-warning" size={20} />
+              طلبات الانضمام
+            </h3>
+            <span className="text-xs font-bold bg-surface-muted px-2 py-1 rounded-xl border border-border text-content-muted">
+              {requests.length} طلب
+            </span>
+          </div>
+
+          {/* Interactive filter toggle */}
+          <div className="flex bg-surface-muted p-1 rounded-2xl border border-border gap-1">
+            <button
+              onClick={() => setRequestFilter('pending')}
+              className={`flex-1 text-center py-2 text-xs font-bold rounded-xl transition-all ${
+                requestFilter === 'pending' 
+                  ? 'bg-surface text-content shadow-sm border border-border/10' 
+                  : 'text-content-muted hover:text-content'
+              }`}
+            >
+              الجديدة ({requests.filter(r => r.status === 'pending').length})
+            </button>
+            <button
+              onClick={() => setRequestFilter('approved')}
+              className={`flex-1 text-center py-2 text-xs font-bold rounded-xl transition-all ${
+                requestFilter === 'approved' 
+                  ? 'bg-surface text-content shadow-sm border border-border/10' 
+                  : 'text-content-muted hover:text-content'
+              }`}
+            >
+              المعتمدة ({requests.filter(r => r.status === 'approved').length})
+            </button>
+            <button
+              onClick={() => setRequestFilter('all')}
+              className={`flex-1 text-center py-2 text-xs font-bold rounded-xl transition-all ${
+                requestFilter === 'all' 
+                  ? 'bg-surface text-content shadow-sm border border-border/10' 
+                  : 'text-content-muted hover:text-content'
+              }`}
+            >
+              الكل ({requests.length})
+            </button>
+          </div>
+
           <div className="space-y-4">
-            {requests.filter(r => r.status === 'pending').map((req) => (
-              <motion.div 
-                key={req.id}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="bg-surface p-5 rounded-3xl border border-border shadow-sm"
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-bold text-content">{req.name}</h4>
-                    <p className="text-xs text-content-muted mt-1">{req.email}</p>
-                    <p className="text-xs text-brand font-medium mt-1">{req.phone}</p>
+            {requests
+              .filter(r => {
+                if (requestFilter === 'pending') return r.status === 'pending';
+                if (requestFilter === 'approved') return r.status === 'approved';
+                return true;
+              })
+              .map((req) => (
+                <motion.div 
+                  key={req.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-surface p-5 rounded-3xl border border-border shadow-sm space-y-3"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-bold text-content">{req.name || 'مستخدم بدون اسم'}</h4>
+                      <p className="text-xs text-content-muted mt-1">{req.email}</p>
+                      <p className="text-xs text-brand font-medium mt-1">{req.phone}</p>
+                    </div>
+                    <div>
+                      {req.status === 'approved' ? (
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-success/10 text-success tracking-wide">
+                          معتمد
+                        </span>
+                      ) : req.status === 'rejected' ? (
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-danger/10 text-danger tracking-wide">
+                          مرفوض
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-warning/10 text-warning tracking-wide animate-pulse">
+                          معلق
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => handleApprove(req)}
-                      className="bg-success/10 text-success p-2 rounded-xl hover:bg-success/20 transition-colors"
-                    >
-                      <UserCheck size={18} />
-                    </button>
-                    <button 
-                      onClick={() => supabase.from('tailor_requests').update({ status: 'rejected' }).eq('id', req.id)}
-                      className="bg-danger/10 text-danger p-2 rounded-xl hover:bg-danger/20 transition-colors"
-                    >
-                      <UserX size={18} />
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-            {requests.filter(r => r.status === 'pending').length === 0 && (
+
+                  {req.status === 'pending' && (
+                    <div className="flex gap-2 pt-2 border-t border-border">
+                      <button 
+                        onClick={() => handleApprove(req)}
+                        className="flex-1 bg-success text-white py-2 rounded-2xl text-xs font-bold hover:bg-success/90 transition-colors flex items-center justify-center gap-1"
+                      >
+                        <UserCheck size={14} />
+                        تفعيل
+                      </button>
+                      <button 
+                        onClick={() => supabase.from('tailor_requests').update({ status: 'rejected' }).eq('id', req.id)}
+                        className="bg-danger/10 text-danger px-3 rounded-2xl text-xs font-bold hover:bg-danger/20 transition-colors"
+                      >
+                        رفض
+                      </button>
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+
+            {requests.filter(r => {
+              if (requestFilter === 'pending') return r.status === 'pending';
+              if (requestFilter === 'approved') return r.status === 'approved';
+              return true;
+            }).length === 0 && (
               <div className="bg-surface-muted p-8 rounded-3xl text-center border border-dashed border-border">
-                <p className="text-content-muted text-sm">لا توجد طلبات جديدة</p>
+                <p className="text-content-muted text-sm">لا توجد طلبات في هذا التبويب</p>
               </div>
             )}
           </div>

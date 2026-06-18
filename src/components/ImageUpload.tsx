@@ -1,8 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { UploadCloud, X, Loader2 } from 'lucide-react';
 import { compressImage } from '../lib/imageOptimization';
-import { storage } from '../lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { uploadImageToSupabase } from '../lib/supabase/storage';
 
 interface ImageUploadProps {
   tenantId: string;
@@ -61,29 +60,16 @@ export default function ImageUpload({ tenantId, onImageUploaded, onImageRemoved,
 
       let publicUrl = '';
 
-      if (storage) {
-        try {
-          const fileExt = compressedFile.name.split('.').pop() || 'jpg';
-          const fileName = `${crypto.randomUUID()}.${fileExt}`;
-          const filePath = `tenants/${tenantId}/${fileName}`;
-          const storageRef = ref(storage, filePath);
+      try {
+        const uploadPromise = uploadImageToSupabase(compressedFile, `tenants/${tenantId}`);
 
-          const uploadPromise = (async () => {
-            await uploadBytes(storageRef, compressedFile);
-            return await getDownloadURL(storageRef);
-          })();
+        const timeoutPromise = new Promise<string>((_, reject) => {
+          setTimeout(() => reject(new Error('TIMEOUT')), 3000);
+        });
 
-          const timeoutPromise = new Promise<string>((_, reject) => {
-            setTimeout(() => reject(new Error('TIMEOUT')), 3000);
-          });
-
-          publicUrl = await Promise.race([uploadPromise, timeoutPromise]);
-        } catch (uploadErr: any) {
-          console.warn('Firebase Storage upload timed out or failed, falling back to Base64:', uploadErr);
-          publicUrl = await convertToBase64(compressedFile);
-        }
-      } else {
-        console.warn('Firebase Storage not initialized, using Base64 directly');
+        publicUrl = await Promise.race([uploadPromise, timeoutPromise]);
+      } catch (uploadErr: any) {
+        console.warn('Supabase Storage upload timed out or failed, falling back to Base64:', uploadErr);
         publicUrl = await convertToBase64(compressedFile);
       }
 

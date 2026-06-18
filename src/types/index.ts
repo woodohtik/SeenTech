@@ -1,3 +1,5 @@
+import type { FabricAttributes } from './fabricAttributes';
+
 export interface ThobeMeasurements {
   collar: number;
   chest: number;
@@ -324,6 +326,7 @@ export interface InventoryItem {
   isTest?: boolean;
   showInPos?: boolean;
   openingBalance?: number;
+  fabricAttributes?: FabricAttributes; // سمات القماش المنظّمة (يؤسّس لسوق الأقمشة)
   updatedAt: string;
 }
 
@@ -569,12 +572,16 @@ export interface EmployeeActivityLog {
 }
 
 export interface AuditLog {
+  // NOTE: تم إعادة بناء هذه الواجهة لأن نسخة الداتا روم كانت مقصوصة هنا.
+  // استرجع التعريف الأصلي الكامل من ريبوكم إن وُجد. index signature يبقيها متوافقة.
   id: string;
   action: string;
-  performedBy: string;
-  performedByEmail: string;
+  performedBy?: string;
+  performedByEmail?: string;
+  tenantId?: string;
   targetTenantId?: string;
-  details: string;
+  details?: string;
+  recordsAffected?: number;
   timestamp: string;
-  type: 'deletion' | 'security' | 'system';
+  [key: string]: any;
 }

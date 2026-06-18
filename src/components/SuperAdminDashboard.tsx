@@ -53,11 +53,12 @@ import {
   MoreVertical,
   Check,
   Ban,
-  Crown
+  Crown,
+  AlertTriangle
 } from 'lucide-react';
 import { SmartSelect } from './ui/SmartSelect';
 
-type TabType = 'overview' | 'financials' | 'tenants' | 'performance' | 'security';
+type TabType = 'overview' | 'financials' | 'tenants' | 'subscriptions' | 'performance' | 'security';
 
 export default function SuperAdminDashboard() {
   const { setImpersonationTenantId } = useAuth();
@@ -106,6 +107,7 @@ export default function SuperAdminDashboard() {
             ...d,
             ownerEmail: d.owner_email,
             createdAt: d.created_at,
+            planId: d.plan_id,
             inventoryStrategy: d.inventory_strategy,
             customerId: d.customer_id,
             vatNumber: d.vat_number,
@@ -174,6 +176,35 @@ export default function SuperAdminDashboard() {
       setTenants(prev => prev.map(t => t.id === tenantId ? { ...t, status: newStatus as any } : t));
     } catch (error) {
       console.error("Error updating tenant status:", error);
+    }
+  };
+
+  const handleUpdateTenantPlan = async (tenantId: string, newPlanId: string) => {
+    try {
+      const { error } = await supabase
+        .from('tenants')
+        .update({ plan_id: newPlanId })
+        .eq('id', tenantId);
+      
+      if (error) throw error;
+      setTenants(prev => prev.map(t => t.id === tenantId ? { ...t, planId: newPlanId } : t));
+    } catch (error) {
+      console.error("Error updating tenant plan:", error);
+    }
+  };
+
+  const handleExtendTrial = async (tenantId: string) => {
+    try {
+      const today = new Date().toISOString();
+      const { error } = await supabase
+        .from('tenants')
+        .update({ created_at: today })
+        .eq('id', tenantId);
+      
+      if (error) throw error;
+      setTenants(prev => prev.map(t => t.id === tenantId ? { ...t, createdAt: today } : t));
+    } catch (error) {
+      console.error("Error extending trial:", error);
     }
   };
 
@@ -281,6 +312,7 @@ export default function SuperAdminDashboard() {
           { id: 'overview', label: 'الرئيسية', icon: LayoutDashboard },
           { id: 'financials', label: 'المالية', icon: DollarSign },
           { id: 'tenants', label: 'المشتركين', icon: Users },
+          { id: 'subscriptions', label: 'إدارة الاشتراكات', icon: Crown },
           { id: 'performance', label: 'الأداء', icon: Server },
           { id: 'security', label: 'الأمان', icon: Shield },
         ].map((tab) => (
@@ -449,7 +481,7 @@ export default function SuperAdminDashboard() {
                       { value: 'all', label: 'كل الحالات' },
                       { value: 'active', label: 'نشط (جاهز)' },
                       { value: 'onboarding', label: 'في التهيئة' },
-                      { value: 'suspended', label: 'موقوف' },
+                      { value: 'inactive', label: 'موقوف' },
                       { value: 'pending', label: 'قيد المراجعة' },
                     ]}
                     className="w-full bg-surface-muted border-none rounded-2xl py-3 px-4 text-xs font-black min-h-[44px] shadow-none"
@@ -558,7 +590,7 @@ export default function SuperAdminDashboard() {
                               Login As
                             </button>
                             <button 
-                              onClick={() => handleUpdateTenantStatus(tenant.id, (tenant.status === 'active' || tenant.status === 'onboarding') ? 'suspended' : 'active')}
+                              onClick={() => handleUpdateTenantStatus(tenant.id, (tenant.status === 'active' || tenant.status === 'onboarding') ? 'inactive' : 'active')}
                               className={cn(
                                 "p-2 rounded-xl border border-border hover:border-brand/20 transition-all",
                                 (tenant.status === 'active' || tenant.status === 'onboarding') ? "text-rose-500 hover:bg-rose-50" : "text-emerald-600 hover:bg-emerald-50"
@@ -655,39 +687,294 @@ export default function SuperAdminDashboard() {
                 </div>
               ))}
             </div>
+          </motion.div>
+        )}
 
+        {activeTab === 'subscriptions' && (
+          <motion.div
+            key="subscriptions"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-8"
+          >
+            {/* Quick Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {[
+                { 
+                  label: 'إجمالي الإيرادات المتوقعة', 
+                  value: <PriceDisplay amount={mrr} />, 
+                  icon: DollarSign, 
+                  color: 'text-brand', 
+                  bg: 'bg-brand/10',
+                  desc: 'بناءً على الباقات الحالية النشطة'
+                },
+                { 
+                  label: 'الاشتراكات المدفوعة النشطة', 
+                  value: tenants.filter(t => t.planId === 'pro' || t.planId === 'enterprise').length, 
+                  icon: Crown, 
+                  color: 'text-amber-600', 
+                  bg: 'bg-amber-500/10',
+                  desc: 'باقات برو وباقات المؤسسات ككل'
+                },
+                { 
+                  label: 'الحسابات قيد التجربة (14 يوم)', 
+                  value: tenants.filter(t => {
+                    const diffDays = (new Date().getTime() - new Date(t.createdAt || new Date()).getTime()) / (1000 * 60 * 60 * 24);
+                    return diffDays < 14;
+                  }).length, 
+                  icon: Clock, 
+                  color: 'text-blue-600', 
+                  bg: 'bg-blue-500/10',
+                  desc: 'المشغّلين الذين لم تنتهِ تجربتهم بعد'
+                },
+                { 
+                  label: 'الفترات التجريبية المنتهية', 
+                  value: tenants.filter(t => {
+                    const diffDays = (new Date().getTime() - new Date(t.createdAt || new Date()).getTime()) / (1000 * 60 * 60 * 24);
+                    return diffDays >= 14 && (!t.planId || t.planId === 'basic');
+                  }).length, 
+                  icon: AlertCircle, 
+                  color: 'text-rose-600', 
+                  bg: 'bg-rose-500/10',
+                  desc: 'متبقي 0 أيام وبحاجة لترقية الباقة'
+                },
+              ].map((m, idx) => (
+                <div key={idx} className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm flex flex-col justify-between">
+                  <div>
+                    <div className="flex justify-between items-center mb-6">
+                      <span className="text-xs font-black text-content-muted uppercase tracking-widest">{m.label}</span>
+                      <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", m.bg, m.color)}>
+                        <m.icon size={20} />
+                      </div>
+                    </div>
+                    <div className="text-3xl font-black text-content mb-1">{m.value}</div>
+                  </div>
+                  <p className="text-[10px] font-bold text-content-muted mt-3">{m.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Main Manager Table */}
             <div className="bg-surface rounded-[3rem] border border-border shadow-sm overflow-hidden">
-               <div className="p-8 border-b border-border bg-brand/5">
-                <h3 className="text-xl font-black text-content">تحليل العمولات حسب المشغلين</h3>
+              <div className="p-8 border-b border-border bg-brand/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <h3 className="text-xl font-black text-content">إدارة تراخيص واشتراكات الخياطين</h3>
+                  <p className="text-content-muted text-xs font-bold mt-1">تعديل باقات المشغلين، تصفح الأيام المتبقية في التجربة، وتمديد الصلاحية فوراً</p>
+                </div>
+                <div className="relative w-full sm:w-80">
+                  <SearchIcon className="absolute right-4 top-1/2 -translate-y-1/2 text-content-muted" size={16} />
+                  <input 
+                    type="text" 
+                    placeholder="بحث سريع في التراخيص..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-surface-muted/60 border-none rounded-xl py-2.5 pr-10 pl-4 text-xs font-bold focus:ring-2 focus:ring-brand transition-all text-content"
+                  />
+                </div>
               </div>
-              <div className="overflow-x-auto whitespace-nowrap scrollbar-hide">
-                <table className="w-full text-right min-w-max">
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-right min-w-[900px]">
                   <thead>
-                    <tr className="bg-surface-muted/30">
-                      <th className="px-8 py-5 text-xs font-black text-content-muted uppercase tracking-widest">المشغل</th>
-                      <th className="px-8 py-5 text-xs font-black text-content-muted uppercase tracking-widest">إجمالي المبيعات</th>
-                      <th className="px-8 py-5 text-xs font-black text-content-muted uppercase tracking-widest">العمولة المستقطعة (5%)</th>
-                      <th className="px-8 py-5 text-xs font-black text-content-muted uppercase tracking-widest">الحالة المالية</th>
+                    <tr className="bg-surface-muted/30 border-b border-border">
+                      <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest">اسم المتجر والمالك</th>
+                      <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest">الحالة ونوع الباقة الحالية</th>
+                      <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest">عداد الفترة التجريبية (14 يوم)</th>
+                      <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest">تغيير الباقة والترقية</th>
+                      <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest">الإجراءات السريعة على الترخيص</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {tenants.slice(0, 8).map(tenant => {
-                      const tenantOrders = orders.filter(o => o.tenantId === tenant.id);
-                      const totalSales = tenantOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
-                      const commission = totalSales * 0.05;
-                      return (
-                        <tr key={tenant.id} className="hover:bg-surface-muted/50 transition-all">
-                          <td className="px-8 py-6 font-black text-brand">{tenant.name}</td>
-                          <td className="px-8 py-6 font-bold text-content"><PriceDisplay amount={totalSales} /></td>
-                          <td className="px-8 py-6 font-black text-emerald-600"><PriceDisplay amount={commission} /></td>
-                          <td className="px-8 py-6 font-bold">
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-black uppercase">مُسدد</span>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {tenants
+                      .filter(t => t.name?.toLowerCase().includes(searchQuery.toLowerCase()) || t.ownerEmail?.toLowerCase().includes(searchQuery.toLowerCase()))
+                      .map(tenant => {
+                        const createdDate = new Date(tenant.createdAt || new Date());
+                        const now = new Date();
+                        const diffTime = now.getTime() - createdDate.getTime();
+                        const diffDays = diffTime / (1000 * 60 * 60 * 24);
+                        const trialDaysLeft = Math.max(0, 14 - Math.floor(diffDays));
+                        const isExpired = diffDays >= 14;
+
+                        return (
+                          <tr key={tenant.id} className="hover:bg-surface-muted/20 transition-all">
+                            {/* Merchant details */}
+                            <td className="px-8 py-6">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-brand/5 border border-brand/10 text-brand rounded-2xl flex items-center justify-center shrink-0">
+                                  <Crown size={18} />
+                                </div>
+                                <div>
+                                  <div className="font-black text-sm text-content">{tenant.name}</div>
+                                  <div className="text-[10px] font-bold text-content-muted">{tenant.ownerEmail}</div>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Plan Badge & Status */}
+                            <td className="px-8 py-6">
+                              <div className="flex items-center gap-2">
+                                <span className={cn(
+                                  "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
+                                  tenant.planId === 'enterprise' ? "bg-amber-100 text-amber-800 border border-amber-200" :
+                                  tenant.planId === 'pro' ? "bg-emerald-100 text-emerald-800 border border-emerald-200" :
+                                  tenant.planId === 'basic' ? "bg-indigo-100 text-indigo-800 border border-indigo-200" :
+                                  "bg-gray-100 text-gray-700"
+                                )}>
+                                  {tenant.planId === 'enterprise' ? 'باقة المؤسسات' :
+                                   tenant.planId === 'pro' ? 'الباقة الاحترافية' :
+                                   tenant.planId === 'basic' ? 'الباقة الأساسية' : 'تجريبية مجانية'}
+                                </span>
+                                <span className={cn(
+                                  "text-[10px] font-bold",
+                                  tenant.status === 'active' ? "text-emerald-600" : "text-rose-500"
+                                )}>
+                                  ({tenant.status === 'active' ? 'نشط' : 'موقوف'})
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* Trial countdown */}
+                            <td className="px-8 py-6">
+                              {!isExpired ? (
+                                <div className="flex items-center gap-2">
+                                  <div className="w-22 bg-surface-muted h-2 rounded-full overflow-hidden border border-border">
+                                    <div 
+                                      className="h-full bg-brand rounded-full transition-all" 
+                                      style={{ width: `${(trialDaysLeft / 14) * 100}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-xs font-black text-brand">
+                                    متبقي {trialDaysLeft} أيام
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1.5 text-rose-500 font-bold text-xs">
+                                  <AlertTriangle size={14} className="animate-bounce" />
+                                  <span>انتهت التجربة (0 أيام متبقية)</span>
+                                </div>
+                              )}
+                            </td>
+
+                            {/* Set / Change Plan */}
+                            <td className="px-8 py-6">
+                              <div className="w-48">
+                                <SmartSelect
+                                  value={tenant.planId || 'free'}
+                                  onChange={(val) => handleUpdateTenantPlan(tenant.id, val)}
+                                  options={[
+                                    { value: 'free', label: 'تجريبية / باقة مجانية (0 ر.س)' },
+                                    { value: 'basic', label: 'الأساسية (199 ر.س / شهر)' },
+                                    { value: 'pro', label: 'الاحترافية (499 ر.س / شهر)' },
+                                    { value: 'enterprise', label: 'المؤسسات (999 ر.س / شهر)' },
+                                  ]}
+                                  className="w-full bg-surface-muted border-none rounded-xl py-2 px-3 text-xs font-black min-h-[38px] cursor-pointer"
+                                />
+                              </div>
+                            </td>
+
+                            {/* Quick Action Triggers */}
+                            <td className="px-8 py-6 text-left">
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => handleExtendTrial(tenant.id)}
+                                  className="flex items-center gap-1.5 px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-black border border-indigo-200 transition-all"
+                                  title="تجديد/تنشيط الفترة التجريبية لـ 14 يوماً من اليوم"
+                                >
+                                  <Clock size={14} />
+                                  تجديد الـ 14 يوماً
+                                </button>
+
+                                <button
+                                  onClick={() => handleUpdateTenantStatus(tenant.id, tenant.status === 'active' ? 'inactive' : 'active')}
+                                  className={cn(
+                                    "p-2 rounded-xl border transition-all",
+                                    tenant.status === 'active' 
+                                      ? "text-rose-500 bg-rose-50 hover:bg-rose-100 border-rose-200" 
+                                      : "text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border-emerald-200"
+                                  )}
+                                  title={tenant.status === 'active' ? 'تعطيل الحساب' : 'تفعيل الحساب'}
+                                >
+                                  {tenant.status === 'active' ? <Ban size={15} /> : <Check size={15} />}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                   </tbody>
                 </table>
+              </div>
+            </div>
+
+            {/* Plan Configuration Panel / Sandbox rules */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="bg-surface p-8 rounded-[3.5rem] border border-border shadow-sm">
+                <h3 className="text-xl font-black text-content flex items-center gap-2">
+                  <Crown className="text-amber-500" size={24} />
+                  إعدادات الباقات وأوقات التجارب الافتراضية
+                </h3>
+                <p className="text-content-muted font-bold text-xs mt-1 mb-8">يمكن لفريق السوبر أدمن التحكم في حزم المبيعات ومكتشف الفترة التجريبية العامة</p>
+                
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-xs font-bold text-content-muted mb-2">مدة الفترة التجريبية الافتراضية (أيام)</label>
+                    <div className="flex items-center gap-4">
+                      <input 
+                        type="range" 
+                        min="7" 
+                        max="60" 
+                        defaultValue="14" 
+                        className="flex-1 accent-brand"
+                      />
+                      <span className="text-sm font-black text-brand bg-brand/5 px-4 py-1.5 rounded-xl border border-brand/10">14 يوماً</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">
+                    {[
+                      { name: 'الباقة الأساسية', price: '199 ر.س' },
+                      { name: 'الباقة الاحترافية', price: '499 ر.س' },
+                      { name: 'باقة المؤسسات', price: '999 ر.س' },
+                    ].map((p, i) => (
+                      <div key={i} className="p-4 bg-surface-muted/40 rounded-2xl border border-border text-center">
+                        <div className="text-xs font-black text-content">{p.name}</div>
+                        <div className="text-sm font-black text-brand mt-1">{p.price}</div>
+                        <span className="text-[9px] text-content-muted font-bold block mt-3">سعر افتراضي شهري</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-surface p-8 rounded-[3.5rem] border border-border shadow-sm flex flex-col justify-between">
+                <div>
+                  <h3 className="text-xl font-black text-content flex items-center gap-2">
+                    <Activity className="text-emerald-500" size={24} />
+                    تحليلات نسب التجديد والاحتفاظ بالمشتركين
+                  </h3>
+                  <p className="text-content-muted font-bold text-xs mt-1 mb-6">أداء الاحتفاظ بالمشغلين في نظام سين الذكي</p>
+                  
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center bg-surface-muted/30 p-4 rounded-2xl">
+                      <span className="text-xs font-black text-content">نسبة تجديد الاشتراكات شهرياً</span>
+                      <span className="text-sm font-black text-emerald-600">94.8%</span>
+                    </div>
+                    <div className="flex justify-between items-center bg-surface-muted/30 p-4 rounded-2xl">
+                      <span className="text-xs font-black text-content">متوسط عمر العميل على المنصة</span>
+                      <span className="text-sm font-black text-brand">11.4 شهر</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-brand/5 p-4 rounded-2xl border border-brand/10 flex items-center gap-3 mt-6">
+                  <div className="p-2 bg-brand/10 text-brand rounded-xl">
+                    <AlertCircle size={18} />
+                  </div>
+                  <span className="text-[10px] font-black text-brand leading-relaxed">
+                    ملاحظة: عمليات تحديث الاشتراكات المسلّطة في هذا التبويب تنعكس فوراً على تجربة المستخدمين وأداء التنبيهات في لوحة قيادتهم.
+                  </span>
+                </div>
               </div>
             </div>
           </motion.div>

@@ -228,6 +228,18 @@ export default function Dashboard({ tenantId }: DashboardProps) {
   const [selectedBranchId, setSelectedBranchId] = useState<string>('all');
   const [branches, setBranches] = useState<any[]>([]);
   const [tenant, setTenant] = useState<Tenant | null>(null);
+  const [trialDays, setTrialDays] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (tenant && tenant.createdAt) {
+      const createdDate = new Date(tenant.createdAt);
+      const now = new Date();
+      const diffTime = now.getTime() - createdDate.getTime();
+      const diffDays = diffTime / (1000 * 60 * 60 * 24);
+      setTrialDays(Math.max(0, 14 - Math.floor(diffDays)));
+    }
+  }, [tenant]);
+
   const { currentStaff } = useStaff();
   const { hasPermission } = usePermissions(currentStaff);
 
@@ -897,6 +909,43 @@ export default function Dashboard({ tenantId }: DashboardProps) {
           </div>
         </div>
       </Header>
+
+      {trialDays !== null && trialDays < 3 && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/20 rounded-[2rem] p-6 lg:p-8 flex flex-col md:flex-row items-center justify-between gap-6"
+        >
+          <div className="flex items-center gap-4 text-right" dir="rtl">
+            <div className="w-12 h-12 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-2xl flex items-center justify-center shrink-0 animate-pulse">
+              <AlertTriangle size={24} />
+            </div>
+            <div>
+              <h3 className="text-base sm:text-lg font-black text-amber-950 dark:text-amber-200">
+                {i18n.language === 'en' ? 'Trial Period Ending Soon!' : 'اقتراب انتهاء الفترة التجريبية!'}
+              </h3>
+              <p className="text-xs sm:text-sm font-medium text-amber-700/85 dark:text-amber-400/85 mt-1 leading-relaxed">
+                {i18n.language === 'en' ? (
+                  trialDays === 0 
+                  ? "Your 14-day free trial has ended today. Contact support to keep access."
+                  : `Only ${trialDays} day${trialDays === 1 ? '' : 's'} remaining in your 14-day free trial. Contact support to upgrade.`
+                ) : (
+                  trialDays === 0 
+                  ? "لقد انتهت الفترة التجريبية للـ 14 يوماً اليوم. يرجى التواصل مع الدعم لتفعيل الحساب ومتابعة أعمالك بسلاسة."
+                  : `متبقي ${trialDays === 1 ? 'يوم واحد فقط' : (trialDays === 2 ? 'يومان فقط' : `${trialDays} أيام`)} على انتهاء الفترة التجريبية المجانية (14 يومًا). يرجى التواصل مع الدعم لتفعيل الاشتراك.`
+                )}
+              </p>
+            </div>
+          </div>
+          <a 
+            href="mailto:nomansa2566512@gmail.com?subject=تفعيل حساب سين الذكي"
+            className="w-full md:w-auto bg-amber-600 hover:bg-amber-700 text-white px-6 py-3.5 rounded-2xl font-bold text-xs sm:text-sm shadow-lg shadow-amber-900/10 transition-all shrink-0 flex items-center justify-center gap-2 border border-amber-700/20"
+          >
+            <ExternalLink size={15} />
+            {i18n.language === 'en' ? 'Contact Support' : 'تواصل مع الدعم وتفعيل الاشتراك'}
+          </a>
+        </motion.div>
+      )}
       
       {/* Mobile Horizontal Filters */}
       <div className="flex overflow-x-auto gap-2 pb-2 -mx-4 px-4 scrollbar-hide lg:hidden">
