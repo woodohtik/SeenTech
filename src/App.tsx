@@ -1,15 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { CheckCircle, Clock as ClockIcon, RefreshCw, LogOut } from 'lucide-react';
-import { 
-  BrowserRouter as Router, 
-  Routes, 
-  Route, 
-  Navigate 
+import { CheckCircle, Clock as ClockIcon, RefreshCw, LogOut, AlertCircle } from 'lucide-react';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useParams
 } from 'react-router-dom';
+import OrderTracking from './components/public/OrderTracking';
+
+// صفحة تتبّع الطلب العامة للعميل النهائي (بلا مصادقة) — /track/:token
+const TrackRoute = () => {
+  const { token } = useParams();
+  return <OrderTracking token={token || ''} />;
+};
 import { onIdTokenChanged, User } from 'firebase/auth';
-import { auth, OperationType, db } from './lib/firebase';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { auth } from './lib/firebase';
 import { logError } from './lib/logger';
 import { supabase, setSupabaseAuthToken } from './lib/supabase/client';
 import { setGlobalCurrencySymbol } from './lib/utils';
@@ -161,6 +168,23 @@ function AppContent() {
         
         // 1. Super Admin Detection
         if (email === SUPER_ADMIN_EMAIL.toLowerCase()) {
+          // Self-heal/provision Super Admin in Supabase saas_users to clear RLS blocks
+          supabase.from('saas_users').upsert({
+            uid,
+            email,
+            name: firebaseUser.displayName || 'Super Admin',
+            role: 'super_admin',
+            is_active: true
+          }, {
+            onConflict: 'uid'
+          }).then(({ error }) => {
+            if (error) {
+              console.error("[Supabase Auth Sync] Error auto-provisioning super admin:", error);
+            } else {
+              console.log("[Supabase Auth Sync] Super Admin auto-provisioned successfully in Supabase DB!");
+            }
+          });
+
           const saState = {
             user: firebaseUser,
             isApproved: true,
@@ -217,7 +241,9 @@ function AppContent() {
 
           // If tenant and approved, let's see if onboarding is completed
           let step = 4;
-          if (staffData.tenant?.status === 'onboarding') {
+          if (requestRes.data && (!requestRes.data.onboarding_step || requestRes.data.onboarding_step < 4)) {
+            step = requestRes.data.onboarding_step || 1;
+          } else if (staffData.tenant?.status === 'onboarding') {
             step = requestRes.data?.onboarding_step || 1;
           } else if (isPending && requestRes.data) {
              step = requestRes.data.onboarding_step || 1;
@@ -337,6 +363,19 @@ function AppContent() {
                         (user?.email?.toLowerCase().trim() === SUPER_ADMIN_EMAIL.toLowerCase()) || 
                         sessionStorage.getItem('dev_bypass') === 'true';
 
+  // Trial Period Check (14 Days)
+  const tenantCreatedAt = (authState.currentUserStaff as any)?.tenant?.created_at;
+  let isTrialExpired = false;
+  if (user && !isSaaSStaff && tenantCreatedAt) {
+    const createdDate = new Date(tenantCreatedAt);
+    const now = new Date();
+    const diffTime = now.getTime() - createdDate.getTime();
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+    if (diffDays > 14) {
+      isTrialExpired = true;
+    }
+  }
+
   // PIN Access Logic
   const needsPinSetup = user && isApproved && !needsOnboarding && authState.userRole === 'owner' && hasStaffWithPin === false && !isSaaSStaff && !!tenantId && tenantId !== 'null';
   const showPinLogin = user && isApproved && !isSaaSStaff && !currentStaff && hasStaffWithPin && !needsPinSetup;
@@ -344,6 +383,67 @@ function AppContent() {
 
   if (loading) {
     return <MainSkeleton />;
+  }
+
+  // Trial expiration lock interception
+  if (isTrialExpired && user && !isSaaSStaff) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-950 text-right p-6 font-sans select-none" dir="rtl">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-xl w-full bg-slate-900 rounded-[3rem] shadow-2xl p-10 md:p-14 border border-red-500/15 relative overflow-hidden"
+        >
+          {/* Visual Accents */}
+          <div className="absolute top-0 right-0 w-44 h-44 bg-red-500/5 rounded-full blur-3xl -mr-20 -mt-20" />
+          <div className="absolute bottom-0 left-0 w-44 h-44 bg-indigo-500/5 rounded-full blur-3xl -ml-20 -mb-20" />
+          
+          <div className="w-24 h-24 bg-red-950/30 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-red-500/10">
+            <AlertCircle size={48} className="animate-pulse" />
+          </div>
+          
+          <h2 className="text-3xl font-black text-white text-center mb-4 tracking-tight leading-tight">انتهت الفترة التجريبية للحساب</h2>
+          <p className="text-slate-400 text-center font-medium leading-relaxed mb-10 px-4 text-sm md:text-base">
+            لقد انتهت فترة الـ 14 يوماً التجريبية المجانية المخصصة لمساحة العمل الخاصة بك. 
+            يرجى التواصل مع إدارة النظام لتفعيل الاشتراك ومتابعة أعمالك بسلاسة.
+          </p>
+          
+          <div className="bg-slate-950/50 rounded-2xl p-5 border border-slate-800/65 mb-10 text-sm space-y-2.5">
+            <div className="flex justify-between items-center text-slate-300">
+              <span className="text-slate-400 font-medium">اسم الحساب:</span>
+              <span className="font-bold text-white">{(authState.currentUserStaff as any)?.tenant?.name || 'مساحة العمل'}</span>
+            </div>
+            <div className="flex justify-between items-center text-slate-300">
+              <span className="text-slate-400 font-medium">البريد الإلكتروني للقرصنة:</span>
+              <span className="font-mono text-white text-[12px]">{user.email}</span>
+            </div>
+            <div className="flex justify-between items-center text-slate-300 mb-0.5">
+              <span className="text-slate-400 font-medium">تاريخ البداية:</span>
+              <span className="font-mono text-white">
+                {tenantCreatedAt ? new Date(tenantCreatedAt).toLocaleDateString('ar-SA', { dateStyle: 'long' }) : '-'}
+              </span>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <a 
+              href="mailto:nomansa2566512@gmail.com?subject=تفعيل حساب سين الذكي"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-bold transition-all shadow-lg shadow-indigo-900/20 flex items-center justify-center gap-3 text-center"
+            >
+              طلب التفعيل والدفع الآن
+            </a>
+            
+            <button 
+              onClick={() => { auth.signOut(); window.location.href = '/login'; }}
+              className="w-full bg-slate-850 hover:bg-slate-800 text-slate-200 py-4 rounded-2xl font-bold transition-all border border-slate-700/30 flex items-center justify-center gap-2"
+            >
+              <LogOut size={18} />
+              تسجيل الخروج من الحساب
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
   }
 
   // Intercept for PIN setups
@@ -369,6 +469,8 @@ function AppContent() {
     <div className="min-h-screen bg-gray-50 font-sans" dir={i18n.language === 'en' ? 'ltr' : 'rtl'}>
       <AnimatePresence mode="wait">
         <Routes>
+          {/* Public order tracking (no auth) */}
+          <Route path="/track/:token" element={<TrackRoute />} />
           {/* SaaS Admin Portal */}
           <Route 
             path="/admin/*" 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Shield, Delete, User, Users, Lock, AlertCircle, LogOut, CheckCircle2, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
+import { auth } from '../lib/firebase';
 import { Staff } from '../types';
 import { cn } from '../lib/utils';
 import bcrypt from 'bcryptjs';
@@ -361,7 +362,16 @@ export default function PinLogin({ tenantId, onLogin }: PinLoginProps) {
 
                 <div className="mt-10 pt-8 border-t border-border w-full">
                   <button 
-                    onClick={() => window.location.reload()}
+                    onClick={async () => {
+                      if (auth) {
+                        try {
+                          await auth.signOut();
+                        } catch (err) {
+                          console.error("Error signing out from PIN screen:", err);
+                        }
+                      }
+                      window.location.href = '/login';
+                    }}
                     className="w-full flex items-center justify-center gap-3 text-content-muted hover:text-content font-black transition-colors py-2"
                   >
                     <LogOut size={20} />

@@ -48,4 +48,5 @@ if (!admin.apps.length) {
 }
 
 export const adminAuth = admin.apps.length ? admin.auth() : null as any;
-export const adminDb = admin.apps.length ? admin.firestore() : null as any;
+// NOTE (Stage 1 migration): Firestore (adminDb) has been removed. Role/tenant
+// lookups now read from Supabase — see ./supabase-admin.ts.

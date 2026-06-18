@@ -51,16 +51,30 @@ export function SmartSelect({
 
   const containerClasses = 'relative w-full text-right';
 
+  const hasHeight = className?.includes('h-');
+  const hasPadding = className?.includes('p-') || className?.includes('py-') || className?.includes('px-') || className?.includes('pr-') || className?.includes('pl-');
+  const hasTextSize = className?.includes('text-');
+  const hasRounded = className?.includes('rounded-');
+  const hasBorder = className?.includes('border-');
+
   const buttonClasses = cn(
-    'relative w-full cursor-default h-[var(--size-input-height)] rounded-[var(--radius-md)] border border-border dark:border-gray-800 bg-surface px-4 text-[var(--size-text-base)] font-semibold outline-none transition-all shadow-sm focus:border-brand focus:ring-2 focus:ring-brand/20',
-    dir === 'rtl' ? 'text-right pr-4 pl-10' : 'text-left pl-4 pr-10',
+    'relative w-full cursor-default outline-none transition-all shadow-sm focus:border-brand focus:ring-2 focus:ring-brand/20 flex items-center',
+    !hasHeight && 'h-[var(--size-input-height)]',
+    !hasRounded && 'rounded-[var(--radius-md)]',
+    !hasBorder && 'border border-border dark:border-gray-800',
+    !hasPadding && 'px-4',
+    'bg-surface font-semibold',
+    !hasTextSize && 'text-[var(--size-text-base)]',
+    dir === 'rtl' 
+      ? (!hasPadding ? 'text-right pr-4 pl-10' : 'text-right justify-start') 
+      : (!hasPadding ? 'text-left pl-4 pr-10' : 'text-left justify-start'),
     disabled && 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-gray-900',
     error && 'border-danger focus:border-danger focus:ring-2 focus:ring-danger/20',
     className
   );
 
   const popoverClasses = cn(
-    'absolute left-0 right-0 z-[100] mt-1.5 max-h-64 overflow-y-auto rounded-xl bg-surface p-1.5 text-sm shadow-xl border border-border dark:border-gray-800 focus:outline-none scrollbar-hide',
+    'absolute left-0 right-0 z-[100] mt-2 max-h-64 overflow-y-auto rounded-3xl bg-surface p-2.5 text-sm shadow-xl border border-border dark:border-gray-800 focus:outline-none scrollbar-hide',
     dir === 'rtl' ? 'text-right font-sans' : 'text-left font-sans'
   );
 
@@ -160,7 +174,7 @@ export function SmartSelect({
       <Listbox value={value} onChange={onChange} disabled={disabled} name={name}>
         <div className="relative group">
           <Listbox.Button className={buttonClasses}>
-            <span className={cn('block truncate flex items-center gap-3 text-sm', !selectedOption && 'text-gray-400')}>
+            <span className={cn('block truncate flex items-center gap-3', !hasTextSize && 'text-sm', !selectedOption && 'text-gray-400')}>
               {selectedOption?.icon && (
                 <span className="w-4 h-4 flex items-center justify-center flex-shrink-0 text-gray-400 group-hover:text-brand transition-colors [&>svg]:w-4 [&>svg]:h-4">
                   {selectedOption.icon}

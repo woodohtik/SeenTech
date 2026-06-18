@@ -7,8 +7,6 @@ import {
   inMemoryPersistence,
   browserPopupRedirectResolver
 } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
 
 const finalConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY?.trim() || '',
@@ -18,12 +16,6 @@ const finalConfig = {
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID?.trim() || '',
   appId: import.meta.env.VITE_FIREBASE_APP_ID?.trim() || '',
 };
-
-console.log("[DEBUG] Firebase Config Detected:", {
-  hasApiKey: !!finalConfig.apiKey,
-  projectId: finalConfig.projectId,
-  hasStorageBucket: !!finalConfig.storageBucket
-});
 
 const app = finalConfig.apiKey ? initializeApp(finalConfig) : null;
 
@@ -42,8 +34,12 @@ if (app) {
 }
 
 export { auth };
-export const db = app ? getFirestore(app) : null;
-export const storage = app ? getStorage(app) : null;
+export const db = null as any;
+export const storage = null as any;
+// NOTE (Stage 1 migration): Firestore (db) and Firebase Storage (storage)
+// exports have been removed. Data lives in Supabase (src/types/lib/supabase/client.ts)
+// and new image uploads go through Supabase Storage (src/types/lib/supabase/storage.ts).
+// Firebase here is for AUTH ONLY (Stage 2 will migrate auth + RLS).
 
 if (!auth) {
   console.error("[CRITICAL] Firebase Auth failed to initialize. Check environment variables.");
@@ -74,7 +70,7 @@ export interface FirestoreErrorInfo {
 
 export function handleFirestoreError(error: any, operationType: OperationType, path: string | null) {
   let errorString = 'Unknown Error';
-  
+
   try {
     if (error instanceof Error) {
       errorString = error.message;
@@ -98,10 +94,9 @@ export function handleFirestoreError(error: any, operationType: OperationType, p
     operationType,
     path
   };
-  
+
   console.error(`[Firestore Error] ${operationType} at ${path}:`, errInfo);
-  
-  // Throwing as a stringified JSON allows ErrorBoundary to parse and provide specific context
+
   let serializedErr: string;
   try {
     serializedErr = JSON.stringify(errInfo);
@@ -117,10 +112,10 @@ export const handleError = handleFirestoreError;
 
 export const getFriendlyErrorMessage = (error: any): string => {
   if (!error) return 'حدث خطأ غير معروف';
-  
+
   const errorMsg = typeof error === 'string' ? error : (error.error || error.message || '');
   const code = error.code || '';
-  
+
   if (code === 'auth/user-not-found' || code === 'auth/wrong-password') return 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
   if (code === 'auth/permission-denied' || code === 'permission-denied' || errorMsg.toLowerCase().includes('permission-denied') || errorMsg.includes('insufficient permissions')) {
     return 'ليس لديك صلاحية للقيام بهذا الإجراء. يرجى التأكد من صلاحيات حسابك.';
@@ -131,8 +126,7 @@ export const getFriendlyErrorMessage = (error: any): string => {
   if (errorMsg.toLowerCase().includes('quota-exceeded')) {
     return 'لقد تجاوزت حصة الاستخدام المسموح بها لهذا اليوم. يرجى المحاولة غداً.';
   }
-  
-  // For development and better debugging, if it's an unknown error, we include the raw message if it's short
+
   const finalMsg = errorMsg && errorMsg.length < 100 ? `${errorMsg}` : 'حدث خطأ في النظام. يرجى المحاولة مرة أخرى لاحقاً.';
   return finalMsg;
 };

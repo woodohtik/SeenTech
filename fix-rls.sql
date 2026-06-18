@@ -39,29 +39,25 @@ AS $$
 DECLARE
     t_id UUID;
     cur_uid TEXT;
-    header_tenant TEXT;
 BEGIN
-    -- 1. Check if client sent specific tenant_id header (High priority/performance)
-    BEGIN
-        header_tenant := current_setting('request.headers', true)::jsonb ->> 'x-tenant-id';
-        IF header_tenant IS NOT NULL AND header_tenant <> '' AND header_tenant <> 'null' THEN
-            RETURN header_tenant::uuid;
-        END IF;
-    EXCEPTION WHEN OTHERS THEN
-        -- Ignore errors from header parsing
-    END;
+    -- SECURITY: The tenant ID is derived ONLY from the verified Firebase JWT
+    -- (request.jwt.claims -> sub), never from a client-supplied header.
+    -- A previous version trusted an `x-tenant-id` request header "for
+    -- performance", which let any authenticated user set that header (via
+    -- localStorage in the web client) and read/write ANY other tenant's data —
+    -- a full cross-tenant isolation breach. That header shortcut is removed.
 
     cur_uid := app_current_uid();
     IF cur_uid IS NULL THEN RETURN NULL; END IF;
-    
-    -- 2. Check if user is staff (Owner is often also staff)
+
+    -- 1. Check if user is staff (Owner is often also staff)
     -- This query bypasses RLS because it's in a SECURITY DEFINER function
     SELECT tenant_id INTO t_id FROM staff WHERE uid = cur_uid AND status = 'active' LIMIT 1;
     IF t_id IS NOT NULL THEN
         RETURN t_id;
     END IF;
-    
-    -- 3. Check if user is owner directly from tenants table
+
+    -- 2. Check if user is owner directly from tenants table
     SELECT id INTO t_id FROM tenants WHERE owner_uid = cur_uid LIMIT 1;
     RETURN t_id;
 END;

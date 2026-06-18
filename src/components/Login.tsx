@@ -406,7 +406,7 @@ export default function Login() {
             owner_email: regEmail,
             owner_uid: user.uid,
             phone: formattedPhone,
-            status: 'pending',
+            status: 'active',
             plan_id: 'basic',
             inventory_strategy: 'centralized'
           })
@@ -458,7 +458,7 @@ export default function Login() {
             email: regEmail,
             uid: user.uid,
             tenant_id: tenantId,
-            status: 'pending',
+            status: 'approved',
             created_at: new Date().toISOString(),
             onboarding_step: 1
           });

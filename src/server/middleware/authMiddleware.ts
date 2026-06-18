@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import express from 'express';
-import admin from 'firebase-admin';
-import { adminAuth, adminDb } from '../firebase-admin.ts';
+import { adminAuth } from '../firebase-admin.ts';
+import { supabaseAdmin } from '../supabase-admin.ts';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -13,7 +13,26 @@ export interface AuthRequest extends Request {
 }
 
 /**
+ * Best-effort security log. Inserts into the Supabase `security_logs` table.
+ * If the table does not exist (it is optional in Stage 1), this is a graceful no-op.
+ */
+async function logSecurityEvent(entry: Record<string, unknown>): Promise<void> {
+  try {
+    const { error } = await supabaseAdmin.from('security_logs').insert({
+      ...entry,
+      created_at: new Date().toISOString(),
+    });
+    if (error) {
+      console.warn('[security_logs] insert skipped/failed:', error.message);
+    }
+  } catch (err) {
+    console.warn('[security_logs] insert skipped/failed:', err);
+  }
+}
+
+/**
  * Middleware to verify Firebase ID Token
+ * (Token verification stays on Firebase in Stage 1; role/tenant lookups now read Supabase.)
  */
 export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
@@ -30,22 +49,34 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       email: decodedToken.email,
     };
 
-    // Fetch user role and tenantId from Firestore
+    // Fetch user role and tenantId from Supabase
     // 1. Check saas_users (Super Admins)
-    const saasUserDoc = await adminDb.collection('saas_users').doc(decodedToken.uid).get();
-    if (saasUserDoc.exists) {
-      const data = saasUserDoc.data();
-      req.user.role = data?.role;
+    const { data: saasUser, error: saasError } = await supabaseAdmin
+      .from('saas_users')
+      .select('role')
+      .eq('uid', decodedToken.uid)
+      .maybeSingle();
+    if (saasError) {
+      console.error('[authMiddleware] saas_users lookup failed:', saasError.message);
+    }
+    if (saasUser) {
+      req.user.role = saasUser.role;
       req.user.tenantId = 'saas_management';
       return next();
     }
 
-    // 2. Check staff collection
-    const staffDoc = await adminDb.collection('staff').doc(decodedToken.uid).get();
-    if (staffDoc.exists) {
-      const data = staffDoc.data();
-      req.user.role = data?.role;
-      req.user.tenantId = data?.tenantId;
+    // 2. Check staff table
+    const { data: staffRow, error: staffError } = await supabaseAdmin
+      .from('staff')
+      .select('role, tenant_id')
+      .eq('uid', decodedToken.uid)
+      .maybeSingle();
+    if (staffError) {
+      console.error('[authMiddleware] staff lookup failed:', staffError.message);
+    }
+    if (staffRow) {
+      req.user.role = staffRow.role;
+      req.user.tenantId = staffRow.tenant_id;
       return next();
     }
 
@@ -57,11 +88,10 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     }
 
     // If no role found, they might be a new user or unauthorized
-    await adminDb.collection('security_logs').add({
+    await logSecurityEvent({
       type: 'unauthorized_access',
       uid: decodedToken.uid,
       email: decodedToken.email,
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
       path: req.path,
       method: req.method,
       reason: 'no_role_assigned'
@@ -91,13 +121,12 @@ export const authorize = (roles: string[]) => {
     }
 
     // Log unauthorized role attempt
-    await adminDb.collection('security_logs').add({
+    await logSecurityEvent({
       type: 'insufficient_permissions',
       uid: req.user.uid,
       email: req.user.email,
       role: req.user.role,
-      requiredRoles: roles,
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      required_roles: roles,
       path: req.path,
       method: req.method
     });
