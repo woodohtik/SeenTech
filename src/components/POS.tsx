@@ -1305,7 +1305,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                     <button 
                        className="col-span-2 flex flex-col items-center justify-center p-4 rounded-2xl border border-success/20 hover:border-success hover:bg-success/5 transition-all text-success group"
                        onClick={async () => {
-                         const text = `فاتورة من ${brandingSettings?.storeName || 'المتجر'}\nرقم الفاتورة: ${completedOrder.invoiceNumber}\nالإجمالي: ${completedOrder.total} ريال.`;
+                         const text = `فاتورة من ${brandingSettings?.storeName || 'المتجر'}\nرقم الفاتورة: ${completedOrder.invoiceNumber}\nالإجمالي: ${completedOrder.total} ﷼.`;
                          try {
                            await shareInvoiceAsPDFFile('pos-invoice-print-area', `Invoice-${completedOrder.invoiceNumber}.pdf`, text);
                          } catch (e) {

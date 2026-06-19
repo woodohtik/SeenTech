@@ -65,7 +65,7 @@ export default function Subscribe({ onCheckout, onContactSales, logoSrc = '/Logo
           <div style={st.priceRow}>
             <span style={st.strike}>1,800</span>
             <span style={st.price}>1,000</span>
-            <span style={st.cur}>ر.س / سنة</span>
+            <span style={st.cur}>﷼ / سنة</span>
           </div>
           <ul style={st.feats}>
             {CORE_FEATURES.map((f) => (
@@ -86,7 +86,7 @@ export default function Subscribe({ onCheckout, onContactSales, logoSrc = '/Logo
           <div style={st.proInner} aria-hidden>
             <h2 style={st.planName}>سين الاحترافية</h2>
             <p style={st.planDesc}>قوة إضافية للمحلات اللي تكبر بسرعة.</p>
-            <div style={st.priceRow}><span style={st.price}>2,400</span><span style={st.cur}>ر.س / سنة</span></div>
+            <div style={st.priceRow}><span style={st.price}>2,400</span><span style={st.cur}>﷼ / سنة</span></div>
             <ul style={st.feats}>
               {PRO_FEATURES.map((f) => (<li key={f} style={st.feat}><Check /> <span>{f}</span></li>))}
             </ul>
@@ -129,9 +129,9 @@ const st: Record<string, React.CSSProperties> = {
   bgGlow: { position: 'absolute', top: -200, insetInlineStart: '50%', transform: 'translateX(50%)', width: 700, height: 420, background: 'radial-gradient(circle, ' + TINT + ' 0%, transparent 70%)', opacity: 0.9, pointerEvents: 'none' },
   head: { position: 'relative', textAlign: 'center', marginBottom: 38 },
   brand: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 16 },
-  brandText: { fontSize: 28, fontWeight: 800, color: INK, letterSpacing: '-0.5px' },
+  brandText: { fontSize: 28, fontWeight: 800, color: INK,  },
   brandPos: { fontSize: 13, fontWeight: 700, color: BRAND, marginInlineStart: 5, verticalAlign: 'middle' },
-  title: { fontSize: 30, fontWeight: 800, color: INK, margin: '0 0 8px', letterSpacing: '-0.5px' },
+  title: { fontSize: 30, fontWeight: 800, color: INK, margin: '0 0 8px',  },
   sub: { color: GRAY, fontSize: 15.5, margin: 0 },
   grid: { position: 'relative', display: 'flex', flexWrap: 'wrap', gap: 20, justifyContent: 'center', maxWidth: 1100, margin: '0 auto', alignItems: 'stretch' },
   card: { flex: '1 1 300px', maxWidth: 340, background: WHITE, borderRadius: 20, border: '1px solid ' + LINE, padding: '30px 26px', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 30px rgba(14,42,66,.08)' },

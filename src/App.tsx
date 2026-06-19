@@ -15,6 +15,21 @@ const TrackRoute = () => {
   const { token } = useParams();
   return <OrderTracking token={token || ''} />;
 };
+
+// توجيه تلقائي لصفحة الهبوط للزوار غير المسجلين
+const LandingRedirect = () => {
+  useEffect(() => {
+    window.location.replace('/seen-landing.html');
+  }, []);
+  return (
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-200" dir="rtl">
+      <div className="text-center">
+        <RefreshCw size={36} className="animate-spin text-sky-400 mx-auto mb-4" />
+        <p className="font-medium text-sm">جاري تحويلك إلى صفحة الهبوط...</p>
+      </div>
+    </div>
+  );
+};
 import { onIdTokenChanged, User } from 'firebase/auth';
 import { auth } from './lib/firebase';
 import { logError } from './lib/logger';
@@ -548,6 +563,26 @@ function AppContent() {
                     </div>
                   ) : <Login />
                 )
+              )
+            } 
+          />
+
+          {/* Root Route — Landing page for visitors, Dashboard for logged-in tenants */}
+          <Route 
+            path="/" 
+            element={
+              (user && isApproved) ? (
+                needsOnboarding ? (
+                  <Navigate to="/onboarding" />
+                ) : (
+                  userRole === 'super_admin' && !impersonationTenantId ? (
+                    <Navigate to="/admin/dashboard" />
+                  ) : (
+                    <Navigate to="/dashboard" />
+                  )
+                )
+              ) : (
+                <LandingRedirect />
               )
             } 
           />
