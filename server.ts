@@ -1,6 +1,7 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
+import fs from "fs";
 import dotenv from 'dotenv';
 import { authenticate, authorize } from "./src/server/middleware/authMiddleware.ts";
 
@@ -42,6 +43,22 @@ async function setupServer() {
       appType: "spa",
     });
     app.use(vite.middlewares);
+
+    // Development catch-all route to serve index.html for client-side routing
+    app.get('*', async (req, res, next) => {
+      // Skip API requests and files with extensions
+      if (req.path.startsWith('/api') || req.path.includes('.')) {
+        return next();
+      }
+      try {
+        const url = req.originalUrl;
+        const indexHtml = fs.readFileSync(path.join(process.cwd(), 'index.html'), 'utf-8');
+        const html = await vite.transformIndexHtml(url, indexHtml);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
+      } catch (e) {
+        next(e);
+      }
+    });
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     // Serve landing at "/" BEFORE static + SPA fallback (public/ is copied into dist/).
