@@ -1,0 +1,37 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/seen-landing.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/subscribe",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pos/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/referral/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/((?!assets/|[^/]+\\.[^/]+$).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
