@@ -85,7 +85,7 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
           shift.staffId || 'system',
           shift.staffName || 'System',
           operationType === 'deposit' ? 'deposit_cash' : 'payout_cash',
-          `${operationType === 'deposit' ? 'إيداع نقدي' : 'سحب نقدي'} بمبلغ ${amount} ريال - السبب: ${reason}`
+          `${operationType === 'deposit' ? 'إيداع نقدي' : 'سحب نقدي'} بمبلغ ${amount} ﷼ - السبب: ${reason}`
         );
       } catch (auditErr) {
         console.error('Audit log failed:', auditErr);
@@ -128,7 +128,7 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
     deposit: [
       'تغذية صندوق الصرف اليومي / Drawer Float',
       'تسوية رصيد الصندوق مع الحساب / Settlement',
-      'إيداع فئات ريالات طارئة / Small Denominations',
+      'إيداع فئات ﷼ات طارئة / Small Denominations',
     ],
     withdrawal: [
       'مشتريات مستلزمات طارئة للفرع / Office Supplies',
@@ -288,7 +288,7 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
                 <div className="relative">
                   {/* Symbol Badge pinned to physical left */}
                   <div className="absolute left-3 top-1/2 -translate-y-1/2 bg-slate-100 rounded-xl px-3 py-1.5 border border-slate-200 text-slate-600 font-extrabold text-[11px] pointer-events-none select-none z-10">
-                    ريال سعودي
+                    ﷼
                   </div>
 
                   {/* Input field with h-16 (to bypass default css) and precise paddings to prevent overlap */}
