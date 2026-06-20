@@ -35,9 +35,6 @@ async function setupServer() {
   // Public marketing landing page served at the site root "/" for visitors.
   // The SPA (app) keeps handling /login, /dashboard, /orders, ... as usual.
   if (process.env.NODE_ENV !== "production") {
-    // Serve landing at "/" BEFORE the Vite SPA middleware.
-    app.get('/', (_req, res) =>
-      res.sendFile(path.join(process.cwd(), 'public', 'seen-landing.html')));
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
@@ -61,9 +58,6 @@ async function setupServer() {
     });
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    // Serve landing at "/" BEFORE static + SPA fallback (public/ is copied into dist/).
-    app.get('/', (_req, res) =>
-      res.sendFile(path.join(distPath, 'seen-landing.html')));
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));

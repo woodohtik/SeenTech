@@ -9,6 +9,7 @@ import {
   useParams
 } from 'react-router-dom';
 import OrderTracking from './components/public/OrderTracking';
+import LandingPage from './components/LandingPage';
 
 // صفحة تتبّع الطلب العامة للعميل النهائي (بلا مصادقة) — /track/:token
 const TrackRoute = () => {
@@ -18,17 +19,7 @@ const TrackRoute = () => {
 
 // توجيه تلقائي لصفحة الهبوط للزوار غير المسجلين
 const LandingRedirect = () => {
-  useEffect(() => {
-    window.location.replace('/seen-landing.html');
-  }, []);
-  return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-200" dir="rtl">
-      <div className="text-center">
-        <RefreshCw size={36} className="animate-spin text-sky-400 mx-auto mb-4" />
-        <p className="font-medium text-sm">جاري تحويلك إلى صفحة الهبوط...</p>
-      </div>
-    </div>
-  );
+  return <LandingPage />;
 };
 import { onIdTokenChanged, User } from 'firebase/auth';
 import { auth } from './lib/firebase';
@@ -43,10 +34,11 @@ import Orders from './components/Orders';
 import Settings from './components/Settings';
 import Sales from './components/Sales';
 import Login from './components/Login';
-import InventoryManager from './components/Inventory/InventoryManager';
 import { PermissionGuard } from './components/PermissionGuard';
-import Reports from './components/Reports';
 import AdminTailors from './components/AdminTailors';
+
+const InventoryManager = React.lazy(() => import('./components/Inventory/InventoryManager'));
+const Reports = React.lazy(() => import('./components/Reports'));
 import Onboarding from './components/Onboarding';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
 import PinLogin from './components/PinLogin';
@@ -609,9 +601,17 @@ function AppContent() {
                         <Route path="/sales" element={<Sales tenantId={effectiveTenantId!} />} />
                         <Route path="/orders" element={<Orders tenantId={effectiveTenantId!} />} />
                         <Route path="/customers" element={<Customers tenantId={effectiveTenantId!} />} />
-                        <Route path="/inventory" element={<InventoryManager tenantId={effectiveTenantId!} />} />
+                        <Route path="/inventory" element={
+                          <React.Suspense fallback={<div className="flex items-center justify-center h-full min-h-[400px]"><RefreshCw className="animate-spin text-indigo-500 w-8 h-8" /></div>}>
+                            <InventoryManager tenantId={effectiveTenantId!} />
+                          </React.Suspense>
+                        } />
                         <Route path="/suppliers" element={<Suppliers tenantId={effectiveTenantId!} />} />
-                        <Route path="/reports" element={<Reports tenantId={effectiveTenantId!} />} />
+                        <Route path="/reports" element={
+                          <React.Suspense fallback={<div className="flex items-center justify-center h-full min-h-[400px]"><RefreshCw className="animate-spin text-indigo-500 w-8 h-8" /></div>}>
+                            <Reports tenantId={effectiveTenantId!} />
+                          </React.Suspense>
+                        } />
                         <Route path="/settings" element={<Settings tenantId={effectiveTenantId!} />} />
                         <Route path="*" element={<Navigate to="/" />} />
                       </Routes>
