@@ -14,6 +14,18 @@
       "destination": "/index.html"
     },
     {
+      "source": "/onboarding",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/track/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/saas/:path*",
+      "destination": "/index.html"
+    },
+    {
       "source": "/admin/:path*",
       "destination": "/index.html"
     },
@@ -26,11 +38,35 @@
       "destination": "/index.html"
     },
     {
-      "source": "/referral/:path*",
+      "source": "/sales/:path*",
       "destination": "/index.html"
     },
     {
-      "source": "/((?!assets/|[^/]+\\.[^/]+$).*)",
+      "source": "/orders/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/customers/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/inventory/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/suppliers/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/reports/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/settings/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/referral/:path*",
       "destination": "/index.html"
     }
   ]
