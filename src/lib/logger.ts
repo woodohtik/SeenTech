@@ -32,7 +32,18 @@ import { OperationType } from './firebase';
 
 export const logError = (error: any, context?: any) => {
   // Console logging for development
-  console.error('[Logger] Error:', error, context);
+  let errorMsg = error;
+  if (error instanceof Error) {
+    errorMsg = error.stack || error.message;
+  } else if (typeof error === 'object') {
+    try { errorMsg = JSON.stringify(error); } catch (e) {}
+  }
+  let ctxStr = '';
+  if (context) {
+    try { ctxStr = JSON.stringify(context); } catch (e) {}
+  }
+  console.error('[Logger] Error:', errorMsg, ctxStr);
+
 
   // Example Sentry integration:
   // if (import.meta.env.PROD) {

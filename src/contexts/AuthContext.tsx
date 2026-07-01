@@ -49,25 +49,41 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-async function fetchDbUser(uid: string): Promise<DbUser | null> {
-    const [{ data: userRow, error: userErr }, { data: staffRow, error: staffErr }] =
-        await Promise.all([
-            supabase.from('users').select('*').eq('id', uid).maybeSingle(),
-            supabase
-                .from('staff')
-                .select('*')
-                .eq('uid', uid)
-                .eq('status', 'active')
-                .limit(1)
-                .maybeSingle(),
-        ]);
+async function fetchDbUser(uid: string, email?: string): Promise<DbUser | null> {
+    const [
+        { data: userRow, error: userErr }, 
+        { data: staffRow, error: staffErr },
+        { data: saasRow, error: saasErr }
+    ] = await Promise.all([
+        supabase.from('users').select('*').eq('id', uid).maybeSingle(),
+        supabase
+            .from('staff')
+            .select('*')
+            .eq('uid', uid)
+            .eq('status', 'active')
+            .limit(1)
+            .maybeSingle(),
+        supabase
+            .from('saas_users')
+            .select('*')
+            .eq('uid', uid)
+            .maybeSingle()
+    ]);
 
     if (userErr) throw userErr;
     if (staffErr) throw staffErr;
+    if (saasErr) throw saasErr;
     if (!userRow) return null;
 
     let actualRole = (staffRow as StaffRow)?.role ?? null;
-    if (staffRow && (staffRow as StaffRow).role_id) {
+    
+    // SaaS Role takes precedence over tenant staff roles
+    const checkEmail = email || userRow.email;
+    if (checkEmail?.toLowerCase().trim() === 'nomansa2566512@gmail.com') {
+        actualRole = 'super_admin';
+    } else if (saasRow) {
+        actualRole = saasRow.role;
+    } else if (staffRow && (staffRow as StaffRow).role_id) {
         const { data: roleRow } = await supabase
             .from('roles')
             .select('role_key')
@@ -100,15 +116,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setDbUser(null);
             return;
         }
-        const token = await fbUser.getIdToken();
-        setSupabaseAuthToken(token);
+        try {
+            const token = await fbUser.getIdToken();
+            setSupabaseAuthToken(token);
+        } catch (err) {
+            console.error('[AuthContext] Failed to get ID token:', err);
+        }
 
         try {
-            const next = await fetchDbUser(fbUser.uid);
+            const next = await fetchDbUser(fbUser.uid, fbUser.email || undefined);
             setDbUser(next);
             
             // Validate impersonation: only super admins can impersonate
-            const isSuperAdmin = next?.role === 'super_admin' || fbUser.email === "nomansa2566512@gmail.com";
+            const isSuperAdmin = next?.role === 'super_admin' || fbUser.email?.toLowerCase().trim() === "nomansa2566512@gmail.com";
             if (!isSuperAdmin) {
                 localStorage.removeItem('impersonatedTenantId');
                 setImpersonationTenantId(null);
@@ -151,8 +171,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setSupabaseAuthToken(null);
                 return;
             }
-            const token = await fbUser.getIdToken();
-            setSupabaseAuthToken(token);
+            try {
+                const token = await fbUser.getIdToken();
+                setSupabaseAuthToken(token);
+            } catch (err) {
+                console.error('[AuthContext] onIdTokenChanged Failed to get ID token:', err);
+            }
         });
         return unsub;
     }, []);

@@ -12,7 +12,8 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-import { SmartSelect } from './ui/SmartSelect';
+import { AdminIconInput } from './ui/AdminIconInput';
+import { AdminIconSelect } from './ui/AdminIconSelect';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 
@@ -46,13 +47,13 @@ export default function SaaSAuditLogs() {
         setLogs(data.map(log => ({
           id: log.id,
           action: log.action,
-          performedBy: log.user_id,
-          performedByEmail: log.user_email,
+          performedBy: log.performed_by_uid,
+          performedByEmail: log.performed_by_email,
           details: log.details,
           type: log.action.includes('security') ? 'security_alert' : 
                 log.action.includes('delete') ? 'deletion' :
                 log.action.includes('login') ? 'login' : 'update',
-          timestamp: log.created_at
+          timestamp: log.created_at || log.timestamp
         } as AuditLog)));
       }
       setLoading(false);
@@ -67,13 +68,13 @@ export default function SaaSAuditLogs() {
         setLogs(prev => [{
           id: newLog.id,
           action: newLog.action,
-          performedBy: newLog.user_id,
-          performedByEmail: newLog.user_email,
+          performedBy: newLog.performed_by_uid,
+          performedByEmail: newLog.performed_by_email,
           details: newLog.details,
           type: newLog.action.includes('security') ? 'security_alert' : 
                 newLog.action.includes('delete') ? 'deletion' :
                 newLog.action.includes('login') ? 'login' : 'update',
-          timestamp: newLog.created_at
+          timestamp: newLog.created_at || newLog.timestamp
         } as AuditLog, ...prev].slice(0, 100));
       })
       .subscribe();
@@ -127,29 +128,28 @@ export default function SaaSAuditLogs() {
 
       {/* Filters */}
       <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          <input 
+        <div className="flex-1">
+          <AdminIconInput 
             type="text"
             placeholder="البحث في السجلات..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pr-12 pl-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 font-bold"
+            startIcon={Search}
           />
         </div>
-        <div className="flex gap-2 w-full md:w-48">
-          <SmartSelect 
+        <div className="flex gap-2 w-full md:w-56">
+          <AdminIconSelect 
             value={filterType}
-            onChange={setFilterType}
-            options={[
-              { value: 'all', label: 'كافة الأنواع' },
-              { value: 'login', label: 'تسجيل الدخول' },
-              { value: 'deletion', label: 'عمليات الحذف' },
-              { value: 'update', label: 'التحديثات' },
-              { value: 'security_alert', label: 'تنبيهات أمنية' },
-            ]}
-            className="px-6 py-3 bg-gray-50 border-none rounded-2xl font-bold min-h-[44px] shadow-none"
-          />
+            onChange={(e) => setFilterType(e.target.value)}
+            startIcon={Filter}
+            className="w-full"
+          >
+            <option value="all">كافة الأنواع</option>
+            <option value="login">تسجيل الدخول</option>
+            <option value="deletion">عمليات الحذف</option>
+            <option value="update">التحديثات</option>
+            <option value="security_alert">تنبيهات أمنية</option>
+          </AdminIconSelect>
         </div>
       </div>
 

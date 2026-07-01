@@ -18,7 +18,8 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { Tenant } from '../types';
-import { SmartSelect } from './ui/SmartSelect';
+import { AdminIconInput } from './ui/AdminIconInput';
+import { AdminIconSelect } from './ui/AdminIconSelect';
 import { useTranslation } from 'react-i18next';
 import GlobalRoleManager from './GlobalRoleManager';
 
@@ -31,7 +32,12 @@ export default function SaaSSystemSettings() {
     websiteUrl: '',
     companyName: 'Seen'
   });
+  const [platformSettings, setPlatformSettings] = useState({
+    trialDays: 14,
+    allowRegistrations: true
+  });
   const [isSavingBranding, setIsSavingBranding] = useState(false);
+  const [isSavingPlatform, setIsSavingPlatform] = useState(false);
   const [userRole, setUserRole] = useState<string>('');
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -75,6 +81,19 @@ export default function SaaSSystemSettings() {
         setBrandingSettings({
           websiteUrl: brandingData.value.websiteUrl || '',
           companyName: brandingData.value.companyName || 'Seen'
+        });
+      }
+
+      const { data: platformData } = await supabase
+        .from('saas_settings')
+        .select('*')
+        .eq('key', 'platform')
+        .maybeSingle();
+      
+      if (platformData && platformData.value) {
+        setPlatformSettings({
+          trialDays: platformData.value.trialDays || 14,
+          allowRegistrations: platformData.value.allowRegistrations !== false
         });
       }
 
@@ -128,6 +147,30 @@ export default function SaaSSystemSettings() {
       alert('حدث خطأ أثناء حفظ الإعدادات');
     } finally {
       setIsSavingBranding(false);
+    }
+  };
+
+  const handleSavePlatform = async () => {
+    setIsSavingPlatform(true);
+    try {
+      const { error } = await supabase
+        .from('saas_settings')
+        .upsert({
+          key: 'platform',
+          value: platformSettings,
+          updated_at: new Date().toISOString(),
+          updated_by: auth.currentUser?.email
+        }, { onConflict: 'key' });
+      
+      if (error) throw error;
+      
+      alert('تم تحديث إعدادات المنصة بنجاح');
+      await logAuditAction('update_platform', `Updated platform settings. Trial: ${platformSettings.trialDays}`);
+    } catch (error) {
+      console.error('Error saving platform settings:', error);
+      alert('حدث خطأ أثناء حفظ الإعدادات');
+    } finally {
+      setIsSavingPlatform(false);
     }
   };
 
@@ -262,50 +305,101 @@ export default function SaaSSystemSettings() {
           </div>
         </div>
 
-        {/* Branding Settings */}
-        <div className="lg:col-span-2 bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
-          <h3 className="text-xl font-black text-content mb-8 flex items-center gap-2">
-            <Globe className="text-brand" size={24} />
-            {t('common.branding_settings')}
-          </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <label className="block text-sm font-black text-content-muted">{t('common.company_name')}</label>
-              <input 
-                type="text"
-                value={brandingSettings.companyName}
-                onChange={(e) => setBrandingSettings(prev => ({ ...prev, companyName: e.target.value }))}
-                placeholder="Seen"
-                className="w-full p-4 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content"
-              />
+        <div className="lg:col-span-2 space-y-8">
+          <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
+            <h3 className="text-xl font-black text-content mb-8 flex items-center gap-2">
+              <Globe className="text-brand" size={24} />
+              {t('common.branding_settings')}
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <label className="block text-sm font-black text-content-muted">{t('common.company_name')}</label>
+                <AdminIconInput 
+                  type="text"
+                  value={brandingSettings.companyName}
+                  onChange={(e) => setBrandingSettings(prev => ({ ...prev, companyName: e.target.value }))}
+                  placeholder="Seen"
+                  className="bg-surface-muted"
+                />
+              </div>
+
+              <div className="space-y-4">
+                <label className="block text-sm font-black text-content-muted">{t('common.website_url')}</label>
+                <AdminIconInput 
+                  type="url"
+                  value={brandingSettings.websiteUrl}
+                  onChange={(e) => setBrandingSettings(prev => ({ ...prev, websiteUrl: e.target.value }))}
+                  placeholder="https://example.com"
+                  startIcon={Globe}
+                  className="bg-surface-muted"
+                />
+              </div>
             </div>
 
-            <div className="space-y-4">
-              <label className="block text-sm font-black text-content-muted">{t('common.website_url')}</label>
-              <input 
-                type="url"
-                value={brandingSettings.websiteUrl}
-                onChange={(e) => setBrandingSettings(prev => ({ ...prev, websiteUrl: e.target.value }))}
-                placeholder="https://example.com"
-                className="w-full p-4 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content"
-              />
+            <div className="mt-8 flex justify-end">
+              <button
+                disabled={isSavingBranding || userRole === 'support_tech'}
+                onClick={handleSaveBranding}
+                className="flex items-center gap-2 px-8 py-4 bg-brand text-white rounded-2xl font-black hover:bg-brand/90 disabled:opacity-50 transition-all shadow-lg shadow-brand/10"
+              >
+                {isSavingBranding ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Save size={20} />
+                )}
+                <span>{t('common.save')}</span>
+              </button>
             </div>
           </div>
 
-          <div className="mt-8 flex justify-end">
-            <button
-              disabled={isSavingBranding || userRole === 'support_tech'}
-              onClick={handleSaveBranding}
-              className="flex items-center gap-2 px-8 py-4 bg-brand text-white rounded-2xl font-black hover:bg-brand/90 disabled:opacity-50 transition-all shadow-lg shadow-brand/10"
-            >
-              {isSavingBranding ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <Save size={20} />
-              )}
-              <span>{t('common.save_branding')}</span>
-            </button>
+          <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
+            <h3 className="text-xl font-black text-content mb-8 flex items-center gap-2">
+              <Settings className="text-brand" size={24} />
+              إعدادات المنصة الأساسية
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <label className="block text-sm font-black text-content-muted">مدة التجربة المجانية (أيام)</label>
+                <AdminIconInput 
+                  type="number"
+                  min="0"
+                  max="90"
+                  value={platformSettings.trialDays}
+                  onChange={(e) => setPlatformSettings(prev => ({ ...prev, trialDays: Number(e.target.value) }))}
+                  startIcon={Settings}
+                  className="bg-surface-muted"
+                />
+              </div>
+
+              <div className="space-y-4 flex flex-col justify-end">
+                 <label className="flex items-center justify-between p-4 bg-surface-muted rounded-2xl cursor-pointer hover:ring-2 hover:ring-brand/50 transition-all h-[56px]">
+                  <span className="text-sm font-black text-content">السماح بتسجيل مشتركين جدد (Self-Serve)</span>
+                  <input 
+                    type="checkbox"
+                    checked={platformSettings.allowRegistrations}
+                    onChange={(e) => setPlatformSettings(prev => ({ ...prev, allowRegistrations: e.target.checked }))}
+                    className="w-5 h-5 accent-brand"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="mt-8 flex justify-end">
+              <button
+                disabled={isSavingPlatform || userRole === 'support_tech'}
+                onClick={handleSavePlatform}
+                className="flex items-center gap-2 px-8 py-4 bg-brand text-white rounded-2xl font-black hover:bg-brand/90 disabled:opacity-50 transition-all shadow-lg shadow-brand/10"
+              >
+                {isSavingPlatform ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Save size={20} />
+                )}
+                <span>حفظ التعديلات</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -325,12 +419,16 @@ export default function SaaSSystemSettings() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-4">
             <label className="block text-sm font-black text-content-muted">{t('common.select_tenant_management')}</label>
-            <SmartSelect
+            <AdminIconSelect
+              startIcon={Database}
               value={selectedTenantId}
-              onChange={setSelectedTenantId}
-              options={tenants.map(t => ({ value: t.id, label: `${t.name} (${t.ownerEmail})` }))}
-              placeholder={t('common.select_tenant')}
-            />
+              onChange={(e) => setSelectedTenantId(e.target.value)}
+            >
+              <option value="" disabled hidden>{t('common.select_tenant')}</option>
+              {tenants.map(t => (
+                <option key={t.id} value={t.id}>{t.name} ({t.ownerEmail})</option>
+              ))}
+            </AdminIconSelect>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 items-end">
@@ -419,12 +517,13 @@ export default function SaaSSystemSettings() {
                     <label className="block text-sm font-black text-content-muted">
                       {t('common.write_name_to_confirm')}: <span className="text-danger">({confirmModal.tenantName})</span>
                     </label>
-                    <input 
+                    <AdminIconInput 
                       type="text"
                       value={confirmModal.inputValue}
                       onChange={(e) => setConfirmModal(prev => ({ ...prev, inputValue: e.target.value }))}
                       placeholder={t('common.type_name_here')}
-                      className="w-full px-6 py-4 bg-surface-muted border-2 border-transparent focus:border-danger rounded-2xl outline-none font-bold transition-all text-content"
+                      error={confirmModal.inputValue.length > 0 && confirmModal.inputValue !== confirmModal.tenantName}
+                      className="bg-surface-muted"
                     />
                   </div>
                 )}

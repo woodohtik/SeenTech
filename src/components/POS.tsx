@@ -38,6 +38,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useStaff } from '../contexts/StaffContext';
 import { useToast } from '../contexts/ToastContext';
 import { logEmployeeAction } from '../services/employeeAuditService';
+import { adjustStock } from '../services/inventoryService';
 import { generateZatcaQR } from '../lib/zatca';
 import VisualMeasurements from './VisualMeasurements';
 import ThobeMeasurementSelector from './ThobeMeasurementSelector';
@@ -683,28 +684,36 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
           // Update branch_inventory
           const branchId = currentStaff?.branchId || '';
           if (branchId) {
-            const { error: stockError } = await supabase.rpc('adjust_stock', {
-              p_branch_id: branchId,
-              p_item_id: item.itemId,
-              p_quantity: -item.quantity,
-              p_reason: `بيع في نقطة البيع - فاتورة ${orderNumber}`,
-              p_type: 'out',
-              p_staff_id: (currentStaff?.id && isUuid(currentStaff.id)) ? currentStaff.id : null
-            });
-            if (stockError) console.error('Stock adjustment error:', stockError);
+            try {
+              await adjustStock({
+                branchId,
+                itemId: item.itemId,
+                quantity: -item.quantity,
+                reason: `بيع في نقطة البيع - فاتورة ${orderNumber}`,
+                type: 'out',
+                staffId: (currentStaff?.id && isUuid(currentStaff.id)) ? currentStaff.id : null,
+                tenantId
+              });
+            } catch (stockError) {
+              console.error('Stock adjustment error:', stockError);
+            }
           }
         } else if (item.type === 'custom' && item.fabricId && item.fabricId !== 'custom' && isUuid(item.fabricId) && item.consumedMeters) {
           const branchId = currentStaff?.branchId || '';
           if (branchId) {
-            const { error: stockError } = await supabase.rpc('adjust_stock', {
-              p_branch_id: branchId,
-              p_item_id: item.fabricId,
-              p_quantity: -item.consumedMeters,
-              p_reason: `استهلاك قماش تفصيل - فاتورة ${orderNumber}`,
-              p_type: 'out',
-              p_staff_id: (currentStaff?.id && isUuid(currentStaff.id)) ? currentStaff.id : null
-            });
-            if (stockError) console.error('Fabric adjustment error:', stockError);
+            try {
+              await adjustStock({
+                branchId,
+                itemId: item.fabricId,
+                quantity: -item.consumedMeters,
+                reason: `استهلاك قماش تفصيل - فاتورة ${orderNumber}`,
+                type: 'out',
+                staffId: (currentStaff?.id && isUuid(currentStaff.id)) ? currentStaff.id : null,
+                tenantId
+              });
+            } catch (stockError) {
+              console.error('Fabric adjustment error:', stockError);
+            }
           }
         }
       }
@@ -2024,16 +2033,30 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                 </div>
               </div>
 
-              {completedOrder.qrCode && (
-                <div className="flex justify-center mb-6">
-                  <QRCodeSVG 
-                    value={completedOrder.qrCode} 
-                    size={140} 
-                    level="M"
-                    includeMargin={true}
-                  />
-                </div>
-              )}
+              <div className="flex flex-col items-center gap-4 mb-6">
+                {completedOrder.qrCode && (
+                  <div className="flex flex-col items-center">
+                    <p className="text-[10px] font-bold mb-1">فاتورة إلكترونية متوافقة</p>
+                    <QRCodeSVG 
+                      value={completedOrder.qrCode} 
+                      size={140} 
+                      level="M"
+                      includeMargin={true}
+                    />
+                  </div>
+                )}
+                {completedOrder.id && (
+                  <div className="flex flex-col items-center">
+                    <p className="text-[10px] font-bold mb-1">الوصول الرقمي للفاتورة</p>
+                    <QRCodeSVG 
+                      value={`${window.location.origin}/p/inv/${completedOrder.id}`} 
+                      size={140} 
+                      level="M"
+                      includeMargin={true}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -2118,12 +2141,24 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
               </div>
 
               <div className="grid grid-cols-2 gap-8 mb-8">
-                <div>
+                <div className="flex gap-4">
                    {completedOrder.qrCode && (
-                     <div className="flex justify-center mt-4">
+                     <div className="flex flex-col items-center justify-center mt-4">
+                        <p className="text-[10px] font-bold mb-1">هيئة الزكاة والضريبة والجمارك</p>
                        <QRCodeSVG 
                          value={completedOrder.qrCode} 
-                         size={200} 
+                         size={160} 
+                         level="M"
+                         includeMargin={true}
+                       />
+                     </div>
+                   )}
+                   {completedOrder.id && (
+                     <div className="flex flex-col items-center justify-center mt-4">
+                        <p className="text-[10px] font-bold mb-1">الوصول الرقمي للفاتورة</p>
+                       <QRCodeSVG 
+                         value={`${window.location.origin}/p/inv/${completedOrder.id}`} 
+                         size={160} 
                          level="M"
                          includeMargin={true}
                        />

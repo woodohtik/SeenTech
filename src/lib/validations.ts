@@ -86,7 +86,7 @@ export const orderSchema = z.object({
 export const inventorySchema = z.object({
   name: z.string().min(2, t('validation.min_length', { count: 2 })),
   nameEn: z.string().optional(),
-  type: z.enum(['fabric', 'thread', 'button', 'lining', 'accessories', 'ready-made', 'other']),
+  type: z.enum(['fabric', 'thread', 'button', 'lining', 'accessories', "ready_made", 'other']),
   quantity: z.coerce.number().min(0, t('validation.required')),
   unit: z.enum(['meter', 'yard', 'roll', 'bolt', 'piece', 'spool', 'box']),
   baseUnit: z.enum(['meter', 'piece']).default('meter'),

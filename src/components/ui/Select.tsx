@@ -59,7 +59,7 @@ export default function Select({
         )}
       >
         <span className={cn(
-          "text-sm truncate flex items-center gap-3",
+          "text-sm truncate flex-1 block text-right flex items-center gap-3 pe-8",
           selectedOption ? "text-content" : "text-content-muted"
         )}>
           {selectedOption?.icon && (
@@ -67,9 +67,9 @@ export default function Select({
               {selectedOption.icon}
             </span>
           )}
-          {selectedOption ? selectedOption.label : placeholder}
+          <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
         </span>
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-brand transition-colors">
+        <div className="absolute top-1/2 -translate-y-1/2 left-4 text-gray-400 group-hover:text-brand transition-colors flex-shrink-0">
           <motion.div
             animate={{ rotate: isOpen ? 180 : 0 }}
             transition={{ duration: 0.2, ease: "easeOut" }}

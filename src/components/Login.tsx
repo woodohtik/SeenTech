@@ -370,9 +370,8 @@ export default function Login() {
           const { data: plansData } = await supabase.from('plans').select('id');
           if (!plansData || plansData.length === 0) {
             await supabase.from('plans').insert([
-              { id: 'basic', name: 'الخطة الأساسية', price: 99, features: ['إدارة العملاء', 'إدارة الطلبات', 'موظف واحد'], max_staff: 1, max_orders: 100 },
-              { id: 'pro', name: 'الخطة الاحترافية', price: 299, features: ['إدارة المخزون', 'تقارير متقدمة', '5 موظفين'], max_staff: 5, max_orders: 500 },
-              { id: 'enterprise', name: 'خطة الشركات', price: 999, features: ['دعم فني 24/7', 'عدد غير محدود', 'تخصيص كامل'], max_staff: 100, max_orders: 10000 }
+              { id: 'free', name: 'الباقة المجانية', price: 0, features: ['تجربة 14 يوم', 'عدد لا محدود من الفواتير', 'بدون ربط بطاقة'], max_staff: 2, max_orders: 100 },
+              { id: 'basic', name: 'الخطة الأساسية', price: 599, features: ['إدارة العملاء', 'إدارة الطلبات', 'دعم فني'], max_staff: 5, max_orders: 50000 }
             ]);
           }
         } catch (planError) {

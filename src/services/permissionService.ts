@@ -96,9 +96,65 @@ export const initializeTenantRoles = async (tenantId: string) => {
   return true;
 };
 
+export const checkSaasRole = async (uid: string, allowedRoles: string[]): Promise<boolean> => {
+  try {
+    // Treat 'owner' as an alias for 'super_admin' in the context of SaaS
+    const normalizedAllowedRoles = allowedRoles.map(r => r === 'owner' ? 'super_admin' : r);
+    
+    // Quick check if super_admin is allowed (they typically have full access)
+    // We already do this by fetching the current user's role
+    const { data: saasUser, error } = await supabase
+      .from('saas_users')
+      .select('email, role, is_active')
+      .eq('uid', uid)
+      .single();
+      
+    // Always grant full access to primary super admin email
+    if (saasUser?.email?.toLowerCase() === 'nomansa2566512@gmail.com') {
+      return true;
+    }
+      
+    if (error || !saasUser || !saasUser.is_active) {
+      return false;
+    }
+    
+    // Super admins and owners have access to everything if owner/super_admin is allowed, 
+    // or arguably to all routes at all times depending on business logic.
+    if (saasUser.role === 'super_admin' || saasUser.role === 'owner' as any) {
+      return true;
+    }
+    
+    return normalizedAllowedRoles.includes(saasUser.role);
+  } catch (error) {
+    console.error('Error checking saas role:', error);
+    return false;
+  }
+};
+
 export const getEffectivePermissions = async (staff: Staff): Promise<PermissionsMap> => {
   if (staff.role === 'owner' || staff.role === 'super_admin') {
     return DEFAULT_ROLES.owner.permissions;
+  }
+
+  // Check if this is a SaaS user (system global roles)
+  if (!staff.tenantId || staff.tenantId === 'system') {
+    const { data: saasUser } = await supabase
+      .from('saas_users')
+      .select('email, role, is_active')
+      .eq('uid', staff.id)
+      .single();
+
+    // Always grant full access to primary super admin email
+    if (saasUser?.email?.toLowerCase() === 'nomansa2566512@gmail.com') {
+      return DEFAULT_ROLES.owner.permissions;
+    }
+
+    if (saasUser && saasUser.is_active) {
+      if (saasUser.role === 'super_admin' || saasUser.role === 'owner' as any) return DEFAULT_ROLES.owner.permissions;
+      if (saasUser.role === 'support_tech') return createPermissions(['orders.view', 'customers.view', 'reports.view']); // Read only 
+      if (saasUser.role === 'sales') return createPermissions(['dashboard.view', 'reports.view', 'customers.create']); // Example mapping
+      if (saasUser.role === 'billing_admin') return createPermissions(['reports.financial', 'reports.view', 'settings.billing']);
+    }
   }
 
   // Search for role in tenant roles first

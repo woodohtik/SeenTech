@@ -567,7 +567,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                   { value: "all", label: t("inventory.all_categories") },
                   { value: "fabric", label: t("inventory.category_fabric") },
                   {
-                    value: "ready-made",
+                    value: "ready_made",
                     label: t("inventory.category_ready_made"),
                   },
                   { value: "thread", label: t("inventory.category_thread") },
@@ -854,7 +854,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                           exit={{ height: 0, opacity: 0 }}
                           className="overflow-hidden bg-brand/5 -mx-4 px-4 py-4 space-y-4"
                         >
-                          {item.category === "ready-made" &&
+                          {item.category === "ready_made" &&
                             (item.collarType ||
                               item.cuffType ||
                               item.pocketType ||
@@ -1197,7 +1197,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
 
                                       <div className="flex-1 space-y-8">
                                         {/* Style Details for Ready-made */}
-                                        {item.category === "ready-made" &&
+                                        {item.category === "ready_made" &&
                                           (item.collarType ||
                                             item.cuffType ||
                                             item.pocketType ||
@@ -1604,13 +1604,13 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
         quantity: defaultQty,
         images: formData.mainImage ? [{ url: formData.mainImage }] : [],
         collar_type:
-          formData.category === "ready-made" ? formData.collarType : undefined,
+          formData.category === "ready_made" ? formData.collarType : undefined,
         cuff_type:
-          formData.category === "ready-made" ? formData.cuffType : undefined,
+          formData.category === "ready_made" ? formData.cuffType : undefined,
         pocket_type:
-          formData.category === "ready-made" ? formData.pocketType : undefined,
+          formData.category === "ready_made" ? formData.pocketType : undefined,
         chest_style:
-          formData.category === "ready-made" ? formData.chestStyle : undefined,
+          formData.category === "ready_made" ? formData.chestStyle : undefined,
         show_in_pos: formData.showInPos,
         supplier_id: formData.supplierId || null,
         opening_balance: formData.openingBalance || formData.initialStock || 0,
@@ -1743,7 +1743,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                 options={[
                   { value: "fabric", label: t("inventory.category_fabric") },
                   {
-                    value: "ready-made",
+                    value: "ready_made",
                     label: t("inventory.category_ready_made"),
                   },
                   { value: "thread", label: t("inventory.category_thread") },
@@ -1771,7 +1771,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
           </div>
 
           <AnimatePresence>
-            {formData.category === "ready-made" && (
+            {formData.category === "ready_made" && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
@@ -2839,7 +2839,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
     },
     {
       name: t("inventory.category_ready_made"),
-      value: items.filter((i: any) => i.category === "ready-made").length,
+      value: items.filter((i: any) => i.category === "ready_made").length,
     },
   ];
 
@@ -3081,13 +3081,13 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
         barcode: formData.barcode,
         images: formData.mainImage ? [{ url: formData.mainImage }] : undefined,
         collar_type:
-          formData.category === "ready-made" ? formData.collarType : null,
+          formData.category === "ready_made" ? formData.collarType : null,
         cuff_type:
-          formData.category === "ready-made" ? formData.cuffType : null,
+          formData.category === "ready_made" ? formData.cuffType : null,
         pocket_type:
-          formData.category === "ready-made" ? formData.pocketType : null,
+          formData.category === "ready_made" ? formData.pocketType : null,
         chest_style:
-          formData.category === "ready-made" ? formData.chestStyle : null,
+          formData.category === "ready_made" ? formData.chestStyle : null,
         show_in_pos: formData.showInPos,
         supplier_id: formData.supplierId || null,
         opening_balance: formData.openingBalance || 0,
@@ -3185,7 +3185,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                 options={[
                   { value: "fabric", label: t("inventory.category_fabric") },
                   {
-                    value: "ready-made",
+                    value: "ready_made",
                     label: t("inventory.category_ready_made"),
                   },
                   { value: "thread", label: t("inventory.category_thread") },
@@ -3213,7 +3213,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
           </div>
 
           <AnimatePresence>
-            {formData.category === "ready-made" && (
+            {formData.category === "ready_made" && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}

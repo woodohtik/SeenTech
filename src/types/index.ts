@@ -103,7 +103,8 @@ export interface Customer {
 export type UserRole = 
   | 'super_admin' 
   | 'support_tech' 
-  | 'billing_admin' 
+  | 'billing_admin'
+  | 'sales' 
   | 'owner' 
   | 'admin'
   | 'manager' 
@@ -304,7 +305,7 @@ export interface InventoryItem {
   name: string;
   nameEn?: string; // English name for bilingual invoices
   description?: string;
-  category: 'fabric' | 'thread' | 'button' | 'lining' | 'accessories' | 'ready-made' | 'other';
+  category: 'fabric' | 'thread' | 'button' | 'lining' | 'accessories' | "ready_made" | 'other';
   unit: 'meter' | 'yard' | 'roll' | 'bolt' | 'piece' | 'spool' | 'box';
   baseUnit: 'meter' | 'piece'; // The normalized unit
   conversionRate: number; // How many baseUnits per unit (e.g., 1 yard = 0.9144 meters)

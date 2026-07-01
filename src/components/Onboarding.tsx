@@ -36,6 +36,7 @@ import { onboardingSchema } from '../lib/validations';
 import { cn } from '../lib/utils';
 import { analytics, AnalyticsEvent } from '../services/analyticsService';
 import { logEmployeeAction } from '../services/employeeAuditService';
+import { markSetup } from '../services/activationService';
 
 type Step = 1 | 2 | 3;
 
@@ -264,6 +265,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       }).eq('id', tenantId);
 
       if (tenantError) throw new Error(`Failed to update tenant: ${tenantError.message}`);
+      markSetup(tenantId).catch(() => {}); // Reforge: Setup Moment
 
       // 3. Update Default Branch
       console.log("[Onboarding] Updating branch...");
@@ -470,7 +472,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                         />
                       </div>
 
-                      <div className="md:col-span-1 space-y-4 sm:space-y-6">
+                      <div className="md:col-span-2 space-y-4 sm:space-y-6">
                         <label className="text-xs sm:text-sm font-black text-slate-700 uppercase tracking-widest block">{t('onboarding.fields.logo')}</label>
                         <input 
                           type="file" 

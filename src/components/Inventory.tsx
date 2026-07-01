@@ -659,7 +659,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                       </h3>
                       <div className="flex flex-wrap gap-1 mt-1">
                         <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 bg-surface-muted text-content-muted rounded-md border border-border">
-                          {item.category === 'fabric' ? t('inventory.fabric') : item.category === 'thread' ? t('inventory.thread') : item.category === 'button' ? t('inventory.button') : item.category === 'ready-made' ? 'جاهز' : t('common.other')}
+                          {item.category === 'fabric' ? t('inventory.fabric') : item.category === 'thread' ? t('inventory.thread') : item.category === 'button' ? t('inventory.button') : item.category === "ready_made" ? 'جاهز' : t('common.other')}
                         </span>
                         {item.taxType === 'inclusive' && <span className="text-[10px] font-black px-2 py-0.5 bg-success/10 text-success rounded-md border border-success/20">شامل الضريبة</span>}
                         {item.taxType === 'exclusive' && <span className="text-[10px] font-black px-2 py-0.5 bg-brand/10 text-brand rounded-md border border-brand/20">غير شامل</span>}
@@ -975,7 +975,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                       className="w-full px-4 py-2 bg-surface-muted border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-content"
                     >
                       <option value="fabric">قماش (Fabric)</option>
-                      <option value="ready-made">جاهز (Ready-made)</option>
+                      <option value="ready_made">جاهز (Ready-made)</option>
                       <option value="accessories">إكسسوارات (Accessories)</option>
                       <option value="thread">خيوط (Thread)</option>
                       <option value="button">أزرار (Buttons)</option>

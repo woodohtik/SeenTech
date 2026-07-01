@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>سين — من الفوضى إلى الوضوح | نظام التشغيل لمحلات التفصيل والأقمشة</title>
+<meta name="description" content="سين: نظام تشغيل متكامل لمحلات التفصيل والأقمشة — نقطة بيع، قياسات وأوامر تفصيل، فوترة زاتكا، وإدارة مخزون في نظام واحد.">
+<!-- استبدل قبل النشر: data-endpoint بالنموذج · روابط واتساب/سوشال · رابط تسجيل الدخول · الأصول داخل ./assets -->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0E2A42; --ink-2:#16395a; --brand:#34BBED; --brand-d:#1192c4; --sky-soft:#e7f7fe;
+  --cta:#0BA06B; --cta-press:#08855a;
+  --surface:#fff; --surface-2:#f5f8fb; --gray:#5b6b7b; --line:#e3eaf1; --line-2:#cfdae6;
+  --r:16px; --r-lg:24px; --shadow:0 10px 30px rgba(14,42,66,.10); --shadow-lg:0 24px 60px rgba(14,42,66,.16);
+  --ease:cubic-bezier(.22,.61,.36,1); --maxw:1180px; --fs-h2:clamp(1.7rem,4vw,2.7rem);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'IBM Plex Sans Arabic','Tajawal',system-ui,sans-serif;color:var(--ink);background:var(--surface);line-height:1.75;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+h1,h2,h3{font-family:'Tajawal','IBM Plex Sans Arabic',sans-serif;font-weight:800;line-height:1.2;letter-spacing:-.01em}
+a{color:inherit;text-decoration:none} img{max-width:100%;display:block}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+.sec{padding:clamp(54px,8vw,104px) 0}
+.surface-2{background:var(--surface-2)}
+.kicker{display:inline-flex;align-items:center;gap:10px;font-family:'Tajawal';font-weight:700;font-size:14px;color:var(--brand-d);margin-bottom:16px}
+.kicker .tick{width:34px;height:10px;flex:none;background:repeating-linear-gradient(to left,var(--brand) 0 1.5px,transparent 1.5px 6px);border-radius:2px;opacity:.9}
+.sec-head{max-width:720px;margin-bottom:44px}
+.sec-head.center{margin-inline:auto;text-align:center}.sec-head.center .kicker{justify-content:center}
+.sec-head h2{font-size:var(--fs-h2);margin-bottom:14px}.sec-head p{font-size:clamp(16px,2vw,18.5px);color:var(--gray)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;font-family:'Tajawal';font-weight:700;font-size:1.05rem;padding:15px 28px;border-radius:999px;border:0;cursor:pointer;transition:transform .25s var(--ease),box-shadow .25s var(--ease),background .2s}
+.btn-cta{background:var(--cta);color:#fff;box-shadow:0 10px 24px rgba(11,160,107,.34)}
+.btn-cta:hover{background:var(--cta-press);transform:translateY(-2px);box-shadow:0 16px 32px rgba(11,160,107,.42)}
+.btn-ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn-ghost.on-dark{color:#fff;border-color:rgba(255,255,255,.45)}
+.btn-ghost.on-dark:hover{border-color:#fff;background:rgba(255,255,255,.10)}
+.btn-login{background:#fff;color:var(--ink);border:1px solid var(--line);padding:9px 18px;font-size:.95rem;border-radius:999px;display:inline-flex;gap:7px;align-items:center;font-family:'Tajawal';font-weight:700;cursor:pointer}
+.btn-login:hover{border-color:var(--brand);color:var(--brand-d)}
+
+header{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.88);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between;height:74px}
+.logo{display:inline-flex;flex-direction:column;align-items:center;gap:5px;line-height:1}
+.logo .lmark{display:flex;align-items:center}
+.logo .lmark img{width:82px;height:auto;display:block}
+.logo .lname{display:flex;align-items:center;color:var(--brand)}
+.logo .lname svg{width:82px;height:auto;display:block}
+.nav-links{display:flex;gap:24px;align-items:center}
+.nav-links a{color:var(--ink);font-weight:500;font-size:.97rem;opacity:.85}.nav-links a:hover{opacity:1;color:var(--brand-d)}
+.nav-cta{display:flex;align-items:center;gap:12px}
+.burger{display:none;background:none;border:0;cursor:pointer;width:42px;height:42px}
+.burger span{display:block;width:22px;height:2px;background:var(--ink);margin:5px auto}
+
+.hero{position:relative;min-height:640px;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;color:#fff}
+.hero video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+.hero .ov1{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(8,20,34,.66) 0%,rgba(8,20,34,.48) 42%,rgba(8,20,34,.86) 100%)}
+.hero .ov2{position:absolute;inset:0;z-index:1;background:radial-gradient(120% 80% at 50% 24%,rgba(52,187,237,.30),transparent 60%);mix-blend-mode:screen;pointer-events:none}
+.hero-inner{position:relative;z-index:2;padding:128px 24px 92px;max-width:920px}
+.hero .eyebrow{display:inline-flex;align-items:center;gap:8px;padding:8px 17px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.34);border-radius:999px;font-weight:700;font-size:.82rem;color:#dff4fd;margin-bottom:22px}
+.hero h1{font-size:clamp(2.2rem,6vw,4.1rem);margin-bottom:18px}
+.hero h1 .grad{background:linear-gradient(90deg,#7ad7f6,var(--brand));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .sub{font-size:clamp(1.05rem,2.4vw,1.3rem);color:#d7e6f2;max-width:60ch;margin:0 auto 12px}
+.hero .tagline{color:#9fc2da;font-size:1.05rem;margin-bottom:28px;font-weight:500}
+.hero-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}
+.hero .reassure{font-size:.9rem;color:#bcd6e8}.hero .reassure b{color:#fff}
+
+.statbar{background:var(--surface);border-bottom:1px solid var(--line)}
+.statbar .row{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;padding:34px 0}
+.statcell{text-align:center;border-inline-start:1px solid var(--line);padding:4px 10px}
+.statcell:first-child{border:0}
+.statcell .n{font-family:'Tajawal';font-weight:800;font-size:clamp(1.3rem,2.6vw,1.85rem);color:var(--ink)}
+.statcell .n b{color:var(--brand-d)}
+.statcell .l{font-size:.86rem;color:var(--gray);margin-top:4px}
+
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:24px;transition:transform .3s var(--ease),box-shadow .3s var(--ease),border-color .3s}
+.card:hover{transform:translateY(-5px);box-shadow:var(--shadow);border-color:#cfe7f2}
+.card .ic{width:48px;height:48px;border-radius:13px;display:grid;place-items:center;font-size:1.4rem;margin-bottom:14px}
+.ic.warn{background:#fff1ec;color:#e2613b}.ic.sky{background:var(--sky-soft);color:var(--brand-d)}
+.card h3{font-size:1.1rem;margin-bottom:7px}.card p{font-size:.95rem;color:var(--gray)}
+
+.dash-sec{background:var(--surface-2)}
+.dash-shell{max-width:980px;margin:0 auto;padding:0 4px}
+
+/* MID CTA */
+.midcta{background:linear-gradient(135deg,var(--sky-soft),#fff);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.midcta .inner{text-align:center;padding:clamp(46px,7vw,72px) 0}
+.midcta h2{font-size:var(--fs-h2);margin-bottom:20px}
+
+/* INDUSTRIES (نسخة الوليد بالضبط) */
+.ind{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+.icard{background:#fff;border:1px solid #E7EFF5;border-radius:18px;overflow:hidden;box-shadow:0 14px 32px -22px rgba(16,52,82,.4);transition:transform .2s var(--ease),box-shadow .2s var(--ease)}
+.icard:hover{transform:translateY(-5px);box-shadow:0 26px 46px -26px rgba(30,159,214,.5)}
+.icard .iph{position:relative;height:170px}
+.icard .iph img{width:100%;height:100%;object-fit:cover;display:block}
+.icard .iph::after{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,rgba(19,32,47,0) 42%,rgba(19,32,47,.74))}
+.icard .ititle{position:absolute;right:14px;left:14px;bottom:12px;z-index:1;color:#fff;font-weight:800;font-size:17px;font-family:'Tajawal'}
+.icard .icap{padding:15px 16px;text-align:center;font-size:13px;color:#7A8AA0}
+
+.why{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.why .f{padding:24px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line)}
+.why .f .ic{width:46px;height:46px;border-radius:12px;background:var(--sky-soft);color:var(--brand-d);display:grid;place-items:center;font-size:1.3rem;margin-bottom:13px}
+.why .f h3{font-size:1.1rem;margin-bottom:7px}.why .f p{font-size:.93rem;color:var(--gray)}
+
+/* STEPS — مرتبة تحت بعض */
+.steps{display:flex;flex-direction:column;gap:18px;max-width:760px;margin:0 auto}
+.step{display:flex;gap:18px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px 24px}
+.step .sn{width:54px;height:54px;flex:none;border-radius:50%;background:#fff;border:2px solid var(--brand);color:var(--ink);font-family:'Tajawal';font-weight:800;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(52,187,237,.25)}
+.step h3{font-size:19px;font-weight:700;margin-bottom:6px}.step p{color:var(--gray);font-size:15px}
+
+.trust{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:8px}
+.badge{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.badge .ic{width:42px;height:42px;border-radius:11px;background:var(--sky-soft);color:var(--brand-d);display:grid;place-items:center;font-size:1.2rem;flex:none}
+.badge b{display:block;font-family:'Tajawal';font-size:1rem}.badge span{font-size:.82rem;color:var(--gray)}
+.founding{margin-top:30px;background:linear-gradient(135deg,var(--sky-soft),#fff);border:1px solid #cdebf7;border-radius:var(--r-lg);padding:30px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.founding h3{font-size:1.4rem}.founding p{color:var(--gray);margin-top:6px}
+
+.faq{max-width:780px;margin:0 auto}
+.q{border:1px solid var(--line);border-radius:14px;margin-bottom:12px;background:var(--surface);overflow:hidden}
+.q summary{list-style:none;cursor:pointer;padding:18px 22px;font-family:'Tajawal';font-weight:700;font-size:1.05rem;display:flex;justify-content:space-between;gap:12px}
+.q summary::-webkit-details-marker{display:none}
+.q summary::after{content:"+";font-size:1.5rem;color:var(--brand);transition:transform .3s}
+.q[open] summary::after{transform:rotate(45deg)}
+.q .a{padding:0 22px 20px;color:var(--gray)}
+
+.cta-band{background:var(--ink);color:#fff;border-radius:var(--r-lg);padding:clamp(34px,5vw,60px);position:relative;overflow:hidden}
+.cta-band::before{content:"";position:absolute;inset-block-start:-40%;inset-inline-end:-10%;width:480px;height:480px;background:radial-gradient(circle,rgba(52,187,237,.22),transparent 65%)}
+.cta-grid{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+.cta-grid h2{font-size:var(--fs-h2);margin-bottom:14px}.cta-grid p{color:#bcd3e4;font-size:1.1rem}
+.form{background:#fff;border-radius:var(--r);padding:26px;box-shadow:var(--shadow-lg)}
+.field{margin-bottom:15px}.field label{display:block;font-size:.9rem;font-weight:600;margin-bottom:6px}
+.field input,.field select{width:100%;min-height:48px;padding:0 15px;border:1.5px solid var(--line);border-radius:11px;font-family:inherit;font-size:1rem;color:var(--ink);background:#fff}
+.field input:focus,.field select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 4px var(--sky-soft)}
+.field .err{color:#d33;font-size:.8rem;margin-top:5px;display:none}
+.field.invalid .err{display:block}.field.invalid input,.field.invalid select{border-color:#d33}
+.form .btn-cta{width:100%}.form-note{font-size:.82rem;color:var(--gray);text-align:center;margin-top:12px}
+.success{display:none;text-align:center;padding:30px 10px}.success.show{display:block}
+.success .ok{width:64px;height:64px;border-radius:50%;background:var(--sky-soft);color:var(--cta);display:grid;place-items:center;font-size:2rem;margin:0 auto 14px}
+
+footer{background:#08202f;color:#9fc2da;padding:46px 0 30px}
+.foot{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:center}
+.foot a{opacity:.85}.foot a:hover{opacity:1;color:#fff}
+.foot-links{display:flex;gap:22px;flex-wrap:wrap}
+.copy{margin-top:26px;padding-top:20px;border-top:1px solid rgba(255,255,255,.1);font-size:.84rem;text-align:center;color:#6f93ac}
+.mobile-cta{display:none;position:fixed;inset-inline:0;bottom:0;z-index:70;padding:12px 16px;background:rgba(255,255,255,.95);backdrop-filter:blur(10px);border-top:1px solid var(--line)}
+.mobile-cta .btn-cta{width:100%}
+
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
+.reveal.in{opacity:1;transform:none}
+
+/* motion touches */
+.iact{transition:transform .3s var(--ease),box-shadow .3s var(--ease)}
+.iact:hover{transform:translateY(-6px);box-shadow:0 26px 46px -26px rgba(30,159,214,.5)}
+.iact img{transition:transform .6s var(--ease)}
+.icard .iph img{transition:transform .6s var(--ease)}
+.icard:hover .iph img{transform:scale(1.07)}
+.iact:hover img{transform:scale(1.07)}
+.card .ic{transition:transform .3s var(--ease)}
+.card:hover .ic{transform:scale(1.1)}
+.why .f .ic{transition:transform .3s var(--ease)}
+.why .f:hover .ic{transform:scale(1.12) rotate(-5deg)}
+.btn-cta{position:relative;overflow:hidden}
+.btn-cta::after{content:"";position:absolute;top:0;inset-inline-start:-60%;width:42%;height:100%;background:linear-gradient(120deg,transparent,rgba(255,255,255,.38),transparent);transform:skewX(-20deg);transition:inset-inline-start .6s var(--ease)}
+.btn-cta:hover::after{inset-inline-start:130%}
+.scrollcue{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);width:26px;height:42px;border:2px solid rgba(255,255,255,.5);border-radius:14px;z-index:3;display:block}
+.scrollcue span{position:absolute;left:50%;top:8px;width:4px;height:8px;border-radius:2px;background:#fff;transform:translateX(-50%);animation:scrolldot 1.7s var(--ease) infinite}
+@keyframes scrolldot{0%{opacity:0;top:7px}40%{opacity:1}80%{opacity:0;top:23px}100%{opacity:0}}
+
+@keyframes seenLive{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes seenBar{0%,100%{transform:scaleY(.72)}50%{transform:scaleY(1)}}
+@keyframes seenSweep{0%{transform:translateX(40px);opacity:0}25%{opacity:.55}100%{transform:translateX(-360px);opacity:0}}
+@keyframes seenToast{0%,6%{opacity:0;transform:translateY(-10px)}12%,42%{opacity:1;transform:none}52%,100%{opacity:0;transform:translateY(-10px)}}
+
+@media(max-width:980px){
+  .grid-4,.ind{grid-template-columns:repeat(2,1fr)}
+  .why,.trust{grid-template-columns:repeat(2,1fr)}
+  .cta-grid{grid-template-columns:1fr;gap:26px}
+  .statbar .row{grid-template-columns:repeat(2,1fr);gap:24px 12px}.statcell:nth-child(3){border:0}
+}
+@media(max-width:640px){
+  .nav-links{display:none}.burger{display:block}
+  .nav.open .nav-links{display:flex;position:absolute;inset-inline:0;top:74px;flex-direction:column;background:#fff;padding:18px 22px;border-bottom:1px solid var(--line);gap:14px}
+  .grid-4,.ind,.why,.trust{grid-template-columns:1fr}
+  .statbar .row{grid-template-columns:1fr 1fr}
+  .founding{flex-direction:column;text-align:center}
+  .mobile-cta{display:block}body{padding-bottom:74px}
+}
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}.hero video{display:none}html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap"><nav class="nav" id="nav">
+    <a class="logo" href="#top"><span class="lmark"><img src="assets/logo-swoosh.png" alt="سين"></span><span class="lname"><svg viewBox="-74 599 2933 1066" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="سين"><path d="M591 1303V1232H699V1303ZM321 1551Q242 1551 178.0 1522.0Q114 1493 77.0 1441.0Q40 1389 40 1322Q40 1301 43.5 1266.5Q47 1232 52.5 1189.5Q58 1147 65.0 1103.5Q72 1060 78 1021L155 1033Q144 1102 135.5 1160.5Q127 1219 122.5 1260.5Q118 1302 118 1322Q118 1368 143.5 1403.5Q169 1439 215.0 1459.5Q261 1480 321 1480Q381 1480 424.0 1461.0Q467 1442 490.0 1408.0Q513 1374 513 1328V803H591V1328Q591 1398 554.5 1448.0Q518 1498 457.0 1524.5Q396 1551 321 1551ZM699 1303V1232Q705 1232 709.0 1234.5Q713 1237 715.0 1241.5Q717 1246 718.0 1252.5Q719 1259 719 1267Q719 1275 718.0 1282.0Q717 1289 715.0 1293.5Q713 1298 709.0 1300.5Q705 1303 699 1303ZM699 1303V1232H949V1303ZM949 1303V1232Q955 1232 959.0 1234.5Q963 1237 965.0 1241.5Q967 1246 968.0 1252.5Q969 1259 969 1267Q969 1275 968.0 1282.0Q967 1289 965.0 1293.5Q963 1298 959.0 1300.5Q955 1303 949 1303ZM699 1303Q693 1303 689.0 1300.5Q685 1298 683.0 1293.5Q681 1289 680.0 1282.0Q679 1275 679 1267Q679 1256 680.5 1248.5Q682 1241 686.5 1236.5Q691 1232 699 1232ZM949 1303V1232H1199V1303ZM1199 1303V1232Q1205 1232 1209.0 1234.5Q1213 1237 1215.0 1241.5Q1217 1246 1218.0 1252.5Q1219 1259 1219 1267Q1219 1275 1218.0 1282.0Q1217 1289 1215.0 1293.5Q1213 1298 1209.0 1300.5Q1205 1303 1199 1303ZM949 1303Q943 1303 939.0 1300.5Q935 1298 933.0 1293.5Q931 1289 930.0 1282.0Q929 1275 929 1267Q929 1256 930.5 1248.5Q932 1241 936.5 1236.5Q941 1232 949 1232ZM1385 1303V1232H1493V1303ZM1493 1303V1232Q1499 1232 1503.0 1234.5Q1507 1237 1509.0 1241.5Q1511 1246 1512.0 1252.5Q1513 1259 1513 1267Q1513 1275 1512.0 1282.0Q1511 1289 1509.0 1293.5Q1507 1298 1503.0 1300.5Q1499 1303 1493 1303ZM1199 1303Q1193 1303 1189.0 1300.5Q1185 1298 1183.0 1293.5Q1181 1289 1180.0 1282.0Q1179 1275 1179 1267Q1179 1256 1180.5 1248.5Q1182 1241 1186.5 1236.5Q1191 1232 1199 1232ZM1199 1303V1232H1343L1307 1261V803H1385V1303ZM1493 1303V1232H1743V1303ZM1743 1303V1232Q1749 1232 1753.0 1234.5Q1757 1237 1759.0 1241.5Q1761 1246 1762.0 1252.5Q1763 1259 1763 1267Q1763 1275 1762.0 1282.0Q1761 1289 1759.0 1293.5Q1757 1298 1753.0 1300.5Q1749 1303 1743 1303ZM1493 1303Q1487 1303 1483.0 1300.5Q1479 1298 1477.0 1293.5Q1475 1289 1474.0 1282.0Q1473 1275 1473 1267Q1473 1256 1474.5 1248.5Q1476 1241 1480.5 1236.5Q1485 1232 1493 1232ZM1743 1303V1232H1993V1303ZM1993 1303V1232Q1999 1232 2003.0 1234.5Q2007 1237 2009.0 1241.5Q2011 1246 2012.0 1252.5Q2013 1259 2013 1267Q2013 1275 2012.0 1282.0Q2011 1289 2009.0 1293.5Q2007 1298 2003.0 1300.5Q1999 1303 1993 1303ZM1743 1303Q1737 1303 1733.0 1300.5Q1729 1298 1727.0 1293.5Q1725 1289 1724.0 1282.0Q1723 1275 1723 1267Q1723 1256 1724.5 1248.5Q1726 1241 1730.5 1236.5Q1735 1232 1743 1232ZM2519 1303Q2485 1303 2452.5 1290.0Q2420 1277 2390 1249L2441 1196Q2464 1215 2482.0 1223.5Q2500 1232 2519 1232H2697L2667 1264V1025Q2667 1007 2663.5 974.0Q2660 941 2653.5 899.5Q2647 858 2638 816L2714 803Q2721 838 2728.0 881.0Q2735 924 2740.0 962.5Q2745 1001 2745 1025V1303ZM1993 1303V1232H2139L2119 1252V903H2196V1303ZM2196 1303V1232H2309Q2343 1232 2360.5 1222.0Q2378 1212 2385.0 1182.0Q2392 1152 2392 1094V853H2470V1094Q2470 1172 2453.5 1218.0Q2437 1264 2402.0 1283.5Q2367 1303 2309 1303ZM1993 1303Q1987 1303 1983.0 1300.5Q1979 1298 1977.0 1293.5Q1975 1289 1974.0 1282.0Q1973 1275 1973 1267Q1973 1256 1974.5 1248.5Q1976 1241 1980.5 1236.5Q1985 1232 1993 1232Z" fill="currentColor" stroke="currentColor" stroke-width="44" stroke-linejoin="round" stroke-linecap="round"/><circle cx="552" cy="803" r="61" fill="currentColor"/><circle cx="1346" cy="803" r="61" fill="currentColor"/><circle cx="2676" cy="803" r="60" fill="currentColor"/><circle cx="2158" cy="903" r="60" fill="currentColor"/><circle cx="2431" cy="853" r="61" fill="currentColor"/><circle cx="317" cy="758" r="52" fill="currentColor"/><circle cx="1278" cy="1438" r="52" fill="currentColor"/><circle cx="1415" cy="1438" r="52" fill="currentColor"/></svg></span></a>
+    <div class="nav-links">
+      <a href="#problem">المشكلة</a><a href="#solution">الحل</a><a href="#industries">لمن سين</a><a href="#how">كيف يعمل</a><a href="#faq">أسئلة</a>
+    </div>
+    <div class="nav-cta">
+      <a href="/login" target="_parent" class="btn-login"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"></circle><path d="M5.5 20c0-3.7 3-5.7 6.5-5.7s6.5 2 6.5 5.7"></path></svg> تسجيل الدخول</a>
+      <button class="burger" id="burger" aria-label="القائمة" aria-expanded="false"><span></span><span></span><span></span></button>
+    </div>
+  </nav></div>
+</header>
+
+<!-- HERO -->
+<section class="hero" id="top">
+  <video autoplay muted loop playsinline poster="assets/act-fabric.jpg"><source src="assets/hero-tailor.mp4" type="video/mp4"></video>
+  <div class="ov1"></div><div class="ov2"></div>
+  <div class="hero-inner">
+    <span class="eyebrow">نظام التشغيل لقطاع التفصيل والأقمشة</span>
+    <h1>من الفوضى <span class="grad">إلى الوضوح</span></h1>
+    <p class="sub">سين يجمع نقطة البيع، القياسات وأوامر التفصيل، فوترة زاتكا، وإدارة المخزون في نظام واحد — مبني خصيصاً لمحلات التفصيل والأقمشة والمفروشات في السعودية والخليج.</p>
+    <p class="tagline">نظام واحد يدير محلك من القياس حتى الفاتورة.</p>
+    <div class="hero-actions">
+      <a href="/login" target="_parent" class="btn btn-cta">ابدأ الآن مجاناً</a>
+      <a href="#dashboard" class="btn btn-ghost on-dark">▶ شوف كيف يشتغل</a>
+    </div>
+    <p class="reassure">١٤ يوم تجربة · بدون بطاقة ائتمانية · <b>إذا ما حسّيت الفرق، لا تكمل</b></p>
+  </div>
+  <a href="#problem" class="scrollcue" aria-label="مرر للأسفل"><span></span></a>
+</section>
+
+<!-- STAT BAR -->
+<div class="statbar">
+  <div class="wrap"><div class="row reveal">
+    <div class="statcell"><div class="n"><b>+١٠ ساعات</b></div><div class="l">موفّرة أسبوعياً من الإدارة الورقية</div></div>
+    <div class="statcell"><div class="n"><b>+٦٠٪</b></div><div class="l">دقة أعلى في المقاسات والطلبات</div></div>
+    <div class="statcell"><div class="n"><b>+٣٠٪</b></div><div class="l">توفير في القماش والخامات</div></div>
+    <div class="statcell"><div class="n"><b>+٢٠٪</b></div><div class="l">نمو في المبيعات المتكررة</div></div>
+  </div></div>
+</div>
+
+<!-- PROBLEM -->
+<section class="sec" id="problem">
+  <div class="wrap">
+    <div class="sec-head center reveal"><span class="kicker"><span class="tick"></span> المشكلة</span>
+      <h2>الإدارة بالدفاتر والواتساب تكلّفك أكثر مما تتخيّل</h2>
+      <p>كل طلب ضائع أو مقاس خاطئ هو زبون قد لا يرجع — والوقت المهدور لا يُعوَّض.</p></div>
+    <div class="grid-4">
+      <div class="card reveal"><div class="ic warn">📋</div><h3>ضياع الطلبات</h3><p>طلبات على ورق ومحادثات واتساب — يسهل أن تُنسى أو تتأخر.</p></div>
+      <div class="card reveal"><div class="ic warn">📏</div><h3>أخطاء المقاسات</h3><p>مقاس واحد غلط = إعادة تفصيل وخسارة قماش وزبون غاضب.</p></div>
+      <div class="card reveal"><div class="ic warn">🧾</div><h3>ضغط فوترة زاتكا</h3><p>فواتير يدوية ومتطلبات متغيّرة تستهلك وقتك وتعرّضك للمخالفات.</p></div>
+      <div class="card reveal"><div class="ic warn">📦</div><h3>فوضى المخزون</h3><p>لا تعرف كم متر باقٍ من كل لفّة إلا بعد أن ينفد أمام الزبون.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- SOLUTION -->
+<section class="sec surface-2" id="solution">
+  <div class="wrap">
+    <div class="sec-head center reveal"><span class="kicker"><span class="tick"></span> الحل</span>
+      <h2>سين يحوّل كل هذا لنظام واحد</h2>
+      <p>من القياس حتى الفاتورة — كل عملياتك في شاشة واحدة منظّمة.</p></div>
+    <div class="dash-shell reveal" id="dashboard" style="margin-bottom:40px">
+    <div style="position:relative;background:#fff;border:1px solid #E7EFF5;border-radius:24px;padding:14px;box-shadow:0 40px 90px -45px rgba(16,52,82,0.4)">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px 14px">
+        <div style="display:flex;gap:6px"><span style="width:11px;height:11px;border-radius:50%;background:#FF5F57"></span><span style="width:11px;height:11px;border-radius:50%;background:#FEBC2E"></span><span style="width:11px;height:11px;border-radius:50%;background:#28C840"></span></div>
+        <span style="font-family:'Tajawal';font-size:12px;color:#9AAAC0">seen.sa / dashboard</span>
+        <div style="display:flex;align-items:center;gap:7px;background:rgba(255,86,87,0.14);border:1px solid rgba(255,86,87,0.35);border-radius:999px;padding:4px 11px"><span style="width:7px;height:7px;border-radius:50%;background:#FF5F57;animation:seenLive 1.6s infinite"></span><span style="font-family:'Tajawal';font-size:11px;font-weight:600;color:#E5484D">LIVE</span></div>
+      </div>
+      <div style="background:#F4F8FB;border-radius:16px;padding:20px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:12px;width:140px;background:linear-gradient(90deg,transparent,rgba(37,182,230,0.16),transparent);animation:seenSweep 5s ease-in-out infinite;pointer-events:none;left:60%"></div>
+        <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:16px;position:relative">
+          <div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+              <div style="background:#EAF6FC;border:1px solid #D2E8F4;border-radius:13px;padding:14px"><div style="font-size:11.5px;color:#5C86A0">مبيعات اليوم</div><div style="font-family:'Tajawal';font-size:21px;font-weight:700;color:#13202F;margin-top:4px">﷼ 8,420</div></div>
+              <div style="background:#fff;border:1px solid #E6EEF4;border-radius:13px;padding:14px"><div style="font-size:11.5px;color:#7A8AA0">طلبات تفصيل</div><div style="font-family:'Tajawal';font-size:21px;font-weight:700;color:#13202F;margin-top:4px">37</div></div>
+              <div style="background:#fff;border:1px solid #E6EEF4;border-radius:13px;padding:14px"><div style="font-size:11.5px;color:#7A8AA0">أمتار مباعة</div><div style="font-family:'Tajawal';font-size:21px;font-weight:700;color:#13202F;margin-top:4px">512م</div></div>
+            </div>
+            <div style="background:#fff;border:1px solid #E9F0F6;border-radius:14px;padding:16px">
+              <div style="font-size:12px;color:#54627A;margin-bottom:14px">المبيعات الأسبوعية</div>
+              <div style="height:120px;display:flex;align-items:flex-end;gap:9px">
+                <div style="flex:1;height:58px;transform-origin:bottom;background:linear-gradient(180deg,#7FD0EE,#3FA8DC);border-radius:6px 6px 0 0;animation:seenBar 3.2s ease-in-out infinite"></div>
+                <div style="flex:1;height:82px;transform-origin:bottom;background:linear-gradient(180deg,#7FD0EE,#3FA8DC);border-radius:6px 6px 0 0;animation:seenBar 3.6s ease-in-out infinite;animation-delay:.2s"></div>
+                <div style="flex:1;height:66px;transform-origin:bottom;background:linear-gradient(180deg,#7FD0EE,#3FA8DC);border-radius:6px 6px 0 0;animation:seenBar 3s ease-in-out infinite;animation-delay:.4s"></div>
+                <div style="flex:1;height:100px;transform-origin:bottom;background:linear-gradient(180deg,#39C0F2,#1E9FD6);border-radius:6px 6px 0 0;animation:seenBar 3.4s ease-in-out infinite;animation-delay:.1s"></div>
+                <div style="flex:1;height:74px;transform-origin:bottom;background:linear-gradient(180deg,#7FD0EE,#3FA8DC);border-radius:6px 6px 0 0;animation:seenBar 3.8s ease-in-out infinite;animation-delay:.5s"></div>
+                <div style="flex:1;height:112px;transform-origin:bottom;background:linear-gradient(180deg,#39C0F2,#1683C0);border-radius:6px 6px 0 0;animation:seenBar 3.1s ease-in-out infinite;animation-delay:.3s"></div>
+                <div style="flex:1;height:92px;transform-origin:bottom;background:linear-gradient(180deg,#7FD0EE,#3FA8DC);border-radius:6px 6px 0 0;animation:seenBar 3.5s ease-in-out infinite;animation-delay:.15s"></div>
+              </div>
+            </div>
+          </div>
+          <div style="background:#fff;border:1px solid #E9F0F6;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:11px;position:relative">
+            <div style="font-size:12.5px;font-weight:800;color:#13202F">أحدث الفواتير</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px"><span style="color:#54627A">#10428 عباية مفصّلة</span><span style="font-family:'Tajawal';color:#1E9E5A;font-weight:700">مدفوعة</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px"><span style="color:#54627A">#10427 قماش 6م</span><span style="font-family:'Tajawal';color:#1E9E5A;font-weight:700">مدفوعة</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px"><span style="color:#54627A">#10426 ستائر صالة</span><span style="font-family:'Tajawal';color:#E0992B;font-weight:700">قيد التفصيل</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px"><span style="color:#54627A">#10425 تنجيد كنب</span><span style="font-family:'Tajawal';color:#1E9E5A;font-weight:700">مدفوعة</span></div>
+            <div style="margin-top:auto;background:#EAF6FC;border-radius:11px;padding:11px;text-align:center;font-size:11.5px;color:#1E8FC5;font-weight:700">عرض كل الطلبات</div>
+            <div style="position:absolute;top:-6px;left:-6px;display:flex;align-items:center;gap:8px;background:#1E9FD6;color:#fff;border-radius:11px;padding:9px 13px;font-size:12px;font-weight:700;box-shadow:0 12px 26px -8px rgba(30,159,214,0.7);animation:seenToast 7s ease-in-out infinite"><span style="width:7px;height:7px;border-radius:50%;background:#fff"></span> طلب جديد وصل الآن</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+    <div class="grid-4">
+      <div class="card reveal"><div class="ic sky">🛒</div><h3>نقطة بيع متخصصة</h3><p>كاشير سريع يدعم بيع القماش بالمتر والقطعة، وفاتورة فورية.</p></div>
+      <div class="card reveal"><div class="ic sky">✂️</div><h3>قياسات وأوامر تفصيل</h3><p>تتبّع كل طلب من القياس حتى التسليم، مع تنبيهات المواعيد.</p></div>
+      <div class="card reveal"><div class="ic sky">🧾</div><h3>فوترة متوافقة مع زاتكا</h3><p>فواتير ضريبية معتمدة من اليوم الأول، بدون خطوات إضافية.</p></div>
+      <div class="card reveal"><div class="ic sky">📦</div><h3>إدارة مخزون</h3><p>لفّات الأقمشة بالأمتار والألوان، مع تنبيه عند قرب النفاد.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- MID CTA -->
+<section class="midcta">
+  <div class="wrap"><div class="inner reveal">
+    <h2>جاهز تشوف محلك بوضوح؟</h2>
+    <a href="/login" target="_parent" class="btn btn-cta">ابدأ الآن مجاناً</a>
+  </div></div>
+</section>
+
+<!-- INDUSTRIES (تخطيط ثابت + صور محلية تظهر دائماً) -->
+<section class="sec" id="industries">
+  <div class="wrap">
+    <div class="sec-head center reveal"><span class="kicker"><span class="tick"></span> لمن سين</span>
+      <h2>الأنشطة التجارية التي نخدمها</h2><p>لكل نشاط فيه قماش وقياس.</p></div>
+    <div class="ind reveal">
+      <div class="icard"><div class="iph"><img src="assets/men-tailor.jpg" alt="خياطة رجالية" loading="lazy"><span class="ititle">خياطة رجالية</span></div><div class="icap">تفصيل ثياب وبدل رجالية</div></div>
+      <div class="icard"><div class="iph"><img src="assets/act-women.jpg" alt="خياطة نسائية" loading="lazy"><span class="ititle">خياطة نسائية</span></div><div class="icap">تفصيل عبايات وفساتين</div></div>
+      <div class="icard"><div class="iph"><img src="assets/act-sofa.jpg" alt="كنب وستائر" loading="lazy"><span class="ititle">كنب وستائر</span></div><div class="icap">تنجيد الكنب وتفصيل الستائر</div></div>
+      <div class="icard"><div class="iph"><img src="assets/fabric-store.jpg" alt="محلات الأقمشة" loading="lazy"><span class="ititle">محلات الأقمشة</span></div><div class="icap">بيع الأقمشة بالأمتار واللفّات</div></div>
+      <div class="icard"><div class="iph"><img src="assets/act-clothing.jpg" alt="ملابس متخصصة" loading="lazy"><span class="ititle">ملابس متخصصة</span></div><div class="icap">ملابس جاهزة ومستلزماتها</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY -->
+<section class="sec surface-2" id="why">
+  <div class="wrap">
+    <div class="sec-head center reveal"><span class="kicker"><span class="tick"></span> لماذا سين</span>
+      <h2>مش مجرد نظام — مبني لمحلك</h2>
+      <p>لا نظام عام تم تكييفه، بل حلّ صُمّم من الصفر لقطاع التفصيل والأقمشة.</p></div>
+    <div class="why reveal">
+      <div class="f"><div class="ic">🎯</div><h3>متخصص للتفصيل</h3><p>بيع القماش بالمتر، أوامر التفصيل، وتتبّع كل لفّة — مزايا لا تجدها في أي كاشير عادي.</p></div>
+      <div class="f"><div class="ic">📱</div><h3>تابع من جوالك</h3><p>المبيعات والطلبات والمخزون في جيبك — لحظياً على أي جهاز وعبر كل فروعك.</p></div>
+      <div class="f"><div class="ic">💬</div><h3>عربي وبسيط — ودعم ٢٤/٧</h3><p>إذا تعرف تستخدم واتساب تعرف تستخدم سين، ومعك دعم عربي على مدار الساعة طوال أيام الأسبوع.</p></div>
+      <div class="f"><div class="ic">🧾</div><h3>جاهز لزاتكا</h3><p>متوافق مع متطلبات هيئة الزكاة والضريبة من اليوم الأول، بدون قلق.</p></div>
+      <div class="f"><div class="ic">🤖</div><h3>ذكاء يخدمك</h3><p>تنبيهات وتوصيات ذكية تساعدك على القرار — لا أرقام تتركك وحدك.</p></div>
+      <div class="f"><div class="ic">🤝</div><h3>مبني بالشراكة معك</h3><p>سين يُبنى بالتعاون مع أصحاب محلات حقيقيين — ونطوّر الميزات حسب اقتراحاتكم واحتياج السوق الفعلي.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW (خطوات تحت بعض) -->
+<section class="sec" id="how">
+  <div class="wrap">
+    <div class="sec-head center reveal"><span class="kicker"><span class="tick"></span> كيف يعمل</span>
+      <h2>ابدأ في ٣ خطوات</h2><p>من التسجيل لأول فاتورة زاتكا — بدون تعقيد.</p></div>
+    <div class="steps">
+      <div class="step reveal"><div class="sn">١</div><div><h3>سجّل محلك</h3><p>نجهّز لك حسابك ونرفع بياناتك بسرعة — وفريق سين معك خطوة بخطوة.</p></div></div>
+      <div class="step reveal"><div class="sn">٢</div><div><h3>أنشئ طلباً بالقياسات</h3><p>أضف العميل، احفظ مقاساته، وافتح الطلب — كله بشاشة واحدة.</p></div></div>
+      <div class="step reveal"><div class="sn">٣</div><div><h3>تابع وافوتر تلقائياً</h3><p>تابع حالة كل طلب، وأصدر فاتورة متوافقة مع زاتكا بضغطة.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- SECURITY -->
+<section class="sec surface-2">
+  <div class="wrap">
+    <div class="sec-head center reveal"><span class="kicker"><span class="tick"></span> الأمان</span>
+      <h2>بياناتك خط أحمر</h2>
+      <p>بيانات محلك وعملائك مشفّرة ومحفوظة وفق نظام حماية البيانات السعودي (PDPL) — ملكك وحدك، لا تُباع ولا تُشارك.</p></div>
+    <div class="trust reveal">
+      <div class="badge"><div class="ic">🔐</div><div><b>تشفير كامل</b><span>حماية بياناتك نقلاً وتخزيناً</span></div></div>
+      <div class="badge"><div class="ic">🛡️</div><div><b>متوافق مع PDPL</b><span>التزام بنظام حماية البيانات</span></div></div>
+      <div class="badge"><div class="ic">🧾</div><div><b>معتمد لزاتكا</b><span>فوترة إلكترونية وفق المتطلبات</span></div></div>
+      <div class="badge"><div class="ic">☁️</div><div><b>نسخ احتياطي</b><span>بياناتك محفوظة تلقائياً</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA + FORM -->
+<section class="sec surface-2" id="demo">
+  <div class="wrap"><div class="cta-band reveal"><div class="cta-grid">
+    <div>
+      <h2>جرّب سين — وإذا ما حسّيت الفرق، لا تكمل</h2>
+      <p>احجز عرضاً سريعاً، ونرتّب لك بداية لمحلك بضمان. بدون بطاقة ائتمانية.</p>
+    </div>
+    <div>
+      <form class="form" id="leadForm" novalidate data-endpoint="REPLACE_WITH_API_ENDPOINT">
+        <div id="formFields">
+          <div class="field"><label for="name">الاسم</label><input id="name" name="name" type="text" autocomplete="name" required placeholder="اسمك الكريم"><span class="err">رجاءً اكتب اسمك</span></div>
+          <div class="field"><label for="phone">رقم الجوال</label><input id="phone" name="phone" type="tel" inputmode="numeric" required placeholder="05XXXXXXXX"><span class="err">رقم جوال صحيح يبدأ بـ 05 و10 أرقام</span></div>
+          <div class="field"><label for="activity">نوع النشاط</label>
+            <select id="activity" name="activity" required><option value="">اختر نشاطك…</option><option>خياطة رجالية</option><option>خياطة نسائية</option><option>كنب وستائر</option><option>محل أقمشة</option><option>ملابس متخصصة</option></select>
+            <span class="err">رجاءً اختر نوع النشاط</span></div>
+          <a href="/login" target="_parent" style="display: block; text-align: center; text-decoration: none;" class="btn btn-cta">ابدأ الآن مجاناً</a>
+          <p class="form-note">نتواصل معك خلال يوم عمل · بياناتك لا تُشارك</p>
+        </div>
+        <div class="success" id="success"><div class="ok">✓</div><h3>تم استلام طلبك ✦</h3><p style="color:var(--gray);margin-top:8px">بنتواصل معك قريباً لترتيب العرض والتجربة.</p></div>
+      </form>
+    </div>
+  </div></div></div>
+</section>
+
+<!-- FAQ (آخر شي قبل الفوتر) -->
+<section class="sec" id="faq">
+  <div class="wrap">
+    <div class="sec-head center reveal" style="margin-bottom:36px"><span class="kicker"><span class="tick"></span> أسئلة شائعة</span><h2>قبل ما تقرر — خلّنا نطمنك</h2></div>
+    <div class="faq reveal">
+      <details class="q"><summary>أنا ما أفهم بالأنظمة — صعب عليّ؟</summary><div class="a">لا. سين مصمّم لصاحب المحل لا للمحاسب — واجهة عربية بسيطة تتعلّمها في دقائق، ونساعدك في التهيئة خطوة بخطوة.</div></details>
+      <details class="q"><summary>بياناتي وبيانات عملائي بتكون آمنة؟</summary><div class="a">نعم. بياناتك مشفّرة ومحفوظة وفق نظام حماية البيانات السعودي (PDPL)، ولها نسخ احتياطي تلقائي — ملكك وحدك ولا تُشارك.</div></details>
+      <details class="q"><summary>يشتغل مع فوترة زاتكا؟</summary><div class="a">نعم، الفوترة الإلكترونية المتوافقة مع زاتكا مدمجة من اليوم الأول، بدون أدوات إضافية.</div></details>
+      <details class="q"><summary>كم ياخذ وقت التجهيز والبدء؟</summary><div class="a">التسجيل والبدء يأخذ دقائق، ونرافقك في إدخال بياناتك حتى تشتغل بثقة.</div></details>
+      <details class="q"><summary>وش يصير لو ما عجبني سين؟</summary><div class="a">جرّب سين بضمان — وإذا ما حسّيت الفرق خلال فترة التجربة، لا تكمل وبدون أي التزام.</div></details>
+      <details class="q"><summary>يخدم نوع نشاطي؟</summary><div class="a">سين يخدم التفصيل الرجالي والنسائي، الكنب والستائر، محلات الأقمشة، والملابس المتخصصة — كل نشاط فيه قماش وقياس.</div></details>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <a class="logo" href="#top"><span class="lmark"><img src="assets/logo-swoosh.png" alt="سين" style="filter:brightness(0) invert(1)"></span><span class="lname" style="color:#fff"><svg viewBox="-74 599 2933 1066" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="سين"><path d="M591 1303V1232H699V1303ZM321 1551Q242 1551 178.0 1522.0Q114 1493 77.0 1441.0Q40 1389 40 1322Q40 1301 43.5 1266.5Q47 1232 52.5 1189.5Q58 1147 65.0 1103.5Q72 1060 78 1021L155 1033Q144 1102 135.5 1160.5Q127 1219 122.5 1260.5Q118 1302 118 1322Q118 1368 143.5 1403.5Q169 1439 215.0 1459.5Q261 1480 321 1480Q381 1480 424.0 1461.0Q467 1442 490.0 1408.0Q513 1374 513 1328V803H591V1328Q591 1398 554.5 1448.0Q518 1498 457.0 1524.5Q396 1551 321 1551ZM699 1303V1232Q705 1232 709.0 1234.5Q713 1237 715.0 1241.5Q717 1246 718.0 1252.5Q719 1259 719 1267Q719 1275 718.0 1282.0Q717 1289 715.0 1293.5Q713 1298 709.0 1300.5Q705 1303 699 1303ZM699 1303V1232H949V1303ZM949 1303V1232Q955 1232 959.0 1234.5Q963 1237 965.0 1241.5Q967 1246 968.0 1252.5Q969 1259 969 1267Q969 1275 968.0 1282.0Q967 1289 965.0 1293.5Q963 1298 959.0 1300.5Q955 1303 949 1303ZM699 1303Q693 1303 689.0 1300.5Q685 1298 683.0 1293.5Q681 1289 680.0 1282.0Q679 1275 679 1267Q679 1256 680.5 1248.5Q682 1241 686.5 1236.5Q691 1232 699 1232ZM949 1303V1232H1199V1303ZM1199 1303V1232Q1205 1232 1209.0 1234.5Q1213 1237 1215.0 1241.5Q1217 1246 1218.0 1252.5Q1219 1259 1219 1267Q1219 1275 1218.0 1282.0Q1217 1289 1215.0 1293.5Q1213 1298 1209.0 1300.5Q1205 1303 1199 1303ZM949 1303Q943 1303 939.0 1300.5Q935 1298 933.0 1293.5Q931 1289 930.0 1282.0Q929 1275 929 1267Q929 1256 930.5 1248.5Q932 1241 936.5 1236.5Q941 1232 949 1232ZM1385 1303V1232H1493V1303ZM1493 1303V1232Q1499 1232 1503.0 1234.5Q1507 1237 1509.0 1241.5Q1511 1246 1512.0 1252.5Q1513 1259 1513 1267Q1513 1275 1512.0 1282.0Q1511 1289 1509.0 1293.5Q1507 1298 1503.0 1300.5Q1499 1303 1493 1303ZM1199 1303Q1193 1303 1189.0 1300.5Q1185 1298 1183.0 1293.5Q1181 1289 1180.0 1282.0Q1179 1275 1179 1267Q1179 1256 1180.5 1248.5Q1182 1241 1186.5 1236.5Q1191 1232 1199 1232ZM1199 1303V1232H1343L1307 1261V803H1385V1303ZM1493 1303V1232H1743V1303ZM1743 1303V1232Q1749 1232 1753.0 1234.5Q1757 1237 1759.0 1241.5Q1761 1246 1762.0 1252.5Q1763 1259 1763 1267Q1763 1275 1762.0 1282.0Q1761 1289 1759.0 1293.5Q1757 1298 1753.0 1300.5Q1749 1303 1743 1303ZM1493 1303Q1487 1303 1483.0 1300.5Q1479 1298 1477.0 1293.5Q1475 1289 1474.0 1282.0Q1473 1275 1473 1267Q1473 1256 1474.5 1248.5Q1476 1241 1480.5 1236.5Q1485 1232 1493 1232ZM1743 1303V1232H1993V1303ZM1993 1303V1232Q1999 1232 2003.0 1234.5Q2007 1237 2009.0 1241.5Q2011 1246 2012.0 1252.5Q2013 1259 2013 1267Q2013 1275 2012.0 1282.0Q2011 1289 2009.0 1293.5Q2007 1298 2003.0 1300.5Q1999 1303 1993 1303ZM1743 1303Q1737 1303 1733.0 1300.5Q1729 1298 1727.0 1293.5Q1725 1289 1724.0 1282.0Q1723 1275 1723 1267Q1723 1256 1724.5 1248.5Q1726 1241 1730.5 1236.5Q1735 1232 1743 1232ZM2519 1303Q2485 1303 2452.5 1290.0Q2420 1277 2390 1249L2441 1196Q2464 1215 2482.0 1223.5Q2500 1232 2519 1232H2697L2667 1264V1025Q2667 1007 2663.5 974.0Q2660 941 2653.5 899.5Q2647 858 2638 816L2714 803Q2721 838 2728.0 881.0Q2735 924 2740.0 962.5Q2745 1001 2745 1025V1303ZM1993 1303V1232H2139L2119 1252V903H2196V1303ZM2196 1303V1232H2309Q2343 1232 2360.5 1222.0Q2378 1212 2385.0 1182.0Q2392 1152 2392 1094V853H2470V1094Q2470 1172 2453.5 1218.0Q2437 1264 2402.0 1283.5Q2367 1303 2309 1303ZM1993 1303Q1987 1303 1983.0 1300.5Q1979 1298 1977.0 1293.5Q1975 1289 1974.0 1282.0Q1973 1275 1973 1267Q1973 1256 1974.5 1248.5Q1976 1241 1980.5 1236.5Q1985 1232 1993 1232Z" fill="currentColor" stroke="currentColor" stroke-width="44" stroke-linejoin="round" stroke-linecap="round"/><circle cx="552" cy="803" r="61" fill="currentColor"/><circle cx="1346" cy="803" r="61" fill="currentColor"/><circle cx="2676" cy="803" r="60" fill="currentColor"/><circle cx="2158" cy="903" r="60" fill="currentColor"/><circle cx="2431" cy="853" r="61" fill="currentColor"/><circle cx="317" cy="758" r="52" fill="currentColor"/><circle cx="1278" cy="1438" r="52" fill="currentColor"/><circle cx="1415" cy="1438" r="52" fill="currentColor"/></svg></span></a>
+      <div class="foot-links"><a href="#solution">الحل</a><a href="#industries">لمن سين</a><a href="#faq">أسئلة</a><a href="mailto:info@seentech.io">info@seentech.io</a><a href="#demo">تواصل عبر واتساب</a></div>
+    </div>
+    <div class="copy">© 2026 سين لتقنية المعلومات — Seen · الرياض، المملكة العربية السعودية</div>
+  </div>
+</footer>
+
+<div class="mobile-cta"><a href="/login" target="_parent" class="btn btn-cta">ابدأ الآن مجاناً</a></div>
+
+<script>
+const burger=document.getElementById('burger'),nav=document.getElementById('nav');
+burger&&burger.addEventListener('click',()=>{const o=nav.classList.toggle('open');burger.setAttribute('aria-expanded',o)});
+nav&&nav.querySelectorAll('.nav-links a').forEach(a=>a.addEventListener('click',()=>{nav.classList.remove('open');burger.setAttribute('aria-expanded',false)}));
+const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.14});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+const form=document.getElementById('leadForm');
+form&&form.addEventListener('submit',function(ev){ev.preventDefault();let ok=true;
+  const set=(i,bad)=>{i.closest('.field').classList.toggle('invalid',bad);if(bad)ok=false;};
+  set(form.name,!form.name.value.trim());
+  set(form.phone,!/^05\d{8}$/.test(form.phone.value.trim().replace(/\s/g,'')));
+  set(form.activity,!form.activity.value);
+  if(!ok)return;
+  document.getElementById('formFields').style.display='none';
+  document.getElementById('success').classList.add('show');
+});
+form&&form.querySelectorAll('input,select').forEach(i=>i.addEventListener('input',()=>i.closest('.field').classList.remove('invalid')));
+</script>
+</body>
+</html>

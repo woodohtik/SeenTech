@@ -12,7 +12,9 @@ import {
   Database,
   Users,
   BarChart3,
-  Zap
+  Zap,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { 
   signInWithEmailAndPassword, 
@@ -24,11 +26,13 @@ import { auth } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { logSaaSSecurityEvent, verifySaaSStaff } from '../services/saasSecurityService';
+import { AdminIconInput } from './ui/AdminIconInput';
 
 export default function SaaSLogin() {
   const [step, setStep] = useState<'login' | '2fa'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const otpRefs = [
     React.useRef<HTMLInputElement>(null),
@@ -166,32 +170,37 @@ export default function SaaSLogin() {
               >
                 <div className="space-y-2">
                   <label className="text-xs font-black text-gray-400 uppercase tracking-widest mr-2">البريد الإلكتروني الرسمي</label>
-                  <div className="relative">
-                    <Mail className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                    <input 
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full bg-gray-50 border-2 border-transparent focus:border-indigo-600 rounded-2xl py-4 pr-12 pl-4 font-bold outline-none transition-all"
-                      placeholder="name@seen.system"
-                      required
-                    />
-                  </div>
+                  <AdminIconInput 
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@seen.system"
+                    startIcon={Mail}
+                    required
+                    className="bg-gray-50 focus-within:ring-indigo-600/50 focus-within:border-indigo-600"
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-xs font-black text-gray-400 uppercase tracking-widest mr-2">كلمة المرور</label>
-                  <div className="relative">
-                    <Lock className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                    <input 
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full bg-gray-50 border-2 border-transparent focus:border-indigo-600 rounded-2xl py-4 pr-12 pl-4 font-bold outline-none transition-all"
-                      placeholder="••••••••"
-                      required
-                    />
-                  </div>
+                  <AdminIconInput 
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    startIcon={Lock}
+                    endIcon={
+                      <button 
+                        type="button" 
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="p-1 hover:bg-black/5 rounded-lg transition-colors text-gray-400 hover:text-gray-600"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    }
+                    required
+                    className="bg-gray-50 focus-within:ring-indigo-600/50 focus-within:border-indigo-600"
+                  />
                 </div>
 
                 {error && (
