@@ -261,9 +261,12 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
           isCollapsed && !isMobileMenuOpen ? "justify-center" : "justify-center w-full"
         )}>
           {tenantLogo ? (
-            <div className="flex items-center gap-3 w-full">
-              <img src={tenantLogo} alt="Logo" className="h-10 md:h-12 lg:h-14 w-auto rounded-xl object-cover shrink-0 shadow-sm" />
-              {(!isCollapsed || isMobileMenuOpen) && <h1 className="text-xl font-bold text-content truncate">{tenantName}</h1>}
+            <div className="flex items-center justify-center gap-3 w-full">
+              <img src={tenantLogo} alt="Logo" className={cn(
+                "rounded-xl object-cover shrink-0 shadow-sm transition-all duration-300",
+                (isCollapsed && !isMobileMenuOpen) ? "w-10 h-10" : "w-[150px] h-[80px]"
+              )} />
+              {(!isCollapsed || isMobileMenuOpen) && <h1 className="text-xl font-bold text-content truncate hidden">{tenantName}</h1>}
             </div>
           ) : (
             <div className="flex justify-center items-center py-1 w-full overflow-hidden">
@@ -271,8 +274,8 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
                 src="/Logo.svg" 
                 alt="Seen Logo" 
                 className={cn(
-                  "w-auto object-contain shrink-0 transition-all duration-300",
-                  (isCollapsed && !isMobileMenuOpen) ? "h-5 max-w-[24px]" : "h-7 lg:h-8"
+                  "object-contain shrink-0 transition-all duration-300",
+                  (isCollapsed && !isMobileMenuOpen) ? "h-5 max-w-[24px] w-auto" : "w-[150px] h-[80px]"
                 )} 
               />
             </div>

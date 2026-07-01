@@ -11,6 +11,7 @@ import { generateZatcaQR } from '../services/zatcaService';
 import { useTranslation } from 'react-i18next';
 import StandardTaxInvoice from './printing/TaxInvoice';
 import SimplifiedTaxInvoice from './printing/SimplifiedTaxInvoice';
+import { downloadInvoicePDF, shareInvoiceAsPDFFile } from '../utils/pdfGenerator';
 
 export default function TaxInvoices({ tenantId }: { tenantId: string }) {
   const { t, i18n } = useTranslation();
@@ -221,7 +222,6 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
 
   const handleDownloadPDF = async () => {
     try {
-      const { downloadInvoicePDF } = await import('../utils/pdfGenerator');
       await downloadInvoicePDF('print-area', `Invoice-${order.invoiceNumber || order.id}.pdf`);
     } catch (e) {
       console.error(e);
@@ -231,7 +231,6 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
   const handleShareWhatsApp = async () => {
     const text = `السلام عليكم ورحمة الله وبركاته،\nمرفق الفاتورة الضريبية الصادرة من المتجر:\nرقم الفاتورة: #${order.invoiceNumber || order.id}\nالإجمالي شامل الضريبة: ${totalIncVat.toFixed(2)} ر.س\nشاكرين ومقدرين لكم تواصلكم معنا.`;
     try {
-      const { shareInvoiceAsPDFFile } = await import('../utils/pdfGenerator');
       await shareInvoiceAsPDFFile('print-area', `Invoice-${order.invoiceNumber || order.id}.pdf`, text);
     } catch (e) {
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');

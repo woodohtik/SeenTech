@@ -40,7 +40,7 @@ export default function Referral({ tenantId }: { tenantId: string }) {
   useEffect(() => { if (tenantId) load(); /* eslint-disable-next-line */ }, [tenantId]);
 
   function copy() {
-    navigator.clipboard?.writeText(link).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1600); });
+    navigator.clipboard?.writeText(link).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1600); }).catch(() => {});
   }
   function shareWhatsApp() {
     const msg = `جرّب «سين» — نظام إدارة محلات الخياطة. سجّل من رابطي: ${link}`;

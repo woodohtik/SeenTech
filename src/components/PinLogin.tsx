@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Shield, Delete, User, Users, Lock, AlertCircle, LogOut, CheckCircle2, Loader2 } from 'lucide-react';
+import { signOut } from 'firebase/auth';
 import { supabase } from '../lib/supabase/client';
 import { auth } from '../lib/firebase';
 import { Staff } from '../types';
@@ -365,7 +366,7 @@ export default function PinLogin({ tenantId, onLogin }: PinLoginProps) {
                     onClick={async () => {
                       if (auth) {
                         try {
-                          await auth.signOut();
+                          await signOut(auth);
                         } catch (err) {
                           console.error("Error signing out from PIN screen:", err);
                         }

@@ -5,7 +5,8 @@ import {
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
-  onAuthStateChanged
+  onAuthStateChanged,
+  signOut
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { supabase, setSupabaseAuthToken } from '../lib/supabase/client';
@@ -841,7 +842,7 @@ export default function Login() {
                 </p>
                 <button 
                   onClick={() => {
-                    auth.signOut();
+                    signOut(auth);
                     setView('login');
                   }}
                   className="flex items-center justify-center gap-2 text-brand font-bold hover:underline mx-auto"

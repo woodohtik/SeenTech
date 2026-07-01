@@ -39,16 +39,16 @@ import { useTranslation } from 'react-i18next';
 import DashboardGridCard from './DashboardGridCard';
 import * as XLSX from 'xlsx';
 import { 
-  AreaChart, 
+  ComposedChart,
   Area, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  BarChart,
   Bar,
-  Cell
+  Cell,
+  Legend
 } from 'recharts';
 
 interface DashboardProps {
@@ -473,7 +473,8 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             date: revenueRange > 7 
               ? new Date(date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK' : 'en-US'), { day: 'numeric', month: 'short' })
               : new Date(date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK' : 'en-US'), { weekday: 'short' }),
-            revenue: dayRev
+            revenue: dayRev,
+            ordersCount: dayOrders.length
           };
         });
         setChartData(dailyRevenue);
@@ -1105,7 +1106,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                 </div>
               )}
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <ComposedChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="var(--brand)" stopOpacity={0.3}/>
@@ -1121,11 +1122,21 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                     dy={10}
                   />
                   <YAxis 
+                    yAxisId="left"
                     axisLine={false} 
                     tickLine={false} 
                     tick={{ fill: 'var(--content-muted)', fontSize: 12, fontWeight: 600 }}
                     tickFormatter={(value) => `${value}`}
                     dx={-10}
+                  />
+                  <YAxis 
+                    yAxisId="right"
+                    orientation="right"
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: 'var(--content-muted)', fontSize: 12, fontWeight: 600 }}
+                    tickFormatter={(value) => `${value}`}
+                    dx={10}
                   />
                   <Tooltip 
                     content={({ active, payload, label }) => {
@@ -1133,12 +1144,15 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                         return (
                           <div className="bg-surface p-4 rounded-2xl shadow-2xl border border-border animate-in fade-in zoom-in duration-200">
                             <p className="text-[10px] font-black text-content-muted uppercase mb-1">{label}</p>
-                            <p className="text-lg font-black text-brand">
-                              <PriceDisplay amount={payload[0].value as number} />
-                            </p>
-                            <div className="mt-2 pt-2 border-t border-border flex items-center gap-2">
-                              <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
-                              <span className="text-[9px] font-bold text-content-muted">{t('common.live_activity', 'نشاط مباشر')}</span>
+                            <div className="space-y-1">
+                              <p className="text-lg font-black text-brand flex items-center justify-between gap-4">
+                                <span>{t('dashboard.revenue', 'المبيعات')}</span>
+                                <PriceDisplay amount={payload[0]?.value as number || 0} />
+                              </p>
+                              <p className="text-sm font-bold text-info flex items-center justify-between gap-4">
+                                <span>{t('dashboard.orders', 'الطلبات')}</span>
+                                <span>{payload[1]?.value as number || 0}</span>
+                              </p>
                             </div>
                           </div>
                         );
@@ -1146,7 +1160,10 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                       return null;
                     }}
                   />
+                  <Legend verticalAlign="top" height={36} />
                   <Area 
+                    yAxisId="left"
+                    name={t('dashboard.revenue', 'المبيعات')}
                     type="monotone" 
                     dataKey="revenue" 
                     stroke="var(--brand)" 
@@ -1155,7 +1172,15 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                     fill="url(#colorRevenue)"
                     activeDot={{ r: 8, strokeWidth: 0, fill: 'var(--brand)' }}
                   />
-                </AreaChart>
+                  <Bar 
+                    yAxisId="right"
+                    name={t('dashboard.orders', 'الطلبات الجديدة')}
+                    dataKey="ordersCount" 
+                    fill="var(--info)" 
+                    radius={[4, 4, 0, 0]} 
+                    barSize={20}
+                  />
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
           </div>

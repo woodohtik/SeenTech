@@ -21,7 +21,7 @@ const TrackRoute = () => {
 const LandingRedirect = () => {
   return <LandingPage />;
 };
-import { onIdTokenChanged, User } from 'firebase/auth';
+import { onIdTokenChanged, User, signOut } from 'firebase/auth';
 import { auth } from './lib/firebase';
 import { logError } from './lib/logger';
 import { supabase, setSupabaseAuthToken } from './lib/supabase/client';
@@ -212,8 +212,6 @@ function AppContent() {
             } else {
               console.log("[Supabase Auth Sync] Super Admin auto-provisioned successfully in Supabase DB!");
             }
-          }).catch(err => {
-            console.error("[Supabase Auth Sync] Catch: Error auto-provisioning super admin:", err);
           });
 
           const saState = {
@@ -469,7 +467,7 @@ function AppContent() {
             </a>
             
             <button 
-              onClick={() => { auth.signOut(); window.location.href = '/login'; }}
+              onClick={() => { signOut(auth); window.location.href = '/login'; }}
               className="w-full bg-slate-850 hover:bg-slate-800 text-slate-200 py-4 rounded-2xl font-bold transition-all border border-slate-700/30 flex items-center justify-center gap-2"
             >
               <LogOut size={18} />
@@ -601,7 +599,7 @@ function AppContent() {
                           </button>
                           
                           <button 
-                            onClick={() => { auth.signOut(); window.location.href = '/login'; }}
+                            onClick={() => { signOut(auth); window.location.href = '/login'; }}
                             className="w-full bg-gray-50 text-gray-600 py-4 rounded-2xl font-bold hover:bg-gray-100 transition-all border border-gray-100 flex items-center justify-center gap-2"
                           >
                             <LogOut size={18} />

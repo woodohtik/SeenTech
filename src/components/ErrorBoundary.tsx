@@ -38,7 +38,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
   handlePromiseRejection = (event: PromiseRejectionEvent) => {
     event.preventDefault();
     const error = event.reason instanceof Error ? event.reason : new Error(String(event.reason));
-    logError(error, { source: 'Unhandled Promise Rejection' });
+    let reasonStr = ""; try { reasonStr = event.reason instanceof Error ? event.reason.stack || event.reason.message : JSON.stringify(event.reason); } catch(e) { reasonStr = String(event.reason); } logError(error, { source: 'Unhandled Promise Rejection', detail: reasonStr });
   };
 
   handleGlobalError = (event: ErrorEvent) => {
