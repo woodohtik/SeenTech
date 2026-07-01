@@ -41,6 +41,7 @@ import { UserRole, Staff as StaffType, PermissionKey } from '../types';
 import { usePermissions } from '../hooks/usePermissions';
 import Branding from './Branding';
 import UserPreferencesMenu from './UserPreferencesMenu';
+import SupportConsentModal from './SupportConsentModal';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -113,7 +114,12 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
   const isSupportTech = role === 'support_tech';
   const isBillingAdmin = role === 'billing_admin';
   const isSaaSStaff = isSuperAdmin || isSupportTech || isBillingAdmin;
-  const isOwner = role === 'owner';
+
+  // When impersonating, they want to see the tenant UI
+  const isActingAsSaaS = isSaaSStaff && !impersonationTenantId;
+  const isImpersonatingSaaS = isSaaSStaff && !!impersonationTenantId;
+  
+  const isOwner = role === 'owner' || isImpersonatingSaaS;
   const isCashier = role === 'cashier';
   const isTailor = role === 'tailor';
 
@@ -123,13 +129,13 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
 
   const navItems = [
     // SaaS Level Navigation
-    ...(isSaaSStaff ? [
+    ...(isActingAsSaaS ? [
       { to: '/admin/dashboard', icon: LayoutDashboard, label: t('sidebar.saas_dashboard'), roles: ['super_admin', 'support_tech', 'billing_admin'] },
       { to: '/admin/tailors', icon: Users, label: t('sidebar.manage_subscribers'), roles: ['super_admin', 'support_tech'] }
     ] : []),
     
     // Tenant Level Navigation
-    ...(!isSaaSStaff ? [
+    ...(!isActingAsSaaS ? [
       { to: '/dashboard', icon: Home, label: t('common.dashboard'), permission: 'dashboard.view' },
       { to: '/sales', icon: Monitor, label: t('common.sales', 'المبيعات'), permissions: ['orders.view', 'shifts.manage', 'orders.create'] },
       { to: '/customers', icon: UserCircle, label: t('common.customers'), permission: 'customers.view' },
@@ -141,13 +147,14 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
     
     { to: '/settings', icon: Settings, label: t('common.settings'), permission: 'settings.view' },
   ].filter(item => {
-    if (isSaaSStaff) return !item.roles || item.roles.includes(effectiveRole as string);
+    if (isActingAsSaaS) return !item.roles || item.roles.includes(effectiveRole as string);
+    if (isImpersonatingSaaS) return true; // Give super admin access to everything when impersonating
     if (isOwner) return true;
     if (effectiveRole === 'admin' || effectiveRole === 'manager') return true; // Manager has full access to tenant items
     if (item.roles) return item.roles.includes(effectiveRole as string);
     if (item.permissions) return item.permissions.some(p => hasPermission(p as PermissionKey));
     if (item.permission) return hasPermission(item.permission as PermissionKey);
-    return true;
+    return false;
   });
 
   return (
@@ -168,7 +175,30 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
             <div className="h-4 w-px bg-white/30 mx-2" />
             <span className="text-xs font-bold">المشترك الحالي: {tenantName}</span>
             <button 
-              onClick={() => {
+              onClick={async () => {
+                try {
+                  const { data } = await supabase
+                    .from('support_sessions')
+                    .select('id, started_at')
+                    .eq('tenant_id', impersonationTenantId!)
+                    .is('ended_at', null)
+                    .order('started_at', { ascending: false })
+                    .limit(1)
+                    .single();
+                  
+                  if (data) {
+                    const started = new Date(data.started_at);
+                    const ended = new Date();
+                    const durationMins = Math.ceil((ended.getTime() - started.getTime()) / 60000);
+                    
+                    await supabase
+                      .from('support_sessions')
+                      .update({ ended_at: ended.toISOString(), duration_minutes: durationMins })
+                      .eq('id', data.id);
+                  }
+                } catch (e) {
+                  console.error('Error ending support session', e);
+                }
                 setImpersonationTenantId(null);
                 window.location.href = '/admin/dashboard';
               }}
@@ -441,6 +471,8 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
           <Branding className="mt-auto pt-8 pb-4 shrink-0 transition-opacity hover:opacity-100 opacity-90" />
         </main>
       </div>
+
+      {tenantId && <SupportConsentModal tenantId={tenantId} />}
     </div>
   );
 }

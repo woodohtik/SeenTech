@@ -52,6 +52,7 @@ export interface TaxInvoiceProps {
     grandTotal: number;
   };
   qrCodeBase64?: string;
+  orderId?: string;
   onPrint?: () => void;
   hidePrintButton?: boolean;
 }
@@ -67,6 +68,7 @@ export default function TaxInvoice({
   items,
   totals,
   qrCodeBase64,
+  orderId,
   onPrint,
   hidePrintButton = false,
 }: TaxInvoiceProps) {
@@ -313,13 +315,26 @@ export default function TaxInvoice({
         {/* Totals Breakdown Block + ZATCA QR Code */}
         <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-8">
           
-          {/* Compliant ZATCA QR Block (TLV Based) */}
-          <div className="w-full md:w-auto flex flex-col items-center p-4 bg-slate-50 border border-slate-200 rounded-2xl shadow-sm text-center">
-            <h4 className="text-xs font-black text-slate-800 mb-2">رمز الاستجابة السريعة لهيئة الزكاة والضريبة والجمارك</h4>
-            <p className="text-[8px] text-slate-400 font-sans font-bold uppercase mb-3">ZATCA Compliant QR Code Code</p>
-            <div className="bg-white p-3 rounded-xl border border-slate-200">
-              <QRCodeSVG value={finalQr} size={135} level="M" />
+          <div className="flex gap-4 w-full md:w-auto">
+            {/* Compliant ZATCA QR Block (TLV Based) */}
+            <div className="flex flex-col items-center p-4 bg-slate-50 border border-slate-200 rounded-2xl shadow-sm text-center">
+              <h4 className="text-[10px] font-black text-slate-800 mb-1">هيئة الزكاة والضريبة والجمارك</h4>
+              <p className="text-[8px] text-slate-400 font-sans font-bold uppercase mb-3">ZATCA Compliant</p>
+              <div className="bg-white p-3 rounded-xl border border-slate-200">
+                <QRCodeSVG value={finalQr} size={110} level="M" />
+              </div>
             </div>
+
+            {/* Public Digital Invoice QR Code */}
+            {orderId && (
+              <div className="flex flex-col items-center p-4 bg-slate-50 border border-slate-200 rounded-2xl shadow-sm text-center">
+                <h4 className="text-[10px] font-black text-slate-800 mb-1">الوصول الرقمي للفاتورة</h4>
+                <p className="text-[8px] text-slate-400 font-sans font-bold uppercase mb-3">Scan to view digital invoice</p>
+                <div className="bg-white p-3 rounded-xl border border-slate-200">
+                  <QRCodeSVG value={`${window.location.origin}/p/inv/${orderId}`} size={110} level="M" />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Bilingual Totals Grid */}

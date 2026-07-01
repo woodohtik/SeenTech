@@ -1,9 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
 @theme {
-  --font-sans: "Tajawal", "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Tajawal", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Tajawal", serif;
   --font-mono: "JetBrains Mono", monospace;
 
@@ -112,6 +111,11 @@ body {
   background-color: var(--surface);
   color: var(--content);
   transition: background-color 0.3s ease, color 0.3s ease;
+  font-family: var(--font-sans);
+}
+
+input, textarea, select, button {
+  font-family: inherit;
 }
 
 /* Base Select Styles - Modern & High-end */
@@ -385,3 +389,34 @@ table td {
 
 
 
+
+/* ============================================================
+   معيار سين الموحّد للمحاذاة والأحجام (الخيار 2 — طبقة أساس آمنة)
+   تنطبق على كل النماذج تلقائياً كحدّ أدنى، ولا تكسر المكوّنات
+   التي تحدّد أبعادها صراحةً (Tailwind utilities أعلى تخصيصاً).
+   ============================================================ */
+@layer base {
+  /* ارتفاع موحّد لعناصر الإدخال = هدف لمس ≥44px (مهم للجمهور 40+) — يرفع الصغير ولا يقلّص الكبير */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+  select,
+  textarea {
+    min-height: 44px;
+  }
+  textarea { min-height: 88px; }
+
+  /* محاذاة RTL متّسقة افتراضياً لعناصر الإدخال */
+  [dir="rtl"] input,
+  [dir="rtl"] textarea,
+  [dir="rtl"] select { text-align: right; }
+  [dir="ltr"] input,
+  [dir="ltr"] textarea { text-align: left; }
+
+  /* حلقة تركيز متّسقة للوصولية (لا تظهر إلا بالكيبورد) */
+  :focus-visible { outline: 2px solid var(--color-brand, #34BBED); outline-offset: 2px; }
+}
+
+/* فئات اختيارية موحّدة — يطبّقها الفريق تدريجياً على المكوّنات لتوحيد الشكل */
+.seen-field { width: 100%; min-height: 44px; }
+@media (max-width: 640px) {
+  .seen-btn-primary { width: 100%; }   /* الأزرار الأساسية بعرض كامل على الجوال */
+}

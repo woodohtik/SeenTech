@@ -27,13 +27,14 @@ const CORE_FEATURES = [
   'نقطة بيع متخصصة (POS)', 'قياسات وأوامر تفصيل', 'فوترة زاتكا معتمدة',
   'إدارة مخزون وخصم تلقائي', 'تقارير ولوحة تحكم', 'دعم فني',
 ];
-const PRO_FEATURES = [
-  'كل مزايا الأساسي', 'تقارير الذكاء الاصطناعي', 'فرع إضافي',
-  'إشعارات واتساب للعملاء', 'تطبيق بعلامتك', 'أولوية الدعم',
+const FREE_FEATURES = [
+  'تجربة جميع المزايا لمدة ١٤ يوم', 'عدد لا محدود من الفواتير', 
+  'إدارة عملاء متكاملة', 'تقارير أساسية', 'بدون ربط بطاقة'
 ];
 
 export default function Subscribe({ onCheckout, onContactSales, logoSrc = '/Logo.svg' }: Props) {
   const [hover, setHover] = useState(false);
+  const [hoverFree, setHoverFree] = useState(false);
 
   return (
     <div dir="rtl" style={st.page}>
@@ -53,18 +54,38 @@ export default function Subscribe({ onCheckout, onContactSales, logoSrc = '/Logo
           <span style={st.brandText}>سين<span style={st.brandPos}>POS</span></span>
         </div>
         <h1 style={st.title}>اختر باقتك وابدأ بوضوح</h1>
-        <p style={st.sub}>باقات سنوية، بدون رسوم خفية — وتقدر تترقّى في أي وقت.</p>
+        <p style={st.sub}>باقات واضحة تلبي احتياجات محلك من البداية وبدون رسوم خفية.</p>
       </header>
 
       <div style={st.grid}>
-        {/* الأساسي — فعّالة */}
-        <section style={{ ...st.card, ...st.cardCore }}>
-          <div style={st.ribbon}>عرض الإطلاق</div>
-          <h2 style={st.planName}>سين الأساسي</h2>
-          <p style={st.planDesc}>كل ما يحتاجه محلك ليشتغل رقمياً من اليوم الأول.</p>
+        {/* الباقة المجانية */}
+        <section style={{ ...st.card, ...st.cardEnt }}>
+          <h2 style={st.planName}>الباقة المجانية</h2>
+          <p style={st.planDesc}>جرّب سين وجميع الأدوات قبل ما تدفع أي ريال.</p>
           <div style={st.priceRow}>
-            <span style={st.strike}>1,800</span>
-            <span style={st.price}>1,000</span>
+            <span style={st.price}>0</span>
+            <span style={st.cur}>﷼ / ١٤ يوم</span>
+          </div>
+          <ul style={st.feats}>
+            {FREE_FEATURES.map((f) => (
+              <li key={f} style={st.feat}><Check /> <span>{f}</span></li>
+            ))}
+          </ul>
+          <button 
+            onMouseEnter={() => setHoverFree(true)} onMouseLeave={() => setHoverFree(false)}
+            onClick={() => onCheckout?.('free', 0)} 
+            style={{ ...st.ghost, ...(hoverFree ? { background: '#EDF2F7' } : {}) }}>
+            ابدأ التجربة المجانية
+          </button>
+        </section>
+
+        {/* سين الأساسية — فعّالة */}
+        <section style={{ ...st.card, ...st.cardCore }}>
+          <div style={st.ribbon}>الأكثر اختياراً</div>
+          <h2 style={st.planName}>سين الأساسية</h2>
+          <p style={st.planDesc}>كل ما يحتاجه محلك ليشتغل رقمياً باشتراك سنوي واضح.</p>
+          <div style={st.priceRow}>
+            <span style={st.price}>599</span>
             <span style={st.cur}>﷼ / سنة</span>
           </div>
           <ul style={st.feats}>
@@ -74,38 +95,11 @@ export default function Subscribe({ onCheckout, onContactSales, logoSrc = '/Logo
           </ul>
           <button
             onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-            onClick={() => onCheckout?.('core', 1000)}
+            onClick={() => onCheckout?.('basic', 599)}
             style={{ ...st.cta, ...(hover ? st.ctaHover : {}) }}>
             اشترك الآن
           </button>
-          <p style={st.guarantee}>ضمان استرجاع خلال 14 يوم</p>
-        </section>
-
-        {/* الاحترافية — قريباً (مغبّشة) */}
-        <section style={{ ...st.card, ...st.cardPro }}>
-          <div style={st.proInner} aria-hidden>
-            <h2 style={st.planName}>سين الاحترافية</h2>
-            <p style={st.planDesc}>قوة إضافية للمحلات اللي تكبر بسرعة.</p>
-            <div style={st.priceRow}><span style={st.price}>2,400</span><span style={st.cur}>﷼ / سنة</span></div>
-            <ul style={st.feats}>
-              {PRO_FEATURES.map((f) => (<li key={f} style={st.feat}><Check /> <span>{f}</span></li>))}
-            </ul>
-          </div>
-          <div style={st.frost}>
-            <span style={st.soon}>قريباً</span>
-            <span style={st.soonSub}>الباقة الاحترافية جايّة لكم قريباً</span>
-          </div>
-        </section>
-
-        {/* السلاسل — مبيعات */}
-        <section style={{ ...st.card, ...st.cardEnt }}>
-          <h2 style={st.planName}>السلاسل والمؤسسات</h2>
-          <p style={st.planDesc}>فروع متعددة، صلاحيات متقدّمة، وتسعير حسب حجمك.</p>
-          <ul style={st.feats}>
-            {['فروع متعددة وإدارة مركزية', 'صلاحيات وأدوار متقدّمة', 'تطبيق بعلامتك (White-Label)', 'مدير حساب مخصّص']
-              .map((f) => (<li key={f} style={st.feat}><Check /> <span>{f}</span></li>))}
-          </ul>
-          <button onClick={onContactSales} style={st.ghost}>تواصل مع المبيعات</button>
+          <p style={st.guarantee}>اشتراك سنوي شامل (شامل التحديثات)</p>
         </section>
       </div>
 

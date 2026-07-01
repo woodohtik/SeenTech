@@ -8,6 +8,7 @@ import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
 import { SmartSelect } from './ui/SmartSelect';
 import { useTranslation } from 'react-i18next';
+import { adjustStock } from '../services/inventoryService';
 
 export default function PurchaseReturns({ 
   tenantId, 
@@ -102,15 +103,19 @@ export default function PurchaseReturns({
 
       // 3. Deduct Inventory
       for (const item of items) {
-        const { error: stockError } = await supabase.rpc('adjust_stock', {
-          p_branch_id: 'main',
-          p_item_id: item.itemId,
-          p_quantity: -item.baseQuantity,
-          p_reason: `مرتجع مشتريات - ${reason}`,
-          p_type: 'out',
-          p_staff_id: null
-        });
-        if (stockError) console.error('Error updating stock for return:', stockError);
+        try {
+          await adjustStock({
+            branchId: 'main',
+            itemId: item.itemId,
+            quantity: -item.baseQuantity,
+            reason: `مرتجع مشتريات - ${reason}`,
+            type: 'out',
+            staffId: null,
+            tenantId
+          });
+        } catch (stockError) {
+          console.error('Error updating stock for return:', stockError);
+        }
       }
 
       setIsModalOpen(false);

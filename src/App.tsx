@@ -33,6 +33,7 @@ import Customers from './components/Customers';
 import Orders from './components/Orders';
 import Settings from './components/Settings';
 import Sales from './components/Sales';
+import PublicInvoice from './pages/PublicInvoice';
 import Login from './components/Login';
 import { PermissionGuard } from './components/PermissionGuard';
 import AdminTailors from './components/AdminTailors';
@@ -62,6 +63,10 @@ import SaaSLayout from './components/SaaSLayout';
 import SaaSReports from './components/SaaSReports';
 import SaaSAuditLogs from './components/SaaSAuditLogs';
 import SaaSSystemSettings from './components/SaaSSystemSettings';
+import SaaSWithdrawals from './components/SaaSWithdrawals';
+import SaaSTeamManagement from './components/SaaSTeamManagement';
+import TenantAnalyticsDashboard from './components/TenantAnalyticsDashboard';
+import RoleGuard from './components/RoleGuard';
 
 import Suppliers from './components/Suppliers';
 
@@ -75,6 +80,23 @@ function AppContent() {
 
   // State sync trigger for seamless boarding
   const [syncTrigger, setSyncTrigger] = useState(0);
+
+  // Inject mock staff for impersonation to prevent null crashes
+  useEffect(() => {
+    if (impersonationTenantId && !currentStaff) {
+      setCurrentStaff({
+        id: 'super_admin_mock_id',
+        name: 'الدعم الفني',
+        email: 'support@super.com',
+        role: 'owner',
+        tenantId: impersonationTenantId,
+        permissions: {},
+        branchId: 'all'
+      } as any);
+    } else if (!impersonationTenantId && currentStaff?.id === 'super_admin_mock_id') {
+      setCurrentStaff(null);
+    }
+  }, [impersonationTenantId, currentStaff, setCurrentStaff]);
 
   const [isLocked, setIsLocked] = useState<boolean>(() => {
     return localStorage.getItem('pos_locked') === 'true';
@@ -190,6 +212,8 @@ function AppContent() {
             } else {
               console.log("[Supabase Auth Sync] Super Admin auto-provisioned successfully in Supabase DB!");
             }
+          }).catch(err => {
+            console.error("[Supabase Auth Sync] Catch: Error auto-provisioning super admin:", err);
           });
 
           const saState = {
@@ -363,7 +387,11 @@ function AppContent() {
   const isTenantOwner = userRole === 'owner' || userRole === 'admin';
   
   // Security Checks
-  const isSaaSStaff = userRole === 'super_admin' || userRole === 'support_tech' || userRole === 'billing_admin';
+  const isSaaSStaff = userRole === 'super_admin' || 
+                      (userRole === 'owner' && (tenantId === 'saas' || tenantId === 'super_admin')) || 
+                      userRole === 'support_tech' || 
+                      userRole === 'billing_admin' || 
+                      userRole === 'sales';
   const effectiveTenantId = (isSaaSStaff && impersonationTenantId) ? impersonationTenantId : tenantId;
   
   const is2FAVerified = sessionStorage.getItem('saas_2fa_verified') === 'true' || 
@@ -477,6 +505,8 @@ function AppContent() {
       <AnimatePresence mode="wait">
         <Routes>
           {/* Public order tracking (no auth) */}
+          {/* Public Digital Invoice Route */}
+          <Route path="/p/inv/:id" element={<PublicInvoice />} />
           <Route path="/track/:token" element={<TrackRoute />} />
           {/* SaaS Admin Portal */}
           <Route 
@@ -487,9 +517,36 @@ function AppContent() {
                   <Routes>
                     <Route path="/dashboard" element={<SuperAdminDashboard />} />
                     <Route path="/tailors" element={<AdminTailors />} />
-                    <Route path="/reports" element={<SaaSReports />} />
-                    <Route path="/audit" element={<SaaSAuditLogs />} />
-                    <Route path="/system" element={<SaaSSystemSettings />} />
+                    <Route path="/tailors/:tenantId/analytics" element={
+                      <RoleGuard allowedRoles={['super_admin', 'billing_admin', 'sales']}>
+                        <TenantAnalyticsDashboard />
+                      </RoleGuard>
+                    } />
+                    <Route path="/reports" element={
+                      <RoleGuard allowedRoles={['super_admin', 'billing_admin', 'sales']}>
+                        <SaaSReports />
+                      </RoleGuard>
+                    } />
+                    <Route path="/withdrawals" element={
+                      <RoleGuard allowedRoles={['super_admin', 'billing_admin']}>
+                        <SaaSWithdrawals />
+                      </RoleGuard>
+                    } />
+                    <Route path="/audit" element={
+                      <RoleGuard allowedRoles={['super_admin']}>
+                        <SaaSAuditLogs />
+                      </RoleGuard>
+                    } />
+                    <Route path="/system" element={
+                      <RoleGuard allowedRoles={['super_admin']}>
+                        <SaaSSystemSettings />
+                      </RoleGuard>
+                    } />
+                    <Route path="/team" element={
+                      <RoleGuard allowedRoles={['super_admin']}>
+                        <SaaSTeamManagement />
+                      </RoleGuard>
+                    } />
                     <Route path="*" element={<Navigate to="/admin/dashboard" />} />
                   </Routes>
                 </SaaSLayout>

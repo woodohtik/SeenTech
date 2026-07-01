@@ -345,6 +345,7 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
               items={formattedItems}
               totals={totals}
               qrCodeBase64={qrCodeBase64}
+              orderId={order.id}
               hidePrintButton={true}
             />
           ) : (
@@ -358,6 +359,7 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
               items={formattedItems}
               totals={totals}
               qrCodeBase64={qrCodeBase64}
+              orderId={order.id}
               hidePrintButton={true}
             />
           )}

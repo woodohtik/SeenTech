@@ -2,11 +2,15 @@ import { useState, useEffect } from 'react';
 import { Staff, PermissionsMap, PermissionKey } from '../types';
 import { getEffectivePermissions, logUnauthorizedAccess } from '../services/permissionService';
 import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export function usePermissions(staff: Staff | null) {
   const [permissions, setPermissions] = useState<PermissionsMap | null>(null);
   const [loading, setLoading] = useState(true);
   const { warning } = useToast();
+  const { dbUser } = useAuth();
+
+  const isGlobalSuperAdmin = dbUser?.role === 'super_admin';
 
   useEffect(() => {
     if (!staff) {
@@ -30,6 +34,7 @@ export function usePermissions(staff: Staff | null) {
   }, [staff]);
 
   const hasPermission = (key: PermissionKey): boolean => {
+    if (isGlobalSuperAdmin) return true;
     if (!staff) return false;
     if (staff.role === 'owner' || staff.role === 'super_admin') return true;
     if (!permissions) return false;

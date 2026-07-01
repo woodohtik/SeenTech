@@ -8,12 +8,13 @@ export type TenantStatus         = 'active' | 'inactive' | 'pending';
 export type InventoryStrategy    = 'centralized' | 'decentralized';
 export type LayoutMode           = 'sidebar' | 'grid';
 
-export type SaasUserRole         = 'super_admin' | 'support_tech' | 'billing_admin';
+export type SaasUserRole         = 'super_admin' | 'support_tech' | 'billing_admin' | 'sales';
 
 export type UserRole =
     | 'super_admin'
     | 'support_tech'
     | 'billing_admin'
+    | 'sales'
     | 'owner'
     | 'admin'
     | 'manager'
@@ -219,6 +220,31 @@ export interface Tenant {
     currency_symbol?: string | null;
     created_at: Timestamptz;
     updated_at: Timestamptz;
+}
+
+export type ConsentStatus = 'pending' | 'approved' | 'rejected' | 'expired';
+export type SupportAccessType = 'explicit' | 'stealth';
+
+export interface SupportAccessRequest {
+    id: string;
+    tenant_id: string;
+    saas_user_id: string;
+    saas_user_name: string;
+    status: ConsentStatus;
+    requested_at: string;
+    expires_at: string;
+    responded_at: string | null;
+}
+
+export interface SupportSession {
+    id: string;
+    tenant_id: string;
+    saas_user_id: string;
+    saas_user_name: string;
+    access_type: SupportAccessType;
+    started_at: string;
+    ended_at: string | null;
+    duration_minutes: number | null;
 }
 
 export interface SaasUser {

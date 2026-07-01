@@ -20,6 +20,12 @@ export default function SaaSWithdrawals() {
     setLoading(true);
     try { setRows(await listPendingWithdrawals()); } finally { setLoading(false); }
   }
+  const [toast, setToast] = useState<{message: string, type: 'success'|'error'} | null>(null);
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+  
   useEffect(() => { load(); }, []);
 
   async function act(id: string, approve: boolean) {

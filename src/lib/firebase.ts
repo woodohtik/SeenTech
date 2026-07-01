@@ -8,7 +8,7 @@ import {
   browserPopupRedirectResolver
 } from 'firebase/auth';
 
-const finalConfig = {
+export const finalConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY?.trim() || '',
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN?.trim() || '',
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID?.trim() || '',

@@ -17,6 +17,7 @@ import { IconInput } from './ui/IconInput';
 import WarehouseManagement from './Inventory/WarehouseManagement';
 import Staff from './Staff';
 import InvoiceLayoutSettings from './InvoiceLayoutSettings';
+import TenantSupportHistory from './TenantSupportHistory';
 
 import Branding from './Branding';
 
@@ -24,7 +25,7 @@ interface SettingsProps {
   tenantId: string;
 }
 
-type TabType = 'profile' | 'appearance' | 'invoice' | 'tax' | 'branches' | 'staff' | 'whatsapp' | 'billing' | 'notifications' | 'data';
+type TabType = 'profile' | 'appearance' | 'invoice' | 'tax' | 'branches' | 'staff' | 'whatsapp' | 'billing' | 'support' | 'notifications' | 'data';
 
 export default function Settings({ tenantId }: SettingsProps) {
   const [loading, setLoading] = useState(true);
@@ -213,6 +214,7 @@ export default function Settings({ tenantId }: SettingsProps) {
     
     { id: 'staff', label: 'الموظفين والصلاحيات', icon: Shield, visible: hasPermission('staff.manage'), group: 'admin' },
     { id: 'billing', label: 'الاشتراك والمدفوعات', icon: CreditCard, visible: canViewBilling, group: 'admin' },
+    { id: 'support', label: 'الدعم الفني والتدخل', icon: ShieldCheck, visible: currentStaff?.role === 'owner' || currentStaff?.role === 'admin', group: 'admin' },
     { id: 'data', label: 'إدارة البيانات', icon: Database, visible: currentStaff?.role === 'owner' || currentStaff?.role === 'super_admin', group: 'admin' },
   ];
 
@@ -765,6 +767,10 @@ export default function Settings({ tenantId }: SettingsProps) {
                       ))}
                     </div>
                 </div>
+              )}
+
+              {activeTab === 'support' && (
+                <TenantSupportHistory tenantId={tenantId} />
               )}
 
               {activeTab === 'data' && (

@@ -40,6 +40,7 @@ import { generateSecurePin, hashPin, isPinUnique } from '../services/staffServic
 import { updateRolePermissions, createCustomRole, DEFAULT_ROLES, updateUserOverrides, seedGlobalRoles } from '../services/permissionService';
 import { SYSTEM_PERMISSIONS } from '../constants/permissions';
 import EmployeeActivityLogTab from './EmployeeActivityLog';
+import AddEmployeeModal from './AddEmployeeModal';
 
 interface StaffMember extends StaffMemberType {
   performance?: {
@@ -56,6 +57,7 @@ export default function Staff({ tenantId }: { tenantId: string }) {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [selectedStaffForDetails, setSelectedStaffForDetails] = useState<StaffMember | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'performance' | 'permissions' | 'employee_activity'>('list');
@@ -683,8 +685,7 @@ export default function Staff({ tenantId }: { tenantId: string }) {
           {canCreate && viewMode !== 'permissions' && viewMode !== 'employee_activity' && (
             <button 
               onClick={() => {
-                setEditingStaff(null);
-                setIsModalOpen(true);
+                setIsAddModalOpen(true);
               }}
               className="bg-brand text-white px-6 py-3 rounded-2xl flex items-center gap-2 hover:bg-brand/90 transition-all shadow-lg shadow-brand/10 font-bold"
             >
@@ -1625,6 +1626,19 @@ export default function Staff({ tenantId }: { tenantId: string }) {
         )}
       </AnimatePresence>
 
+      <AddEmployeeModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        tenantId={tenantId}
+        roles={activeRoles}
+        branches={branches}
+        currentStaffName={currentStaff?.name}
+        currentStaffEmail={currentStaff?.email}
+        onSuccess={() => {
+          setIsAddModalOpen(false);
+        }}
+      />
+
       {/* Modal */}
       <AnimatePresence>
         {isModalOpen && (
@@ -1644,7 +1658,7 @@ export default function Staff({ tenantId }: { tenantId: string }) {
             >
               <div className="p-6 border-b border-border flex justify-between items-center bg-surface-muted">
                 <h2 className="text-xl font-black text-content">
-                  {editingStaff ? 'تعديل بيانات موظف' : 'إضافة موظف جديد'}
+                  تعديل بيانات موظف
                 </h2>
                 <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm">
                   <X size={24} className="text-content-muted" />
@@ -1658,7 +1672,7 @@ export default function Staff({ tenantId }: { tenantId: string }) {
                     <input 
                       {...register('name')}
                       className={cn(
-                        "w-full bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl p-4 pr-12 font-bold transition-all outline-none text-content",
+                        "w-full bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl py-4 pl-4 pr-12 font-bold transition-all outline-none text-content",
                         errors.name && "border-red-500"
                       )}
                     />
@@ -1700,13 +1714,14 @@ export default function Staff({ tenantId }: { tenantId: string }) {
                 <div className="space-y-2">
                   <label className="text-xs font-black text-content-muted uppercase tracking-widest">البريد الإلكتروني</label>
                   <div className="relative">
-                    <Mail className="absolute right-4 top-1/2 -translate-y-1/2 text-content-muted" size={20} />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-content-muted" size={20} />
                     <input 
                       {...register('email')}
                       className={cn(
-                        "w-full bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl p-4 pr-12 font-bold transition-all outline-none text-content",
+                        "w-full bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl py-4 pr-4 pl-12 font-bold transition-all outline-none text-content text-left",
                         errors.email && "border-red-500"
                       )}
+                      dir="ltr"
                     />
                   </div>
                   {errors.email && <p className="text-xs text-red-500 font-bold">{errors.email.message}</p>}
@@ -1714,13 +1729,14 @@ export default function Staff({ tenantId }: { tenantId: string }) {
                 <div className="space-y-2">
                   <label className="text-xs font-black text-content-muted uppercase tracking-widest">رقم الهاتف</label>
                   <div className="relative">
-                    <Smartphone className="absolute right-4 top-1/2 -translate-y-1/2 text-content-muted" size={20} />
+                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-content-muted" size={20} />
                     <input 
                       {...register('phone')}
                       className={cn(
-                        "w-full bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl p-4 pr-12 font-bold transition-all outline-none text-content",
+                        "w-full bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl py-4 pr-4 pl-12 font-bold transition-all outline-none text-content text-left",
                         errors.phone && "border-red-500"
                       )}
+                      dir="ltr"
                     />
                   </div>
                   {errors.phone && <p className="text-xs text-red-500 font-bold">{errors.phone.message}</p>}
@@ -1735,7 +1751,7 @@ export default function Staff({ tenantId }: { tenantId: string }) {
                       maxLength={4}
                       placeholder="****"
                       className={cn(
-                        "w-full bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl p-4 pr-12 font-bold transition-all outline-none text-center tracking-[1em] text-content",
+                        "w-full bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl py-4 px-12 font-bold transition-all outline-none text-center tracking-[1em] text-content",
                         errors.pin && "border-red-500"
                       )}
                     />
@@ -1762,7 +1778,7 @@ export default function Staff({ tenantId }: { tenantId: string }) {
                   disabled={isSubmitting}
                   className="w-full bg-brand text-white py-4 rounded-2xl font-black hover:bg-brand/90 shadow-xl shadow-brand/10 transition-all hover:scale-105 active:scale-95 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting ? 'جاري الحفظ...' : (editingStaff ? 'حفظ التعديلات' : 'تأكيد الإضافة')}
+                  {isSubmitting ? 'جاري الحفظ...' : 'حفظ التعديلات'}
                 </button>
               </form>
             </motion.div>

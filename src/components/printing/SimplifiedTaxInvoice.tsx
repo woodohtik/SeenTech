@@ -38,6 +38,7 @@ export interface SimplifiedTaxInvoiceProps {
     grandTotal: number;
   };
   qrCodeBase64?: string;
+  orderId?: string;
   onPrint?: () => void;
   hidePrintButton?: boolean;
 }
@@ -52,6 +53,7 @@ export default function SimplifiedTaxInvoice({
   items,
   totals,
   qrCodeBase64,
+  orderId,
   onPrint,
   hidePrintButton = false,
 }: SimplifiedTaxInvoiceProps) {
@@ -233,6 +235,17 @@ export default function SimplifiedTaxInvoice({
             <QRCodeSVG value={finalQr} size={110} level="M" />
           </div>
         </div>
+
+        {/* Public Digital Invoice QR Code */}
+        {orderId && (
+          <div className="flex flex-col items-center justify-center py-2 mb-4">
+            <p className="text-[9px] text-slate-600 font-bold mb-1">امسح الرمز لعرض الفاتورة الرقمية</p>
+            <p className="text-[8px] text-slate-400 mb-2 font-sans">Scan to view digital invoice</p>
+            <div className="bg-slate-50 p-2 rounded-xl border border-slate-100">
+              <QRCodeSVG value={`${window.location.origin}/p/inv/${orderId}`} size={90} level="M" />
+            </div>
+          </div>
+        )}
 
         {/* Retail Slip Bottom note */}
         <div className="pt-4 border-t border-dashed border-slate-300 text-center">
