@@ -15,7 +15,7 @@ export default function ExpansionPrompt({ tenantId }: { tenantId: string }) {
   useEffect(() => {
     try { if (localStorage.getItem('seen_exp_dismiss_' + tenantId)) setDismissed(true); } catch {}
     let on = true;
-    if (tenantId) getHealth(tenantId).then(d => { if (on) setH(d); });
+    if (tenantId) getHealth(tenantId).then(d => { if (on) setH(d); }).catch(e => console.warn(e));
     return () => { on = false; };
   }, [tenantId]);
 

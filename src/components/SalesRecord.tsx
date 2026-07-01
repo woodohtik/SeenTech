@@ -7,6 +7,7 @@ import { decodeOrderB2BNotes } from '../utils/b2bHelper';
 import { PriceDisplay } from './PriceDisplay';
 import { FileText, Eye, X, Download, Package, Scissors, User, Calendar, CreditCard, ShoppingBag, Clock, Printer, Share2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { downloadInvoicePDF, shareInvoiceAsPDFFile } from '../utils/pdfGenerator';
 
 export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenantId: string, shiftId?: string, filterStatus?: string }) {
   const { t } = useTranslation();
@@ -18,7 +19,6 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
   const handleDownloadPDF = async () => {
     if (!selectedOrder) return;
     try {
-      const { downloadInvoicePDF } = await import('../utils/pdfGenerator');
       await downloadInvoicePDF('sales-record-print-area', `Invoice-${selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase()}.pdf`);
     } catch (e) {
       console.error(e);
@@ -34,7 +34,6 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
     const statusText = selectedOrder.status === 'delivered' ? 'مكتمل / تم التسليم' : 'قيد المعالجة / الانتظار';
     const text = `السلام عليكم ورحمة الله وبركاته،\nتفاصيل الفاتورة من المتجر:\nرقم الفاتورة: #${selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase()}\nالإجمالي: ${selectedOrder.totalAmount} ر.س\nطريقة الدفع: ${paymentMethodText}\nحالة الطلب: ${statusText}\nشكراً لتواصلك معنا!`;
     try {
-      const { shareInvoiceAsPDFFile } = await import('../utils/pdfGenerator');
       await shareInvoiceAsPDFFile('sales-record-print-area', `Invoice-${selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase()}.pdf`, text);
     } catch (e) {
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');

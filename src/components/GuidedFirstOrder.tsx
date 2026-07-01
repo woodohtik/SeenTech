@@ -14,7 +14,7 @@ export default function GuidedFirstOrder({ tenantId }: { tenantId: string }) {
 
   useEffect(() => {
     let on = true;
-    if (tenantId) getActivation(tenantId).then(a => { if (on) { setAct(a); setLoaded(true); } });
+    if (tenantId) getActivation(tenantId).then(a => { if (on) { setAct(a); setLoaded(true); } }).catch(e => console.warn(e));
     return () => { on = false; };
   }, [tenantId]);
 
