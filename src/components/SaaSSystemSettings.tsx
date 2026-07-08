@@ -114,12 +114,12 @@ export default function SaaSSystemSettings() {
     try {
       await supabase.from('saas_security_logs').insert({
         action,
-        performed_by_uid: auth.currentUser?.uid,
-        performed_by_email: auth.currentUser?.email,
+        user_id: auth.currentUser?.uid,
+        user_email: auth.currentUser?.email,
         target_tenant_id: targetTenantId,
         details,
         type: action.includes('wipe') ? 'deletion' : 'update',
-        timestamp: new Date().toISOString()
+        occurred_at: new Date().toISOString()
       });
     } catch (error) {
       console.error('Error logging audit action:', error);
@@ -135,7 +135,7 @@ export default function SaaSSystemSettings() {
           key: 'branding',
           value: brandingSettings,
           updated_at: new Date().toISOString(),
-          updated_by: auth.currentUser?.email
+          updated_by: auth.currentUser?.uid
         }, { onConflict: 'key' });
       
       if (error) throw error;
@@ -159,7 +159,7 @@ export default function SaaSSystemSettings() {
           key: 'platform',
           value: platformSettings,
           updated_at: new Date().toISOString(),
-          updated_by: auth.currentUser?.email
+          updated_by: auth.currentUser?.uid
         }, { onConflict: 'key' });
       
       if (error) throw error;

@@ -335,6 +335,8 @@ export interface Staff {
     pin_hash: string | null;
     must_change_pin: boolean;
     is_test: boolean;
+    commission_type: 'percentage' | 'fixed_amount' | null;
+    commission_value: Numeric | null;
     created_at: Timestamptz;
     updated_at: Timestamptz;
 }
@@ -641,6 +643,8 @@ export interface OrderItem {
     additions: string | null;
     embroidery: string | null;
     measurements: Measurements;
+    assigned_tailor_id: UUID | null;
+    calculated_commission: Numeric | null;
     created_at: Timestamptz;
 }
 

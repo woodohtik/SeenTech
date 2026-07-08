@@ -9,7 +9,7 @@ import { Role, Branch } from '../types';
 import { supabase } from '../lib/supabase/client';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { initializeApp, deleteApp } from 'firebase/app';
-import { finalConfig } from '../lib/firebase';
+import { auth, finalConfig } from '../lib/firebase';
 import { generateSecurePin, hashPin } from '../services/staffService';
 import { Listbox, Transition } from '@headlessui/react';
 
@@ -265,7 +265,8 @@ export default function AddEmployeeModal({
 
       // Ensure user exists in users table
       if (uid) {
-         await supabase.from('users').upsert({ id: uid, email: data.email.toLowerCase(), full_name: data.name }, { onConflict: 'id' });
+         const { error: upsertErr } = await supabase.from('users').upsert({ id: uid, email: data.email.toLowerCase(), display_name: data.name }, { onConflict: 'id' });
+         if (upsertErr) throw upsertErr;
       }
 
       // 3. Prepare PIN
@@ -288,8 +289,8 @@ export default function AddEmployeeModal({
         uid: uid,
         name: data.name,
         role: dbRoleValue,
-        role_id: selectedRole?.id || '',
-        branch_id: data.branchId,
+        role_id: selectedRole?.id || null,
+        branch_id: data.branchId || null,
         email: data.email.toLowerCase(),
         phone: data.phone,
         status: 'active',
@@ -305,11 +306,11 @@ export default function AddEmployeeModal({
       // Audit Log
       await supabase.from('audit_logs').insert({
         action: 'إضافة موظف',
-        performed_by: currentStaffName || 'المدير',
+        performed_by: auth.currentUser?.uid || null,
         performed_by_email: currentStaffEmail || 'unknown',
         target_tenant_id: tenantId,
         details: `تم إضافة الموظف ${data.name} بنجاح`,
-        timestamp: new Date().toISOString(),
+        occurred_at: new Date().toISOString(),
         type: 'security'
       });
 
@@ -318,7 +319,7 @@ export default function AddEmployeeModal({
       onSuccess();
 
     } catch (error: any) {
-      console.error('Error adding employee:', error);
+      console.error('Error adding employee:', JSON.stringify(error));
       setErrorMsg(error.message || 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.');
     } finally {
       setIsSubmitting(false);

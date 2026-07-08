@@ -39,9 +39,14 @@ import { AlertCircle } from 'lucide-react';
 
 import { UserRole, Staff as StaffType, PermissionKey } from '../types';
 import { usePermissions } from '../hooks/usePermissions';
-import Branding from './Branding';
 import UserPreferencesMenu from './UserPreferencesMenu';
 import SupportConsentModal from './SupportConsentModal';
+import StaffTutorialModal from './StaffTutorialModal';
+import SeenAIFab from './SeenAIFab';
+import OnboardingTour from './OnboardingTour';
+
+
+
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -106,8 +111,14 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
   };
 
   const handleLogout = async () => {
-    await signOut(auth);
-    navigate('/login');
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+      await signOut(auth);
+    } catch (e) {
+      console.error(e);
+    }
+    window.location.replace('/login');
   };
 
   const isSuperAdmin = role === 'super_admin';
@@ -356,10 +367,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
               onToggleLayout={toggleLayoutMode}
             />
           </div>
-          <Branding 
-            collapsed={isCollapsed && !isMobileMenuOpen} 
-            className={cn("mt-2", (isCollapsed && !isMobileMenuOpen) ? "" : "justify-start px-4")} 
-          />
+
         </div>
       </aside>
       )}
@@ -467,11 +475,13 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
           ) : (
             <div className="flex-1">
               {children}
+          
+          <SeenAIFab />
+          <OnboardingTour role={role} />
             </div>
           )}
           
-          {/* Global Footer Branding */}
-          <Branding className="mt-auto pt-8 pb-4 shrink-0 transition-opacity hover:opacity-100 opacity-90" />
+
         </main>
       </div>
 

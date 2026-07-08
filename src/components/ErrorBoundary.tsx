@@ -46,13 +46,13 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
   };
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('React ErrorBoundary caught an error:', error, errorInfo);
+    console.warn('React ErrorBoundary caught an error:', error, errorInfo);
     try {
       const eventId = new Date().getTime().toString();
       this.setState({ errorInfo, eventId });
       logError(error, { errorInfo, source: 'ErrorBoundary', eventId });
     } catch(e) {
-      console.error('Failed to log error inside ErrorBoundary:', e);
+      console.warn('Failed to log error inside ErrorBoundary:', e);
     }
   }
 

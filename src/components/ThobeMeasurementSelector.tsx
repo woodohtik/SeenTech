@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Lightbulb } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { ThobeMeasurements } from '../types';
 import Branding from './Branding';
@@ -20,8 +21,19 @@ const PART_LABELS: Record<ThobePart, string> = {
   bottomWidth: 'وسع الأسفل',
 };
 
+const PART_HINTS: Record<ThobePart, string> = {
+  collar: 'قم بقياس محيط الرقبة مع ترك مسافة إصبعين للراحة.',
+  chest: 'قم بقياس محيط الصدر تحت الإبطين في أوسع نقطة.',
+  shoulders: 'من عظمة الكتف الأيمن إلى الأيسر من الخلف.',
+  sleeves: 'من عظمة الكتف وحتى المعصم.',
+  length: 'من أعلى نقطة في الكتف حتى الطول المطلوب.',
+  bottomWidth: 'عرض الثوب من الأسفل.'
+};
+
 export default function ThobeMeasurementSelector({ values, onChange }: ThobeMeasurementSelectorProps) {
   const [activePart, setActivePart] = useState<ThobePart | null>(null);
+  const [isInstructionMode, setIsInstructionMode] = useState(false);
+  const [activeHint, setActiveHint] = useState<ThobePart | null>(null);
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const handlePartClick = (part: ThobePart) => {
@@ -282,9 +294,18 @@ export default function ThobeMeasurementSelector({ values, onChange }: ThobeMeas
 
       {/* Input Form Section */}
       <div className="w-full lg:w-[350px] space-y-6">
-        <div className="pb-4 border-b border-border">
-          <h2 className="text-xl font-black text-content">مُحدد المقاسات البصري</h2>
-          <p className="text-sm text-content-muted font-bold">أدخل المقاسات بدقة للمراجعة الفورية</p>
+        <div className="pb-4 border-b border-border flex items-center justify-between gap-2">
+          <div>
+            <h2 className="text-xl font-black text-content">مُحدد المقاسات البصري</h2>
+            <p className="text-sm text-content-muted font-bold">أدخل المقاسات بدقة للمراجعة الفورية</p>
+          </div>
+          <button 
+            onClick={() => setIsInstructionMode(!isInstructionMode)}
+            title="وضع التعليمات"
+            className={cn("p-2.5 rounded-xl transition-colors shrink-0", isInstructionMode ? "bg-amber-100 text-amber-600" : "bg-surface-muted text-content-muted hover:bg-border")}
+          >
+            <Lightbulb size={24} />
+          </button>
         </div>
 
         <div className="grid grid-cols-1 gap-4">
@@ -298,9 +319,33 @@ export default function ThobeMeasurementSelector({ values, onChange }: ThobeMeas
                   : "border-border bg-surface hover:border-brand/30"
               )}
             >
-              <label className="block text-[10px] font-black text-content-muted uppercase tracking-widest mb-2">
-                {PART_LABELS[part]}
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-[10px] font-black text-content-muted uppercase tracking-widest">
+                  {PART_LABELS[part]}
+                </label>
+                {isInstructionMode && (
+                  <button 
+                    onClick={() => setActiveHint(activeHint === part ? null : part)}
+                    className={cn("p-1.5 rounded-full transition-colors", activeHint === part ? "text-amber-600 bg-amber-100" : "text-amber-500 hover:bg-amber-50")}
+                  >
+                    <Lightbulb size={14} />
+                  </button>
+                )}
+              </div>
+              <AnimatePresence>
+                {isInstructionMode && activeHint === part && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden mb-3"
+                  >
+                    <p className="text-xs text-amber-700 bg-amber-50/80 p-2.5 rounded-xl font-bold leading-relaxed border border-amber-100/50">
+                      {PART_HINTS[part]}
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
               <div className="flex items-center gap-3">
                 <input
                   ref={(el) => { inputRefs.current[part] = el; }}

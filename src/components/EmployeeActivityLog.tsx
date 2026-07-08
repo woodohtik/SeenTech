@@ -18,7 +18,7 @@ export default function EmployeeActivityLogTab({ tenantId }: { tenantId: string 
           .from('employee_activity_logs')
           .select('*')
           .eq('tenant_id', tenantId)
-          .order('timestamp', { ascending: false })
+          .order('occurred_at', { ascending: false })
           .limit(100);
         
         if (error) throw error;
@@ -29,6 +29,7 @@ export default function EmployeeActivityLogTab({ tenantId }: { tenantId: string 
           staffName: d.staff_name,
           tenantId: d.tenant_id,
           branchName: d.branch_name,
+          timestamp: d.occurred_at
         }) as EmployeeActivityLog);
 
         setLogs(mappedLogs);

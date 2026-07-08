@@ -95,13 +95,13 @@ export function handleFirestoreError(error: any, operationType: OperationType, p
     path
   };
 
-  console.error(`[Firestore Error] ${operationType} at ${path}:`, errInfo);
+  console.warn(`[Firestore Error] ${operationType} at ${path}:`, errInfo);
 
   let serializedErr: string;
   try {
     serializedErr = JSON.stringify(errInfo);
   } catch (e) {
-    console.error("Failed to stringify error info:", e);
+    console.warn("Failed to stringify error info:", e);
     serializedErr = `Firestore Error in ${operationType} at ${path}: ${errorString}`;
   }
   throw new Error(serializedErr);

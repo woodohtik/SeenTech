@@ -211,6 +211,8 @@ export interface Staff {
   tenantId: string;
   branchId?: string; // Linked to a specific branch
   isTest?: boolean;
+  commission_type?: 'percentage' | 'fixed_amount';
+  commission_value?: number;
   createdAt: string;
 }
 
@@ -443,6 +445,10 @@ export interface OrderItem {
   basePrice?: number; // Price without tax
   taxAmount?: number;
   taxType?: ProductTaxType;
+  
+  // Commission fields
+  assigned_tailor_id?: string;
+  calculated_commission?: number;
   
   // Customization fields
   closureType?: 'zipper' | 'buttons';

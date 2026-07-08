@@ -8,8 +8,10 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase/client';
 import { useStaff } from '../contexts/StaffContext';
 import { usePermissions } from '../hooks/usePermissions';
-import GuidedFirstOrder from './GuidedFirstOrder';
 import ExpansionPrompt from './ExpansionPrompt';
+import UsageGuide from './UsageGuide';
+import { HelpCircle } from 'lucide-react';
+
 
 const STAGES = ['measurements_taken','cutting','sewing','embroidery','ironing_packaging','ready','delivered'];
 const STAGE_AR: Record<string,string> = {
@@ -27,6 +29,7 @@ export default function DashboardToday({ tenantId }: { tenantId: string }) {
   const [collectedToday, setCollectedToday] = useState(0);
   const [lowStock, setLowStock] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [showUsageGuide, setShowUsageGuide] = useState(() => localStorage.getItem('staff_usage_guide_dismissed') !== 'true');
 
   async function load() {
     if (!tenantId) return;
@@ -55,12 +58,32 @@ export default function DashboardToday({ tenantId }: { tenantId: string }) {
 
   return (
     <div dir="rtl" className="w-full max-w-4xl mx-auto p-3 sm:p-5 lg:p-6">
-      <GuidedFirstOrder tenantId={tenantId} />
-      <ExpansionPrompt tenantId={tenantId} />
-      {/* header — يلتف على الجوال */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
+      {showUsageGuide ? (
+        <UsageGuide onSkip={() => {
+          localStorage.setItem('staff_usage_guide_dismissed', 'true');
+          setShowUsageGuide(false);
+        }} />
+      ) : (
+        <>
+          <ExpansionPrompt tenantId={tenantId} />
+          {/* header — يلتف على الجوال */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-content leading-none">اليوم</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-black text-content leading-none">اليوم</h1>
+            {!showUsageGuide && (
+              <button 
+                onClick={() => {
+                  localStorage.setItem('staff_usage_guide_dismissed', 'false');
+                  setShowUsageGuide(true);
+                }}
+                className="text-xs sm:text-sm bg-brand/10 hover:bg-brand/20 text-brand font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors"
+              >
+                <HelpCircle size={16} />
+                مساعدة
+              </button>
+            )}
+          </div>
           <p className="text-xs sm:text-sm text-content-muted mt-1">{todayStr}</p>
         </div>
         <button onClick={() => navigate('/sales')}
@@ -97,6 +120,8 @@ export default function DashboardToday({ tenantId }: { tenantId: string }) {
           </Section>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }

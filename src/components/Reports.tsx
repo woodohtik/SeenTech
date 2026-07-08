@@ -38,11 +38,13 @@ import {
   AlertTriangle,
   User,
   X,
-  Calculator
+  Calculator,
+  Scissors
 } from 'lucide-react';
 import { PriceDisplay } from './PriceDisplay';
 import { cn } from '../lib/utils';
 import Header from './Header';
+import TailorStatementReport from './TailorStatementReport';
 import Branding from './Branding';
 import Select from './ui/Select';
 import { motion, AnimatePresence } from 'motion/react';
@@ -54,7 +56,7 @@ import { usePermissions } from '../hooks/usePermissions';
 
 const COLORS = ['#1C8FFF', '#22C55E', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
 
-type ReportTab = 'general' | 'financial' | 'orders' | 'inventory' | 'staff' | 'zreports';
+type ReportTab = 'general' | 'financial' | 'orders' | 'inventory' | 'staff' | 'zreports' | 'tailor_commissions';
 
 interface DrillDownData {
   title: string;
@@ -504,6 +506,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           { id: 'orders', label: 'تقارير الطلبات', icon: ShoppingBag },
           { id: 'inventory', label: 'تقارير المخزون', icon: Package },
           { id: 'staff', label: 'الموظفين والعملاء', icon: Users },
+          { id: 'tailor_commissions', label: 'عمولات الخياطين', icon: Scissors },
           { id: 'zreports', label: 'تقارير Z (إغلاق اليوم)', icon: Calculator },
         ].map((tab) => (
           <button
@@ -898,6 +901,10 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 </div>
               </div>
             </div>
+          )}
+
+          {activeTab === 'tailor_commissions' && (
+            <TailorStatementReport tenantId={tenantId} />
           )}
 
           {activeTab === 'zreports' && (
