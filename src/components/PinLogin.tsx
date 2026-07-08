@@ -13,10 +13,11 @@ import Branding from './Branding';
 
 interface PinLoginProps {
   tenantId: string;
+  currentUserStaff?: Staff | null;
   onLogin: (staff: Staff) => void;
 }
 
-export default function PinLogin({ tenantId, onLogin }: PinLoginProps) {
+export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLoginProps) {
   const [pin, setPin] = useState('');
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -106,19 +107,36 @@ export default function PinLogin({ tenantId, onLogin }: PinLoginProps) {
     setIsVerifying(true);
     setError(null);
     try {
-      // Find possible matches
-      const checkPromises = staffList.map(async s => {
-        if (!s.pin) return null;
+      let matchedStaff: Staff | null = null;
+      
+      // 1. Prioritize currentUserStaff (if logging in from own device)
+      if (currentUserStaff && currentUserStaff.pin) {
         try {
-          const isMatch = await bcrypt.compare(pin, s.pin);
-          return isMatch ? s : null;
+          const isMatch = await bcrypt.compare(pin, currentUserStaff.pin);
+          if (isMatch) {
+            matchedStaff = currentUserStaff as Staff;
+          }
         } catch (e) {
-          return null;
+          // ignore
         }
-      });
+      }
 
-      const checkResults = await Promise.all(checkPromises);
-      const matchedStaff = checkResults.find(s => s !== null);
+      // 2. Check all staff if not matched yet
+      if (!matchedStaff) {
+        const checkPromises = staffList.map(async s => {
+          if (!s.pin) return null;
+          if (currentUserStaff && s.id === currentUserStaff.id) return null; // already checked
+          try {
+            const isMatch = await bcrypt.compare(pin, s.pin);
+            return isMatch ? s : null;
+          } catch (e) {
+            return null;
+          }
+        });
+
+        const checkResults = await Promise.all(checkPromises);
+        matchedStaff = checkResults.find(s => s !== null) as Staff | null;
+      }
       
       if (matchedStaff) {
         if (matchedStaff.mustChangePin) {
@@ -364,14 +382,16 @@ export default function PinLogin({ tenantId, onLogin }: PinLoginProps) {
                 <div className="mt-10 pt-8 border-t border-border w-full">
                   <button 
                     onClick={async () => {
-                      if (auth) {
-                        try {
+                      try {
+                        localStorage.clear();
+                        sessionStorage.clear();
+                        if (auth) {
                           await signOut(auth);
-                        } catch (err) {
-                          console.error("Error signing out from PIN screen:", err);
                         }
+                      } catch (err) {
+                        console.error("Error signing out from PIN screen:", err);
                       }
-                      window.location.href = '/login';
+                      window.location.replace('/login');
                     }}
                     className="w-full flex items-center justify-center gap-3 text-content-muted hover:text-content font-black transition-colors py-2"
                   >

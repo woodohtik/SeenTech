@@ -31,18 +31,33 @@ import { OperationType } from './firebase';
 // };
 
 export const logError = (error: any, context?: any) => {
+  if (!error) return;
+
+  console.warn('[Logger] RAW ERROR:', error);
+  if (context) {
+    console.warn('[Logger] CONTEXT:', context);
+  }
+
   // Console logging for development
   let errorMsg = error;
   if (error instanceof Error) {
     errorMsg = error.stack || error.message;
   } else if (typeof error === 'object') {
-    try { errorMsg = JSON.stringify(error); } catch (e) {}
+    try { 
+      errorMsg = JSON.stringify(error); 
+      if (errorMsg === '{}') {
+        errorMsg = error.message || error.type || String(error);
+      }
+    } catch (e) {}
   }
+  
+  if (errorMsg === '{}' || !errorMsg) return;
+
   let ctxStr = '';
   if (context) {
     try { ctxStr = JSON.stringify(context); } catch (e) {}
   }
-  console.error('[Logger] Error:', errorMsg, ctxStr);
+  console.warn('[Logger] Error:', errorMsg, ctxStr);
 
 
   // Example Sentry integration:

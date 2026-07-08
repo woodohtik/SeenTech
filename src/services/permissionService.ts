@@ -206,7 +206,7 @@ export const logUnauthorizedAccess = async (staff: Staff, permission: string, mo
       staff_email: staff.email,
       attempted_permission: permission,
       module,
-      timestamp: new Date().toISOString(),
+      occurred_at: new Date().toISOString(),
       message: `محاولة وصول غير مصرح بها لـ ${permission} في موديول ${module}`
     });
   } catch (error) {
@@ -214,7 +214,7 @@ export const logUnauthorizedAccess = async (staff: Staff, permission: string, mo
   }
 };
 
-export const createCustomRole = async (tenantId: string, name: string, description: string, permissions: PermissionsMap, performedBy: string, performedByEmail: string) => {
+export const createCustomRole = async (tenantId: string, name: string, description: string, permissions: PermissionsMap, performedBy: string | null, performedByEmail: string) => {
   const roleKey = `custom_${name.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}`;
   
   const { data, error } = await supabase.from('roles').insert({
@@ -236,14 +236,14 @@ export const createCustomRole = async (tenantId: string, name: string, descripti
     performed_by_email: performedByEmail,
     target_tenant_id: tenantId,
     details: `تم إنشاء مهنة مخصصة جديدة: ${name}`,
-    timestamp: new Date().toISOString(),
+    occurred_at: new Date().toISOString(),
     type: 'security'
   });
 
   return data.id;
 };
 
-export const updateRolePermissions = async (roleId: string, permissions: PermissionsMap, performedBy: string, performedByEmail: string, tenantId: string) => {
+export const updateRolePermissions = async (roleId: string, permissions: PermissionsMap, performedBy: string | null, performedByEmail: string, tenantId: string) => {
   const { data: roleData, error: roleFetchError } = await supabase
     .from('roles')
     .select('*')
@@ -293,12 +293,12 @@ export const updateRolePermissions = async (roleId: string, permissions: Permiss
     performed_by_email: performedByEmail,
     target_tenant_id: tenantId,
     details: `تم تحديث صلاحيات المهنة: ${roleData.name}`,
-    timestamp: new Date().toISOString(),
+    occurred_at: new Date().toISOString(),
     type: 'security'
   });
 };
 
-export const updateUserOverrides = async (staffId: string, tenantId: string, overrides: Partial<PermissionsMap>, performedBy: string, performedByEmail: string) => {
+export const updateUserOverrides = async (staffId: string, tenantId: string, overrides: Partial<PermissionsMap>, performedBy: string | null, performedByEmail: string) => {
   await supabase.from('user_permission_overrides').upsert({
     user_id: staffId,
     tenant_id: tenantId,
@@ -313,7 +313,7 @@ export const updateUserOverrides = async (staffId: string, tenantId: string, ove
     performed_by_email: performedByEmail,
     target_tenant_id: tenantId,
     details: `تم تحديث الاستثناءات الفردية للموظف ذو المعرف: ${staffId}`,
-    timestamp: new Date().toISOString(),
+    occurred_at: new Date().toISOString(),
     type: 'security'
   });
 };
@@ -386,7 +386,7 @@ export const getStaffPermissionDetails = async (staff: Staff): Promise<Permissio
 export const bulkUpdateRolePermissions = async (
   roleIds: string[],
   permissions: PermissionsMap,
-  performedBy: string,
+  performedBy: string | null,
   performedByEmail: string,
   tenantId: string
 ) => {
@@ -435,7 +435,7 @@ export const bulkUpdateRolePermissions = async (
       performed_by_email: performedByEmail,
       target_tenant_id: tenantId,
       details: `تم تحديث صلاحيات المهنة: ${roleData.name} بشكل جماعي`,
-      timestamp: new Date().toISOString(),
+      occurred_at: new Date().toISOString(),
       type: 'security'
     });
   }

@@ -68,7 +68,9 @@ export default function GlobalRoleManager() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
+  const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
   const [newRole, setNewRole] = useState<Partial<Role>>({
     name: '',
     description: '',
@@ -91,7 +93,7 @@ export default function GlobalRoleManager() {
       .select('*')
       .is('tenant_id', null);
     if (error) {
-      console.error('Error fetching system roles:', error);
+      console.warn('Error fetching system roles:', error);
     } else if (data) {
       setRoles(data.map(d => ({
         id: d.id,
@@ -136,8 +138,9 @@ export default function GlobalRoleManager() {
 
   const handleSaveRole = async () => {
     const roleToSave = editingRole || newRole;
-    if (!roleToSave.name) return;
+    if (!roleToSave.name || isSaving) return;
 
+    setIsSaving(true);
     try {
       if (editingRole) {
         const { error } = await supabase
@@ -183,24 +186,35 @@ export default function GlobalRoleManager() {
       }
       await fetchRoles();
     } catch (error: any) {
-      console.error('Error saving role:', error);
+      console.warn('Error saving role:', error);
       setToast({ message: `فشل الحفظ: ${error.message || 'خطأ غير معروف'}`, type: 'error' });
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleDeleteRole = async (id: string) => {
-    if (!window.confirm('هل أنت متأكد من حذف هذه المهنة؟ سيؤثر ذلك على جميع المشتركين الذين يستخدمونها.')) return;
+  const confirmDeleteRole = (role: Role) => {
+    setRoleToDelete(role);
+  };
+
+  const executeDeleteRole = async () => {
+    if (!roleToDelete || isSaving) return;
+
+    setIsSaving(true);
     try {
       const { error } = await supabase
-        .from('roles')
+        .from("roles")
         .delete()
-        .eq('id', id);
+        .eq("id", roleToDelete.id);
       if (error) throw error;
-      setToast({ message: 'تم حذف المهنة بنجاح', type: 'success' });
+      setToast({ message: "تم حذف المهنة بنجاح", type: "success" });
       await fetchRoles();
+      setRoleToDelete(null);
     } catch (error: any) {
-      console.error('Error deleting role:', error);
-      setToast({ message: `فشل الحذف: ${error.message || 'خطأ غير معروف'}`, type: 'error' });
+      console.warn("Error deleting role:", error);
+      setToast({ message: `فشل الحذف: ${error.message || "خطأ غير معروف"}`, type: "error" });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -262,7 +276,7 @@ export default function GlobalRoleManager() {
                   <Edit2 size={18} />
                 </button>
                 <button
-                  onClick={() => handleDeleteRole(role.id)}
+                  onClick={() => confirmDeleteRole(role)}
                   className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                 >
                   <Trash2 size={18} />
@@ -475,6 +489,50 @@ export default function GlobalRoleManager() {
                     <span>حفظ المهنة</span>
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {roleToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !isSaving && setRoleToDelete(null)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl p-8 overflow-hidden"
+            >
+              <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mb-6 mx-auto">
+                <Trash2 size={32} className="text-rose-600" />
+              </div>
+              <h3 className="text-xl font-black text-gray-900 text-center mb-2">تأكيد الحذف</h3>
+              <p className="text-sm font-medium text-gray-500 text-center mb-8">
+                هل أنت متأكد من حذف مهنة "{roleToDelete.name}"؟ 
+                <br />
+                <span className="text-rose-600 font-bold">هذا الإجراء سيؤثر على المشتركين الذين يستخدمونها.</span>
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setRoleToDelete(null)}
+                  disabled={isSaving}
+                  className="flex-1 px-4 py-3 rounded-2xl font-black text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 transition-all disabled:opacity-50"
+                >
+                  إلغاء
+                </button>
+                <button
+                  onClick={executeDeleteRole}
+                  disabled={isSaving}
+                  className="flex-1 px-4 py-3 rounded-2xl font-black text-sm text-white bg-rose-600 hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 disabled:opacity-50 flex items-center justify-center"
+                >
+                  {isSaving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'حذف المهنة'}
+                </button>
               </div>
             </motion.div>
           </div>

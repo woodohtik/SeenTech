@@ -94,7 +94,7 @@ export default function SuperAdminDashboard() {
           supabase.from('orders').select('*').order('order_date', { ascending: false }).limit(100),
           supabase.from('saas_users').select('*').eq('uid', auth.currentUser?.uid).single(),
           supabase.from('audit_logs').select('*').order('timestamp', { ascending: false }).limit(20),
-          supabase.from('employee_activity_logs').select('*').order('timestamp', { ascending: false }).limit(20),
+          supabase.from('employee_activity_logs').select('*').order('occurred_at', { ascending: false }).limit(20),
           supabase.from('plans').select('*')
         ]);
 

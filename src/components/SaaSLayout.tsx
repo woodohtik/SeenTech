@@ -87,11 +87,14 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
 
   const handleLogout = useCallback(async () => {
     await logSaaSSecurityEvent('saas_logout', 'User logged out or session timed out');
-    sessionStorage.removeItem('saas_2fa_verified');
-    sessionStorage.removeItem('dev_bypass');
-    localStorage.removeItem('impersonatedTenantId');
-    await signOut(auth);
-    navigate('/saas/login');
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+      await signOut(auth);
+    } catch (e) {
+      console.error(e);
+    }
+    window.location.replace('/saas/login');
   }, [navigate]);
 
   useEffect(() => {
@@ -217,7 +220,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
         setUnreadCount(updatedAlerts.filter(n => !n.read).length);
 
       } catch (err) {
-        console.error('Error fetching notifications:', err);
+        console.warn('Error fetching notifications:', err);
       }
     };
 

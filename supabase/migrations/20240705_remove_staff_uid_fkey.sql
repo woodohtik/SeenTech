@@ -1,0 +1,1 @@
+ALTER TABLE staff DROP CONSTRAINT IF EXISTS staff_uid_fkey;

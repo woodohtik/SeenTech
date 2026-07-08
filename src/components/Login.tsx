@@ -369,7 +369,7 @@ export default function Login() {
         // Ensure plan records exist in database to prevent plan_id foreign key constraint failures
         try {
           const { data: plansData } = await supabase.from('plans').select('id');
-          if (!plansData || plansData.length === 0) {
+          if (!plansData || plansData.length === 0 || !plansData.find(p => p.id === 'free')) {
             await supabase.from('plans').insert([
               { id: 'free', name: 'الباقة المجانية', price: 0, features: ['تجربة 14 يوم', 'عدد لا محدود من الفواتير', 'بدون ربط بطاقة'], max_staff: 2, max_orders: 100 },
               { id: 'basic', name: 'الخطة الأساسية', price: 599, features: ['إدارة العملاء', 'إدارة الطلبات', 'دعم فني'], max_staff: 5, max_orders: 50000 }
@@ -407,7 +407,7 @@ export default function Login() {
             owner_uid: user.uid,
             phone: formattedPhone,
             status: 'active',
-            plan_id: 'basic',
+            plan_id: 'free',
             inventory_strategy: 'centralized'
           })
           .select('id')
@@ -841,8 +841,14 @@ export default function Login() {
                   {t('login.pending_success_desc')}
                 </p>
                 <button 
-                  onClick={() => {
-                    signOut(auth);
+                  onClick={async () => {
+                    try {
+                      localStorage.clear();
+                      sessionStorage.clear();
+                      await signOut(auth);
+                    } catch (e) {
+                      console.error(e);
+                    }
                     setView('login');
                   }}
                   className="flex items-center justify-center gap-2 text-brand font-bold hover:underline mx-auto"

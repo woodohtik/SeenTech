@@ -36,7 +36,7 @@ export const logSaaSSecurityEvent = async (action: string, details: string) => {
     
     if (error) throw error;
   } catch (error) {
-    console.error('Error logging SaaS security event:', error);
+    console.warn('SaaS security event log skipped (table may not exist):', error);
   }
 };
 

@@ -53,7 +53,7 @@ export default function SaaSAuditLogs() {
           type: log.action.includes('security') ? 'security_alert' : 
                 log.action.includes('delete') ? 'deletion' :
                 log.action.includes('login') ? 'login' : 'update',
-          timestamp: log.created_at || log.timestamp
+          timestamp: log.created_at || log.occurred_at
         } as AuditLog)));
       }
       setLoading(false);
@@ -74,7 +74,7 @@ export default function SaaSAuditLogs() {
           type: newLog.action.includes('security') ? 'security_alert' : 
                 newLog.action.includes('delete') ? 'deletion' :
                 newLog.action.includes('login') ? 'login' : 'update',
-          timestamp: newLog.created_at || newLog.timestamp
+          timestamp: newLog.created_at || newLog.occurred_at
         } as AuditLog, ...prev].slice(0, 100));
       })
       .subscribe();

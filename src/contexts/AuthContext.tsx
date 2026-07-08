@@ -190,7 +190,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     const logout = useCallback(async () => {
-        if (firebaseAuth) await signOut(firebaseAuth);
+        try {
+            localStorage.clear();
+            sessionStorage.clear();
+            if (firebaseAuth) await signOut(firebaseAuth);
+        } catch (e) {
+            console.error(e);
+        }
+        window.location.replace('/login');
     }, []);
 
     const refreshDbUser = useCallback(async () => {

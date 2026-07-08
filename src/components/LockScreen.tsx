@@ -106,10 +106,25 @@ export default function LockScreen({ currentStaff, onUnlock, tenantId, onUnlockW
         setIsVerifying(true);
         setError(null);
         try {
-          if (staffList.length > 0) {
-            // Find possible matches
+          let matchedStaff: Staff | null = null;
+          
+          // Always check currentStaff FIRST to avoid PIN collision with another staff (e.g. Owner)
+          if (currentStaff && currentStaff.pin) {
+            try {
+              const isMatch = await bcrypt.compare(pin, currentStaff.pin);
+              if (isMatch) {
+                matchedStaff = currentStaff as Staff;
+              }
+            } catch (e) {
+              // Ignore and proceed
+            }
+          }
+
+          if (!matchedStaff && staffList.length > 0) {
+            // Find possible matches in the rest of the staff
             const checkPromises = staffList.map(async s => {
               if (!s.pin) return null;
+              if (currentStaff && s.id === currentStaff.id) return null; // already checked
               try {
                 const isMatch = await bcrypt.compare(pin, s.pin);
                 return isMatch ? s : null;
@@ -119,44 +134,36 @@ export default function LockScreen({ currentStaff, onUnlock, tenantId, onUnlockW
             });
 
             const checkResults = await Promise.all(checkPromises);
-            const matchedStaff = checkResults.find(s => s !== null);
+            matchedStaff = checkResults.find(s => s !== null) as Staff | null;
+          }
 
-            if (matchedStaff) {
-              if (currentStaff && matchedStaff.id === currentStaff.id) {
-                onUnlock();
-              } else {
-                if (onUnlockWithStaff) {
-                  onUnlockWithStaff(matchedStaff);
-                } else {
-                  onUnlock();
-                }
-                // Log audit action for employee unlocking & switching
-                logEmployeeAction(
-                  tenantId || matchedStaff.tenantId || '',
-                  matchedStaff.id,
-                  matchedStaff.name,
-                  'login',
-                  'تسجيل الدخول للنظام بعد إلغاء القفل (PIN)'
-                ).catch(() => {});
-              }
+          if (matchedStaff) {
+            if (currentStaff && matchedStaff.id === currentStaff.id) {
+              onUnlock();
             } else {
-              setError(t('common.invalid_pin', 'رمز الدخول غير صحيح'));
-              setPin('');
+              if (onUnlockWithStaff) {
+                onUnlockWithStaff(matchedStaff);
+              } else {
+                onUnlock();
+              }
+              // Log audit action for employee unlocking & switching
+              logEmployeeAction(
+                tenantId || matchedStaff.tenantId || '',
+                matchedStaff.id,
+                matchedStaff.name,
+                'login',
+                'تسجيل الدخول للنظام بعد إلغاء القفل (PIN)'
+              ).catch(() => {});
             }
           } else {
-            // Fallback to only checks currentStaff code
+            // Fallback to only checks currentStaff code (if not matched above)
             if (!currentStaff) {
               // Decoupled or missing staff session context, clear lock
               onUnlock();
               return;
             }
-            const isMatch = await bcrypt.compare(pin, currentStaff.pin || '');
-            if (isMatch) {
-              onUnlock();
-            } else {
-              setError(t('common.invalid_pin', 'رمز الدخول غير صحيح'));
-              setPin('');
-            }
+            setError(t('common.invalid_pin', 'رمز الدخول غير صحيح'));
+            setPin('');
           }
         } catch (err) {
           console.error('[LockScreen] Error verifying lock pin:', err);

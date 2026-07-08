@@ -79,10 +79,10 @@ export default function TenantAnalyticsDashboard() {
       
       const { data: recentActivity } = await supabase
         .from('employee_activity_logs')
-        .select('staff_id, staff_name, timestamp, action')
+        .select('staff_id, staff_name, occurred_at, action')
         .eq('tenant_id', tenantId)
-        .gte('timestamp', yesterday.toISOString())
-        .order('timestamp', { ascending: false });
+        .gte('occurred_at', yesterday.toISOString())
+        .order('occurred_at', { ascending: false });
 
       // Determine active staff (logged in / had activity within last 2 hours)
       const twoHoursAgo = new Date();
@@ -91,12 +91,12 @@ export default function TenantAnalyticsDashboard() {
       const activeStaffMap = new Map();
       if (recentActivity) {
         recentActivity.forEach(log => {
-          if (new Date(log.timestamp) >= twoHoursAgo && log.staff_id) {
+          if (new Date(log.occurred_at) >= twoHoursAgo && log.staff_id) {
             if (!activeStaffMap.has(log.staff_id)) {
               activeStaffMap.set(log.staff_id, {
                 id: log.staff_id,
                 name: log.staff_name,
-                lastSeen: log.timestamp
+                lastSeen: log.occurred_at
               });
             }
           }

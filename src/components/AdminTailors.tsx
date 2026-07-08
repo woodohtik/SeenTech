@@ -348,7 +348,7 @@ export default function AdminTailors() {
           setTenants(prev => prev.map(t => t.id === tenantId ? { ...t, planId: newPlanId } : t));
           showToast('تم تحديث الباقة بنجاح', 'success');
         } catch (error) {
-          console.error("Error updating tenant plan:", error);
+          console.warn("Error updating tenant plan:", error);
           showToast('فشل تحديث الباقة', 'error');
         }
       }
@@ -371,7 +371,7 @@ export default function AdminTailors() {
           setTenants(prev => prev.map(t => t.id === tenantId ? { ...t, createdAt: today } : t));
           showToast('تم تمديد الفترة التجريبية لـ 14 يوماً إضافياً', 'success');
         } catch (error) {
-          console.error("Error extending trial:", error);
+          console.warn("Error extending trial:", error);
           showToast('فشل تمديد الفترة', 'error');
         }
       }
@@ -459,7 +459,7 @@ export default function AdminTailors() {
             action: 'renew_subscription',
             target_tenant_id: tenant.id,
             details: `Renewed subscription for ${tenant.name}. Clock reset to ${now}`,
-            timestamp: now
+            occurred_at: now
           });
 
           const updatedTenant = { ...tenant, status: 'active' as const, createdAt: now };
@@ -717,6 +717,7 @@ export default function AdminTailors() {
             </div>
             
             <div className="flex gap-2">
+
               <button className="px-6 py-3 bg-surface-muted border border-border rounded-2xl font-bold text-sm flex items-center gap-2 hover:bg-border transition-all">
                 <Download size={18} />
                 تصدير البيانات
@@ -910,6 +911,7 @@ export default function AdminTailors() {
                             <span className={cn(
                               "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
                               tenant.planId === 'basic' ? "bg-indigo-100 text-indigo-800 border border-indigo-200" :
+                              tenant.planId === 'free' ? "bg-emerald-100 text-emerald-800 border border-emerald-200" :
                               "bg-gray-100 text-gray-700 shadow-sm"
                             )}>
                               {getPlanName(tenant.planId)}

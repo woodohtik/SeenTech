@@ -72,6 +72,7 @@ export const supabase: SupabaseClient<any> =
                                 const clonedRes = res.clone();
                                 try {
                                     const text = await clonedRes.text();
+                                    if (!text) return res;
                                     const parsed = JSON.parse(text);
                                     const decoded = decodeOrderPayload(parsed);
                                     return new Response(JSON.stringify(decoded), {
@@ -80,7 +81,7 @@ export const supabase: SupabaseClient<any> =
                                         headers: res.headers
                                     });
                                 } catch (err) {
-                                    console.error('[Supabase Fetch Interceptor] Failed to decode orders response:', err);
+                                    console.warn('[Supabase Fetch Interceptor] Failed to decode orders response (likely network disconnect):', err);
                                     return res;
                                 }
                             }

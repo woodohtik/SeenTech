@@ -36,7 +36,7 @@ export const autoSeed = async () => {
         owner_email: 'demo@tailor.com',
         phone: '0540000000',
         status: 'active',
-        plan_id: 'basic',
+        plan_id: 'free',
         created_at: new Date().toISOString()
       });
 
