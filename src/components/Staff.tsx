@@ -810,7 +810,7 @@ export default function Staff({ tenantId }: { tenantId: string }) {
         <AdminTailorCommissions tenantId={tenantId} />
       )}
 
-      {viewMode === 'list' ? (
+      {viewMode === 'list' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredStaff.map((member) => (
             <motion.div 
@@ -980,7 +980,9 @@ export default function Staff({ tenantId }: { tenantId: string }) {
             </motion.div>
           ))}
         </div>
-      ) : viewMode === 'performance' ? (
+      )}
+
+      {viewMode === 'performance' && (
         <div className="bg-surface rounded-[2.5rem] border border-border overflow-x-auto whitespace-nowrap shadow-sm">
           <table className="w-full text-right min-w-max">
             <thead>
@@ -1052,7 +1054,9 @@ export default function Staff({ tenantId }: { tenantId: string }) {
             </tbody>
           </table>
         </div>
-      ) : (
+      )}
+
+      {viewMode === 'permissions' && (
         <div className="space-y-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div className="bg-surface-muted p-1 rounded-2xl flex">

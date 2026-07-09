@@ -34,6 +34,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { customerSchema } from '../lib/validations';
 import { PriceDisplay } from './PriceDisplay';
+import PageSkeleton from "./PageSkeleton";
 import Header from './Header';
 import ThobeMeasurementSelector from './ThobeMeasurementSelector';
 import { useStaff } from '../contexts/StaffContext';
@@ -50,6 +51,7 @@ interface CustomersProps {
 
 export default function Customers({ tenantId }: CustomersProps) {
   const { error: toastError, success: toastSuccess, handleError } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'date'>('date');
@@ -108,6 +110,7 @@ export default function Customers({ tenantId }: CustomersProps) {
     if (!tenantId) return;
 
     const fetchCustomers = async () => {
+      setIsLoading(true);
       const { data, error } = await supabase
         .from('customers')
         .select('*')
@@ -373,6 +376,10 @@ export default function Customers({ tenantId }: CustomersProps) {
       </div>
     </div>
   );
+
+  if (isLoading) {
+    return <PageSkeleton />;
+  }
 
   return (
     <div className="space-y-6 text-right" dir="rtl">

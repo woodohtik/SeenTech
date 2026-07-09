@@ -42,7 +42,7 @@ export default function SaaSWithdrawals() {
 
       {loading ? <div style={st.empty}>جارٍ التحميل…</div> :
         rows.length === 0 ? <div style={st.empty}>لا طلبات قيد المراجعة.</div> :
-        <table style={st.table}>
+        <div className="seen-table-scroll"><table style={st.table}>
           <thead><tr>
             {['التاريخ', 'المبلغ', 'المستفيد', 'الآيبان (IBAN)', 'إجراء'].map(h =>
               <th key={h} style={st.th}>{h}</th>)}
@@ -61,7 +61,7 @@ export default function SaaSWithdrawals() {
               </tr>
             ))}
           </tbody>
-        </table>}
+        </table></div>}
     </div>
   );
 }
