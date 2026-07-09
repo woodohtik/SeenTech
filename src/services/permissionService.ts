@@ -77,11 +77,12 @@ export const seedGlobalRoles = async () => {
         created_at: new Date().toISOString()
       });
     } else {
-      console.log(`Updating existing role: ${key}`);
+      // Always update system roles to ensure they have the latest permissions from code
+      console.log(`Updating existing system role permissions: ${key}`);
       return supabase.from('roles').update({
+        permissions: roleData.permissions,
         name: roleData.name,
         description: roleData.description,
-        permissions: roleData.permissions,
         updated_at: new Date().toISOString()
       }).eq('id', existing.id);
     }
@@ -165,8 +166,10 @@ export const getEffectivePermissions = async (staff: Staff): Promise<Permissions
     .eq('role_key', staff.role)
     .single();
   
-  let permissions: PermissionsMap = { ...DEFAULT_ROLES.tailor.permissions }; // Fallback
-  
+  let permissions: PermissionsMap = DEFAULT_ROLES[staff.role] 
+    ? { ...DEFAULT_ROLES[staff.role].permissions } 
+    : { ...DEFAULT_ROLES.tailor.permissions }; // Fallback
+
   if (tenantRoleData) {
     permissions = tenantRoleData.permissions as PermissionsMap;
   } else {
@@ -338,8 +341,10 @@ export const getStaffPermissionDetails = async (staff: Staff): Promise<Permissio
     .eq('role_key', staff.role)
     .single();
   
-  let basePermissions: PermissionsMap = { ...DEFAULT_ROLES.tailor.permissions }; // Fallback
-  
+  let basePermissions: PermissionsMap = DEFAULT_ROLES[staff.role]
+    ? { ...DEFAULT_ROLES[staff.role].permissions }
+    : { ...DEFAULT_ROLES.tailor.permissions }; // Fallback
+
   if (tenantRoleData) {
     basePermissions = tenantRoleData.permissions as PermissionsMap;
   } else {

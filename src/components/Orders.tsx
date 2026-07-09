@@ -44,6 +44,7 @@ import { Order, Customer, OrderStatus, OrderHistory, InventoryItem, PaymentMetho
 import { cn, generateOrderNumber } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
 import { logEmployeeAction } from '../services/employeeAuditService';
+import PageSkeleton from "./PageSkeleton";
 import Header from './Header';
 import VisualMeasurements from './VisualMeasurements';
 import ThobeMeasurementSelector from './ThobeMeasurementSelector';
@@ -156,6 +157,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const refreshCounter = useRefreshCounter();
   const { settings: branding } = useBranding();
   const { error: toastError, success: toastSuccess, warning: toastWarning, handleError } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -298,7 +300,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       }
     };
 
-    fetchOrders();
+    // fetchOrders();
 
     const fetchData = async () => {
       try {
@@ -351,7 +353,12 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       }
     };
 
-    fetchData();
+    const fetchAll = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchOrders(), fetchData()]);
+      setIsLoading(false);
+    };
+    fetchAll();
   }, [tenantId, mapOrderData, refreshCounter]);
 
   useEffect(() => {
@@ -1439,6 +1446,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       </motion.div>
     </div>
   );
+
+  if (isLoading) {
+    return <PageSkeleton />;
+  }
 
   return (
     <div className="space-y-6 text-right" dir="rtl">

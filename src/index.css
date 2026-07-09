@@ -420,3 +420,45 @@ table td {
 @media (max-width: 640px) {
   .seen-btn-primary { width: 100%; }   /* الأزرار الأساسية بعرض كامل على الجوال */
 }
+
+/* ============================================================
+   طبقة التجاوب العامة (Responsive safety net) — جوال/تاب/لابتوب
+   طبقة أساس آمنة تُطبَّق تلقائياً على كل الشاشات دون كسر أي مكوّن
+   يحدّد أبعاده صراحةً (Tailwind utilities تبقى أعلى تخصيصاً).
+   ============================================================ */
+
+/* 1) منع الصور والوسائط من تجاوز عرض الشاشة (سبب شائع للتمرير الأفقي) */
+img, video, canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 2) منع تمرير أفقي غير مقصود على مستوى الصفحة (المكوّنات تدير تمريرها الداخلي) */
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* 3) أداة موحّدة لجعل الجداول العريضة قابلة للتمرير أفقياً على الشاشات الصغيرة
+      (تُطبَّق على غلاف الجدول: <div class="seen-table-scroll"><table/></div>) */
+.seen-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 4) شبكة إحصائيات تتكيّف تلقائياً: تتقلّص إلى عمود واحد على الجوال */
+@media (max-width: 640px) {
+  /* تخفيف الهوامش/الحشوات الكبيرة جداً على الجوال لتحسين استغلال المساحة */
+  .p-8 { padding: 1.25rem !important; }
+  .gap-8 { gap: 1rem !important; }
+  /* تصغير العناوين الضخمة قليلاً على الجوال لتجنّب الالتفاف الرديء */
+  .text-4xl { font-size: 1.875rem !important; line-height: 2.25rem !important; }
+  /* ضمان تمرير أي جدول عريض حتى لو لم يُغلَّف صراحةً */
+  table.min-w-max, table[class*="min-w-"] { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; }
+}
+
+/* 5) هدف لمس مريح للأزرار الأيقونية على الأجهزة اللمسية */
+@media (pointer: coarse) {
+  button, a[role="button"], [role="tab"] { min-height: 40px; }
+}

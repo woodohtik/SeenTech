@@ -273,22 +273,24 @@ export default function UserPreferencesMenu({
             <div className="h-px bg-border my-1" />
 
             {/* 4. Lock Screen */}
-            <button
-              onClick={() => {
-                setIsOpen(false);
-                onLock();
-              }}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-brand/5 text-brand hover:text-brand-dark text-sm font-bold transition-all cursor-pointer focus:outline-none w-full",
-                isRtl ? "text-right" : "text-left"
-              )}
-            >
-              <Lock size={18} />
-              <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
-                <span>{t('common.lock_screen', 'قفل الشاشة مؤقتاً')}</span>
-                <span className="text-[9px] font-bold opacity-80 uppercase tracking-widest">{t('common.lock_desc', 'SCREEN LOCK')}</span>
-              </div>
-            </button>
+            {currentStaff?.pin && (
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  onLock();
+                }}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-brand/5 text-brand hover:text-brand-dark text-sm font-bold transition-all cursor-pointer focus:outline-none w-full",
+                  isRtl ? "text-right" : "text-left"
+                )}
+              >
+                <Lock size={18} />
+                <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
+                  <span>{t('common.lock_screen', 'قفل الشاشة مؤقتاً')}</span>
+                  <span className="text-[9px] font-bold opacity-80 uppercase tracking-widest">{t('common.lock_desc', 'SCREEN LOCK')}</span>
+                </div>
+              </button>
+            )}
 
             {/* 5. Log Out */}
             <button
