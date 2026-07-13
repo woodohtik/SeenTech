@@ -1,5 +1,6 @@
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import Barcode from 'react-barcode';
 import { generateZatcaQR } from '../../services/zatcaService';
 import { FileText, Printer, Mail, Phone, MapPin, Layers, Globe } from 'lucide-react';
 

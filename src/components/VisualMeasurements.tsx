@@ -1,13 +1,6 @@
 import React from 'react';
 import { 
-  Shirt, 
-  Check, 
-  Circle, 
-  Square, 
-  Layers, 
-  Maximize2,
-  ChevronRight,
-  ChevronLeft
+  Check,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -17,6 +10,7 @@ interface VisualMeasurementsProps {
     cuffType?: string;
     pocketType?: string;
     chestStyle?: string;
+    shoulderStyle?: string;
     closureType?: 'zipper' | 'buttons';
     closureVisibility?: 'hidden' | 'visible';
   };
@@ -25,28 +19,29 @@ interface VisualMeasurementsProps {
 }
 
 const COLLAR_TYPES = [
-  { id: 'plain', label: 'سادة', icon: Shirt },
-  { id: 'formal', label: 'رسمي', icon: Shirt },
-  { id: 'flip', label: 'قلاب', icon: Shirt },
-  { id: 'saudi', label: 'سعودي', icon: Shirt },
+  { id: 'classic', label: 'كلاسيك', icon: () => <div className="w-8 h-4 border-2 border-current rounded-t-lg" /> },
+  { id: 'mandarin', label: 'صيني', icon: () => <div className="w-8 h-2 border-2 border-current rounded-t-sm" /> },
 ];
 
 const CUFF_TYPES = [
-  { id: 'plain', label: 'سادة', icon: Square },
-  { id: 'french', label: 'فرنسي', icon: Square },
-  { id: 'round', label: 'دائري', icon: Circle },
+  { id: 'square', label: 'مربع', icon: () => <div className="w-6 h-6 border-2 border-current" /> },
+  { id: 'round', label: 'دائري', icon: () => <div className="w-6 h-6 border-2 border-current rounded-full" /> },
 ];
 
 const POCKET_TYPES = [
-  { id: 'none', label: 'بدون', icon: Layers },
-  { id: 'single', label: 'واحد', icon: Layers },
-  { id: 'double', label: 'اثنين', icon: Layers },
+  { id: 'hidden', label: 'مخفي', icon: () => <div className="w-6 h-6 border-2 border-dashed border-current" /> },
+  { id: 'visible', label: 'ظاهر', icon: () => <div className="w-6 h-6 border-2 border-current rounded-b-lg" /> },
 ];
 
 const CHEST_STYLES = [
-  { id: 'plain', label: 'سادة', icon: Maximize2 },
-  { id: 'pleated', label: 'كسرات', icon: Maximize2 },
-  { id: 'embroidered', label: 'تطريز', icon: Maximize2 },
+  { id: 'plain', label: 'سادة', icon: () => <div className="w-8 h-8 border-2 border-current" /> },
+  { id: 'pleated', label: 'كسرات', icon: () => <div className="w-8 h-8 border-2 border-current flex gap-1 px-1 justify-center"><div className="w-px h-full bg-current"/><div className="w-px h-full bg-current"/></div> },
+];
+
+const SHOULDER_STYLES = [
+  { id: 'plain', label: 'سادة', icon: () => <div className="w-8 h-8 border-2 border-current" /> },
+  { id: 'padded', label: 'حشوة', icon: () => <div className="w-8 h-8 border-2 border-current flex items-center justify-center"><div className="w-6 h-2 bg-current opacity-20"/></div> },
+  { id: 'double', label: 'دبل', icon: () => <div className="w-8 h-8 border-2 border-current flex flex-col gap-1 p-1 justify-center"><div className="h-px w-full bg-current"/><div className="h-px w-full bg-current"/></div> },
 ];
 
 export default function VisualMeasurements({ values, onChange, readOnly }: VisualMeasurementsProps) {
@@ -65,17 +60,19 @@ export default function VisualMeasurements({ values, onChange, readOnly }: Visua
               disabled={readOnly}
               onClick={() => onChange(field, opt.id)}
               className={cn(
-                "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all group relative overflow-hidden",
+                "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all group relative overflow-hidden h-24",
                 isSelected 
-                  ? "border-brand bg-brand/5 text-brand" 
+                  ? "border-brand bg-brand/5 text-brand shadow-sm shadow-brand/10" 
                   : "border-border bg-surface text-content-muted hover:border-brand/30 hover:bg-brand/5"
               )}
             >
-              <opt.icon size={24} className={cn("mb-2 transition-transform", isSelected && "scale-110")} />
+              <div className={cn("mb-3 flex items-center justify-center transition-transform", isSelected && "scale-110 text-brand")}>
+                <opt.icon />
+              </div>
               <span className="text-xs font-bold">{opt.label}</span>
               {isSelected && (
-                <div className="absolute top-1 right-1">
-                  <Check size={12} className="text-brand" />
+                <div className="absolute top-2 right-2">
+                  <Check size={14} className="text-brand" strokeWidth={3} />
                 </div>
               )}
             </button>
@@ -92,6 +89,7 @@ export default function VisualMeasurements({ values, onChange, readOnly }: Visua
         <Section title="نوع الكبك" field="cuffType" options={CUFF_TYPES} />
         <Section title="نوع الجيب" field="pocketType" options={POCKET_TYPES} />
         <Section title="تصميم الصدر" field="chestStyle" options={CHEST_STYLES} />
+        <Section title="تصميم الكتف" field="shoulderStyle" options={SHOULDER_STYLES} />
       </div>
 
       <div className="pt-6 border-t border-border grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -113,7 +111,7 @@ export default function VisualMeasurements({ values, onChange, readOnly }: Visua
                 className={cn(
                   "flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all",
                   values.closureType === opt.id 
-                    ? "border-brand bg-brand text-white" 
+                    ? "border-brand bg-brand text-white shadow-md shadow-brand/20" 
                     : "border-border bg-surface text-content-muted hover:border-brand/30"
                 )}
               >
@@ -141,7 +139,7 @@ export default function VisualMeasurements({ values, onChange, readOnly }: Visua
                 className={cn(
                   "flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all",
                   values.closureVisibility === opt.id 
-                    ? "border-brand bg-brand text-white" 
+                    ? "border-brand bg-brand text-white shadow-md shadow-brand/20" 
                     : "border-border bg-surface text-content-muted hover:border-brand/30"
                 )}
               >

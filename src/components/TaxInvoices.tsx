@@ -94,7 +94,7 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
   }
 
   return (
-    <div className="p-6 font-sans bg-surface" dir={isRtl ? 'rtl' : 'ltr'} style={{ fontFamily: 'IBM Plex Sans, sans-serif' }}>
+    <div className="p-6 font-sans bg-surface" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="mb-6 flex justify-between items-center bg-surface p-6 rounded-2xl shadow-sm border border-border">
         <div>
           <h2 className="text-xl font-black text-content flex items-center gap-2">
@@ -289,7 +289,7 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
   return (
     <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl relative z-10 overflow-y-auto max-h-[90vh] flex flex-col font-sans border border-border" dir={isRtl ? 'rtl' : 'ltr'} style={{ fontFamily: 'IBM Plex Sans, sans-serif' }}>
+      <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl relative z-10 overflow-y-auto max-h-[90vh] flex flex-col font-sans border border-border" dir={isRtl ? 'rtl' : 'ltr'}>
         
         {/* Modal Controls */}
         <div className="p-4 border-b border-border flex flex-wrap gap-3 justify-between items-center bg-surface-muted/50 print:hidden shrink-0">
@@ -344,7 +344,7 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
               items={formattedItems}
               totals={totals}
               qrCodeBase64={qrCodeBase64}
-              orderId={order.id}
+              orderId={order.orderId || order.id}
               hidePrintButton={true}
             />
           ) : (
@@ -358,7 +358,7 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
               items={formattedItems}
               totals={totals}
               qrCodeBase64={qrCodeBase64}
-              orderId={order.id}
+              orderId={order.orderId || order.id}
               hidePrintButton={true}
             />
           )}

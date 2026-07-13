@@ -90,7 +90,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto font-sans" style={{ fontFamily: 'IBM Plex Sans, sans-serif' }}>
+    <div className="p-6 max-w-4xl mx-auto font-sans">
       <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-6">
         <div>
           <h2 className="text-xl font-bold text-gray-800 mb-4">إرجاع فاتورة مبيعات</h2>

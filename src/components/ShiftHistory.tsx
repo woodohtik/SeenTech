@@ -115,7 +115,7 @@ export default function ShiftHistory({ tenantId, staffId, isManager }: ShiftHist
   }
 
   return (
-    <div className="p-6 space-y-6 font-sans" style={{ fontFamily: 'IBM Plex Sans, sans-serif' }}>
+    <div className="p-6 space-y-6 font-sans">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-2xl font-black text-content">سجل الورديات</h2>
@@ -212,7 +212,7 @@ export default function ShiftHistory({ tenantId, staffId, isManager }: ShiftHist
 
       {/* Printable Z-Report */}
       {selectedShift && (
-        <div className="hidden print:block fixed inset-0 bg-white z-[200] p-8 text-black" dir="rtl" style={{ fontFamily: 'IBM Plex Sans, sans-serif' }}>
+        <div className="hidden print:block fixed inset-0 bg-white z-[200] p-8 text-black" dir="rtl">
           <div className="max-w-md mx-auto">
             <div className="text-center mb-6 border-b border-dashed border-gray-400 pb-4">
               <h1 className="text-2xl font-black mb-2">تقرير الوردية (Z-Report)</h1>

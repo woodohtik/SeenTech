@@ -23,58 +23,20 @@ export default function PublicInvoice() {
         return;
       }
 
+      
       try {
-        const { data: orderData, error: orderError } = await supabase
-          .from('orders')
-          .select('*')
-          .eq('id', id)
-          .maybeSingle();
-
-        if (orderError || !orderData) {
+        const response = await fetch(`/api/public/invoices/${id}`);
+        if (!response.ok) {
           setError('لم يتم العثور على الفاتورة');
           setLoading(false);
           return;
         }
-
-        setOrder({
-          ...orderData,
-          orderNumber: orderData.order_number,
-          orderDate: orderData.order_date,
-          totalAmount: orderData.total_amount,
-          paidAmount: orderData.paid_amount,
-          vatAmount: orderData.vat_amount,
-          paymentMethod: orderData.payment_method,
-          tenantId: orderData.tenant_id,
-        });
-
-        // Fetch tenant details
-        const { data: tenantData } = await supabase
-          .from('tenants')
-          .select('*')
-          .eq('id', orderData.tenant_id)
-          .maybeSingle();
-
-        if (tenantData) {
-          setTenant({
-            ...tenantData,
-            storeName: tenantData.store_name,
-            storeNameEn: tenantData.store_name_en,
-            vatNumber: tenantData.vat_number,
-            address: tenantData.address,
-            logoUrl: tenantData.logo_url
-          });
-        }
-
-        if (orderData.customer_id) {
-          const { data: customerData } = await supabase
-            .from('customers')
-            .select('*')
-            .eq('id', orderData.customer_id)
-            .maybeSingle();
-          if (customerData) {
-            setCustomer(customerData);
-          }
-        }
+        
+        const data = await response.json();
+        
+        setOrder(data.order);
+        setTenant(data.tenant);
+        setCustomer(data.customer);
 
       } catch (err: any) {
         setError('حدث خطأ أثناء تحميل الفاتورة');
@@ -88,8 +50,12 @@ export default function PublicInvoice() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader2 className="animate-spin text-brand w-8 h-8" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center" dir="rtl">
+        <div className="w-16 h-16 bg-brand/10 text-brand rounded-full flex items-center justify-center mb-4">
+          <Loader2 className="animate-spin w-8 h-8" />
+        </div>
+        <h1 className="text-xl font-bold text-slate-900 mb-2">جاري استرجاع الفاتورة...</h1>
+        <p className="text-slate-500">يرجى الانتظار لحظات</p>
       </div>
     );
   }
