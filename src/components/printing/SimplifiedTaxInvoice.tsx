@@ -1,5 +1,6 @@
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import Barcode from 'react-barcode';
 import { generateZatcaQR } from '../../services/zatcaService';
 import { ShoppingBag, Printer } from 'lucide-react';
 
@@ -57,6 +58,8 @@ export default function SimplifiedTaxInvoice({
   onPrint,
   hidePrintButton = false,
 }: SimplifiedTaxInvoiceProps) {
+  const [fontSizeScale, setFontSizeScale] = React.useState<number>(100);
+
   // If totals are not provided, compute them dynamically (assuming unitPrice is VAT-inclusive)
   const computedTotals = totals || (() => {
     let grandTotal = 0;
@@ -104,21 +107,29 @@ export default function SimplifiedTaxInvoice({
   return (
     <div className="w-full max-w-md mx-auto my-6 bg-white p-6 border border-slate-200 rounded-3xl shadow-lg relative font-sans text-right print:shadow-none print:border-none print:m-0 print:p-0" dir="rtl">
       
-      {/* Print Trigger Button (Hidden in Print Mode) */}
+      {/* Print Controls (Hidden in Print Mode) */}
       {!hidePrintButton && (
-        <div className="flex justify-center mb-6 print:hidden">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 print:hidden bg-slate-50 p-4 rounded-2xl border border-slate-100">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold text-slate-600">حجم الخط:</span>
+            <div className="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden">
+              <button onClick={() => setFontSizeScale(s => Math.max(70, s - 10))} className="px-3 py-1.5 hover:bg-slate-50 text-slate-700 font-bold border-l border-slate-200 cursor-pointer">-</button>
+              <span className="px-3 py-1.5 text-xs font-bold text-slate-800 min-w-[3rem] text-center" dir="ltr">{fontSizeScale}%</span>
+              <button onClick={() => setFontSizeScale(s => Math.min(150, s + 10))} className="px-3 py-1.5 hover:bg-slate-50 text-slate-700 font-bold border-r border-slate-200 cursor-pointer">+</button>
+            </div>
+          </div>
           <button
             onClick={handlePrint}
-            className="flex items-center gap-2 px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer"
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer w-full sm:w-auto"
           >
             <Printer size={14} />
-            <span>طباعة الإيصال / Print Receipt</span>
+            <span>طباعة الإيصال / Print</span>
           </button>
         </div>
       )}
 
       {/* Invoice Frame - 80mm Thermal Style */}
-      <div id="simplified-invoice-container" className="bg-white p-4 print:p-0 text-slate-800 text-xs">
+      <div id="simplified-invoice-container" className="bg-white p-4 print:p-0 text-slate-800 text-xs" style={{ zoom: `${fontSizeScale}%` }}>
         
         {/* Header Block */}
         <div className="text-center mb-6 border-b border-dashed border-slate-300 pb-5">
@@ -228,6 +239,11 @@ export default function SimplifiedTaxInvoice({
           </div>
         </div>
 
+        {/* 1D Barcode for quick scanning */}
+        <div className="flex flex-col items-center justify-center py-2 mb-2">
+          <Barcode value={invoiceNumber} width={1.5} height={40} fontSize={12} margin={0} displayValue={true} />
+        </div>
+
         {/* Compliant ZATCA QR Code */}
         <div className="flex flex-col items-center justify-center py-2 mb-4">
           <p className="text-[9px] text-slate-400 font-bold mb-2">فاتورة إلكترونية متوافقة / Compliant E-Invoice</p>
@@ -258,9 +274,12 @@ export default function SimplifiedTaxInvoice({
       {/* Styled Printable thermal Setup */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
+          @page { margin: 0; size: 80mm auto; }
           body {
             background: white !important;
             color: black !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
           #print-area, #simplified-invoice-container, #simplified-invoice-container * {
             visibility: visible;
@@ -271,9 +290,10 @@ export default function SimplifiedTaxInvoice({
           #simplified-invoice-container {
             border: none !important;
             padding: 0 !important;
-            margin: 0 !important;
+            margin: 0 auto !important;
             width: 80mm !important;
             max-width: 100% !important;
+            box-sizing: border-box;
           }
         }
       `}} />

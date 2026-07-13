@@ -171,7 +171,7 @@ export default function ZReport({ data, onClose }: ZReportProps) {
   const netProfit = totals.totalSales - totals.taxes;
 
   return (
-    <div className="bg-surface min-h-screen py-8 px-4 sm:px-6 lg:px-8 font-sans print:p-0" style={{ fontFamily: 'IBM Plex Sans, sans-serif' }} dir="rtl">
+    <div className="bg-surface min-h-screen py-8 px-4 sm:px-6 lg:px-8 font-sans print:p-0" dir="rtl">
       {/* Header Utilities (Hide on print) */}
       <div className="max-w-3xl mx-auto mb-8 flex justify-between items-center print:hidden">
         <h1 className="text-2xl font-black text-content flex items-center gap-3">

@@ -17,6 +17,7 @@ export interface Measurements {
   hips?: number;
   sleeve?: number;
   neck?: number;
+  bottomWidth?: number;
   // Visual/Sector specific fields
   collarType?: string; // الياقة
   cuffType?: string;   // الكبك

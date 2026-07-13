@@ -178,7 +178,7 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
   );
 
   return (
-    <div className="p-6 font-sans bg-surface" dir={isRtl ? 'rtl' : 'ltr'} style={{ fontFamily: 'IBM Plex Sans, sans-serif' }}>
+    <div className="p-6 font-sans bg-surface" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="mb-6 flex justify-between items-center bg-surface p-6 rounded-2xl shadow-sm border border-border">
         <div>
           <h2 className="text-xl font-black text-content flex items-center gap-2">

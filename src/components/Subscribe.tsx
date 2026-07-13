@@ -15,8 +15,6 @@ import { useState } from 'react';
 const INK = '#0E2A42', INK2 = '#15395A', BRAND = '#61BEED', BRAND2 = '#5AA2D6';
 const CTA = '#0BA06B', CTA_INK = '#0A7E54', TINT = '#EAF6FD', SURFACE = '#F5F7FA';
 const GRAY = '#6B7280', TEXT = '#34404D', LINE = '#E5EAF1', WHITE = '#FFFFFF';
-const FONT = "'IBM Plex Sans Arabic', system-ui, sans-serif";
-
 interface Props {
   onCheckout?: (planId: string, amountSar: number) => void;
   onContactSales?: () => void;
@@ -119,7 +117,7 @@ function Check() {
 }
 
 const st: Record<string, React.CSSProperties> = {
-  page: { position: 'relative', minHeight: '100vh', background: SURFACE, color: TEXT, fontFamily: FONT, padding: '52px 16px 40px', overflow: 'hidden' },
+  page: { position: 'relative', minHeight: '100vh', background: SURFACE, color: TEXT, padding: '52px 16px 40px', overflow: 'hidden' },
   bgGlow: { position: 'absolute', top: -200, insetInlineStart: '50%', transform: 'translateX(50%)', width: 700, height: 420, background: 'radial-gradient(circle, ' + TINT + ' 0%, transparent 70%)', opacity: 0.9, pointerEvents: 'none' },
   head: { position: 'relative', textAlign: 'center', marginBottom: 38 },
   brand: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 16 },
@@ -145,9 +143,9 @@ const st: Record<string, React.CSSProperties> = {
   cur: { color: GRAY, fontSize: 14 },
   feats: { listStyle: 'none', padding: 0, margin: '18px 0 22px', flex: 1, display: 'flex', flexDirection: 'column', gap: 11 },
   feat: { display: 'flex', alignItems: 'center', gap: 10, fontSize: 14.5, color: TEXT },
-  cta: { width: '100%', padding: '14px 0', borderRadius: 14, border: 'none', background: CTA, color: WHITE, fontWeight: 800, fontSize: 16, cursor: 'pointer', fontFamily: FONT, boxShadow: '0 14px 30px rgba(11,160,107,.3)', transition: 'transform .15s, background .15s' },
+  cta: { width: '100%', padding: '14px 0', borderRadius: 14, border: 'none', background: CTA, color: WHITE, fontWeight: 800, fontSize: 16, cursor: 'pointer', boxShadow: '0 14px 30px rgba(11,160,107,.3)', transition: 'transform .15s, background .15s' },
   ctaHover: { background: CTA_INK, transform: 'translateY(-2px)' },
   guarantee: { textAlign: 'center', color: GRAY, fontSize: 12.5, marginTop: 12 },
-  ghost: { width: '100%', padding: '13px 0', borderRadius: 14, background: 'transparent', border: '2px solid ' + INK, color: INK, fontWeight: 800, fontSize: 15, cursor: 'pointer', fontFamily: FONT, transition: 'background .15s' },
+  ghost: { width: '100%', padding: '13px 0', borderRadius: 14, background: 'transparent', border: '2px solid ' + INK, color: INK, fontWeight: 800, fontSize: 15, cursor: 'pointer', transition: 'background .15s' },
   foot: { position: 'relative', textAlign: 'center', color: '#9AA4B0', fontSize: 13, marginTop: 30 },
 };

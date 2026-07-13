@@ -37,6 +37,7 @@ import { PriceDisplay } from './PriceDisplay';
 import PageSkeleton from "./PageSkeleton";
 import Header from './Header';
 import ThobeMeasurementSelector from './ThobeMeasurementSelector';
+import VisualMeasurements from './VisualMeasurements';
 import { useStaff } from '../contexts/StaffContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { useToast } from '../contexts/ToastContext';
@@ -109,8 +110,8 @@ export default function Customers({ tenantId }: CustomersProps) {
   useEffect(() => {
     if (!tenantId) return;
 
-    const fetchCustomers = async () => {
-      setIsLoading(true);
+    const fetchCustomers = async (showLoading = true) => {
+      if (showLoading) setIsLoading(true);
       const { data, error } = await supabase
         .from('customers')
         .select('*')
@@ -131,15 +132,16 @@ export default function Customers({ tenantId }: CustomersProps) {
         }) as unknown as Customer);
         setCustomers(mapped);
       }
+      if (showLoading) setIsLoading(false);
     };
 
-    fetchCustomers();
+    fetchCustomers(true);
 
     // Subscribe to changes
     const channel = supabase
       .channel('customers-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'customers', filter: `tenant_id=eq.${tenantId}` }, () => {
-        fetchCustomers();
+        fetchCustomers(false);
       })
       .subscribe();
 
@@ -348,34 +350,7 @@ export default function Customers({ tenantId }: CustomersProps) {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
-  const VisualPart = ({ label, icon: Icon, value, options, onChange }: any) => (
-    <div className="space-y-3 p-4 bg-surface rounded-2xl border border-border shadow-sm hover:border-brand/40 transition-all group">
-      <div className="flex items-center gap-2 text-content-muted group-hover:text-brand transition-colors">
-        <Icon size={18} />
-        <span className="text-xs font-black uppercase tracking-wider">{label}</span>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        {options.map((opt: any) => (
-          <button
-            key={opt.id}
-            type="button"
-            onClick={() => onChange(opt.id)}
-            className={cn(
-              "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
-              value === opt.id 
-                ? "bg-brand/10 border-brand text-brand" 
-                : "bg-surface-muted border-transparent text-content-muted hover:bg-surface"
-            )}
-          >
-            <div className="w-10 h-10 flex items-center justify-center">
-              {opt.icon}
-            </div>
-            <span className="text-[10px] font-bold">{opt.label}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+
 
   if (isLoading) {
     return <PageSkeleton />;
@@ -667,162 +642,33 @@ export default function Customers({ tenantId }: CustomersProps) {
                 </div>
 
                 <h4 className="text-lg font-bold text-content mb-4 flex items-center gap-2">
-                  <Ruler size={20} className="text-brand" />
-                  القياسات الأساسية
-                </h4>
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                  {['length', 'shoulder', 'chest', 'waist', 'hips', 'sleeve', 'neck'].map((field) => (
-                    <div key={field} className="space-y-1">
-                      <label className="text-xs font-medium text-content-muted">
-                        {field === 'length' ? 'الطول' : 
-                         field === 'shoulder' ? 'الكتف' :
-                         field === 'chest' ? 'الصدر' :
-                         field === 'waist' ? 'الخصر' :
-                         field === 'hips' ? 'الأرداف' :
-                         field === 'sleeve' ? 'الكم' : 'الرقبة'}
-                      </label>
-                      <input 
-                        type="number" 
-                        step="0.1"
-                        {...register(`measurements.${field}` as any)} 
-                        className="w-full bg-surface-muted border-none rounded-lg p-2 text-sm focus:ring-2 focus:ring-brand text-content" 
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                <h4 className="text-lg font-bold text-content mb-4 flex items-center gap-2">
                   <Zap size={20} className="text-brand" />
                   التفاصيل البصرية والمقاسات التفاعلية
                 </h4>
 
                 <div className="mb-8">
+                  <VisualMeasurements 
+                    values={watchMeasurements || {}}
+                    onChange={(field, value) => setValue(`measurements.${field}` as any, value)}
+                  />
+                </div>
+
+                <div className="mb-8 pt-8 border-t border-border">
+                  <h3 className="text-sm font-black text-content flex items-center gap-2 mb-4">
+                    <div className="w-1.5 h-4 bg-brand rounded-full" />
+                    مُحدد المقاسات البصري التفاعلي
+                  </h3>
                   <ThobeMeasurementSelector 
-                    values={(watchMeasurements?.thobeMeasurements as ThobeMeasurements) || {
-                      collar: 0,
-                      chest: 0,
-                      shoulders: 0,
-                      sleeves: 0,
-                      length: 0,
-                      bottomWidth: 0
+                    values={(watchMeasurements as Measurements) || {}}
+                    onChange={(newMeasurements) => {
+                      Object.entries(newMeasurements).forEach(([key, value]) => {
+                        setValue(`measurements.${key}` as any, value);
+                      });
                     }}
-                    onChange={(newMeasurements) => setValue('measurements.thobeMeasurements' as any, newMeasurements)}
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                  <VisualPart
-                    label="نوع الياقة"
-                    icon={ChevronLeft}
-                    value={watchMeasurements?.collarType}
-                    onChange={(val: string) => setValue('measurements.collarType', val)}
-                    options={[
-                      { id: 'classic', label: 'كلاسيك', icon: <div className="w-8 h-4 border-2 border-current rounded-t-lg" /> },
-                      { id: 'mandarin', label: 'صيني', icon: <div className="w-8 h-2 border-2 border-current rounded-t-sm" /> },
-                    ]}
-                  />
-                  <VisualPart
-                    label="نوع الكبك"
-                    icon={ChevronLeft}
-                    value={watchMeasurements?.cuffType}
-                    onChange={(val: string) => setValue('measurements.cuffType', val)}
-                    options={[
-                      { id: 'square', label: 'مربع', icon: <div className="w-6 h-6 border-2 border-current" /> },
-                      { id: 'round', label: 'دائري', icon: <div className="w-6 h-6 border-2 border-current rounded-full" /> },
-                    ]}
-                  />
-                  <VisualPart
-                    label="نوع الجيب"
-                    icon={ChevronLeft}
-                    value={watchMeasurements?.pocketType}
-                    onChange={(val: string) => setValue('measurements.pocketType', val)}
-                    options={[
-                      { id: 'hidden', label: 'مخفي', icon: <div className="w-6 h-6 border-2 border-dashed border-current" /> },
-                      { id: 'visible', label: 'ظاهر', icon: <div className="w-6 h-6 border-2 border-current rounded-b-lg" /> },
-                    ]}
-                  />
-                  <VisualPart
-                    label="شكل الصدر"
-                    icon={ChevronLeft}
-                    value={watchMeasurements?.chestStyle}
-                    onChange={(val: string) => setValue('measurements.chestStyle', val)}
-                    options={[
-                      { id: 'plain', label: 'سادة', icon: <div className="w-8 h-8 border-2 border-current" /> },
-                      { id: 'pleated', label: 'كسرات', icon: <div className="w-8 h-8 border-2 border-current flex gap-1 px-1"><div className="w-px h-full bg-current"/><div className="w-px h-full bg-current"/></div> },
-                    ]}
-                  />
-                  <VisualPart
-                    label="شكل الكتف"
-                    icon={ChevronLeft}
-                    value={watchMeasurements?.shoulderStyle}
-                    onChange={(val: string) => setValue('measurements.shoulderStyle', val)}
-                    options={[
-                      { id: 'plain', label: 'سادة', icon: <div className="w-8 h-8 border-2 border-current" /> },
-                      { id: 'padded', label: 'حشوة', icon: <div className="w-8 h-8 border-2 border-current flex items-center justify-center"><div className="w-6 h-2 bg-current opacity-20"/></div> },
-                      { id: 'double', label: 'دبل', icon: <div className="w-8 h-8 border-2 border-current flex flex-col gap-1 p-1"><div className="h-px w-full bg-current"/><div className="h-px w-full bg-current"/></div> },
-                    ]}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 bg-brand/5 p-4 rounded-2xl">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-brand block mb-2">شكل الرقبة</label>
-                    <Controller
-                      name="styles.neckShape"
-                      control={control}
-                      render={({ field }) => (
-                         <SmartSelect
-                           {...field}
-                           className="bg-surface text-content rounded-xl"
-                           options={[
-                             { value: 'round', label: 'دائري' },
-                             { value: 'v-neck', label: 'سبعة (V)' },
-                             { value: 'square', label: 'مربع' }
-                           ]}
-                         />
-                      )}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-brand block mb-2">نوع الكم</label>
-                    <Controller
-                      name="styles.sleeveStyle"
-                      control={control}
-                      render={({ field }) => (
-                         <SmartSelect
-                           {...field}
-                           className="bg-surface text-content rounded-xl"
-                           options={[
-                             { value: 'normal', label: 'عادي' },
-                             { value: 'cuff', label: 'كبك' },
-                             { value: 'wide', label: 'واسع' }
-                           ]}
-                         />
-                      )}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-brand block mb-2">الجيب</label>
-                    <Controller
-                      name="styles.pocketType"
-                      control={control}
-                      render={({ field }) => (
-                         <SmartSelect
-                           {...field}
-                           className="bg-surface text-content rounded-xl"
-                           options={[
-                             { value: 'none', label: 'بدون' },
-                             { value: 'single', label: 'واحد' },
-                             { value: 'double', label: 'اثنين' }
-                           ]}
-                         />
-                      )}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2 mb-8">
+                <div className="space-y-2 mb-8 mt-8 pt-8 border-t border-border">
                   <label className="text-sm font-bold text-content-muted">ملاحظات إضافية</label>
                   <textarea {...register('notes')} className="w-full bg-surface-muted border-none rounded-xl p-3 focus:ring-2 focus:ring-brand h-24 text-content" />
                 </div>
@@ -1037,16 +883,9 @@ const CustomerDetailsModal = ({
 
         {/* Garment Blueprint Section */}
         <DetailSection title="المخطط الهندسي للثوب" icon={Scissors}>
-          <div className="bg-surface-muted/30 rounded-[2.5rem] p-4 border border-border">
+          <div className="bg-surface-muted/30 rounded-[2.5rem] p-4 border border-border pointer-events-none">
             <ThobeMeasurementSelector 
-              values={(customer.measurements?.thobeMeasurements as ThobeMeasurements) || {
-                collar: 0,
-                chest: 0,
-                shoulders: 0,
-                sleeves: 0,
-                length: 0,
-                bottomWidth: 0
-              }}
+              values={(customer.measurements as Measurements) || {}}
               onChange={() => {}} // Read-only in details view
             />
           </div>

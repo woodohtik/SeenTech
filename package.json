@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "build": "export NODE_OPTIONS=--max-old-space-size=4096 \"build": "vite build\"build": "vite build vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "preview": "vite preview",
     "clean": "rm -rf dist",
@@ -42,6 +42,7 @@
     "next-themes": "^0.4.6",
     "qrcode.react": "^4.2.0",
     "react": "^19.0.0",
+    "react-barcode": "^1.6.1",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.72.0",
     "react-i18next": "^17.0.2",

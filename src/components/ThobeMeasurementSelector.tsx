@@ -1,31 +1,35 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Lightbulb } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { ThobeMeasurements } from '../types';
+import { Measurements } from '../types';
 import Branding from './Branding';
 
 interface ThobeMeasurementSelectorProps {
-  values: ThobeMeasurements;
-  onChange: (values: ThobeMeasurements) => void;
+  values: Measurements;
+  onChange: (values: Measurements) => void;
 }
 
-type ThobePart = keyof ThobeMeasurements;
+type ThobePart = 'neck' | 'chest' | 'waist' | 'hips' | 'shoulder' | 'sleeve' | 'length' | 'bottomWidth';
 
 const PART_LABELS: Record<ThobePart, string> = {
-  collar: 'مقاس الرقبة',
+  neck: 'مقاس الرقبة',
   chest: 'مقاس الصدر',
-  shoulders: 'مقاس الأكتاف',
-  sleeves: 'مقاس الأكمام',
+  waist: 'مقاس الخصر',
+  hips: 'مقاس الأرداف',
+  shoulder: 'مقاس الأكتاف',
+  sleeve: 'مقاس الأكمام',
   length: 'الطول الكلي',
   bottomWidth: 'وسع الأسفل',
 };
 
 const PART_HINTS: Record<ThobePart, string> = {
-  collar: 'قم بقياس محيط الرقبة مع ترك مسافة إصبعين للراحة.',
+  neck: 'قم بقياس محيط الرقبة مع ترك مسافة إصبعين للراحة.',
   chest: 'قم بقياس محيط الصدر تحت الإبطين في أوسع نقطة.',
-  shoulders: 'من عظمة الكتف الأيمن إلى الأيسر من الخلف.',
-  sleeves: 'من عظمة الكتف وحتى المعصم.',
+  waist: 'قم بقياس محيط الخصر في أضيق نقطة.',
+  hips: 'قم بقياس محيط الأرداف في أوسع نقطة.',
+  shoulder: 'من عظمة الكتف الأيمن إلى الأيسر من الخلف.',
+  sleeve: 'من عظمة الكتف وحتى المعصم.',
   length: 'من أعلى نقطة في الكتف حتى الطول المطلوب.',
   bottomWidth: 'عرض الثوب من الأسفل.'
 };
@@ -48,48 +52,38 @@ export default function ThobeMeasurementSelector({ values, onChange }: ThobeMeas
 
   const highlightColor = "#1C8FFF";
   const dimColor = "rgba(0, 0, 0, 0.1)";
-  const strokeColor = "#333";
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 md:gap-8 p-4 md:p-8 bg-white rounded-3xl md:rounded-[3rem] border border-slate-100 shadow-xl relative overflow-hidden" dir="rtl">
-      {/* Visual SVG Section */}
-      <div className="flex-1 flex flex-col items-center justify-center bg-slate-50/50 rounded-2xl md:rounded-[2.5rem] p-4 md:p-12 min-h-[400px] md:min-h-[900px] relative border border-slate-100/50">
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+    <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8 bg-surface p-6 sm:p-8 rounded-[2rem] border border-border shadow-xl shadow-brand/5 w-full">
+      {/* Interactive SVG Section */}
+      <div className="relative w-full max-w-[400px] mx-auto flex flex-col items-center select-none touch-none">
         <svg 
           viewBox="0 0 400 800" 
-          className="w-full h-auto"
-          style={{ maxHeight: '850px' }}
+          className="w-full h-auto drop-shadow-lg"
+          style={{ 
+            maxHeight: '70vh',
+            filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.05))'
+          }}
         >
           <defs>
-            <linearGradient id="thobeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <linearGradient id="thobeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#ffffff" />
-              <stop offset="50%" stopColor="#fcfdfe" />
-              <stop offset="100%" stopColor="#f5f7fa" />
+              <stop offset="100%" stopColor="#f8fafc" />
             </linearGradient>
+            
             <linearGradient id="collarGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#ffffff" />
-              <stop offset="100%" stopColor="#f0f2f5" />
+              <stop offset="0%" stopColor="#f1f5f9" />
+              <stop offset="100%" stopColor="#e2e8f0" />
             </linearGradient>
-            <filter id="realisticShadow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur in="SourceAlpha" stdDeviation="8" />
-              <feOffset dx="0" dy="4" result="offsetblur" />
-              <feComponentTransfer>
-                <feFuncA type="linear" slope="0.15" />
-              </feComponentTransfer>
-              <feMerge>
-                <feMergeNode />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
+
+            <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+              <feDropShadow dx="0" dy="8" stdDeviation="12" floodOpacity="0.06" />
             </filter>
           </defs>
 
-          {/* Background Shadow */}
-          <ellipse cx="200" cy="760" rx="150" ry="20" fill="rgba(0,0,0,0.05)" />
-
-          {/* Main Thobe Body - Professional Silhouette */}
+          {/* Base Thobe Body */}
           <motion.path
-            id="thobe-body"
-            d="M135,110 C135,110 160,100 200,100 C240,100 265,110 265,110 L330,180 C330,180 345,400 360,750 C260,770 140,770 40,750 C55,400 70,180 70,180 Z"
+            d="M200,80 C180,80 160,90 140,105 C120,130 90,170 70,210 L30,480 L80,500 L95,330 C95,330 75,500 50,750 C120,770 280,770 350,750 C325,500 305,330 305,330 L320,500 L370,480 L330,210 C310,170 280,130 260,105 C240,90 220,80 200,80 Z"
             fill="url(#thobeGradient)"
             stroke="#e2e8f0"
             strokeWidth="1"
@@ -124,47 +118,47 @@ export default function ThobeMeasurementSelector({ values, onChange }: ThobeMeas
             <path d="M315,400 L315,480" stroke="#cbd5e1" strokeWidth="1" strokeDasharray="2,2" />
           </motion.g>
 
-          {/* Interactive Parts */}
-          
-          {/* Shoulders */}
+          {/* Interactive Areas */}
+
+          {/* Shoulders Area */}
           <motion.path
-            id="part-shoulders"
-            d="M135,110 L265,110 L330,180 L70,180 Z"
-            fill={activePart === 'shoulders' ? `${highlightColor}33` : 'transparent'}
-            stroke={activePart === 'shoulders' ? highlightColor : 'transparent'}
+            id="part-shoulder"
+            d="M140,105 C160,90 240,90 260,105 L280,140 L120,140 Z"
+            fill={activePart === 'shoulder' ? `${highlightColor}33` : 'transparent'}
+            stroke={activePart === 'shoulder' ? highlightColor : 'transparent'}
             strokeWidth="3"
             className="cursor-pointer"
-            onClick={() => handlePartClick('shoulders')}
+            onClick={() => handlePartClick('shoulder')}
             whileHover={{ fill: `${highlightColor}11` }}
             animate={{ 
-              opacity: activePart && activePart !== 'shoulders' ? 0.3 : 1,
+              opacity: activePart && activePart !== 'shoulder' ? 0.3 : 1,
             }}
           />
 
-          {/* Collar (Saudi Sada Style) */}
-          <motion.g
-            id="part-collar"
+          {/* Collar / Neck */}
+          <motion.g 
+            id="part-neck"
             className="cursor-pointer"
-            onClick={() => handlePartClick('collar')}
+            onClick={() => handlePartClick('neck')}
             animate={{ 
-              opacity: activePart && activePart !== 'collar' ? 0.3 : 1,
-              y: activePart === 'collar' ? -5 : 0
+              opacity: activePart && activePart !== 'neck' ? 0.3 : 1,
+              y: activePart === 'neck' ? -5 : 0
             }}
           >
             <path
-              d="M165,70 C165,70 180,60 200,60 C220,60 235,70 235,70 L250,115 C250,115 200,125 150,115 Z"
-              fill={activePart === 'collar' ? highlightColor : 'url(#collarGradient)'}
-              stroke={activePart === 'collar' ? highlightColor : '#94a3b8'}
-              strokeWidth={activePart === 'collar' ? "3" : "1.5"}
-              style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.05))' }}
+              d="M165,80 C185,95 215,95 235,80 L235,110 C215,125 185,125 165,110 Z"
+              fill={activePart === 'neck' ? highlightColor : 'url(#collarGradient)'}
+              stroke={activePart === 'neck' ? highlightColor : '#94a3b8'}
+              strokeWidth={activePart === 'neck' ? "3" : "1.5"}
             />
-            <circle cx="200" cy="85" r="3" fill={activePart === 'collar' ? '#fff' : '#64748b'} />
+            {/* Collar Button */}
+            <circle cx="200" cy="85" r="3" fill={activePart === 'neck' ? '#fff' : '#64748b'} />
           </motion.g>
 
           {/* Chest Area */}
           <motion.path
             id="part-chest"
-            d="M85,190 L315,190 L325,350 L75,350 Z"
+            d="M85,190 L315,190 L325,310 L75,310 Z"
             fill={activePart === 'chest' ? `${highlightColor}33` : 'transparent'}
             stroke={activePart === 'chest' ? highlightColor : 'transparent'}
             strokeWidth="3"
@@ -176,30 +170,60 @@ export default function ThobeMeasurementSelector({ values, onChange }: ThobeMeas
             }}
           />
 
+          {/* Waist Area */}
+          <motion.path
+            id="part-waist"
+            d="M75,310 L325,310 L315,400 L85,400 Z"
+            fill={activePart === 'waist' ? `${highlightColor}33` : 'transparent'}
+            stroke={activePart === 'waist' ? highlightColor : 'transparent'}
+            strokeWidth="3"
+            className="cursor-pointer"
+            onClick={() => handlePartClick('waist')}
+            whileHover={{ fill: `${highlightColor}11` }}
+            animate={{ 
+              opacity: activePart && activePart !== 'waist' ? 0.3 : 1,
+            }}
+          />
+
+          {/* Hips Area */}
+          <motion.path
+            id="part-hips"
+            d="M85,400 L315,400 L295,500 L105,500 Z"
+            fill={activePart === 'hips' ? `${highlightColor}33` : 'transparent'}
+            stroke={activePart === 'hips' ? highlightColor : 'transparent'}
+            strokeWidth="3"
+            className="cursor-pointer"
+            onClick={() => handlePartClick('hips')}
+            whileHover={{ fill: `${highlightColor}11` }}
+            animate={{ 
+              opacity: activePart && activePart !== 'hips' ? 0.3 : 1,
+            }}
+          />
+
           {/* Sleeves with Cuffs */}
           <motion.g 
-            id="part-sleeves" 
+            id="part-sleeve" 
             className="cursor-pointer"
-            onClick={() => handlePartClick('sleeves')}
+            onClick={() => handlePartClick('sleeve')}
             animate={{ 
-              opacity: activePart && activePart !== 'sleeves' ? 0.3 : 1,
+              opacity: activePart && activePart !== 'sleeve' ? 0.3 : 1,
             }}
           >
             {/* Left Sleeve */}
             <path
               d="M70,180 L10,480 L60,500 L90,210 Z"
-              fill={activePart === 'sleeves' ? `${highlightColor}33` : 'transparent'}
-              stroke={activePart === 'sleeves' ? highlightColor : '#94a3b8'}
-              strokeWidth={activePart === 'sleeves' ? "3" : "0.5"}
-              strokeDasharray={activePart === 'sleeves' ? "none" : "4,2"}
+              fill={activePart === 'sleeve' ? `${highlightColor}33` : 'transparent'}
+              stroke={activePart === 'sleeve' ? highlightColor : '#94a3b8'}
+              strokeWidth={activePart === 'sleeve' ? "3" : "0.5"}
+              strokeDasharray={activePart === 'sleeve' ? "none" : "4,2"}
             />
             {/* Right Sleeve */}
             <path
               d="M330,180 L390,480 L340,500 L310,210 Z"
-              fill={activePart === 'sleeves' ? `${highlightColor}33` : 'transparent'}
-              stroke={activePart === 'sleeves' ? highlightColor : '#94a3b8'}
-              strokeWidth={activePart === 'sleeves' ? "3" : "0.5"}
-              strokeDasharray={activePart === 'sleeves' ? "none" : "4,2"}
+              fill={activePart === 'sleeve' ? `${highlightColor}33` : 'transparent'}
+              stroke={activePart === 'sleeve' ? highlightColor : '#94a3b8'}
+              strokeWidth={activePart === 'sleeve' ? "3" : "0.5"}
+              strokeDasharray={activePart === 'sleeve' ? "none" : "4,2"}
             />
             {/* Cuff Details */}
             <g opacity="0.6">
@@ -246,18 +270,20 @@ export default function ThobeMeasurementSelector({ values, onChange }: ThobeMeas
           {/* Value Labels */}
           <AnimatePresence>
             {Object.entries(values).map(([key, val]) => {
-              if (val === 0) return null;
+              if (val === 0 || val === undefined || val === null) return null;
               
               let coords = { x: 0, y: 0 };
               switch(key) {
-                case 'collar': coords = { x: 200, y: 90 }; break;
-                case 'shoulders': coords = { x: 200, y: 145 }; break;
+                case 'neck': coords = { x: 200, y: 90 }; break;
+                case 'shoulder': coords = { x: 200, y: 145 }; break;
                 case 'chest': coords = { x: 200, y: 270 }; break;
-                case 'sleeves': coords = { x: 50, y: 350 }; break;
+                case 'waist': coords = { x: 200, y: 350 }; break;
+                case 'hips': coords = { x: 200, y: 430 }; break;
+                case 'sleeve': coords = { x: 50, y: 350 }; break;
                 case 'length': coords = { x: 240, y: 500 }; break;
                 case 'bottomWidth': coords = { x: 200, y: 780 }; break;
+                default: return null;
               }
-
               return (
                 <motion.g
                   key={`label-${key}`}
@@ -268,7 +294,7 @@ export default function ThobeMeasurementSelector({ values, onChange }: ThobeMeas
                   <rect 
                     x={coords.x - 30} y={coords.y - 15} 
                     width="60" height="30" rx="15" 
-                    fill={highlightColor} 
+                    fill={highlightColor}
                     style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))' }}
                   />
                   <text
@@ -332,6 +358,7 @@ export default function ThobeMeasurementSelector({ values, onChange }: ThobeMeas
                   </button>
                 )}
               </div>
+              
               <AnimatePresence>
                 {isInstructionMode && activeHint === part && (
                   <motion.div
@@ -346,13 +373,14 @@ export default function ThobeMeasurementSelector({ values, onChange }: ThobeMeas
                   </motion.div>
                 )}
               </AnimatePresence>
+
               <div className="flex items-center gap-3">
                 <input
                   ref={(el) => { inputRefs.current[part] = el; }}
                   type="number"
                   min="0"
                   step="0.1"
-                  value={values[part] || ''}
+                  value={(values as any)[part] || ''}
                   onChange={(e) => handleInputChange(part, e.target.value)}
                   onFocus={() => setActivePart(part)}
                   onBlur={() => setActivePart(null)}

@@ -231,7 +231,7 @@ export default function SupplierLedger({
   };
 
   return (
-    <div className="space-y-6 font-sans text-right" dir="rtl" style={{ fontFamily: 'IBM Plex Sans, sans-serif' }}>
+    <div className="space-y-6 font-sans text-right" dir="rtl">
       
       {/* Top action header for Ledger view */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden">
@@ -582,8 +582,7 @@ export default function SupplierLedger({
       <div 
         className="absolute left-[-9999px] top-[-9999px] w-[800px] bg-white p-8 space-y-6 text-right" 
         dir="rtl" 
-        id="supplier-ledger-pdf-capture" 
-        style={{ fontFamily: 'IBM Plex Sans, sans-serif' }}
+        id="supplier-ledger-pdf-capture"
       >
         {/* Headings */}
         <div className="border-b-2 border-slate-950 pb-6">

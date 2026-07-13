@@ -84,7 +84,7 @@ export default function EmployeeActivityLogTab({ tenantId }: { tenantId: string 
   }
 
   return (
-    <div className="space-y-6 font-sans" style={{ fontFamily: 'IBM Plex Sans, sans-serif' }}>
+    <div className="space-y-6 font-sans">
       
       {/* Filters */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

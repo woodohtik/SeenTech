@@ -14,8 +14,6 @@ import {
 
 const INK = '#0E2A42', BRAND = '#34BBED', CTA = '#0BA06B', CTA2 = '#0A8A5C';
 const SURF = '#F5F7FA', GRAY = '#6B7280', TEXT = '#34404D', LINE = '#E5EAF1', MINT = '#E7F7EE', TINT = '#EAF6FD';
-const FONT = "'IBM Plex Sans Arabic', system-ui, sans-serif";
-
 export default function Referral({ tenantId }: { tenantId: string }) {
   const [link, setLink] = useState('');
   const [wallet, setWallet] = useState<Wallet>({ balance: 0, total_earned: 0 });
@@ -166,7 +164,7 @@ function wStatusLabel(s: string) { return s === 'paid' ? 'تم التحويل �
 function wStatusColor(s: string) { return s === 'paid' ? { bg: MINT, fg: CTA2 } : s === 'rejected' ? { bg: '#F7D9D5', fg: '#C0392B' } : { bg: TINT, fg: '#2E75B6' }; }
 
 const s: Record<string, React.CSSProperties> = {
-  wrap: { fontFamily: FONT, color: TEXT, padding: 24, maxWidth: 1000, margin: '0 auto' },
+  wrap: {  color: TEXT, padding: 24, maxWidth: 1000, margin: '0 auto' },
   head: { marginBottom: 20 },
   title: { fontFamily: "'Tajawal', sans-serif", fontWeight: 800, fontSize: 28, color: INK, margin: 0 },
   sub: { color: GRAY, fontSize: 15.5, margin: '6px 0 0' },
@@ -183,9 +181,9 @@ const s: Record<string, React.CSSProperties> = {
   ctaDisabled: { opacity: 0.5, cursor: 'not-allowed' },
   earned: { fontSize: 13, color: '#9FB6D4', marginTop: 12, textAlign: 'center' },
   linkRow: { display: 'flex', gap: 8 },
-  linkInput: { flex: 1, border: `1px solid ${LINE}`, borderRadius: 10, padding: '11px 12px', fontSize: 13, background: SURF, color: INK, fontFamily: FONT },
-  copyBtn: { background: INK, color: '#fff', border: 'none', borderRadius: 10, padding: '0 18px', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: FONT },
-  waBtn: { width: '100%', background: '#25D366', color: '#fff', border: 'none', borderRadius: 10, padding: '11px 0', fontWeight: 700, fontSize: 14, cursor: 'pointer', marginTop: 12, fontFamily: FONT },
+  linkInput: { flex: 1, border: `1px solid ${LINE}`, borderRadius: 10, padding: '11px 12px', fontSize: 13, background: SURF, color: INK },
+  copyBtn: { background: INK, color: '#fff', border: 'none', borderRadius: 10, padding: '0 18px', fontWeight: 700, fontSize: 14, cursor: 'pointer' },
+  waBtn: { width: '100%', background: '#25D366', color: '#fff', border: 'none', borderRadius: 10, padding: '11px 0', fontWeight: 700, fontSize: 14, cursor: 'pointer', marginTop: 12 },
   hint: { fontSize: 13, color: GRAY, marginTop: 12, lineHeight: 1.7 },
   empty: { color: GRAY, fontSize: 14, padding: '14px 0' },
   rowItem: { display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0', borderBottom: `1px solid ${LINE}` },
@@ -193,12 +191,12 @@ const s: Record<string, React.CSSProperties> = {
   rowDate: { fontSize: 13, color: GRAY, direction: 'ltr' },
   rowText: { fontSize: 14.5, color: TEXT, marginRight: 'auto' },
   overlay: { position: 'fixed', inset: 0, background: 'rgba(15,23,42,.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: 16 },
-  modal: { width: '100%', maxWidth: 440, background: '#fff', borderRadius: 18, padding: 26, fontFamily: FONT },
+  modal: { width: '100%', maxWidth: 440, background: '#fff', borderRadius: 18, padding: 26 },
   modalTitle: { fontFamily: "'Tajawal', sans-serif", fontWeight: 800, fontSize: 21, color: INK, margin: 0 },
   modalSub: { fontSize: 14, color: GRAY, margin: '8px 0 16px', lineHeight: 1.7 },
   field: { display: 'block', marginBottom: 12 },
   flbl: { display: 'block', fontSize: 13.5, fontWeight: 700, color: INK, marginBottom: 6 },
-  input: { width: '100%', border: `1px solid ${LINE}`, borderRadius: 10, padding: '11px 12px', fontSize: 15, fontFamily: FONT, color: INK },
+  input: { width: '100%', border: `1px solid ${LINE}`, borderRadius: 10, padding: '11px 12px', fontSize: 15, color: INK },
   err: { color: '#C0392B', fontSize: 13.5, marginTop: 4 },
-  cancel: { width: '100%', background: 'transparent', border: 'none', color: GRAY, fontWeight: 600, fontSize: 14, cursor: 'pointer', marginTop: 8, fontFamily: FONT },
+  cancel: { width: '100%', background: 'transparent', border: 'none', color: GRAY, fontWeight: 600, fontSize: 14, cursor: 'pointer', marginTop: 8 },
 };

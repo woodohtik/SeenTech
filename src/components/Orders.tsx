@@ -40,7 +40,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { auth, handleFirestoreError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
-import { Order, Customer, OrderStatus, OrderHistory, InventoryItem, PaymentMethod, OrderItem, Staff, Tenant, ThobeMeasurements } from '../types';
+import { Order, Customer, OrderStatus, OrderHistory, InventoryItem, PaymentMethod, OrderItem, Staff, Tenant, Measurements } from '../types';
 import { cn, generateOrderNumber } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
 import { logEmployeeAction } from '../services/employeeAuditService';
@@ -369,6 +369,80 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     }
   }, [searchParams, customers, setValue]);
 
+  useEffect(() => {
+    let barcodeBuffer = '';
+    let barcodeTimeout: NodeJS.Timeout;
+
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Allow rapid scanning from anywhere
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        if (e.key === 'Enter') {
+          // If they pressed Enter in the search box
+          if ((e.target as HTMLInputElement).placeholder?.includes('ابحث برقم')) {
+             const searchLower = search.toLowerCase();
+             const localFiltered = orders.filter(o => {
+               const orderNumberStr = o.orderNumber ? o.orderNumber.toString() : '';
+               const invoiceNumberStr = (o as any).invoiceNumber ? String((o as any).invoiceNumber).toLowerCase() : '';
+               return (o.customerName || '').toLowerCase().includes(searchLower) ||
+                      o.id.toLowerCase().includes(searchLower) ||
+                      searchLower.includes(o.id.toLowerCase()) ||
+                      orderNumberStr.includes(searchLower) ||
+                      invoiceNumberStr.includes(searchLower) ||
+                      searchLower.includes(invoiceNumberStr);
+             });
+             if (localFiltered.length === 1) {
+                 setSelectedOrder(localFiltered[0]);
+                 setIsInvoiceOpen(true);
+             }
+          }
+        }
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        if (barcodeBuffer.length > 2) {
+          const scanned = barcodeBuffer.toLowerCase();
+          const matchedOrder = orders.find(o => 
+             (o as any).invoiceNumber?.toString().toLowerCase() === scanned ||
+             o.orderNumber?.toString().toLowerCase() === scanned ||
+             o.id.toLowerCase() === scanned
+          );
+          if (matchedOrder) {
+             setSearch(scanned);
+             setSelectedOrder(matchedOrder);
+             setIsInvoiceOpen(true);
+          } else {
+             // Try searching just by includes to be safe
+             const partialMatch = orders.find(o => 
+                 (o as any).invoiceNumber?.toString().toLowerCase().includes(scanned) ||
+                 o.orderNumber?.toString().toLowerCase().includes(scanned) ||
+                 o.id.toLowerCase().includes(scanned)
+             );
+             if (partialMatch) {
+                 setSearch(scanned);
+                 setSelectedOrder(partialMatch);
+                 setIsInvoiceOpen(true);
+             }
+          }
+        }
+        barcodeBuffer = '';
+      } else if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        barcodeBuffer += e.key;
+        clearTimeout(barcodeTimeout);
+        barcodeTimeout = setTimeout(() => {
+          barcodeBuffer = '';
+        }, 50); // Scanners are very fast, usually < 30ms per character
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown);
+      clearTimeout(barcodeTimeout);
+    };
+  }, [orders, search]);
+
+
   const VisualPart = ({ label, icon: Icon, value, options, onChange }: any) => (
     <div className="space-y-2">
       <label className="text-xs font-bold text-content-muted uppercase tracking-widest flex items-center gap-2">
@@ -551,15 +625,12 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   مُحدد المقاسات البصري التفاعلي
                 </h3>
                 <ThobeMeasurementSelector 
-                  values={(watchCustMeasurements?.thobeMeasurements as ThobeMeasurements) || {
-                    collar: 0,
-                    chest: 0,
-                    shoulders: 0,
-                    sleeves: 0,
-                    length: 0,
-                    bottomWidth: 0
+                  values={(watchCustMeasurements as Measurements) || {}}
+                  onChange={(newMeasurements) => {
+                    Object.entries(newMeasurements).forEach(([key, value]) => {
+                      setCustValue(`measurements.${key}` as any, value);
+                    });
                   }}
-                  onChange={(newMeasurements) => setCustValue('measurements.thobeMeasurements' as any, newMeasurements)}
                 />
               </div>
             </div>
@@ -822,8 +893,18 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   };
 
   const filteredOrders = orders.filter(o => {
-    const matchesSearch = (o.customerName || '').toLowerCase().includes(search.toLowerCase()) || 
-                         o.id.includes(search);
+    const searchLower = search.toLowerCase();
+    const orderNumberStr = o.orderNumber ? o.orderNumber.toString() : '';
+    // Handle potential invoice number inside the order object if it exists
+    const invoiceNumberStr = (o as any).invoiceNumber ? String((o as any).invoiceNumber).toLowerCase() : '';
+    
+    // Support scanning the full URL QR code by checking if the search string contains the ID
+    const matchesSearch = (o.customerName || '').toLowerCase().includes(searchLower) || 
+                         o.id.toLowerCase().includes(searchLower) ||
+                         searchLower.includes(o.id.toLowerCase()) ||
+                         orderNumberStr.includes(searchLower) ||
+                         invoiceNumberStr.includes(searchLower) ||
+                         searchLower.includes(invoiceNumberStr);
     const matchesStatus = !statusFilter || o.status === statusFilter;
     
     // Date comparison
@@ -1087,7 +1168,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             </section>
 
             {/* Customer Measurements */}
-            {customers.find(c => c.id === order.customerId)?.measurements?.thobeMeasurements && (
+            {customers.find(c => c.id === order.customerId)?.measurements && (
               <section className="space-y-4">
                 <h3 className="text-xs font-black text-content-muted uppercase tracking-widest flex items-center gap-2">
                   <Ruler size={14} />
@@ -1096,16 +1177,18 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 <div className="bg-brand/5 p-6 rounded-3xl border border-brand/10">
                   <div className="grid grid-cols-3 gap-4">
                     {[
-                      { label: 'الرقبة', value: customers.find(c => c.id === order.customerId)?.measurements?.thobeMeasurements?.collar },
-                      { label: 'الصدر', value: customers.find(c => c.id === order.customerId)?.measurements?.thobeMeasurements?.chest },
-                      { label: 'الأكتاف', value: customers.find(c => c.id === order.customerId)?.measurements?.thobeMeasurements?.shoulders },
-                      { label: 'الأكمام', value: customers.find(c => c.id === order.customerId)?.measurements?.thobeMeasurements?.sleeves },
-                      { label: 'الطول', value: customers.find(c => c.id === order.customerId)?.measurements?.thobeMeasurements?.length },
-                      { label: 'الوسع', value: customers.find(c => c.id === order.customerId)?.measurements?.thobeMeasurements?.bottomWidth },
-                    ].map((m, i) => (
+                      { label: 'الرقبة', value: customers.find(c => c.id === order.customerId)?.measurements?.neck },
+                      { label: 'الصدر', value: customers.find(c => c.id === order.customerId)?.measurements?.chest },
+                      { label: 'الخصر', value: customers.find(c => c.id === order.customerId)?.measurements?.waist },
+                      { label: 'الأرداف', value: customers.find(c => c.id === order.customerId)?.measurements?.hips },
+                      { label: 'الأكتاف', value: customers.find(c => c.id === order.customerId)?.measurements?.shoulder },
+                      { label: 'الأكمام', value: customers.find(c => c.id === order.customerId)?.measurements?.sleeve },
+                      { label: 'الطول', value: customers.find(c => c.id === order.customerId)?.measurements?.length },
+                      { label: 'الوسع', value: customers.find(c => c.id === order.customerId)?.measurements?.bottomWidth },
+                    ].filter(m => m.value).map((m, i) => (
                       <div key={i} className="text-center">
                         <span className="block text-[10px] text-content-muted font-bold mb-1">{m.label}</span>
-                        <span className="text-lg font-black text-brand">{m.value || 0}</span>
+                        <span className="text-lg font-black text-brand">{m.value}</span>
                       </div>
                     ))}
                   </div>

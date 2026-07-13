@@ -214,7 +214,6 @@ export default function Settings({ tenantId }: SettingsProps) {
     
     { id: 'staff', label: 'الموظفين والصلاحيات', icon: Shield, visible: hasPermission('staff.manage'), group: 'admin' },
     { id: 'billing', label: 'الاشتراك والمدفوعات', icon: CreditCard, visible: canViewBilling, group: 'admin' },
-    { id: 'support', label: 'الدعم الفني والتدخل', icon: ShieldCheck, visible: currentStaff?.role === 'owner' || currentStaff?.role === 'admin', group: 'admin' },
     { id: 'data', label: 'إدارة البيانات', icon: Database, visible: currentStaff?.role === 'owner' || currentStaff?.role === 'super_admin', group: 'admin' },
   ];
 
@@ -767,10 +766,6 @@ export default function Settings({ tenantId }: SettingsProps) {
                       ))}
                     </div>
                 </div>
-              )}
-
-              {activeTab === 'support' && (
-                <TenantSupportHistory tenantId={tenantId} />
               )}
 
               {activeTab === 'data' && (

@@ -327,7 +327,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
   }
 
   return (
-    <div className="flex flex-col h-full font-sans bg-background" dir={isRtl ? 'rtl' : 'ltr'} style={{ fontFamily: 'IBM Plex Sans, sans-serif' }}>
+    <div className="flex flex-col h-full font-sans bg-background" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Header & Top Tabs */}
       <div className="bg-surface border-b border-border shrink-0">
         <div className="px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -656,7 +656,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                 {/* Employee / Shift info */}
                 <div className="flex justify-between items-center text-xs font-bold text-content-muted bg-surface-muted/35 px-4 py-2.5 rounded-xl border border-border">
                   <span>{t('sales.employee', 'الموظف')}: <span className="text-content font-extrabold">{activeShift.staffName || t('sales.unknown', 'غير معروف')}</span></span>
-                  <span>{t('sales.shift_no', 'رقم الوردية')}: <span className="font-mono text-content font-extrabold">#{activeShift.id?.slice(-6).toUpperCase()}</span></span>
+                  <span>{t('sales.shift_no', 'رقم الوردية')}: <span className="font-sans text-content font-extrabold">#{activeShift.id?.slice(-6).toUpperCase()}</span></span>
                 </div>
 
                 {/* Main Cash Drawer Indicator */}

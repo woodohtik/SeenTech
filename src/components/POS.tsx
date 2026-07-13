@@ -760,7 +760,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
           <div className="flex items-center gap-2">
             {isMobilePanel && <div className="lg:hidden w-10 h-1 bg-border rounded-full absolute top-2 left-1/2 -translate-x-1/2" />}
             <ShoppingCart size={24} className="text-[#1C8FFF]" />
-            <h2 className="text-lg lg:text-xl font-bold text-content" style={{ fontFamily: 'IBM Plex Sans, sans-serif' }}>
+            <h2 className="text-lg lg:text-xl font-bold text-content">
               {t('pos.cart_title', 'سلة المشتريات')}
             </h2>
             <span className="bg-[#1C8FFF]/10 text-[#1C8FFF] text-xs px-2.5 py-0.5 rounded-full font-black">{cart.length}</span>
@@ -916,7 +916,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                           {t('pos.type_ready_made', 'جاهز')}
                         </span>
                       )}
-                      <span className="font-medium text-content line-clamp-1" style={{ fontFamily: 'IBM Plex Sans, sans-serif' }}>
+                      <span className="font-medium text-content line-clamp-1">
                         {item.type === 'custom' ? item.garmentType : (i18n.language === 'en' && item.nameEn ? item.nameEn : item.name)}
                       </span>
                     </div>
@@ -1573,7 +1573,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                 {/* Employee / Shift info */}
                 <div className="flex justify-between items-center text-xs font-bold text-content-muted bg-surface-muted/35 px-4 py-2.5 rounded-xl border border-border">
                   <span>الموظف: <span className="text-content font-extrabold">{currentStaff?.name || 'غير معروف'}</span></span>
-                  <span>رقم الوردية: <span className="font-mono text-content font-extrabold">#{shiftId?.slice(-6).toUpperCase()}</span></span>
+                  <span>رقم الوردية: <span className="font-sans text-content font-extrabold">#{shiftId?.slice(-6).toUpperCase()}</span></span>
                 </div>
 
                 {/* Main Cash Drawer Indicator */}
@@ -1812,15 +1812,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                       مُحدد المقاسات البصري التفاعلي
                     </h3>
                     <ThobeMeasurementSelector 
-                      values={customMeasurements.thobeMeasurements || {
-                        collar: 0,
-                        chest: 0,
-                        shoulders: 0,
-                        sleeves: 0,
-                        length: 0,
-                        bottomWidth: 0
-                      }}
-                      onChange={(newMeasurements) => setCustomMeasurements({...customMeasurements, thobeMeasurements: newMeasurements})}
+                      values={customMeasurements as any || {}}
+                      onChange={(newMeasurements) => setCustomMeasurements({...customMeasurements, ...newMeasurements})}
                     />
                   </div>
                 </div>
