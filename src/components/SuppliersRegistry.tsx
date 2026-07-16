@@ -85,8 +85,8 @@ export default function SuppliersRegistry({
         </div>
       </div>
 
-      {/* Main Datatable */}
-      <div className="overflow-x-auto">
+      {/* Main Datatable & Mobile Cards */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-right border-collapse whitespace-nowrap text-xs md:text-sm">
           <thead>
             <tr className="bg-slate-100 text-[11px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-200/50">
@@ -226,6 +226,121 @@ export default function SuppliersRegistry({
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Card Layout */}
+      <div className="block md:hidden p-4 space-y-4">
+        {suppliers.map((supplier) => {
+          const supaId = supplier.id;
+          const { totalPurchases = 0, totalPaid = 0 } = aggregates[supaId] || {
+            totalPurchases: supplier.balance > 0 ? supplier.balance : 0,
+            totalPaid: 0,
+          };
+          const currentDue = supplier.balance;
+
+          return (
+            <div 
+              key={supplier.id} 
+              className="bg-slate-50/50 rounded-2xl p-4 border border-slate-200/60 space-y-3 flex flex-col"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-10 h-10 bg-white rounded-xl border border-slate-200 flex items-center justify-center text-slate-600 shrink-0">
+                    <Building size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-extrabold text-slate-900 text-sm truncate">{supplier.name}</h3>
+                    <p className="text-[10px] text-slate-400 font-bold mt-0.5 truncate">
+                      {supplier.contactPerson && `المسؤول: ${supplier.contactPerson}`}
+                      {supplier.phone && ` | ${supplier.phone}`}
+                    </p>
+                  </div>
+                </div>
+                <div className="shrink-0">
+                  {currentDue <= 0 ? (
+                    <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[9px] font-black border border-emerald-100">
+                      <span>مخلص بالكامل</span>
+                    </span>
+                  ) : currentDue > 10000 ? (
+                    <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 px-2 py-0.5 rounded-full text-[9px] font-black border border-rose-100">
+                      <span>ذمة معلقة مرتفعة</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full text-[9px] font-black border border-amber-100">
+                      <span>قيد السداد</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Balances grid */}
+              <div className="grid grid-cols-3 gap-2 bg-white p-2.5 rounded-xl border border-slate-200/40 text-center">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] text-slate-400 font-bold">المشتريات</span>
+                  <span className="font-mono font-extrabold text-xs text-slate-800">
+                    <PriceDisplay amount={totalPurchases} />
+                  </span>
+                </div>
+                <div className="flex flex-col gap-0.5 border-r border-slate-100">
+                  <span className="text-[9px] text-slate-400 font-bold">المدفوع</span>
+                  <span className="font-mono font-extrabold text-xs text-slate-500">
+                    <PriceDisplay amount={totalPaid} />
+                  </span>
+                </div>
+                <div className="flex flex-col gap-0.5 border-r border-slate-100">
+                  <span className="text-[9px] text-slate-400 font-bold">الرصيد المستحق</span>
+                  <span className={cn(
+                    "font-mono font-black text-xs",
+                    currentDue > 0 ? "text-red-600" : "text-emerald-600"
+                  )}>
+                    <PriceDisplay amount={currentDue} />
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  onClick={() => onSelectLedger(supplier)}
+                  className="flex items-center justify-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-xl py-2 px-3 text-[10px] font-black transition-all cursor-pointer min-h-[44px]"
+                >
+                  <BookOpen size={13} className="text-red-600 shrink-0" />
+                  <span>كشف حساب</span>
+                </button>
+                <button
+                  onClick={() => onOpenPayout(supplier)}
+                  className="flex items-center justify-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl py-2 px-3 text-[10px] font-black transition-all cursor-pointer shadow-sm min-h-[44px]"
+                >
+                  <DollarSign size={13} className="shrink-0" />
+                  <span>سند صرف</span>
+                </button>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-2">
+                <button
+                  onClick={() => onEdit(supplier)}
+                  className="flex-1 max-w-[60px] flex items-center justify-center p-2 text-slate-400 hover:text-slate-800 bg-white border border-slate-200 rounded-xl transition-all cursor-pointer min-h-[38px]"
+                  title="تعديل"
+                >
+                  <Edit2 size={13} />
+                </button>
+                <button
+                  onClick={() => onDelete(supplier.id)}
+                  className="flex-1 max-w-[60px] flex items-center justify-center p-2 text-slate-400 hover:text-red-600 bg-white border border-slate-200 rounded-xl transition-all cursor-pointer min-h-[38px]"
+                  title="حذف"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+
+        {suppliers.length === 0 && (
+          <div className="p-8 text-center text-slate-400 font-bold text-xs bg-slate-50/30 rounded-2xl border border-dashed border-slate-200">
+            لا يوجد موردون مسجلون لتعدين سجلات المحاسبة حالياً.
+          </div>
+        )}
       </div>
 
     </div>

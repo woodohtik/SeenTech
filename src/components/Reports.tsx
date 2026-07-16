@@ -407,43 +407,44 @@ export default function Reports({ tenantId }: { tenantId: string }) {
   }
 
   return (
-    <div className="space-y-8 text-right pb-20" dir="rtl">
+    <div className="space-y-4 sm:space-y-8 text-right pb-20 px-2 sm:px-0" dir="rtl">
       <Header 
         tenantId={tenantId} 
         title="مركز التقارير الشامل" 
         subtitle="تحليلات دقيقة لأداء متجرك المالي والتشغيلي"
       >
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto">
           <button 
             onClick={() => canExportReports && exportToExcel(filteredOrders, `orders_report_${activeTab}`)}
             disabled={!canExportReports}
             className={cn(
-              "flex items-center gap-2 px-6 py-3 bg-surface border border-border rounded-2xl text-content-muted hover:bg-surface-muted font-black text-sm transition-all shadow-sm",
+              "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-surface border border-border rounded-xl sm:rounded-2xl text-content-muted hover:bg-surface-muted font-black text-xs sm:text-sm transition-all shadow-sm",
               !canExportReports && "opacity-50 cursor-not-allowed"
             )}
           >
-            <FileSpreadsheet size={20} className="text-emerald-600" />
+            <FileSpreadsheet size={16} className="text-emerald-600 sm:w-5 sm:h-5" />
             <span>تصدير Excel</span>
           </button>
           <button 
             onClick={() => canExportReports && window.print()}
             disabled={!canExportReports}
             className={cn(
-              "flex items-center gap-2 px-6 py-3 bg-brand text-white rounded-2xl hover:bg-brand/90 font-black text-sm transition-all shadow-lg shadow-brand/10",
+              "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-brand text-white rounded-xl sm:rounded-2xl hover:bg-brand/90 font-black text-xs sm:text-sm transition-all shadow-lg shadow-brand/10",
               !canExportReports && "opacity-50 cursor-not-allowed"
             )}
           >
-            <Download size={20} />
+            <Download size={16} className="sm:w-5 sm:h-5" />
             <span>تصدير PDF</span>
           </button>
         </div>
       </Header>
 
       {/* Filters Bar */}
-      <div className="bg-surface p-6 rounded-[2.5rem] border border-border shadow-sm flex flex-wrap items-center gap-6">
-        <div className="flex-1 min-w-[200px] relative">
+      <div id="reports-filters-bar" className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm flex flex-col lg:flex-row lg:items-center gap-4 sm:gap-6">
+        <div className="w-full lg:flex-1 relative">
           <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-content-muted" size={18} />
           <input 
+            id="reports-search-input"
             type="text" 
             placeholder="بحث برقم الطلب أو اسم العميل..."
             value={searchTerm}
@@ -452,25 +453,31 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           />
         </div>
         
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-surface-muted px-4 py-2 rounded-2xl border border-border">
-            <CalendarIcon size={16} className="text-content-muted" />
-            <input 
-              type="date" 
-              value={dateRange.start}
-              onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-              className="bg-transparent border-none focus:ring-0 text-xs font-bold text-content"
-            />
-            <span className="text-content-muted/30">إلى</span>
-            <input 
-              type="date" 
-              value={dateRange.end}
-              onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-              className="bg-transparent border-none focus:ring-0 text-xs font-bold text-content"
-            />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+          <div id="reports-date-picker-wrapper" className="flex flex-col xs:flex-row flex-1 items-stretch xs:items-center justify-between gap-2 bg-surface-muted px-4 py-2.5 rounded-2xl border border-border">
+            <div className="flex items-center gap-2 flex-1">
+              <CalendarIcon size={16} className="text-content-muted shrink-0" />
+              <input 
+                id="reports-date-start"
+                type="date" 
+                value={dateRange.start}
+                onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                className="bg-transparent border-none p-0 focus:ring-0 text-xs font-bold text-content w-full"
+              />
+            </div>
+            <span className="text-content-muted/30 font-bold text-xs shrink-0 text-center xs:px-1">إلى</span>
+            <div className="flex items-center gap-2 flex-1">
+              <input 
+                id="reports-date-end"
+                type="date" 
+                value={dateRange.end}
+                onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                className="bg-transparent border-none p-0 focus:ring-0 text-xs font-bold text-content w-full"
+              />
+            </div>
           </div>
 
-          <div className="min-w-[180px]">
+          <div className="flex-1 sm:flex-none sm:min-w-[160px]">
             <Select 
               value={selectedStaff}
               onChange={(val) => setSelectedStaff(val)}
@@ -478,11 +485,11 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 { value: 'all', label: 'جميع الموظفين' },
                 ...staff.map(s => ({ value: s.id, label: s.name }))
               ]}
-              className="bg-surface-muted"
+              className="bg-surface-muted w-full"
             />
           </div>
 
-          <div className="min-w-[180px]">
+          <div className="flex-1 sm:flex-none sm:min-w-[160px]">
             <Select 
               value={paymentStatus}
               onChange={(val) => setPaymentStatus(val)}
@@ -492,37 +499,40 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 { value: 'partial', label: 'دفع جزئي' },
                 { value: 'unpaid', label: 'غير مدفوع' }
               ]}
-              className="bg-surface-muted"
+              className="bg-surface-muted w-full"
             />
           </div>
         </div>
       </div>
 
       {/* Tabs Navigation */}
-      <div className="flex items-center gap-2 bg-surface p-2 rounded-[2rem] border border-border shadow-sm w-fit">
-        {[
-          { id: 'general', label: 'اللوحة العامة', icon: TrendingUp },
-          { id: 'financial', label: 'التقارير المالية', icon: DollarSign },
-          { id: 'orders', label: 'تقارير الطلبات', icon: ShoppingBag },
-          { id: 'inventory', label: 'تقارير المخزون', icon: Package },
-          { id: 'staff', label: 'الموظفين والعملاء', icon: Users },
-          { id: 'tailor_commissions', label: 'عمولات الخياطين', icon: Scissors },
-          { id: 'zreports', label: 'تقارير Z (إغلاق اليوم)', icon: Calculator },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as ReportTab)}
-            className={cn(
-              "flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-sm transition-all",
-              activeTab === tab.id 
-                ? "bg-brand text-white shadow-lg shadow-brand/10" 
-                : "text-content-muted hover:bg-surface-muted"
-            )}
-          >
-            <tab.icon size={18} />
-            <span>{tab.label}</span>
-          </button>
-        ))}
+      <div id="reports-tabs-nav-container" className="w-full overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="flex items-center gap-1.5 sm:gap-2 bg-surface p-1.5 sm:p-2 rounded-xl sm:rounded-[2rem] border border-border shadow-sm w-max">
+          {[
+            { id: 'general', label: 'اللوحة العامة', icon: TrendingUp },
+            { id: 'financial', label: 'التقارير المالية', icon: DollarSign },
+            { id: 'orders', label: 'تقارير الطلبات', icon: ShoppingBag },
+            { id: 'inventory', label: 'تقارير المخزون', icon: Package },
+            { id: 'staff', label: 'الموظفين والعملاء', icon: Users },
+            { id: 'tailor_commissions', label: 'عمولات الخياطين', icon: Scissors },
+            { id: 'zreports', label: 'تقارير Z (إغلاق اليوم)', icon: Calculator },
+          ].map((tab) => (
+            <button
+              id={`tab-btn-${tab.id}`}
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as ReportTab)}
+              className={cn(
+                "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-2xl font-black text-xs sm:text-sm transition-all shrink-0",
+                activeTab === tab.id 
+                  ? "bg-brand text-white shadow-lg shadow-brand/10" 
+                  : "text-content-muted hover:bg-surface-muted"
+              )}
+            >
+              <tab.icon size={16} className="sm:w-[18px] sm:h-[18px]" />
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Tab Content */}
@@ -532,23 +542,23 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
-          className="space-y-8"
+          className="space-y-4 sm:space-y-8"
         >
           {activeTab === 'general' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div id="reports-general-grid" className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
               {[
                 { label: 'إجمالي الإيرادات', value: financialStats.totalRevenue, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
                 { label: 'إجمالي المبيعات', value: financialStats.totalSales, icon: TrendingUp, color: 'text-brand', bg: 'bg-brand/10' },
                 { label: 'عدد الطلبات', value: filteredOrders.length, icon: ShoppingBag, color: 'text-amber-600', bg: 'bg-amber-500/10' },
                 { label: 'الطلبات المتأخرة', value: orderStats.delayedCount, icon: AlertTriangle, color: 'text-rose-600', bg: 'bg-rose-500/10' },
               ].map((stat, i) => (
-                <div key={i} className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm flex items-center gap-6">
-                  <div className={cn("p-5 rounded-2xl", stat.bg, stat.color)}>
-                    <stat.icon size={28} />
+                <div key={i} className="bg-surface p-3 sm:p-6 lg:p-8 rounded-xl sm:rounded-[2.5rem] border border-border shadow-sm flex flex-col sm:flex-row items-center sm:items-start lg:items-center gap-3 sm:gap-6 text-center sm:text-right">
+                  <div className={cn("p-2.5 sm:p-5 rounded-xl sm:rounded-2xl shrink-0", stat.bg, stat.color)}>
+                    <stat.icon size={20} className="sm:w-7 sm:h-7" />
                   </div>
-                  <div>
-                    <p className="text-xs font-black text-content-muted uppercase tracking-widest">{stat.label}</p>
-                    <h3 className="text-2xl font-black text-content mt-1">
+                  <div className="min-w-0">
+                    <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest truncate">{stat.label}</p>
+                    <h3 className="text-xs sm:text-xl lg:text-2xl font-black text-content mt-0.5 sm:mt-1 truncate">
                       {typeof stat.value === 'number' && (stat.label.includes('إيرادات') || stat.label.includes('مبيعات'))
                         ? <PriceDisplay amount={stat.value} />
                         : stat.value.toLocaleString()}
@@ -560,17 +570,17 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           )}
 
           {activeTab === 'financial' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
               {/* Revenue vs Sales Trend */}
-              <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
-                <div className="flex justify-between items-center mb-8">
-                  <h3 className="text-lg font-black text-content">مقارنة الإيرادات والمبيعات</h3>
-                  <div className="flex gap-4 text-xs font-bold">
-                    <div className="flex items-center gap-2"><div className="w-3 h-3 bg-brand rounded-full" /><span>المبيعات</span></div>
-                    <div className="flex items-center gap-2"><div className="w-3 h-3 bg-emerald-500 rounded-full" /><span>الإيرادات</span></div>
+              <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                <div className="flex justify-between items-center mb-6 sm:mb-8">
+                  <h3 className="text-sm sm:text-lg font-black text-content">مقارنة الإيرادات والمبيعات</h3>
+                  <div className="flex gap-2 sm:gap-4 text-[10px] sm:text-xs font-bold">
+                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-brand rounded-full" /><span>المبيعات</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-emerald-500 rounded-full" /><span>الإيرادات</span></div>
                   </div>
                 </div>
-                <div className="h-80">
+                <div className="h-64 sm:h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={financialStats.trendChartData}>
                       <defs>
@@ -584,32 +594,32 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-border" />
-                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
+                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
                       <Tooltip 
-                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)' }}
+                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
                         formatter={(value: number) => <PriceDisplay amount={value} />}
                       />
-                      <Area type="monotone" dataKey="sales" stroke="#1C8FFF" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
-                      <Area type="monotone" dataKey="revenue" stroke="#22C55E" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
+                      <Area type="monotone" dataKey="sales" stroke="#1C8FFF" strokeWidth={2.5} fillOpacity={1} fill="url(#colorSales)" />
+                      <Area type="monotone" dataKey="revenue" stroke="#22C55E" strokeWidth={2.5} fillOpacity={1} fill="url(#colorRevenue)" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
               {/* Payment Methods */}
-              <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
-                <h3 className="text-lg font-black text-content mb-8">توزيع المبيعات حسب طرق الدفع</h3>
-                <div className="h-80">
+              <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">توزيع المبيعات حسب طرق الدفع</h3>
+                <div className="h-64 sm:h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={financialStats.paymentChartData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={80}
-                        outerRadius={110}
-                        paddingAngle={8}
+                        innerRadius={55}
+                        outerRadius={85}
+                        paddingAngle={6}
                         dataKey="value"
                       >
                         {financialStats.paymentChartData.map((entry, index) => (
@@ -617,57 +627,57 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                         ))}
                       </Pie>
                       <Tooltip 
-                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)' }}
+                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
                         formatter={(value: number) => <PriceDisplay amount={value} />}
                       />
-                      <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                      <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 700 }} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
               {/* Tax & Profit Cards */}
-              <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
-                  <p className="text-xs font-black text-content-muted uppercase tracking-widest">إجمالي الضريبة</p>
-                  <h3 className="text-2xl font-black text-rose-600 mt-2"><PriceDisplay amount={financialStats.totalTax} /></h3>
-                  <p className="text-[10px] text-content-muted mt-1 font-bold">ضريبة القيمة المضافة (15%)</p>
+              <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                  <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">إجمالي الضريبة</p>
+                  <h3 className="text-base sm:text-2xl font-black text-rose-600 mt-1 sm:mt-2"><PriceDisplay amount={financialStats.totalTax} /></h3>
+                  <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">ضريبة القيمة المضافة (15%)</p>
                 </div>
-                <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
-                  <p className="text-xs font-black text-content-muted uppercase tracking-widest">صافي الأرباح</p>
-                  <h3 className="text-2xl font-black text-emerald-600 mt-2"><PriceDisplay amount={financialStats.netProfit} /></h3>
-                  <p className="text-[10px] text-content-muted mt-1 font-bold">بعد خصم الضرائب</p>
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                  <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">صافي الأرباح</p>
+                  <h3 className="text-base sm:text-2xl font-black text-emerald-600 mt-1 sm:mt-2"><PriceDisplay amount={financialStats.netProfit} /></h3>
+                  <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">بعد خصم الضرائب</p>
                 </div>
-                <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
-                  <p className="text-xs font-black text-content-muted uppercase tracking-widest">متوسط قيمة الطلب</p>
-                  <h3 className="text-2xl font-black text-brand mt-2">
+                <div className="col-span-2 md:col-span-1 bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                  <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">متوسط قيمة الطلب</p>
+                  <h3 className="text-base sm:text-2xl font-black text-brand mt-1 sm:mt-2">
                     <PriceDisplay amount={filteredOrders.length > 0 ? financialStats.totalSales / filteredOrders.length : 0} />
                   </h3>
-                  <p className="text-[10px] text-content-muted mt-1 font-bold">بناءً على {filteredOrders.length} طلب</p>
+                  <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">بناءً على {filteredOrders.length} طلب</p>
                 </div>
               </div>
             </div>
           )}
 
           {activeTab === 'orders' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
               {/* Order Status Bar Chart */}
-              <div className="lg:col-span-2 bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
-                <h3 className="text-lg font-black text-content mb-8">حالات الطلبات الحالية</h3>
-                <div className="h-80">
+              <div className="lg:col-span-2 bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">حالات الطلبات الحالية</h3>
+                <div className="h-64 sm:h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={orderStats.statusChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <BarChart data={orderStats.statusChartData} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-border" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
                       <Tooltip 
                         cursor={{ fill: 'var(--color-surface-muted)' }}
-                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)' }}
+                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
                       />
                       <Bar 
                         dataKey="value" 
                         fill="#1C8FFF" 
-                        radius={[10, 10, 0, 0]} 
+                        radius={[6, 6, 0, 0]} 
                         onClick={(data) => setDrillDown({
                           title: `تفاصيل طلبات: ${data.name}`,
                           data: filteredOrders.filter(o => {
@@ -689,18 +699,20 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               </div>
 
               {/* KPIs */}
-              <div className="space-y-6">
-                <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="p-3 bg-amber-500/10 text-amber-600 rounded-xl"><Clock size={24} /></div>
-                    <h4 className="font-black text-content">متوسط وقت الإنجاز</h4>
+              <div className="grid grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-6">
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 sm:gap-4 mb-2 sm:mb-4">
+                      <div className="p-2 bg-amber-500/10 text-amber-600 rounded-lg sm:rounded-xl shrink-0"><Clock size={16} className="sm:w-6 sm:h-6" /></div>
+                      <h4 className="font-black text-xs sm:text-base text-content">وقت الإنجاز</h4>
+                    </div>
+                    <h3 className="text-lg sm:text-3xl font-black text-content">{orderStats.avgTime} يوم</h3>
                   </div>
-                  <h3 className="text-3xl font-black text-content">{orderStats.avgTime} يوم</h3>
-                  <p className="text-xs text-content-muted font-bold mt-2">من استلام الطلب حتى التسليم</p>
+                  <p className="text-[9px] sm:text-xs text-content-muted font-bold mt-2">من استلام الطلب حتى التسليم</p>
                 </div>
 
                 <div 
-                  className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm cursor-pointer hover:border-rose-500/30 transition-all"
+                  className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm cursor-pointer hover:border-rose-500/30 transition-all flex flex-col justify-between"
                   onClick={() => setDrillDown({
                     title: 'الطلبات المتأخرة عن موعد التسليم',
                     data: orderStats.delayedOrders,
@@ -712,72 +724,74 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     ]
                   })}
                 >
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="p-3 bg-rose-500/10 text-rose-600 rounded-xl"><AlertTriangle size={24} /></div>
-                    <h4 className="font-black text-content">الطلبات المتأخرة</h4>
+                  <div>
+                    <div className="flex items-center gap-2 sm:gap-4 mb-2 sm:mb-4">
+                      <div className="p-2 bg-rose-500/10 text-rose-600 rounded-lg sm:rounded-xl shrink-0"><AlertTriangle size={16} className="sm:w-6 sm:h-6" /></div>
+                      <h4 className="font-black text-xs sm:text-base text-content">الطلبات المتأخرة</h4>
+                    </div>
+                    <h3 className="text-lg sm:text-3xl font-black text-rose-600">{orderStats.delayedCount}</h3>
                   </div>
-                  <h3 className="text-3xl font-black text-rose-600">{orderStats.delayedCount}</h3>
-                  <p className="text-xs text-content-muted font-bold mt-2">تجاوزت 7 أيام عمل</p>
+                  <p className="text-[9px] sm:text-xs text-content-muted font-bold mt-2">تجاوزت 7 أيام عمل</p>
                 </div>
               </div>
             </div>
           )}
 
           {activeTab === 'inventory' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
               {/* Low Stock Alerts */}
-              <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
-                <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-lg font-black text-content flex items-center gap-2">
-                    <AlertTriangle className="text-rose-500" size={20} />
+              <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                <div className="flex items-center justify-between mb-6 sm:mb-8">
+                  <h3 className="text-sm sm:text-lg font-black text-content flex items-center gap-1.5 sm:gap-2">
+                    <AlertTriangle className="text-rose-500 shrink-0 sm:w-5 sm:h-5" size={18} />
                     تنبيهات المخزون المنخفض
                   </h3>
-                  <span className="px-3 py-1 bg-rose-500/10 text-rose-600 rounded-full text-xs font-black">
+                  <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-rose-500/10 text-rose-600 rounded-full text-[10px] sm:text-xs font-black">
                     {inventoryStats.lowStockItems.length} أصناف
                   </span>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4 max-h-[320px] overflow-y-auto pr-1">
                   {inventoryStats.lowStockItems.length > 0 ? (
                     inventoryStats.lowStockItems.map(item => (
-                      <div key={item.id} className="flex items-center justify-between p-4 bg-surface-muted rounded-2xl">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-surface rounded-xl flex items-center justify-center text-rose-500 shadow-sm">
-                            <Package size={20} />
+                      <div key={item.id} className="flex items-center justify-between p-3 sm:p-4 bg-surface-muted rounded-xl sm:rounded-2xl">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-surface rounded-lg sm:rounded-xl flex items-center justify-center text-rose-500 shadow-sm shrink-0">
+                            <Package size={16} className="sm:w-5 sm:h-5" />
                           </div>
                           <div>
-                            <p className="text-sm font-black text-content">{item.name}</p>
-                            <p className="text-[10px] text-content-muted font-bold">الحد الأدنى: {item.minThreshold} {item.unit}</p>
+                            <p className="text-xs sm:text-sm font-black text-content truncate max-w-[120px] sm:max-w-none">{item.name}</p>
+                            <p className="text-[9px] sm:text-[10px] text-content-muted font-bold">الحد الأدنى: {item.minThreshold} {item.unit}</p>
                           </div>
                         </div>
                         <div className="text-left">
-                          <p className="text-sm font-black text-rose-600">{item.quantity} {item.unit}</p>
-                          <p className="text-[10px] text-content-muted font-bold">الكمية الحالية</p>
+                          <p className="text-xs sm:text-sm font-black text-rose-600">{item.quantity} {item.unit}</p>
+                          <p className="text-[9px] sm:text-[10px] text-content-muted font-bold">الكمية الحالية</p>
                         </div>
                       </div>
                     ))
                   ) : (
                     <div className="text-center py-12">
-                      <CheckCircle2 size={48} className="text-emerald-500/20 mx-auto mb-4" />
-                      <p className="text-content-muted font-bold">المخزون في حالة ممتازة</p>
+                      <CheckCircle2 size={40} className="text-emerald-500/20 mx-auto mb-3 sm:w-12 sm:h-12" />
+                      <p className="text-content-muted font-bold text-xs sm:text-sm">المخزون في حالة ممتازة</p>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Top Consumed Items */}
-              <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
-                <h3 className="text-lg font-black text-content mb-8">الأصناف الأكثر توفراً</h3>
-                <div className="h-80">
+              <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">الأصناف الأكثر توفراً</h3>
+                <div className="h-64 sm:h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={inventoryStats.topItems} layout="vertical" margin={{ left: 20 }}>
+                    <BarChart data={inventoryStats.topItems} layout="vertical" margin={{ left: 10, right: 10 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="currentColor" className="text-border" />
-                      <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
-                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" width={80} />
+                      <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
+                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" width={70} />
                       <Tooltip 
                         cursor={{ fill: 'var(--color-surface-muted)' }}
-                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)' }}
+                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
                       />
-                      <Bar dataKey="quantity" fill="#1C8FFF" radius={[0, 10, 10, 0]} />
+                      <Bar dataKey="quantity" fill="#1C8FFF" radius={[0, 6, 6, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -786,43 +800,43 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           )}
 
           {activeTab === 'staff' && (
-            <div className="space-y-8">
+            <div className="space-y-4 sm:space-y-8">
               {/* Staff Section */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
                 {/* Staff Productivity */}
-                <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
-                  <h3 className="text-lg font-black text-content mb-8">إنتاجية الموظفين (الطلبات المكتملة)</h3>
-                  <div className="h-80">
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                  <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">إنتاجية الموظفين (الطلبات المكتملة)</h3>
+                  <div className="h-64 sm:h-80">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={staffStats.performance}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-border" />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
                         <Tooltip 
                           cursor={{ fill: 'var(--color-surface-muted)' }}
-                          contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)' }}
+                          contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
                         />
-                        <Bar dataKey="completed" fill="#22C55E" radius={[10, 10, 0, 0]} name="الطلبات المسلمة" />
+                        <Bar dataKey="completed" fill="#22C55E" radius={[6, 6, 0, 0]} name="الطلبات المسلمة" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
 
                 {/* Staff Sales */}
-                <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
-                  <h3 className="text-lg font-black text-content mb-8">إجمالي مبيعات الكاشير</h3>
-                  <div className="space-y-6">
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                  <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">إجمالي مبيعات الكاشير</h3>
+                  <div className="space-y-4 sm:space-y-6">
                     {staffStats.performance.filter(s => s.role === 'cashier' || s.role === 'owner' || s.role === 'admin').map((s, i) => (
-                      <div key={i} className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-surface-muted rounded-2xl flex items-center justify-center text-content-muted">
-                          <User size={24} />
+                      <div key={i} className="flex items-center gap-3 sm:gap-4">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-surface-muted rounded-xl sm:rounded-2xl flex items-center justify-center text-content-muted shrink-0">
+                          <User size={20} className="sm:w-6 sm:h-6" />
                         </div>
-                        <div className="flex-1">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm font-black text-content">{s.name}</span>
-                            <span className="text-sm font-black text-brand"><PriceDisplay amount={s.sales} /></span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-center mb-1.5 sm:mb-2">
+                            <span className="text-xs sm:text-sm font-black text-content truncate">{s.name}</span>
+                            <span className="text-xs sm:text-sm font-black text-brand shrink-0"><PriceDisplay amount={s.sales} /></span>
                           </div>
-                          <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
+                          <div className="h-1.5 sm:h-2 bg-surface-muted rounded-full overflow-hidden">
                             <motion.div 
                               initial={{ width: 0 }}
                               animate={{ width: `${(s.sales / Math.max(...staffStats.performance.map(x => x.sales), 1)) * 100}%` }}
@@ -837,35 +851,35 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               </div>
 
               {/* Customer Insights Section */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
                 {/* Top Customers */}
-                <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
-                  <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-lg font-black text-content">أفضل العملاء (حسب المبيعات)</h3>
-                    <span className="px-3 py-1 bg-brand/10 text-brand rounded-full text-xs font-black">
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                  <div className="flex items-center justify-between mb-6 sm:mb-8">
+                    <h3 className="text-sm sm:text-lg font-black text-content">أفضل العملاء (حسب المبيعات)</h3>
+                    <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-brand/10 text-brand rounded-full text-[10px] sm:text-xs font-black">
                       {customerStats.totalActiveCustomers} عميل نشط
                     </span>
                   </div>
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     {customerStats.topCustomers.map((customer, index) => (
-                      <div key={customer.id} className="flex items-center justify-between p-4 bg-surface-muted rounded-2xl">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-brand text-white rounded-xl flex items-center justify-center font-black shadow-sm">
+                      <div key={customer.id} className="flex items-center justify-between p-3 sm:p-4 bg-surface-muted rounded-xl sm:rounded-2xl">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-brand text-white rounded-lg sm:rounded-xl flex items-center justify-center font-black shadow-sm text-xs sm:text-sm shrink-0">
                             {index + 1}
                           </div>
                           <div>
-                            <p className="text-sm font-black text-content">{customer.name}</p>
-                            <p className="text-[10px] text-content-muted font-bold">{customer.orderCount} طلبات</p>
+                            <p className="text-xs sm:text-sm font-black text-content truncate max-w-[120px] sm:max-w-none">{customer.name}</p>
+                            <p className="text-[9px] sm:text-[10px] text-content-muted font-bold">{customer.orderCount} طلبات</p>
                           </div>
                         </div>
                         <div className="text-left">
-                          <p className="text-sm font-black text-brand"><PriceDisplay amount={customer.totalSpent} /></p>
-                          <p className="text-[10px] text-content-muted font-bold">إجمالي المشتريات</p>
+                          <p className="text-xs sm:text-sm font-black text-brand"><PriceDisplay amount={customer.totalSpent} /></p>
+                          <p className="text-[9px] sm:text-[10px] text-content-muted font-bold">إجمالي المشتريات</p>
                         </div>
                       </div>
                     ))}
                     {customerStats.topCustomers.length === 0 && (
-                      <div className="text-center py-8 text-content-muted font-bold">
+                      <div className="text-center py-8 text-content-muted font-bold text-xs sm:text-sm">
                         لا توجد بيانات للعملاء في هذه الفترة
                       </div>
                     )}
@@ -873,18 +887,18 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 </div>
 
                 {/* Customer Retention */}
-                <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
-                  <h3 className="text-lg font-black text-content mb-8">ولاء العملاء (جدد مقابل متكررين)</h3>
-                  <div className="h-80">
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                  <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">ولاء العملاء (جدد مقابل متكررين)</h3>
+                  <div className="h-64 sm:h-80">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
                           data={customerStats.retentionChartData}
                           cx="50%"
                           cy="50%"
-                          innerRadius={80}
-                          outerRadius={110}
-                          paddingAngle={8}
+                          innerRadius={55}
+                          outerRadius={85}
+                          paddingAngle={6}
                           dataKey="value"
                         >
                           {customerStats.retentionChartData.map((entry, index) => (
@@ -892,9 +906,9 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                           ))}
                         </Pie>
                         <Tooltip 
-                          contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)' }}
+                          contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
                         />
-                        <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                        <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 700 }} />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
@@ -908,35 +922,35 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           )}
 
           {activeTab === 'zreports' && (
-            <div className="space-y-8">
-              <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm max-w-xl mx-auto text-center">
-                <div className="bg-brand/10 w-16 h-16 rounded-2xl flex items-center justify-center text-brand mx-auto mb-6">
-                  <Calculator size={32} />
+            <div className="space-y-4 sm:space-y-8">
+              <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm max-w-xl mx-auto text-center">
+                <div className="bg-brand/10 w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center text-brand mx-auto mb-4 sm:mb-6">
+                  <Calculator size={28} className="sm:w-8 sm:h-8" />
                 </div>
-                <h3 className="text-xl font-black text-gray-900 mb-2">إصدار تقرير نهاية اليوم (EOD)</h3>
-                <p className="text-gray-500 font-bold mb-8 text-sm px-8">يمكنك معاينة وطباعة التقرير المالي المجمع لجميع الورديات التي تمت في تاريخ محدد.</p>
+                <h3 className="text-base sm:text-xl font-black text-content mb-2">إصدار تقرير نهاية اليوم (EOD)</h3>
+                <p className="text-content-muted font-bold mb-6 sm:mb-8 text-xs sm:text-sm px-4 sm:px-8">يمكنك معاينة وطباعة التقرير المالي المجمع لجميع الورديات التي تمت في تاريخ محدد.</p>
                 
                 <div className="flex flex-col gap-4 max-w-sm mx-auto">
-                  <div className="space-y-2 text-right">
-                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest mr-2">اختر التاريخ</label>
+                  <div className="space-y-1.5 sm:space-y-2 text-right">
+                    <label className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest mr-2">اختر التاريخ</label>
                     <input 
                       type="date" 
                       value={selectedZDate}
                       onChange={(e) => setSelectedZDate(e.target.value)}
-                      className="w-full px-6 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-brand font-black text-lg text-center"
+                      className="w-full px-4 py-3 sm:px-6 sm:py-4 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-black text-base sm:text-lg text-center text-content"
                     />
                   </div>
                   <button 
                     onClick={() => fetchDailyZReport(selectedZDate)}
                     disabled={loadingZ || !selectedZDate}
-                    className="w-full bg-brand text-white py-4 rounded-2xl font-black text-lg shadow-xl shadow-brand/20 hover:bg-brand/90 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                    className="w-full bg-brand text-white py-3 sm:py-4 rounded-2xl font-black text-sm sm:text-lg shadow-xl shadow-brand/20 hover:bg-brand/90 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
                   >
                     {loadingZ ? (
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                     ) : (
                       <>
-                        <FileText size={20} />
-                        توليد التقرير المالي المجمع
+                        <FileText size={18} className="sm:w-5 sm:h-5" />
+                        <span>توليد التقرير المالي المجمع</span>
                       </>
                     )}
                   </button>
@@ -944,7 +958,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               </div>
 
               {dailyZData && (
-                <div className="bg-white rounded-[2.5rem] border border-border shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4">
+                <div className="bg-white rounded-2xl sm:rounded-[2.5rem] border border-border shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4">
                   <ZReport 
                     data={dailyZData} 
                     onClose={() => setDailyZData(null)} 
@@ -953,7 +967,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               )}
 
               {!dailyZData && !loadingZ && (
-                <div className="text-center py-12 text-gray-400 font-bold">
+                <div className="text-center py-12 text-gray-400 font-bold text-xs sm:text-sm">
                   لم يتم توليد تقرير لهذا التاريخ بعد. يرجى البدء باختيار التاريخ والنقر على الزر أعلاه.
                 </div>
               )}
@@ -965,7 +979,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
       {/* Drill-down Modal */}
       <AnimatePresence>
         {drillDown && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
             <motion.div 
               initial={{ opacity: 0 }} 
               animate={{ opacity: 1 }} 
@@ -977,33 +991,33 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               initial={{ scale: 0.9, opacity: 0, y: 20 }} 
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-surface w-full max-w-5xl rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh] border border-border"
+              className="bg-surface w-full max-w-5xl rounded-2xl sm:rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh] border border-border"
             >
-              <div className="p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
-                <div className="flex items-center gap-4">
-                  <div className="p-4 bg-brand text-white rounded-2xl shadow-lg shadow-brand/10">
-                    <FileText size={24} />
+              <div className="p-4 sm:p-8 border-b border-border flex flex-col sm:flex-row gap-4 justify-between sm:items-center bg-surface-muted/50">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="p-2.5 sm:p-4 bg-brand text-white rounded-xl sm:rounded-2xl shadow-lg shadow-brand/10 shrink-0">
+                    <FileText size={20} className="sm:w-6 sm:h-6" />
                   </div>
-                  <div>
-                    <h2 className="text-2xl font-black text-content">{drillDown.title}</h2>
-                    <p className="text-xs text-content-muted font-bold uppercase tracking-widest">عرض البيانات التفصيلية</p>
+                  <div className="min-w-0">
+                    <h2 className="text-base sm:text-2xl font-black text-content truncate">{drillDown.title}</h2>
+                    <p className="text-[10px] text-content-muted font-bold uppercase tracking-widest">عرض البيانات التفصيلية</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto border-t sm:border-0 pt-3 sm:pt-0 border-border">
                   <button 
                     onClick={() => exportToExcel(drillDown.data, drillDown.title)}
-                    className="flex items-center gap-2 bg-emerald-500/10 px-4 py-2 rounded-xl border border-emerald-500/20 text-sm font-bold text-emerald-600 hover:bg-emerald-500/20 transition-all"
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-emerald-500/10 px-4 py-2 sm:py-2.5 rounded-xl border border-emerald-500/20 text-xs sm:text-sm font-bold text-emerald-600 hover:bg-emerald-500/20 transition-all"
                   >
-                    <FileSpreadsheet size={18} />
+                    <FileSpreadsheet size={16} />
                     تصدير Excel
                   </button>
-                  <button onClick={() => setDrillDown(null)} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm">
-                    <X size={24} className="text-content-muted" />
+                  <button onClick={() => setDrillDown(null)} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm shrink-0">
+                    <X size={20} className="text-content-muted sm:w-6 sm:h-6" />
                   </button>
                 </div>
               </div>
 
-              <div className="flex-1 overflow-x-auto whitespace-nowrap p-8">
+              <div className="flex-1 overflow-x-auto whitespace-nowrap p-4 sm:p-8">
                 <div className="bg-surface rounded-2xl border border-border min-w-max">
                   <table className="w-full text-right min-w-max">
                     <thead className="bg-surface-muted text-[10px] font-black text-content-muted uppercase tracking-widest">

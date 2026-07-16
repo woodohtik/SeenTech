@@ -28,24 +28,26 @@ import { supabase, setSupabaseAuthToken } from './lib/supabase/client';
 import { setGlobalCurrencySymbol } from './lib/utils';
 import Layout from './components/Layout';
 import LockScreen from './components/LockScreen';
-import Dashboard from './components/Dashboard';
-import Customers from './components/Customers';
-import Orders from './components/Orders';
-import Settings from './components/Settings';
-import Sales from './components/Sales';
-import PublicInvoice from './pages/PublicInvoice';
 import Login from './components/Login';
 import { PermissionGuard } from './components/PermissionGuard';
-import AdminTailors from './components/AdminTailors';
+import Dashboard from './components/Dashboard';
 
+// Lazy loaded core tenant components
+const Customers = React.lazy(() => import('./components/Customers'));
+const Orders = React.lazy(() => import('./components/Orders'));
+const Settings = React.lazy(() => import('./components/Settings'));
+const Sales = React.lazy(() => import('./components/Sales'));
+const Suppliers = React.lazy(() => import('./components/Suppliers'));
 const InventoryManager = React.lazy(() => import('./components/Inventory/InventoryManager'));
 const Reports = React.lazy(() => import('./components/Reports'));
-import Onboarding from './components/Onboarding';
-import SuperAdminDashboard from './components/SuperAdminDashboard';
+const Onboarding = React.lazy(() => import('./components/Onboarding'));
+const PublicInvoice = React.lazy(() => import('./pages/PublicInvoice'));
+
 import PinLogin from './components/PinLogin';
 import ForcePinSetup from './components/ForcePinSetup';
 import StaffPinSetup from './components/StaffPinSetup';
 import MainSkeleton from './components/MainSkeleton';
+import PageSkeleton from './components/PageSkeleton';
 import ErrorBoundary from './components/ErrorBoundary';
 import { UserRole, Staff as StaffType } from './types';
 import { autoSeed } from './services/seedService';
@@ -60,15 +62,17 @@ import { useTranslation } from 'react-i18next';
 
 import SaaSLogin from './components/SaaSLogin';
 import SaaSLayout from './components/SaaSLayout';
-import SaaSReports from './components/SaaSReports';
-import SaaSAuditLogs from './components/SaaSAuditLogs';
-import SaaSSystemSettings from './components/SaaSSystemSettings';
-import SaaSWithdrawals from './components/SaaSWithdrawals';
-import SaaSTeamManagement from './components/SaaSTeamManagement';
-import TenantAnalyticsDashboard from './components/TenantAnalyticsDashboard';
 import RoleGuard from './components/RoleGuard';
 
-import Suppliers from './components/Suppliers';
+// Lazy loaded SaaS Super Admin components
+const SuperAdminDashboard = React.lazy(() => import('./components/SuperAdminDashboard'));
+const AdminTailors = React.lazy(() => import('./components/AdminTailors'));
+const SaaSReports = React.lazy(() => import('./components/SaaSReports'));
+const SaaSAuditLogs = React.lazy(() => import('./components/SaaSAuditLogs'));
+const SaaSSystemSettings = React.lazy(() => import('./components/SaaSSystemSettings'));
+const SaaSWithdrawals = React.lazy(() => import('./components/SaaSWithdrawals'));
+const SaaSTeamManagement = React.lazy(() => import('./components/SaaSTeamManagement'));
+const TenantAnalyticsDashboard = React.lazy(() => import('./components/TenantAnalyticsDashboard'));
 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
@@ -77,6 +81,38 @@ function AppContent() {
   const { currentStaff, setCurrentStaff } = useStaff();
   const { impersonationTenantId } = useAuth();
   const SUPER_ADMIN_EMAIL = "nomansa2566512@gmail.com";
+
+  // Desktop/Mobile viewport sync mode
+  const [isDesktopView, setIsDesktopView] = useState<boolean>(() => {
+    const saved = localStorage.getItem('desktop_view');
+    if (saved === null) {
+      return false; // Default to false so that mobile users get a beautifully adapted responsive layout by default
+    }
+    return saved === 'true';
+  });
+
+  useEffect(() => {
+    const handleDesktopViewChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setIsDesktopView(customEvent.detail);
+    };
+    window.addEventListener('desktop-view-changed', handleDesktopViewChange);
+    return () => window.removeEventListener('desktop-view-changed', handleDesktopViewChange);
+  }, []);
+
+  useEffect(() => {
+    const meta = document.querySelector('meta[name="viewport"]');
+    const root = document.documentElement;
+    if (meta) {
+      if (isDesktopView) {
+        meta.setAttribute('content', 'width=1280, initial-scale=0.3, minimum-scale=0.1, maximum-scale=5.0, user-scalable=yes');
+        root.classList.add('desktop-mode-active');
+      } else {
+        meta.setAttribute('content', 'width=device-width, initial-scale=1, viewport-fit=cover');
+        root.classList.remove('desktop-mode-active');
+      }
+    }
+  }, [isDesktopView]);
 
   // State sync trigger for seamless boarding
   const [syncTrigger, setSyncTrigger] = useState(0);
@@ -425,8 +461,12 @@ function AppContent() {
     }
   }
 
+  const effectiveRole = currentStaff?.role || userRole || 'tailor';
+  const layoutModeKey = `layoutMode_${effectiveTenantId}_${currentStaff?.id || effectiveRole}`;
+  const savedLayoutMode = localStorage.getItem(layoutModeKey) || 'sidebar';
+
   // PIN Access Logic
-  const needsPinSetup = user && isApproved && !needsOnboarding && authState.userRole === 'owner' && hasStaffWithPin === false && !isSaaSStaff && !!tenantId && tenantId !== 'null';
+  const needsPinSetup = user && isApproved && !needsOnboarding && authState.userRole === 'owner' && authState.currentUserStaff?.mustChangePin === true && !isSaaSStaff && !!tenantId && tenantId !== 'null';
   const showPinLogin = user && isApproved && !isSaaSStaff && !currentStaff && hasStaffWithPin && !needsPinSetup;
   const showForcePinSetup = false; // Retired in favor of automatic setup
 
@@ -476,7 +516,7 @@ function AppContent() {
           
           <div className="space-y-4">
             <a 
-              href="mailto:nomansa2566512@gmail.com?subject=تفعيل حساب سين الذكي"
+              href="mailto:nomansa2566512@gmail.com?subject=تفعيل حساب سين"
               className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-bold transition-all shadow-lg shadow-indigo-900/20 flex items-center justify-center gap-3 text-center"
             >
               طلب التفعيل والدفع الآن
@@ -530,7 +570,14 @@ function AppContent() {
         <Routes>
           {/* Public order tracking (no auth) */}
           {/* Public Digital Invoice Route */}
-          <Route path="/p/inv/:id" element={<PublicInvoice />} />
+          <Route 
+            path="/p/inv/:id" 
+            element={
+              <React.Suspense fallback={<PageSkeleton />}>
+                <PublicInvoice />
+              </React.Suspense>
+            } 
+          />
           <Route path="/track/:token" element={<TrackRoute />} />
           {/* SaaS Admin Portal */}
           <Route 
@@ -538,53 +585,57 @@ function AppContent() {
             element={
               (isSaaSStaff && is2FAVerified) ? (
                 <SaaSLayout userRole={userRole}>
-                  <Routes>
-                    <Route path="/dashboard" element={<SuperAdminDashboard />} />
-                    <Route path="/tailors" element={<AdminTailors />} />
-                    <Route path="/tailors/:tenantId/analytics" element={
-                      <RoleGuard allowedRoles={['super_admin', 'billing_admin', 'sales']}>
-                        <TenantAnalyticsDashboard />
-                      </RoleGuard>
-                    } />
-                    <Route path="/reports" element={
-                      <RoleGuard allowedRoles={['super_admin', 'billing_admin', 'sales']}>
-                        <SaaSReports />
-                      </RoleGuard>
-                    } />
-                    <Route path="/withdrawals" element={
-                      <RoleGuard allowedRoles={['super_admin', 'billing_admin']}>
-                        <SaaSWithdrawals />
-                      </RoleGuard>
-                    } />
-                    <Route path="/audit" element={
-                      <RoleGuard allowedRoles={['super_admin']}>
-                        <SaaSAuditLogs />
-                      </RoleGuard>
-                    } />
-                    <Route path="/system" element={
-                      <RoleGuard allowedRoles={['super_admin']}>
-                        <SaaSSystemSettings />
-                      </RoleGuard>
-                    } />
-                    <Route path="/team" element={
-                      <RoleGuard allowedRoles={['super_admin']}>
-                        <SaaSTeamManagement />
-                      </RoleGuard>
-                    } />
-                    <Route path="*" element={<Navigate to="/admin/dashboard" />} />
-                  </Routes>
+                  <React.Suspense fallback={<PageSkeleton />}>
+                    <Routes>
+                      <Route path="/dashboard" element={<SuperAdminDashboard />} />
+                      <Route path="/tailors" element={<AdminTailors />} />
+                      <Route path="/tailors/:tenantId/analytics" element={
+                        <RoleGuard allowedRoles={['super_admin', 'billing_admin', 'sales']}>
+                          <TenantAnalyticsDashboard />
+                        </RoleGuard>
+                      } />
+                      <Route path="/reports" element={
+                        <RoleGuard allowedRoles={['super_admin', 'billing_admin', 'sales']}>
+                          <SaaSReports />
+                        </RoleGuard>
+                      } />
+                      <Route path="/withdrawals" element={
+                        <RoleGuard allowedRoles={['super_admin', 'billing_admin']}>
+                          <SaaSWithdrawals />
+                        </RoleGuard>
+                      } />
+                      <Route path="/audit" element={
+                        <RoleGuard allowedRoles={['super_admin']}>
+                          <SaaSAuditLogs />
+                        </RoleGuard>
+                      } />
+                      <Route path="/system" element={
+                        <RoleGuard allowedRoles={['super_admin']}>
+                          <SaaSSystemSettings />
+                        </RoleGuard>
+                      } />
+                      <Route path="/team" element={
+                        <RoleGuard allowedRoles={['super_admin']}>
+                          <SaaSTeamManagement />
+                        </RoleGuard>
+                      } />
+                      <Route path="*" element={<Navigate to="/admin/dashboard" />} />
+                    </Routes>
+                  </React.Suspense>
                 </SaaSLayout>
               ) : <Navigate to="/saas/login" />
             } 
           />
-          <Route path="/saas/login" element={<SaaSLogin />} />
+          <Route path="/saas/login" element={<SaaSLogin />} /> <Route path="/invoice-test" element={<React.Suspense fallback={<div>Loading...</div>}>{React.createElement(React.lazy(() => import('./components/printing/InvoiceReceipt')))}</React.Suspense>} />
 
           {/* User Onboarding */}
           <Route 
             path="/onboarding" 
             element={
               needsOnboarding ? (
-                <Onboarding onComplete={() => setSyncTrigger(p => p + 1)} />
+                <React.Suspense fallback={<MainSkeleton />}>
+                  <Onboarding onComplete={() => setSyncTrigger(p => p + 1)} />
+                </React.Suspense>
               ) : <Navigate to="/" />
             } 
           />
@@ -660,7 +711,47 @@ function AppContent() {
                   userRole === 'super_admin' && !impersonationTenantId ? (
                     <Navigate to="/admin/dashboard" />
                   ) : (
-                    <Navigate to="/dashboard" />
+                    savedLayoutMode === 'grid' ? (
+                      <>
+                        <Layout 
+                          role={userRole || 'tailor'} 
+                          tenantId={effectiveTenantId!}
+                          currentStaff={currentStaff}
+                          onLock={() => setIsLocked(true)}
+                          isLocked={isLocked}
+                        >
+                          <React.Suspense fallback={<PageSkeleton />}>
+                            <Routes>
+                              <Route path="/" element={userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> : <Dashboard tenantId={effectiveTenantId!} />} />
+                              <Route path="/dashboard" element={userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> : <Dashboard tenantId={effectiveTenantId!} />} />
+                              <Route path="/sales" element={<Sales tenantId={effectiveTenantId!} />} />
+                              <Route path="/orders" element={<Orders tenantId={effectiveTenantId!} />} />
+                              <Route path="/customers" element={<Customers tenantId={effectiveTenantId!} />} />
+                              <Route path="/inventory" element={<InventoryManager tenantId={effectiveTenantId!} />} />
+                              <Route path="/suppliers" element={<Suppliers tenantId={effectiveTenantId!} />} />
+                              <Route path="/reports" element={<Reports tenantId={effectiveTenantId!} />} />
+                              <Route path="/settings" element={<Settings tenantId={effectiveTenantId!} />} />
+                              <Route path="*" element={<Navigate to="/" />} />
+                            </Routes>
+                          </React.Suspense>
+                        </Layout>
+                        <AnimatePresence>
+                          {isLocked && (
+                            <LockScreen 
+                              currentStaff={currentStaff} 
+                              onUnlock={() => setIsLocked(false)} 
+                              tenantId={effectiveTenantId || undefined}
+                              onUnlockWithStaff={(staff) => {
+                                setCurrentStaff(staff);
+                                setIsLocked(false);
+                              }}
+                            />
+                          )}
+                        </AnimatePresence>
+                      </>
+                    ) : (
+                      <Navigate to="/dashboard" />
+                    )
                   )
                 )
               ) : (
@@ -685,26 +776,20 @@ function AppContent() {
                       onLock={() => setIsLocked(true)}
                       isLocked={isLocked}
                     >
-                      <Routes>
-                        <Route path="/" element={userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> : <Dashboard tenantId={effectiveTenantId!} />} />
-                        <Route path="/dashboard" element={userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> : <Dashboard tenantId={effectiveTenantId!} />} />
-                        <Route path="/sales" element={<Sales tenantId={effectiveTenantId!} />} />
-                        <Route path="/orders" element={<Orders tenantId={effectiveTenantId!} />} />
-                        <Route path="/customers" element={<Customers tenantId={effectiveTenantId!} />} />
-                        <Route path="/inventory" element={
-                          <React.Suspense fallback={<div className="flex items-center justify-center h-full min-h-[400px]"><RefreshCw className="animate-spin text-indigo-500 w-8 h-8" /></div>}>
-                            <InventoryManager tenantId={effectiveTenantId!} />
-                          </React.Suspense>
-                        } />
-                        <Route path="/suppliers" element={<Suppliers tenantId={effectiveTenantId!} />} />
-                        <Route path="/reports" element={
-                          <React.Suspense fallback={<div className="flex items-center justify-center h-full min-h-[400px]"><RefreshCw className="animate-spin text-indigo-500 w-8 h-8" /></div>}>
-                            <Reports tenantId={effectiveTenantId!} />
-                          </React.Suspense>
-                        } />
-                        <Route path="/settings" element={<Settings tenantId={effectiveTenantId!} />} />
-                        <Route path="*" element={<Navigate to="/" />} />
-                      </Routes>
+                      <React.Suspense fallback={<PageSkeleton />}>
+                        <Routes>
+                          <Route path="/" element={userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> : <Dashboard tenantId={effectiveTenantId!} />} />
+                          <Route path="/dashboard" element={userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> : <Dashboard tenantId={effectiveTenantId!} />} />
+                          <Route path="/sales" element={<Sales tenantId={effectiveTenantId!} />} />
+                          <Route path="/orders" element={<Orders tenantId={effectiveTenantId!} />} />
+                          <Route path="/customers" element={<Customers tenantId={effectiveTenantId!} />} />
+                          <Route path="/inventory" element={<InventoryManager tenantId={effectiveTenantId!} />} />
+                          <Route path="/suppliers" element={<Suppliers tenantId={effectiveTenantId!} />} />
+                          <Route path="/reports" element={<Reports tenantId={effectiveTenantId!} />} />
+                          <Route path="/settings" element={<Settings tenantId={effectiveTenantId!} />} />
+                          <Route path="*" element={<Navigate to="/" />} />
+                        </Routes>
+                      </React.Suspense>
                     </Layout>
                     <AnimatePresence>
                       {isLocked && (

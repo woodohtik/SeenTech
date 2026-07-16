@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Store, MapPin, Phone, Globe, Bell, Shield, CreditCard, MessageSquare, CheckCircle2, AlertCircle, ChevronRight, ExternalLink, Zap, Upload, X as CloseIcon, Database, Trash2, ShieldCheck, Palette, FileText, HelpCircle, Layout, Mail } from 'lucide-react';
+import { Store, MapPin, Phone, Globe, Bell, Shield, CreditCard, MessageSquare, CheckCircle2, AlertCircle, ChevronRight, ExternalLink, Zap, Upload, X as CloseIcon, Database, Trash2, ShieldCheck, Palette, FileText, HelpCircle, Layout, Mail, Printer } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
 import { motion, AnimatePresence } from 'motion/react';
@@ -18,6 +18,7 @@ import WarehouseManagement from './Inventory/WarehouseManagement';
 import Staff from './Staff';
 import InvoiceLayoutSettings from './InvoiceLayoutSettings';
 import TenantSupportHistory from './TenantSupportHistory';
+import PrinterSettings from './PrinterSettings';
 
 import Branding from './Branding';
 
@@ -25,7 +26,7 @@ interface SettingsProps {
   tenantId: string;
 }
 
-type TabType = 'profile' | 'appearance' | 'invoice' | 'tax' | 'branches' | 'staff' | 'whatsapp' | 'billing' | 'support' | 'notifications' | 'data';
+type TabType = 'profile' | 'appearance' | 'invoice' | 'printer' | 'tax' | 'branches' | 'staff' | 'whatsapp' | 'billing' | 'support' | 'notifications' | 'data';
 
 export default function Settings({ tenantId }: SettingsProps) {
   const [loading, setLoading] = useState(true);
@@ -209,6 +210,7 @@ export default function Settings({ tenantId }: SettingsProps) {
     
     { id: 'appearance', label: 'المظهر والسمات', icon: Palette, visible: true, group: 'system' },
     { id: 'invoice', label: 'تخطيط الفاتورة', icon: FileText, visible: true, group: 'system' },
+    { id: 'printer', label: 'إعدادات الطابعة', icon: Printer, visible: true, group: 'system' },
     { id: 'notifications', label: 'التنبيهات', icon: Bell, visible: canViewNotifications, group: 'system' },
     { id: 'whatsapp', label: 'تكامل واتساب', icon: MessageSquare, visible: canViewWhatsApp, group: 'system' },
     
@@ -224,16 +226,35 @@ export default function Settings({ tenantId }: SettingsProps) {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 text-right pb-20" dir="rtl">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-8 text-right pb-20" dir="rtl">
       <Header 
         tenantId={tenantId} 
         title="الإعدادات" 
         subtitle="تخصيص تجربة متجرك وإدارة اشتراكك"
       />
 
-      <div className="flex flex-col lg:flex-row gap-8 items-start">
-        {/* Navigation Sidebar */}
-        <aside className="w-full lg:w-72 shrink-0 space-y-8 sticky top-8">
+      {/* Mobile Navigation Tabs (Horizontally Scrollable) */}
+      <div className="lg:hidden w-full overflow-x-auto scrollbar-hide py-2 px-1 select-none flex gap-2 border-b border-border mb-6">
+        {TABS.filter(t => t.visible).map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer",
+              activeTab === tab.id
+                ? "bg-brand text-white shadow-md shadow-brand/10 scale-105"
+                : "bg-surface text-content-muted border border-border hover:border-brand/30 hover:text-brand"
+            )}
+          >
+            <tab.icon size={14} />
+            <span>{tab.label}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-8 items-start w-full">
+        {/* Navigation Sidebar (Desktop) */}
+        <aside className="hidden lg:block lg:w-72 shrink-0 space-y-8 sticky top-8">
           {Object.entries(groupedTabs).map(([key, group], gIdx) => group.tabs.length > 0 && (
             <div key={key} className="space-y-3">
               <h4 className="px-6 text-[10px] font-black text-content-muted uppercase tracking-widest">{group.label}</h4>
@@ -265,7 +286,7 @@ export default function Settings({ tenantId }: SettingsProps) {
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 min-w-0">
+        <main className="flex-1 min-w-0 w-full">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -273,12 +294,13 @@ export default function Settings({ tenantId }: SettingsProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+              className="w-full"
             >
               {activeTab === 'profile' && (
-                <form onSubmit={handleSubmit(onSave)} className="bg-surface p-10 rounded-[3rem] border border-border shadow-xl shadow-brand/5 space-y-10">
-                  <div className="flex flex-col md:flex-row items-center md:items-start gap-10 border-b border-border pb-10">
+                <form onSubmit={handleSubmit(onSave)} className="bg-surface p-5 sm:p-8 md:p-10 rounded-2xl md:rounded-[3rem] border border-border shadow-xl shadow-brand/5 space-y-6 md:space-y-10 w-full">
+                  <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-10 border-b border-border pb-6 md:pb-10">
                     <div className="relative group">
-                      <div className="w-40 h-40 bg-surface-muted rounded-[2.5rem] border-2 border-dashed border-border flex items-center justify-center overflow-hidden transition-all group-hover:border-brand/40 group-hover:bg-brand/5">
+                      <div className="w-32 h-32 md:w-40 md:h-40 bg-surface-muted rounded-2xl md:rounded-[2.5rem] border-2 border-dashed border-border flex items-center justify-center overflow-hidden transition-all group-hover:border-brand/40 group-hover:bg-brand/5">
                         {logoPreview ? (
                           <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
                         ) : (
@@ -311,7 +333,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between px-1">
                         <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em]">اسم المنشأة التجاري</label>
@@ -385,7 +407,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                           { val: 'decentralized', label: 'مخزون فرعي', sub: 'Point-of-Sale Strategy', desc: 'كل فرع يتحكم في رصيده الخاص بشكل مستقل.', icon: MapPin },
                         ].map((strat) => (
                           <label key={strat.val} className={cn(
-                            "relative flex flex-col p-6 rounded-[2rem] border-2 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] group",
+                            "relative flex flex-col p-4 sm:p-6 rounded-2xl md:rounded-[2rem] border-2 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] group",
                             currentStrategy === strat.val ? "border-brand bg-brand/5 ring-4 ring-brand/5 shadow-lg shadow-brand/5" : "border-border bg-surface hover:border-brand/30 hover:bg-surface-muted/30"
                           )}>
                             <input type="radio" value={strat.val} {...register('inventoryStrategy')} className="sr-only" />
@@ -412,13 +434,13 @@ export default function Settings({ tenantId }: SettingsProps) {
                     </div>
                   </div>
 
-                  <div className="pt-8 border-t border-border flex justify-end items-center gap-4">
+                  <div className="pt-6 md:pt-8 border-t border-border flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-4 w-full">
                     <p className="text-[10px] text-content-muted font-bold text-left hidden md:block">يتم حفظ هذه البيانات تلقائياً وتنعكس على جميع فروع المتجر</p>
                     {canEdit && (
                       <button 
                         type="submit"
                         disabled={isSubmitting}
-                        className="bg-brand text-white px-10 py-4 rounded-[1.5rem] font-black hover:bg-brand/90 transition-all shadow-xl shadow-brand/20 disabled:opacity-50 hover:scale-105 active:scale-95 flex items-center gap-2"
+                        className="bg-brand text-white px-6 md:px-10 py-3.5 md:py-4 rounded-xl md:rounded-[1.5rem] font-black hover:bg-brand/90 transition-all shadow-xl shadow-brand/20 disabled:opacity-50 hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
                       >
                         {isSubmitting && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
                         <span>حفظ إعدادات المنشأة</span>
@@ -490,8 +512,8 @@ export default function Settings({ tenantId }: SettingsProps) {
               )}
 
               {activeTab === 'tax' && (
-                <form onSubmit={handleSubmit(onSave)} className="bg-surface p-10 rounded-[3rem] border border-border shadow-xl shadow-brand/5 space-y-10">
-                  <div className="flex items-center gap-5 border-b border-border pb-8">
+                <form onSubmit={handleSubmit(onSave)} className="bg-surface p-5 sm:p-8 md:p-10 rounded-2xl md:rounded-[3rem] border border-border shadow-xl shadow-brand/5 space-y-6 md:space-y-10 w-full">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 border-b border-border pb-6 sm:pb-8 text-center sm:text-right">
                     <div className="p-4 bg-brand/10 text-brand rounded-[1.5rem] shadow-inner">
                       <FileText size={32} />
                     </div>
@@ -501,12 +523,12 @@ export default function Settings({ tenantId }: SettingsProps) {
                     </div>
                   </div>
 
-                  <div className="space-y-8">
+                  <div className="space-y-6 md:space-y-8 w-full">
                     <label className={cn(
-                      "flex items-center justify-between p-8 rounded-[2.5rem] border-2 cursor-pointer transition-all group",
+                      "flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-5 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border-2 cursor-pointer transition-all gap-4 group",
                       taxEnabled ? "border-brand bg-brand/5 shadow-lg shadow-brand/5" : "border-border hover:border-brand/20 bg-surface-muted/30"
                     )}>
-                      <div className="max-w-xl">
+                      <div className="max-w-xl text-right">
                         <h4 className="text-lg font-black text-content flex items-center gap-3">
                           وضع الفوترة الإلكترونية المتقدمة
                           {taxEnabled && (
@@ -517,7 +539,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                         </h4>
                         <p className="text-sm text-content-muted mt-2 font-medium leading-relaxed">تفعيل الضريبة يضمن توافق متجرك مع متطلبات المرحلة الثانية من الفوترة الإلكترونية، بما في ذلك التوقيع الرقمي ورمز الاستجابة السريع المحمي.</p>
                       </div>
-                      <div className="relative">
+                      <div className="relative flex justify-end sm:justify-start">
                         <input type="checkbox" {...register('taxSettings.enabled')} className="sr-only" />
                         <div className={cn(
                           "w-16 h-8 rounded-full transition-all relative overflow-hidden",
@@ -537,7 +559,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                           initial={{ opacity: 0, scale: 0.95 }}
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.95 }}
-                          className="grid grid-cols-1 md:grid-cols-2 gap-10 bg-surface-muted/30 p-10 rounded-[2.5rem] border border-border/50"
+                          className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 bg-surface-muted/30 p-5 sm:p-10 rounded-2xl sm:rounded-[2.5rem] border border-border/50"
                         >
                           <div className="space-y-3">
                             <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">الرقم الضريبي (TRN - 15 خانة)</label>
@@ -599,7 +621,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                     )}
                   </div>
 
-                  <div className="pt-8 border-t border-border flex justify-end items-center gap-5">
+                  <div className="pt-6 md:pt-8 border-t border-border flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-4 w-full">
                      <p className="text-[10px] text-warning font-bold max-w-xs text-left leading-tight hidden md:block">
                         تأكد من صحة الرقم الضريبي؛ أي خطأ قد يؤدي إلى رفض الفاتورة من قبل منصة فاتورة.
                      </p>
@@ -607,7 +629,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                       <button 
                         type="submit"
                         disabled={isSubmitting}
-                        className="bg-brand text-white px-10 py-4 rounded-[1.5rem] font-black hover:bg-brand/90 transition-all shadow-xl shadow-brand/20 disabled:opacity-50 hover:scale-105 active:scale-95"
+                        className="bg-brand text-white px-6 md:px-10 py-3.5 md:py-4 rounded-xl md:rounded-[1.5rem] font-black hover:bg-brand/90 transition-all shadow-xl shadow-brand/20 disabled:opacity-50 hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
                       >
                         {isSubmitting ? 'جاري المزامنة...' : 'حفظ بيانات التكليف'}
                       </button>
@@ -616,9 +638,13 @@ export default function Settings({ tenantId }: SettingsProps) {
                 </form>
               )}
 
+              {activeTab === 'printer' && (
+                <PrinterSettings />
+              )}
+
               {activeTab === 'whatsapp' && (
-                <div className="bg-surface p-10 rounded-[3rem] border border-border shadow-xl shadow-brand/5 space-y-10">
-                  <div className="flex items-center gap-5 border-b border-border pb-8">
+                <div className="bg-surface p-5 sm:p-8 md:p-10 rounded-2xl md:rounded-[3rem] border border-border shadow-xl shadow-brand/5 space-y-6 md:space-y-10 w-full">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 border-b border-border pb-6 sm:pb-8 text-center sm:text-right">
                     <div className="p-4 bg-success/10 text-success rounded-[1.5rem] shadow-inner">
                       <MessageSquare size={32} />
                     </div>
@@ -628,9 +654,9 @@ export default function Settings({ tenantId }: SettingsProps) {
                     </div>
                   </div>
 
-                  <div className="space-y-8">
-                    <div className="flex flex-col md:flex-row items-center justify-between p-8 bg-success/5 rounded-[2.5rem] border border-success/10 gap-6">
-                      <div className="flex items-start gap-5 flex-1">
+                  <div className="space-y-6 md:space-y-8 w-full">
+                    <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between p-5 sm:p-8 bg-success/5 rounded-2xl sm:rounded-[2.5rem] border border-success/10 gap-6">
+                      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 flex-1 text-center sm:text-right">
                         <div className="p-4 bg-white rounded-2xl shadow-sm shrink-0">
                           <Zap size={28} className="text-success animate-pulse" />
                         </div>
@@ -639,10 +665,12 @@ export default function Settings({ tenantId }: SettingsProps) {
                           <p className="text-sm text-content-muted font-medium leading-relaxed">بمجرد الضغط على "الدفع"، سيتم إرسال نسخة من الفاتورة إلى رقم واتساب الخاص بالعميل بشكل فوري.</p>
                         </div>
                       </div>
-                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                        <input type="checkbox" className="sr-only peer" defaultChecked />
-                        <div className="w-16 h-8 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-success"></div>
-                      </label>
+                      <div className="flex justify-end sm:justify-start">
+                        <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                          <input type="checkbox" className="sr-only peer" defaultChecked />
+                          <div className="w-16 h-8 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-success"></div>
+                        </label>
+                      </div>
                     </div>
 
                     <div className="space-y-4">
@@ -653,9 +681,9 @@ export default function Settings({ tenantId }: SettingsProps) {
                        <div className="relative group">
                           <textarea 
                             defaultValue="مرحباً {customer_name}، تم استلام طلبك رقم {order_id}. يمكنك متابعة حالة الطلب من هنا: {invoice_url}"
-                            className="w-full bg-surface-muted border-2 border-transparent focus:border-brand/20 focus:bg-surface rounded-3xl p-8 font-bold transition-all outline-none h-48 resize-none text-sm leading-relaxed text-content shadow-inner"
+                            className="w-full bg-surface-muted border-2 border-transparent focus:border-brand/20 focus:bg-surface rounded-2xl sm:rounded-3xl p-5 sm:p-8 font-bold transition-all outline-none h-48 resize-none text-sm leading-relaxed text-content shadow-inner"
                           />
-                          <div className="absolute left-4 bottom-4 flex gap-2">
+                          <div className="absolute left-4 bottom-4 flex flex-wrap gap-2">
                             {['{customer_name}', '{order_id}', '{invoice_url}'].map(tag => (
                               <button key={tag} className="text-[8px] bg-brand/10 text-brand px-2 py-1 rounded-md font-black hover:bg-brand hover:text-white transition-colors uppercase tracking-tight">{tag}</button>
                             ))}
@@ -667,23 +695,23 @@ export default function Settings({ tenantId }: SettingsProps) {
               )}
 
               {activeTab === 'billing' && (
-                <div className="space-y-8 max-w-5xl mx-auto">
+                <div className="space-y-6 md:space-y-8 max-w-5xl mx-auto w-full">
                   {/* Premium Plan Dashboard */}
-                  <div className="bg-brand text-white p-12 rounded-[3.5rem] shadow-2xl shadow-brand/20 relative overflow-hidden group">
+                  <div className="bg-brand text-white p-6 sm:p-12 rounded-3xl sm:rounded-[3.5rem] shadow-2xl shadow-brand/20 relative overflow-hidden group w-full">
                     <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_left,_var(--tw-gradient-stops))] from-white/10 via-transparent to-transparent opacity-50" />
-                    <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-10">
-                      <div className="space-y-5 text-center md:text-right">
+                    <div className="relative z-10 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-6 md:gap-10">
+                      <div className="space-y-4 text-center md:text-right">
                         <div className="inline-flex items-center gap-2 bg-white/20 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest text-white border border-white/10 backdrop-blur-md">
                           <Zap size={14} className="fill-white" />
                           خطة التشغيل الفعالة
                         </div>
-                        <h3 className="text-5xl font-black tracking-tighter">سين برو <span className="text-white/40 text-2xl">SEEN PRO</span></h3>
-                        <p className="text-white/80 font-medium max-w-md text-lg leading-relaxed">أنت تستخدم أعلى باقة متوفرة؛ صلاحيات كاملة، تخزين غير محدود، ودعم فني مباشر عبر الواتساب.</p>
+                        <h3 className="text-3xl sm:text-5xl font-black tracking-tighter">سين برو <span className="text-white/40 text-lg sm:text-2xl">SEEN PRO</span></h3>
+                        <p className="text-white/80 font-medium max-w-md text-sm sm:text-lg leading-relaxed">أنت تستخدم أعلى باقة متوفرة؛ صلاحيات كاملة، تخزين غير محدود، ودعم فني مباشر عبر الواتساب.</p>
                       </div>
-                      <div className="bg-white/10 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/20 text-center min-w-[240px]">
+                      <div className="bg-white/10 backdrop-blur-xl p-6 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-white/20 text-center min-w-[240px] w-full md:w-auto">
                         <p className="text-white/60 font-black uppercase tracking-[0.2em] text-[10px] mb-2">تاريخ الفوترة القادم</p>
-                        <p className="text-3xl font-black text-white mb-6">15 أبريل 2026</p>
-                        <button className="w-full bg-white text-brand px-8 py-4 rounded-2xl font-black transition-all hover:scale-105 active:scale-95 shadow-xl shadow-brand/20">
+                        <p className="text-2xl sm:text-3xl font-black text-white mb-6">15 أبريل 2026</p>
+                        <button className="w-full bg-white text-brand px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl sm:rounded-2xl font-black transition-all hover:scale-105 active:scale-95 shadow-xl shadow-brand/20">
                           إدارة الاشتراك
                         </button>
                       </div>
@@ -691,23 +719,23 @@ export default function Settings({ tenantId }: SettingsProps) {
                   </div>
 
                   {/* Billing Table */}
-                  <div className="bg-surface p-10 rounded-[3rem] border border-border shadow-xl shadow-brand/5">
-                    <div className="flex items-center justify-between mb-8 px-2">
+                  <div className="bg-surface p-5 sm:p-8 md:p-10 rounded-2xl md:rounded-[3rem] border border-border shadow-xl shadow-brand/5 space-y-6 md:space-y-8 w-full">
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between mb-4 sm:mb-8 px-2 gap-4">
                        <h4 className="text-sm font-black text-content-muted uppercase tracking-[0.2em] flex items-center gap-3">
                         <CreditCard size={18} className="text-brand" />
                         سجل العمليات المالية والرسوم
                       </h4>
-                      <button className="text-[10px] font-black text-brand bg-brand/10 px-4 py-2 rounded-xl hover:bg-brand hover:text-white transition-all uppercase">تحميل السجل بالكامل</button>
+                      <button className="text-[10px] font-black text-brand bg-brand/10 px-4 py-2 rounded-xl hover:bg-brand hover:text-white transition-all uppercase w-full sm:w-auto">تحميل السجل بالكامل</button>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-4 w-full">
                       {[
                         { date: '15 مارس 2026', amount: 299, desc: 'اشتراك شهري SEEN PRO' },
                         { date: '15 فبراير 2026', amount: 299, desc: 'اشتراك شهري SEEN PRO' },
                         { date: '15 يناير 2026', amount: 299, desc: 'اشتراك شهري SEEN PRO' },
                       ].map((inv, idx) => (
-                        <div key={inv.date} className="flex justify-between items-center p-6 bg-surface-muted/30 hover:bg-surface border-2 border-transparent hover:border-brand/10 hover:shadow-lg hover:shadow-brand/5 rounded-[2rem] transition-all group">
-                          <div className="flex items-center gap-5">
+                        <div key={inv.date} className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center p-4 sm:p-6 bg-surface-muted/30 hover:bg-surface border-2 border-transparent hover:border-brand/10 hover:shadow-lg hover:shadow-brand/5 rounded-2xl sm:rounded-[2rem] transition-all group gap-4">
+                          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-right">
                             <div className="w-12 h-12 bg-success/10 text-success rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
                               <CheckCircle2 size={24} />
                             </div>
@@ -716,7 +744,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                               <p className="text-[10px] text-content-muted font-bold uppercase tracking-widest mt-0.5">{inv.date} • رقم مرجعي #{idx + 8921}</p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-8">
+                          <div className="flex items-center justify-between sm:justify-start gap-8">
                             <span className="text-xl font-black text-content"><PriceDisplay amount={inv.amount} /></span>
                             <button className="p-3 bg-white text-content-muted hover:text-brand hover:bg-brand/5 transition-all rounded-xl shadow-sm">
                               <FileText size={20} />
@@ -730,8 +758,8 @@ export default function Settings({ tenantId }: SettingsProps) {
               )}
 
               {activeTab === 'notifications' && (
-                <div className="bg-surface p-10 rounded-[3rem] border border-border shadow-xl shadow-brand/5 space-y-10">
-                   <div className="flex items-center gap-5 border-b border-border pb-8">
+                <div className="bg-surface p-5 sm:p-8 md:p-10 rounded-2xl md:rounded-[3rem] border border-border shadow-xl shadow-brand/5 space-y-6 md:space-y-10 w-full">
+                   <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 border-b border-border pb-6 sm:pb-8 text-center sm:text-right">
                       <div className="p-4 bg-warning/10 text-warning rounded-[1.5rem] shadow-inner">
                         <Bell size={32} />
                       </div>
@@ -741,16 +769,16 @@ export default function Settings({ tenantId }: SettingsProps) {
                       </div>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-4 w-full">
                       {[
                         { title: 'تحذيرات المخزون المنخفض', desc: 'سيتم تنبيهك عندما تصل كمية القماش أو الإكسسوارات للحد الأدنى.', icon: Database, color: 'text-danger' },
                         { title: 'إشعارات الطلبات الجديدة', desc: 'إشعار فوري عند قيام أي موظف بإنشاء فاتورة بيع جديدة.', icon: Store, color: 'text-brand' },
                         { title: 'تقارير الإغلاق اليومية', desc: 'ملخص بالأرباح والخسائر والمبيعات فور إغلاق الوردية.', icon: FileText, color: 'text-success' },
                         { title: 'مواعيد تسليم الغد', desc: 'تنبيه لقائمة العملاء الذين يجب تسليم طلباتهم في اليوم التالي.', icon: Bell, color: 'text-warning' },
                       ].map((item) => (
-                        <div key={item.title} className="flex items-center justify-between p-8 bg-surface-muted/30 hover:bg-surface border-2 border-transparent hover:border-border rounded-[2.5rem] transition-all group">
-                          <div className="flex items-start gap-5">
-                            <div className={cn("p-4 bg-white rounded-2xl shadow-sm transition-transform group-hover:scale-110", item.color)}>
+                        <div key={item.title} className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-5 sm:p-8 bg-surface-muted/30 hover:bg-surface border-2 border-transparent hover:border-border rounded-2xl sm:rounded-[2.5rem] transition-all group gap-4">
+                          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-right">
+                            <div className={cn("p-4 bg-white rounded-2xl shadow-sm transition-transform group-hover:scale-110 shrink-0", item.color)}>
                               <item.icon size={26} />
                             </div>
                             <div className="space-y-1">
@@ -758,10 +786,12 @@ export default function Settings({ tenantId }: SettingsProps) {
                               <p className="text-sm text-content-muted font-medium leading-relaxed max-w-md">{item.desc}</p>
                             </div>
                           </div>
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" className="sr-only peer" defaultChecked />
-                            <div className="w-14 h-7 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand"></div>
-                          </label>
+                          <div className="flex justify-end sm:justify-start">
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input type="checkbox" className="sr-only peer" defaultChecked />
+                              <div className="w-14 h-7 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand"></div>
+                            </label>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -769,34 +799,34 @@ export default function Settings({ tenantId }: SettingsProps) {
               )}
 
               {activeTab === 'data' && (
-                <div className="bg-surface p-10 rounded-[3rem] border border-border shadow-xl shadow-brand/5 space-y-10">
-                   <div className="flex items-center gap-5 border-b border-border pb-8">
+                <div className="bg-surface p-5 sm:p-8 md:p-10 rounded-2xl md:rounded-[3rem] border border-border shadow-xl shadow-brand/5 space-y-6 md:space-y-10 w-full">
+                   <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 border-b border-border pb-6 sm:pb-8 text-center sm:text-right">
                       <div className="p-4 bg-danger/10 text-danger rounded-[1.5rem] shadow-inner">
                         <Database size={32} />
                       </div>
                       <div>
                         <h3 className="text-2xl font-black text-content">إدارة البيانات وسرية المعلومات</h3>
-                        <p className="text-sm text-content-muted font-medium mt-1 uppercase tracking-tight">التحكم في سجلات النظام والبيانات المؤرشفة</p>
+                        <p className="text-sm text-content-muted font-medium mt-1 uppercase tracking-tight">التحم في سجلات النظام والبيانات المؤرشفة</p>
                       </div>
                     </div>
 
-                    <div className="space-y-8">
-                      <div className="p-10 bg-danger/5 rounded-[3rem] border-2 border-dashed border-danger/20 space-y-6">
-                        <div className="flex items-center gap-4 text-danger">
+                    <div className="space-y-6 md:space-y-8 w-full">
+                      <div className="p-5 sm:p-10 bg-danger/5 rounded-2xl sm:rounded-[3rem] border-2 border-dashed border-danger/20 space-y-6 text-right">
+                        <div className="flex flex-col sm:flex-row items-center gap-4 text-danger text-center sm:text-right">
                           <div className="p-3 bg-danger text-white rounded-2xl shadow-lg shadow-danger/20">
                             <AlertCircle size={28} />
                           </div>
                           <h4 className="text-2xl font-black tracking-tight">المنطقة الخطرة (Critical Zone)</h4>
                         </div>
-                        <p className="text-base text-danger/80 font-bold leading-relaxed max-w-2xl">
+                        <p className="text-base text-danger/80 font-bold leading-relaxed max-w-2xl text-center sm:text-right">
                           حذف البيانات التجريبية سيمسح جميع السجلات التي تم تمييزها كـ "بيانات اختبار". 
                           هذا الإجراء مفيد جداً قبل الانتقال لبيئة التشغيل الفعلية (Go-Live) لتصفير عداد الطلبات والعملاء الوهميين.
                         </p>
-                        <div className="pt-4">
+                        <div className="pt-2 flex justify-center sm:justify-start">
                           <button
                             onClick={handleDeleteTestData}
                             disabled={isDeletingTestData}
-                            className="flex items-center gap-3 bg-danger text-white px-10 py-5 rounded-[1.5rem] font-black hover:bg-danger/90 transition-all shadow-xl shadow-danger/20 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
+                            className="flex items-center justify-center gap-3 bg-danger text-white w-full sm:w-auto px-6 py-4 rounded-xl sm:rounded-[1.5rem] font-black hover:bg-danger/90 transition-all shadow-xl shadow-danger/20 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
                           >
                             {isDeletingTestData ? (
                               <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin" />
@@ -808,15 +838,15 @@ export default function Settings({ tenantId }: SettingsProps) {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-1">
-                        <button className="flex flex-col items-center justify-center p-10 bg-surface rounded-[2.5rem] border-2 border-border border-dashed hover:border-brand/40 hover:bg-brand/5 transition-all group">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-1">
+                        <button className="flex flex-col items-center justify-center p-6 sm:p-10 bg-surface rounded-2xl sm:rounded-[2.5rem] border-2 border-border border-dashed hover:border-brand/40 hover:bg-brand/5 transition-all group text-center">
                           <div className="p-4 bg-surface-muted rounded-2xl mb-4 group-hover:scale-110 transition-transform">
                              <Database size={32} className="text-content-muted" />
                           </div>
                           <p className="font-black text-content">تصدير قاعدة البيانات (JSON)</p>
                           <p className="text-[10px] text-content-muted font-bold mt-2 uppercase">آخر نسخة تم تصديرها: لم تُجرى بعد</p>
                         </button>
-                        <button className="flex flex-col items-center justify-center p-10 bg-surface rounded-[2.5rem] border-2 border-border border-dashed hover:border-success/40 hover:bg-success/5 transition-all group">
+                        <button className="flex flex-col items-center justify-center p-6 sm:p-10 bg-surface rounded-2xl sm:rounded-[2.5rem] border-2 border-border border-dashed hover:border-success/40 hover:bg-success/5 transition-all group text-center">
                           <div className="p-4 bg-surface-muted rounded-2xl mb-4 group-hover:scale-110 transition-transform">
                              <FileText size={32} className="text-content-muted" />
                           </div>

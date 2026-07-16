@@ -47,6 +47,20 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.warn('React ErrorBoundary caught an error:', error, errorInfo);
+    
+    // Check if it's a dynamic import loading error
+    const isLazyLoadError = error && (
+      error.message?.includes('Failed to fetch dynamically imported module') ||
+      error.message?.includes('dynamically imported module') ||
+      error.name === 'ChunkLoadError'
+    );
+    
+    if (isLazyLoadError) {
+      console.log('Detected lazy load error, auto-refreshing page...');
+      window.location.reload();
+      return;
+    }
+
     try {
       const eventId = new Date().getTime().toString();
       this.setState({ errorInfo, eventId });

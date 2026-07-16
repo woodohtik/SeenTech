@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lock, Shield, AlertCircle, CheckCircle2, ArrowLeft, Loader2 } from 'lucide-react';
+import { Lock, Shield, AlertCircle, CheckCircle2, ArrowLeft, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase/client';
 import { hashPin } from '../services/staffService';
@@ -16,8 +16,10 @@ interface ForcePinSetupProps {
 
 export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProps) {
   const navigate = useNavigate();
+  const [enablePin, setEnablePin] = useState(true);
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
+  const [showPin, setShowPin] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -25,6 +27,7 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
   const weakPins = ['1234', '0000', '1111', '2222', '3333', '4444', '5555', '6666', '7777', '8888', '9999', '1212', '2580'];
 
   const validatePin = () => {
+    if (!enablePin) return true;
     if (pin.length !== 4) {
       setError('يجب أن يتكون الرمز من 4 أرقام');
       return false;
@@ -52,7 +55,7 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
 
     setLoading(true);
     try {
-      const hashedPin = await hashPin(pin);
+      const hashedPin = enablePin ? await hashPin(pin) : null;
       
       const { data: tenantData, error: tenantError } = await supabase
         .from('tenants')
@@ -143,7 +146,9 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
           staffData.id,
           staffData.name,
           'security',
-          `تم إكمال إعداد الرمز السري (${usedRole === 'owner' ? 'المالك' : 'موظف'}) بنجاح`
+          enablePin 
+            ? `تم إكمال إعداد الرمز السري (${usedRole === 'owner' ? 'المالك' : 'موظف'}) بنجاح`
+            : `تم تخطي إعداد رمز الدخول للموظفين وتعطيله`
         ).catch(() => {});
       }
 
@@ -178,111 +183,169 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
   };
 
   return (
-    <div className="fixed inset-0 z-[200] bg-gray-50 flex items-center justify-center p-6 font-sans" dir="rtl">
+    <div className="fixed inset-0 z-[200] bg-slate-50/90 backdrop-blur-sm flex items-center justify-center p-4 font-sans" dir="rtl">
       <motion.div 
-        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        initial={{ opacity: 0, y: 15, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        className="w-full max-w-lg bg-white rounded-[3rem] shadow-2xl shadow-indigo-100 overflow-hidden border border-gray-100"
+        className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden"
       >
-        <div className="bg-indigo-600 p-10 text-white text-center relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
-          <div className="relative z-10">
-            <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-3xl flex items-center justify-center mx-auto mb-6 border border-white/30 shadow-xl">
-              <Shield size={40} className="text-white" />
+        {/* Header - More elegant and integrated */}
+        <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 px-6 py-8 text-white text-center relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-xl" />
+          <div className="relative z-10 space-y-3">
+            <div className="w-14 h-14 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto border border-white/20 shadow-md">
+              <Shield size={28} className="text-white" />
             </div>
-            <h1 className="text-3xl font-black mb-2">إعداد الأمان الإلزامي</h1>
-            <p className="text-indigo-100 font-medium">يرجى تعيين رمز الدخول السريع الأول للمنشأة</p>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight">إعداد أمان النظام</h1>
+              <p className="text-xs text-indigo-100/90 mt-1">تحديد خيارات تسجيل الدخول والرموز السرية للموظفين</p>
+            </div>
           </div>
         </div>
 
-        <div className="p-10">
+        {/* Content Body */}
+        <div className="p-6">
           <AnimatePresence mode="wait">
             {success ? (
               <motion.div 
                 key="success"
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-8"
+                className="text-center py-6 space-y-4"
               >
-                <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <CheckCircle2 size={48} />
+                <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto border border-emerald-100">
+                  <CheckCircle2 size={36} />
                 </div>
-                <h2 className="text-2xl font-black text-gray-900 mb-2">تم التعيين بنجاح!</h2>
-                <p className="text-gray-500 font-medium">تم تعيين رمز الدخول بنجاح، يمكنك الآن استخدامه للدخول السريع.</p>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-800">تم التعيين بنجاح!</h2>
+                  <p className="text-xs text-slate-500 mt-1">تم حفظ الإعدادات بنجاح، جاري تحويلك الآن...</p>
+                </div>
               </motion.div>
             ) : (
               <motion.form 
                 key="form"
                 onSubmit={handleSubmit}
-                className="space-y-8"
+                className="space-y-5"
               >
-                <div className="space-y-6">
-                  <div className="space-y-3">
-                    <label className="text-sm font-black text-gray-700 mr-2 flex items-center gap-2">
-                      <Lock size={16} className="text-indigo-600" />
-                      أدخل الرمز السري الجديد (4 أرقام)
-                    </label>
-                    <input 
-                      type="password"
-                      maxLength={4}
-                      value={pin}
-                      onChange={(e) => {
-                        setPin(e.target.value.replace(/\D/g, ''));
-                        setError(null);
-                      }}
-                      className={cn(
-                        "w-full bg-gray-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl p-5 text-center text-3xl font-black tracking-[1em] outline-none transition-all shadow-inner",
-                        error && "border-red-200 bg-red-50"
-                      )}
-                      placeholder="****"
-                      autoFocus
-                    />
+                {/* Enable PIN Toggle option - beautiful card layout */}
+                <div className="bg-slate-50/50 rounded-xl p-4 border border-slate-100 flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <label htmlFor="enable_pin_toggle" className="text-sm font-bold text-slate-700 cursor-pointer">تفعيل رمز الموظف</label>
+                    <p className="text-xs text-slate-400">تطلب رمز دخول سري لكل موظف لاستخدام النظام</p>
                   </div>
-
-                  <div className="space-y-3">
-                    <label className="text-sm font-black text-gray-700 mr-2 flex items-center gap-2">
-                      <CheckCircle2 size={16} className="text-indigo-600" />
-                      تأكيد الرمز السري
-                    </label>
-                    <input 
-                      type="password"
-                      maxLength={4}
-                      value={confirmPin}
-                      onChange={(e) => {
-                        setConfirmPin(e.target.value.replace(/\D/g, ''));
-                        setError(null);
-                      }}
+                  <button
+                    id="enable_pin_toggle"
+                    type="button"
+                    onClick={() => {
+                      setEnablePin(!enablePin);
+                      setError(null);
+                    }}
+                    className={cn(
+                      "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                      enablePin ? "bg-indigo-600" : "bg-slate-200"
+                    )}
+                  >
+                    <span
+                      aria-hidden="true"
                       className={cn(
-                        "w-full bg-gray-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl p-5 text-center text-3xl font-black tracking-[1em] outline-none transition-all shadow-inner",
-                        error && "border-red-200 bg-red-50"
+                        "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                        enablePin ? "-translate-x-5" : "translate-x-0"
                       )}
-                      placeholder="****"
                     />
-                  </div>
+                  </button>
                 </div>
 
+                {/* Input Fields Container with comfortable sizing */}
+                {enablePin && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="space-y-4 overflow-hidden"
+                  >
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center px-1">
+                        <label className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
+                          <Lock size={14} className="text-indigo-500" />
+                          أدخل رمز الدخول الجديد (4 أرقام)
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowPin(!showPin)}
+                          className="text-xs text-slate-400 hover:text-indigo-600 transition-colors flex items-center gap-1"
+                        >
+                          {showPin ? <EyeOff size={13} /> : <Eye size={13} />}
+                          <span>{showPin ? "إخفاء" : "إظهار"}</span>
+                        </button>
+                      </div>
+                      <input 
+                        type={showPin ? "text" : "password"}
+                        maxLength={4}
+                        pattern="\d*"
+                        value={pin}
+                        onChange={(e) => {
+                          setPin(e.target.value.replace(/\D/g, ''));
+                          setError(null);
+                        }}
+                        className={cn(
+                          "w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-xl p-3 text-center text-xl font-bold tracking-[0.5em] outline-none transition-all",
+                          error && "border-red-300 bg-red-50/30"
+                        )}
+                        placeholder="••••"
+                        autoFocus
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-600 mr-1 flex items-center gap-1.5">
+                        <CheckCircle2 size={14} className="text-indigo-500" />
+                        تأكيد الرمز السري
+                      </label>
+                      <input 
+                        type={showPin ? "text" : "password"}
+                        maxLength={4}
+                        pattern="\d*"
+                        value={confirmPin}
+                        onChange={(e) => {
+                          setConfirmPin(e.target.value.replace(/\D/g, ''));
+                          setError(null);
+                        }}
+                        className={cn(
+                          "w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-xl p-3 text-center text-xl font-bold tracking-[0.5em] outline-none transition-all",
+                          error && "border-red-300 bg-red-50/30"
+                        )}
+                        placeholder="••••"
+                      />
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Error Banner */}
                 {error && (
                   <motion.div 
-                    initial={{ opacity: 0, y: -10 }}
+                    initial={{ opacity: 0, y: -5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center gap-3 text-red-600 text-sm font-bold bg-red-50 p-4 rounded-2xl border border-red-100"
+                    className="flex items-start gap-2.5 text-red-600 text-xs font-semibold bg-red-50 p-3 rounded-xl border border-red-100/50"
                   >
-                    <AlertCircle size={20} />
+                    <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
                     <span>{error}</span>
                   </motion.div>
                 )}
 
+                {/* Action Button */}
                 <button 
                   type="submit"
-                  disabled={loading || pin.length !== 4 || confirmPin.length !== 4}
-                  className="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black text-lg hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3"
+                  disabled={loading || (enablePin && (pin.length !== 4 || confirmPin.length !== 4))}
+                  className="w-full bg-indigo-600 text-white py-3 px-4 rounded-xl font-bold text-sm hover:bg-indigo-700 shadow-md hover:shadow-indigo-100 transition-all active:scale-98 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
                 >
-                  {loading ? <Loader2 className="animate-spin" /> : <Shield size={24} />}
-                  <span>حفظ وتفعيل الرمز</span>
+                  {loading ? <Loader2 className="animate-spin" size={18} /> : <Shield size={16} />}
+                  <span>{enablePin ? "حفظ وتفعيل رمز الموظف" : "متابعة بدون رمز دخول"}</span>
                 </button>
 
-                <p className="text-center text-xs text-gray-400 font-medium leading-relaxed px-4">
-                  ملاحظة: هذا الرمز سيستخدم للدخول السريع لجميع موظفي المنشأة. يرجى التأكد من حفظه جيداً.
+                <p className="text-center text-[10px] text-slate-400 leading-relaxed px-2">
+                  {enablePin 
+                    ? "ملاحظة: هذا الرمز سيستخدم للدخول السريع لموظفي المنشأة لحماية البيانات."
+                    : "تنبيه: عدم تفعيل الرمز يعني إمكانية دخول أي مستخدم للنظام مباشرة دون إثبات هوية موظف."}
                 </p>
               </motion.form>
             )}

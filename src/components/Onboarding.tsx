@@ -421,38 +421,38 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-10 bg-slate-50 p-4 sm:p-8 rounded-[1.5rem] sm:rounded-[3rem] border border-slate-100">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-100">
                       <div className="md:col-span-2">
-                        <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-2 flex items-center gap-3">
-                          <Store className="text-brand" /> {t('onboarding.steps.identity')}
+                        <h3 className="text-base sm:text-lg font-black text-slate-900 mb-1 flex items-center gap-2">
+                          <Store className="text-brand" size={18} /> {t('onboarding.steps.identity')}
                         </h3>
                       </div>
 
-                      <div className="space-y-4 sm:space-y-5">
-                        <label className="text-xs sm:text-sm font-black text-slate-700 uppercase tracking-widest flex items-center gap-2">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center gap-2">
                           {t('onboarding.fields.shop_name')}
                         </label>
                         <div className={cn(
-                          "group flex items-center bg-white border-2 rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden focus-within:border-brand transition-all shadow-sm focus-within:shadow-xl focus-within:shadow-brand/5",
+                          "group flex items-center bg-white border rounded-xl overflow-hidden focus-within:border-brand transition-all shadow-sm focus-within:ring-1 focus-within:ring-brand/30",
                           errors.shopName ? "border-rose-500 bg-rose-50/30" : "border-slate-200"
                         )}>
                           <div className={cn(
-                            "flex items-center justify-center p-3.5 sm:p-5 border-e transition-colors shrink-0",
-                            errors.shopName ? "text-rose-500 border-rose-500/20" : "text-slate-300 border-slate-100 group-focus-within:border-brand/40 group-focus-within:text-brand"
+                            "flex items-center justify-center p-2.5 sm:p-3 border-e transition-colors shrink-0",
+                            errors.shopName ? "text-rose-500 border-rose-500/20" : "text-slate-400 border-slate-100 group-focus-within:border-brand/40 group-focus-within:text-brand"
                           )}>
-                            <Store size={20} className="sm:w-6 sm:h-6" />
+                            <Store size={18} />
                           </div>
                           <input 
                             {...register('shopName')}
                             placeholder={t('onboarding.fields.shop_name_placeholder')}
-                            className="flex-1 w-full bg-transparent border-none py-3.5 sm:py-5 px-4 sm:px-6 text-base sm:text-lg font-bold outline-none ring-0 placeholder:text-slate-300 text-content"
+                            className="flex-1 w-full bg-transparent border-none py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none ring-0 placeholder:text-slate-300 text-content"
                           />
                         </div>
-                        {errors.shopName && <p className="text-xs text-rose-500 font-bold mt-2 ps-4">{errors.shopName.message as string}</p>}
+                        {errors.shopName && <p className="text-xs text-rose-500 font-bold mt-1 ps-2">{errors.shopName.message as string}</p>}
                       </div>
 
-                      <div className="space-y-4 sm:space-y-5">
-                        <label className="text-xs sm:text-sm font-black text-slate-700 uppercase tracking-widest flex items-center gap-2">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center gap-2">
                           {t('onboarding.fields.activity_type')}
                         </label>
                         <Controller
@@ -461,7 +461,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                           render={({ field }) => (
                             <SmartSelect
                               {...field}
-                              className="w-full bg-white border-2 border-slate-200 focus-within:border-brand rounded-[1.5rem] sm:rounded-[2.5rem] py-3.5 sm:py-5 px-5 sm:px-8 text-base sm:text-lg font-bold outline-none transition-all shadow-sm"
+                              className="w-full bg-white border border-slate-200 focus-within:border-brand rounded-xl py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none transition-all shadow-sm"
                               options={[
                                 { value: 'tailor', label: t('onboarding.categories.tailor') },
                                 { value: 'tailor-female', label: t('onboarding.categories.tailor_female') },
@@ -472,8 +472,8 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                         />
                       </div>
 
-                      <div className="md:col-span-2 space-y-4 sm:space-y-6">
-                        <label className="text-xs sm:text-sm font-black text-slate-700 uppercase tracking-widest block">{t('onboarding.fields.logo')}</label>
+                      <div className="md:col-span-2 space-y-2">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest block">{t('onboarding.fields.logo')}</label>
                         <input 
                           type="file" 
                           id="logo-upload" 
@@ -483,60 +483,60 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                         />
                         <label 
                           htmlFor="logo-upload"
-                          className="flex items-center gap-4 p-1 bg-white rounded-[1.5rem] sm:rounded-[2.5rem] border-2 border-dashed border-slate-300 hover:border-brand hover:bg-slate-50 transition-all cursor-pointer group"
+                          className="flex items-center gap-3 p-1.5 bg-white rounded-xl border border-dashed border-slate-300 hover:border-brand hover:bg-slate-50 transition-all cursor-pointer group"
                         >
-                          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-slate-50 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm text-slate-300 overflow-hidden group-hover:scale-105 transition-transform border border-slate-100 shrink-0">
+                          <div className="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center shadow-sm text-slate-300 overflow-hidden group-hover:scale-105 transition-transform border border-slate-100 shrink-0">
                             {formData.logoUrl ? (
                               <img src={formData.logoUrl} alt="Logo Preview" className="w-full h-full object-cover" />
                             ) : (
-                              <ImageIcon size={20} className="sm:w-6 sm:h-6" />
+                              <ImageIcon size={18} />
                             )}
                           </div>
                           <div className={cn("flex-1 min-w-0", i18n.language === 'en' ? "text-left" : "text-right")}>
-                            <h3 className="font-black text-slate-800 text-xs sm:text-sm truncate group-hover:text-brand transition-colors">
+                            <h3 className="font-bold text-slate-700 text-xs truncate group-hover:text-brand transition-colors">
                               {formData.logoUrl ? t('onboarding.fields.logo_uploaded') : t('onboarding.fields.logo_upload')}
                             </h3>
                           </div>
                         </label>
                       </div>
 
-                      <div className="md:col-span-2 pt-6 sm:pt-8 border-t border-slate-200 mt-2 sm:mt-4">
-                        <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-4 sm:mb-6 flex items-center gap-3">
-                          <ShieldCheck className="text-brand" /> {t('onboarding.fields.tax_info', 'البيانات الضريبية')}
+                      <div className="md:col-span-2 pt-4 sm:pt-6 border-t border-slate-100 mt-2">
+                        <h3 className="text-base sm:text-lg font-black text-slate-900 mb-3 flex items-center gap-2">
+                          <ShieldCheck className="text-brand" size={18} /> {t('onboarding.fields.tax_info', 'البيانات الضريبية')}
                         </h3>
                       </div>
 
-                      <div className="space-y-4 sm:space-y-5">
-                        <label className="text-xs sm:text-sm font-black text-slate-700 uppercase tracking-widest flex items-center gap-2">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center gap-2">
                           {t('onboarding.fields.tax_number')}
                         </label>
                         <div className={cn(
-                          "group flex items-center bg-white border-2 rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden transition-all shadow-sm focus-within:shadow-xl focus-within:shadow-brand/5",
+                          "group flex items-center bg-white border rounded-xl overflow-hidden transition-all shadow-sm focus-within:ring-1 focus-within:ring-brand/30",
                           errors.taxNumber ? "border-rose-500 bg-rose-50/30" : checkVatValid(watch('taxNumber')) ? "border-emerald-500" : "border-slate-200 focus-within:border-brand"
                         )}>
                           <div className={cn(
-                            "flex items-center justify-center p-3.5 sm:p-5 border-e transition-colors shrink-0",
-                            errors.taxNumber ? "text-rose-500 border-rose-500/20" : checkVatValid(watch('taxNumber')) ? "text-emerald-500 border-emerald-500/20" : "text-slate-300 border-slate-100 group-focus-within:border-brand/40 group-focus-within:text-brand"
+                            "flex items-center justify-center p-2.5 sm:p-3 border-e transition-colors shrink-0",
+                            errors.taxNumber ? "text-rose-500 border-rose-500/20" : checkVatValid(watch('taxNumber')) ? "text-emerald-500 border-emerald-500/20" : "text-slate-400 border-slate-100 group-focus-within:border-brand/40 group-focus-within:text-brand"
                           )}>
-                            <ShieldCheck size={20} className="sm:w-6 sm:h-6" />
+                            <ShieldCheck size={18} />
                           </div>
                           <input 
                             {...register('taxNumber')}
                             placeholder={t('onboarding.fields.tax_number_placeholder')}
                             maxLength={15}
-                            className="flex-1 min-w-0 bg-transparent border-none py-3.5 sm:py-5 px-4 sm:px-6 text-base sm:text-lg font-bold outline-none ring-0 placeholder:text-slate-300 text-content"
+                            className="flex-1 min-w-0 bg-transparent border-none py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none ring-0 placeholder:text-slate-300 text-content"
                           />
                           {checkVatValid(watch('taxNumber')) && (
-                            <div className="mx-2 sm:mx-4 bg-emerald-100 text-emerald-600 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-black flex items-center gap-1 shrink-0">
-                              <Check size={12} className="sm:w-3.5 sm:h-3.5" /> {t('common.verified', 'موثق')}
+                            <div className="mx-2 bg-emerald-100 text-emerald-600 px-2.5 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1 shrink-0">
+                              <Check size={10} /> {t('common.verified', 'موثق')}
                             </div>
                           )}
                         </div>
-                        {errors.taxNumber && <p className="text-xs text-rose-500 font-bold mt-2 ps-4">{errors.taxNumber.message as string}</p>}
+                        {errors.taxNumber && <p className="text-xs text-rose-500 font-bold mt-1 ps-2">{errors.taxNumber.message as string}</p>}
                       </div>
 
-                      <div className="space-y-4 sm:space-y-5">
-                        <label className="text-xs sm:text-sm font-black text-slate-700 uppercase tracking-widest flex items-center gap-2">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center gap-2">
                           {t('onboarding.fields.tax_status')}
                         </label>
                         <Controller
@@ -545,7 +545,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                           render={({ field }) => (
                             <SmartSelect
                               {...field}
-                              className="w-full bg-white border-2 border-slate-200 focus-within:border-brand rounded-[1.5rem] sm:rounded-[2.5rem] py-3.5 sm:py-5 px-5 sm:px-8 text-base sm:text-lg font-bold outline-none transition-all shadow-sm"
+                              className="w-full bg-white border border-slate-200 focus-within:border-brand rounded-xl py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none transition-all shadow-sm"
                               options={[
                                 { value: 'registered', label: t('onboarding.tax_status_options.registered') },
                                 { value: 'unregistered', label: t('onboarding.tax_status_options.unregistered') }
@@ -567,62 +567,62 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-10 mt-6 sm:mt-12 bg-indigo-50/50 p-4 sm:p-8 rounded-[1.5rem] sm:rounded-[3rem] border border-indigo-100/50">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mt-4 bg-indigo-50/50 p-4 sm:p-6 rounded-2xl border border-indigo-100/50">
                       <div className="md:col-span-2">
-                        <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-4 sm:mb-6 flex items-center gap-3">
-                          <MapPin className="text-indigo-500" /> {t('onboarding.fields.address')}
+                        <h3 className="text-base sm:text-lg font-black text-slate-900 mb-1 flex items-center gap-2">
+                          <MapPin className="text-indigo-500" size={18} /> {t('onboarding.fields.address')}
                         </h3>
                       </div>
 
-                      <div className="md:col-span-2 space-y-4 sm:space-y-5">
-                        <label className={cn("text-xs sm:text-sm font-black text-slate-700 uppercase tracking-widest", i18n.language === 'en' ? "ps-2" : "pe-2")}>{t('onboarding.fields.address')}</label>
+                      <div className="md:col-span-2 space-y-2">
+                        <label className={cn("text-xs font-bold text-slate-700 uppercase tracking-widest", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.address')}</label>
                         <div className={cn(
-                          "group flex items-center bg-white border-2 rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden focus-within:border-indigo-500 transition-all shadow-sm focus-within:shadow-xl focus-within:shadow-indigo-500/5",
+                          "group flex items-center bg-white border rounded-xl overflow-hidden focus-within:border-indigo-500 transition-all shadow-sm focus-within:ring-1 focus-within:ring-indigo-500/30",
                           errors.address ? "border-rose-500 bg-rose-50/30" : "border-slate-200"
                         )}>
                           <div className={cn(
-                            "flex items-center justify-center p-3.5 sm:p-5 border-e transition-colors shrink-0",
-                            errors.address ? "text-rose-500 border-rose-500/20" : "text-slate-300 border-slate-100 group-focus-within:border-indigo-500/40 group-focus-within:text-indigo-500"
+                            "flex items-center justify-center p-2.5 sm:p-3 border-e transition-colors shrink-0",
+                            errors.address ? "text-rose-500 border-rose-500/20" : "text-slate-400 border-slate-100 group-focus-within:border-indigo-500/40 group-focus-within:text-indigo-500"
                           )}>
-                            <MapPin size={20} className="sm:w-6 sm:h-6" />
+                            <MapPin size={18} />
                           </div>
                           <input 
                             {...register('address')}
                             placeholder={t('onboarding.fields.address_placeholder')}
-                            className="flex-1 w-full bg-transparent border-none py-3.5 sm:py-5 px-4 sm:px-6 text-base sm:text-lg font-bold outline-none ring-0 placeholder:text-slate-300 text-content"
+                            className="flex-1 w-full bg-transparent border-none py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none ring-0 placeholder:text-slate-300 text-content"
                           />
                         </div>
-                        {errors.address && <p className="text-xs text-rose-500 font-bold mt-2 ps-4">{errors.address.message as string}</p>}
+                        {errors.address && <p className="text-xs text-rose-500 font-bold mt-1 ps-2">{errors.address.message as string}</p>}
                       </div>
 
-                      <div className="space-y-4 sm:space-y-5">
-                        <label className={cn("text-xs sm:text-sm font-black text-slate-700 uppercase tracking-widest", i18n.language === 'en' ? "ps-2" : "pe-2")}>{t('onboarding.fields.city')}</label>
+                      <div className="space-y-2">
+                        <label className={cn("text-xs font-bold text-slate-700 uppercase tracking-widest", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.city')}</label>
                         <input 
                           {...register('city')}
                           placeholder={t('onboarding.fields.city_placeholder')}
                           className={cn(
-                            "w-full bg-white border-2 border-slate-200 focus:border-indigo-500 rounded-[1.5rem] sm:rounded-[2.5rem] py-3.5 sm:py-5 px-5 sm:px-8 text-base sm:text-lg font-bold outline-none transition-all shadow-sm",
+                            "w-full bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-xl py-2.5 sm:py-3 px-3.5 text-sm sm:text-base font-bold outline-none transition-all shadow-sm",
                             errors.city && "border-rose-500 bg-rose-50/30"
                           )}
                         />
-                        {errors.city && <p className="text-xs text-rose-500 font-bold mt-2 ps-4">{errors.city.message as string}</p>}
+                        {errors.city && <p className="text-xs text-rose-500 font-bold mt-1 ps-2">{errors.city.message as string}</p>}
                       </div>
 
-                      <div className="space-y-4 sm:space-y-5">
-                        <label className={cn("text-xs sm:text-sm font-black text-slate-700 uppercase tracking-widest", i18n.language === 'en' ? "ps-2" : "pe-2")}>{t('onboarding.fields.country')}</label>
+                      <div className="space-y-2">
+                        <label className={cn("text-xs font-bold text-slate-700 uppercase tracking-widest", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.country')}</label>
                         <input 
                           {...register('country')}
                           placeholder={t('onboarding.fields.country_placeholder')}
                           className={cn(
-                            "w-full bg-white border-2 border-slate-200 focus:border-indigo-500 rounded-[1.5rem] sm:rounded-[2.5rem] py-3.5 sm:py-5 px-5 sm:px-8 text-base sm:text-lg font-bold outline-none transition-all shadow-sm",
+                            "w-full bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-xl py-2.5 sm:py-3 px-3.5 text-sm sm:text-base font-bold outline-none transition-all shadow-sm",
                             errors.country && "border-rose-500 bg-rose-50/30"
                           )}
                         />
-                        {errors.country && <p className="text-xs text-rose-500 font-bold mt-2 ps-4">{errors.country.message as string}</p>}
+                        {errors.country && <p className="text-xs text-rose-500 font-bold mt-1 ps-2">{errors.country.message as string}</p>}
                       </div>
 
                       <div className="md:col-span-2 space-y-4 sm:space-y-6">
-                        <div className="h-[280px] sm:h-[400px] w-full rounded-[1.5rem] sm:rounded-[3rem] overflow-hidden border-2 border-white bg-white relative z-0 shadow-lg group">
+                        <div className="h-[240px] sm:h-[320px] w-full rounded-2xl overflow-hidden border-2 border-white bg-white relative z-0 shadow-md group">
                           <MapContainer 
                             center={[formData.latitude || 24.7136, formData.longitude || 46.6753]} 
                             zoom={13} 
@@ -646,16 +646,16 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                           </MapContainer>
                           
                           <div className={cn(
-                            "absolute bottom-4 left-4 right-4 sm:bottom-6 z-[10] bg-white/90 backdrop-blur-md p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2.2rem] border border-white shadow-2xl space-y-4 sm:max-w-xs md:min-w-[280px]",
-                            i18n.language === 'en' ? "sm:right-6 sm:left-auto" : "sm:left-6 sm:right-auto"
+                            "absolute bottom-3 left-3 right-3 sm:bottom-4 z-[10] bg-white/90 backdrop-blur-md p-3 sm:p-4 rounded-xl border border-white shadow-lg space-y-3 sm:max-w-xs md:min-w-[240px]",
+                            i18n.language === 'en' ? "sm:right-4 sm:left-auto" : "sm:left-4 sm:right-auto"
                           )}>
-                            <div className="flex items-start gap-4">
-                              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-100 text-indigo-500 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0">
-                                <Navigation size={20} className="sm:w-6 sm:h-6" />
+                            <div className="flex items-start gap-3">
+                              <div className="w-8 h-8 bg-indigo-100 text-indigo-500 rounded-lg flex items-center justify-center shrink-0">
+                                <Navigation size={16} />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">{t('onboarding.fields.location_selected', 'الموقع المحدد')}</p>
-                                <p className="text-xs sm:text-sm font-bold text-slate-700 line-clamp-2 leading-snug">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-0.5">{t('onboarding.fields.location_selected', 'الموقع المحدد')}</p>
+                                <p className="text-xs font-bold text-slate-700 line-clamp-2 leading-snug">
                                   {formData.address || t('onboarding.fields.location_manual', 'تم تحديد الموقع يدوياً')}
                                 </p>
                               </div>
@@ -676,23 +676,23 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-10 bg-slate-50 p-4 sm:p-8 rounded-[1.5rem] sm:rounded-[3rem] border border-slate-100">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-100">
                       
                       <div className="md:col-span-2">
-                        <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-4 sm:mb-6 flex items-center gap-3">
-                          <Coins className="text-amber-500" /> {t('onboarding.titles.preferences')}
+                        <h3 className="text-base sm:text-lg font-black text-slate-900 mb-1 flex items-center gap-2">
+                          <Coins className="text-amber-500" size={18} /> {t('onboarding.titles.preferences')}
                         </h3>
                       </div>
 
-                      <div className="space-y-4 sm:space-y-5">
-                        <label className={cn("text-xs sm:text-sm font-black text-slate-700 uppercase tracking-widest", i18n.language === 'en' ? "ps-2" : "pe-2")}>{t('onboarding.fields.currency')}</label>
+                      <div className="space-y-2">
+                        <label className={cn("text-xs font-bold text-slate-700 uppercase tracking-widest", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.currency')}</label>
                         <Controller
                           control={control}
                           name="currency"
                           render={({ field }) => (
                             <SmartSelect
                               {...field}
-                              className="w-full bg-white border-2 border-slate-200 focus-within:border-brand rounded-[1.5rem] sm:rounded-[2.5rem] py-3.5 sm:py-5 px-5 sm:px-8 text-base sm:text-lg font-bold outline-none transition-all shadow-sm"
+                              className="w-full bg-white border border-slate-200 focus-within:border-brand rounded-xl py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none transition-all shadow-sm"
                               options={[
                                 { value: 'SAR', label: 'ریال سعودي (SAR)' },
                                 { value: 'AED', label: 'درهم إماراتي (AED)' },
@@ -705,15 +705,15 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                         />
                       </div>
 
-                      <div className="space-y-4 sm:space-y-5">
-                        <label className={cn("text-xs sm:text-sm font-black text-slate-700 uppercase tracking-widest", i18n.language === 'en' ? "ps-2" : "pe-2")}>{t('onboarding.fields.language')}</label>
+                      <div className="space-y-2">
+                        <label className={cn("text-xs font-bold text-slate-700 uppercase tracking-widest", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.language')}</label>
                         <Controller
                           control={control}
                           name="language"
                           render={({ field }) => (
                             <SmartSelect
                               {...field}
-                              className="w-full bg-white border-2 border-slate-200 focus-within:border-brand rounded-[1.5rem] sm:rounded-[2.5rem] py-3.5 sm:py-5 px-5 sm:px-8 text-base sm:text-lg font-bold outline-none transition-all shadow-sm"
+                              className="w-full bg-white border border-slate-200 focus-within:border-brand rounded-xl py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none transition-all shadow-sm"
                               options={[
                                 { value: 'ar', label: 'العربية' },
                                 { value: 'en', label: 'English' },
@@ -724,45 +724,45 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                         />
                       </div>
 
-                      <div className="md:col-span-2 space-y-4 sm:space-y-5">
-                         <label className={cn("text-xs sm:text-sm font-black text-slate-700 uppercase tracking-widest", i18n.language === 'en' ? "ps-2" : "pe-2")}>{t('onboarding.fields.invoice_terms')}</label>
+                      <div className="md:col-span-2 space-y-2">
+                         <label className={cn("text-xs font-bold text-slate-700 uppercase tracking-widest", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.invoice_terms')}</label>
                          <textarea 
                            {...register('invoiceDefaults')}
                            placeholder={t('onboarding.fields.invoice_terms_placeholder')}
                            rows={3}
-                           className="w-full bg-white border-2 border-slate-200 focus-within:border-brand rounded-[1.5rem] sm:rounded-[2.5rem] py-3.5 sm:py-5 px-5 sm:px-8 text-base sm:text-lg font-bold outline-none transition-all shadow-sm resize-none"
+                           className="w-full bg-white border border-slate-200 focus-within:border-brand rounded-xl py-2.5 sm:py-3 px-3.5 text-sm sm:text-base font-bold outline-none transition-all shadow-sm resize-none"
                          />
                       </div>
 
-                      <div className="md:col-span-2 space-y-4 sm:space-y-6 pt-4 border-t border-slate-200">
-                        <label className={cn("text-xs sm:text-sm font-black text-slate-700 uppercase tracking-widest", i18n.language === 'en' ? "ps-2" : "pe-2")}>{t('onboarding.fields.inventory_strategy')}</label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+                      <div className="md:col-span-2 space-y-3 pt-3 border-t border-slate-200">
+                        <label className={cn("text-xs font-bold text-slate-700 uppercase tracking-widest block", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.inventory_strategy')}</label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                           <label className={cn(
-                            "relative p-5 sm:p-8 rounded-[1.5rem] sm:rounded-[2.5rem] border-2 cursor-pointer transition-all duration-300",
-                            formData.inventoryStrategy === 'centralized' ? "border-brand bg-brand/5 shadow-xl shadow-brand/5" : "border-slate-200 bg-white hover:border-slate-300"
+                            "relative p-4 sm:p-5 rounded-xl border cursor-pointer transition-all duration-300",
+                            formData.inventoryStrategy === 'centralized' ? "border-brand bg-brand/5 shadow-md" : "border-slate-200 bg-white hover:border-slate-300"
                           )}>
                             <input type="radio" value="centralized" {...register('inventoryStrategy')} className="sr-only" />
-                            <div className="flex items-center gap-4 sm:gap-5 mb-3 sm:mb-4">
-                              <div className={cn("w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 flex items-center justify-center transition-colors", formData.inventoryStrategy === 'centralized' ? "border-brand" : "border-slate-300")}>
-                                {formData.inventoryStrategy === 'centralized' && <div className="w-3 h-3 sm:w-4 sm:h-4 bg-brand rounded-full shadow-sm" />}
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className={cn("w-5 h-5 rounded-full border flex items-center justify-center transition-colors", formData.inventoryStrategy === 'centralized' ? "border-brand" : "border-slate-300")}>
+                                {formData.inventoryStrategy === 'centralized' && <div className="w-2.5 h-2.5 bg-brand rounded-full shadow-sm" />}
                               </div>
-                              <span className="text-lg sm:text-xl font-black text-slate-900">{t('onboarding.fields.centralized')}</span>
+                              <span className="text-sm sm:text-base font-black text-slate-900">{t('onboarding.fields.centralized')}</span>
                             </div>
-                            <p className={cn("text-xs sm:text-sm text-slate-500 font-medium leading-relaxed", i18n.language === 'en' ? "ps-0 sm:ps-12" : "pe-0 sm:pe-12")}>{t('onboarding.fields.centralized_desc')}</p>
+                            <p className={cn("text-xs text-slate-500 font-medium leading-relaxed", i18n.language === 'en' ? "ps-8" : "pe-8")}>{t('onboarding.fields.centralized_desc')}</p>
                           </label>
 
                           <label className={cn(
-                            "relative p-5 sm:p-8 rounded-[1.5rem] sm:rounded-[2.5rem] border-2 cursor-pointer transition-all duration-300",
-                            formData.inventoryStrategy === 'decentralized' ? "border-brand bg-brand/5 shadow-xl shadow-brand/5" : "border-slate-200 bg-white hover:border-slate-300"
+                            "relative p-4 sm:p-5 rounded-xl border cursor-pointer transition-all duration-300",
+                            formData.inventoryStrategy === 'decentralized' ? "border-brand bg-brand/5 shadow-md" : "border-slate-200 bg-white hover:border-slate-300"
                           )}>
                             <input type="radio" value="decentralized" {...register('inventoryStrategy')} className="sr-only" />
-                            <div className="flex items-center gap-4 sm:gap-5 mb-3 sm:mb-4">
-                              <div className={cn("w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 flex items-center justify-center transition-colors", formData.inventoryStrategy === 'decentralized' ? "border-brand" : "border-slate-300")}>
-                                {formData.inventoryStrategy === 'decentralized' && <div className="w-3 h-3 sm:w-4 sm:h-4 bg-brand rounded-full shadow-sm" />}
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className={cn("w-5 h-5 rounded-full border flex items-center justify-center transition-colors", formData.inventoryStrategy === 'decentralized' ? "border-brand" : "border-slate-300")}>
+                                {formData.inventoryStrategy === 'decentralized' && <div className="w-2.5 h-2.5 bg-brand rounded-full shadow-sm" />}
                               </div>
-                              <span className="text-lg sm:text-xl font-black text-slate-900">{t('onboarding.fields.decentralized')}</span>
+                              <span className="text-sm sm:text-base font-black text-slate-900">{t('onboarding.fields.decentralized')}</span>
                             </div>
-                            <p className={cn("text-xs sm:text-sm text-slate-500 font-medium leading-relaxed", i18n.language === 'en' ? "ps-0 sm:ps-12" : "pe-0 sm:pe-12")}>{t('onboarding.fields.decentralized_desc')}</p>
+                            <p className={cn("text-xs text-slate-500 font-medium leading-relaxed", i18n.language === 'en' ? "ps-8" : "pe-8")}>{t('onboarding.fields.decentralized_desc')}</p>
                           </label>
                         </div>
                       </div>

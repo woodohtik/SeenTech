@@ -446,7 +446,8 @@ export default function SupplierLedger({
             <span className="text-xs font-mono font-bold text-slate-500">مجموع القيود: {filteredTransactions.length} قيد مالي</span>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Chronological list table (Desktop only) */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-right border-collapse whitespace-nowrap text-xs md:text-sm">
               <thead>
                 <tr className="bg-slate-100/60 text-[11px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-200/50 print:bg-slate-100">
@@ -526,6 +527,62 @@ export default function SupplierLedger({
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Card Layout (Mobile only) */}
+          <div className="block md:hidden divide-y divide-slate-100 print:hidden">
+            {filteredTransactions.map((tx) => {
+              const txDate = new Date(tx.date);
+              
+              return (
+                <div key={tx.id} className="p-4 space-y-3 bg-white hover:bg-slate-50/30 transition-colors">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] text-slate-400 font-bold font-mono">
+                      {txDate.toLocaleDateString('ar-SA')} | {txDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    <span className={cn(
+                      "px-2 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase",
+                      tx.type === 'payment' ? "bg-rose-50 text-rose-600 border border-rose-100" :
+                      tx.type === 'purchase' ? "bg-slate-50 text-slate-600 border border-slate-200" :
+                      "bg-amber-50 text-amber-600 border border-amber-200"
+                    )}>
+                      {tx.reference_number}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-slate-700 font-semibold leading-relaxed">
+                    {tx.notes}
+                  </p>
+
+                  <div className="grid grid-cols-3 gap-2 bg-slate-50/50 p-2.5 rounded-xl text-center">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[9px] text-slate-400 font-bold">المدفوع (مدين)</span>
+                      <span className="font-mono font-bold text-xs text-red-600">
+                        {tx.debit > 0 ? `-${tx.debit.toFixed(2)}` : '—'}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-0.5 border-r border-slate-100">
+                      <span className="text-[9px] text-slate-400 font-bold">المطلوب (دائن)</span>
+                      <span className="font-mono font-bold text-xs text-slate-800">
+                        {tx.credit > 0 ? `+${tx.credit.toFixed(2)}` : '—'}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-0.5 border-r border-slate-100">
+                      <span className="text-[9px] text-slate-400 font-bold">الرصيد المستحق</span>
+                      <span className="font-mono font-black text-xs text-slate-950">
+                        {tx.running_balance.toFixed(2)} ر.س
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {filteredTransactions.length === 0 && (
+              <div className="p-8 text-center text-slate-400 font-bold text-xs">
+                لا توجد حركات مالية مطابقة للقيد المستعلم عنه حالياً
+              </div>
+            )}
           </div>
         </div>
       )}

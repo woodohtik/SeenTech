@@ -23,27 +23,29 @@ import { Staff } from '../types';
 import { cn } from '../lib/utils';
 
 interface UserPreferencesMenuProps {
-  currentStaff: Staff | null;
-  role: string | null;
-  onLock: () => void;
-  onLogout: () => void;
-  layoutMode: 'sidebar' | 'grid';
+  currentStaff?: Staff | null;
+  role?: string | null;
+  onLock?: () => void;
+  onLogout?: () => void;
+  layoutMode?: 'sidebar' | 'grid';
   onToggleLayout?: () => void;
   className?: string;
   isCollapsed?: boolean;
   dropdownPosition?: 'top' | 'bottom';
+  align?: 'left' | 'right';
 }
 
 export default function UserPreferencesMenu({
-  currentStaff,
-  role,
-  onLock,
-  onLogout,
-  layoutMode,
+  currentStaff = null,
+  role = null,
+  onLock = () => {},
+  onLogout = () => {},
+  layoutMode = 'sidebar',
   onToggleLayout,
   className,
   isCollapsed = false,
-  dropdownPosition
+  dropdownPosition,
+  align
 }: UserPreferencesMenuProps) {
   const { t, i18n } = useState({ t: (s: string, def?: string) => def || s, i18n: { language: 'ar', changeLanguage: (l: string) => {} } }) && { t: useTranslation().t, i18n: useTranslation().i18n };
   const { theme, setTheme } = useTheme();
@@ -51,12 +53,37 @@ export default function UserPreferencesMenu({
   const [density, setDensity] = useState<'comfortable' | 'compact'>(() => {
     return (localStorage.getItem('app-density') as 'comfortable' | 'compact') || 'comfortable';
   });
+  const [desktopView, setDesktopView] = useState<boolean>(() => {
+    const saved = localStorage.getItem('desktop_view');
+    if (saved === null) {
+      return false; // Default to false to keep standard mobile layout optimized and responsive by default
+    }
+    return saved === 'true';
+  });
+
+  const handleDesktopViewToggle = () => {
+    const newValue = !desktopView;
+    setDesktopView(newValue);
+    localStorage.setItem('desktop_view', newValue ? 'true' : 'false');
+    window.dispatchEvent(new CustomEvent('desktop-view-changed', { detail: newValue }));
+  };
+
+  useEffect(() => {
+    const handleSync = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setDesktopView(customEvent.detail);
+    };
+    window.addEventListener('desktop-view-changed', handleSync);
+    return () => window.removeEventListener('desktop-view-changed', handleSync);
+  }, []);
 
   const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
 
   // Determine dynamic alignment to prevent clipping when direction is LTR
   let alignmentClass = '';
-  if (layoutMode === 'sidebar') {
+  if (align) {
+    alignmentClass = align === 'left' ? 'left-0' : 'right-0';
+  } else if (layoutMode === 'sidebar') {
     alignmentClass = isRtl ? 'right-0' : 'left-0';
   } else {
     // grid mode
@@ -187,6 +214,25 @@ export default function UserPreferencesMenu({
                 <span className="font-bold">{t('common.view_density', 'طريقة العرض')}</span>
                 <span className="text-[10px] text-content-muted">
                   {density === 'compact' ? t('common.compact', 'مكثف ومضغوط') : t('common.comfortable', 'مريح وفضفاض')}
+                </span>
+              </div>
+            </button>
+
+            {/* Desktop View Toggle */}
+            <button
+              onClick={handleDesktopViewToggle}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-muted text-content-muted hover:text-content text-sm transition-all cursor-pointer focus:outline-none w-full",
+                isRtl ? "text-right" : "text-left"
+              )}
+            >
+              <Monitor size={18} className="text-brand" />
+              <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
+                <span className="font-bold">{t('common.desktop_view', 'عرض نسخة الكمبيوتر')}</span>
+                <span className="text-[10px] text-content-muted">
+                  {desktopView 
+                    ? t('common.desktop_view_enabled', 'مفعّل (منظم ومناسب للتاب والجوال)') 
+                    : t('common.desktop_view_disabled', 'معطّل (الوضع المتجاوب الافتراضي)')}
                 </span>
               </div>
             </button>

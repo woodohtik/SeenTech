@@ -548,9 +548,10 @@ export default function PurchaseOrders({
         </div>
       </div>
 
-      {/* Main Data Table */}
-      <div className="bg-surface rounded-[2rem] border border-border overflow-hidden shadow-sm">
-        <div className="overflow-x-auto whitespace-nowrap scrollbar-hide">
+      {/* Main Data Table & Mobile Cards */}
+      <div className="bg-surface rounded-2xl md:rounded-[2rem] border border-border overflow-hidden shadow-sm">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto whitespace-nowrap scrollbar-hide">
           <table className="w-full text-right min-w-max">
             <thead className="bg-surface-muted text-content-muted border-b border-border">
               <tr>
@@ -596,7 +597,7 @@ export default function PurchaseOrders({
                     <td className="px-6 py-4 text-left">
                       <button
                         onClick={() => setSelectedOrder(po)}
-                        className="p-2 bg-brand/10 text-brand hover:bg-brand hover:text-white rounded-xl transition-all flex items-center justify-center"
+                        className="p-2 bg-brand/10 text-brand hover:bg-brand hover:text-white rounded-xl transition-all flex items-center justify-center cursor-pointer"
                       >
                         <Eye size={16} />
                       </button>
@@ -614,6 +615,76 @@ export default function PurchaseOrders({
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Cards View */}
+        <div className="block md:hidden divide-y divide-border text-right" dir="rtl">
+          {filteredOrders.map(po => {
+            const poType = po.orderType || (po as any).order_type || 'purchase';
+            const poStatus = po.status || 'draft';
+            return (
+              <div key={po.id} className="p-4 space-y-3 hover:bg-surface-muted/10 transition-colors">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] text-content-muted font-bold">
+                    {new Date(po.orderDate).toLocaleDateString('ar-SA')}
+                  </span>
+                  <div>
+                    {poType === 'purchase' ? (
+                      <span className="px-2 py-0.5 text-[9px] font-black bg-brand/10 text-brand rounded-full">أمر شراء</span>
+                    ) : (
+                      <span className="px-2 py-0.5 text-[9px] font-black bg-danger/10 text-danger rounded-full">أمر إرجاع</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h3 className="font-black text-content text-sm">{po.supplierName}</h3>
+                    <p className="text-[10px] text-content-muted font-mono mt-0.5">
+                      رقم السند: {po.poNumber || (po as any).po_number || po.id.slice(0, 8)}
+                    </p>
+                  </div>
+                  <div className="text-left">
+                    <span className="text-xs text-content-muted block text-[10px] font-bold">القيمة</span>
+                    <span className="text-sm font-black text-brand">
+                      <PriceDisplay amount={po.totalAmount} />
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <div>
+                    {poStatus === 'confirmed' || poStatus === 'received' || poStatus === 'returned' ? (
+                      <div className="flex items-center gap-1 text-success bg-success/10 px-2.5 py-0.5 rounded-full border border-success/10">
+                        <span className="w-1 h-1 rounded-full bg-success"></span>
+                        <span className="text-[9px] font-black">مؤكد ومرحل</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 text-content-muted bg-neutral-100 dark:bg-neutral-800 px-2.5 py-0.5 rounded-full">
+                        <span className="w-1 h-1 rounded-full bg-neutral-400"></span>
+                        <span className="text-[9px] font-black">مسودة</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => setSelectedOrder(po)}
+                    className="flex items-center justify-center gap-1.5 bg-brand/10 text-brand px-3 py-1.5 rounded-xl text-[10px] font-black hover:bg-brand hover:text-white transition-all cursor-pointer min-h-[38px]"
+                  >
+                    <Eye size={13} />
+                    <span>عرض التفاصيل</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+
+          {filteredOrders.length === 0 && (
+            <div className="p-8 text-center text-content-muted bg-surface-muted/30">
+              <Package className="mx-auto mb-3 opacity-20" size={40} />
+              <p className="text-xs font-bold">لم يعثر على أي مستندات شراء تطابق الفلترة الحالية</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -672,8 +743,8 @@ export default function PurchaseOrders({
               )}
 
               {/* Items Table */}
-              <div className="border border-border rounded-2xl overflow-hidden bg-surface">
-                <table className="w-full text-right">
+              <div className="border border-border rounded-2xl overflow-x-auto whitespace-nowrap bg-surface scrollbar-hide">
+                <table className="w-full text-right min-w-max">
                   <thead className="bg-surface-muted text-content-muted">
                     <tr>
                       <th className="p-3 text-xs font-black">اسم المنتج / الصنف</th>
@@ -802,8 +873,8 @@ export default function PurchaseOrders({
               </div>
 
               {items.length > 0 && (
-                <div className="border border-border rounded-2xl overflow-hidden bg-surface">
-                  <table className="w-full text-right">
+                <div className="border border-border rounded-2xl overflow-x-auto whitespace-nowrap bg-surface scrollbar-hide">
+                  <table className="w-full text-right min-w-max">
                     <thead className="bg-surface-muted text-content-muted">
                       <tr>
                         <th className="p-3 text-xs font-black">الصنف</th>

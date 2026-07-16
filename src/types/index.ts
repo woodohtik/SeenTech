@@ -539,6 +539,9 @@ export interface TaxInvoice {
   issuedAt: string;
   createdBy: string;
   status: 'valid' | 'cancelled';
+  paidAmount?: number;
+  remainingAmount?: number;
+  branchName?: string;
 }
 
 export interface CreditNote {

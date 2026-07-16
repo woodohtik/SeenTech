@@ -43,6 +43,33 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
           } as Tenant);
         }
 
+        const { data: branchesData } = await supabase
+          .from('branches')
+          .select('*')
+          .eq('tenant_id', tenantId);
+
+        const { data: ordersData } = await supabase
+          .from('orders')
+          .select('id, branch_id')
+          .eq('tenant_id', tenantId);
+
+        const branchMap = new Map<string, string>();
+        if (branchesData) {
+          branchesData.forEach(b => {
+            branchMap.set(b.id, b.name);
+          });
+        }
+
+        const orderBranchMap = new Map<string, string>();
+        if (ordersData && branchesData) {
+          ordersData.forEach(o => {
+            const bName = branchMap.get(o.branch_id);
+            if (bName && o.id) {
+              orderBranchMap.set(o.id, bName);
+            }
+          });
+        }
+
         const { data, error } = await supabase
           .from('tax_invoices')
           .select('*')
@@ -70,7 +97,10 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
             qrCodeBase64: d.zatca_qr_code || d.qr_payload,
             issuedAt: d.issued_at,
             createdBy: extNotes.created_by || d.created_by || 'System',
-            status: d.status === 'issued' ? 'valid' : 'cancelled'
+            status: d.status === 'issued' ? 'valid' : 'cancelled',
+            paidAmount: d.paid_amount !== undefined && d.paid_amount !== null ? Number(d.paid_amount) : Number(d.total_amount),
+            remainingAmount: Math.max(0, Number(d.total_amount) - (d.paid_amount !== undefined && d.paid_amount !== null ? Number(d.paid_amount) : Number(d.total_amount))),
+            branchName: d.order_id ? (orderBranchMap.get(d.order_id) || 'الفرع الرئيسي') : 'الفرع الرئيسي'
           } as TaxInvoice;
         });
 
@@ -94,8 +124,8 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
   }
 
   return (
-    <div className="p-6 font-sans bg-surface" dir={isRtl ? 'rtl' : 'ltr'}>
-      <div className="mb-6 flex justify-between items-center bg-surface p-6 rounded-2xl shadow-sm border border-border">
+    <div className="p-4 md:p-6 font-sans bg-surface" dir={isRtl ? 'rtl' : 'ltr'}>
+      <div className="mb-4 md:mb-6 flex justify-between items-center bg-surface p-4 md:p-6 rounded-2xl md:rounded-[2rem] shadow-sm border border-border">
         <div>
           <h2 className="text-xl font-black text-content flex items-center gap-2">
             <FileText className="text-brand" />
@@ -209,6 +239,31 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
 
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        logEmployeeAction(
+          order.tenantId,
+          // @ts-ignore
+          window.currentStaffId || 'system',
+          // @ts-ignore
+          window.currentStaffName || 'System',
+          'print_invoice',
+          `طباعة فاتورة ضريبية رقم ${order.invoiceNumber || order.id}`
+        );
+        window.print();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [order, onClose]);
+
   const isB2B = order.isB2B || false;
 
   // Calculate totals
@@ -253,7 +308,7 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
 
   const sellerInfo = {
     name: sellerName,
-    nameEn: (tenant as any).name_en || 'Seen Smart System Brand',
+    nameEn: (tenant as any).name_en || 'Seen System Brand',
     logoUrl: tenant.logoUrl,
     vatNumber: vatNumber,
     address: tenant.address || 'المملكة العربية السعودية',
@@ -356,10 +411,16 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
               seller={sellerInfo}
               customerName={buyerInfo.name}
               items={formattedItems}
-              totals={totals}
+              totals={{
+                ...totals,
+                paidAmount: order.paidAmount,
+                remainingAmount: order.remainingAmount
+              }}
               qrCodeBase64={qrCodeBase64}
               orderId={order.orderId || order.id}
               hidePrintButton={true}
+              branchName={order.branchName}
+              sellerName={order.createdBy}
             />
           )}
         </div>

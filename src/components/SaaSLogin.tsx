@@ -153,7 +153,7 @@ export default function SaaSLogin() {
             className="h-11 md:h-12 lg:h-14 w-auto object-contain mb-4 filter drop-shadow-md" 
           />
           <h1 className="text-3xl font-black text-gray-900 tracking-tight">Seen System</h1>
-          <p className="text-gray-500 font-bold mt-2">نظام سين الذكي للمبيعات والمخازن</p>
+          <p className="text-gray-500 font-bold mt-2">نظام سين للمبيعات والمخازن</p>
         </div>
 
         {/* Login Card */}

@@ -16,6 +16,7 @@ import {
   Eye
 } from 'lucide-react';
 import Branding from './Branding';
+import { ThermalInvoice, StandardInvoice, InvoiceData, InvoiceLayoutSettingsType } from './printing/InvoiceReceipt';
 
 interface InvoiceLayoutSettingsProps {
   tenantId: string;
@@ -122,7 +123,6 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
         .eq('id', tenantId);
 
       if (error) throw error;
-      // Success feedback could be improved later
     } catch (error) {
       handleError(error, OperationType.UPDATE, 'tenants');
     } finally {
@@ -132,19 +132,52 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
 
   if (loading) {
     return (
-      <div className="h-96 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="w-8 h-8 border-4 border-brand border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
+  const previewInvoiceData: InvoiceData = {
+    invoiceNumber: 'INV-2026-00042',
+    issueDate: new Date().toISOString(),
+    seller: {
+      name: settings.header.facilityName || 'متجر التجربة الافتراضي',
+      vatNumber: settings.header.taxId || '300012345600003',
+      address: settings.header.address || 'شارع العليا العام، الرياض، المملكة العربية السعودية',
+      phone: settings.header.contactNumbers || ''
+    },
+    customer: {
+      name: 'سليمان بن عبد العزيز',
+      vatNumber: '300011122200003'
+    },
+    items: [
+      {
+        id: 'item-1',
+        name: 'تفصيل ثوب سعودي ياباني فاخر',
+        quantity: 1,
+        unitPrice: 350.00
+      }
+    ],
+    subtotal: 350.00,
+    discountAmount: settings.columns.showDiscount ? 20.00 : 0,
+    vatAmount: (settings.columns.showDiscount ? 330.00 : 350.00) * 0.15,
+    grandTotal: (settings.columns.showDiscount ? 330.00 : 350.00) * 1.15,
+    qrValue: settings.footer.showZatcaQr ? 'https://zatca.gov.sa' : '',
+    invoiceType: settings.layoutTemplate === 'tax' ? 'simplified_tax' : 'standard_b2b',
+    paidAmount: (settings.columns.showDiscount ? 330.00 : 350.00) * 1.15,
+    remainingAmount: 0.00,
+    branchName: 'الفرع الرئيسي',
+    sellerName: 'عبد الله محمد'
+  };
+
   return (
-    <div className="bg-surface rounded-[3rem] border border-border shadow-xl shadow-brand/5 overflow-hidden flex flex-col lg:flex-row min-h-[900px]" dir="rtl">
+    <div className="bg-surface rounded-2xl md:rounded-[3rem] border border-border shadow-xl shadow-brand/5 overflow-hidden flex flex-col lg:flex-row min-h-[900px] w-full" dir="rtl">
       {/* Controls Section */}
-      <div className="w-full lg:w-1/2 p-10 border-l border-border overflow-y-auto max-h-[900px] space-y-10 custom-scrollbar">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="text-center md:text-right">
-            <h2 className="text-2xl font-black text-content flex items-center justify-center md:justify-start gap-3">
+      <div className="w-full lg:w-1/2 p-4 sm:p-6 md:p-10 border-b lg:border-b-0 lg:border-l border-border overflow-y-auto max-h-[900px] space-y-6 md:space-y-10 custom-scrollbar">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-center sm:text-right">
+            <h2 className="text-2xl font-black text-content flex items-center justify-center sm:justify-start gap-3">
               <div className="p-2 bg-brand/10 text-brand rounded-xl">
                 <FileText size={24} />
               </div>
@@ -155,7 +188,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
           <button 
             onClick={handleSave}
             disabled={saving}
-            className="w-full md:w-auto bg-brand text-white px-8 py-3.5 rounded-2xl font-black hover:bg-brand/90 transition-all shadow-xl shadow-brand/20 flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-105 active:scale-95"
+            className="w-full sm:w-auto bg-brand text-white px-8 py-3.5 rounded-2xl font-black hover:bg-brand/90 transition-all shadow-xl shadow-brand/20 flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-105 active:scale-95"
           >
             {saving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save size={20} />}
             {saving ? 'جاري الحفظ...' : 'اعتماد التصميم'}
@@ -169,7 +202,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
              <h3 className="text-lg font-black text-content uppercase tracking-tight">1. الإخراج والطباعة</h3>
           </div>
           
-          <div className="space-y-4 bg-surface-muted/50 p-6 rounded-[2rem] border border-border">
+          <div className="space-y-4 bg-surface-muted/50 p-4 sm:p-6 rounded-2xl md:rounded-[2rem] border border-border">
             <div className="space-y-3">
               <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">قياس الورق المفضل</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -209,12 +242,11 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                     className={cn(
                       "group py-4 px-4 rounded-xl text-xs font-black transition-all border-2 flex flex-col items-center gap-3",
                       settings.layoutTemplate === template.id 
-                        ? "border-brand bg-brand text-white shadow-xl shadow-brand/20" 
-                        : "border-border bg-white text-content-muted hover:border-brand/30 hover:bg-surface-muted"
+                        ? "border-brand bg-brand/5 text-brand shadow-lg shadow-brand/5" 
+                        : "border-border bg-white text-content-muted hover:border-brand/30"
                     )}
                   >
-                    <Layout size={24} className={cn("transition-transform group-hover:scale-110", settings.layoutTemplate === template.id ? "text-white" : "text-brand")} />
-                    {template.label}
+                    <span className="text-sm font-black group-hover:text-brand">{template.label}</span>
                   </button>
                 ))}
               </div>
@@ -222,34 +254,24 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
           </div>
         </div>
 
-        {/* 2. Content Customization */}
-        <div className="space-y-10">
+        {/* 2. Header and Logo */}
+        <div className="space-y-6">
           <div className="flex items-center gap-2 group">
              <div className="w-1.5 h-6 bg-brand rounded-full transition-all group-hover:h-8" />
-             <h3 className="text-lg font-black text-content uppercase tracking-tight">2. صياغة المحتوى</h3>
+             <h3 className="text-lg font-black text-content uppercase tracking-tight">2. ترويسة ومحتوى الفاتورة</h3>
           </div>
           
-          {/* Header */}
-          <div className="space-y-6 bg-surface-muted/30 p-8 rounded-[2.5rem] border border-border">
-            <div className="flex items-center gap-3">
-               <div className="p-2 bg-white rounded-lg shadow-sm">
-                  <AlignRight size={18} className="text-brand" />
-               </div>
-               <h4 className="font-black text-content uppercase tracking-widest text-xs">ترويسة الفاتورة</h4>
-            </div>
-            
-            <div className="flex flex-col md:flex-row items-center gap-8 border-b border-border/50 pb-8">
-              <div className="relative group">
-                <div className="w-28 h-28 bg-white rounded-[1.5rem] border-2 border-dashed border-border flex items-center justify-center overflow-hidden transition-all group-hover:border-brand/40 group-hover:bg-brand/5 shadow-inner">
-                  {logoPreview ? (
-                    <img src={logoPreview} alt="Logo" className="w-full h-full object-contain p-4 transition-transform group-hover:scale-105" />
-                  ) : (
-                    <div className="text-center space-y-2 opacity-30">
-                       <Upload size={24} className="mx-auto" />
-                       <span className="text-[10px] font-black uppercase">Logo</span>
-                    </div>
-                  )}
-                </div>
+          <div className="space-y-6 bg-surface-muted/50 p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border">
+            <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8 border-b border-border/50 pb-6 sm:pb-8">
+              <div className="relative w-28 h-28 bg-white border-2 border-dashed border-border rounded-3xl flex items-center justify-center overflow-hidden group hover:border-brand transition-all shadow-inner">
+                {logoPreview ? (
+                  <img src={logoPreview} alt="Logo Preview" className="w-full h-full object-contain p-2" />
+                ) : (
+                  <div className="text-center p-4">
+                    <Upload size={20} className="mx-auto text-content-muted mb-2 group-hover:text-brand transition-all" />
+                    <span className="text-[9px] font-black text-content-muted tracking-tighter">شعار المتجر</span>
+                  </div>
+                )}
                 <label className="absolute -bottom-2 -right-2 p-2 bg-brand text-white rounded-xl shadow-lg cursor-pointer hover:bg-brand/90 transition-all hover:scale-110">
                   <Upload size={14} />
                   <input type="file" className="hidden" accept="image/*" onChange={handleLogoChange} />
@@ -264,7 +286,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                 )}
               </div>
               
-              <div className="flex-1 space-y-4">
+              <div className="flex-1 space-y-4 w-full">
                 <div>
                   <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] mb-2 block">رقم واتساب المبيعات</label>
                   <input 
@@ -276,8 +298,8 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] mb-2 block">اتجاه المحاذاة</label>
-                  <div className="flex bg-white rounded-xl border border-border p-1.5 w-fit shadow-inner">
+                  <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] mb-2 block text-center sm:text-right">اتجاه المحاذاة</label>
+                  <div className="flex bg-white rounded-xl border border-border p-1.5 w-fit shadow-inner mx-auto sm:mx-0">
                     {[
                       { id: 'right', icon: AlignRight },
                       { id: 'center', icon: AlignCenter },
@@ -299,7 +321,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">العنوان المطبوع</label>
                 <input 
@@ -323,7 +345,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
           </div>
 
           {/* Table Columns */}
-          <div className="space-y-6 bg-surface-muted/30 p-8 rounded-[2.5rem] border border-border">
+          <div className="space-y-6 bg-surface-muted/30 p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border">
             <div className="flex items-center gap-3">
                <div className="p-2 bg-white rounded-lg shadow-sm text-brand">
                   <Layout size={18} />
@@ -354,7 +376,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
           </div>
 
           {/* Footer */}
-          <div className="space-y-6 bg-surface-muted/30 p-8 rounded-[2.5rem] border border-border">
+          <div className="space-y-6 bg-surface-muted/30 p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border">
             <div className="flex items-center gap-3">
                <div className="p-2 bg-white rounded-lg shadow-sm text-brand">
                   <FileText size={18} />
@@ -368,7 +390,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                 rows={4}
                 value={settings.footer.returnPolicy}
                 onChange={e => setSettings(s => ({ ...s, footer: { ...s.footer, returnPolicy: e.target.value } }))}
-                className="w-full bg-white border border-border/50 rounded-2xl p-6 text-xs font-medium focus:ring-2 focus:ring-brand outline-none resize-none leading-relaxed shadow-inner"
+                className="w-full bg-white border border-border/50 rounded-2xl p-4 sm:p-6 text-xs font-medium focus:ring-2 focus:ring-brand outline-none resize-none leading-relaxed shadow-inner"
                 placeholder="أدخل نص السياسة القانونية للفاتورة..."
               />
             </div>
@@ -383,9 +405,9 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
               />
             </div>
 
-            <label className="flex items-center justify-between p-6 bg-surface-muted/50 rounded-[2rem] border border-dashed border-brand/20 cursor-pointer hover:bg-brand/5 transition-all">
-              <div className="flex items-center gap-4">
-                 <div className="p-3 bg-white rounded-2xl shadow-sm text-brand">
+            <label className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-4 sm:p-6 bg-surface-muted/50 rounded-2xl sm:rounded-[2rem] border border-dashed border-brand/20 cursor-pointer hover:bg-brand/5 transition-all gap-4">
+              <div className="flex items-center gap-4 text-right">
+                 <div className="p-3 bg-white rounded-2xl shadow-sm text-brand shrink-0">
                     <Zap size={24} className="animate-pulse" />
                  </div>
                  <div>
@@ -393,14 +415,16 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                     <p className="text-[10px] text-content-muted font-medium">توافق تام مع المرحلة الثانية من الفوترة الإلكترونية</p>
                  </div>
               </div>
-              <div className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer"
-                  checked={settings.footer.showZatcaQr}
-                  onChange={(e) => setSettings(s => ({ ...s, footer: { ...s.footer, showZatcaQr: e.target.checked } }))}
-                />
-                <div className="w-14 h-7 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand"></div>
+              <div className="flex justify-end sm:justify-start">
+                <div className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer"
+                    checked={settings.footer.showZatcaQr}
+                    onChange={(e) => setSettings(s => ({ ...s, footer: { ...s.footer, showZatcaQr: e.target.checked } }))}
+                  />
+                  <div className="w-14 h-7 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand"></div>
+                </div>
               </div>
             </label>
           </div>
@@ -408,138 +432,33 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
       </div>
 
       {/* Live Preview Section */}
-      <div className="w-full lg:w-1/2 bg-surface-muted/40 p-4 sm:p-10 flex flex-col items-center justify-start overflow-auto max-h-[900px] border-r border-border custom-scrollbar">
-        <div className="bg-white/80 backdrop-blur-md px-6 py-2 rounded-full border border-border/50 flex items-center gap-2 mb-10 text-content-muted font-black uppercase tracking-widest text-[10px] sticky top-0 z-10 shadow-sm shadow-brand/5 whitespace-nowrap">
+      <div className="w-full lg:w-1/2 bg-surface-muted/40 p-4 sm:p-10 flex flex-col items-center justify-start overflow-auto max-h-[900px] border-t lg:border-t-0 border-border custom-scrollbar">
+        <div className="bg-white/80 backdrop-blur-md px-6 py-2 rounded-full border border-border/50 flex items-center gap-2 mb-6 sm:mb-10 text-content-muted font-black uppercase tracking-widest text-[10px] sticky top-0 z-10 shadow-sm shadow-brand/5 whitespace-nowrap">
           <Eye size={12} className="text-brand" />
           <span>محاكاة حية للفاتورة المطبوعة</span>
         </div>
 
         {/* Invoice Paper Wrapper to handle scaling */}
         <div className={cn(
-          "flex justify-center transition-all duration-500 w-full origin-top",
-          settings.printSize === 'a4' ? "scale-[0.6] sm:scale-[0.75] md:scale-[0.8] lg:scale-[0.65] xl:scale-[0.75] 2xl:scale-90" : 
-          settings.printSize === 'a5' ? "scale-[0.8] sm:scale-90 lg:scale-[0.8] xl:scale-95" : "scale-100"
+          "flex justify-center transition-all duration-500 w-full origin-top mb-10 xl:mb-20 overflow-x-auto",
+          settings.printSize === 'a4' ? "scale-[0.45] xs:scale-[0.5] sm:scale-[0.6] md:scale-[0.7] lg:scale-[0.45] xl:scale-[0.6] 2xl:scale-[0.7]" : 
+          settings.printSize === 'a5' ? "scale-[0.55] xs:scale-[0.6] sm:scale-[0.7] lg:scale-[0.55] xl:scale-[0.7]" : "scale-100"
         )}>
-          {/* Invoice Paper */}
-          <div 
-            className={cn(
-              "bg-white shadow-[0_35px_60px_-15px_rgba(0,0,0,0.1)] transition-all duration-500 relative border border-border/30 rounded-sm origin-top mb-10 xl:mb-20 flex-shrink-0",
-              settings.printSize === 'thermal80' ? "w-[320px] p-6 text-[11px]" :
-              settings.printSize === 'thermal58' ? "w-[240px] p-4 text-[9px]" :
-              settings.printSize === 'a4' ? "w-[595px] min-h-[842px] p-12 text-sm" :
-              "w-[420px] min-h-[595px] p-10 text-xs" // A5
-            )}
-            style={{ fontFamily: 'Inter, sans-serif' }}
-          >
-          {/* Header */}
-          <div className={cn(
-            "flex flex-col mb-10 border-b border-dashed border-gray-200 pb-8",
-            settings.header.alignment === 'center' ? "items-center text-center" :
-            settings.header.alignment === 'left' ? "items-end text-left" : "items-start text-right"
-          )}>
-            {settings.header.logoUrl && (
-              <img src={settings.header.logoUrl} alt="Logo" className="w-20 h-20 object-contain mb-4 filter drop-shadow-sm" />
-            )}
-            <h1 className="font-black text-xl text-gray-900 tracking-tight">{settings.header.facilityName || 'اسم المتجر الافتراضي'}</h1>
-            {settings.header.address && <p className="text-gray-500 mt-2 font-medium">{settings.header.address}</p>}
-            {settings.header.contactNumbers && <p className="text-gray-500 font-medium">واتساب: {settings.header.contactNumbers}</p>}
-            {settings.header.taxId && settings.layoutTemplate === 'tax' && (
-              <p className="text-gray-800 font-black mt-2 bg-gray-50 px-2 py-0.5 rounded">الرقم الضريبي: {settings.header.taxId}</p>
-            )}
-            
-            {settings.layoutTemplate === 'tax' && (
-              <div className="mt-6 text-[10px] text-gray-900 font-black border-2 border-gray-900 px-4 py-1.5 rounded uppercase tracking-tighter">
-                فاتورة ضريبية مبسطة
-              </div>
-            )}
-          </div>
-
-          {/* Items Table */}
-          <div className="overflow-x-auto whitespace-nowrap scrollbar-hide mb-8">
-            <table className="w-full border-collapse min-w-max">
-            <thead>
-              <tr className="border-b-2 border-gray-900">
-                <th className="text-right py-3 font-black text-gray-900 uppercase tracking-tighter text-[10px]">الوصف</th>
-                <th className="text-center py-3 font-black text-gray-900 uppercase tracking-tighter text-[10px]">الكمية</th>
-                {settings.columns.showUnitPrice && <th className="text-center py-3 font-black text-gray-900 uppercase tracking-tighter text-[10px]">السعر</th>}
-                <th className="text-left py-3 font-black text-gray-900 uppercase tracking-tighter text-[10px]">المجموع</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-b border-gray-100 pb-2">
-                <td className="py-4">
-                  <div className="font-black text-gray-900 text-sm">تفصيل قماش ياباني</div>
-                  {settings.columns.showMeasurements && settings.layoutTemplate === 'detailed' && (
-                    <div className="text-gray-400 mt-1 font-medium italic">
-                      طول: 155, كتف: 48, صدر: 58
-                    </div>
-                  )}
-                </td>
-                <td className="text-center py-4 font-bold">1</td>
-                {settings.columns.showUnitPrice && <td className="text-center py-4 text-gray-600">350.00</td>}
-                <td className="text-left py-4 font-black">350.00</td>
-              </tr>
-            </tbody>
-          </table>
-          </div>
-
-          {/* Totals */}
-          <div className="border-t-2 border-gray-900 pt-6 mb-10 space-y-3">
-            <div className="flex justify-between text-gray-600 font-medium">
-              <span>المجموع الفرعي:</span>
-              <span>350.00 ر.س</span>
-            </div>
-            {settings.layoutTemplate === 'tax' && (
-              <div className="flex justify-between text-gray-600 font-medium border-b border-dashed border-gray-100 pb-2">
-                <span>الضريبة (15%):</span>
-                <span>52.50 ر.س</span>
-              </div>
-            )}
-            <div className="flex justify-between text-xl font-black text-gray-900 py-2 bg-gray-50 px-4 rounded-xl">
-              <span>الإجمالي العام:</span>
-              <span>402.50 ر.س</span>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="text-center space-y-6">
-            {settings.footer.returnPolicy && (
-              <div className="text-gray-400 text-[10px] leading-relaxed border-t border-gray-100 pt-6">
-                <p className="font-black text-gray-600 mb-2 uppercase tracking-widest">ملاحظات وشروط:</p>
-                <p className="whitespace-pre-wrap px-4">{settings.footer.returnPolicy}</p>
-              </div>
-            )}
-            
-            {settings.footer.thankYouMessage && (
-              <p className="font-black text-gray-900 text-base italic tracking-tight">{settings.footer.thankYouMessage}</p>
-            )}
-
-            <div className="flex flex-col items-center gap-6 mt-8">
-              {settings.columns.showBarcode && (
-                <div className="w-full flex flex-col items-center gap-1 opacity-60">
-                   <div className="w-4/5 h-10 bg-gray-100 flex items-center justify-center font-barcode text-3xl">
-                    10042-2024
-                   </div>
-                   <span className="text-[8px] font-black tracking-[0.5em]">#ORD-10042</span>
-                </div>
-              )}
-
-              {settings.footer.showZatcaQr && (
-                <div className="p-2 border-2 border-gray-100 rounded-2xl group transition-transform hover:scale-110">
-                   <div className="w-28 h-28 bg-gray-100 flex items-center justify-center text-gray-300 text-[10px] font-black uppercase tracking-tighter shadow-inner">
-                    QR SECURE
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="pt-8 mt-10 border-t border-gray-100">
-              <Branding className="scale-75 opacity-20 grayscale brightness-0" />
-            </div>
-          </div>
+          {['thermal80', 'thermal58'].includes(settings.printSize) ? (
+            <ThermalInvoice 
+              data={previewInvoiceData} 
+              size={settings.printSize === 'thermal58' ? '58mm' : '80mm'} 
+              settings={settings as unknown as InvoiceLayoutSettingsType} 
+            />
+          ) : (
+            <StandardInvoice 
+              data={previewInvoiceData} 
+              size={settings.printSize === 'a5' ? 'A5' : 'A4'} 
+              settings={settings as unknown as InvoiceLayoutSettingsType} 
+            />
+          )}
         </div>
       </div>
     </div>
-  </div>
-);
+  );
 }

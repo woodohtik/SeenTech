@@ -110,6 +110,7 @@ export const staffSchema = z.object({
   branchId: z.string().min(1, t('validation.required')),
   status: z.enum(['active', 'inactive']),
   pin: z.string().length(4, t('validation.required')).regex(/^\d+$/, t('validation.phone_format')).optional().or(z.literal('')),
+  enablePin: z.boolean().optional().default(true),
   isTest: z.boolean().optional().default(false),
 });
 

@@ -33,34 +33,22 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  BarChart,
-  Bar,
   PieChart,
   Cell,
-  Legend,
   Pie
 } from 'recharts';
 import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
-import { 
-  Monitor, 
-  ExternalLink, 
-  UserPlus, 
-  Search as SearchIcon,
-  Filter,
-  MoreVertical,
-  Check,
-  Ban,
-  Crown,
-  AlertTriangle
-} from 'lucide-react';
-import { SmartSelect } from './ui/SmartSelect';
+import { useTranslation } from 'react-i18next';
 
 type TabType = 'overview' | 'financials' | 'tenants' | 'subscriptions' | 'performance' | 'security';
 
 export default function SuperAdminDashboard() {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+
   const { setImpersonationTenantId } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -139,12 +127,12 @@ export default function SuperAdminDashboard() {
           const last7Days = Array.from({ length: 7 }, (_, i) => {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            return d.toLocaleDateString('ar-SA', { weekday: 'short' });
+            return d.toLocaleDateString(i18n.language === 'en' ? 'en-US' : isRtl ? 'ar-SA' : 'en-US', { weekday: 'short' });
           }).reverse();
 
           const revenueByDay = new Map();
           ordersMapped.forEach(o => {
-            const day = new Date(o.orderDate).toLocaleDateString('ar-SA', { weekday: 'short' });
+            const day = new Date(o.orderDate).toLocaleDateString(i18n.language === 'en' ? 'en-US' : isRtl ? 'ar-SA' : 'en-US', { weekday: 'short' });
             const current = revenueByDay.get(day) || { revenue: 0, count: 0 };
             revenueByDay.set(day, {
               revenue: current.revenue + o.totalAmount,
@@ -176,7 +164,7 @@ export default function SuperAdminDashboard() {
       }
     };
     fetchData();
-  }, []);
+  }, [i18n.language]);
 
   // North Star SaaS Metrics
   const activeTenantsCount = tenants.filter(t => t.status === 'active' || t.status === 'onboarding').length;
@@ -201,7 +189,7 @@ export default function SuperAdminDashboard() {
 
   const stats = [
     { 
-      label: 'إجمالي المشتركين', 
+      label: t('saas.total_tenants', 'إجمالي المشتركين'), 
       value: tenants.length, 
       icon: Users, 
       color: 'text-brand', 
@@ -210,7 +198,7 @@ export default function SuperAdminDashboard() {
       isPositive: true
     },
     { 
-      label: 'الإيرادات المتكررة شهرياً (MRR)', 
+      label: t('saas.recurring_revenue_mrr', 'الإيرادات المتكررة شهرياً (MRR)'), 
       value: <PriceDisplay amount={mrr} />, 
       icon: TrendingUp, 
       color: 'text-emerald-600', 
@@ -219,7 +207,7 @@ export default function SuperAdminDashboard() {
       isPositive: true
     },
     { 
-      label: 'إيرادات العمولات (5%)', 
+      label: t('saas.commission_revenue', 'إيرادات العمولات (5%)'), 
       value: <PriceDisplay amount={platformCommission} />, 
       icon: DollarSign, 
       color: 'text-amber-600', 
@@ -228,12 +216,12 @@ export default function SuperAdminDashboard() {
       isPositive: true
     },
     { 
-      label: 'النشطين حالياً', 
+      label: t('saas.active_now', 'النشطين حالياً'), 
       value: activeTenantsCount, 
       icon: Activity, 
       color: 'text-rose-600', 
       bg: 'bg-rose-500/10',
-      trend: 'مستقر',
+      trend: t('saas.stable', 'مستقر'),
       isPositive: true
     },
   ];
@@ -250,7 +238,7 @@ export default function SuperAdminDashboard() {
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      const dayName = date.toLocaleDateString('ar-SA', { weekday: 'short' });
+      const dayName = date.toLocaleDateString(i18n.language === 'en' ? 'en-US' : isRtl ? 'ar-SA' : 'en-US', { weekday: 'short' });
       
       // Calculate MRR up to this date
       const activeUpToDate = sortedTenants.filter(t => new Date(t.createdAt) <= date && (t.status === 'active' || t.status === 'onboarding'));
@@ -272,9 +260,9 @@ export default function SuperAdminDashboard() {
   };
 
   const displayRevenueData = tenants.length > 0 ? generateDynamicChartData() : [
-    { name: 'السبت', mrr: 1200, commission: 50 },
-    { name: 'الأحد', mrr: 1240, commission: 80 },
-    { name: 'الاثنين', mrr: 1240, commission: 60 },
+    { name: isRtl ? 'السبت' : 'Sat', mrr: 1200, commission: 50 },
+    { name: isRtl ? 'الأحد' : 'Sun', mrr: 1240, commission: 80 },
+    { name: isRtl ? 'الاثنين' : 'Mon', mrr: 1240, commission: 60 },
   ];
 
   const planDistribution = plansList.map((plan, idx) => ({
@@ -292,12 +280,14 @@ export default function SuperAdminDashboard() {
   }
 
   return (
-    <div className="space-y-8 font-sans" dir="rtl">
+    <div className="space-y-8 font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Dynamic Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h2 className="text-4xl font-black text-content">لوحة تحكم المنصة 🚀</h2>
-          <p className="text-content-muted font-bold mt-1">أهلاً بك {userName}، نراقب الآن أداء {tenants.length} مشغل مسجل</p>
+          <h2 className="text-4xl font-black text-content">{t('saas.platform_dashboard_title', 'لوحة تحكم المنصة 🚀')}</h2>
+          <p className="text-content-muted font-bold mt-1">
+            {t('saas.dashboard_welcome', 'أهلاً بك')} {userName}، {t('saas.dashboard_monitoring_count', 'نراقب الآن أداء {{count}} مشغل مسجل', { count: tenants.length })}
+          </p>
         </div>
         
         <div className="flex items-center gap-3">
@@ -305,9 +295,9 @@ export default function SuperAdminDashboard() {
             <Globe className="text-emerald-500" size={16} />
             <span className="text-xs font-black text-content-muted uppercase tracking-widest leading-none">Global Network: Online</span>
           </div>
-          <button className="flex items-center gap-2 px-6 py-3 bg-brand text-white rounded-2xl shadow-lg shadow-brand/20 font-black transition-all hover:scale-105 active:scale-95">
+          <button className="flex items-center gap-2 px-6 py-3 bg-brand text-white rounded-2xl shadow-lg shadow-brand/20 font-black transition-all hover:scale-105 active:scale-95 cursor-pointer">
             <Settings size={18} />
-            إعدادات المنصة
+            <span>{t('common.system_settings', 'إعدادات المنصة')}</span>
           </button>
         </div>
       </div>
@@ -315,23 +305,23 @@ export default function SuperAdminDashboard() {
       {/* Modern Tabs Navigation */}
       <div className="flex flex-wrap items-center gap-2 bg-surface p-2 rounded-[2rem] border border-border shadow-sm inline-flex">
         {[
-          { id: 'overview', label: 'الرئيسية', icon: LayoutDashboard },
-          { id: 'financials', label: 'المالية', icon: DollarSign },
-          { id: 'performance', label: 'الأداء', icon: Server },
-          { id: 'security', label: 'الأمان', icon: Shield },
+          { id: 'overview', label: t('saas.overview', 'الرئيسية'), icon: LayoutDashboard },
+          { id: 'financials', label: t('saas.financials', 'المالية'), icon: DollarSign },
+          { id: 'performance', label: t('saas.performance', 'الأداء'), icon: Server },
+          { id: 'security', label: t('saas.security', 'الأمان'), icon: Shield },
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as TabType)}
             className={cn(
-              "flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-black transition-all",
+              "flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-black transition-all cursor-pointer",
               activeTab === tab.id 
                 ? "bg-brand text-white shadow-lg shadow-brand/20" 
                 : "text-content-muted hover:bg-surface-muted hover:text-content"
             )}
           >
             <tab.icon size={18} />
-            {tab.label}
+            <span>{tab.label}</span>
           </button>
         ))}
       </div>
@@ -363,7 +353,7 @@ export default function SuperAdminDashboard() {
                       stat.isPositive ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
                     )}>
                       {stat.isPositive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-                      {stat.trend}
+                      <span>{stat.trend}</span>
                     </div>
                   </div>
                   <div className="text-3xl font-black text-content mb-1">{stat.value}</div>
@@ -378,13 +368,13 @@ export default function SuperAdminDashboard() {
                   <div>
                     <h3 className="text-2xl font-black text-content flex items-center gap-3">
                       <TrendingUp className="text-brand" size={28} />
-                      نمو الإيرادات المتكررة
+                      <span>{t('saas.recurring_revenue_growth', 'نمو الإيرادات المتكررة')}</span>
                     </h3>
-                    <p className="text-content-muted font-bold text-sm mt-1">تتبع MRR والعمولات المستقطعة أسبوعياً</p>
+                    <p className="text-content-muted font-bold text-sm mt-1">{t('saas.mrr_commission_tracking', 'تتبع MRR والعمولات المستقطعة أسبوعياً')}</p>
                   </div>
                   <div className="flex bg-surface-muted p-1.5 rounded-2xl border border-border">
-                    <button className="px-4 py-2 bg-brand text-white rounded-xl text-xs font-black shadow-sm">أسبوعي</button>
-                    <button className="px-4 py-2 text-content-muted rounded-xl text-xs font-black hover:bg-surface transition-all">شهري</button>
+                    <button className="px-4 py-2 bg-brand text-white rounded-xl text-xs font-black shadow-sm">{t('saas.weekly', 'أسبوعي')}</button>
+                    <button className="px-4 py-2 text-content-muted rounded-xl text-xs font-black hover:bg-surface transition-all">{t('saas.monthly', 'شهري')}</button>
                   </div>
                 </div>
                 <div className="h-[350px] w-full">
@@ -404,7 +394,7 @@ export default function SuperAdminDashboard() {
                         itemStyle={{ fontWeight: 900 }}
                       />
                       <Area type="monotone" dataKey="mrr" name="MRR" stroke="var(--bg-brand)" strokeWidth={4} fillOpacity={1} fill="url(#colorMrr)" />
-                      <Area type="monotone" dataKey="commission" name="عمولات" stroke="#f59e0b" strokeWidth={3} fill="transparent" />
+                      <Area type="monotone" dataKey="commission" name={t('saas.commission_revenue', 'عمولات')} stroke="#f59e0b" strokeWidth={3} fill="transparent" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -413,9 +403,9 @@ export default function SuperAdminDashboard() {
               <div className="bg-surface p-8 rounded-[3rem] border border-border shadow-sm flex flex-col">
                 <h3 className="text-xl font-black text-content mb-2 flex items-center gap-2">
                   <PieChartIcon className="text-brand" size={24} />
-                  توزيع الباقات
+                  <span>{t('saas.plan_distribution', 'توزيع الباقات')}</span>
                 </h3>
-                <p className="text-content-muted font-bold text-sm mb-6">نسبة المشتركين حسب نوع الباقة</p>
+                <p className="text-content-muted font-bold text-sm mb-6">{t('saas.tenant_percentage_by_plan', 'نسبة المشتركين حسب نوع الباقة')}</p>
                 <div className="flex-1 min-h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -446,7 +436,7 @@ export default function SuperAdminDashboard() {
                         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: plan.color }} />
                         <span className="text-sm font-black text-content">{plan.name}</span>
                       </div>
-                      <span className="text-sm font-black text-brand">{plan.value} مشترك</span>
+                      <span className="text-sm font-black text-brand">{plan.value} {t('saas.tenant_count_label', 'مشترك')}</span>
                     </div>
                   ))}
                 </div>
@@ -465,9 +455,9 @@ export default function SuperAdminDashboard() {
           >
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
-                { label: 'ARPU (متوسط الإيراد لكل مشترك)', value: <PriceDisplay amount={arpu} />, icon: MousePointer2, color: 'text-indigo-600' },
-                { label: 'ARR (الإيراد السنوي المتكرر)', value: <PriceDisplay amount={arr} />, icon: TrendingUp, color: 'text-emerald-600' },
-                { label: 'LTV (القيمة الحيوية المتوقعة)', value: <PriceDisplay amount={arpu * 24} />, icon: Activity, color: 'text-brand' },
+                { label: t('saas.arpu_label', 'ARPU (متوسط الإيراد لكل مشترك)'), value: <PriceDisplay amount={arpu} />, icon: MousePointer2, color: 'text-indigo-600' },
+                { label: t('saas.arr_label', 'ARR (الإيراد السنوي المتكرر)'), value: <PriceDisplay amount={arr} />, icon: TrendingUp, color: 'text-emerald-600' },
+                { label: t('saas.ltv_label', 'LTV (القيمة الحيوية المتوقعة)'), value: <PriceDisplay amount={arpu * 24} />, icon: Activity, color: 'text-brand' },
               ].map((m) => (
                 <div key={m.label} className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
                   <div className="flex items-center gap-3 mb-4">
@@ -515,25 +505,29 @@ export default function SuperAdminDashboard() {
             <div className="bg-surface p-8 rounded-[3rem] border border-border shadow-sm">
               <h3 className="text-xl font-black text-content mb-8 flex items-center gap-2">
                 <History className="text-brand" size={24} />
-                سجل نشاط النظام التفصيلي
+                <span>{t('saas.system_activity_log', 'سجل نشاط النظام التفصيلي')}</span>
               </h3>
               <div className="space-y-4">
                 {activityLogs.map((log) => (
-                  <div key={log.id} className="flex items-center justify-between p-6 bg-surface-muted/30 rounded-3xl border border-border group hover:border-brand/30 transition-all">
+                  <div key={log.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 bg-surface-muted/30 rounded-3xl border border-border group hover:border-brand/30 transition-all gap-4">
                     <div className="flex items-center gap-4">
-                      <div className="p-3 bg-brand/5 text-brand rounded-2xl">
+                      <div className="p-3 bg-brand/5 text-brand rounded-2xl shrink-0">
                         <Activity size={20} />
                       </div>
                       <div>
                         <div className="text-sm font-black text-content">
-                          قام <span className="text-brand">{log.staffName}</span> بتنفيذ <span className="text-emerald-600">[{log.action}]</span>
+                          {t('saas.performed_action', 'قام')} <span className="text-brand">{log.staffName}</span> {t('saas.executing_action', 'بتنفيذ')} <span className="text-emerald-600">[{log.action}]</span>
                         </div>
                         <div className="text-xs text-content-muted font-bold mt-1 line-clamp-1">{log.details}</div>
                       </div>
                     </div>
-                    <div className="text-right">
-                       <div className="text-[10px] font-black text-content-muted uppercase tracking-widest">{new Date(log.timestamp).toLocaleTimeString('ar-SA')}</div>
-                       <div className="text-[10px] font-bold text-brand mt-1 uppercase tracking-widest leading-none">Branch: {log.branchName || 'Remote'}</div>
+                    <div className="text-right rtl:text-right ltr:text-left shrink-0">
+                        <div className="text-[10px] font-black text-content-muted uppercase tracking-widest">
+                          {new Date(log.timestamp).toLocaleTimeString(
+                            i18n.language === 'en' ? 'en-US' : i18n.language === 'ur' ? 'ur-PK' : 'ar-SA'
+                          )}
+                        </div>
+                        <div className="text-[10px] font-bold text-brand mt-1 uppercase tracking-widest leading-none">Branch: {log.branchName || 'Remote'}</div>
                     </div>
                   </div>
                 ))}
@@ -550,14 +544,14 @@ export default function SuperAdminDashboard() {
             exit={{ opacity: 0, y: -10 }}
             className="space-y-8"
           >
-             <div className="bg-rose-500/5 p-10 rounded-[3rem] border border-rose-500/10 flex items-center gap-8">
+             <div className="bg-rose-500/5 p-10 rounded-[3rem] border border-rose-500/10 flex flex-col md:flex-row items-start md:items-center gap-8">
                <div className="w-24 h-24 bg-rose-500/10 text-rose-600 rounded-[2.5rem] flex items-center justify-center shrink-0 shadow-lg shadow-rose-100">
                 <Shield size={48} />
               </div>
               <div>
-                <h3 className="text-2xl font-black text-rose-600 mb-2">مركز مراقبة الأمان والنزاهة</h3>
-                <p className="text-rose-600/80 font-bold leading-relaxed max-w-2xl">
-                  هذا القسم مخصص لمراقبة الأحداث الأمنية، محاولات الدخول، وتعديلات البيانات الحساسة على مستوى المنصة ككل. أي تغيير في هذا القسم يتم توثيقه في سجل التدقيق الأبدي.
+                <h3 className="text-2xl font-black text-rose-600 mb-2">{t('saas.security_center_title', 'مركز مراقبة الأمان والنزاهة')}</h3>
+                <p className="text-rose-600/80 font-bold leading-relaxed max-w-2xl text-sm">
+                  {t('saas.security_center_desc', 'هذا القسم مخصص لمراقبة الأحداث الأمنية، محاولات الدخول، وتعديلات البيانات الحساسة على مستوى المنصة ككل. أي تغيير في هذا القسم يتم توثيقه في سجل التدقيق الأبدي.')}
                 </p>
               </div>
             </div>
@@ -565,12 +559,12 @@ export default function SuperAdminDashboard() {
             <div className="bg-surface p-8 rounded-[3rem] border border-border shadow-sm">
               <h3 className="text-xl font-black text-content mb-8 flex items-center gap-2">
                 <Lock className="text-rose-600" size={24} />
-                سجل التدقيق (Audit Logs)
+                <span>{t('saas.audit_logs_label', 'سجل التدقيق (Audit Logs)')}</span>
               </h3>
               <div className="space-y-4">
                 {auditLogs.map((log) => (
                   <div key={log.id} className="flex items-start gap-4 p-6 bg-surface-muted/20 rounded-3xl border border-border border-r-4 border-r-rose-400">
-                    <div className="p-2 bg-rose-500/10 text-rose-600 rounded-lg">
+                    <div className="p-2 bg-rose-500/10 text-rose-600 rounded-lg shrink-0">
                       <AlertCircle size={16} />
                     </div>
                     <div>
@@ -579,7 +573,11 @@ export default function SuperAdminDashboard() {
                       </div>
                       <p className="text-xs text-content-muted font-bold mt-1">{log.details}</p>
                       <div className="mt-3 flex items-center gap-3">
-                        <span className="text-[10px] font-black text-content-muted uppercase tracking-widest">{new Date(log.timestamp).toLocaleString('ar-SA')}</span>
+                        <span className="text-[10px] font-black text-content-muted uppercase tracking-widest">
+                          {new Date(log.timestamp).toLocaleString(
+                            i18n.language === 'en' ? 'en-US' : i18n.language === 'ur' ? 'ur-PK' : 'ar-SA'
+                          )}
+                        </span>
                         <span className="w-1 h-1 bg-border rounded-full" />
                         <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest">Type: {log.type}</span>
                       </div>
@@ -602,11 +600,11 @@ export default function SuperAdminDashboard() {
             ))}
           </div>
           <div className="px-4">
-            <p className="text-xs font-black text-content">دعم فني مباشر</p>
-            <p className="text-[10px] font-bold text-emerald-500">متواجدون الآن</p>
+            <p className="text-xs font-black text-content">{t('saas.live_tech_support', 'دعم فني مباشر')}</p>
+            <p className="text-[10px] font-bold text-emerald-500">{t('saas.active_now_green', 'متواجدون الآن')}</p>
           </div>
-          <button className="px-8 py-3 bg-brand text-white rounded-2xl font-black text-sm shadow-xl shadow-brand/20 hover:scale-105 active:scale-95 transition-all">
-            فتح تذكرة دعم
+          <button className="px-8 py-3 bg-brand text-white rounded-2xl font-black text-sm shadow-xl shadow-brand/20 hover:scale-105 active:scale-95 transition-all cursor-pointer">
+            {t('saas.open_support_ticket', 'فتح تذكرة دعم')}
           </button>
         </div>
       </div>

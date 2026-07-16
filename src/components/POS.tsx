@@ -1,3 +1,4 @@
+import { ThermalInvoice, StandardInvoice, InvoiceData } from "./printing/InvoiceReceipt";
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Search, 
@@ -49,6 +50,7 @@ import { useRealtimeSync } from '../hooks/useRealtimeSync';
 import { useRouter, useRefreshCounter } from '../hooks/useRouter';
 import { encodeOrderB2BNotes, encodeInvoiceExtendedNotes } from '../utils/b2bHelper';
 import { useTranslation } from 'react-i18next';
+import ScannerModal from './ScannerModal';
 
 export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?: string }) {
   const router = useRouter();
@@ -63,6 +65,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isCustomOrderModalOpen, setIsCustomOrderModalOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [paidAmount, setPaidAmount] = useState<number>(0);
@@ -74,6 +77,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const [completedOrder, setCompletedOrder] = useState<any>(null);
   const [showCartOnMobile, setShowCartOnMobile] = useState(false);
   const { currentStaff } = useStaff();
+  const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
 
   const [taxSettings, setTaxSettings] = useState<any>(null);
 
@@ -90,6 +95,11 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const [newCustomerPhone, setNewCustomerPhone] = useState('');
   const [newCustomerVat, setNewCustomerVat] = useState('');
   const [isSavingCustomer, setIsSavingCustomer] = useState(false);
+  
+  // Settings
+  const [isAutoPrintEnabled, setIsAutoPrintEnabled] = useState(() => {
+    return localStorage.getItem('pos_auto_print') === 'true';
+  });
 
   // Cash Drawer State
   const [cashDrawerBalance, setCashDrawerBalance] = useState<number>(0);
@@ -355,6 +365,111 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     fetchData();
   }, [tenantId, mapCustomer, mapInventoryItem, refreshCounter]);
 
+  // Sync state values to refs to avoid stale closure issues in global shortcut event listeners
+  const cartRef = React.useRef(cart);
+  const isPaymentModalOpenRef = React.useRef(isPaymentModalOpen);
+  const completedOrderRef = React.useRef(completedOrder);
+  const totalAmountRef = React.useRef<number>(0);
+  const loadingRef = React.useRef(loading);
+  const handleCheckoutRef = React.useRef<any>(null);
+
+  cartRef.current = cart;
+  isPaymentModalOpenRef.current = isPaymentModalOpen;
+  completedOrderRef.current = completedOrder;
+  loadingRef.current = loading;
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 1. Show Keyboard Shortcuts with F1 or Ctrl+/
+      if (e.key === 'F1' || (e.ctrlKey && e.key === '/')) {
+        e.preventDefault();
+        setIsShortcutsModalOpen(prev => !prev);
+        return;
+      }
+
+      // 2. Focus search input with F3 or Ctrl+F
+      if (e.key === 'F3' || (e.ctrlKey && e.key.toLowerCase() === 'f')) {
+        e.preventDefault();
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+          searchInputRef.current.select();
+        }
+        return;
+      }
+
+      // 3. Open Payment Modal with F8 or Ctrl+Enter
+      if ((e.key === 'F8' || (e.ctrlKey && e.key === 'Enter')) && !isPaymentModalOpenRef.current && !completedOrderRef.current && cartRef.current.length > 0) {
+        e.preventDefault();
+        setIsPaymentModalOpen(true);
+        setPaidAmount(totalAmountRef.current);
+        return;
+      }
+
+      // 4. Complete Payment with F9 when payment modal is open
+      if (e.key === 'F9' && isPaymentModalOpenRef.current && !completedOrderRef.current && !loadingRef.current) {
+        e.preventDefault();
+        if (handleCheckoutRef.current) {
+          handleCheckoutRef.current();
+        }
+        return;
+      }
+
+      // 5. Change payment method inside payment modal: Ctrl+1 (Cash), Ctrl+2 (Card)
+      if (e.ctrlKey && isPaymentModalOpenRef.current && !completedOrderRef.current) {
+        if (e.key === '1') {
+          e.preventDefault();
+          setPaymentMethod('cash');
+          return;
+        }
+        if (e.key === '2') {
+          e.preventDefault();
+          setPaymentMethod('network');
+          return;
+        }
+      }
+
+      // 6. Print receipt with Ctrl+P (if completedOrder is set)
+      if (e.ctrlKey && e.key.toLowerCase() === 'p') {
+        if (completedOrderRef.current) {
+          e.preventDefault();
+          window.print();
+          return;
+        }
+      }
+
+      // 7. Clear cart with F4
+      if (e.key === 'F4' && !isPaymentModalOpenRef.current && !completedOrderRef.current) {
+        e.preventDefault();
+        if (cartRef.current.length > 0) {
+          if (confirm('هل أنت متأكد من رغبتك في إفراغ سلة المشتريات بالكامل؟')) {
+            setCart([]);
+          }
+        }
+        return;
+      }
+
+      // 8. Add custom tailor item with F7 or Ctrl+Shift+A
+      if (e.key === 'F7' || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a')) {
+        e.preventDefault();
+        setIsCustomOrderModalOpen(true);
+        return;
+      }
+
+      // 9. Close completed screen and start new order with F2 or Esc (when completedOrder is active)
+      if ((e.key === 'F2' || e.key === 'Escape') && completedOrderRef.current) {
+        e.preventDefault();
+        setCompletedOrder(null);
+        setIsPaymentModalOpen(false);
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   const [selectedCategory, setSelectedCategory] = useState('all');
 
   const uniqueCategories = React.useMemo(() => {
@@ -389,6 +504,16 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
      item.barcode?.includes(searchQuery) || 
      item.sku?.includes(searchQuery))
   );
+
+  const handleScan = (decodedText: string) => {
+    const item = inventory.find(i => i.barcode === decodedText || i.sku === decodedText);
+    if (item) {
+      addToCart(item);
+      toastSuccess(t('pos.item_added_from_scan', 'تمت إضافة المنتج من الباركود'));
+    } else {
+      toastError(t('pos.item_not_found', 'لم يتم العثور على المنتج'));
+    }
+  };
 
   const addToCart = (item: InventoryItem) => {
     setCart(prev => {
@@ -552,6 +677,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const vatRate = 15;
   const isTaxEnabled = taxAmount > 0 || (taxSettings?.enabled ?? true);
   const totalAmount = discountedSubtotal + taxAmount;
+  totalAmountRef.current = totalAmount;
 
   const handleCheckout = async () => {
     if (cart.length === 0) {
@@ -744,6 +870,14 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       }
       router.refresh();
       toastSuccess('تم إصدار الفاتورة الضريبية بنجاح');
+      
+      if (isAutoPrintEnabled) {
+        setTimeout(() => {
+          window.print();
+          setCompletedOrder(null);
+          setIsPaymentModalOpen(false);
+        }, 300);
+      }
     } catch (error) {
       console.error('Checkout error:', error);
       handleError(error as any, 'فشل إتمام العملية');
@@ -751,6 +885,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       setLoading(false);
     }
   };
+  handleCheckoutRef.current = handleCheckout;
 
   const renderCartPanel = (isMobilePanel: boolean = false) => {
     return (
@@ -1010,16 +1145,42 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     );
   };
 
+const invoiceData: InvoiceData | null = completedOrder ? {
+  invoiceNumber: completedOrder.invoiceNumber,
+  issueDate: completedOrder.issuedAt,
+  seller: {
+    name: brandingSettings?.storeName || 'مؤسسة وضوح الشاملة',
+    vatNumber: taxSettings?.trn || '300000000000003',
+  },
+  customer: {
+    name: completedOrder.customerName || 'عميل نقدي',
+    vatNumber: completedOrder.customerVat || undefined
+  },
+  items: completedOrder.items.map((item: any, index: number) => ({
+    id: index,
+    name: item.name,
+    quantity: item.quantity,
+    unitPrice: item.price
+  })),
+  subtotal: completedOrder.subTotal,
+  vatAmount: completedOrder.taxAmount,
+  discountAmount: completedOrder.discountAmount,
+  grandTotal: completedOrder.total,
+  qrValue: completedOrder.qrCode,
+  invoiceType: completedOrder.invoiceType
+} : null;
   return (
     <div className="h-full flex flex-col lg:flex-row font-sans bg-[#F5F7FA] dark:bg-[#121212] overflow-hidden w-full" dir={isRtl ? 'rtl' : 'ltr'}>
+      <ScannerModal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} onScan={handleScan} />
       {/* Main Pane (70% width on Desktop) */}
-      <div className="w-full lg:w-[70%] flex flex-col gap-4 lg:gap-6 overflow-x-hidden transition-all duration-300 p-4 lg:p-6 overflow-y-auto h-[calc(100vh-4rem)] lg:h-full shrink-0">
+      <div className="w-full lg:w-[70%] flex flex-col gap-4 lg:gap-6 overflow-x-hidden transition-all duration-300 p-4 lg:p-6 overflow-y-auto h-auto lg:h-full flex-1">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <div className="group flex-1 flex items-center bg-[#FFFFFF] dark:bg-[#1D1D1D] border border-border rounded-xl focus-within:ring-2 focus-within:ring-[#1C8FFF] focus-within:border-[#1C8FFF] transition-all shadow-sm overflow-hidden h-11">
             <div className="flex items-center justify-center px-3.5 border-e border-border/60 text-[#6B7280] group-focus-within:text-[#1C8FFF] h-full shrink-0">
               <Search size={18} />
             </div>
             <input
+              ref={searchInputRef}
               type="text"
               placeholder={t('pos.search_placeholder', 'ابحث عن منتج أو باركود...')}
               value={searchQuery}
@@ -1029,12 +1190,22 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
             <div className="flex items-center justify-center px-3 border-s border-border/60 h-full shrink-0">
               <button 
                 type="button"
-                className="text-[#6B7280] hover:text-[#1C8FFF] transition-colors flex items-center justify-center focus:outline-none"
+                onClick={() => setIsScannerOpen(true)}
+                className="text-[#6B7280] hover:text-[#1C8FFF] transition-colors flex items-center justify-center focus:outline-none cursor-pointer"
               >
                 <Barcode size={18} />
               </button>
             </div>
           </div>
+
+          <button
+            onClick={() => setIsShortcutsModalOpen(true)}
+            className="hidden sm:flex items-center justify-center gap-2 px-4 py-3 bg-[#FFFFFF] dark:bg-[#1D1D1D] border border-border text-content hover:bg-surface-muted rounded-xl transition-all font-bold shadow-sm active:scale-95 cursor-pointer text-xs sm:text-sm"
+            title="جدول اختصارات لوحة المفاتيح"
+          >
+            <span>⌨️</span>
+            <span className="whitespace-nowrap">الاختصارات (F1)</span>
+          </button>
 
           <button
             onClick={() => setIsCustomOrderModalOpen(true)}
@@ -1270,23 +1441,9 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                     <h2 className="text-2xl font-black text-content mb-1">تم إصدار الفاتورة</h2>
                     <p className="text-content-muted">{completedOrder.invoiceNumber}</p>
                   </div>
-                  
-                  <div className="bg-surface-muted p-4 rounded-2xl w-full border border-border">
-                    <p className="text-sm text-content-muted mb-1">الإجمالي الشامل</p>
-                    <p className="text-3xl font-bold text-brand"><PriceDisplay amount={completedOrder.total} /></p>
-                    {completedOrder.invoiceType === 'standard_b2b' && (
-                       <span className="inline-block mt-2 px-3 py-1 bg-brand/10 text-brand text-xs font-bold rounded-full">
-                         فاتورة ضريبية (أعمال B2B)
-                       </span>
-                    )}
+                  <div className="w-full max-h-[50vh] overflow-y-auto bg-gray-100 rounded-xl border border-border p-4 flex justify-center custom-scrollbar">
+                    {invoiceData && <ThermalInvoice data={invoiceData} size="80mm" />}
                   </div>
-
-                  {completedOrder.qrCode && (
-                    <div className="flex justify-center p-4 bg-white rounded-xl border border-border">
-                      <QRCodeSVG value={completedOrder.qrCode} size={100} level="M" />
-                    </div>
-                  )}
-
                   <div className="grid grid-cols-2 gap-3 w-full pt-4 print:hidden">
                     <button 
                       onClick={() => {
@@ -1514,6 +1671,23 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                                 <span className="text-lg font-bold text-red-600"><PriceDisplay amount={totalAmount - paidAmount} /></span>
                             </div>
                         )}
+                    </div>
+
+                    <div className="flex items-center justify-between bg-surface p-4 rounded-xl border border-border mb-4">
+                      <span className="text-sm font-bold text-content">الطباعة التلقائية عند الإصدار</span>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={isAutoPrintEnabled} 
+                          onChange={(e) => {
+                            const val = e.target.checked;
+                            setIsAutoPrintEnabled(val);
+                            localStorage.setItem('pos_auto_print', String(val));
+                          }} 
+                        />
+                        <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand"></div>
+                      </label>
                     </div>
 
                     <button
@@ -1930,279 +2104,12 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       </Transition>
 
       {/* Hidden Invoice to Print */}
-      {completedOrder && (
+      {completedOrder && invoiceData && (
         <div id="pos-invoice-print-area" className="fixed top-[100%] left-[100%] w-[800px] -z-50 pointer-events-none bg-white font-sans text-black print:static print:w-full print:block print:max-w-none print:m-0 print:p-0" dir="rtl">
-          
-          {/* B2C Simplified Invoice */}
-          {completedOrder.invoiceType === 'simplified_b2c' && (
-            <div className="p-8 print:p-0">
-              <div className="text-center mb-6 pb-4 border-b-2 border-black">
-                <h2 className="text-2xl font-bold print:text-xl mb-1">فاتورة ضريبية مبسطة</h2>
-                <h3 className="text-xl font-bold print:text-lg mb-3">Simplified Tax Invoice</h3>
-                
-                <div className="text-sm print:text-sm space-y-1">
-                  <p className="font-bold text-lg print:text-base">{brandingSettings?.storeName || 'المتجر'}</p>
-                  <p>الرقم الضريبي | VAT No: {taxSettings?.trn || '300000000000003'}</p>
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center mb-4 text-sm print:text-sm border-b-2 border-black pb-4">
-                <div>
-                  <p className="font-bold mb-1">رقم الفاتورة | Invoice No</p>
-                  <p>{completedOrder.invoiceNumber}</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold mb-1">تاريخ الإصدار | Issue Date</p>
-                  <p dir="ltr">{new Date(completedOrder.issuedAt).toLocaleString('en-GB')}</p>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto whitespace-nowrap scrollbar-hide print:overflow-visible print:whitespace-normal mb-4">
-                <table className="w-full text-sm print:text-xs min-w-max border-b-2 border-black pb-4">
-                <thead>
-                  <tr className="border-b-[1.5px] border-black">
-                    <th className="py-2 text-right">المنتج<br/>Item</th>
-                    <th className="py-2 text-center">السعر<br/>Price</th>
-                    <th className="py-2 text-center">الكمية<br/>Qty</th>
-                    <th className="py-2 text-left">الإجمالي<br/>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {completedOrder.items?.map((item: any, idx: number) => {
-                    const lineTotal = item.quantity * item.price;
-                    return (
-                      <tr key={idx} className="border-b border-gray-200">
-                        <td className="py-2 font-bold">{item.name}</td>
-                        <td className="py-2 text-center tabular-nums">{item.price.toFixed(2)}</td>
-                        <td className="py-2 text-center tabular-nums">{item.quantity}</td>
-                        <td className="py-2 text-left tabular-nums">{lineTotal.toFixed(2)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              </div>
-
-              {/* Unified Totals Section */}
-              <div className="space-y-2 text-sm print:text-sm border-b-2 border-black pb-4 mb-4">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <span className="block font-bold">الإجمالي (غير شامل الضريبة)</span>
-                    <span className="block text-gray-800 text-[10px] text-left" dir="ltr">Total (Excluding VAT)</span>
-                  </div>
-                  <span className="tabular-nums font-bold">{Number(completedOrder.subTotal).toFixed(2)}</span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <div>
-                    <span className="block font-bold">الخصم</span>
-                    <span className="block text-gray-800 text-[10px] text-left" dir="ltr">Discount</span>
-                  </div>
-                  <span className="tabular-nums font-bold">{Number(completedOrder.discountAmount).toFixed(2)}</span>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <div>
-                    <span className="block font-bold">الإجمالي الخاضع للضريبة</span>
-                    <span className="block text-gray-800 text-[10px] text-left" dir="ltr">Total Taxable Amount</span>
-                  </div>
-                  <span className="tabular-nums font-bold">{(Number(completedOrder.subTotal) - Number(completedOrder.discountAmount)).toFixed(2)}</span>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <div>
-                    <span className="block font-bold">مجموع ضريبة القيمة المضافة (15%)</span>
-                    <span className="block text-gray-800 text-[10px] text-left" dir="ltr">Total VAT (15%)</span>
-                  </div>
-                  <span className="tabular-nums font-bold">{Number(completedOrder.taxAmount).toFixed(2)}</span>
-                </div>
-
-                <div className="flex justify-between items-center mt-3 pt-3 border-t-[1.5px] border-black text-base print:text-base">
-                  <div>
-                    <span className="block font-black">الإجمالي (شامل الضريبة)</span>
-                    <span className="block text-black text-xs font-bold text-left" dir="ltr">Grand Total (Inc VAT)</span>
-                  </div>
-                  <span className="tabular-nums font-black">{Number(completedOrder.total).toFixed(2)}</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col items-center gap-4 mb-6">
-                {completedOrder.qrCode && (
-                  <div className="flex flex-col items-center">
-                    <p className="text-[10px] font-bold mb-1">فاتورة إلكترونية متوافقة</p>
-                    <QRCodeSVG 
-                      value={completedOrder.qrCode} 
-                      size={140} 
-                      level="M"
-                      includeMargin={true}
-                    />
-                  </div>
-                )}
-                {completedOrder.id && (
-                  <div className="flex flex-col items-center">
-                    <p className="text-[10px] font-bold mb-1">الوصول الرقمي للفاتورة</p>
-                    <QRCodeSVG 
-                      value={`${window.location.origin}/p/inv/${completedOrder.id}`} 
-                      size={140} 
-                      level="M"
-                      includeMargin={true}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* B2B Standard Invoice */}
-          {completedOrder.invoiceType === 'standard_b2b' && (
-            <div className="p-8 print:p-8">
-               <div className="text-center mb-8 pb-6 border-b-2 border-black">
-                <h2 className="text-3xl font-bold mb-1">فاتورة ضريبية</h2>
-                <h3 className="text-2xl font-bold text-gray-800">Tax Invoice</h3>
-              </div>
-
-              <div className="grid grid-cols-2 gap-8 mb-8">
-                {/* Seller */}
-                <div className="space-y-3">
-                  <div className="bg-gray-100 p-2 text-center font-bold print:bg-gray-200">المورد | Seller</div>
-                  <div className="space-y-1 text-sm print:text-base">
-                    <div><span className="font-bold">الاسم | Name:</span> {brandingSettings?.storeName || 'المتجر'}</div>
-                    <div><span className="font-bold">الرقم الضريبي | VAT No:</span> {taxSettings?.trn || '300000000000003'}</div>
-                  </div>
-                </div>
-                
-                {/* Buyer */}
-                <div className="space-y-3">
-                  <div className="bg-gray-100 p-2 text-center font-bold print:bg-gray-200">العميل | Buyer</div>
-                  <div className="space-y-1 text-sm print:text-base">
-                    <div><span className="font-bold">الاسم | Name:</span> {completedOrder.b2bCompanyName || completedOrder.customerName}</div>
-                    <div><span className="font-bold">الرقم الضريبي | VAT No:</span> {completedOrder.b2bTRN || completedOrder.customerVat || b2bData.trn}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center mb-8 text-sm print:text-base border-y-2 border-black py-4">
-                <div>
-                  <p className="font-bold mb-1">رقم الفاتورة | Invoice No</p>
-                  <p>{completedOrder.invoiceNumber}</p>
-                </div>
-                <div>
-                  <p className="font-bold mb-1">تاريخ الإصدار | Issue Date</p>
-                  <p dir="ltr">{new Date(completedOrder.issuedAt).toLocaleString('en-GB')}</p>
-                </div>
-                <div className="text-left">
-                  <p className="font-bold mb-1">تاريخ التوريد | Date of Supply</p>
-                  <p dir="ltr">{new Date(completedOrder.issuedAt).toLocaleString('en-GB')}</p>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto whitespace-nowrap scrollbar-hide print:overflow-visible print:whitespace-normal mb-8">
-                <table className="w-full text-sm print:text-base min-w-max border-b-2 border-black pb-4">
-                <thead>
-                  <tr className="border-b-2 border-black bg-gray-50 print:bg-gray-100">
-                    <th className="py-3 px-2 text-right">المنتج<br/>Item</th>
-                    <th className="py-3 px-2 text-center">سعر الوحدة<br/>Unit Price</th>
-                    <th className="py-3 px-2 text-center">الكمية<br/>Qty</th>
-                    <th className="py-3 px-2 text-center">المبلغ الخاضع للضريبة<br/>Taxable Amt</th>
-                    <th className="py-3 px-2 text-center">نسبة الضريبة<br/>VAT Rate</th>
-                    <th className="py-3 px-2 text-center">مبلغ الضريبة<br/>VAT Amt</th>
-                    <th className="py-3 px-2 text-left">المجموع (شامل الضريبة)<br/>Total (Inc. VAT)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {completedOrder.items?.map((item: any, idx: number) => {
-                    const vatRate = completedOrder.taxRate || 15;
-                    const priceExcludingVat = item.price / (1 + (vatRate / 100));
-                    const taxableAmount = priceExcludingVat * item.quantity;
-                    const vatAmount = taxableAmount * (vatRate / 100);
-                    const lineTotal = item.quantity * item.price;
-
-                    return (
-                      <tr key={idx} className="border-b border-gray-200">
-                        <td className="py-3 px-2 font-bold">{item.name}</td>
-                        <td className="py-3 px-2 text-center tabular-nums">{priceExcludingVat.toFixed(2)}</td>
-                        <td className="py-3 px-2 text-center tabular-nums">{item.quantity}</td>
-                        <td className="py-3 px-2 text-center tabular-nums">{taxableAmount.toFixed(2)}</td>
-                        <td className="py-3 px-2 text-center tabular-nums">{vatRate}%</td>
-                        <td className="py-3 px-2 text-center tabular-nums">{vatAmount.toFixed(2)}</td>
-                        <td className="py-3 px-2 text-left tabular-nums">{lineTotal.toFixed(2)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              </div>
-
-              <div className="grid grid-cols-2 gap-8 mb-8">
-                <div className="flex gap-4">
-                   {completedOrder.qrCode && (
-                     <div className="flex flex-col items-center justify-center mt-4">
-                        <p className="text-[10px] font-bold mb-1">هيئة الزكاة والضريبة والجمارك</p>
-                       <QRCodeSVG 
-                         value={completedOrder.qrCode} 
-                         size={160} 
-                         level="M"
-                         includeMargin={true}
-                       />
-                     </div>
-                   )}
-                   {completedOrder.id && (
-                     <div className="flex flex-col items-center justify-center mt-4">
-                        <p className="text-[10px] font-bold mb-1">الوصول الرقمي للفاتورة</p>
-                       <QRCodeSVG 
-                         value={`${window.location.origin}/p/inv/${completedOrder.id}`} 
-                         size={160} 
-                         level="M"
-                         includeMargin={true}
-                       />
-                     </div>
-                   )}
-                </div>
-                
-                {/* Unified Totals Section */}
-                <div className="space-y-3 text-sm print:text-base h-fit border-2 border-black p-4 bg-gray-50 print:bg-transparent">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <span className="block font-bold">الإجمالي (غير شامل الضريبة)</span>
-                      <span className="block text-gray-600 text-xs text-left" dir="ltr">Total (Excluding VAT)</span>
-                    </div>
-                    <span className="tabular-nums font-bold">{Number(completedOrder.subTotal).toFixed(2)}</span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <span className="block font-bold">الخصم</span>
-                      <span className="block text-gray-600 text-xs text-left" dir="ltr">Discount</span>
-                    </div>
-                    <span className="tabular-nums font-bold">{Number(completedOrder.discountAmount).toFixed(2)}</span>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <span className="block font-bold">الإجمالي الخاضع للضريبة</span>
-                      <span className="block text-gray-600 text-xs text-left" dir="ltr">Total Taxable Amount</span>
-                    </div>
-                    <span className="tabular-nums font-bold">{(Number(completedOrder.subTotal) - Number(completedOrder.discountAmount)).toFixed(2)}</span>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <span className="block font-bold">مجموع ضريبة القيمة المضافة (15%)</span>
-                      <span className="block text-gray-600 text-xs text-left" dir="ltr">Total VAT (15%)</span>
-                    </div>
-                    <span className="tabular-nums font-bold">{Number(completedOrder.taxAmount).toFixed(2)}</span>
-                  </div>
-
-                  <div className="flex justify-between items-center mt-4 pt-4 border-t-2 border-black text-lg print:text-xl bg-gray-200 print:bg-gray-100 -mx-4 -mb-4 p-4">
-                    <div>
-                      <span className="block font-black">الإجمالي (شامل الضريبة)</span>
-                      <span className="block text-gray-800 text-sm font-bold text-left" dir="ltr">Grand Total (Including VAT)</span>
-                    </div>
-                    <span className="tabular-nums font-black">{Number(completedOrder.total).toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {invoiceData.invoiceType === "standard_b2b" ? (
+             <StandardInvoice data={invoiceData} size="A4" />
+          ) : (
+             <ThermalInvoice data={invoiceData} size="80mm" />
           )}
         </div>
       )}
@@ -2266,6 +2173,70 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
           </Dialog.Panel>
         </div>
       </Dialog>
+
+      {/* Keyboard Shortcuts Help Modal */}
+      <Transition appear show={isShortcutsModalOpen} as={React.Fragment}>
+        <Dialog as="div" className="relative z-[150] flex items-center justify-center" onClose={() => setIsShortcutsModalOpen(false)}>
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" aria-hidden="true" onClick={() => setIsShortcutsModalOpen(false)} />
+          <div className="fixed inset-0 flex items-center justify-center p-4">
+            <Dialog.Panel className="w-full max-w-lg bg-surface p-6 rounded-3xl shadow-2xl border border-border text-right" dir="rtl">
+              <div className="flex justify-between items-center mb-6 border-b border-border pb-4">
+                <Dialog.Title className="text-xl font-black text-content flex items-center gap-2">
+                  <span>⌨️</span>
+                  <span>اختصارات لوحة المفاتيح للكاشير</span>
+                </Dialog.Title>
+                <button onClick={() => setIsShortcutsModalOpen(false)} className="p-2 hover:bg-surface-muted rounded-full transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                <p className="text-sm text-content-muted font-bold mb-4">
+                  استخدم هذه الاختصارات لتسريع عملية البيع وإصدار الفواتير دون الحاجة لاستخدام الماوس:
+                </p>
+
+                <div className="grid grid-cols-1 gap-2">
+                  {[
+                    { keys: ['F1', 'Ctrl + /'], label: 'فتح / إغلاق دليل الاختصارات' },
+                    { keys: ['F3', 'Ctrl + F'], label: 'التركيز على حقل البحث عن منتج' },
+                    { keys: ['F8', 'Ctrl + Enter'], label: 'فتح نافذة الدفع وإتمام الطلب' },
+                    { keys: ['F9'], label: 'تأكيد الدفع وإصدار الفاتورة (داخل نافذة الدفع)' },
+                    { keys: ['Ctrl + 1'], label: 'اختيار الدفع النقدي (داخل نافذة الدفع)' },
+                    { keys: ['Ctrl + 2'], label: 'اختيار الدفع بالشبكة/مدى (داخل نافذة الدفع)' },
+                    { keys: ['Ctrl + P'], label: 'الطباعة السريعة للإيصال (بعد إصدار الفاتورة)' },
+                    { keys: ['F2', 'Esc'], label: 'إغلاق شاشة الفاتورة وبدء طلب جديد' },
+                    { keys: ['F7', 'Ctrl + Shift + A'], label: 'فتح نافذة تفصيل ثوب جديد مخصص' },
+                    { keys: ['F4'], label: 'إفراغ سلة المشتريات بالكامل' },
+                  ].map((shortcut, idx) => (
+                    <div key={idx} className="flex justify-between items-center p-3 bg-surface-muted rounded-xl border border-border/50 hover:bg-brand/5 transition-all">
+                      <span className="text-sm font-bold text-content">{shortcut.label}</span>
+                      <div className="flex gap-1.5" dir="ltr">
+                        {shortcut.keys.map((key, kIdx) => (
+                          <React.Fragment key={kIdx}>
+                            {kIdx > 0 && <span className="text-content-muted self-center font-bold text-xs">+</span>}
+                            <kbd className="px-2 py-1 bg-white dark:bg-zinc-800 border border-border rounded-lg shadow-sm font-mono text-xs font-black text-brand">
+                              {key}
+                            </kbd>
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setIsShortcutsModalOpen(false)}
+                  className="px-6 py-2.5 bg-brand text-white font-bold rounded-xl hover:bg-brand/90 transition-all text-sm shadow-md"
+                >
+                  فهمت، إغلاق
+                </button>
+              </div>
+            </Dialog.Panel>
+          </div>
+        </Dialog>
+      </Transition>
 
     </div>
   );

@@ -17,6 +17,23 @@ interface InvoiceModalProps {
 }
 
 export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNumber, items }: InvoiceModalProps) {
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        window.print();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   if (!invoice) return null;
 
   const handlePrintThermal = () => {

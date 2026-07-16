@@ -24,7 +24,8 @@ import { useTranslation } from 'react-i18next';
 import GlobalRoleManager from './GlobalRoleManager';
 
 export default function SaaSSystemSettings() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [selectedTenantId, setSelectedTenantId] = useState<string>('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -250,7 +251,7 @@ export default function SaaSSystemSettings() {
   };
 
   return (
-    <div className="space-y-8 font-sans" dir="rtl">
+    <div className="space-y-8 font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
       <div>
         <h2 className="text-3xl font-black text-content">{t('common.system_settings')}</h2>
         <p className="text-content-muted font-bold mt-1">{t('common.system_settings_subtitle')}</p>
@@ -356,12 +357,12 @@ export default function SaaSSystemSettings() {
           <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
             <h3 className="text-xl font-black text-content mb-8 flex items-center gap-2">
               <Settings className="text-brand" size={24} />
-              إعدادات المنصة الأساسية
+              {t('saas.core_platform_settings', 'إعدادات المنصة الأساسية')}
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
-                <label className="block text-sm font-black text-content-muted">مدة التجربة المجانية (أيام)</label>
+                <label className="block text-sm font-black text-content-muted">{t('saas.trial_duration_days', 'مدة التجربة المجانية (أيام)')}</label>
                 <AdminIconInput 
                   type="number"
                   min="0"
@@ -375,7 +376,7 @@ export default function SaaSSystemSettings() {
 
               <div className="space-y-4 flex flex-col justify-end">
                  <label className="flex items-center justify-between p-4 bg-surface-muted rounded-2xl cursor-pointer hover:ring-2 hover:ring-brand/50 transition-all h-[56px]">
-                  <span className="text-sm font-black text-content">السماح بتسجيل مشتركين جدد (Self-Serve)</span>
+                  <span className="text-sm font-black text-content">{t('saas.allow_self_serve_registrations', 'السماح بتسجيل مشتركين جدد (Self-Serve)')}</span>
                   <input 
                     type="checkbox"
                     checked={platformSettings.allowRegistrations}
@@ -397,7 +398,7 @@ export default function SaaSSystemSettings() {
                 ) : (
                   <Save size={20} />
                 )}
-                <span>حفظ التعديلات</span>
+                <span>{t('common.save_changes', 'حفظ التعديلات')}</span>
               </button>
             </div>
           </div>

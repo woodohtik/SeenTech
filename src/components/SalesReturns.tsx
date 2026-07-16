@@ -90,13 +90,13 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto font-sans">
-      <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-6">
+    <div className="p-4 md:p-6 max-w-4xl mx-auto font-sans">
+      <div className="bg-white dark:bg-[#1D1D1D] p-4 sm:p-6 rounded-2xl md:rounded-[2rem] border border-gray-200 dark:border-gray-800 shadow-sm space-y-6">
         <div>
-          <h2 className="text-xl font-bold text-gray-800 mb-4">إرجاع فاتورة مبيعات</h2>
-          <div className="flex gap-4">
-            <div className="group flex-1 flex items-center bg-gray-50 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-[#1C8FFF] transition-all overflow-hidden h-12">
-              <div className="flex items-center justify-center px-4 border-e border-gray-200/60 text-gray-400 group-focus-within:text-[#1C8FFF] h-full shrink-0 bg-gray-100/50">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">إرجاع فاتورة مبيعات</h2>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="group flex-1 flex items-center bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-xl focus-within:ring-2 focus-within:ring-[#1C8FFF] transition-all overflow-hidden h-12">
+              <div className="flex items-center justify-center px-4 border-e border-gray-200/60 dark:border-gray-700 text-gray-400 group-focus-within:text-[#1C8FFF] h-full shrink-0 bg-gray-100/50 dark:bg-slate-900/50">
                 <Search size={18} />
               </div>
               <input 
@@ -105,13 +105,13 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="flex-1 min-w-0 bg-transparent border-none py-3 px-4 text-sm text-gray-800 outline-none ring-0 placeholder:text-gray-400 font-semibold"
+                className="flex-1 min-w-0 bg-transparent border-none py-3 px-4 text-sm text-gray-800 dark:text-gray-100 outline-none ring-0 placeholder:text-gray-400 font-semibold"
               />
             </div>
             <button 
               onClick={handleSearch}
               disabled={loading || !searchQuery}
-              className="bg-[#1C8FFF] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#1C8FFF]/90 transition-colors disabled:opacity-50"
+              className="bg-[#1C8FFF] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#1C8FFF]/90 transition-all active:scale-95 disabled:opacity-50 cursor-pointer h-12"
             >
               {loading ? 'جاري البحث...' : 'بحث'}
             </button>
@@ -119,32 +119,32 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
         </div>
 
         {order && (
-          <div className="border-t border-gray-100 pt-6 space-y-6">
+          <div className="border-t border-gray-100 dark:border-gray-800 pt-6 space-y-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-gray-50 p-4 rounded-xl">
-                <p className="text-sm text-gray-500 mb-1">رقم الفاتورة</p>
-                <p className="font-bold text-gray-800">#{order.orderNumber || order.id.slice(-6).toUpperCase()}</p>
+              <div className="bg-gray-50 dark:bg-slate-850 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">رقم الفاتورة</p>
+                <p className="font-bold text-gray-800 dark:text-gray-100">#{order.orderNumber || order.id.slice(-6).toUpperCase()}</p>
               </div>
-              <div className="bg-gray-50 p-4 rounded-xl">
-                <p className="text-sm text-gray-500 mb-1">العميل</p>
-                <p className="font-bold text-gray-800">{order.customerName}</p>
+              <div className="bg-gray-50 dark:bg-slate-850 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">العميل</p>
+                <p className="font-bold text-gray-800 dark:text-gray-100">{order.customerName}</p>
               </div>
-              <div className="bg-gray-50 p-4 rounded-xl">
-                <p className="text-sm text-gray-500 mb-1">التاريخ</p>
-                <p className="font-bold text-gray-800" dir="ltr">{new Date(order.orderDate).toLocaleDateString('ar-SA')}</p>
+              <div className="bg-gray-50 dark:bg-slate-850 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">التاريخ</p>
+                <p className="font-bold text-gray-800 dark:text-gray-100" dir="ltr">{new Date(order.orderDate).toLocaleDateString('ar-SA')}</p>
               </div>
-              <div className="bg-gray-50 p-4 rounded-xl">
-                <p className="text-sm text-gray-500 mb-1">الإجمالي</p>
+              <div className="bg-gray-50 dark:bg-slate-850 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">الإجمالي</p>
                 <p className="font-bold text-[#1C8FFF]"><PriceDisplay amount={order.totalAmount} /></p>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-600 mb-2">سبب الإرجاع</label>
+              <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">سبب الإرجاع</label>
               <textarea 
                 value={returnReason}
                 onChange={(e) => setReturnReason(e.target.value)}
-                className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#1C8FFF] outline-none h-24 resize-none"
+                className="w-full p-4 bg-gray-50 dark:bg-slate-850 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-[#1C8FFF] outline-none h-24 resize-none text-gray-800 dark:text-gray-100"
                 placeholder="اكتب سبب الإرجاع هنا..."
               />
             </div>

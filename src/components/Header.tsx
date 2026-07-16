@@ -75,6 +75,9 @@ export default function Header({ tenantId, title, subtitle, children }: HeaderPr
 
   const handleLanguageSelect = (languageCode: string) => {
     i18n.changeLanguage(languageCode);
+    const dir = languageCode === 'en' ? 'ltr' : 'rtl';
+    document.documentElement.dir = dir;
+    document.documentElement.lang = languageCode;
     setIsLanguageDropdownOpen(false);
   };
 
