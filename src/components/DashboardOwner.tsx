@@ -327,10 +327,10 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
           supabase.from('branch_inventory').select('*').eq('tenant_id', tenantId)
         ]);
 
-        if (customersRes.error) throw customersRes.error;
-        if (ordersRes.error) throw ordersRes.error;
-        if (inventoryRes.error) throw inventoryRes.error;
-        if (branchInvRes.error) throw branchInvRes.error;
+        if (customersRes.error) console.error('Customers query error:', customersRes.error);
+        if (ordersRes.error) console.error('Orders query error:', ordersRes.error);
+        if (inventoryRes.error) console.error('Inventory query error:', inventoryRes.error);
+        if (branchInvRes.error) console.error('Branch Inventory query error:', branchInvRes.error);
 
         const customers = (customersRes.data || []).map(d => ({
           ...d,
@@ -340,14 +340,14 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
 
         let orders = (ordersRes.data || []).map(d => ({
           ...d,
-          customerId: d.customer_id,
-          customerName: d.customer_name,
-          orderDate: d.order_date,
-          totalAmount: d.total_amount,
-          paidAmount: d.paid_amount,
-          remainingAmount: d.remaining_amount,
-          branchId: d.branch_id,
-          orderNumber: d.order_number,
+          customerId: d.customer_id || '',
+          customerName: d.customer_name || '',
+          orderDate: d.order_date || new Date().toISOString(),
+          totalAmount: d.total_amount || 0,
+          paidAmount: d.paid_amount || 0,
+          remainingAmount: d.remaining_amount || 0,
+          branchId: d.branch_id || '',
+          orderNumber: d.order_number || '',
           createdAt: d.created_at,
           updatedAt: d.updated_at
         }) as unknown as Order);
@@ -356,19 +356,19 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
           orders = orders.filter(o => o.branchId === selectedBranchId);
         }
 
-        const inventory = inventoryRes.data.map(d => ({
+        const inventory = (inventoryRes.data || []).map(d => ({
           id: d.id,
           name: d.name,
-          minThreshold: d.min_threshold,
+          minThreshold: d.min_threshold || 0,
           tenantId: d.tenant_id,
-          quantity: d.quantity
+          quantity: d.quantity || 0
         } as InventoryItem));
 
-        const bInv = branchInvRes.data.map(d => ({
+        const bInv = (branchInvRes.data || []).map(d => ({
           id: d.id,
           itemId: d.item_id,
           branchId: d.branch_id,
-          quantity: d.quantity,
+          quantity: d.quantity || 0,
           tenantId: d.tenant_id
         } as BranchInventory));
 
@@ -385,10 +385,12 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         let totalTimeMs = 0;
         let completionCount = 0;
         completedOrders.forEach(o => {
-          const finalHistory = o.history && [...o.history].reverse().find((h: any) => ['delivered', 'ready'].includes(h.status));
+          const finalHistory = Array.isArray(o.history) 
+            ? [...o.history].reverse().find((h: any) => h && ['delivered', 'ready'].includes(h.status))
+            : null;
           if (finalHistory) {
-            const startTime = new Date(o.orderDate).getTime();
-            const endTime = new Date(finalHistory.updatedAt).getTime();
+            const startTime = new Date(o.orderDate || '').getTime();
+            const endTime = new Date(finalHistory.updatedAt || '').getTime();
             if (endTime > startTime) {
               totalTimeMs += (endTime - startTime);
               completionCount++;
@@ -401,14 +403,16 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
         const activeCustomerIds = new Set(
           orders
-            .filter(o => new Date(o.orderDate) >= sixtyDaysAgo)
+            .filter(o => o.orderDate && new Date(o.orderDate) >= sixtyDaysAgo)
             .map(o => o.customerId)
         );
         const activeCustomers = activeCustomerIds.size;
 
         const customerOrderCounts: Record<string, number> = {};
         orders.forEach(o => {
-          customerOrderCounts[o.customerId] = (customerOrderCounts[o.customerId] || 0) + 1;
+          if (o.customerId) {
+            customerOrderCounts[o.customerId] = (customerOrderCounts[o.customerId] || 0) + 1;
+          }
         });
         const totalCustomersWithOrders = Object.keys(customerOrderCounts).length;
         const repeatCustomersCount = Object.values(customerOrderCounts).filter(count => count > 1).length;
@@ -441,14 +445,16 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
 
         const currentMonthRevenue = orders
           .filter(o => {
-            const d = new Date(o.orderDate);
+            const orderDateStr = typeof o.orderDate === 'string' ? o.orderDate : '';
+            const d = new Date(orderDateStr);
             return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
           })
           .reduce((acc, o) => acc + (o.paidAmount || 0), 0);
 
         const lastMonthRevenue = orders
           .filter(o => {
-            const d = new Date(o.orderDate);
+            const orderDateStr = typeof o.orderDate === 'string' ? o.orderDate : '';
+            const d = new Date(orderDateStr);
             return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
           })
           .reduce((acc, o) => acc + (o.paidAmount || 0), 0);
@@ -467,7 +473,10 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         }).reverse();
 
         const dailyRevenue = days.map(date => {
-          const dayOrders = orders.filter(o => o.orderDate.startsWith(date));
+          const dayOrders = orders.filter(o => {
+            const orderDateStr = typeof o.orderDate === 'string' ? o.orderDate : '';
+            return orderDateStr.startsWith(date);
+          });
           const dayRev = dayOrders.reduce((acc, o) => acc + (o.paidAmount || 0), 0);
           return {
             date: revenueRange > 7 
@@ -814,9 +823,9 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         title={t('dashboard.title')} 
         subtitle={t('dashboard.subtitle', { name: tenant?.name || t('common.tailor_system') })}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
           {/* Branch Filter */}
-          <div className="w-56 shrink-0">
+          <div className="w-full sm:w-56 shrink-0">
             <SmartSelect
               value={selectedBranchId}
               onChange={setSelectedBranchId}
@@ -827,86 +836,88 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             />
           </div>
 
-          <button 
-            onClick={() => setIsDeleteConfirmVisible(true)}
-            className="flex items-center gap-2 bg-danger/10 text-danger px-4 py-2 rounded-2xl font-bold text-xs hover:bg-danger/20 transition-all border border-danger/20"
-          >
-            <AlertTriangle size={16} />
-            {t('dashboard.delete_test_data')}
-          </button>
-          <div className="bg-surface p-3 rounded-2xl border border-border flex items-center gap-3 shadow-sm">
-            <div className="p-2 bg-success/10 text-success rounded-xl">
-              <TrendingUp size={20} />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-content-muted uppercase">{t('dashboard.growth_rate')}</p>
-              <p className={cn(
-                "text-sm font-black",
-                growthRate >= 0 ? "text-success" : "text-danger"
-              )}>
-                {growthRate >= 0 ? '+' : ''}{growthRate}%
-              </p>
-            </div>
-          </div>
-          <div className="relative">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 justify-between sm:justify-end w-full sm:w-auto">
             <button 
-              onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-              className="relative p-3 bg-surface rounded-2xl border border-border shadow-sm hover:bg-surface-muted transition-colors"
+              onClick={() => setIsDeleteConfirmVisible(true)}
+              className="flex items-center gap-1.5 sm:gap-2 bg-danger/10 text-danger px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl font-bold text-xs hover:bg-danger/20 transition-all border border-danger/20 shrink-0"
             >
-              <Bell size={24} className="text-content-muted" />
-              {notifications.length > 0 && (
-                <span className="absolute top-2 right-2 w-3 h-3 bg-danger border-2 border-surface rounded-full" />
-              )}
+              <AlertTriangle size={15} />
+              {t('dashboard.delete_test_data')}
             </button>
-            
-            <AnimatePresence>
-              {isNotificationsOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setIsNotificationsOpen(false)} />
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute left-0 mt-2 w-80 bg-surface rounded-3xl shadow-2xl border border-border z-50 overflow-hidden"
-                  >
-                    <div className="p-4 border-b border-border flex justify-between items-center bg-surface-muted/50">
-                      <h4 className="text-sm font-black text-content">{t('dashboard.notifications')}</h4>
-                      <span className="text-[10px] font-bold text-brand bg-brand/10 px-2 py-0.5 rounded-full">
-                        {notifications.length} {t('dashboard.new_notifications')}
-                      </span>
-                    </div>
-                    <div className="max-h-96 overflow-y-auto p-2 space-y-1">
-                      {notifications.length > 0 ? (
-                        notifications.map(notif => (
-                          <div key={notif.id} className="p-3 hover:bg-surface-muted rounded-2xl transition-colors cursor-pointer group">
-                            <div className="flex gap-3">
-                              <div className={cn(
-                                "p-2 rounded-xl h-fit",
-                                notif.type === 'inventory' ? "bg-danger/10 text-danger" : "bg-brand/10 text-brand"
-                              )}>
-                                {notif.type === 'inventory' ? <AlertTriangle size={16} /> : <Bell size={16} />}
-                              </div>
-                              <div className="flex-1">
-                                <p className="text-xs font-black text-content group-hover:text-brand transition-colors">{notif.title}</p>
-                                <p className="text-[10px] text-content-muted mt-0.5 leading-relaxed">{notif.message}</p>
-                                <p className="text-[9px] text-content-muted mt-1 font-bold">
-                                  {new Date(notif.createdAt).toLocaleTimeString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK' : 'en-US'), { hour: '2-digit', minute: '2-digit' })}
-                                </p>
+            <div className="bg-surface p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border border-border flex items-center gap-2 sm:gap-3 shadow-sm shrink-0">
+              <div className="p-1 sm:p-1.5 bg-success/10 text-success rounded-lg sm:rounded-xl">
+                <TrendingUp size={16} />
+              </div>
+              <div>
+                <p className="text-[8px] sm:text-[10px] font-bold text-content-muted uppercase leading-none">{t('dashboard.growth_rate')}</p>
+                <p className={cn(
+                  "text-xs sm:text-sm font-black mt-0.5 sm:mt-1 leading-none",
+                  growthRate >= 0 ? "text-success" : "text-danger"
+                )}>
+                  {growthRate >= 0 ? '+' : ''}{growthRate}%
+                </p>
+              </div>
+            </div>
+            <div className="relative shrink-0">
+              <button 
+                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                className="relative p-2 sm:p-3 bg-surface rounded-xl sm:rounded-2xl border border-border shadow-sm hover:bg-surface-muted transition-colors"
+              >
+                <Bell size={18} className="text-content-muted sm:size-6" />
+                {notifications.length > 0 && (
+                  <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-2 h-2 sm:w-3 sm:h-3 bg-danger border-2 border-surface rounded-full" />
+                )}
+              </button>
+              
+              <AnimatePresence>
+                {isNotificationsOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setIsNotificationsOpen(false)} />
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute left-0 mt-2 w-72 sm:w-80 bg-surface rounded-3xl shadow-2xl border border-border z-50 overflow-hidden"
+                    >
+                      <div className="p-4 border-b border-border flex justify-between items-center bg-surface-muted/50">
+                        <h4 className="text-sm font-black text-content">{t('dashboard.notifications')}</h4>
+                        <span className="text-[10px] font-bold text-brand bg-brand/10 px-2 py-0.5 rounded-full">
+                          {notifications.length} {t('dashboard.new_notifications')}
+                        </span>
+                      </div>
+                      <div className="max-h-96 overflow-y-auto p-2 space-y-1">
+                        {notifications.length > 0 ? (
+                          notifications.map(notif => (
+                            <div key={notif.id} className="p-3 hover:bg-surface-muted rounded-2xl transition-colors cursor-pointer group">
+                              <div className="flex gap-3">
+                                <div className={cn(
+                                  "p-2 rounded-xl h-fit",
+                                  notif.type === 'inventory' ? "bg-danger/10 text-danger" : "bg-brand/10 text-brand"
+                                )}>
+                                  {notif.type === 'inventory' ? <AlertTriangle size={16} /> : <Bell size={16} />}
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-xs font-black text-content group-hover:text-brand transition-colors">{notif.title}</p>
+                                  <p className="text-[10px] text-content-muted mt-0.5 leading-relaxed">{notif.message}</p>
+                                  <p className="text-[9px] text-content-muted mt-1 font-bold">
+                                    {new Date(notif.createdAt).toLocaleTimeString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK' : 'en-US'), { hour: '2-digit', minute: '2-digit' })}
+                                  </p>
+                                </div>
                               </div>
                             </div>
+                          ))
+                        ) : (
+                          <div className="py-8 text-center">
+                            <CheckCircle2 size={32} className="text-content-muted/30 mx-auto mb-2" />
+                            <p className="text-xs text-content-muted font-bold">{t('dashboard.no_notifications')}</p>
                           </div>
-                        ))
-                      ) : (
-                        <div className="py-8 text-center">
-                          <CheckCircle2 size={32} className="text-content-muted/30 mx-auto mb-2" />
-                          <p className="text-xs text-content-muted font-bold">{t('dashboard.no_notifications')}</p>
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
+                        )}
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </Header>
@@ -939,7 +950,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             </div>
           </div>
           <a 
-            href="mailto:nomansa2566512@gmail.com?subject=تفعيل حساب سين الذكي"
+            href="mailto:nomansa2566512@gmail.com?subject=تفعيل حساب سين"
             className="w-full md:w-auto bg-amber-600 hover:bg-amber-700 text-white px-6 py-3.5 rounded-2xl font-bold text-xs sm:text-sm shadow-lg shadow-amber-900/10 transition-all shrink-0 flex items-center justify-center gap-2 border border-amber-700/20"
           >
             <ExternalLink size={15} />
@@ -1044,7 +1055,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         )}
       </AnimatePresence>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {visibleStatCards.map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -1052,32 +1063,32 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
             onClick={stat.onClick}
-            className="bg-surface p-6 rounded-3xl border border-border shadow-sm hover:shadow-xl transition-all group cursor-pointer"
+            className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-border shadow-sm hover:shadow-xl transition-all group cursor-pointer"
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className={cn(stat.color, "p-4 rounded-2xl text-white shadow-lg shadow-current/20 group-hover:scale-110 transition-transform")}>
-                <stat.icon size={24} />
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className={cn(stat.color, "p-3 sm:p-4 rounded-xl sm:rounded-2xl text-white shadow-lg shadow-current/20 group-hover:scale-110 transition-transform")}>
+                <stat.icon className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <span className={cn(
-                "text-xs font-black px-2 py-1 rounded-lg",
+                "text-[10px] sm:text-xs font-black px-2 py-1 rounded-lg",
                 stat.trend.startsWith('+') ? "bg-success/10 text-success" : 
                 (stat.isAlert || stat.trend === t('dashboard.trend.critical', 'هام')) ? "bg-danger/10 text-danger" : "bg-surface-muted text-content-muted"
               )}>
                 {stat.trend}
               </span>
             </div>
-            <p className="text-content-muted text-xs font-black uppercase tracking-widest">{stat.label}</p>
-            <h3 className="text-3xl font-black text-content mt-1">
+            <p className="text-content-muted text-[10px] sm:text-xs font-black uppercase tracking-widest">{stat.label}</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-content mt-1">
               {typeof stat.value === 'number' ? stat.value.toLocaleString('en-US') : stat.value}
             </h3>
           </motion.div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         {/* Revenue Chart */}
         {hasRevenuePermission && (
-          <div className="lg:col-span-2 bg-surface rounded-[2.5rem] border border-border shadow-sm p-8 flex flex-col justify-between">
+          <div className="lg:col-span-2 bg-surface rounded-2xl sm:rounded-3xl md:rounded-[2.5rem] border border-border shadow-sm p-4 sm:p-6 md:p-8 flex flex-col justify-between">
             <div className="flex justify-between items-center mb-8">
               <div>
                 <h3 className="text-xl font-black text-content">{t('dashboard.revenue_analysis')}</h3>
@@ -1188,7 +1199,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
 
         {/* Status Breakdown */}
         {hasOrdersPermission && (
-          <div className={cn("bg-surface rounded-[2.5rem] border border-border shadow-sm p-8 flex flex-col justify-between", !hasRevenuePermission && "lg:col-span-3")}>
+          <div className={cn("bg-surface rounded-2xl sm:rounded-3xl md:rounded-[2.5rem] border border-border shadow-sm p-4 sm:p-6 md:p-8 flex flex-col justify-between", !hasRevenuePermission && "lg:col-span-3")}>
             <div>
               <h3 className="text-xl font-black text-content mb-2">{t('dashboard.status_distribution')}</h3>
               <p className="text-sm text-content-muted font-medium mb-8">{t('dashboard.status_distribution_desc', 'مراحل العمل الحالية في المشغل')}</p>
@@ -1269,12 +1280,12 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         {/* Recent Orders Table */}
         {hasOrdersPermission && (
-          <div className="lg:col-span-2 bg-surface rounded-[2.5rem] border border-border shadow-sm overflow-hidden">
-            <div className="p-8 border-b border-border flex justify-between items-center">
-              <h3 className="text-xl font-black text-content">{t('dashboard.recent_orders')}</h3>
+          <div className="lg:col-span-2 bg-surface rounded-2xl sm:rounded-3xl md:rounded-[2.5rem] border border-border shadow-sm overflow-hidden">
+            <div className="p-4 sm:p-6 md:p-8 border-b border-border flex justify-between items-center">
+              <h3 className="text-lg sm:text-xl font-black text-content">{t('dashboard.recent_orders')}</h3>
               <button 
                 onClick={() => setDrillDown({ 
                   type: 'all_orders', 
@@ -1437,9 +1448,9 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
 
         {/* Recent Notifications / Low Stock */}
         <div className="space-y-6">
-          <div className="bg-surface rounded-[2.5rem] border border-border shadow-sm p-8">
+          <div className="bg-surface rounded-2xl sm:rounded-3xl md:rounded-[2.5rem] border border-border shadow-sm p-4 sm:p-6 md:p-8">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-black text-content">{t('dashboard.notifications', 'التنبيهات')}</h3>
+              <h3 className="text-lg sm:text-xl font-black text-content">{t('dashboard.notifications', 'التنبيهات')}</h3>
               <span className="bg-danger/10 text-danger text-[10px] font-black px-2 py-1 rounded-lg">{t('common.active', 'نشط')}</span>
             </div>
             <div className="space-y-4">
@@ -1470,7 +1481,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
           </div>
 
           {hasInventoryPermission && (
-            <div className="bg-brand rounded-[2.5rem] p-8 text-white shadow-xl shadow-brand/20 relative overflow-hidden group">
+            <div className="bg-brand rounded-2xl sm:rounded-3xl md:rounded-[2.5rem] p-4 sm:p-6 md:p-8 text-white shadow-xl shadow-brand/20 relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
                 <Package size={120} />
               </div>

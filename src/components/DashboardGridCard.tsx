@@ -30,15 +30,15 @@ export default function DashboardGridCard({
     <button
       onClick={onClick}
       className={cn(
-        "bg-surface p-6 rounded-3xl border border-border shadow-sm hover:shadow-xl transition-all group flex flex-col w-full cursor-pointer h-full",
+        "bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-border shadow-sm hover:shadow-xl transition-all group flex flex-col w-full cursor-pointer h-full",
         textAlignmentClass,
         flexAlignmentClass
       )}
       dir={dir}
     >
-      <div className="flex items-center justify-between mb-4 w-full">
-        <div className={cn(color, "p-4 rounded-2xl text-white shadow-lg shadow-current/20 group-hover:scale-110 transition-transform")}>
-          <Icon size={24} />
+      <div className="flex items-center justify-between mb-3 sm:mb-4 w-full">
+        <div className={cn(color, "p-3 sm:p-4 rounded-xl sm:rounded-2xl text-white shadow-lg shadow-current/20 group-hover:scale-110 transition-transform")}>
+          <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
         </div>
         {isActive && (
           <span className="text-[10px] font-black px-2 py-1 rounded-lg bg-success/10 text-success">

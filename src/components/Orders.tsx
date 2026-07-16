@@ -16,6 +16,7 @@ import {
   Trash2,
   Printer,
   QrCode,
+  Barcode,
   Eye,
   Share2,
   MessageSquare,
@@ -57,6 +58,7 @@ import { orderSchema, customerSchema } from '../lib/validations';
 import { QRCodeSVG } from 'qrcode.react';
 import * as XLSX from 'xlsx';
 import Branding from './Branding';
+import ScannerModal from './ScannerModal';
 import Select from './ui/Select';
 import { SmartSelect } from './ui/SmartSelect';
 import { checkStockAvailability, deductStock } from '../services/inventoryService';
@@ -168,6 +170,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [pendingStatusUpdate, setPendingStatusUpdate] = useState<{ id: string, status: OrderStatus } | null>(null);
@@ -892,6 +895,36 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     }
   };
 
+  const handleScan = (decodedText: string) => {
+    const scanned = decodedText.toLowerCase();
+    const matchedOrder = orders.find(o => 
+        (o as any).invoiceNumber?.toString().toLowerCase() === scanned || 
+        o.orderNumber?.toString().toLowerCase() === scanned || 
+        o.id.toLowerCase() === scanned
+    );
+    
+    if (matchedOrder) {
+        setSearch(scanned);
+        setSelectedOrder(matchedOrder);
+        setIsInvoiceOpen(true);
+        toastSuccess('تم العثور على الطلب من الباركود');
+    } else {
+        const partialMatch = orders.find(o => 
+            (o as any).invoiceNumber?.toString().toLowerCase().includes(scanned) ||
+            o.orderNumber?.toString().toLowerCase().includes(scanned) ||
+            o.id.toLowerCase().includes(scanned)
+        );
+        if (partialMatch) {
+            setSearch(scanned);
+            setSelectedOrder(partialMatch);
+            setIsInvoiceOpen(true);
+            toastSuccess('تم العثور على الطلب من الباركود');
+        } else {
+            toastError('لم يتم العثور على طلب بهذا الباركود');
+        }
+    }
+  };
+
   const filteredOrders = orders.filter(o => {
     const searchLower = search.toLowerCase();
     const orderNumberStr = o.orderNumber ? o.orderNumber.toString() : '';
@@ -1604,6 +1637,13 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+          <button 
+            type="button"
+            onClick={() => setIsScannerOpen(true)}
+            className="text-content-muted hover:text-brand transition-colors cursor-pointer"
+          >
+            <Barcode size={20} />
+          </button>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 bg-surface p-4 rounded-3xl border border-border shadow-sm">
@@ -1814,6 +1854,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       </div>
 
       {/* Modals */}
+      <ScannerModal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} onScan={handleScan} />
       {isInvoiceOpen && selectedOrder && <InvoiceModal order={selectedOrder} />}
       <AnimatePresence>
         {isDetailsOpen && selectedOrder && <OrderDetailsDrawer order={selectedOrder} />}

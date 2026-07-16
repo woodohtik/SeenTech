@@ -406,7 +406,7 @@ export default function Customers({ tenantId }: CustomersProps) {
         </div>
 
         {/* Filter Chips */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex overflow-x-auto pb-1.5 gap-2 scrollbar-hide select-none w-full">
           {[
             { id: 'all', label: 'الكل', icon: Users },
             { id: 'measurements', label: 'بقياسات', icon: Ruler },
@@ -417,7 +417,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               key={chip.id}
               onClick={() => setFilter(chip.id as any)}
               className={cn(
-                "flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-black transition-all border-2",
+                "flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-black transition-all border-2 shrink-0 whitespace-nowrap",
                 filter === chip.id 
                   ? "bg-brand border-brand text-white shadow-lg shadow-brand/20 scale-105" 
                   : "bg-surface border-border text-content-muted hover:border-brand/30 hover:text-brand"
@@ -473,7 +473,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                   </a>
                 </div>
               </div>
-              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
+              <div className="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all md:translate-x-2 md:group-hover:translate-x-0">
                 {canEdit && (
                   <button 
                     onClick={(e) => { e.stopPropagation(); openEditModal(customer); }} 
@@ -726,22 +726,22 @@ export default function Customers({ tenantId }: CustomersProps) {
 const DetailSection = ({ title, icon: Icon, children, defaultOpen = true }: any) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   return (
-    <div className="bg-surface rounded-3xl border border-border shadow-sm overflow-hidden">
+    <div className="bg-surface rounded-2xl sm:rounded-3xl border border-border shadow-sm overflow-hidden">
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full p-5 flex items-center justify-between bg-surface-muted/50 hover:bg-surface-muted transition-colors"
+        className="w-full p-3.5 sm:p-5 flex items-center justify-between bg-surface-muted/50 hover:bg-surface-muted transition-colors"
       >
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-surface rounded-xl text-brand shadow-sm">
-            <Icon size={20} />
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="p-1.5 sm:p-2 bg-surface rounded-lg sm:rounded-xl text-brand shadow-sm">
+            <Icon size={16} className="sm:w-5 sm:h-5" />
           </div>
-          <h3 className="text-sm font-black text-content uppercase tracking-widest">{title}</h3>
+          <h3 className="text-xs sm:text-sm font-black text-content uppercase tracking-widest">{title}</h3>
         </div>
         <motion.div
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.2 }}
         >
-          <ChevronDown size={20} className="text-content-muted" />
+          <ChevronDown size={16} className="text-content-muted sm:w-5 sm:h-5" />
         </motion.div>
       </button>
       <AnimatePresence initial={false}>
@@ -752,7 +752,7 @@ const DetailSection = ({ title, icon: Icon, children, defaultOpen = true }: any)
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
           >
-            <div className="p-6 border-t border-border">
+            <div className="p-4 sm:p-6 border-t border-border">
               {children}
             </div>
           </motion.div>
@@ -779,7 +779,7 @@ const CustomerDetailsModal = ({
   visualLabels: Record<string, string>,
   visualIcons: Record<string, React.ReactNode>
 }) => (
-  <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6">
+  <div className="fixed inset-0 z-[150] flex items-center justify-center p-2 sm:p-6">
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -791,37 +791,37 @@ const CustomerDetailsModal = ({
       initial={{ scale: 0.9, opacity: 0, y: 20 }}
       animate={{ scale: 1, opacity: 1, y: 0 }}
       exit={{ scale: 0.9, opacity: 0, y: 20 }}
-      className="bg-surface w-full max-w-5xl rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh] border border-border"
+      className="bg-surface w-full max-w-5xl rounded-2xl sm:rounded-[2rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh] border border-border"
     >
-      <div className="p-6 border-b border-border flex justify-between items-center bg-brand/5">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-brand text-white rounded-2xl">
-            <UserPlus size={24} />
+      <div className="p-4 sm:p-6 border-b border-border flex justify-between items-center bg-brand/5">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="p-2.5 sm:p-3 bg-brand text-white rounded-xl sm:rounded-2xl">
+            <UserPlus size={20} className="sm:w-6 sm:h-6" />
           </div>
           <div>
-            <h2 className="text-xl font-black text-content flex items-center gap-2">
+            <h2 className="text-base sm:text-xl font-black text-content flex items-center gap-1.5 sm:gap-2">
               {customer.name}
               {customer.isB2B && (
-                 <span className="bg-brand text-white px-2 py-0.5 rounded-lg text-[10px] uppercase font-black tracking-wider">B2B</span>
+                 <span className="bg-brand text-white px-1.5 py-0.5 rounded-md text-[9px] uppercase font-black tracking-wider">B2B</span>
               )}
             </h2>
-            <p className="text-xs text-content-muted font-bold">{customer.phone}</p>
+            <p className="text-[11px] sm:text-xs text-content-muted font-bold">{customer.phone}</p>
           </div>
         </div>
-        <button onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm">
-          <X size={24} className="text-content-muted" />
+        <button onClick={onClose} className="p-1.5 sm:p-2 hover:bg-surface rounded-full transition-colors shadow-sm">
+          <X size={20} className="text-content-muted sm:w-6 sm:h-6" />
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 text-right" dir="rtl">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 text-right" dir="rtl">
         {customer.isB2B && (
            <DetailSection title="بيانات الشركات (B2B)" icon={ShoppingBag}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <div className="bg-surface p-4 rounded-2xl border border-border">
+                 <div className="bg-surface p-4 rounded-xl sm:rounded-2xl border border-border">
                     <p className="text-[10px] text-content-muted font-black uppercase tracking-wider mb-1">الشركة / المؤسسة</p>
                     <p className="text-sm font-black text-content">{customer.companyName || 'لا يوجد'}</p>
                  </div>
-                 <div className="bg-surface p-4 rounded-2xl border border-border">
+                 <div className="bg-surface p-4 rounded-xl sm:rounded-2xl border border-border">
                     <p className="text-[10px] text-content-muted font-black uppercase tracking-wider mb-1">الرقم الضريبي TRN</p>
                     <p className="text-sm font-mono font-black text-content">{customer.trn || 'لا يوجد'}</p>
                  </div>
@@ -831,7 +831,7 @@ const CustomerDetailsModal = ({
 
         {/* Measurements Section */}
         <DetailSection title="القياسات الحالية" icon={Ruler}>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             {[
               { label: 'الطول', value: customer.measurements?.length, icon: <ArrowUpDown size={14} />, color: 'bg-info/10 text-info' },
               { label: 'الكتف', value: customer.measurements?.shoulder, icon: <ArrowLeftRight size={14} />, color: 'bg-brand/10 text-brand' },
@@ -841,14 +841,14 @@ const CustomerDetailsModal = ({
               { label: 'الكم', value: customer.measurements?.sleeve, icon: <Scissors size={14} />, color: 'bg-info/10 text-info' },
               { label: 'الرقبة', value: customer.measurements?.neck, icon: <User size={14} />, color: 'bg-brand/10 text-brand' },
             ].map((m) => (
-              <div key={m.label} className="bg-surface p-4 rounded-2xl border border-border hover:border-brand/20 transition-all group shadow-sm hover:shadow-md">
-                <div className="flex items-center gap-2 mb-2">
+              <div key={m.label} className="bg-surface p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-border hover:border-brand/20 transition-all group shadow-sm hover:shadow-md">
+                <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
                   <div className={cn("p-1.5 rounded-lg", m.color)}>
                     {m.icon}
                   </div>
                   <p className="text-[10px] text-content-muted font-black uppercase tracking-wider">{m.label}</p>
                 </div>
-                <p className="text-xl font-black text-content">
+                <p className="text-base sm:text-xl font-black text-content">
                   {m.value || '-'} 
                   <span className="text-[10px] text-content-muted mr-1 font-bold">سم</span>
                 </p>
@@ -859,7 +859,7 @@ const CustomerDetailsModal = ({
 
         {/* Visual Details Section */}
         <DetailSection title="مخطط التفصيل البصري" icon={Zap}>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
             {[
               { label: 'الياقة', value: customer.measurements?.collarType, desc: 'نوع القبة' },
               { label: 'الكبك', value: customer.measurements?.cuffType, desc: 'نهاية الكم' },
@@ -867,15 +867,15 @@ const CustomerDetailsModal = ({
               { label: 'الصدر', value: customer.measurements?.chestStyle, desc: 'شكل الصدر' },
               { label: 'الكتف', value: customer.measurements?.shoulderStyle, desc: 'قصة الكتف' },
             ].map((v) => (
-              <div key={v.label} className="bg-surface p-4 rounded-3xl border border-border flex flex-col items-center text-center group hover:border-brand/40 transition-all shadow-sm hover:shadow-md">
-                <div className="w-16 h-16 bg-brand/5 text-brand rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-inner">
-                  {v.value ? visualIcons[v.value] : <Info size={24} className="opacity-20" />}
+              <div key={v.label} className="bg-surface p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-border flex flex-col items-center text-center group hover:border-brand/40 transition-all shadow-sm hover:shadow-md">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-brand/5 text-brand rounded-xl sm:rounded-2xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform shadow-inner">
+                  {v.value ? visualIcons[v.value] : <Info size={20} className="opacity-20 sm:w-6 sm:h-6" />}
                 </div>
                 <p className="text-[10px] text-brand/60 font-black uppercase tracking-widest mb-1">{v.label}</p>
-                <p className="text-sm font-black text-content truncate w-full">
+                <p className="text-xs sm:text-sm font-black text-content truncate w-full">
                   {v.value ? visualLabels[v.value] : 'غير محدد'}
                 </p>
-                <p className="text-[9px] text-content-muted font-bold mt-0.5">{v.desc}</p>
+                <p className="text-[8px] sm:text-[9px] text-content-muted font-bold mt-0.5">{v.desc}</p>
               </div>
             ))}
           </div>
@@ -883,30 +883,31 @@ const CustomerDetailsModal = ({
 
         {/* Garment Blueprint Section */}
         <DetailSection title="المخطط الهندسي للثوب" icon={Scissors}>
-          <div className="bg-surface-muted/30 rounded-[2.5rem] p-4 border border-border pointer-events-none">
+          <div className="bg-surface-muted/30 rounded-2xl sm:rounded-[2.5rem] p-2 sm:p-4 border border-border pointer-events-none overflow-x-auto scrollbar-hide">
             <ThobeMeasurementSelector 
               values={(customer.measurements as Measurements) || {}}
               onChange={() => {}} // Read-only in details view
+              readOnly={true}
             />
           </div>
         </DetailSection>
 
         {/* Style Preferences Section */}
         <DetailSection title="تفضيلات التصميم" icon={ShoppingBag} defaultOpen={false}>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-surface-muted p-4 rounded-2xl border border-border">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="bg-surface-muted p-4 rounded-xl sm:rounded-2xl border border-border">
               <span className="text-[10px] text-content-muted font-bold block mb-1">شكل الرقبة</span>
               <span className="text-sm font-bold text-content">
                 {customer.styles?.neckShape === 'round' ? 'دائري' : customer.styles?.neckShape === 'v-neck' ? 'سبعة' : customer.styles?.neckShape === 'square' ? 'مربع' : '-'}
               </span>
             </div>
-            <div className="bg-surface-muted p-4 rounded-2xl border border-border">
+            <div className="bg-surface-muted p-4 rounded-xl sm:rounded-2xl border border-border">
               <span className="text-[10px] text-content-muted font-bold block mb-1">نوع الكم</span>
               <span className="text-sm font-bold text-content">
                 {customer.styles?.sleeveStyle === 'normal' ? 'عادي' : customer.styles?.sleeveStyle === 'cuff' ? 'كبك' : customer.styles?.sleeveStyle === 'wide' ? 'واسع' : '-'}
               </span>
             </div>
-            <div className="bg-surface-muted p-4 rounded-2xl border border-border">
+            <div className="bg-surface-muted p-4 rounded-xl sm:rounded-2xl border border-border">
               <span className="text-[10px] text-content-muted font-bold block mb-1">الجيب</span>
               <span className="text-sm font-bold text-content">
                 {customer.styles?.pocketType === 'none' ? 'بدون' : customer.styles?.pocketType === 'single' ? 'واحد' : customer.styles?.pocketType === 'double' ? 'اثنين' : '-'}
@@ -920,20 +921,20 @@ const CustomerDetailsModal = ({
           <div className="space-y-3">
             {orders.length > 0 ? (
               orders.map((order) => (
-                <div key={order.id} className="bg-surface p-4 rounded-2xl border border-border shadow-sm flex items-center justify-between hover:border-brand/20 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-surface-muted rounded-xl text-content-muted">
-                      <ShoppingBag size={18} />
+                <div key={order.id} className="bg-surface p-4 rounded-xl sm:rounded-2xl border border-border shadow-sm flex items-center justify-between hover:border-brand/20 transition-colors">
+                  <div className="flex items-center gap-2.5 sm:gap-3">
+                    <div className="p-2 bg-surface-muted rounded-xl text-content-muted animate-pulse">
+                      <ShoppingBag size={16} className="sm:w-[18px] sm:h-[18px]" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-content">#{order.id.slice(-6).toUpperCase()}</p>
-                      <p className="text-[10px] text-content-muted">{new Date(order.orderDate).toLocaleDateString('ar-SA')}</p>
+                      <p className="text-xs sm:text-sm font-bold text-content">#{order.id.slice(-6).toUpperCase()}</p>
+                      <p className="text-[9px] sm:text-[10px] text-content-muted">{new Date(order.orderDate).toLocaleDateString('ar-SA')}</p>
                     </div>
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-black text-brand"><PriceDisplay amount={order.totalAmount} /></p>
+                    <p className="text-xs sm:text-sm font-black text-brand"><PriceDisplay amount={order.totalAmount} /></p>
                     <span className={cn(
-                      "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                      "text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full",
                       order.status === 'delivered' ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
                     )}>
                       {order.status === 'delivered' ? 'تم التسليم' : 'قيد التنفيذ'}
@@ -942,7 +943,7 @@ const CustomerDetailsModal = ({
                 </div>
               ))
             ) : (
-              <div className="text-center py-8 bg-surface-muted rounded-2xl border-2 border-dashed border-border text-content-muted">
+              <div className="text-center py-8 bg-surface-muted rounded-xl sm:rounded-2xl border-2 border-dashed border-border text-content-muted">
                 <p className="text-sm font-bold">لا توجد طلبات سابقة</p>
               </div>
             )}
@@ -951,7 +952,7 @@ const CustomerDetailsModal = ({
 
         {customer.notes && (
           <DetailSection title="ملاحظات" icon={Info} defaultOpen={false}>
-            <p className="text-sm text-content-muted leading-relaxed bg-warning/5 p-4 rounded-2xl border border-warning/10">
+            <p className="text-sm text-content-muted leading-relaxed bg-warning/5 p-4 rounded-xl sm:rounded-2xl border border-warning/10">
               {customer.notes}
             </p>
           </DetailSection>
@@ -959,19 +960,19 @@ const CustomerDetailsModal = ({
       </div>
 
       {/* Footer (Fixed) */}
-      <div className="sticky bottom-0 z-10 shrink-0 p-4 sm:p-6 border-t border-[var(--border)] bg-[var(--surface)] flex gap-3 text-sm sm:text-base">
+      <div className="sticky bottom-0 z-10 shrink-0 p-4 sm:p-6 border-t border-[var(--border)] bg-[var(--surface)] flex gap-2.5 sm:gap-3 text-xs sm:text-base">
         <button 
           onClick={onEdit}
-          className="flex-1 flex items-center justify-center gap-2 bg-surface text-content py-3 rounded-xl font-bold border border-border hover:bg-surface-muted transition-all"
+          className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 bg-surface text-content py-3 rounded-xl font-bold border border-border hover:bg-surface-muted transition-all"
         >
-          <Edit2 size={18} />
+          <Edit2 size={16} className="sm:w-[18px] sm:h-[18px]" />
           <span>تعديل البيانات</span>
         </button>
         <button 
           onClick={onNewOrder}
-          className="flex-1 flex items-center justify-center gap-2 bg-brand text-white py-3 rounded-xl font-bold hover:bg-brand/90 transition-all shadow-lg shadow-brand/10"
+          className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 bg-brand text-white py-3 rounded-xl font-bold hover:bg-brand/90 transition-all shadow-lg shadow-brand/10"
         >
-          <Plus size={18} />
+          <Plus size={16} className="sm:w-[18px] sm:h-[18px]" />
           <span>طلب جديد</span>
         </button>
       </div>

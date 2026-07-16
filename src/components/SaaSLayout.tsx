@@ -28,6 +28,8 @@ import { cn } from '../lib/utils';
 import { logSaaSSecurityEvent } from '../services/saasSecurityService';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase/client';
+import { useTranslation } from 'react-i18next';
+import UserPreferencesMenu from './UserPreferencesMenu';
 
 import { AdminIconInput } from './ui/AdminIconInput';
 
@@ -56,7 +58,23 @@ const SAAS_MENU_ITEMS = [
   { id: 'system', label: 'إعدادات النظام', icon: Settings, path: '/admin/system', roles: ['super_admin'] },
 ];
 
+const getMenuItemLabel = (id: string, defaultLabel: string, t: any) => {
+  switch (id) {
+    case 'overview': return t('saas.menu_overview', defaultLabel);
+    case 'tenants': return t('saas.menu_tenants', defaultLabel);
+    case 'reports': return t('saas.menu_reports', defaultLabel);
+    case 'withdrawals': return t('saas.menu_withdrawals', defaultLabel);
+    case 'audit': return t('saas.menu_audit', defaultLabel);
+    case 'team': return t('saas.menu_team', defaultLabel);
+    case 'system': return t('saas.menu_system', defaultLabel);
+    default: return defaultLabel;
+  }
+};
+
 export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+
   const navigate = useNavigate();
   const location = useLocation();
   const { impersonationTenantId, setImpersonationTenantId } = useAuth();
@@ -268,15 +286,15 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
 
   const getRoleLabel = (role: string | null) => {
     switch (role) {
-      case 'super_admin': return 'المدير العام';
-      case 'support_tech': return 'فريق الدعم الفني';
-      case 'billing_admin': return 'فريق المبيعات والمحاسبة';
-      default: return 'موظف SaaS';
+      case 'super_admin': return t('saas.role_super_admin', 'المدير العام');
+      case 'support_tech': return t('saas.role_support_tech', 'فريق الدعم الفني');
+      case 'billing_admin': return t('saas.role_billing_admin', 'فريق المبيعات والمحاسبة');
+      default: return 'SaaS Staff';
     }
   };
 
   return (
-    <div className="min-h-screen bg-background flex font-sans" dir="rtl">
+    <div className="min-h-screen bg-background flex font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Impersonation Banner */}
       <AnimatePresence>
         {impersonationTenantId && (
@@ -288,15 +306,15 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
           >
             <div className="flex items-center gap-2 font-black text-sm">
               <AlertCircle size={18} />
-              <span>أنت الآن في وضع الدعم الفني (Impersonation Mode)</span>
+              <span>{t('common.support_mode_desc', 'أنت الآن في وضع الدعم الفني (Impersonation Mode)')}</span>
             </div>
             <div className="h-4 w-px bg-white/30 mx-2" />
-            <span className="text-xs font-bold">المشترك الحالي: {impersonatedTenantName || impersonationTenantId}</span>
+            <span className="text-xs font-bold">{t('common.current_subscriber', 'المشترك الحالي')}: {impersonatedTenantName || impersonationTenantId}</span>
             <button 
               onClick={stopImpersonation}
               className="bg-white text-warning px-4 py-1 rounded-full text-xs font-black hover:bg-white/90 transition-all ml-4"
             >
-              إنهاء الجلسة والعودة للوحة SaaS
+              {t('common.end_impersonation', 'إنهاء الجلسة والعودة للوحة SaaS')}
             </button>
           </motion.div>
         )}
@@ -320,12 +338,12 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
         initial={false}
         animate={{ 
           width: (isMobile || isSidebarOpen) ? 280 : 80,
-          x: (isMobile && !isSidebarOpen) ? 280 : 0
+          x: (isMobile && !isSidebarOpen) ? (isRtl ? 280 : -280) : 0
         }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
         className={cn(
-          "bg-surface border-l border-border shadow-2xl shadow-brand/5 relative z-40 flex flex-col h-screen",
-          isMobile && "fixed inset-y-0 right-0 z-40"
+          "bg-surface border-l rtl:border-l ltr:border-r border-border shadow-2xl shadow-brand/5 relative z-40 flex flex-col h-screen",
+          isMobile && cn("fixed inset-y-0 z-40", isRtl ? "right-0" : "left-0")
         )}
       >
         {/* Sidebar Header */}
@@ -362,9 +380,9 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                 )}
               >
                 <item.icon size={24} className={cn("shrink-0", isActive ? "text-white" : "group-hover:scale-110 transition-transform")} />
-                {(isSidebarOpen || isMobile) && <span className="font-bold text-sm truncate">{item.label}</span>}
+                {(isSidebarOpen || isMobile) && <span className="font-bold text-sm truncate">{getMenuItemLabel(item.id, item.label, t)}</span>}
                 {(!isSidebarOpen && !isMobile) && isActive && (
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-brand rounded-l-full" />
+                  <div className="absolute right-0 ltr:right-auto ltr:left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-brand rounded-l-full ltr:rounded-r-full" />
                 )}
               </Link>
             );
@@ -381,7 +399,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
             )}
           >
             <LogOut size={24} className="shrink-0" />
-            {(isSidebarOpen || isMobile) && <span>تسجيل الخروج</span>}
+            {(isSidebarOpen || isMobile) && <span>{t('saas.logout', 'تسجيل الخروج')}</span>}
           </button>
         </div>
       </motion.aside>
@@ -393,13 +411,13 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 hover:bg-surface-muted rounded-xl transition-all text-content-muted"
+              className="p-2 hover:bg-surface-muted rounded-xl transition-all text-content-muted animate-none"
             >
-              <ChevronRight size={24} className={cn("transition-transform", !isSidebarOpen && "rotate-180")} />
+              <ChevronRight size={24} className={cn("transition-transform", (!isSidebarOpen ? isRtl : !isRtl) && "rotate-180")} />
             </button>
             <div className="h-8 w-px bg-border mx-2" />
             <div className="flex flex-col">
-              <span className="text-sm font-black text-content">أهلاً، {auth.currentUser?.displayName || 'مهندس الدعم'}</span>
+              <span className="text-sm font-black text-content">{t('common.welcome_user', 'أهلاً')}، {auth.currentUser?.displayName || t('common.support_engineer', 'مهندس الدعم')}</span>
               <span className="text-[10px] font-bold text-brand">{getRoleLabel(userRole)}</span>
             </div>
           </div>
@@ -408,11 +426,15 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
             <div className="hidden md:block w-64">
               <AdminIconInput 
                 type="text"
-                placeholder="بحث سريع..."
+                placeholder={t('saas.quick_search', 'بحث سريع...')}
                 startIcon={Search}
                 className="rounded-2xl"
               />
             </div>
+
+            {/* Language Preferences */}
+            <UserPreferencesMenu />
+
             <div className="relative" ref={notificationsRef}>
               <button 
                 onClick={() => setShowNotifications(!showNotifications)}
@@ -433,16 +455,19 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute left-0 mt-2 w-96 bg-surface border border-border rounded-3xl shadow-2xl z-50 overflow-hidden"
+                    className={cn(
+                      "absolute mt-2 w-96 bg-surface border border-border rounded-3xl shadow-2xl z-50 overflow-hidden",
+                      isRtl ? "left-0" : "right-0"
+                    )}
                   >
                     <div className="p-4 border-b border-border flex items-center justify-between bg-surface-muted/30">
-                      <h3 className="font-black text-content">التنبيهات ({unreadCount})</h3>
+                      <h3 className="font-black text-content">{t('saas.notifications', 'التنبيهات')} ({unreadCount})</h3>
                       {unreadCount > 0 && (
                         <button 
                           onClick={markAllAsRead}
                           className="text-xs text-brand font-bold hover:underline"
                         >
-                          تحديد الكل كمقروء
+                          {t('saas.mark_all_read', 'تحديد الكل كمقروء')}
                         </button>
                       )}
                     </div>
@@ -451,7 +476,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                       {notifications.length === 0 ? (
                         <div className="p-8 text-center text-content-muted">
                           <Bell size={32} className="mx-auto mb-3 opacity-20" />
-                          <p className="font-bold">لا توجد تنبيهات حالياً</p>
+                          <p className="font-bold">{t('saas.no_notifications', 'لا توجد تنبيهات حالياً')}</p>
                         </div>
                       ) : (
                         <div className="divide-y divide-border">
@@ -498,7 +523,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                     </div>
                     <div className="p-3 border-t border-border bg-surface-muted/30 text-center">
                       <Link to="/admin/dashboard" onClick={() => setShowNotifications(false)} className="text-xs font-black text-content hover:text-brand transition-colors">
-                        عرض لوحة التحكم
+                        {t('saas.view_dashboard', 'عرض لوحة التحكم')}
                       </Link>
                     </div>
                   </motion.div>

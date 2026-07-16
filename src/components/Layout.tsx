@@ -275,7 +275,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
             <div className="flex items-center justify-center gap-3 w-full">
               <img src={tenantLogo} alt="Logo" className={cn(
                 "rounded-xl object-cover shrink-0 shadow-sm transition-all duration-300",
-                (isCollapsed && !isMobileMenuOpen) ? "w-10 h-10" : "w-[150px] h-[80px]"
+                (isCollapsed && !isMobileMenuOpen) ? "w-10 h-10" : "w-[120px] h-[80px]"
               )} />
               {(!isCollapsed || isMobileMenuOpen) && <h1 className="text-xl font-bold text-content truncate hidden">{tenantName}</h1>}
             </div>
@@ -286,7 +286,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
                 alt="Seen Logo" 
                 className={cn(
                   "object-contain shrink-0 transition-all duration-300",
-                  (isCollapsed && !isMobileMenuOpen) ? "h-5 max-w-[24px] w-auto" : "w-[150px] h-[80px]"
+                  (isCollapsed && !isMobileMenuOpen) ? "h-5 max-w-[24px] w-auto" : "w-[120px] h-[80px]"
                 )} 
               />
             </div>
@@ -352,22 +352,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
           ))}
         </nav>
 
-        <div className="p-4 border-t border-border mt-auto">
-          <div className="lg:hidden mb-4">
-            <UserPreferencesMenu
-              currentStaff={currentStaff}
-              role={effectiveRole || null}
-              onLock={() => {
-                if (onLock) onLock();
-              }}
-              onLogout={handleLogout}
-              layoutMode={layoutMode}
-              isCollapsed={false}
-              dropdownPosition="top"
-              onToggleLayout={toggleLayoutMode}
-            />
-          </div>
-
+        <div className="p-4 border-t border-border mt-auto hidden lg:block">
         </div>
       </aside>
       )}
@@ -376,28 +361,61 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
       <div className="flex-1 flex flex-col overflow-hidden relative">
         {/* Mobile Header (Fixed Top Bar) */}
         {layoutMode === 'sidebar' && (
-          <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-[#1e1e2d] flex items-center justify-between px-4 shrink-0 z-40 shadow-lg" dir="ltr">
+          <header className="lg:hidden fixed top-0 left-0 right-0 h-20 bg-surface/90 backdrop-blur-xl border-b border-border/60 flex items-center justify-between px-4 sm:px-6 shrink-0 z-40 shadow-[0_8px_30px_rgb(0,0,0,0.02)]" dir={isRtl ? 'rtl' : 'ltr'}>
             <div className="flex items-center gap-3">
               <button 
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="p-2 text-white hover:bg-white/10 rounded-xl transition-all active:scale-95"
+                className="p-2.5 bg-surface-muted hover:bg-border/60 text-content rounded-2xl transition-all active:scale-95 border border-border/40 flex items-center justify-center shadow-sm cursor-pointer"
               >
-                <Menu size={24} />
+                <Menu size={22} />
               </button>
-              <div className="flex flex-col">
-                <span className="font-black text-white truncate max-w-[150px] text-sm leading-tight">{tenantName}</span>
-                <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest leading-none mt-0.5">POS System</span>
+              
+              <div className="flex items-center gap-2.5">
+                {tenantLogo ? (
+                  <img src={tenantLogo} alt="Logo" className="w-10 h-10 rounded-2xl object-cover border border-border/60 shadow-sm shrink-0" />
+                ) : (
+                  <div className="w-10 h-10 rounded-2xl bg-brand/10 text-brand flex items-center justify-center font-black text-sm border border-brand/20 shadow-sm shrink-0">
+                    {tenantName?.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="flex flex-col text-right rtl:text-right ltr:text-left">
+                  <span className="font-black text-content truncate max-w-[150px] text-sm leading-tight">{tenantName}</span>
+                  <div className="flex items-center gap-1.5 mt-0.5 justify-start rtl:justify-start ltr:justify-start">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
+                    <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider leading-none">
+                      {t('common.active', 'نشط')}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
             
             <div className="flex items-center gap-3">
-              <div className="flex flex-col items-end mr-1">
-                <span className="text-[10px] font-black text-white/90 leading-none">{currentStaff?.name || 'User'}</span>
-                <span className="text-[8px] font-bold text-white/50 uppercase tracking-tighter">Online</span>
+              <div className={cn("hidden sm:flex flex-col", isRtl ? "items-start ml-2" : "items-end mr-2")}>
+                <span className="text-xs font-black text-content leading-none">{currentStaff?.name || 'User'}</span>
+                <span className="text-[10px] font-bold text-content-muted uppercase tracking-tighter mt-1">
+                  {currentStaff?.role === 'owner' 
+                    ? t('common.roles.owner', 'مالك') 
+                    : currentStaff?.role === 'cashier' 
+                      ? t('common.roles.cashier', 'كاشير') 
+                      : t('common.roles.tailor', 'خياط')}
+                </span>
               </div>
-              <div className="w-10 h-10 rounded-full bg-white/11 border border-white/10 flex items-center justify-center text-xs font-black text-white shadow-sm overflow-hidden ring-2 ring-brand/20">
-                {currentStaff?.name?.charAt(0).toUpperCase() || 'U'}
-              </div>
+              
+              <UserPreferencesMenu
+                currentStaff={currentStaff}
+                role={effectiveRole || null}
+                onLock={() => {
+                  if (onLock) onLock();
+                }}
+                onLogout={handleLogout}
+                layoutMode={layoutMode}
+                isCollapsed={true}
+                dropdownPosition="bottom"
+                align={isRtl ? 'left' : 'right'}
+                onToggleLayout={toggleLayoutMode}
+                className="shadow-sm"
+              />
             </div>
           </header>
         )}
@@ -443,7 +461,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
 
         <main className={cn(
           "flex-1 overflow-x-hidden flex flex-col",
-          "mt-16 lg:mt-0", // Add margin for fixed mobile header
+          layoutMode === 'sidebar' ? "mt-20 lg:mt-0" : "", // Add margin for fixed mobile header only in sidebar mode
           layoutMode === 'grid' && location.pathname === '/' ? "p-4 md:p-8" : "p-4 md:p-8"
         )}>
           {layoutMode === 'grid' && location.pathname === '/' ? (

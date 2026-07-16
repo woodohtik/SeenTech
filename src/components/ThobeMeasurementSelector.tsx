@@ -8,6 +8,7 @@ import Branding from './Branding';
 interface ThobeMeasurementSelectorProps {
   values: Measurements;
   onChange: (values: Measurements) => void;
+  readOnly?: boolean;
 }
 
 type ThobePart = 'neck' | 'chest' | 'waist' | 'hips' | 'shoulder' | 'sleeve' | 'length' | 'bottomWidth';
@@ -34,18 +35,20 @@ const PART_HINTS: Record<ThobePart, string> = {
   bottomWidth: 'عرض الثوب من الأسفل.'
 };
 
-export default function ThobeMeasurementSelector({ values, onChange }: ThobeMeasurementSelectorProps) {
+export default function ThobeMeasurementSelector({ values, onChange, readOnly = false }: ThobeMeasurementSelectorProps) {
   const [activePart, setActivePart] = useState<ThobePart | null>(null);
   const [isInstructionMode, setIsInstructionMode] = useState(false);
   const [activeHint, setActiveHint] = useState<ThobePart | null>(null);
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const handlePartClick = (part: ThobePart) => {
+    if (readOnly) return;
     setActivePart(part);
     inputRefs.current[part]?.focus();
   };
 
   const handleInputChange = (part: ThobePart, value: string) => {
+    if (readOnly) return;
     const numValue = Math.max(0, parseFloat(value) || 0);
     onChange({ ...values, [part]: numValue });
   };
@@ -54,7 +57,10 @@ export default function ThobeMeasurementSelector({ values, onChange }: ThobeMeas
   const dimColor = "rgba(0, 0, 0, 0.1)";
 
   return (
-    <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8 bg-surface p-6 sm:p-8 rounded-[2rem] border border-border shadow-xl shadow-brand/5 w-full">
+    <div className={cn(
+      "flex flex-col items-center gap-8 bg-surface p-4 sm:p-8 rounded-[2rem] border border-border shadow-xl shadow-brand/5 w-full",
+      !readOnly ? "lg:flex-row lg:items-start" : "max-w-md mx-auto"
+    )}>
       {/* Interactive SVG Section */}
       <div className="relative w-full max-w-[400px] mx-auto flex flex-col items-center select-none touch-none">
         <svg 
@@ -319,88 +325,90 @@ export default function ThobeMeasurementSelector({ values, onChange }: ThobeMeas
       </div>
 
       {/* Input Form Section */}
-      <div className="w-full lg:w-[350px] space-y-6">
-        <div className="pb-4 border-b border-border flex items-center justify-between gap-2">
-          <div>
-            <h2 className="text-xl font-black text-content">مُحدد المقاسات البصري</h2>
-            <p className="text-sm text-content-muted font-bold">أدخل المقاسات بدقة للمراجعة الفورية</p>
-          </div>
-          <button 
-            onClick={() => setIsInstructionMode(!isInstructionMode)}
-            title="وضع التعليمات"
-            className={cn("p-2.5 rounded-xl transition-colors shrink-0", isInstructionMode ? "bg-amber-100 text-amber-600" : "bg-surface-muted text-content-muted hover:bg-border")}
-          >
-            <Lightbulb size={24} />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4">
-          {(Object.keys(PART_LABELS) as ThobePart[]).map((part) => (
-            <div 
-              key={part}
-              className={cn(
-                "p-4 rounded-2xl border-2 transition-all duration-300",
-                activePart === part 
-                  ? "border-brand bg-brand/5 shadow-lg shadow-brand/5" 
-                  : "border-border bg-surface hover:border-brand/30"
-              )}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-[10px] font-black text-content-muted uppercase tracking-widest">
-                  {PART_LABELS[part]}
-                </label>
-                {isInstructionMode && (
-                  <button 
-                    onClick={() => setActiveHint(activeHint === part ? null : part)}
-                    className={cn("p-1.5 rounded-full transition-colors", activeHint === part ? "text-amber-600 bg-amber-100" : "text-amber-500 hover:bg-amber-50")}
-                  >
-                    <Lightbulb size={14} />
-                  </button>
-                )}
-              </div>
-              
-              <AnimatePresence>
-                {isInstructionMode && activeHint === part && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="overflow-hidden mb-3"
-                  >
-                    <p className="text-xs text-amber-700 bg-amber-50/80 p-2.5 rounded-xl font-bold leading-relaxed border border-amber-100/50">
-                      {PART_HINTS[part]}
-                    </p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <div className="flex items-center gap-3">
-                <input
-                  ref={(el) => { inputRefs.current[part] = el; }}
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={(values as any)[part] || ''}
-                  onChange={(e) => handleInputChange(part, e.target.value)}
-                  onFocus={() => setActivePart(part)}
-                  onBlur={() => setActivePart(null)}
-                  placeholder="0.0"
-                  className="w-full bg-transparent border-none p-0 text-3xl font-black text-content focus:ring-0 placeholder:text-content-muted/30"
-                />
-                <span className="text-sm font-bold text-content-muted">سم</span>
-              </div>
+      {!readOnly && (
+        <div className="w-full lg:w-[350px] space-y-6">
+          <div className="pb-4 border-b border-border flex items-center justify-between gap-2">
+            <div>
+              <h2 className="text-xl font-black text-content">مُحدد المقاسات البصري</h2>
+              <p className="text-sm text-content-muted font-bold">أدخل المقاسات بدقة للمراجعة الفورية</p>
             </div>
-          ))}
-        </div>
+            <button 
+              onClick={() => setIsInstructionMode(!isInstructionMode)}
+              title="وضع التعليمات"
+              className={cn("p-2.5 rounded-xl transition-colors shrink-0", isInstructionMode ? "bg-amber-100 text-amber-600" : "bg-surface-muted text-content-muted hover:bg-border")}
+            >
+              <Lightbulb size={24} />
+            </button>
+          </div>
 
-        <div className="pt-4">
-          <div className="p-4 bg-brand/10 rounded-2xl border border-brand/20">
-            <p className="text-xs font-bold text-brand leading-relaxed">
-              * يتم حفظ هذه المقاسات تلقائياً ككائن JSON مرتبط ببيانات العميل والطلب لضمان دقة التفصيل.
-            </p>
+          <div className="grid grid-cols-1 gap-4">
+            {(Object.keys(PART_LABELS) as ThobePart[]).map((part) => (
+              <div 
+                key={part}
+                className={cn(
+                  "p-4 rounded-2xl border-2 transition-all duration-300",
+                  activePart === part 
+                    ? "border-brand bg-brand/5 shadow-lg shadow-brand/5" 
+                    : "border-border bg-surface hover:border-brand/30"
+                )}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-[10px] font-black text-content-muted uppercase tracking-widest">
+                    {PART_LABELS[part]}
+                  </label>
+                  {isInstructionMode && (
+                    <button 
+                      onClick={() => setActiveHint(activeHint === part ? null : part)}
+                      className={cn("p-1.5 rounded-full transition-colors", activeHint === part ? "text-amber-600 bg-amber-100" : "text-amber-500 hover:bg-amber-50")}
+                    >
+                      <Lightbulb size={14} />
+                    </button>
+                  )}
+                </div>
+                
+                <AnimatePresence>
+                  {isInstructionMode && activeHint === part && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden mb-3"
+                    >
+                      <p className="text-xs text-amber-700 bg-amber-50/80 p-2.5 rounded-xl font-bold leading-relaxed border border-amber-100/50">
+                        {PART_HINTS[part]}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className="flex items-center gap-3">
+                  <input
+                    ref={(el) => { inputRefs.current[part] = el; }}
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={(values as any)[part] || ''}
+                    onChange={(e) => handleInputChange(part, e.target.value)}
+                    onFocus={() => setActivePart(part)}
+                    onBlur={() => setActivePart(null)}
+                    placeholder="0.0"
+                    className="w-full bg-transparent border-none p-0 text-3xl font-black text-content focus:ring-0 placeholder:text-content-muted/30"
+                  />
+                  <span className="text-sm font-bold text-content-muted">سم</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="pt-4">
+            <div className="p-4 bg-brand/10 rounded-2xl border border-brand/20">
+              <p className="text-xs font-bold text-brand leading-relaxed">
+                * يتم حفظ هذه المقاسات تلقائياً ككائن JSON مرتبط ببيانات العميل والطلب لضمان دقة التفصيل.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

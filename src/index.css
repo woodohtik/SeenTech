@@ -462,3 +462,9 @@ html, body {
 @media (pointer: coarse) {
   button, a[role="button"], [role="tab"] { min-height: 40px; }
 }
+
+/* 6) دعم وضع الكمبيوتر على الجوال والتاب (Desktop View Support) */
+.desktop-mode-active, .desktop-mode-active body {
+  overflow-x: auto !important;
+  max-width: none !important;
+}

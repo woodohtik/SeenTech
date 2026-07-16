@@ -405,7 +405,7 @@ export default function PaymentVoucherModal({
 
             {/* footer signature line */}
             <div className="text-center text-[9px] text-slate-400 font-bold mt-8 border-t border-slate-100 pt-3">
-              نظام "سين الذكي" لإدارة مبيعات ومشتريات الخياطة والطلب
+              نظام "سين" لإدارة مبيعات ومشتريات الخياطة والطلب
             </div>
 
           </div>

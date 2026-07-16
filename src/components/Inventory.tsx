@@ -508,8 +508,8 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
         title={t('inventory.title')} 
         subtitle={t('inventory.subtitle')}
       >
-        <div className="flex gap-2 w-full md:w-auto">
-          <div className="flex bg-surface rounded-xl border border-border p-1">
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto items-stretch sm:items-center">
+          <div className="flex bg-surface rounded-xl border border-border p-1 overflow-x-auto scrollbar-hide shrink-0">
             {[
               { id: 'inventory', label: t('inventory.title'), icon: Package },
               { id: 'suppliers', label: t('suppliers.title'), icon: Truck },
@@ -518,73 +518,75 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                   activeTab === tab.id 
                   ? 'bg-brand text-white shadow-sm' 
                   : 'text-content-muted hover:text-brand'
                 }`}
               >
-                <tab.icon size={18} />
-                <span className="hidden sm:inline">{tab.label}</span>
+                <tab.icon size={16} className="sm:w-[18px] sm:h-[18px]" />
+                <span>{tab.label}</span>
               </button>
             ))}
           </div>
-          <button 
-            onClick={handleExport}
-            className="p-2 bg-success/10 text-success rounded-xl hover:bg-success/20 transition-colors border border-success/10"
-            title={t('common.export')}
-          >
-            <FileSpreadsheet size={20} />
-          </button>
-          {canCreate && (
+          <div className="flex gap-2 w-full sm:w-auto">
             <button 
-              onClick={() => {
-                if (activeTab === 'suppliers') {
-                  setEditingSupplier(null);
-                  setIsSupplierModalOpen(true);
-                } else {
-                  setEditingItem(null);
-                  setIsModalOpen(true);
-                }
-              }}
-              className="bg-brand text-white px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:bg-brand/90 transition-colors shadow-lg shadow-brand/10"
+              onClick={handleExport}
+              className="flex-1 sm:flex-none flex items-center justify-center p-2.5 bg-success/10 text-success rounded-xl hover:bg-success/20 transition-colors border border-success/10"
+              title={t('common.export')}
             >
-              <Plus size={20} />
-              <span>{activeTab === 'suppliers' ? t('suppliers.add_supplier') : t('inventory.add_item')}</span>
+              <FileSpreadsheet size={18} className="sm:w-5 sm:h-5" />
             </button>
-          )}
+            {canCreate && (
+              <button 
+                onClick={() => {
+                  if (activeTab === 'suppliers') {
+                    setEditingSupplier(null);
+                    setIsSupplierModalOpen(true);
+                  } else {
+                    setEditingItem(null);
+                    setIsModalOpen(true);
+                  }
+                }}
+                className="flex-[3] sm:flex-none bg-brand text-white px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-brand/90 transition-colors shadow-lg shadow-brand/10 text-xs sm:text-sm font-bold"
+              >
+                <Plus size={16} className="sm:w-[18px] sm:h-[18px]" />
+                <span>{activeTab === 'suppliers' ? t('suppliers.add_supplier') : t('inventory.add_item')}</span>
+              </button>
+            )}
+          </div>
         </div>
       </Header>
 
       {activeTab === 'inventory' && (
         <>
           {/* Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="bg-surface p-4 rounded-2xl shadow-sm border border-border flex items-center gap-4">
-              <div className="p-3 bg-info/10 text-info rounded-xl">
-                <Package size={24} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="bg-surface p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-sm border border-border flex items-center gap-3.5 sm:gap-4">
+              <div className="p-2.5 sm:p-3 bg-info/10 text-info rounded-lg sm:rounded-xl">
+                <Package size={20} className="sm:w-6 sm:h-6" />
               </div>
               <div>
-                <p className="text-sm text-content-muted">{t('inventory.total_items')}</p>
-                <p className="text-xl font-bold text-content">{items.length.toLocaleString('en-US')}</p>
+                <p className="text-xs text-content-muted">{t('inventory.total_items')}</p>
+                <p className="text-base sm:text-xl font-bold text-content">{items.length.toLocaleString('en-US')}</p>
               </div>
             </div>
-            <div className="bg-surface p-4 rounded-2xl shadow-sm border border-border flex items-center gap-4">
-              <div className="p-3 bg-warning/10 text-warning rounded-xl">
-                <AlertTriangle size={24} />
+            <div className="bg-surface p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-sm border border-border flex items-center gap-3.5 sm:gap-4">
+              <div className="p-2.5 sm:p-3 bg-warning/10 text-warning rounded-lg sm:rounded-xl">
+                <AlertTriangle size={20} className="sm:w-6 sm:h-6" />
               </div>
               <div>
-                <p className="text-sm text-content-muted">{t('inventory.low_stock_items')}</p>
-                <p className="text-xl font-bold text-warning">{lowStockItems.length.toLocaleString('en-US')}</p>
+                <p className="text-xs text-content-muted">{t('inventory.low_stock_items')}</p>
+                <p className="text-base sm:text-xl font-bold text-warning">{lowStockItems.length.toLocaleString('en-US')}</p>
               </div>
             </div>
-            <div className="bg-surface p-4 rounded-2xl shadow-sm border border-border flex items-center gap-4 sm:col-span-2 lg:col-span-1">
-              <div className="p-3 bg-success/10 text-success rounded-xl">
-                <ArrowUpRight size={24} />
+            <div className="bg-surface p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-sm border border-border flex items-center gap-3.5 sm:gap-4 sm:col-span-2 lg:col-span-1">
+              <div className="p-2.5 sm:p-3 bg-success/10 text-success rounded-lg sm:rounded-xl">
+                <ArrowUpRight size={20} className="sm:w-6 sm:h-6" />
               </div>
               <div>
-                <p className="text-sm text-content-muted">{t('inventory.estimated_value')}</p>
-                <p className="text-xl font-bold text-success">
+                <p className="text-xs text-content-muted">{t('inventory.estimated_value')}</p>
+                <p className="text-base sm:text-xl font-bold text-success">
                   <PriceDisplay amount={items.reduce((acc, item) => acc + (item.quantity * item.pricePerUnit), 0)} />
                 </p>
               </div>
@@ -592,23 +594,23 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
           </div>
 
           {/* Filters */}
-          <div className="flex flex-col lg:flex-row gap-4">
+          <div className="flex flex-col lg:flex-row gap-3 sm:gap-4">
             <div className="relative flex-1">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-content-muted" size={20} />
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-content-muted w-4 h-4 sm:w-5 sm:h-5" />
               <input 
                 type="text"
                 placeholder={t('inventory.search_placeholder', 'بحث عن صنف...')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pr-10 pl-4 py-2 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-content placeholder-content-muted"
+                className="w-full pr-9 pl-4 py-2 sm:py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-xs sm:text-sm text-content placeholder-content-muted"
               />
             </div>
-            <div className="flex overflow-x-auto pb-2 lg:pb-0 gap-2 scrollbar-hide">
+            <div className="flex overflow-x-auto pb-2 lg:pb-0 gap-2 scrollbar-hide select-none">
               {['all', 'low_stock', 'fabric', 'thread', 'button', 'lining', 'other'].map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setFilterCategory(cat)}
-                  className={`whitespace-nowrap px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                  className={`whitespace-nowrap px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
                     filterCategory === cat 
                     ? 'bg-brand text-white' 
                     : 'bg-surface text-content-muted border border-border hover:bg-surface-muted'
@@ -626,48 +628,48 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
           </div>
 
           {/* Inventory Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
             {filteredItems.map((item) => (
               <motion.div 
                 key={item.id}
                 layout
-                className="bg-surface p-5 rounded-2xl shadow-sm border border-border flex flex-col gap-4"
+                className="bg-surface p-4 sm:p-5 rounded-2xl shadow-sm border border-border flex flex-col gap-3.5 sm:gap-4"
               >
-                <div className="flex justify-between items-start">
-                  <div className="flex gap-4">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="flex gap-2.5 sm:gap-4 min-w-0">
                     {item.mainImage ? (
                       <img 
                         src={item.mainImage} 
                         alt={item.name} 
-                        className="w-16 h-16 rounded-xl object-cover border border-border shadow-sm"
+                        className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl object-cover border border-border shadow-sm shrink-0"
                         referrerPolicy="no-referrer"
                       />
                     ) : (
-                      <div className="w-16 h-16 bg-surface-muted rounded-xl flex items-center justify-center text-content-muted border border-border border-dashed">
-                        <ImageIcon size={24} />
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-surface-muted rounded-xl flex items-center justify-center text-content-muted border border-border border-dashed shrink-0">
+                        <ImageIcon size={20} className="sm:w-6 sm:h-6" />
                       </div>
                     )}
-                    <div>
-                      <h3 className="font-bold text-content text-lg flex items-center gap-2">
-                        {item.name}
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-content text-sm sm:text-lg flex items-center gap-1.5 truncate">
+                        <span className="truncate">{item.name}</span>
                         {item.isTest && (
-                          <span className="text-[10px] bg-danger/10 text-danger px-2 py-0.5 rounded-full font-black uppercase tracking-widest flex items-center gap-1">
-                            <Zap size={10} />
+                          <span className="text-[9px] sm:text-[10px] bg-danger/10 text-danger px-1.5 py-0.5 rounded-full font-black uppercase tracking-widest flex items-center gap-0.5 shrink-0">
+                            <Zap size={8} />
                             {t('common.test')}
                           </span>
                         )}
                       </h3>
                       <div className="flex flex-wrap gap-1 mt-1">
-                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 bg-surface-muted text-content-muted rounded-md border border-border">
+                        <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 bg-surface-muted text-content-muted rounded-md border border-border">
                           {item.category === 'fabric' ? t('inventory.fabric') : item.category === 'thread' ? t('inventory.thread') : item.category === 'button' ? t('inventory.button') : item.category === "ready_made" ? 'جاهز' : t('common.other')}
                         </span>
-                        {item.taxType === 'inclusive' && <span className="text-[10px] font-black px-2 py-0.5 bg-success/10 text-success rounded-md border border-success/20">شامل الضريبة</span>}
-                        {item.taxType === 'exclusive' && <span className="text-[10px] font-black px-2 py-0.5 bg-brand/10 text-brand rounded-md border border-brand/20">غير شامل</span>}
-                        {item.taxType === 'exempt' && <span className="text-[10px] font-black px-2 py-0.5 bg-content-muted/10 text-content-muted rounded-md border border-content-muted/20">معفى</span>}
+                        {item.taxType === 'inclusive' && <span className="text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 bg-success/10 text-success rounded-md border border-success/20">شامل</span>}
+                        {item.taxType === 'exclusive' && <span className="text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 bg-brand/10 text-brand rounded-md border border-brand/20">غير شامل</span>}
+                        {item.taxType === 'exempt' && <span className="text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 bg-content-muted/10 text-content-muted rounded-md border border-content-muted/20">معفى</span>}
                       </div>
                     </div>
                   </div>
-                  <div className="flex gap-1 shrink-0">
+                  <div className="flex gap-0.5 shrink-0">
                     {canReconcile && (
                       <button 
                         onClick={() => {
@@ -679,10 +681,10 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                           });
                           setIsReconcileModalOpen(true);
                         }}
-                        className="p-2 text-warning hover:bg-warning/10 rounded-lg transition-colors"
+                        className="p-1.5 sm:p-2 text-warning hover:bg-warning/10 rounded-lg transition-colors"
                         title="تسوية الكمية"
                       >
-                        <RefreshCcw size={18} />
+                        <RefreshCcw size={16} className="sm:w-[18px] sm:h-[18px]" />
                       </button>
                     )}
                     {canEdit && (
@@ -705,17 +707,17 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                           });
                           setIsModalOpen(true);
                         }}
-                        className="p-2 text-brand hover:bg-brand/10 rounded-lg transition-colors"
+                        className="p-1.5 sm:p-2 text-brand hover:bg-brand/10 rounded-lg transition-colors"
                       >
-                        <Edit2 size={18} />
+                        <Edit2 size={16} className="sm:w-[18px] sm:h-[18px]" />
                       </button>
                     )}
                     {canDelete && (
                       <button 
                         onClick={() => handleDelete(item.id)}
-                        className="p-2 text-danger hover:bg-danger/10 rounded-lg transition-colors"
+                        className="p-1.5 sm:p-2 text-danger hover:bg-danger/10 rounded-lg transition-colors"
                       >
-                        <Trash2 size={18} />
+                        <Trash2 size={16} className="sm:w-[18px] sm:h-[18px]" />
                       </button>
                     )}
                   </div>
@@ -723,25 +725,25 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
 
                 <div className="grid grid-cols-2 gap-4 py-2 border-y border-border">
                   <div>
-                    <p className="text-xs text-content-muted mb-1">{t('inventory.quantity')}</p>
-                    <p className={`font-bold ${item.quantity <= item.minThreshold ? 'text-danger' : 'text-content'}`}>
+                    <p className="text-[10px] sm:text-xs text-content-muted mb-1">{t('inventory.quantity')}</p>
+                    <p className={`text-xs sm:text-base font-bold ${item.quantity <= item.minThreshold ? 'text-danger' : 'text-content'}`}>
                       {item.quantity.toLocaleString('en-US')} {item.unit === 'meter' ? t('inventory.units.meter') : item.unit === 'roll' ? t('inventory.units.roll') : item.unit === 'spool' ? t('inventory.units.spool') : t('inventory.units.piece')}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-content-muted mb-1">{t('inventory.price_per_unit')}</p>
-                    <p className="font-bold text-content"><PriceDisplay amount={item.pricePerUnit} /></p>
+                    <p className="text-[10px] sm:text-xs text-content-muted mb-1">{t('inventory.price_per_unit')}</p>
+                    <p className="text-xs sm:text-base font-bold text-content"><PriceDisplay amount={item.pricePerUnit} /></p>
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2 text-xs text-content-muted">
-                    <Truck size={14} />
-                    <span>{suppliers.find(s => s.id === item.supplierId)?.name || t('inventory.no_supplier', 'بدون مورد')}</span>
+                <div className="flex justify-between items-center text-[11px] sm:text-xs">
+                  <div className="flex items-center gap-1.5 text-content-muted truncate min-w-0">
+                    <Truck size={12} className="shrink-0" />
+                    <span className="truncate">{suppliers.find(s => s.id === item.supplierId)?.name || t('inventory.no_supplier', 'بدون مورد')}</span>
                   </div>
                   {item.quantity <= item.minThreshold && (
-                    <div className="flex items-center gap-1 text-xs text-danger font-bold animate-pulse">
-                      <AlertTriangle size={14} />
+                    <div className="flex items-center gap-1 text-danger font-bold shrink-0 animate-pulse">
+                      <AlertTriangle size={12} />
                       <span>{t('inventory.needs_order', 'تحتاج طلب!')}</span>
                     </div>
                   )}
@@ -753,74 +755,76 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
       )}
 
       {activeTab === 'suppliers' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {suppliers.map((supplier) => (
             <motion.div 
               key={supplier.id}
               layout
-              className="bg-surface p-5 rounded-2xl shadow-sm border border-border space-y-4"
+              className="bg-surface p-4 sm:p-5 rounded-2xl shadow-sm border border-border flex flex-col justify-between gap-4"
             >
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-brand/10 text-brand rounded-xl">
-                    <Truck size={24} />
+              <div>
+                <div className="flex justify-between items-start gap-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="p-2.5 bg-brand/10 text-brand rounded-xl shrink-0">
+                      <Truck size={20} className="sm:w-6 sm:h-6" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-content text-sm sm:text-base flex items-center gap-1.5 truncate">
+                        <span className="truncate">{supplier.name}</span>
+                        {supplier.isTest && (
+                           <span className="text-[9px] sm:text-[10px] bg-danger/10 text-danger px-1.5 py-0.5 rounded-full font-black uppercase tracking-widest flex items-center gap-0.5 shrink-0">
+                            <Zap size={8} />
+                            {t('common.test')}
+                          </span>
+                        )}
+                      </h3>
+                      <p className="text-[10px] sm:text-xs text-content-muted font-medium truncate">{supplier.contactPerson}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-content flex items-center gap-2">
-                      {supplier.name}
-                      {supplier.isTest && (
-                         <span className="text-[10px] bg-danger/10 text-danger px-2 py-0.5 rounded-full font-black uppercase tracking-widest flex items-center gap-1">
-                          <Zap size={10} />
-                          {t('common.test')}
-                        </span>
-                      )}
-                    </h3>
-                    <p className="text-xs text-content-muted">{supplier.contactPerson}</p>
+                  <div className="flex gap-0.5 shrink-0">
+                    <button 
+                      onClick={() => {
+                        setEditingSupplier(supplier);
+                        resetSupplier({
+                          name: supplier.name,
+                          contactPerson: supplier.contactPerson,
+                          email: supplier.email,
+                          phone: supplier.phone,
+                          address: supplier.address,
+                          category: supplier.category as any,
+                          isTest: supplier.isTest || false
+                        });
+                        setIsSupplierModalOpen(true);
+                      }}
+                      className="p-1.5 sm:p-2 text-brand hover:bg-brand/10 rounded-lg transition-colors"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteSupplier(supplier.id)}
+                      className="p-1.5 sm:p-2 text-danger hover:bg-danger/10 rounded-lg transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
                 </div>
-                <div className="flex gap-1">
-                  <button 
-                    onClick={() => {
-                      setEditingSupplier(supplier);
-                      resetSupplier({
-                        name: supplier.name,
-                        contactPerson: supplier.contactPerson,
-                        email: supplier.email,
-                        phone: supplier.phone,
-                        address: supplier.address,
-                        category: supplier.category as any,
-                        isTest: supplier.isTest || false
-                      });
-                      setIsSupplierModalOpen(true);
-                    }}
-                    className="p-2 text-brand hover:bg-brand/10 rounded-lg transition-colors"
-                  >
-                    <Edit2 size={18} />
-                  </button>
-                  <button 
-                    onClick={() => handleDeleteSupplier(supplier.id)}
-                    className="p-2 text-danger hover:bg-danger/10 rounded-lg transition-colors"
-                  >
-                    <Trash2 size={18} />
-                  </button>
+                <div className="space-y-1.5 text-[11px] sm:text-xs mt-4">
+                  <div className="flex items-center gap-2 text-content-muted">
+                    <Phone size={12} className="shrink-0" />
+                    <span className="truncate">{supplier.phone}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-content-muted">
+                    <Search size={12} className="shrink-0" />
+                    <span className="truncate">{supplier.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-content-muted">
+                    <MapPin size={12} className="shrink-0" />
+                    <span className="truncate">{supplier.address}</span>
+                  </div>
                 </div>
               </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2 text-content-muted">
-                  <Phone size={14} />
-                  <span>{supplier.phone}</span>
-                </div>
-                <div className="flex items-center gap-2 text-content-muted">
-                  <Search size={14} />
-                  <span>{supplier.email}</span>
-                </div>
-                <div className="flex items-center gap-2 text-content-muted">
-                  <MapPin size={14} />
-                  <span className="truncate">{supplier.address}</span>
-                </div>
-              </div>
-              <div className="pt-3 border-t border-border">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-brand bg-brand/10 px-2 py-1 rounded-lg">
+              <div className="pt-3 border-t border-border flex justify-between items-center text-[10px] sm:text-xs">
+                <span className="font-bold uppercase tracking-wider text-brand bg-brand/10 px-2 py-0.5 rounded-md">
                   {supplier.category === 'fabric' ? t('inventory.fabric') : 
                    supplier.category === 'thread' ? t('inventory.thread') : 
                    supplier.category === 'button' ? t('inventory.button') : 
@@ -830,9 +834,9 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
             </motion.div>
           ))}
           {suppliers.length === 0 && (
-            <div className="md:col-span-2 lg:col-span-3 p-12 text-center text-content-muted bg-surface rounded-2xl border border-dashed border-border">
-              <Truck className="mx-auto mb-4 opacity-20" size={48} />
-              <p>{t('suppliers.no_suppliers', 'لا يوجد موردين مسجلين حالياً')}</p>
+            <div className="md:col-span-2 lg:col-span-3 p-8 sm:p-12 text-center text-content-muted bg-surface rounded-2xl border border-dashed border-border">
+              <Truck className="mx-auto mb-3 sm:mb-4 opacity-20 w-10 h-10 sm:w-12 sm:h-12" />
+              <p className="text-xs sm:text-sm">{t('suppliers.no_suppliers', 'لا يوجد موردين مسجلين حالياً')}</p>
             </div>
           )}
         </div>
@@ -843,27 +847,27 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
           {/* Mobile View: Stacked Card List */}
           <div className="block md:hidden divide-y divide-border">
             {reconciliations.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((recon) => (
-              <div key={recon.id} className="p-4 flex items-center justify-between group hover:bg-surface-muted transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-warning/10 text-warning rounded-xl">
-                    <RefreshCcw size={20} />
+              <div key={recon.id} className="p-4 flex items-center justify-between group hover:bg-surface-muted transition-colors gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="p-2 bg-warning/10 text-warning rounded-xl shrink-0">
+                    <RefreshCcw size={16} />
                   </div>
-                  <div>
-                    <h4 className="font-black text-content text-sm">{recon.itemName}</h4>
-                    <p className="text-[10px] text-content-muted font-bold flex items-center gap-1 mt-0.5">
+                  <div className="min-w-0">
+                    <h4 className="font-black text-content text-xs truncate">{recon.itemName}</h4>
+                    <p className="text-[9px] text-content-muted font-bold flex items-center gap-1 mt-0.5">
                       <History size={10} />
                       {new Date(recon.createdAt).toLocaleDateString('ar-SA')}
                     </p>
                   </div>
                 </div>
-                <div className="text-left flex flex-col items-end gap-1">
+                <div className="text-left flex flex-col items-end gap-1 shrink-0">
                   <span className={cn(
-                    "px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider",
+                    "px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider",
                     recon.difference > 0 ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'
                   )}>
                     {recon.difference > 0 ? '+' : ''}{recon.difference}
                   </span>
-                  <span className="text-[10px] text-content-muted font-bold truncate max-w-[100px]">{recon.staffName}</span>
+                  <span className="text-[9px] text-content-muted font-bold truncate max-w-[80px]">{recon.staffName}</span>
                 </div>
               </div>
             ))}

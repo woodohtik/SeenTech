@@ -53,7 +53,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
 
   const [selectedLedgerSupplier, setSelectedLedgerSupplier] = useState<Supplier | null>(null);
   const [payoutSupplier, setPayoutSupplier] = useState<any | null>(null);
-  const [tenantName, setTenantName] = useState('نظام سين الذكي - SEEN POS');
+  const [tenantName, setTenantName] = useState('نظام سين - SEEN POS');
   const [supplierReloadTrigger, setSupplierReloadTrigger] = useState(0);
 
   const { register, handleSubmit, reset, control, formState: { errors, isSubmitting } } = useForm({
@@ -404,12 +404,12 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
             <>
               {/* Filters & Search & View Toggle */}
               <div className="space-y-4">
-                <div className="flex flex-wrap justify-between items-center gap-4">
-                  <div className="flex flex-wrap gap-2">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div className="flex overflow-x-auto pb-2 sm:pb-0 gap-2 scrollbar-hide select-none w-full sm:w-auto">
                     <button
                       onClick={() => setCategoryFilter('all')}
                       className={cn(
-                        "px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer",
+                        "whitespace-nowrap px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer",
                         categoryFilter === 'all' 
                           ? "bg-brand text-white shadow-md shadow-brand/10" 
                           : "bg-surface text-content-muted border border-border hover:bg-surface-muted"
@@ -427,7 +427,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                         key={cat.id}
                         onClick={() => setCategoryFilter(cat.id)}
                         className={cn(
-                          "px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer",
+                          "whitespace-nowrap px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer",
                           categoryFilter === cat.id 
                             ? "bg-brand text-white shadow-md shadow-brand/10" 
                             : "bg-surface text-content-muted border border-border hover:bg-surface-muted"
@@ -436,19 +436,6 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                         {cat.label}
                       </button>
                     ))}
-                  </div>
-
-                  {/* View mode buttons */}
-                  <div className="flex bg-surface border border-border p-1 rounded-xl">
-                    <button
-                      onClick={() => setCategoryFilter('all')}
-                      className={cn(
-                        "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
-                        categoryFilter === 'all' ? "bg-brand/10 text-brand" : "text-content-muted hover:text-content"
-                      )}
-                    >
-                      تصفية الكل
-                    </button>
                   </div>
                 </div>
 
@@ -562,7 +549,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                 />
                 {errors.contactPerson && <p className="text-xs text-red-500 font-bold mt-1">{errors.contactPerson.message}</p>}
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-content-muted mb-1">البريد الإلكتروني</label>
                   <input 
@@ -588,7 +575,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                   {errors.phone && <p className="text-xs text-red-500 font-bold mt-1">{errors.phone.message}</p>}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-content-muted mb-1">الرقم الضريبي (اختياري)</label>
                   <input 
@@ -764,8 +751,8 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                   }
 
                   return (
-                    <div className="border border-border rounded-2xl overflow-hidden bg-surface">
-                      <table className="w-full text-right border-collapse">
+                    <div className="border border-border rounded-2xl overflow-x-auto bg-surface scrollbar-hide">
+                      <table className="w-full text-right border-collapse min-w-max">
                         <thead>
                           <tr className="bg-surface-muted/50 border-b border-border text-xs font-black text-content-muted">
                             <th className="p-4 text-right">اسم المنتج</th>
@@ -846,12 +833,12 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                   return (
                     <div className="space-y-4">
                       {/* Sub-section: Items ordered summary */}
-                      <div className="border border-border rounded-2xl overflow-hidden bg-surface">
+                      <div className="border border-border rounded-2xl overflow-x-auto bg-surface scrollbar-hide">
                         <div className="p-4 bg-surface-muted/40 font-bold text-sm text-content border-b border-border">إجمالي الكميات والأنواع التي تم توريدها/طلبها</div>
                         {orderedItemsArray.length === 0 ? (
                           <div className="p-4 text-center text-xs text-content-muted">لا توجد بنود تفصيلية في سجلات أوامر الشراء.</div>
                         ) : (
-                          <table className="w-full text-right border-collapse">
+                          <table className="w-full text-right border-collapse min-w-max">
                             <thead>
                               <tr className="bg-surface-muted/20 border-b border-border text-xs font-black text-content-muted">
                                 <th className="p-4 text-right">اسم المنتج المطلـوب</th>

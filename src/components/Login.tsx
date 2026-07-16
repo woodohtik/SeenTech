@@ -29,7 +29,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import Branding from './Branding';
 import { IconInput } from './ui/IconInput';
@@ -39,7 +39,13 @@ type ViewMode = 'login' | 'register' | 'pending' | 'forgot-password';
 export default function Login() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const [view, setView] = useState<ViewMode>('login');
+  const [searchParams] = useSearchParams();
+  const [view, setView] = useState<ViewMode>(() => {
+    const mode = searchParams.get('view');
+    if (mode === 'register') return 'register';
+    if (mode === 'forgot-password') return 'forgot-password';
+    return 'login';
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,6 +59,7 @@ export default function Login() {
   const [regEmail, setRegEmail] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [regPassword, setRegPassword] = useState('');
+  const [googleUser, setGoogleUser] = useState<any>(null);
 
   const languages = [
     { code: 'ar', name: 'العربية', dir: 'rtl' },
@@ -64,15 +71,36 @@ export default function Login() {
 
   const changeLanguage = (code: string) => {
     i18n.changeLanguage(code);
+    const dir = code === 'en' ? 'ltr' : 'rtl';
+    document.documentElement.dir = dir;
+    document.documentElement.lang = code;
     setIsLangMenuOpen(false);
   };
 
-  // Load remembered loginId
+  // Load remembered loginId and ensure Arabic is default if language is not set
   useEffect(() => {
+    // Ensure Arabic is default if no language is selected or if cleared
+    const currentLng = localStorage.getItem('i18nextLng');
+    if (!currentLng || (currentLng !== 'ar' && currentLng !== 'en' && currentLng !== 'ur')) {
+      localStorage.setItem('i18nextLng', 'ar');
+      i18n.changeLanguage('ar');
+      document.documentElement.dir = 'rtl';
+      document.documentElement.lang = 'ar';
+    } else {
+      const dir = i18n.language === 'en' ? 'ltr' : 'rtl';
+      document.documentElement.dir = dir;
+      document.documentElement.lang = i18n.language;
+    }
+
     const saved = localStorage.getItem('rememberedUser');
     if (saved) {
       setLoginId(saved);
       setRememberMe(true);
+    }
+
+    if (view === 'login') {
+      localStorage.removeItem('is_registering');
+      setGoogleUser(null);
     }
 
     // Auto-redirect if already logged in (backup to App.tsx)
@@ -86,6 +114,18 @@ export default function Login() {
       return () => unsubscribe();
     }
   }, []);
+
+  // Sync view state dynamically when searchParams changes
+  useEffect(() => {
+    const mode = searchParams.get('view');
+    if (mode === 'register') {
+      setView('register');
+    } else if (mode === 'forgot-password') {
+      setView('forgot-password');
+    } else {
+      setView('login');
+    }
+  }, [searchParams]);
 
   // Phone Formatting Logic
   const formatSaudiPhone = (phone: string) => {
@@ -151,31 +191,29 @@ export default function Login() {
          }
       }
 
-      // Check existing tenant or request using Supabase
-      const { data: tenantSnap } = await supabase
-        .from('tenants')
-        .select('*')
-        .eq('owner_email', user.email);
-      
-      if (tenantSnap && tenantSnap.length > 0) {
-        const tenant = tenantSnap[0];
-        // if (tenant.status === 'pending') setView('pending'); // Handled by App.tsx
+      // Check existing tenant, request, or staff record
+      const [tenantRes, requestRes, staffRes] = await Promise.all([
+        supabase.from('tenants').select('*').eq('owner_email', user.email).maybeSingle(),
+        supabase.from('tailor_requests').select('*').eq('uid', user.uid).maybeSingle(),
+        supabase.from('staff').select('*').or(`uid.eq.${user.uid},email.eq.${user.email}`).maybeSingle()
+      ]);
+
+      const hasAccount = tenantRes.data || requestRes.data || staffRes.data;
+
+      if (hasAccount) {
+        // Logged-in/already has account, App.tsx will automatically detect this Firebase user session and route them to dashboard/onboarding
+        setLoading(false);
         return;
       }
 
-      const { data: reqSnap } = await supabase
-        .from('tailor_requests')
-        .select('*')
-        .eq('uid', user.uid);
-      
-      if (!reqSnap || reqSnap.length === 0) {
-        setView('register');
-        setFullName(user.displayName || '');
-        setRegEmail(user.email || '');
-      } else {
-        const request = reqSnap[0];
-        // if (request.status === 'pending') setView('pending'); // Handled by App.tsx
-      }
+      // No account exists, transfer to Register view and pre-fill fields
+      localStorage.setItem('is_registering', 'true');
+      setGoogleUser(user);
+      setView('register');
+      setFullName(user.displayName || '');
+      setRegEmail(user.email || '');
+      setRegPhone(user.phoneNumber || '');
+      setLoading(false);
     } catch (err: any) {
       if (err.code === 'auth/popup-closed-by-user') {
         console.log('Google login popup was closed by the user.');
@@ -306,7 +344,7 @@ export default function Login() {
       setError(t('login.errors.invalid_phone'));
       return;
     }
-    if (strength < 2) {
+    if (!googleUser && strength < 2) {
       setError(t('login.errors.weak_password'));
       return;
     }
@@ -351,15 +389,19 @@ export default function Login() {
       // Lock the Firebase observer in App.tsx from taking over prematurely 
       localStorage.setItem('is_registering', 'true');
 
-      let userCredential;
-      try {
-        userCredential = await createUserWithEmailAndPassword(auth, regEmail, regPassword);
-      } catch (authErr: any) {
-        localStorage.removeItem('is_registering');
-        throw authErr;
+      let user;
+      if (googleUser) {
+        user = googleUser;
+      } else {
+        let userCredential;
+        try {
+          userCredential = await createUserWithEmailAndPassword(auth, regEmail, regPassword);
+        } catch (authErr: any) {
+          localStorage.removeItem('is_registering');
+          throw authErr;
+        }
+        user = userCredential.user;
       }
-
-      const user = userCredential.user;
       
       const token = await user.getIdToken();
       setSupabaseAuthToken(token);
@@ -468,11 +510,13 @@ export default function Login() {
       } catch (err: any) {
         console.error('Registration/Tenant Creation Error:', err);
         localStorage.removeItem('is_registering');
-        // If request creation fails, we should rollback the Firebase user unit
-        try {
-          await user.delete();
-        } catch (delErr) {
-          console.error("Failed to delete user during registration failure rollback:", delErr);
+        // If request creation fails, we should rollback the Firebase user unit if not a social login
+        if (!googleUser) {
+          try {
+            await user.delete();
+          } catch (delErr) {
+            console.error("Failed to delete user during registration failure rollback:", delErr);
+          }
         }
         if (err instanceof TypeError && err.message === 'Failed to fetch') {
            throw new Error(`تعذر الاتصال بقاعدة البيانات. ${import.meta.env.VITE_SUPABASE_URL || ''}`);
@@ -759,56 +803,70 @@ export default function Login() {
                   wrapperClassName="h-11"
                 />
 
-                <IconInput
-                  required
-                  type="email"
-                  value={regEmail}
-                  onChange={(e) => setRegEmail(e.target.value)}
-                  placeholder="example@mail.com"
-                  startIcon={Mail}
-                  label={t('login.email')}
-                  wrapperClassName="h-11"
-                />
+                <div className="relative">
+                  <IconInput
+                    required
+                    type="email"
+                    value={regEmail}
+                    onChange={(e) => setRegEmail(e.target.value)}
+                    placeholder="example@mail.com"
+                    startIcon={Mail}
+                    label={t('login.email')}
+                    wrapperClassName="h-11"
+                    readOnly={!!googleUser}
+                    disabled={!!googleUser}
+                    className={cn(googleUser && "bg-gray-50 text-gray-400 cursor-not-allowed")}
+                  />
+                  {googleUser && (
+                    <span className="absolute top-1 left-2 text-[10px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">
+                      متحقق عبر Google ✓
+                    </span>
+                  )}
+                </div>
 
-                <IconInput
-                  required
-                  type={showPassword ? 'text' : 'password'}
-                  value={regPassword}
-                  onChange={(e) => setRegPassword(e.target.value)}
-                  placeholder="••••••••"
-                  startIcon={Lock}
-                  label={t('login.password')}
-                  wrapperClassName="h-11"
-                  endIcon={
-                    <button 
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="text-content-muted hover:text-content flex items-center justify-center p-1 focus:outline-none"
-                    >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  }
-                />
-                  {/* Strength Indicator */}
-                  <div className="px-1 pt-2">
-                    <div className="flex justify-between text-[10px] font-bold mb-1">
-                      <span className="text-content-muted uppercase">{t('login.password_strength')}</span>
-                      <span className={cn("uppercase", strength > 0 ? "text-brand" : "text-content-muted")}>
-                        {regPassword ? strengthLabels[strength - 1] : ''}
-                      </span>
+                {!googleUser && (
+                  <>
+                    <IconInput
+                      required
+                      type={showPassword ? 'text' : 'password'}
+                      value={regPassword}
+                      onChange={(e) => setRegPassword(e.target.value)}
+                      placeholder="••••••••"
+                      startIcon={Lock}
+                      label={t('login.password')}
+                      wrapperClassName="h-11"
+                      endIcon={
+                        <button 
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="text-content-muted hover:text-content flex items-center justify-center p-1 focus:outline-none"
+                        >
+                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      }
+                    />
+                    {/* Strength Indicator */}
+                    <div className="px-1 pt-2">
+                      <div className="flex justify-between text-[10px] font-bold mb-1">
+                        <span className="text-content-muted uppercase">{t('login.password_strength')}</span>
+                        <span className={cn("uppercase", strength > 0 ? "text-brand" : "text-content-muted")}>
+                          {regPassword ? strengthLabels[strength - 1] : ''}
+                        </span>
+                      </div>
+                      <div className="flex gap-1 h-1">
+                        {[1, 2, 3, 4].map((i) => (
+                          <div 
+                            key={i} 
+                            className={cn(
+                              "flex-1 rounded-full transition-all duration-500",
+                              strength >= i ? strengthColors[strength - 1] : "bg-surface-muted"
+                            )} 
+                          />
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex gap-1 h-1">
-                      {[1, 2, 3, 4].map((i) => (
-                        <div 
-                          key={i} 
-                          className={cn(
-                            "flex-1 rounded-full transition-all duration-500",
-                            strength >= i ? strengthColors[strength - 1] : "bg-surface-muted"
-                          )} 
-                        />
-                      ))}
-                    </div>
-                  </div>
+                  </>
+                )}
 
                 <button 
                   disabled={loading}
@@ -821,7 +879,22 @@ export default function Login() {
 
                 <p className="text-center text-content-muted font-medium">
                   {t('login.have_account')}{' '}
-                  <button type="button" onClick={() => setView('login')} className="text-brand font-bold hover:underline">{t('login.login_button')}</button>
+                  <button 
+                    type="button" 
+                    onClick={async () => {
+                      localStorage.removeItem('is_registering');
+                      setGoogleUser(null);
+                      try {
+                        await signOut(auth);
+                      } catch (e) {
+                        console.error(e);
+                      }
+                      setView('login');
+                    }} 
+                    className="text-brand font-bold hover:underline"
+                  >
+                    {t('login.login_button')}
+                  </button>
                 </p>
               </motion.form>
             )}

@@ -393,56 +393,58 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
   });
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-content flex items-center gap-3">
-            <Package className="text-brand" size={32} />
+          <h1 className="text-2xl sm:text-3xl font-black text-content flex items-center gap-2 sm:gap-3">
+            <Package className="text-brand shrink-0" size={28} />
             {t("inventory.title")}
           </h1>
-          <p className="text-content-muted font-medium mt-1">
+          <p className="text-content-muted text-xs sm:text-sm font-medium mt-1">
             {t("inventory.subtitle")}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          {hasPermission("inventory.create") && (
-            <button
-              onClick={() => setShowOpeningBalanceModal(true)}
-              className="flex items-center gap-2 bg-surface border-2 border-border px-5 py-2.5 rounded-2xl font-bold text-content-muted hover:border-success/20 hover:text-success transition-all shadow-sm"
-            >
-              <Download size={20} />
-              {t("inventory.opening_balance")}
-            </button>
-          )}
-          {hasPermission("inventory.transfer") && (
-            <button
-              onClick={() => setShowTransferModal(true)}
-              className="flex items-center gap-2 bg-surface border-2 border-border px-5 py-2.5 rounded-2xl font-bold text-content-muted hover:border-brand/20 hover:text-brand transition-all shadow-sm"
-            >
-              <ArrowRightLeft size={20} />
-              {t("inventory.transfer_stock")}
-            </button>
-          )}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full lg:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {hasPermission("inventory.create") && (
+              <button
+                onClick={() => setShowOpeningBalanceModal(true)}
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 bg-surface border-2 border-border px-3 sm:px-5 py-2.5 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm text-content-muted hover:border-success/20 hover:text-success transition-all shadow-sm"
+              >
+                <Download size={16} className="sm:size-[20px]" />
+                <span className="whitespace-nowrap">{t("inventory.opening_balance")}</span>
+              </button>
+            )}
+            {hasPermission("inventory.transfer") && (
+              <button
+                onClick={() => setShowTransferModal(true)}
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 bg-surface border-2 border-border px-3 sm:px-5 py-2.5 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm text-content-muted hover:border-brand/20 hover:text-brand transition-all shadow-sm"
+              >
+                <ArrowRightLeft size={16} className="sm:size-[20px]" />
+                <span className="whitespace-nowrap">{t("inventory.transfer_stock")}</span>
+              </button>
+            )}
+          </div>
           {hasPermission("inventory.create") && (
             <button
               onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 bg-brand text-white px-6 py-2.5 rounded-2xl font-bold hover:bg-brand/90 transition-all shadow-lg shadow-brand/10"
+              className="w-full sm:w-auto flex items-center justify-center gap-1.5 sm:gap-2 bg-brand text-white px-5 sm:px-6 py-2.5 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm hover:bg-brand/90 transition-all shadow-lg shadow-brand/10"
             >
-              <Plus size={20} />
-              {t("inventory.add_item")}
+              <Plus size={16} className="sm:size-[20px]" />
+              <span className="whitespace-nowrap">{t("inventory.add_item")}</span>
             </button>
           )}
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-4 bg-surface p-1.5 rounded-2xl border border-border w-fit">
+      <div className="flex items-center gap-1 sm:gap-4 bg-surface p-1.5 rounded-2xl border border-border w-full sm:w-fit overflow-x-auto scrollbar-none">
         <button
           onClick={() => setActiveTab("inventory")}
           className={cn(
-            "px-6 py-2.5 rounded-xl font-bold transition-all",
+            "px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold transition-all whitespace-nowrap text-xs sm:text-sm flex-1 sm:flex-none text-center",
             activeTab === "inventory"
               ? "bg-brand text-brand-content shadow-lg shadow-brand/10"
               : "text-content-muted hover:bg-surface-muted",
@@ -453,7 +455,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
         <button
           onClick={() => setActiveTab("transfers")}
           className={cn(
-            "px-6 py-2.5 rounded-xl font-bold transition-all",
+            "px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold transition-all whitespace-nowrap text-xs sm:text-sm flex-1 sm:flex-none text-center",
             activeTab === "transfers"
               ? "bg-brand text-brand-content shadow-lg shadow-brand/10"
               : "text-content-muted hover:bg-surface-muted",
@@ -464,7 +466,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
         <button
           onClick={() => setActiveTab("reports")}
           className={cn(
-            "px-6 py-2.5 rounded-xl font-bold transition-all",
+            "px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold transition-all whitespace-nowrap text-xs sm:text-sm flex-1 sm:flex-none text-center",
             activeTab === "reports"
               ? "bg-brand text-brand-content shadow-lg shadow-brand/10"
               : "text-content-muted hover:bg-surface-muted",
@@ -477,62 +479,62 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
       {activeTab === "inventory" && (
         <>
           {/* Stats Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-surface p-6 rounded-[2rem] border border-border shadow-sm">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-brand/10 text-brand rounded-2xl">
-                  <Layers size={24} />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="bg-surface p-3 sm:p-6 rounded-2xl sm:rounded-3xl border border-border shadow-sm">
+              <div className="flex items-center gap-2 sm:gap-4">
+                <div className="p-2 sm:p-3 bg-brand/10 text-brand rounded-xl sm:rounded-2xl shrink-0">
+                  <Layers size={20} className="sm:size-6" />
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-content-muted uppercase tracking-wider">
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-xs font-bold text-content-muted uppercase tracking-wider truncate">
                     {t("inventory.total_items")}
                   </p>
-                  <p className="text-2xl font-black text-content">
+                  <p className="text-lg sm:text-2xl font-black text-content mt-0.5">
                     {items.length}
                   </p>
                 </div>
               </div>
             </div>
-            <div className="bg-surface p-6 rounded-[2rem] border border-border shadow-sm">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-success/10 text-success rounded-2xl">
-                  <Warehouse size={24} />
+            <div className="bg-surface p-3 sm:p-6 rounded-2xl sm:rounded-3xl border border-border shadow-sm">
+              <div className="flex items-center gap-2 sm:gap-4">
+                <div className="p-2 sm:p-3 bg-success/10 text-success rounded-xl sm:rounded-2xl shrink-0">
+                  <Warehouse size={20} className="sm:size-6" />
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-content-muted uppercase tracking-wider">
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-xs font-bold text-content-muted uppercase tracking-wider truncate">
                     {t("inventory.warehouses")}
                   </p>
-                  <p className="text-2xl font-black text-content">
+                  <p className="text-lg sm:text-2xl font-black text-content mt-0.5">
                     {branches.filter((b) => b.type === "warehouse").length}
                   </p>
                 </div>
               </div>
             </div>
-            <div className="bg-surface p-6 rounded-[2rem] border border-border shadow-sm">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-warning/10 text-warning rounded-2xl">
-                  <Store size={24} />
+            <div className="bg-surface p-3 sm:p-6 rounded-2xl sm:rounded-3xl border border-border shadow-sm">
+              <div className="flex items-center gap-2 sm:gap-4">
+                <div className="p-2 sm:p-3 bg-warning/10 text-warning rounded-xl sm:rounded-2xl shrink-0">
+                  <Store size={20} className="sm:size-6" />
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-content-muted uppercase tracking-wider">
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-xs font-bold text-content-muted uppercase tracking-wider truncate">
                     {t("inventory.branches")}
                   </p>
-                  <p className="text-2xl font-black text-content">
+                  <p className="text-lg sm:text-2xl font-black text-content mt-0.5">
                     {branches.filter((b) => b.type === "store").length}
                   </p>
                 </div>
               </div>
             </div>
-            <div className="bg-surface p-6 rounded-[2rem] border border-border shadow-sm">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-danger/10 text-danger rounded-2xl">
-                  <AlertCircle size={24} />
+            <div className="bg-surface p-3 sm:p-6 rounded-2xl sm:rounded-3xl border border-border shadow-sm">
+              <div className="flex items-center gap-2 sm:gap-4">
+                <div className="p-2 sm:p-3 bg-danger/10 text-danger rounded-xl sm:rounded-2xl shrink-0">
+                  <AlertCircle size={20} className="sm:size-6" />
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-content-muted uppercase tracking-wider">
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-xs font-bold text-content-muted uppercase tracking-wider truncate">
                     {t("inventory.low_stock")}
                   </p>
-                  <p className="text-2xl font-black text-content">
+                  <p className="text-lg sm:text-2xl font-black text-content mt-0.5">
                     {
                       items.filter(
                         (item) => getTotalStock(item.id) <= item.minThreshold,
@@ -545,21 +547,21 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
           </div>
 
           {/* Filters */}
-          <div className="bg-surface p-4 rounded-[2rem] border border-border shadow-sm flex flex-col md:flex-row gap-4">
+          <div className="bg-surface p-3 sm:p-4 rounded-2xl sm:rounded-[2rem] border border-border shadow-sm flex flex-col sm:flex-row gap-3 sm:gap-4">
             <div className="relative flex-1">
               <Search
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-content-muted"
-                size={20}
+                className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-content-muted"
+                size={18}
               />
               <input
                 type="text"
                 placeholder={t("inventory.search_placeholder")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-medium text-content"
+                className="w-full pl-10 sm:pl-12 pr-4 py-2.5 sm:py-3 bg-surface-muted border-none rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-brand font-bold text-xs sm:text-sm text-content text-right"
               />
             </div>
-            <div className="flex items-center gap-2 min-w-[200px]">
+            <div className="flex items-center gap-2 w-full sm:min-w-[200px] sm:w-auto">
               <Select
                 value={selectedCategory}
                 onChange={(val) => setSelectedCategory(val)}
@@ -575,7 +577,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                   { value: "lining", label: t("inventory.category_lining") },
                   { value: "other", label: t("inventory.category_other") },
                 ]}
-                className="bg-surface-muted"
+                className="bg-surface-muted w-full"
               />
             </div>
           </div>
@@ -751,47 +753,47 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between bg-surface-muted/50 p-3 rounded-2xl">
-                      <div className="flex gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-surface-muted/50 p-3 rounded-2xl gap-3">
+                      <div className="grid grid-cols-3 gap-2 sm:flex sm:gap-4 flex-1">
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-[10px] font-black text-content-muted uppercase tracking-widest">
+                          <span className="text-[9px] sm:text-[10px] font-black text-content-muted uppercase tracking-wider">
                             {t("inventory.total_stock")}
                           </span>
-                          <p className="font-black text-content">
+                          <p className="text-xs sm:text-sm font-black text-content">
                             {totalStock} {t(`inventory.unit_${item.unit}`)}
                           </p>
                         </div>
-                        <div className="flex flex-col gap-0.5 border-l border-border/50 pl-4 rtl:pr-4 rtl:border-l-0 rtl:border-r">
-                          <span className="text-[10px] font-black text-content-muted uppercase tracking-widest">
+                        <div className="flex flex-col gap-0.5 border-l border-border/50 pl-2 sm:pl-4 rtl:pr-2 rtl:pl-0 sm:rtl:pr-4 rtl:border-l-0 rtl:border-r">
+                          <span className="text-[9px] sm:text-[10px] font-black text-content-muted uppercase tracking-wider">
                             {t("inventory.price_per_unit")}
                           </span>
-                          <p className="font-black text-content">
+                          <p className="text-xs sm:text-sm font-black text-content">
                             {item.pricePerUnit}{" "}
-                            <span className="text-[10px]">SAR</span>
+                            <span className="text-[8px] sm:text-[10px]">SAR</span>
                           </p>
                         </div>
-                        <div className="flex flex-col gap-0.5 border-l border-border/50 pl-4 rtl:pr-4 rtl:border-l-0 rtl:border-r">
-                          <span className="text-[10px] font-black text-content-muted uppercase tracking-widest">
+                        <div className="flex flex-col gap-0.5 border-l border-border/50 pl-2 sm:pl-4 rtl:pr-2 rtl:pl-0 sm:rtl:pr-4 rtl:border-l-0 rtl:border-r">
+                          <span className="text-[9px] sm:text-[10px] font-black text-content-muted uppercase tracking-wider">
                             الظهور في POS
                           </span>
                           <span className={cn(
-                            "text-xs font-black",
+                            "text-[10px] sm:text-xs font-black",
                             item.showInPos ? "text-success" : "text-content-muted"
                           )}>
                             {item.showInPos ? "ظاهر" : "مخفي"}
                           </span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-end gap-2 shrink-0 pt-2 sm:pt-0 border-t border-border/30 sm:border-none">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             setEditingItem(item);
                             setShowEditModal(true);
                           }}
-                          className="p-3 bg-brand/10 text-brand rounded-xl active:scale-95 transition-all"
+                          className="p-2 sm:p-3 bg-brand/10 text-brand rounded-xl active:scale-95 transition-all"
                         >
-                          <Edit2 size={20} />
+                          <Edit2 size={16} className="sm:size-5" />
                         </button>
                         <Menu
                           as="div"
@@ -799,9 +801,9 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                         >
                           <Menu.Button
                             onClick={(e) => e.stopPropagation()}
-                            className="p-3 bg-surface border border-border rounded-xl text-content-muted active:scale-95 transition-all outline-none"
+                            className="p-2 sm:p-3 bg-surface border border-border rounded-xl text-content-muted active:scale-95 transition-all outline-none"
                           >
-                            <MoreVertical size={20} />
+                            <MoreVertical size={16} className="sm:size-5" />
                           </Menu.Button>
                           <Transition
                             as={Fragment}
@@ -1669,7 +1671,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -1681,18 +1683,18 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-surface w-full max-w-3xl rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
+        className="bg-surface w-full max-w-3xl rounded-2xl sm:rounded-3xl md:rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[90vh]"
       >
-        <div className="p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
-          <div className="flex items-center gap-4">
-            <div className="p-4 bg-brand text-white rounded-2xl shadow-lg shadow-brand/10">
-              <Plus size={24} />
+        <div className="p-4 sm:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="p-2.5 sm:p-4 bg-brand text-white rounded-xl sm:rounded-2xl shadow-lg shadow-brand/10 shrink-0">
+              <Plus size={20} className="sm:size-6" />
             </div>
             <div>
-              <h2 className="text-2xl font-black text-content">
+              <h2 className="text-lg sm:text-2xl font-black text-content">
                 {t("inventory.add_item")}
               </h2>
-              <p className="text-xs text-content-muted font-bold uppercase tracking-widest">
+              <p className="text-[10px] sm:text-xs text-content-muted font-bold uppercase tracking-widest">
                 {t("inventory.master_catalog")}
               </p>
             </div>
@@ -1701,13 +1703,13 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
             onClick={onClose}
             className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm"
           >
-            <X size={24} className="text-content-muted" />
+            <X size={20} className="text-content-muted sm:size-6" />
           </button>
         </div>
 
-        <form onSubmit={handleAdd} className="p-8 space-y-8 overflow-y-auto">
+        <form onSubmit={handleAdd} dir="rtl" className="p-4 sm:p-8 space-y-4 sm:space-y-8 overflow-y-auto text-right">
           {/* Image Uploader */}
-          <div className="bg-surface-muted/50 p-6 rounded-[2rem] border border-border">
+          <div className="bg-surface-muted/50 p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-border">
             <ProductImageUploader
               tenantId={tenantId}
               onUploadComplete={(url: string) =>
@@ -1717,56 +1719,58 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
-                {t("inventory.item_name")}
-              </label>
-              <input
-                required
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                className="w-full px-5 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
-                {t("inventory.category")}
-              </label>
-              <SmartSelect
-                value={formData.category}
-                onChange={(val) =>
-                  setFormData({ ...formData, category: val as any })
-                }
-                options={[
-                  { value: "fabric", label: t("inventory.category_fabric") },
-                  {
-                    value: "ready_made",
-                    label: t("inventory.category_ready_made"),
-                  },
-                  { value: "thread", label: t("inventory.category_thread") },
-                  { value: "button", label: t("inventory.category_button") },
-                  { value: "lining", label: t("inventory.category_lining") },
-                  { value: "accessories", label: "إكسسوارات" },
-                  { value: "other", label: t("inventory.category_other") },
-                ]}
-                className="bg-surface-muted border-none"
-              />
-            </div>
-            <div className="space-y-2 col-span-1 md:col-span-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1 animate-pulse">
-                الوصف | Description
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                placeholder="تفاصيل ووصف إضافي للمنتج..."
-                className="w-full px-5 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content resize-none h-16"
-              />
+          <div className="bg-surface-muted/50 p-6 rounded-[2rem] border border-border">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
+              <div className="space-y-2 col-span-1 md:col-span-6 text-right">
+                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                  {t("inventory.item_name")}
+                </label>
+                <input
+                  required
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
+                />
+              </div>
+              <div className="space-y-2 col-span-1 md:col-span-6 text-right">
+                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                  {t("inventory.category")}
+                </label>
+                <SmartSelect
+                  value={formData.category}
+                  onChange={(val) =>
+                    setFormData({ ...formData, category: val as any })
+                  }
+                  options={[
+                    { value: "fabric", label: t("inventory.category_fabric") },
+                    {
+                      value: "ready_made",
+                      label: t("inventory.category_ready_made"),
+                    },
+                    { value: "thread", label: t("inventory.category_thread") },
+                    { value: "button", label: t("inventory.category_button") },
+                    { value: "lining", label: t("inventory.category_lining") },
+                    { value: "accessories", label: "إكسسوارات" },
+                    { value: "other", label: t("inventory.category_other") },
+                  ]}
+                  className="bg-surface border-none text-right"
+                />
+              </div>
+              <div className="space-y-2 col-span-1 md:col-span-12 text-right">
+                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                  الوصف
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  placeholder="تفاصيل ووصف إضافي للمنتج..."
+                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content resize-none h-16 text-right"
+                />
+              </div>
             </div>
           </div>
 
@@ -1784,10 +1788,10 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                       تخصيصات الثوب الجاهز
                     </h3>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-content-muted uppercase tracking-widest ml-1">
-                        نوع الياقة (Collar)
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
+                    <div className="space-y-2 col-span-1 md:col-span-6 text-right">
+                      <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                        نوع الياقة
                       </label>
                       <SmartSelect
                         value={formData.collarType}
@@ -1801,12 +1805,12 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                           { value: "saudi", label: "سعودي" },
                           { value: "marini", label: "ماريني" },
                         ]}
-                        className="bg-surface border-none"
+                        className="bg-surface border-none text-right"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-content-muted uppercase tracking-widest ml-1">
-                        نوع الكبك (Cuff)
+                    <div className="space-y-2 col-span-1 md:col-span-6 text-right">
+                      <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                        نوع الكبك
                       </label>
                       <SmartSelect
                         value={formData.cuffType}
@@ -1819,12 +1823,12 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                           { value: "double", label: "مزدوج (للأزرار)" },
                           { value: "french", label: "فرنسي" },
                         ]}
-                        className="bg-surface border-none"
+                        className="bg-surface border-none text-right"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-content-muted uppercase tracking-widest ml-1">
-                        نوع الجيب (Pocket)
+                    <div className="space-y-2 col-span-1 md:col-span-6 text-right">
+                      <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                        نوع الجيب
                       </label>
                       <SmartSelect
                         value={formData.pocketType}
@@ -1837,12 +1841,12 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                           { value: "visible", label: "ظاهري" },
                           { value: "none", label: "بدون جيب" },
                         ]}
-                        className="bg-surface border-none"
+                        className="bg-surface border-none text-right"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-content-muted uppercase tracking-widest ml-1">
-                        شكل الصدر (Chest)
+                    <div className="space-y-2 col-span-1 md:col-span-6 text-right">
+                      <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                        شكل الصدر
                       </label>
                       <SmartSelect
                         value={formData.chestStyle}
@@ -1855,7 +1859,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                           { value: "pleated", label: "بكسرات" },
                           { value: "embroided", label: "مطرز" },
                         ]}
-                        className="bg-surface border-none"
+                        className="bg-surface border-none text-right"
                       />
                     </div>
                   </div>
@@ -1864,206 +1868,214 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
             )}
           </AnimatePresence>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="space-y-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
-                {t("inventory.unit")}
-              </label>
-              <SmartSelect
-                value={formData.unit}
-                onChange={(val) =>
-                  setFormData({ ...formData, unit: val as any })
-                }
-                options={[
-                  { value: "meter", label: t("inventory.unit_meter") },
-                  { value: "yard", label: t("inventory.unit_yard") },
-                  { value: "roll", label: t("inventory.unit_roll") },
-                  { value: "bolt", label: "طاقة (Bolt)" },
-                  { value: "piece", label: t("inventory.unit_piece") },
-                  { value: "box", label: "صندوق (Box)" },
-                ]}
-                className="bg-surface-muted border-none"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
-                معامل التحويل (Conversion Rate)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                required
-                value={formData.conversionRate}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    conversionRate: Number(e.target.value),
-                  })
-                }
-                className="w-full px-5 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
-                {t("inventory.min_threshold")}
-              </label>
-              <input
-                type="number"
-                required
-                value={formData.minThreshold}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    minThreshold: Number(e.target.value),
-                  })
-                }
-                className="w-full px-5 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-6 bg-surface-muted rounded-[2rem] border border-border">
-            <div className="space-y-2 col-span-1">
-              <label className="text-xs font-black text-[#6B7280] uppercase tracking-widest ml-1">
-                سعر الشراء (التكلفة) | Cost Price
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                required
-                value={formData.costPrice}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    costPrice: Number(e.target.value),
-                  })
-                }
-                placeholder="0.00"
-                className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content"
-              />
-            </div>
-
-            <div className="space-y-2 col-span-1">
-              <label className="text-xs font-black text-[#6B7280] uppercase tracking-widest ml-1">
-                سعر البيع | Selling Price
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                required
-                value={formData.pricePerUnit}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    pricePerUnit: Number(e.target.value),
-                  })
-                }
-                placeholder="0.00"
-                className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content"
-              />
-            </div>
-
-            <div className="space-y-2 col-span-1 md:col-span-2">
-              <label className="text-xs font-black text-[#6B7280] uppercase tracking-widest ml-1">
-                الحالة الضريبية للمنتج | VAT Status
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  {
-                    id: "inclusive",
-                    label: "شامل الضريبة",
-                    desc: "VAT Inclusive (15%)",
-                  },
-                  {
-                    id: "exclusive",
-                    label: "غير شامل",
-                    desc: "VAT Exclusive (+15%)",
-                  },
-                  { id: "exempt", label: "معفى من الضريبة", desc: "VAT Exempt (0%)" },
-                ].map((tax) => (
-                  <button
-                    key={tax.id}
-                    type="button"
-                    onClick={() =>
-                      setFormData({ ...formData, taxType: tax.id as any })
-                    }
-                    className={cn(
-                      "flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all text-center h-[52px]",
-                      formData.taxType === tax.id
-                        ? "bg-[#1C8FFF]/10 border-[#1C8FFF] text-[#1C8FFF]"
-                        : "bg-surface border-transparent text-content-muted hover:bg-surface-muted",
-                    )}
-                  >
-                    <span className="text-xs font-black leading-tight">{tax.label}</span>
-                    <span className="text-[8px] font-bold opacity-70 leading-none">{tax.desc}</span>
-                  </button>
-                ))}
+          <div className="bg-surface-muted/50 p-6 rounded-[2rem] border border-border">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
+              <div className="space-y-2 col-span-1 md:col-span-4 text-right">
+                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                  {t("inventory.unit")}
+                </label>
+                <SmartSelect
+                  value={formData.unit}
+                  onChange={(val) =>
+                    setFormData({ ...formData, unit: val as any })
+                  }
+                  options={[
+                    { value: "meter", label: t("inventory.unit_meter") },
+                    { value: "yard", label: t("inventory.unit_yard") },
+                    { value: "roll", label: t("inventory.unit_roll") },
+                    { value: "bolt", label: "طاقة (Bolt)" },
+                    { value: "piece", label: t("inventory.unit_piece") },
+                    { value: "box", label: "صندوق (Box)" },
+                  ]}
+                  className="bg-surface border-none text-right"
+                />
+              </div>
+              <div className="space-y-2 col-span-1 md:col-span-4 text-right">
+                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                  معامل التحويل
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  value={formData.conversionRate}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      conversionRate: Number(e.target.value),
+                    })
+                  }
+                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
+                />
+              </div>
+              <div className="space-y-2 col-span-1 md:col-span-4 text-right">
+                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                  {t("inventory.min_threshold")}
+                </label>
+                <input
+                  type="number"
+                  required
+                  value={formData.minThreshold}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      minThreshold: Number(e.target.value),
+                    })
+                  }
+                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
+                />
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-brand/5 p-6 rounded-2xl border border-brand/10">
-            <div className="space-y-2">
-              <label className="text-xs font-black text-content uppercase tracking-widest ml-1">
-                المورد (Supplier)
-              </label>
-              <SmartSelect
-                value={formData.supplierId}
-                onChange={(val) => setFormData({ ...formData, supplierId: val })}
-                options={[
-                  { value: "", label: "اختر مورد..." },
-                  ...suppliersList.map((s: any) => ({ value: s.id, label: s.name }))
-                ]}
-                className="bg-surface border-none"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black text-content uppercase tracking-widest ml-1">
-                الرصيد الافتتاحي (Opening Balance)
-              </label>
-              <input
-                type="number"
-                placeholder="0.00"
-                value={formData.openingBalance || ""}
-                onChange={(e) => {
-                  const val = Number(e.target.value);
-                  setFormData({ ...formData, openingBalance: val, initialStock: val });
-                }}
-                className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content"
-              />
+          <div className="bg-surface-muted/50 p-6 rounded-[2rem] border border-border">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
+              <div className="space-y-2 col-span-1 md:col-span-3 text-right">
+                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                  سعر الشراء (التكلفة)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  value={formData.costPrice}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      costPrice: Number(e.target.value),
+                    })
+                  }
+                  placeholder="0.00"
+                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content text-right"
+                />
+              </div>
+
+              <div className="space-y-2 col-span-1 md:col-span-3 text-right">
+                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                  سعر البيع
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  value={formData.pricePerUnit}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      pricePerUnit: Number(e.target.value),
+                    })
+                  }
+                  placeholder="0.00"
+                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content text-right"
+                />
+              </div>
+
+              <div className="space-y-2 col-span-1 md:col-span-6 text-right">
+                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                  الحالة الضريبية للمنتج
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    {
+                      id: "inclusive",
+                      label: "شامل الضريبة",
+                      desc: "VAT Inclusive (15%)",
+                    },
+                    {
+                      id: "exclusive",
+                      label: "غير شامل",
+                      desc: "VAT Exclusive (+15%)",
+                    },
+                    { id: "exempt", label: "معفى من الضريبة", desc: "VAT Exempt (0%)" },
+                  ].map((tax) => (
+                    <button
+                      key={tax.id}
+                      type="button"
+                      onClick={() =>
+                        setFormData({ ...formData, taxType: tax.id as any })
+                      }
+                      className={cn(
+                        "flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all text-center h-[52px]",
+                        formData.taxType === tax.id
+                          ? "bg-[#1C8FFF]/10 border-[#1C8FFF] text-[#1C8FFF]"
+                          : "bg-surface border-transparent text-content-muted hover:bg-surface-muted",
+                      )}
+                    >
+                      <span className="text-xs font-black leading-tight">{tax.label}</span>
+                      <span className="text-[8px] font-bold opacity-70 leading-none">{tax.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
-                {t("inventory.sku")}
-              </label>
-              <input
-                placeholder="رقمي فقط (توليد آلي إن تُرك فارغاً)"
-                value={formData.sku}
-                onChange={(e) =>
-                  setFormData({ ...formData, sku: e.target.value.replace(/\D/g, "") })
-                }
-                className="w-full px-5 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
-                {t("inventory.barcode")}
-              </label>
-              <input
-                placeholder="Barcode (Auto)"
-                value={formData.barcode}
-                onChange={(e) =>
-                  setFormData({ ...formData, barcode: e.target.value })
-                }
-                className="w-full px-5 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content"
-              />
+          <div className="bg-brand/5 p-6 rounded-[2rem] border border-brand/10 text-right">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
+              <div className="space-y-2 col-span-1 md:col-span-6">
+                <label className="text-xs font-black text-content uppercase tracking-widest mx-1 block">
+                  المورد
+                </label>
+                <SmartSelect
+                  value={formData.supplierId}
+                  onChange={(val) => setFormData({ ...formData, supplierId: val })}
+                  options={[
+                    { value: "", label: "اختر مورد..." },
+                    ...suppliersList.map((s: any) => ({ value: s.id, label: s.name }))
+                  ]}
+                  className="bg-surface border-none text-right"
+                />
+              </div>
+              <div className="space-y-2 col-span-1 md:col-span-6">
+                <label className="text-xs font-black text-content uppercase tracking-widest mx-1 block">
+                  الرصيد الافتتاحي
+                </label>
+                <input
+                  type="number"
+                  placeholder="0.00"
+                  value={formData.openingBalance || ""}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    setFormData({ ...formData, openingBalance: val, initialStock: val });
+                  }}
+                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
+                />
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-brand/5 rounded-2xl border border-brand/10">
+          <div className="bg-surface-muted/50 p-6 rounded-[2rem] border border-border">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
+              <div className="space-y-2 col-span-1 md:col-span-6">
+                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                  {t("inventory.sku")}
+                </label>
+                <input
+                  placeholder="رقمي فقط (توليد آلي إن تُرك فارغاً)"
+                  value={formData.sku}
+                  onChange={(e) =>
+                    setFormData({ ...formData, sku: e.target.value.replace(/\D/g, "") })
+                  }
+                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
+                />
+              </div>
+              <div className="space-y-2 col-span-1 md:col-span-6">
+                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                  {t("inventory.barcode")}
+                </label>
+                <input
+                  placeholder="Barcode (Auto)"
+                  value={formData.barcode}
+                  onChange={(e) =>
+                    setFormData({ ...formData, barcode: e.target.value })
+                  }
+                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-6 bg-brand/5 rounded-[2rem] border border-brand/10">
             <div>
               <h4 className="text-sm font-black text-content">إظهار في شاشة البيع (POS)</h4>
               <p className="text-xs text-content-muted">إذا تم تفعيله، سيتمكن الكاشير من بيع هذا المنتج مباشرة من شاشة البيع</p>
@@ -3110,7 +3122,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -3122,18 +3134,18 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-surface w-full max-w-3xl rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
+        className="bg-surface w-full max-w-3xl rounded-2xl sm:rounded-3xl md:rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[90vh]"
       >
-        <div className="p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
-          <div className="flex items-center gap-4">
-            <div className="p-4 bg-brand text-white rounded-2xl shadow-lg shadow-brand/10">
-              <Plus size={24} />
+        <div className="p-4 sm:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="p-2.5 sm:p-4 bg-brand text-white rounded-xl sm:rounded-2xl shadow-lg shadow-brand/10 shrink-0">
+              <Plus size={20} className="sm:size-6" />
             </div>
             <div>
-              <h2 className="text-2xl font-black text-content">
+              <h2 className="text-lg sm:text-2xl font-black text-content">
                 {t("common.edit")} : {item.name}
               </h2>
-              <p className="text-xs text-content-muted font-bold uppercase tracking-widest">
+              <p className="text-[10px] sm:text-xs text-content-muted font-bold uppercase tracking-widest">
                 {t("inventory.master_catalog")}
               </p>
             </div>
@@ -3142,13 +3154,13 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
             onClick={onClose}
             className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm"
           >
-            <X size={24} className="text-content-muted" />
+            <X size={20} className="text-content-muted sm:size-6" />
           </button>
         </div>
 
-        <form onSubmit={handleUpdate} className="p-8 space-y-8 overflow-y-auto">
+        <form onSubmit={handleUpdate} dir="rtl" className="p-4 sm:p-8 space-y-4 sm:space-y-8 overflow-y-auto text-right">
           {/* Image Uploader */}
-          <div className="bg-surface-muted/50 p-6 rounded-[2rem] border border-border">
+          <div className="bg-surface-muted/50 p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-border">
             <ProductImageUploader
               tenantId={tenantId}
               onUploadComplete={(url: string) =>
@@ -3158,56 +3170,58 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
-                {t("inventory.item_name")}
-              </label>
-              <input
-                required
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                className="w-full px-5 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
-                {t("inventory.category")}
-              </label>
-              <SmartSelect
-                value={formData.category}
-                onChange={(val) =>
-                  setFormData({ ...formData, category: val as any })
-                }
-                options={[
-                  { value: "fabric", label: t("inventory.category_fabric") },
-                  {
-                    value: "ready_made",
-                    label: t("inventory.category_ready_made"),
-                  },
-                  { value: "thread", label: t("inventory.category_thread") },
-                  { value: "button", label: t("inventory.category_button") },
-                  { value: "lining", label: t("inventory.category_lining") },
-                  { value: "accessories", label: "إكسسوارات" },
-                  { value: "other", label: t("inventory.category_other") },
-                ]}
-                className="bg-surface-muted border-none"
-              />
-            </div>
-            <div className="space-y-2 col-span-1 md:col-span-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1 transition-all">
-                الوصف | Description
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                placeholder="تفاصيل ووصف إضافي للمنتج..."
-                className="w-full px-5 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content resize-none h-16"
-              />
+          <div className="bg-surface-muted/50 p-6 rounded-[2rem] border border-border">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
+              <div className="space-y-2 col-span-1 md:col-span-6 text-right">
+                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                  {t("inventory.item_name")}
+                </label>
+                <input
+                  required
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
+                />
+              </div>
+              <div className="space-y-2 col-span-1 md:col-span-6 text-right">
+                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                  {t("inventory.category")}
+                </label>
+                <SmartSelect
+                  value={formData.category}
+                  onChange={(val) =>
+                    setFormData({ ...formData, category: val as any })
+                  }
+                  options={[
+                    { value: "fabric", label: t("inventory.category_fabric") },
+                    {
+                      value: "ready_made",
+                      label: t("inventory.category_ready_made"),
+                    },
+                    { value: "thread", label: t("inventory.category_thread") },
+                    { value: "button", label: t("inventory.category_button") },
+                    { value: "lining", label: t("inventory.category_lining") },
+                    { value: "accessories", label: "إكسسوارات" },
+                    { value: "other", label: t("inventory.category_other") },
+                  ]}
+                  className="bg-surface border-none text-right"
+                />
+              </div>
+              <div className="space-y-2 col-span-1 md:col-span-12 text-right">
+                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                  الوصف
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  placeholder="تفاصيل ووصف إضافي للمنتج..."
+                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content resize-none h-16 text-right"
+                />
+              </div>
             </div>
           </div>
 
@@ -3225,10 +3239,10 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                       تخصيصات الثوب الجاهز
                     </h3>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-content-muted uppercase tracking-widest ml-1">
-                        نوع الياقة (Collar)
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
+                    <div className="space-y-2 col-span-1 md:col-span-6 text-right">
+                      <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                        نوع الياقة
                       </label>
                       <SmartSelect
                         value={formData.collarType}
@@ -3242,12 +3256,12 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                           { value: "saudi", label: "سعودي" },
                           { value: "marini", label: "ماريني" },
                         ]}
-                        className="bg-surface border-none"
+                        className="bg-surface border-none text-right"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-content-muted uppercase tracking-widest ml-1">
-                        نوع الكبك (Cuff)
+                    <div className="space-y-2 col-span-1 md:col-span-6 text-right">
+                      <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                        نوع الكبك
                       </label>
                       <SmartSelect
                         value={formData.cuffType}
@@ -3260,12 +3274,12 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                           { value: "double", label: "مزدوج (للأزرار)" },
                           { value: "french", label: "فرنسي" },
                         ]}
-                        className="bg-surface border-none"
+                        className="bg-surface border-none text-right"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px) font-black text-content-muted uppercase tracking-widest ml-1">
-                        نوع الجيب (Pocket)
+                    <div className="space-y-2 col-span-1 md:col-span-6 text-right">
+                      <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                        نوع الجيب
                       </label>
                       <SmartSelect
                         value={formData.pocketType}
@@ -3278,12 +3292,12 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                           { value: "visible", label: "ظاهري" },
                           { value: "none", label: "بدون جيب" },
                         ]}
-                        className="bg-surface border-none"
+                        className="bg-surface border-none text-right"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-content-muted uppercase tracking-widest ml-1">
-                        شكل الصدر (Chest)
+                    <div className="space-y-2 col-span-1 md:col-span-6 text-right">
+                      <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                        شكل الصدر
                       </label>
                       <SmartSelect
                         value={formData.chestStyle}
@@ -3296,7 +3310,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                           { value: "pleated", label: "بكسرات" },
                           { value: "embroided", label: "مطرز" },
                         ]}
-                        className="bg-surface border-none"
+                        className="bg-surface border-none text-right"
                       />
                     </div>
                   </div>
@@ -3305,202 +3319,210 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
             )}
           </AnimatePresence>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="space-y-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
-                {t("inventory.unit")}
-              </label>
-              <SmartSelect
-                value={formData.unit}
-                onChange={(val) =>
-                  setFormData({ ...formData, unit: val as any })
-                }
-                options={[
-                  { value: "meter", label: t("inventory.unit_meter") },
-                  { value: "yard", label: t("inventory.unit_yard") },
-                  { value: "roll", label: t("inventory.unit_roll") },
-                  { value: "bolt", label: "طاقة (Bolt)" },
-                  { value: "piece", label: t("inventory.unit_piece") },
-                  { value: "box", label: "صندوق (Box)" },
-                ]}
-                className="bg-surface-muted border-none"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
-                معامل التحويل (Conversion Rate)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                required
-                value={formData.conversionRate}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    conversionRate: Number(e.target.value),
-                  })
-                }
-                className="w-full px-5 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
-                {t("inventory.min_threshold")}
-              </label>
-              <input
-                type="number"
-                required
-                value={formData.minThreshold}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    minThreshold: Number(e.target.value),
-                  })
-                }
-                className="w-full px-5 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-6 bg-surface-muted rounded-[2rem] border border-border">
-            <div className="space-y-2 col-span-1">
-              <label className="text-xs font-black text-[#6B7280] uppercase tracking-widest ml-1">
-                سعر الشراء (التكلفة) | Cost Price
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                required
-                value={formData.costPrice}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    costPrice: Number(e.target.value),
-                  })
-                }
-                placeholder="0.00"
-                className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content"
-              />
-            </div>
-
-            <div className="space-y-2 col-span-1">
-              <label className="text-xs font-black text-[#6B7280] uppercase tracking-widest ml-1">
-                سعر البيع | Selling Price
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                required
-                value={formData.pricePerUnit}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    pricePerUnit: Number(e.target.value),
-                  })
-                }
-                placeholder="0.00"
-                className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content"
-              />
-            </div>
-
-            <div className="space-y-2 col-span-1 md:col-span-2">
-              <label className="text-xs font-black text-[#6B7280] uppercase tracking-widest ml-1">
-                الحالة الضريبية للمنتج | VAT Status
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  {
-                    id: "inclusive",
-                    label: "شامل الضريبة",
-                    desc: "VAT Inclusive (15%)",
-                  },
-                  {
-                    id: "exclusive",
-                    label: "غير شامل",
-                    desc: "VAT Exclusive (+15%)",
-                  },
-                  { id: "exempt", label: "معفى من الضريبة", desc: "VAT Exempt (0%)" },
-                ].map((tax) => (
-                  <button
-                    key={tax.id}
-                    type="button"
-                    onClick={() =>
-                      setFormData({ ...formData, taxType: tax.id as any })
-                    }
-                    className={cn(
-                      "flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all text-center h-[52px]",
-                      formData.taxType === tax.id
-                        ? "bg-[#1C8FFF]/10 border-[#1C8FFF] text-[#1C8FFF]"
-                        : "bg-surface border-transparent text-content-muted hover:bg-surface-muted",
-                    )}
-                  >
-                    <span className="text-xs font-black leading-tight">{tax.label}</span>
-                    <span className="text-[8px] font-bold opacity-70 leading-none">{tax.desc}</span>
-                  </button>
-                ))}
+          <div className="bg-surface-muted/50 p-6 rounded-[2rem] border border-border">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
+              <div className="space-y-2 col-span-1 md:col-span-4 text-right">
+                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                  {t("inventory.unit")}
+                </label>
+                <SmartSelect
+                  value={formData.unit}
+                  onChange={(val) =>
+                    setFormData({ ...formData, unit: val as any })
+                  }
+                  options={[
+                    { value: "meter", label: t("inventory.unit_meter") },
+                    { value: "yard", label: t("inventory.unit_yard") },
+                    { value: "roll", label: t("inventory.unit_roll") },
+                    { value: "bolt", label: "طاقة (Bolt)" },
+                    { value: "piece", label: t("inventory.unit_piece") },
+                    { value: "box", label: "صندوق (Box)" },
+                  ]}
+                  className="bg-surface border-none text-right"
+                />
+              </div>
+              <div className="space-y-2 col-span-1 md:col-span-4 text-right">
+                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                  معامل التحويل
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  value={formData.conversionRate}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      conversionRate: Number(e.target.value),
+                    })
+                  }
+                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
+                />
+              </div>
+              <div className="space-y-2 col-span-1 md:col-span-4 text-right">
+                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                  {t("inventory.min_threshold")}
+                </label>
+                <input
+                  type="number"
+                  required
+                  value={formData.minThreshold}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      minThreshold: Number(e.target.value),
+                    })
+                  }
+                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
+                />
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-brand/5 p-6 rounded-2xl border border-brand/10">
-            <div className="space-y-2">
-              <label className="text-xs font-black text-content uppercase tracking-widest ml-1">
-                المورد (Supplier)
-              </label>
-              <SmartSelect
-                value={formData.supplierId}
-                onChange={(val) => setFormData({ ...formData, supplierId: val })}
-                options={[
-                  { value: "", label: "اختر مورد..." },
-                  ...suppliersList.map((s: any) => ({ value: s.id, label: s.name }))
-                ]}
-                className="bg-surface border-none"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black text-content uppercase tracking-widest ml-1">
-                الرصيد الافتتاحي (Opening Balance)
-              </label>
-              <input
-                type="number"
-                placeholder="0.00"
-                value={formData.openingBalance || ""}
-                onChange={(e) => setFormData({ ...formData, openingBalance: Number(e.target.value) })}
-                className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content"
-              />
+          <div className="bg-surface-muted/50 p-6 rounded-[2rem] border border-border">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
+              <div className="space-y-2 col-span-1 md:col-span-3 text-right">
+                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                  سعر الشراء (التكلفة)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  value={formData.costPrice}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      costPrice: Number(e.target.value),
+                    })
+                  }
+                  placeholder="0.00"
+                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content text-right"
+                />
+              </div>
+
+              <div className="space-y-2 col-span-1 md:col-span-3 text-right">
+                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                  سعر البيع
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  value={formData.pricePerUnit}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      pricePerUnit: Number(e.target.value),
+                    })
+                  }
+                  placeholder="0.00"
+                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content text-right"
+                />
+              </div>
+
+              <div className="space-y-2 col-span-1 md:col-span-6 text-right">
+                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                  الحالة الضريبية للمنتج
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    {
+                      id: "inclusive",
+                      label: "شامل الضريبة",
+                      desc: "VAT Inclusive (15%)",
+                    },
+                    {
+                      id: "exclusive",
+                      label: "غير شامل",
+                      desc: "VAT Exclusive (+15%)",
+                    },
+                    { id: "exempt", label: "معفى من الضريبة", desc: "VAT Exempt (0%)" },
+                  ].map((tax) => (
+                    <button
+                      key={tax.id}
+                      type="button"
+                      onClick={() =>
+                        setFormData({ ...formData, taxType: tax.id as any })
+                      }
+                      className={cn(
+                        "flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all text-center h-[52px]",
+                        formData.taxType === tax.id
+                          ? "bg-[#1C8FFF]/10 border-[#1C8FFF] text-[#1C8FFF]"
+                          : "bg-surface border-transparent text-content-muted hover:bg-surface-muted",
+                      )}
+                    >
+                      <span className="text-xs font-black leading-tight">{tax.label}</span>
+                      <span className="text-[8px] font-bold opacity-70 leading-none">{tax.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
-                الرقم المرجعي (SKU)
-              </label>
-              <input
-                placeholder="أرقام فقط (مثال: 82749301)"
-                value={formData.sku}
-                onChange={(e) =>
-                  setFormData({ ...formData, sku: e.target.value.replace(/\D/g, "") })
-                }
-                className="w-full px-5 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
-                الباركود (Barcode)
-              </label>
-              <input
-                value={formData.barcode}
-                onChange={(e) =>
-                  setFormData({ ...formData, barcode: e.target.value })
-                }
-                className="w-full px-5 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content"
-              />
+          <div className="bg-brand/5 p-6 rounded-[2rem] border border-brand/10 text-right">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
+              <div className="space-y-2 col-span-1 md:col-span-6">
+                <label className="text-xs font-black text-content uppercase tracking-widest mx-1 block">
+                  المورد
+                </label>
+                <SmartSelect
+                  value={formData.supplierId}
+                  onChange={(val) => setFormData({ ...formData, supplierId: val })}
+                  options={[
+                    { value: "", label: "اختر مورد..." },
+                    ...suppliersList.map((s: any) => ({ value: s.id, label: s.name }))
+                  ]}
+                  className="bg-surface border-none text-right"
+                />
+              </div>
+              <div className="space-y-2 col-span-1 md:col-span-6">
+                <label className="text-xs font-black text-content uppercase tracking-widest mx-1 block">
+                  الرصيد الافتتاحي
+                </label>
+                <input
+                  type="number"
+                  placeholder="0.00"
+                  value={formData.openingBalance || ""}
+                  onChange={(e) => setFormData({ ...formData, openingBalance: Number(e.target.value) })}
+                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
+                />
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-brand/5 rounded-2xl border border-brand/10">
+          <div className="bg-surface-muted/50 p-6 rounded-[2rem] border border-border">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
+              <div className="space-y-2 col-span-1 md:col-span-6">
+                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                  الرقم المرجعي (SKU)
+                </label>
+                <input
+                  placeholder="أرقام فقط (مثال: 82749301)"
+                  value={formData.sku}
+                  onChange={(e) =>
+                    setFormData({ ...formData, sku: e.target.value.replace(/\D/g, "") })
+                  }
+                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
+                />
+              </div>
+              <div className="space-y-2 col-span-1 md:col-span-6">
+                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                  الباركود (Barcode)
+                </label>
+                <input
+                  value={formData.barcode}
+                  onChange={(e) =>
+                    setFormData({ ...formData, barcode: e.target.value })
+                  }
+                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-6 bg-brand/5 rounded-[2rem] border border-brand/10">
             <div>
               <h4 className="text-sm font-black text-content">إظهار في شاشة البيع (POS)</h4>
               <p className="text-xs text-content-muted">إذا تم تفعيله، سيتمكن الكاشير من بيع هذا المنتج مباشرة من شاشة البيع</p>

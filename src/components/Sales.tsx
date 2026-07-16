@@ -330,103 +330,116 @@ export default function Sales({ tenantId }: { tenantId: string }) {
     <div className="flex flex-col h-full font-sans bg-background" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Header & Top Tabs */}
       <div className="bg-surface border-b border-border shrink-0">
-        <div className="px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <h1 className="text-2xl font-bold text-content">{t('sales.title', 'المبيعات')}</h1>
-          {activeShift && (
-            <div className="flex flex-wrap items-center gap-4 bg-surface-muted/30 px-4 py-2.5 rounded-2xl border border-border/60">
-              {/* Active Shift Details */}
-              <div className="text-sm text-content-muted flex items-center gap-2">
-                <Clock className="text-brand shrink-0" size={16} />
-                <span>
-                  {t('sales.active_shift', 'وردية نشطة')}: <span className="font-extrabold text-content">{activeShift.staffName}</span> | {t('sales.shift_start', 'البداية')}: <span className="font-semibold text-content" dir="ltr">{new Date(activeShift.startTime).toLocaleTimeString(i18n.language === 'ar' ? 'ar-SA' : (i18n.language === 'ur' ? 'ur-PK' : 'en-US'), { hour: '2-digit', minute: '2-digit' })}</span>
-                </span>
-              </div>
-              
-              {/* Divider */}
-              <span className="hidden md:inline h-4 w-px bg-border" />
-
-              {/* Dynamic Cash Drawer Balance Badge */}
+        <div className="px-4 md:px-6 py-4 flex flex-col gap-4">
+          <div className="flex justify-between items-center w-full">
+            <h1 className="text-xl md:text-2xl font-bold text-content">{t('sales.title', 'المبيعات')}</h1>
+            
+            {/* Quick cash drawer badge for mobile, compact */}
+            {activeShift && (
               <button
                 onClick={() => setIsCashDrawerDetailsOpen(true)}
-                className="flex items-center gap-2 bg-emerald-500/10 text-emerald-600 px-3.5 py-1.5 rounded-xl border border-emerald-500/20 shadow-sm hover:bg-emerald-500/20 transition-all cursor-pointer active:scale-95"
-                title={t('sales.cash_drawer_tooltip', 'انقر لعرض تفصيل وتدفق نقدية الصندوق')}
+                className="flex md:hidden items-center gap-1.5 bg-emerald-500/10 text-emerald-600 px-3 py-1.5 rounded-xl border border-emerald-500/20 text-[11px] font-black cursor-pointer shadow-sm active:scale-95"
               >
-                <Wallet size={16} className="text-emerald-500 shrink-0" />
-                <span className="text-xs font-bold text-emerald-700">{t('sales.cash_drawer', 'صندوق الكاش')}:</span>
-                <span className="text-sm font-black text-emerald-600">
+                <Wallet size={14} className="text-emerald-500 shrink-0" />
+                <span>
                   <PriceDisplay amount={cashDrawerBalance} />
                 </span>
               </button>
+            )}
+          </div>
 
-              {/* Action operations buttons */}
-              {canManageShifts && (
-                <>
-                  <span className="hidden md:inline h-4 w-px bg-border" />
-                  <div className="flex items-center gap-2">
+          {activeShift && (
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface-muted/30 p-3 md:p-4 rounded-2xl border border-border/60">
+              {/* Active Shift Details */}
+              <div className="text-xs md:text-sm text-content-muted flex items-center gap-2">
+                <Clock className="text-brand shrink-0" size={16} />
+                <span className="leading-relaxed">
+                  {t('sales.active_shift', 'وردية نشطة')}: <span className="font-extrabold text-content">{activeShift.staffName}</span> 
+                  <span className="mx-1.5 text-border">|</span>
+                  {t('sales.shift_start', 'البداية')}: <span className="font-semibold text-content" dir="ltr">{new Date(activeShift.startTime).toLocaleTimeString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between md:justify-end gap-2.5 mt-1 md:mt-0 pt-2.5 md:pt-0 border-t md:border-t-0 border-border/50">
+                {/* Desktop Cash Drawer */}
+                <button
+                  onClick={() => setIsCashDrawerDetailsOpen(true)}
+                  className="hidden md:flex items-center gap-2 bg-emerald-500/10 text-emerald-600 px-3.5 py-1.5 rounded-xl border border-emerald-500/20 shadow-sm hover:bg-emerald-500/20 transition-all cursor-pointer active:scale-95"
+                  title={t('sales.cash_drawer_tooltip', 'انقر لعرض تفصيل وتدفق نقدية الصندوق')}
+                >
+                  <Wallet size={16} className="text-emerald-500 shrink-0" />
+                  <span className="text-xs font-bold text-emerald-700">{t('sales.cash_drawer', 'صندوق الكاش')}:</span>
+                  <span className="text-sm font-black text-emerald-600">
+                    <PriceDisplay amount={cashDrawerBalance} />
+                  </span>
+                </button>
+
+                {canManageShifts && (
+                  <div className="flex items-center gap-2 w-full md:w-auto">
                     <button 
                       onClick={() => setIsCashOperationsModalOpen(true)}
-                      className="text-brand bg-brand/5 hover:bg-brand/10 border border-brand/20 px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all duration-250 flex items-center gap-1.5 active:scale-95"
+                      className="flex-1 md:flex-none text-brand bg-brand/5 hover:bg-brand/10 border border-brand/20 px-3 py-2 md:py-1.5 rounded-xl text-xs font-extrabold transition-all duration-250 flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer min-h-[36px]"
                     >
-                      <DollarSign size={15} />
-                      {t('sales.cash_operations', 'حركة الدرج النقدية')}
+                      <DollarSign size={14} />
+                      <span className="whitespace-nowrap">{t('sales.cash_operations', 'حركة الدرج')}</span>
                     </button>
                     <button 
                       onClick={handleCloseShift}
-                      className="bg-brand text-white hover:bg-brand/90 px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all duration-250 active:scale-95"
+                      className="flex-1 md:flex-none bg-brand text-white hover:bg-brand/90 px-3 py-2 md:py-1.5 rounded-xl text-xs font-extrabold transition-all duration-250 active:scale-95 cursor-pointer min-h-[36px] whitespace-nowrap"
                     >
                       {t('sales.close_shift', 'إغلاق الوردية')}
                     </button>
                   </div>
-                </>
-              )}
+                )}
+              </div>
             </div>
           )}
         </div>
         
         {/* Primary Top Tabs */}
-        <div className="flex px-6 gap-8 border-b border-border/50">
+        <div className="flex px-4 md:px-6 gap-4 md:gap-8 border-b border-border/50 overflow-x-auto scrollbar-hide whitespace-nowrap scroll-smooth">
           <button
             onClick={() => handleTopTabChange('pos')}
             className={cn(
-              "pb-4 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors",
+              "pb-4 text-xs md:text-sm font-bold flex items-center gap-2 border-b-2 transition-colors shrink-0",
               activeTopTab === 'pos' ? "border-brand text-brand" : "border-transparent text-content-muted hover:text-content"
             )}
           >
-            <Monitor size={18} />
+            <Monitor size={16} />
             {t('sales.pos', 'نقطة البيع (POS)')}
           </button>
           <button
             onClick={() => handleTopTabChange('returns')}
             className={cn(
-              "pb-4 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors",
+              "pb-4 text-xs md:text-sm font-bold flex items-center gap-2 border-b-2 transition-colors shrink-0",
               activeTopTab === 'returns' ? "border-brand text-brand" : "border-transparent text-content-muted hover:text-content"
             )}
           >
-            <RotateCcw size={18} />
+            <RotateCcw size={16} />
             {t('sales.returns', 'المرتجعات')}
           </button>
           {canManageShifts && (
             <button
               onClick={() => handleTopTabChange('shifts')}
               className={cn(
-                "pb-4 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors",
+                "pb-4 text-xs md:text-sm font-bold flex items-center gap-2 border-b-2 transition-colors shrink-0",
                 activeTopTab === 'shifts' ? "border-brand text-brand" : "border-transparent text-content-muted hover:text-content"
               )}
             >
-              <Clock size={18} />
+              <Clock size={16} />
               {t('sales.shifts', 'الورديات')}
             </button>
           )}
         </div>
 
         {/* Sub Tabs */}
-        <div className="flex px-6 gap-4 py-3 bg-surface-muted/50 overflow-x-auto scrollbar-hide scroll-smooth">
+        <div className="flex px-4 md:px-6 gap-3 py-3 bg-surface-muted/50 overflow-x-auto scrollbar-hide scroll-smooth w-full">
           {activeTopTab === 'pos' && (
             <>
               <button
                 onClick={() => setActiveSubTab('pos_main')}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-bold transition-colors",
+                  "px-4 py-2 rounded-lg text-sm font-bold transition-colors shrink-0 whitespace-nowrap",
                   activeSubTab === 'pos_main' ? "bg-brand text-white" : "bg-surface text-content-muted border border-border hover:border-brand hover:text-brand"
                 )}
               >
@@ -435,7 +448,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               <button
                 onClick={() => setActiveSubTab('sales_record')}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-bold transition-colors",
+                  "px-4 py-2 rounded-lg text-sm font-bold transition-colors shrink-0 whitespace-nowrap",
                   activeSubTab === 'sales_record' ? "bg-brand text-white" : "bg-surface text-content-muted border border-border hover:border-brand hover:text-brand"
                 )}
               >
@@ -444,7 +457,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               <button
                 onClick={() => setActiveSubTab('tax_invoices')}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-bold transition-colors",
+                  "px-4 py-2 rounded-lg text-sm font-bold transition-colors shrink-0 whitespace-nowrap",
                   activeSubTab === 'tax_invoices' ? "bg-brand text-white" : "bg-surface text-content-muted border border-border hover:border-brand hover:text-brand"
                 )}
               >
@@ -453,7 +466,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               <button
                 onClick={() => setActiveSubTab('credit_notes')}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-bold transition-colors",
+                  "px-4 py-2 rounded-lg text-sm font-bold transition-colors shrink-0 whitespace-nowrap",
                   activeSubTab === 'credit_notes' ? "bg-brand text-white" : "bg-surface text-content-muted border border-border hover:border-brand hover:text-brand"
                 )}
               >
@@ -466,7 +479,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               <button
                 onClick={() => setActiveSubTab('returns_main')}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-bold transition-colors",
+                  "px-4 py-2 rounded-lg text-sm font-bold transition-colors shrink-0 whitespace-nowrap",
                   activeSubTab === 'returns_main' ? "bg-brand text-white" : "bg-surface text-content-muted border border-border hover:border-brand hover:text-brand"
                 )}
               >
@@ -475,7 +488,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               <button
                 onClick={() => setActiveSubTab('returns_record')}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-bold transition-colors",
+                  "px-4 py-2 rounded-lg text-sm font-bold transition-colors shrink-0 whitespace-nowrap",
                   activeSubTab === 'returns_record' ? "bg-brand text-white" : "bg-surface text-content-muted border border-border hover:border-brand hover:text-brand"
                 )}
               >
@@ -488,7 +501,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               <button
                 onClick={() => setActiveSubTab('shifts_main')}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-bold transition-colors",
+                  "px-4 py-2 rounded-lg text-sm font-bold transition-colors shrink-0 whitespace-nowrap",
                   activeSubTab === 'shifts_main' ? "bg-brand text-white" : "bg-surface text-content-muted border border-border hover:border-brand hover:text-brand"
                 )}
               >
@@ -497,7 +510,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               <button
                 onClick={() => setActiveSubTab('shifts_record')}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-bold transition-colors",
+                  "px-4 py-2 rounded-lg text-sm font-bold transition-colors shrink-0 whitespace-nowrap",
                   activeSubTab === 'shifts_record' ? "bg-brand text-white" : "bg-surface text-content-muted border border-border hover:border-brand hover:text-brand"
                 )}
               >

@@ -1,21 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { BarChart3, TrendingUp, Users, DollarSign, ArrowUpRight, ArrowDownRight, RefreshCw } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, DollarSign, RefreshCw } from 'lucide-react';
 import { PriceDisplay } from './PriceDisplay';
 import { supabase } from '../lib/supabase/client';
 import { 
-  AreaChart, 
-  Area, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
   BarChart,
-  Bar,
-  Cell
+  Bar
 } from 'recharts';
+import { useTranslation } from 'react-i18next';
 
 export default function SaaSReports() {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+
   const [data, setData] = useState<{
     mrr: number;
     arpu: number;
@@ -58,7 +59,7 @@ export default function SaaSReports() {
       const monthsMap = new Map();
       orders.forEach(o => {
         const date = new Date(o.order_date);
-        const month = date.toLocaleDateString('en-US', { month: 'short' });
+        const month = date.toLocaleDateString(i18n.language === 'en' ? 'en-US' : isRtl ? 'ar-SA' : 'en-US', { month: 'short' });
         monthsMap.set(month, (monthsMap.get(month) || 0) + Number(o.total_amount));
       });
 
@@ -82,7 +83,7 @@ export default function SaaSReports() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [i18n.language]);
 
   if (data.loading) {
     return (
@@ -93,29 +94,29 @@ export default function SaaSReports() {
   }
 
   const stats = [
-    { label: 'إجمالي الإيرادات (Platform Sales)', value: <PriceDisplay amount={data.totalRevenue} />, trend: '+12.5%', icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { label: 'متوسط قيمة العميل (ARPU)', value: <PriceDisplay amount={data.arpu} />, trend: '+5.2%', icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-    { label: 'الإيرادات المتكررة (MRR)', value: <PriceDisplay amount={data.mrr} />, trend: '+2.1%', icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: 'معدل التجديد (نموذجي)', value: '94.2%', trend: '-0.5%', icon: BarChart3, color: 'text-rose-600', bg: 'bg-rose-50' },
+    { label: t('saas.total_revenue_platform_sales', 'إجمالي الإيرادات (مبيعات المنصة)'), value: <PriceDisplay amount={data.totalRevenue} />, trend: '+12.5%', icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: t('saas.average_revenue_per_user', 'متوسط قيمة العميل (ARPU)'), value: <PriceDisplay amount={data.arpu} />, trend: '+5.2%', icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+    { label: t('saas.recurring_revenue_mrr', 'الإيرادات المتكررة شهرياً (MRR)'), value: <PriceDisplay amount={data.mrr} />, trend: '+2.1%', icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: t('saas.renewal_rate_typical', 'معدل التجديد (نموذجي)'), value: '94.2%', trend: '-0.5%', icon: BarChart3, color: 'text-rose-600', bg: 'bg-rose-50' },
   ];
 
   return (
-    <div className="space-y-8 font-sans" dir="rtl">
-      <div className="flex justify-between items-center">
+    <div className="space-y-8 font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-black text-gray-900">التقارير المالية</h1>
-          <p className="text-gray-500 font-bold mt-1">تحليل الأداء المالي لمنصة Seen</p>
+          <h1 className="text-3xl font-black text-gray-900">{t('saas.financial_reports_title', 'التقارير المالية والتحليلات')}</h1>
+          <p className="text-gray-500 font-bold mt-1">{t('saas.financial_reports_subtitle', 'تحليل الأداء المالي للمنصة')}</p>
         </div>
         <div className="flex gap-2">
-          <button className="px-6 py-2 bg-white border border-gray-100 rounded-xl font-bold text-sm shadow-sm group">
-            تصدير PDF
+          <button className="px-6 py-2 bg-white border border-gray-100 rounded-xl font-bold text-sm shadow-sm hover:bg-gray-50 transition-colors cursor-pointer">
+            {t('saas.export_pdf', 'تصدير PDF')}
           </button>
           <button 
             onClick={fetchData}
-            className="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-100 flex items-center gap-2 hover:bg-indigo-700 transition-all"
+            className="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-100 flex items-center gap-2 hover:bg-indigo-700 transition-all cursor-pointer"
           >
             <RefreshCw size={16} className={data.loading ? "animate-spin" : ""} />
-            تحديث البيانات
+            {t('saas.refresh_data', 'تحديث البيانات')}
           </button>
         </div>
       </div>
@@ -138,11 +139,11 @@ export default function SaaSReports() {
       </div>
 
       <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
-        <h3 className="text-xl font-black text-gray-900 mb-8">نمو الإيرادات الشهرية المنصة</h3>
+        <h3 className="text-xl font-black text-gray-900 mb-8">{t('saas.monthly_revenue_growth_platform', 'نمو الإيرادات الشهرية للمنصة')}</h3>
         <div className="h-96">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data.chartData.length > 0 ? data.chartData : [
-              { month: 'لا توجد بيانات', revenue: 0 }
+              { month: t('common.no_data', 'لا توجد بيانات'), revenue: 0 }
             ]}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
               <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12, fontWeight: 600}} />
@@ -150,7 +151,7 @@ export default function SaaSReports() {
               <Tooltip 
                 cursor={{fill: '#f8fafc'}} 
                 contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} 
-                formatter={(value: number) => <PriceDisplay amount={value} />}
+                formatter={(value: number) => [ <PriceDisplay amount={value} />, '' ]}
               />
               <Bar dataKey="revenue" fill="#4f46e5" radius={[8, 8, 0, 0]} />
             </BarChart>

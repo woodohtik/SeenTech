@@ -22,7 +22,7 @@ body{font-family:'IBM Plex Sans Arabic','Tajawal',system-ui,sans-serif;color:var
 h1,h2,h3{font-family:'Tajawal','IBM Plex Sans Arabic',sans-serif;font-weight:800;line-height:1.2;letter-spacing:-.01em}
 a{color:inherit;text-decoration:none} img{max-width:100%;display:block}
 .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
-.sec{padding:clamp(54px,8vw,104px) 0}
+.sec{padding:clamp(54px,8vw,104px) 0;scroll-margin-top:74px}
 .surface-2{background:var(--surface-2)}
 .kicker{display:inline-flex;align-items:center;gap:10px;font-family:'Tajawal';font-weight:700;font-size:14px;color:var(--brand-d);margin-bottom:16px}
 .kicker .tick{width:34px;height:10px;flex:none;background:repeating-linear-gradient(to left,var(--brand) 0 1.5px,transparent 1.5px 6px);border-radius:2px;opacity:.9}
@@ -216,7 +216,7 @@ footer{background:#08202f;color:#9fc2da;padding:46px 0 30px}
     <p class="sub">سين يجمع نقطة البيع، القياسات وأوامر التفصيل، فوترة زاتكا، وإدارة المخزون في نظام واحد — مبني خصيصاً لمحلات التفصيل والأقمشة والمفروشات في السعودية والخليج.</p>
     <p class="tagline">نظام واحد يدير محلك من القياس حتى الفاتورة.</p>
     <div class="hero-actions">
-      <a href="/login" target="_parent" class="btn btn-cta">ابدأ الآن مجاناً</a>
+      <a href="/login?view=register" target="_parent" class="btn btn-cta">ابدأ الآن مجاناً</a>
       <a href="#dashboard" class="btn btn-ghost on-dark">▶ شوف كيف يشتغل</a>
     </div>
     <p class="reassure">١٤ يوم تجربة · بدون بطاقة ائتمانية · <b>إذا ما حسّيت الفرق، لا تكمل</b></p>
@@ -310,7 +310,7 @@ footer{background:#08202f;color:#9fc2da;padding:46px 0 30px}
 <section class="midcta">
   <div class="wrap"><div class="inner reveal">
     <h2>جاهز تشوف محلك بوضوح؟</h2>
-    <a href="/login" target="_parent" class="btn btn-cta">ابدأ الآن مجاناً</a>
+    <a href="/login?view=register" target="_parent" class="btn btn-cta">ابدأ الآن مجاناً</a>
   </div></div>
 </section>
 
@@ -389,7 +389,7 @@ footer{background:#08202f;color:#9fc2da;padding:46px 0 30px}
           <div class="field"><label for="activity">نوع النشاط</label>
             <select id="activity" name="activity" required><option value="">اختر نشاطك…</option><option>خياطة رجالية</option><option>خياطة نسائية</option><option>كنب وستائر</option><option>محل أقمشة</option><option>ملابس متخصصة</option></select>
             <span class="err">رجاءً اختر نوع النشاط</span></div>
-          <a href="/login" target="_parent" style="display: block; text-align: center; text-decoration: none;" class="btn btn-cta">ابدأ الآن مجاناً</a>
+          <a href="/login?view=register" target="_parent" style="display: block; text-align: center; text-decoration: none;" class="btn btn-cta">ابدأ الآن مجاناً</a>
           <p class="form-note">نتواصل معك خلال يوم عمل · بياناتك لا تُشارك</p>
         </div>
         <div class="success" id="success"><div class="ok">✓</div><h3>تم استلام طلبك ✦</h3><p style="color:var(--gray);margin-top:8px">بنتواصل معك قريباً لترتيب العرض والتجربة.</p></div>
@@ -423,12 +423,26 @@ footer{background:#08202f;color:#9fc2da;padding:46px 0 30px}
   </div>
 </footer>
 
-<div class="mobile-cta"><a href="/login" target="_parent" class="btn btn-cta">ابدأ الآن مجاناً</a></div>
+<div class="mobile-cta"><a href="/login?view=register" target="_parent" class="btn btn-cta">ابدأ الآن مجاناً</a></div>
 
 <script>
 const burger=document.getElementById('burger'),nav=document.getElementById('nav');
 burger&&burger.addEventListener('click',()=>{const o=nav.classList.toggle('open');burger.setAttribute('aria-expanded',o)});
 nav&&nav.querySelectorAll('.nav-links a').forEach(a=>a.addEventListener('click',()=>{nav.classList.remove('open');burger.setAttribute('aria-expanded',false)}));
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+  anchor.addEventListener('click', function (e) {
+    e.preventDefault();
+    const targetId = this.getAttribute('href');
+    if (targetId === '#top') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      const targetElement = document.querySelector(targetId);
+      if (targetElement) {
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  });
+});
 const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.14});
 document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
 const form=document.getElementById('leadForm');

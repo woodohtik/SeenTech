@@ -178,8 +178,8 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
   );
 
   return (
-    <div className="p-6 font-sans bg-surface" dir={isRtl ? 'rtl' : 'ltr'}>
-      <div className="mb-6 flex justify-between items-center bg-surface p-6 rounded-2xl shadow-sm border border-border">
+    <div className="p-4 md:p-6 font-sans bg-surface" dir={isRtl ? 'rtl' : 'ltr'}>
+      <div className="mb-4 md:mb-6 flex justify-between items-center bg-surface p-4 md:p-6 rounded-2xl md:rounded-[2rem] shadow-sm border border-border">
         <div>
           <h2 className="text-xl font-black text-content flex items-center gap-2">
             <ArrowDownLeft className="text-brand" />
@@ -190,7 +190,7 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="lg:col-span-1 bg-surface p-6 rounded-2xl border border-border shadow-sm flex flex-col">
+        <div className="lg:col-span-1 bg-surface p-4 sm:p-6 rounded-2xl md:rounded-3xl border border-border shadow-sm flex flex-col">
           <h3 className="text-lg font-black text-content mb-4 flex items-center gap-2">
             <ShieldAlert className="text-warning" />
             {t('credit_notes.issue_new', 'إصدار إشعار جديد')}

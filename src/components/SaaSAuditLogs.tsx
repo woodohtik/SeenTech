@@ -8,14 +8,13 @@ import {
   AlertCircle, 
   Search,
   Filter,
-  Download,
-  ChevronLeft,
-  ChevronRight
+  Download
 } from 'lucide-react';
 import { AdminIconInput } from './ui/AdminIconInput';
 import { AdminIconSelect } from './ui/AdminIconSelect';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface AuditLog {
   id: string;
@@ -29,6 +28,9 @@ interface AuditLog {
 }
 
 export default function SaaSAuditLogs() {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -114,15 +116,15 @@ export default function SaaSAuditLogs() {
   };
 
   return (
-    <div className="space-y-8 font-sans" dir="rtl">
+    <div className="space-y-8 font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h2 className="text-3xl font-black text-gray-900">سجل التدقيق الأمني (Audit Logs)</h2>
-          <p className="text-gray-500 font-bold mt-1">تتبع كافة العمليات الحساسة التي تتم في النظام</p>
+          <h2 className="text-3xl font-black text-gray-900">{t('saas.audit_logs_title', 'سجل التدقيق والأمان')}</h2>
+          <p className="text-gray-500 font-bold mt-1">{t('saas.audit_logs_subtitle', 'سجل الأمان والعمليات في النظام في الوقت الفعلي')}</p>
         </div>
-        <button className="flex items-center gap-2 px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-2xl font-bold hover:bg-gray-50 transition-all shadow-sm">
+        <button className="flex items-center gap-2 px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-2xl font-bold hover:bg-gray-50 transition-all shadow-sm cursor-pointer">
           <Download size={18} />
-          <span>تصدير السجل</span>
+          <span>{t('saas.export_logs', 'تصدير السجلات')}</span>
         </button>
       </div>
 
@@ -131,7 +133,7 @@ export default function SaaSAuditLogs() {
         <div className="flex-1">
           <AdminIconInput 
             type="text"
-            placeholder="البحث في السجلات..."
+            placeholder={t('saas.search_logs_placeholder', 'البحث في السجلات حسب العملية، البريد، التفاصيل...')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             startIcon={Search}
@@ -144,78 +146,82 @@ export default function SaaSAuditLogs() {
             startIcon={Filter}
             className="w-full"
           >
-            <option value="all">كافة الأنواع</option>
-            <option value="login">تسجيل الدخول</option>
-            <option value="deletion">عمليات الحذف</option>
-            <option value="update">التحديثات</option>
-            <option value="security_alert">تنبيهات أمنية</option>
+            <option value="all">{t('saas.filter_type_all', 'كل العمليات')}</option>
+            <option value="login">{t('saas.filter_type_login', 'تسجيلات الدخول')}</option>
+            <option value="deletion">{t('saas.filter_type_deletion', 'عمليات الحذف')}</option>
+            <option value="update">{t('saas.filter_type_update', 'التحديثات')}</option>
+            <option value="security_alert">{t('saas.filter_type_security_alert', 'تنبيهات الأمان')}</option>
           </AdminIconSelect>
         </div>
       </div>
 
       {/* Logs Table */}
       <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-x-auto whitespace-nowrap scrollbar-hide">
-        <table className="w-full text-right min-w-max">
-            <thead>
-              <tr className="bg-gray-50 text-gray-500 text-xs font-black uppercase tracking-wider">
-                <th className="px-8 py-5">العملية</th>
-                <th className="px-8 py-5">بواسطة</th>
-                <th className="px-8 py-5">التفاصيل</th>
-                <th className="px-8 py-5">التوقيت</th>
+        <table className="w-full text-right rtl:text-right ltr:text-left min-w-max">
+          <thead>
+            <tr className="bg-gray-50 text-gray-500 text-xs font-black uppercase tracking-wider">
+              <th className="px-8 py-5 text-right rtl:text-right ltr:text-left">{t('saas.action_performed', 'العملية المنفذة')}</th>
+              <th className="px-8 py-5 text-right rtl:text-right ltr:text-left">{t('saas.performed_by', 'بواسطة')}</th>
+              <th className="px-8 py-5 text-right rtl:text-right ltr:text-left">{t('saas.details', 'التفاصيل')}</th>
+              <th className="px-8 py-5 text-right rtl:text-right ltr:text-left">{t('saas.timestamp', 'طابع الوقت')}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {loading ? (
+              <tr>
+                <td colSpan={4} className="px-8 py-20 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {loading ? (
-                <tr>
-                  <td colSpan={4} className="px-8 py-20 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+            ) : filteredLogs.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-8 py-20 text-center">
+                  <p className="text-gray-400 font-bold">{t('saas.no_logs_found', 'لا توجد سجلات مطابقة للبحث')}</p>
+                </td>
+              </tr>
+            ) : (
+              filteredLogs.map((log) => (
+                <tr key={log.id} className="hover:bg-gray-50 transition-colors group">
+                  <td className="px-8 py-6">
+                    <div className="flex items-center gap-3">
+                      <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", getLogBg(log.type))}>
+                        {getLogIcon(log.type)}
+                      </div>
+                      <div className="text-right rtl:text-right ltr:text-left">
+                        <div className="font-bold text-gray-900">{log.action}</div>
+                        <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest">{log.type}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500">
+                        <User size={16} />
+                      </div>
+                      <div className="text-sm font-bold text-gray-700">{log.performedByEmail}</div>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <p className="text-sm text-gray-600 font-medium max-w-md truncate" title={log.details}>
+                      {log.details}
+                    </p>
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="flex items-center gap-2 text-gray-500 text-xs font-bold">
+                      <Clock size={14} />
+                      <span>
+                        {new Date(log.timestamp).toLocaleString(
+                          i18n.language === 'en' ? 'en-US' : i18n.language === 'ur' ? 'ur-PK' : 'ar-SA'
+                        )}
+                      </span>
+                    </div>
                   </td>
                 </tr>
-              ) : filteredLogs.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-8 py-20 text-center">
-                    <p className="text-gray-400 font-bold">لا توجد سجلات مطابقة للبحث</p>
-                  </td>
-                </tr>
-              ) : (
-                filteredLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-gray-50 transition-colors group">
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-3">
-                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", getLogBg(log.type))}>
-                          {getLogIcon(log.type)}
-                        </div>
-                        <div>
-                          <div className="font-bold text-gray-900">{log.action}</div>
-                          <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest">{log.type}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500">
-                          <User size={16} />
-                        </div>
-                        <div className="text-sm font-bold text-gray-700">{log.performedByEmail}</div>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <p className="text-sm text-gray-600 font-medium max-w-md truncate" title={log.details}>
-                        {log.details}
-                      </p>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-2 text-gray-500 text-xs font-bold">
-                        <Clock size={14} />
-                        {new Date(log.timestamp).toLocaleString('ar-SA')}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

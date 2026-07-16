@@ -93,25 +93,62 @@ export default function StaffPinSetup({ staff, onSuccess }: StaffPinSetupProps) 
     }
   };
 
+  const handleSkip = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { error: updateError } = await supabase
+        .from('staff')
+        .update({
+          pin_hash: null,
+          must_change_pin: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', staff.id);
+      
+      if (updateError) throw updateError;
+
+      // Trigger global refresh
+      if ((window as any).refreshAuthData) {
+        (window as any).refreshAuthData();
+      }
+
+      // Audit Log
+      await logEmployeeAction(
+        staff.tenantId || (staff as any).tenant_id,
+        staff.id,
+        staff.name,
+        'security',
+        `اختار الموظف ${staff.name} عدم استخدام رمز دخول`
+      );
+
+      onSuccess({ ...staff, pin: null, must_change_pin: false } as any);
+    } catch (err) {
+      console.error('Error skipping PIN:', err);
+      setError('حدث خطأ أثناء تخطي الإعداد');
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[200] bg-white flex items-center justify-center p-6 font-sans" dir="rtl">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-white rounded-[3rem] shadow-2xl border border-gray-100 p-10 flex flex-col items-center"
+        className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-gray-200 p-8 flex flex-col items-center"
       >
-        <div className="w-20 h-20 bg-indigo-50 rounded-3xl flex items-center justify-center text-indigo-600 mb-6 shadow-inner">
-          <Shield size={40} />
+        <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 mb-6">
+          <Shield size={32} />
         </div>
 
-        <h2 className="text-3xl font-black text-gray-900 mb-2 text-center">تعيين رمز الدخول</h2>
-        <p className="text-gray-500 text-sm mb-10 text-center font-medium">
-          أهلاً بك {staff.name}! يرجى تعيين رمز دخول مكون من 4 أرقام لاستخدام النظام بسرعة وأمان.
+        <h2 className="text-2xl font-black text-gray-900 mb-2 text-center">إعداد رمز الدخول</h2>
+        <p className="text-gray-500 text-sm mb-8 text-center">
+          أهلاً بك {staff.name}! يمكنك تعيين رمز دخول من 4 أرقام لتسجيل الدخول السريع، أو تخطي هذه الخطوة.
         </p>
 
-        <form onSubmit={handleSubmit} className="w-full space-y-6">
+        <form onSubmit={handleSubmit} className="w-full space-y-5">
           <div className="space-y-2">
-            <label className="text-xs font-black text-gray-400 uppercase tracking-widest mr-2 flex items-center gap-2">
+            <label className="text-xs font-bold text-gray-500 flex items-center gap-2">
               <Lock size={14} />
               رمز الدخول الجديد
             </label>
@@ -121,8 +158,8 @@ export default function StaffPinSetup({ staff, onSuccess }: StaffPinSetupProps) 
               value={pin}
               onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
               className={cn(
-                "w-full bg-gray-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl p-4 text-center text-2xl font-black tracking-[1em] outline-none transition-all",
-                error && "border-red-100 bg-red-50"
+                "w-full bg-gray-50 border border-gray-200 focus:border-indigo-500 rounded-xl p-3 text-center text-xl font-bold tracking-[0.5em] outline-none transition-all",
+                error && "border-red-300 bg-red-50"
               )}
               placeholder="****"
               required
@@ -130,7 +167,7 @@ export default function StaffPinSetup({ staff, onSuccess }: StaffPinSetupProps) 
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-black text-gray-400 uppercase tracking-widest mr-2 flex items-center gap-2">
+            <label className="text-xs font-bold text-gray-500 flex items-center gap-2">
               <CheckCircle2 size={14} />
               تأكيد الرمز
             </label>
@@ -140,8 +177,8 @@ export default function StaffPinSetup({ staff, onSuccess }: StaffPinSetupProps) 
               value={confirmPin}
               onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
               className={cn(
-                "w-full bg-gray-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl p-4 text-center text-2xl font-black tracking-[1em] outline-none transition-all",
-                error && "border-red-100 bg-red-50"
+                "w-full bg-gray-50 border border-gray-200 focus:border-indigo-500 rounded-xl p-3 text-center text-xl font-bold tracking-[0.5em] outline-none transition-all",
+                error && "border-red-300 bg-red-50"
               )}
               placeholder="****"
               required
@@ -152,32 +189,42 @@ export default function StaffPinSetup({ staff, onSuccess }: StaffPinSetupProps) 
             <motion.div 
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-2 text-red-500 text-xs font-bold bg-red-50 px-4 py-3 rounded-xl border border-red-100"
+              className="flex items-center gap-2 text-red-600 text-xs font-bold bg-red-50 px-4 py-3 rounded-lg border border-red-100"
             >
               <AlertCircle size={16} />
               <span>{error}</span>
             </motion.div>
           )}
 
-          <button 
-            type="submit"
-            disabled={loading || pin.length !== 4 || confirmPin.length !== 4}
-            className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <>
-                <Loader2 size={20} className="animate-spin" />
-                <span>جاري الحفظ...</span>
-              </>
-            ) : (
-              <span>تأكيد الرمز السري</span>
-            )}
-          </button>
+          <div className="flex flex-col gap-3 pt-2">
+            <button 
+              type="submit"
+              disabled={loading || pin.length !== 4 || confirmPin.length !== 4}
+              className="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  <span>جاري الحفظ...</span>
+                </>
+              ) : (
+                <span>تأكيد الرمز</span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={handleSkip}
+              disabled={loading}
+              className="w-full bg-gray-100 text-gray-700 py-3.5 rounded-xl font-bold hover:bg-gray-200 transition-all disabled:opacity-50"
+            >
+              عدم استخدام رمز دخول والانتقال للرئيسية
+            </button>
+          </div>
         </form>
 
-        <div className="mt-8 p-4 bg-gray-50 rounded-2xl w-full">
-          <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">نصائح للأمان:</h4>
-          <ul className="text-[10px] text-gray-500 space-y-1 font-bold">
+        <div className="mt-6 p-4 bg-gray-50 rounded-xl w-full">
+          <h4 className="text-xs font-bold text-gray-600 mb-2">نصائح للأمان:</h4>
+          <ul className="text-xs text-gray-500 space-y-1">
             <li>• تجنب استخدام أرقام متسلسلة (مثل 1234)</li>
             <li>• تجنب استخدام أرقام مكررة (مثل 1111)</li>
             <li>• لا تشارك رمز الدخول الخاص بك مع أي شخص آخر</li>
