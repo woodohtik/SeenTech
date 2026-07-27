@@ -3,29 +3,28 @@
  * ------------------------------------------------------------------
  * محرك الطباعة الموحّد لنظام سين POS.
  *
- * يدعم مسارين:
+ * ⚠️ تم حذف الطباعة الصامتة (ESC/POS المباشرة) من تدفق طباعة الفواتير.
+ *    كل عمليات الطباعة الآن تمر عبر **مسار واحد فقط**:
  *
- *  1) الطباعة المباشرة (صامتة) على طابعة حرارية مربوطة فعلياً:
- *     USB (WebUSB) / منفذ تسلسلي (Web Serial) / بلوتوث (Web Bluetooth) /
- *     شبكة LAN عبر وسيط السيرفر (منفذ 9100). يتم تحويل الفاتورة إلى صورة
- *     نقطية ثم إرسالها كأوامر ESC/POS — وهي الطريقة الوحيدة الموثوقة
- *     لطباعة العربية لأن أغلب الطابعات لا تحتوي خطاً عربياً مدمجاً.
+ *      بناء مستند طباعة معزول داخل iframe → فتح مربع حوار الطباعة →
+ *      إغلاقه فوراً بعد الإرسال.
  *
- *  2) الطباعة عبر مربع حوار المتصفح (طابعة النظام / طابعة عادية A4):
- *     يتم بناء مستند طباعة معزول داخل iframe مع نسخ كامل تنسيقات
- *     التطبيق (CSS) وتحويل عناصر canvas (الباركود / QR) إلى صور،
- *     وانتظار تحميل الصور والخطوط قبل إطلاق أمر الطباعة.
+ *    لماذا؟
+ *      • المسار الصامت كان يحوّل الفاتورة إلى صورة نقطية بعرض الطابعة،
+ *        فيخرج شكل مختلف تماماً عن شكل الويندوز (صغير ومضغوط) — وهو
+ *        سبب اختلاف الفاتورة على التابلت وأجهزة الأندرويد.
+ *      • كان يستهلك ثوانٍ في محاولات USB/بلوتوث/وسيط قبل أن يفشل
+ *        ويتحوّل لمربع الحوار، فتبدو الطباعة بطيئة.
  *
  * ------------------------------------------------------------------
- * أهم الأعطال التي كانت تمنع الطباعة وتم إصلاحها هنا:
- *   • كان الـ iframe بأبعاد 0×0 و visibility:hidden → المتصفح يطبع
- *     صفحة فارغة أو يتجاهل الأمر تماماً.
- *   • لم يكن يتم نسخ تنسيقات التطبيق (Tailwind) إلى مستند الطباعة
- *     → المحتوى يخرج بلا تنسيق أو مخفي بقواعد @media print.
- *   • نسخ innerHTML يُفقد محتوى عناصر <canvas> (QR والباركود).
- *   • كان يُطبع بعد 300ms ثابتة قبل تحميل الصور والخطوط.
- *   • كان يُرجع "نجاح" دائماً حتى لو لم تتم الطباعة إطلاقاً.
- *   • مسار الرسم النقطي كان يصوّر عنصراً بـ opacity:0 → صورة بيضاء.
+ * ضمان تطابق الشكل على كل الأجهزة (ويندوز / أندرويد / تابلت):
+ *   • أبعاد المستند مُثبّتة بالمليمتر (وليس بنسبة مئوية أو بعرض الشاشة).
+ *   • عرض الـ iframe يساوي عرض منطقة الطباعة الفعلية بالبكسل، فيتم
+ *     تخطيط الصفحة بنفس الطريقة على كل جهاز.
+ *   • تعطيل تكبير النص التلقائي في كروم أندرويد
+ *     (text-size-adjust) — كان يُضخّم/يُصغّر الخطوط ويكسر التنسيق.
+ *   • هوامش @page صريحة لكل مقاس، فلا تُضاف هوامش المتصفح الافتراضية
+ *     الكبيرة أعلى وأسفل الفاتورة.
  * ------------------------------------------------------------------
  */
 
@@ -76,14 +75,46 @@ const DOT_WIDTH: Record<string, number> = {
   A5: 874,
 };
 
-const CSS_WIDTH: Record<string, string> = {
-  '58mm': '58mm',
-  '80mm': '80mm',
-  A4: '210mm',
-  A5: '148mm',
+const isThermal = (size: string) => size === '58mm' || size === '80mm';
+
+/** 1mm = 96/25.4 بكسل CSS — نسبة ثابتة في كل المتصفحات والأنظمة. */
+const MM_TO_PX = 96 / 25.4;
+
+/**
+ * هندسة الورق: عرض الورقة، هامش الصفحة، والحشو الداخلي.
+ *
+ * هذه الأرقام هي **المرجع الوحيد** لشكل الفاتورة على كل الأجهزة. القيم
+ * الحرارية مطابقة تماماً لما كان يُطبع على الويندوز (المرجع الذي طلبه
+ * المستخدم)، والورق العادي بهامش صغير 8mm بدل هوامش المتصفح الافتراضية.
+ */
+interface PaperGeometry {
+  /** ما يُمرَّر إلى @page size */
+  pageSize: string;
+  /** هامش @page بالمليمتر */
+  marginMm: number;
+  /** عرض منطقة المحتوى بالمليمتر (عرض الورقة ناقص الهوامش) */
+  contentMm: number;
+  /** حشو داخلي للجذر */
+  rootPadding: string;
+  thermal: boolean;
+}
+
+const getPaperGeometry = (size: PrintPaperSize): PaperGeometry => {
+  switch (size) {
+    case '58mm':
+      return { pageSize: '58mm auto', marginMm: 0, contentMm: 58, rootPadding: '2mm 1.5mm', thermal: true };
+    case 'A5':
+      return { pageSize: 'A5', marginMm: 8, contentMm: 148 - 16, rootPadding: '0', thermal: false };
+    case 'A4':
+      return { pageSize: 'A4', marginMm: 8, contentMm: 210 - 16, rootPadding: '0', thermal: false };
+    case '80mm':
+    default:
+      return { pageSize: '80mm auto', marginMm: 0, contentMm: 80, rootPadding: '2mm 1.5mm', thermal: true };
+  }
 };
 
-const isThermal = (size: string) => size === '58mm' || size === '80mm';
+/** عرض منطقة الطباعة بالبكسل — يُستخدم لعرض الـ iframe حتى يتطابق التخطيط. */
+const layoutPxFor = (geo: PaperGeometry): number => Math.round(geo.contentMm * MM_TO_PX);
 
 /** انتظار ظهور العنصر في DOM (قد يتأخر بسبب دورة رسم React). */
 const waitForElement = async (elementId: string, timeoutMs = 1500): Promise<HTMLElement | null> => {
@@ -237,20 +268,24 @@ const buildPrintableClone = (element: HTMLElement): HTMLElement => {
   return clone;
 };
 
-/** بناء مستند HTML كامل ومستقل للطباعة. */
+/**
+ * بناء مستند HTML كامل ومستقل للطباعة.
+ *
+ * كل الأبعاد مُثبّتة بالمليمتر حتى تخرج الفاتورة بنفس الشكل تماماً على
+ * ويندوز والأندرويد والتابلت. لا يوجد أي عرض يعتمد على حجم الشاشة.
+ */
 const buildPrintDocument = (bodyHtml: string, options: PrintOptions): string => {
   const paperSize = options.paperSize || '80mm';
-  const widthCss = CSS_WIDTH[paperSize] || '80mm';
-  const thermal = isThermal(paperSize);
-  const pageSize = thermal ? `${widthCss} auto` : paperSize === 'A5' ? 'A5' : 'A4';
-  const pageMargin = thermal ? '0' : '8mm';
+  const geo = getPaperGeometry(paperSize);
+  const contentWidth = `${geo.contentMm}mm`;
+  const layoutPx = layoutPxFor(geo);
   const { css, links } = collectAppCss();
 
   return `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=${layoutPx}, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>${(options.title || 'فاتورة').replace(/[<>&"]/g, '')}</title>
 ${links.map((h) => `<link rel="stylesheet" href="${h}">`).join('\n')}
 <style>
@@ -259,15 +294,33 @@ ${css}
 </style>
 <style>
 /* ===== تجاوزات خاصة بمستند الطباعة (تأتي بعد تنسيقات التطبيق) ===== */
-@page { size: ${pageSize}; margin: ${pageMargin}; }
+/*
+ * ⚠️ !important مقصود: تنسيقات التطبيق المنسوخة أعلاه تحتوي قواعد @page
+ * خاصة بها (margin: 0 / size: auto) وكذلك قواعد @page داخل قوالب الفواتير.
+ * بدون !important هنا قد تفوز إحداها فتُصفَّر هوامش الورق العادي (A4/A5)
+ * ويتولّى المتصفح إضافة هوامشه الافتراضية الكبيرة أعلى وأسفل الفاتورة.
+ */
+@page { size: ${geo.pageSize} !important; margin: ${geo.marginMm}mm !important; }
+
+html {
+  /*
+   * ⚠️ حاسم للأندرويد: كروم أندرويد يُكبّر الخطوط تلقائياً (Font Boosting)
+   * في المستندات المضمّنة، وهو سبب خروج الفاتورة بشكل مختلف ومضغوط على
+   * التابلت. هذه القاعدة تُعطّله فيتطابق الشكل مع الويندوز.
+   */
+  -webkit-text-size-adjust: 100% !important;
+  -moz-text-size-adjust: 100% !important;
+  text-size-adjust: 100% !important;
+}
 
 html, body {
   margin: 0 !important;
   padding: 0 !important;
   background: #ffffff !important;
   color: #000000 !important;
-  width: ${thermal ? widthCss : 'auto'} !important;
+  width: ${contentWidth} !important;
   min-width: 0 !important;
+  max-width: ${contentWidth} !important;
   overflow: visible !important;
   visibility: visible !important;
   display: block !important;
@@ -284,12 +337,14 @@ html, body {
   box-shadow: none !important;
   text-shadow: none !important;
   backdrop-filter: none !important;
+  filter: none !important;
 }
 
 /* إبطال أي قاعدة إخفاء ورثناها من تنسيقات التطبيق */
 #seen-print-root,
 #seen-print-root *,
 #print-area, #print-area *,
+#sales-record-print-area, #sales-record-print-area *,
 #pos-invoice-print-area, #pos-invoice-print-area *,
 #receipt-printable-content, #receipt-printable-content *,
 .printable-area, .printable-area * {
@@ -297,8 +352,14 @@ html, body {
   opacity: 1 !important;
 }
 
+/*
+ * أغلفة الطباعة داخل التطبيق تحمل حشواً (p-4 / md:p-8) وارتفاعات
+ * وتمريراً — كان ذلك يُنتج هامشاً كبيراً أعلى وأسفل الفاتورة عند
+ * الطباعة من سجل المبيعات والفواتير الضريبية. نُصفّرها كلها هنا.
+ */
 #seen-print-root,
 #print-area,
+#sales-record-print-area,
 #pos-invoice-print-area,
 #receipt-printable-content,
 .printable-area {
@@ -308,10 +369,12 @@ html, body {
   transform: none !important;
   width: 100% !important;
   max-width: 100% !important;
+  min-height: 0 !important;
   max-height: none !important;
   height: auto !important;
   overflow: visible !important;
   margin: 0 !important;
+  padding: 0 !important;
   border: none !important;
   border-radius: 0 !important;
   background: #ffffff !important;
@@ -320,15 +383,32 @@ html, body {
 }
 
 #seen-print-root {
-  width: ${thermal ? widthCss : '100%'} !important;
-  max-width: ${thermal ? widthCss : '100%'} !important;
-  padding: ${thermal ? '2mm 1.5mm' : '0'} !important;
+  width: ${contentWidth} !important;
+  max-width: ${contentWidth} !important;
+  padding: ${geo.rootPadding} !important;
+  margin: 0 auto !important;
   font-family: 'Tajawal', 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
-  ${thermal ? 'font-size: 11.5px; line-height: 1.45;' : ''}
+  ${geo.thermal ? 'font-size: 11.5px; line-height: 1.45;' : ''}
   color: #000000 !important;
 }
 
 #seen-print-root * { color: #000000 !important; }
+
+/*
+ * شبكة أمان لتوحيد الشكل:
+ *  • min-height: 0 — قوالب A4 تستخدم min-h-[297mm] لعرض الشاشة، وهو مع
+ *    هوامش @page يتجاوز ارتفاع منطقة الطباعة فتخرج ورقة ثانية فارغة.
+ *  • max-width: 100% — قوالب A4 تستخدم w-[210mm]، وهو أعرض من منطقة
+ *    الطباعة (194mm) فيُقتطع جانب الفاتورة أو يُصغّرها المتصفح.
+ */
+#seen-print-root * {
+  min-height: 0 !important;
+  max-width: 100% !important;
+}
+
+/* لا فراغ زائد في أول وآخر الفاتورة */
+#seen-print-root > *:first-child { margin-top: 0 !important; padding-top: 0 !important; }
+#seen-print-root > *:last-child { margin-bottom: 0 !important; padding-bottom: 0 !important; }
 
 img, svg { max-width: 100% !important; height: auto !important; }
 table { width: 100% !important; border-collapse: collapse !important; }
@@ -337,10 +417,11 @@ th, td { padding: 1px 2px !important; }
 /* لا نطبع عناصر التحكم */
 #seen-print-root button,
 #seen-print-root [role="button"],
-#seen-print-root .no-print { display: none !important; }
+#seen-print-root .no-print,
+#seen-print-root [data-no-print] { display: none !important; }
 
 ${
-  thermal
+  geo.thermal
     ? `#seen-print-root, #seen-print-root * { font-weight: 600 !important; }
        #seen-print-root h1 { font-size: 15px !important; }
        #seen-print-root h2 { font-size: 13.5px !important; }
@@ -357,7 +438,13 @@ ${bodyHtml}
 </html>`;
 };
 
-/** انتظار جاهزية مستند الطباعة: الصور + الخطوط + إطارين للرسم. */
+/**
+ * انتظار جاهزية مستند الطباعة: الصور + الخطوط + إطارين للرسم.
+ *
+ * المهل هنا مقصودة أن تكون قصيرة: الهدف أن يظهر مربع حوار الطباعة فوراً
+ * تقريباً. الصور المحلية والـ QR تكون جاهزة في أجزاء من الثانية، ولا يصح
+ * تعليق الكاشير ثوانٍ في انتظار صورة خارجية بطيئة.
+ */
 const waitForDocumentReady = async (doc: Document, win: Window): Promise<void> => {
   const imgs = Array.from(doc.images || []);
   await Promise.all(
@@ -374,7 +461,7 @@ const waitForDocumentReady = async (doc: Document, win: Window): Promise<void> =
           };
           img.addEventListener('load', done, { once: true });
           img.addEventListener('error', done, { once: true });
-          setTimeout(done, 5000);
+          setTimeout(done, 1500);
         })
     )
   );
@@ -382,7 +469,7 @@ const waitForDocumentReady = async (doc: Document, win: Window): Promise<void> =
   try {
     const fonts = (doc as any).fonts;
     if (fonts?.ready) {
-      await Promise.race([fonts.ready, new Promise((r) => setTimeout(r, 2500))]);
+      await Promise.race([fonts.ready, new Promise((r) => setTimeout(r, 700))]);
     }
   } catch {
     /* تجاهل */
@@ -613,8 +700,12 @@ const buildTransportChain = async (
 };
 
 /**
- * محاولة الطباعة الصامتة على الجهاز المربوط.
- * ترجع null إذا لم تكن هناك طابعة مربوطة (ليس خطأ — ننتقل لمسار المتصفح).
+ * @deprecated تم حذف الطباعة الصامتة من تدفق طباعة الفواتير.
+ *
+ * الدالة باقية فقط ليستخدمها اختبار الطابعة في صفحة الإعدادات
+ * (PrinterSettings) عند الرغبة في التحقق من الاتصال بجهاز مربوط.
+ * لا تستدعِها من أي مسار طباعة فاتورة — الفواتير تُطبع عبر
+ * `printElementDetailed` ومربع حوار الطباعة فقط.
  */
 export const printElementViaRawDevice = async (
   elementId: string,
@@ -732,7 +823,7 @@ export const printElementViaRawDevice = async (
    3) الطباعة عبر مربع حوار المتصفح
    ================================================================ */
 
-const printViaIframe = async (html: string): Promise<PrintResult> => {
+const printViaIframe = async (html: string, layoutPx: number): Promise<PrintResult> => {
   // إزالة أي إطار طباعة سابق (إعادة استخدام الإطار القديم كانت تسبب صفحات فارغة)
   document.querySelectorAll('iframe[data-seen-print="1"]').forEach((n) => n.remove());
 
@@ -740,12 +831,19 @@ const printViaIframe = async (html: string): Promise<PrintResult> => {
   iframe.setAttribute('data-seen-print', '1');
   iframe.setAttribute('aria-hidden', 'true');
   iframe.setAttribute('title', 'مستند الطباعة');
-  // مهم: أبعاد حقيقية وبدون visibility:hidden — وإلا يطبع المتصفح صفحة فارغة
+  /*
+   * مهم: أبعاد حقيقية وبدون visibility:hidden — وإلا يطبع المتصفح صفحة فارغة.
+   *
+   * الأهم: عرض الإطار يساوي عرض منطقة الطباعة بالبكسل (وليس 260mm ثابتة
+   * كما كان). بهذا يكون "منفذ العرض" داخل الإطار مطابقاً لعرض الورقة على
+   * كل الأجهزة، فلا يعيد كروم أندرويد تخطيط الفاتورة بعرض شاشة التابلت
+   * ثم يضغطها — وهو سبب خروجها صغيرة ومختلفة الشكل.
+   */
   iframe.style.cssText = [
     'position:fixed',
     'left:-20000px',
     'top:0',
-    'width:260mm',
+    `width:${layoutPx}px`,
     'height:100vh',
     'border:0',
     'padding:0',
@@ -824,10 +922,11 @@ const printViaIframe = async (html: string): Promise<PrintResult> => {
   }
 };
 
-const printViaPopup = async (html: string): Promise<PrintResult> => {
+const printViaPopup = async (html: string, layoutPx: number): Promise<PrintResult> => {
   let win: Window | null = null;
   try {
-    win = window.open('', '_blank', 'width=560,height=760,top=80,left=80');
+    const w = Math.min(Math.max(layoutPx + 40, 380), 900);
+    win = window.open('', '_blank', `width=${w},height=760,top=80,left=80`);
   } catch {
     win = null;
   }
@@ -894,12 +993,14 @@ export const printHtmlContentDetailed = async (
   htmlContent: string,
   options: PrintOptions = {}
 ): Promise<PrintResult> => {
+  const geo = getPaperGeometry(options.paperSize || '80mm');
+  const layoutPx = layoutPxFor(geo);
   const doc = buildPrintDocument(htmlContent, options);
 
-  const viaIframe = await printViaIframe(doc);
+  const viaIframe = await printViaIframe(doc, layoutPx);
   if (viaIframe.ok) return viaIframe;
 
-  const viaPopup = await printViaPopup(doc);
+  const viaPopup = await printViaPopup(doc, layoutPx);
   if (viaPopup.ok) return viaPopup;
 
   // الملاذ الأخير: طباعة النافذة الحالية (تعتمد على قواعد @media print في index.css)
@@ -920,21 +1021,22 @@ export const printHtmlContentDetailed = async (
    4) الواجهة العامة
    ================================================================ */
 
-/** الطباعة الكاملة لعنصر: الجهاز المربوط أولاً ثم مربع الحوار. */
+/**
+ * الطباعة الكاملة لعنصر — مسار واحد فقط: مربع حوار الطباعة.
+ *
+ * ⚠️ تم حذف الطباعة الصامتة نهائياً من هذا التدفق. لم تعد هناك أي محاولة
+ * إرسال ESC/POS مباشرة إلى USB/بلوتوث/شبكة/وسيط قبل الطباعة، لسببين:
+ *   1) السرعة: كانت كل فاتورة تنتظر فشل تلك المحاولات قبل فتح مربع الحوار.
+ *   2) توحيد الشكل: المسار الصامت يطبع صورة نقطية بعرض الطابعة، فتخرج
+ *      الفاتورة على الأندرويد بشكل مختلف عن شكل الويندوز.
+ *
+ * خيار `skipRawDevice` أُبقي في الواجهة للتوافق مع الاستدعاءات القديمة
+ * فقط، ولم يبقَ له أي أثر.
+ */
 export const printElementDetailed = async (
   elementId: string,
   options: PrintOptions = {}
 ): Promise<PrintResult> => {
-  // 1) طابعة مربوطة مباشرة → طباعة صامتة بأوامر ESC/POS
-  if (!options.skipRawDevice) {
-    const raw = await printElementViaRawDevice(elementId, options);
-    if (raw?.ok) return raw;
-    if (raw && !raw.ok) {
-      console.warn('[printManager] سيتم التحويل إلى مربع حوار الطباعة:', raw.message);
-    }
-  }
-
-  // 2) مربع حوار المتصفح
   const element = await waitForElement(elementId);
   if (!element) {
     console.warn(`[printManager] العنصر #${elementId} غير موجود. سيتم استخدام طباعة النافذة.`);

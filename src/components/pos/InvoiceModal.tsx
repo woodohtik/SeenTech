@@ -17,26 +17,13 @@ interface InvoiceModalProps {
 }
 
 export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNumber, items }: InvoiceModalProps) {
-  React.useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key.toLowerCase() === 'p') {
-        e.preventDefault();
-        window.print();
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen, onClose]);
-
-  if (!invoice) return null;
-
-  const handlePrintThermal = async () => {
+  /*
+   * تُعرَّف دالة الطباعة قبل الـ useEffect عن قصد: الـ effect يسجّل مستمع
+   * Ctrl+P، ولو كانت الدالة معرّفة بعد `if (!invoice) return null` لصار
+   * استدعاؤها من المستمع يرمي ReferenceError.
+   */
+  const handlePrint = React.useCallback(async () => {
+    if (!invoice) return;
     try {
       const { printElementDetailed, getConfiguredPaperSize } = await import('../../utils/printManager');
       const res = await printElementDetailed('print-area', {
@@ -51,7 +38,28 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
       console.error('[InvoiceModal] خطأ الطباعة:', e);
       window.print();
     }
-  };
+  }, [invoice]);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        // نمر عبر محرك الطباعة الموحّد بدل window.print() حتى تخرج الفاتورة
+        // بنفس الشكل والهوامش على كل الأجهزة.
+        void handlePrint();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose, handlePrint]);
+
+  if (!invoice) return null;
 
   const handleDownloadPDF = async () => {
     try {
@@ -201,11 +209,11 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
                 {/* Actions */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 print:hidden">
                   <button
-                    onClick={handlePrintThermal}
+                    onClick={handlePrint}
                     className="flex justify-center items-center gap-2 w-full px-4 py-3 bg-content text-surface rounded-xl font-bold hover:bg-content/90 transition-colors"
                   >
                     <Printer size={18} />
-                    <span>طباعة حرارية</span>
+                    <span>طباعة</span>
                   </button>
                   <button
                     onClick={handleDownloadPDF}

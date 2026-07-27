@@ -250,12 +250,15 @@ option {
 
   #pos-invoice-print-area, #pos-invoice-print-area *,
   #print-area, #print-area *,
+  #sales-record-print-area, #sales-record-print-area *,
   #receipt-printable-content, #receipt-printable-content *,
-  .print-area, .print-area * {
+  .print-area, .print-area *,
+  .printable-area, .printable-area * {
     visibility: visible !important;
   }
 
-  #pos-invoice-print-area, #print-area, #receipt-printable-content, .print-area {
+  #pos-invoice-print-area, #print-area, #sales-record-print-area,
+  #receipt-printable-content, .print-area, .printable-area {
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
@@ -510,11 +513,13 @@ html, body {
    قواعد وسائط الطباعة الحرارية للفواتير (Thermal POS Print Rules)
    ============================================================ */
 @media print {
+  /* بدون !important — حتى يستطيع مستند الطباعة المعزول (printManager)
+     فرض هوامش @page الصحيحة لكل مقاس ورق. */
   @page {
-    margin: 0 !important;
+    margin: 0;
     size: auto;
   }
-  
+
   html, body {
     background: #ffffff !important;
     color: #000000 !important;
@@ -539,6 +544,7 @@ html, body {
      فقط عند وجود الصنف .thermal-print أو السمة data-paper="80mm". */
   .printable-area,
   #print-area,
+  #sales-record-print-area,
   #pos-invoice-print-area,
   #receipt-printable-content {
     display: block !important;
@@ -575,6 +581,7 @@ html, body {
 
   .printable-area *,
   #print-area *,
+  #sales-record-print-area *,
   #pos-invoice-print-area *,
   #receipt-printable-content * {
     visibility: visible !important;

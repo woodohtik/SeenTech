@@ -261,16 +261,7 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.key.toLowerCase() === 'p') {
         e.preventDefault();
-        logEmployeeAction(
-          order.tenantId,
-          // @ts-ignore
-          window.currentStaffId || 'system',
-          // @ts-ignore
-          window.currentStaffName || 'System',
-          'print_invoice',
-          `طباعة فاتورة ضريبية رقم ${order.invoiceNumber || order.id}`
-        );
-        window.print();
+        void handlePrint();
       } else if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
@@ -298,6 +289,41 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
       await downloadInvoicePDF('print-area', `Invoice-${order.invoiceNumber || order.id}.pdf`);
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  /**
+   * طباعة الفاتورة الضريبية.
+   *
+   * كانت `window.print()` تطبع الصفحة كاملة بهوامش المتصفح الافتراضية،
+   * ومع حشو النافذة (p-4 / md:p-8) وقاعدة `height: 100%` كان يخرج هامش
+   * كبير أعلى وأسفل الفاتورة. الآن تمر عبر محرك الطباعة الموحّد فيخرج
+   * نفس شكل الفاتورة وبنفس الهوامش على كل الأجهزة.
+   *
+   * الفاتورة الضريبية الكاملة (B2B) تُطبع على A4، والمبسطة تتبع مقاس
+   * الورق المضبوط في إعدادات الطابعة.
+   */
+  const handlePrint = async () => {
+    logEmployeeAction(
+      order.tenantId,
+      // @ts-ignore
+      window.currentStaffId || 'system',
+      // @ts-ignore
+      window.currentStaffName || 'System',
+      'print_invoice',
+      `طباعة فاتورة ضريبية رقم ${order.invoiceNumber || order.id}`
+    );
+
+    try {
+      const { printElementDetailed, getConfiguredPaperSize } = await import('../utils/printManager');
+      const res = await printElementDetailed('print-area', {
+        paperSize: isB2B ? 'A4' : getConfiguredPaperSize('80mm'),
+        title: `فاتورة-${order.invoiceNumber || order.id}`,
+      });
+      if (!res.ok) console.error('[TaxInvoices] فشل الطباعة:', res.message);
+    } catch (e) {
+      console.error('[TaxInvoices] خطأ الطباعة:', e);
+      window.print();
     }
   };
 
@@ -383,19 +409,8 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
             >
               <Share2 size={16} /> {t('sales_record.share_whatsapp', 'مشاركة عبر واتساب')}
             </button>
-            <button 
-              onClick={() => {
-                logEmployeeAction(
-                  order.tenantId,
-                  // @ts-ignore
-                  window.currentStaffId || 'system',
-                  // @ts-ignore
-                  window.currentStaffName || 'System',
-                  'print_invoice',
-                  `طباعة فاتورة ضريبية رقم ${order.invoiceNumber || order.id}`
-                );
-                window.print();
-              }} 
+            <button
+              onClick={handlePrint}
               className="px-4 py-2 bg-slate-600 text-white rounded-xl font-bold flex items-center gap-2 hover:bg-slate-700 transition-colors shadow-sm cursor-pointer text-xs"
             >
               <Printer size={16} /> {t('tax_invoices.print', 'طباعة')}
@@ -448,8 +463,17 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
 
       </div>
 
+      {/*
+        قواعد احتياطية فقط (إن فشل محرك الطباعة الموحّد).
+        أُزيل `height: 100%` لأنه كان يُجبر الفاتورة على ملء ارتفاع الورقة
+        فيخرج فراغ كبير أسفلها، وأُضيف هامش @page صريح بدل هوامش المتصفح.
+      */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
+          @page {
+            size: A4;
+            margin: 8mm;
+          }
           body * {
             visibility: hidden;
           }
@@ -461,9 +485,13 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
             left: 0;
             top: 0;
             width: 100%;
-            height: 100%;
-            padding: 0;
-            margin: 0;
+            max-width: 100%;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: visible !important;
+            padding: 0 !important;
+            margin: 0 !important;
             background-color: white !important;
           }
           .print\\:hidden {

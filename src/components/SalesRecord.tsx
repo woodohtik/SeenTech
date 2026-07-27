@@ -27,9 +27,34 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
     }
   };
 
+  /**
+   * الطباعة من سجل المبيعات.
+   *
+   * كانت تستخدم `window.print()` مباشرة، فيطبع المتصفح الصفحة كاملة
+   * بهوامشه الافتراضية الكبيرة أعلى وأسفل الورقة، ومع حشو النافذة
+   * (p-4 / sm:p-8) وارتفاع 100% كان يظهر فراغ واسع حول الفاتورة.
+   *
+   * الآن تمر عبر محرك الطباعة الموحّد: نسخة معزولة من الفاتورة بهوامش
+   * @page مضبوطة — نفس ناتج الطباعة من صفحة البيع تماماً.
+   */
+  const handlePrint = async () => {
+    if (!selectedOrder) return;
+    try {
+      const { printElementDetailed, getConfiguredPaperSize } = await import('../utils/printManager');
+      const res = await printElementDetailed('sales-record-print-area', {
+        paperSize: getConfiguredPaperSize('80mm'),
+        title: `فاتورة-${selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase()}`,
+      });
+      if (!res.ok) console.error('[SalesRecord] فشل الطباعة:', res.message);
+    } catch (e) {
+      console.error('[SalesRecord] خطأ الطباعة:', e);
+      window.print();
+    }
+  };
+
   const handleShareWhatsApp = async () => {
     if (!selectedOrder) return;
-    const paymentMethodText = selectedOrder.paymentMethod === 'cash' ? t('pos.cash') : 
+    const paymentMethodText = selectedOrder.paymentMethod === 'cash' ? t('pos.cash') :
                           selectedOrder.paymentMethod === 'network' ? t('pos.card') : 
                           selectedOrder.paymentMethod === 'partial' ? t('pos.partial') : 
                           selectedOrder.paymentMethod === 'bank_transfer' ? t('pos.bank_transfer') : t('pos.other');
@@ -372,7 +397,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                 {t('sales_record.whatsapp', 'واتساب')}
               </button>
               <button 
-                onClick={() => window.print()}
+                onClick={handlePrint}
                 className="flex-1 min-w-[90px] bg-slate-600 text-white py-2.5 px-3 rounded-xl font-bold text-xs shadow-md hover:bg-slate-700 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Printer size={16} />
@@ -386,8 +411,18 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
               </button>
             </div>
 
+            {/*
+              قواعد احتياطية فقط (تُستخدم إن فشل محرك الطباعة الموحّد).
+              أُزيل منها `height: 100%` — كان يُجبر الفاتورة على ملء ارتفاع
+              الورقة فيظهر فراغ كبير أسفلها، وأُضيف هامش @page صريح بدل
+              هوامش المتصفح الافتراضية الكبيرة.
+            */}
             <style dangerouslySetInnerHTML={{ __html: `
               @media print {
+                @page {
+                  size: A4;
+                  margin: 8mm;
+                }
                 body * {
                   visibility: hidden;
                 }
@@ -399,9 +434,13 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                   left: 0;
                   top: 0;
                   width: 100%;
-                  height: 100%;
-                  padding: 0;
-                  margin: 0;
+                  max-width: 100%;
+                  height: auto !important;
+                  min-height: 0 !important;
+                  max-height: none !important;
+                  overflow: visible !important;
+                  padding: 0 !important;
+                  margin: 0 !important;
                   background-color: white !important;
                 }
                 .print\\:hidden {
