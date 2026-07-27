@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Shield, 
+  ShieldCheck,
   Users, 
   BarChart3, 
   Settings, 
@@ -51,6 +52,7 @@ interface SaaSNotification {
 const SAAS_MENU_ITEMS = [
   { id: 'overview', label: 'لوحة التحكم', icon: LayoutDashboard, path: '/admin/dashboard', roles: ['super_admin', 'support_tech', 'billing_admin', 'sales'] },
   { id: 'tenants', label: 'إدارة المشتركين', icon: Users, path: '/admin/tailors', roles: ['super_admin', 'support_tech', 'billing_admin', 'sales'] },
+  { id: 'roles', label: 'الأدوار والصلاحيات القياسية', icon: ShieldCheck, path: '/admin/roles', roles: ['super_admin'] },
   { id: 'reports', label: 'التقارير المالية', icon: BarChart3, path: '/admin/reports', roles: ['super_admin', 'billing_admin', 'sales'] },
   { id: 'withdrawals', label: 'طلبات السحب', icon: DollarSign, path: '/admin/withdrawals', roles: ['super_admin', 'billing_admin'] },
   { id: 'audit', label: 'سجل التدقيق', icon: Shield, path: '/admin/audit', roles: ['super_admin'] },
@@ -62,6 +64,7 @@ const getMenuItemLabel = (id: string, defaultLabel: string, t: any) => {
   switch (id) {
     case 'overview': return t('saas.menu_overview', defaultLabel);
     case 'tenants': return t('saas.menu_tenants', defaultLabel);
+    case 'roles': return t('saas.menu_roles', defaultLabel);
     case 'reports': return t('saas.menu_reports', defaultLabel);
     case 'withdrawals': return t('saas.menu_withdrawals', defaultLabel);
     case 'audit': return t('saas.menu_audit', defaultLabel);
@@ -204,18 +207,21 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
 
           // Trial Expiration Alert
           const plan = plansData?.find(p => p.id === tenant.plan_id);
-          const isTrial = !plan || plan.price === 0 || (tenant.plan_id && typeof tenant.plan_id === 'string' && tenant.plan_id.includes('trial'));
+          const isTrial = tenant.plan_id === 'free' || 
+                          (!plan && tenant.plan_id !== 'basic') || 
+                          (plan && plan.price === 0) || 
+                          (tenant.plan_id && typeof tenant.plan_id === 'string' && tenant.plan_id.includes('trial'));
           
-          if (isTrial && (tenant.status === 'active' || tenant.status === 'onboarding')) {
-            const trialDays = 14; // Should ideally read from saas_settings
-            const daysLeft = trialDays - diffDays;
+          if (tenant.status === 'active' || tenant.status === 'onboarding') {
+            const durationDays = isTrial ? 14 : 365;
+            const daysLeft = durationDays - diffDays;
             
-            if (daysLeft >= 0 && daysLeft <= 3) {
+            if (daysLeft >= 0 && daysLeft <= (isTrial ? 3 : 7)) {
               newAlerts.push({
-                id: `trial-${tenant.id}`,
+                id: `sub-${tenant.id}`,
                 type: 'trial_expiring',
-                title: 'تنبيه انتهاء تجربة',
-                message: `الاشتراك التجريبي لـ ${tenant.name} ينتهي خلال ${daysLeft} أيام.`,
+                title: isTrial ? 'تنبيه انتهاء تجربة' : 'تنبيه انتهاء اشتراك',
+                message: isTrial ? `الاشتراك التجريبي لـ ${tenant.name} ينتهي خلال ${daysLeft} أيام.` : `اشتراك باقة ${plan?.name || 'الأساسية'} لـ ${tenant.name} ينتهي خلال ${daysLeft} أيام.`,
                 date: new Date(now.getTime() - Math.random() * 86400000).toISOString(),
                 read: false,
                 tenantId: tenant.id
@@ -503,7 +509,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                                   {notif.message}
                                 </p>
                                 <span className="text-[10px] text-content-muted font-bold pt-1 block opacity-75">
-                                  {new Date(notif.date).toLocaleDateString('ar-SA', { 
+                                  {new Date(notif.date).toLocaleDateString('ar-SA-u-nu-latn', { 
                                     month: 'short', 
                                     day: 'numeric', 
                                     hour: '2-digit', 

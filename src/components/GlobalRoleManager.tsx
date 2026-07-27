@@ -17,50 +17,14 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
-import { seedGlobalRoles } from '../services/permissionService';
+import { seedGlobalRoles, DEFAULT_ROLES, isSaaSRole, isMerchantRole } from '../services/permissionService';
+import { SYSTEM_PERMISSIONS } from '../constants/permissions';
 
-const ALL_PERMISSIONS: { key: PermissionKey; label: string; category: string }[] = [
-  // Customers
-  { key: 'customers.view', label: 'عرض العملاء', category: 'العملاء' },
-  { key: 'customers.create', label: 'إضافة عميل', category: 'العملاء' },
-  { key: 'customers.edit', label: 'تعديل عميل', category: 'العملاء' },
-  { key: 'customers.delete', label: 'حذف عميل', category: 'العملاء' },
-  // Orders
-  { key: 'orders.view', label: 'عرض الطلبات', category: 'الطلبات' },
-  { key: 'orders.create', label: 'إنشاء طلب', category: 'الطلبات' },
-  { key: 'orders.edit', label: 'تعديل طلب', category: 'الطلبات' },
-  { key: 'orders.delete', label: 'حذف طلب', category: 'الطلبات' },
-  // Inventory
-  { key: 'inventory.view', label: 'عرض المخزون', category: 'المخزون' },
-  { key: 'inventory.create', label: 'إضافة صنف', category: 'المخزون' },
-  { key: 'inventory.edit', label: 'تعديل صنف', category: 'المخزون' },
-  { key: 'inventory.delete', label: 'حذف صنف', category: 'المخزون' },
-  { key: 'inventory.reconcile', label: 'تسوية المخزون', category: 'المخزون' },
-  // Staff
-  { key: 'staff.view', label: 'عرض الموظفين', category: 'الموظفين' },
-  { key: 'staff.create', label: 'إضافة موظف', category: 'الموظفين' },
-  { key: 'staff.edit', label: 'تعديل موظف', category: 'الموظفين' },
-  { key: 'staff.delete', label: 'حذف موظف', category: 'الموظفين' },
-  // Reports
-  { key: 'reports.view', label: 'عرض التقارير', category: 'التقارير' },
-  { key: 'reports.export', label: 'تصدير التقارير', category: 'التقارير' },
-  // Settings
-  { key: 'settings.view', label: 'عرض الإعدادات', category: 'الإعدادات' },
-  { key: 'settings.edit', label: 'تعديل الإعدادات', category: 'الإعدادات' },
-  { key: 'settings.whatsapp', label: 'إعدادات واتساب', category: 'الإعدادات' },
-  { key: 'settings.billing', label: 'إعدادات الفوترة', category: 'الإعدادات' },
-  { key: 'settings.notifications', label: 'إعدادات التنبيهات', category: 'الإعدادات' },
-  // Dashboard
-  { key: 'dashboard.view', label: 'عرض لوحة التحكم', category: 'لوحة التحكم' },
-  { key: 'dashboard.revenue', label: 'عرض الإيرادات', category: 'لوحة التحكم' },
-  { key: 'dashboard.orders', label: 'عرض إحصائيات الطلبات', category: 'لوحة التحكم' },
-  { key: 'dashboard.inventory', label: 'عرض إحصائيات المخزون', category: 'لوحة التحكم' },
-  { key: 'dashboard.customers', label: 'عرض إحصائيات العملاء', category: 'لوحة التحكم' },
-  // Actions
-  { key: 'action.refund', label: 'إجراء مرتجع', category: 'عمليات خاصة' },
-  { key: 'action.discount', label: 'منح خصم', category: 'عمليات خاصة' },
-  { key: 'suppliers.manage', label: 'إدارة الموردين', category: 'الموردين' },
-];
+const ALL_PERMISSIONS: { key: PermissionKey; label: string; category: string }[] = SYSTEM_PERMISSIONS.map(p => ({
+  key: p.id as PermissionKey,
+  label: p.name,
+  category: p.category
+}));
 
 const CATEGORIES = Array.from(new Set(ALL_PERMISSIONS.map(p => p.category)));
 
@@ -78,6 +42,7 @@ export default function GlobalRoleManager() {
     tenantId: '',
     isDefault: true
   });
+  const [categoryTab, setCategoryTab] = useState<'all' | 'merchant' | 'saas'>('all');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
@@ -92,18 +57,43 @@ export default function GlobalRoleManager() {
       .from('roles')
       .select('*')
       .is('tenant_id', null);
+      
     if (error) {
       console.warn('Error fetching system roles:', error);
-    } else if (data) {
-      setRoles(data.map(d => ({
-        id: d.id,
-        name: d.name,
-        description: d.description,
-        permissions: d.permissions,
-        tenantId: d.tenant_id,
-        isDefault: d.is_default
-      } as Role)));
     }
+
+    const combinedMap = new Map<string, Role>();
+
+    // 1. Base default system roles
+    Object.entries(DEFAULT_ROLES).forEach(([key, roleInfo]) => {
+      combinedMap.set(key, {
+        id: key,
+        name: roleInfo.name,
+        description: roleInfo.description,
+        permissions: roleInfo.permissions,
+        tenantId: null,
+        isDefault: true,
+        roleKey: key
+      } as Role);
+    });
+
+    // 2. DB system roles
+    if (data) {
+      data.forEach(d => {
+        const key = d.role_key || d.id;
+        combinedMap.set(key, {
+          id: d.id,
+          name: d.name,
+          description: d.description,
+          permissions: d.permissions,
+          tenantId: d.tenant_id,
+          isDefault: d.is_default,
+          roleKey: key
+        } as Role);
+      });
+    }
+
+    setRoles(Array.from(combinedMap.values()));
     setLoading(false);
   };
 
@@ -257,32 +247,83 @@ export default function GlobalRoleManager() {
         </div>
       </div>
 
+      {/* Category Filter Tabs */}
+      <div className="flex items-center gap-2 p-1.5 bg-gray-100 rounded-2xl w-fit">
+        <button
+          onClick={() => setCategoryTab('all')}
+          className={cn(
+            "px-5 py-2 text-xs font-black rounded-xl transition-all",
+            categoryTab === 'all' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
+          )}
+        >
+          الجميع ({roles.length})
+        </button>
+        <button
+          onClick={() => setCategoryTab('merchant')}
+          className={cn(
+            "px-5 py-2 text-xs font-black rounded-xl transition-all flex items-center gap-1.5",
+            categoryTab === 'merchant' ? "bg-indigo-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-900"
+          )}
+        >
+          <span>أدوار التجار والمتاجر</span>
+          <span className="text-[10px] opacity-80">({roles.filter(r => isMerchantRole(r.roleKey)).length})</span>
+        </button>
+        <button
+          onClick={() => setCategoryTab('saas')}
+          className={cn(
+            "px-5 py-2 text-xs font-black rounded-xl transition-all flex items-center gap-1.5",
+            categoryTab === 'saas' ? "bg-purple-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-900"
+          )}
+        >
+          <span>أدوار منصة ساس</span>
+          <span className="text-[10px] opacity-80">({roles.filter(r => isSaaSRole(r.roleKey)).length})</span>
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {roles.map((role) => (
-          <motion.div
-            key={role.id}
-            layoutId={role.id}
-            className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-md transition-all group"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
-                <Shield size={24} />
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setEditingRole(role)}
-                  className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
-                >
-                  <Edit2 size={18} />
-                </button>
-                <button
-                  onClick={() => confirmDeleteRole(role)}
-                  className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                >
-                  <Trash2 size={18} />
-                </button>
-              </div>
-            </div>
+        {roles
+          .filter(r => {
+            if (categoryTab === 'merchant') return isMerchantRole(r.roleKey);
+            if (categoryTab === 'saas') return isSaaSRole(r.roleKey);
+            return true;
+          })
+          .map((role) => {
+            const isSaas = isSaaSRole(role.roleKey);
+
+            return (
+              <motion.div
+                key={role.id}
+                layoutId={role.id}
+                className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-md transition-all group"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className={cn(
+                    "w-12 h-12 rounded-2xl flex items-center justify-center font-black",
+                    isSaas ? "bg-purple-50 text-purple-600" : "bg-indigo-50 text-indigo-600"
+                  )}>
+                    <Shield size={24} />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={cn(
+                      "text-[10px] font-black px-2.5 py-1 rounded-full border",
+                      isSaas ? "bg-purple-50 text-purple-600 border-purple-200" : "bg-blue-50 text-blue-600 border-blue-200"
+                    )}>
+                      {isSaas ? 'فريق ساس' : 'أدوار المتاجر'}
+                    </span>
+                    <button
+                      onClick={() => setEditingRole(role)}
+                      className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                    >
+                      <Edit2 size={18} />
+                    </button>
+                    <button
+                      onClick={() => confirmDeleteRole(role)}
+                      className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
 
             <h3 className="text-lg font-black text-gray-900">{role.name}</h3>
             <p className="text-sm text-gray-500 font-medium mt-1 line-clamp-2 h-10">
@@ -314,7 +355,8 @@ export default function GlobalRoleManager() {
               </div>
             </div>
           </motion.div>
-        ))}
+            );
+          })}
       </div>
 
       {/* Add/Edit Modal */}

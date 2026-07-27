@@ -356,7 +356,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                 <span className="leading-relaxed">
                   {t('sales.active_shift', 'وردية نشطة')}: <span className="font-extrabold text-content">{activeShift.staffName}</span> 
                   <span className="mx-1.5 text-border">|</span>
-                  {t('sales.shift_start', 'البداية')}: <span className="font-semibold text-content" dir="ltr">{new Date(activeShift.startTime).toLocaleTimeString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                  {t('sales.shift_start', 'البداية')}: <span className="font-semibold text-content" dir="ltr">{new Date(activeShift.startTime).toLocaleTimeString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                 </span>
               </div>
 
@@ -577,7 +577,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-border/50">
                     <span className="text-content-muted font-medium">{t('sales.start_time', 'وقت البداية')}</span>
-                    <span className="font-bold text-content" dir="ltr">{new Date(activeShift.startTime).toLocaleString(i18n.language === 'ar' ? 'ar-SA' : (i18n.language === 'ur' ? 'ur-PK' : 'en-US'))}</span>
+                    <span className="font-bold text-content" dir="ltr">{new Date(activeShift.startTime).toLocaleString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'))}</span>
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-border/50">
                     <span className="text-content-muted font-medium">{t('sales.opening_balance', 'الرصيد الافتتاحي')}</span>

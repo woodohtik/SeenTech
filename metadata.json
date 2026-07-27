@@ -1,6 +1,6 @@
 {
   "name": "نظام سين",
   "description": "نظام سين - نظام كاشير سحابي (SaaS) متكامل للخياطين لإدارة العملاء والطلبات والقياسات، Seen System.",
-  "requestFramePermissions": ["geolocation"],
+  "requestFramePermissions": ["geolocation", "usb", "serial", "bluetooth"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

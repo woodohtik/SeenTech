@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase/client';
 import { decodeOrderRow } from '../utils/orderHistoryHelper';
 
@@ -10,6 +10,12 @@ import { decodeOrderRow } from '../utils/orderHistoryHelper';
  * @param onUpdate The callback function that runs when an INSERT, UPDATE, or DELETE payload arrives.
  */
 export function useRealtimeSync(table: string, tenantId: string | undefined, onUpdate: (payload: any) => void) {
+  const onUpdateRef = useRef(onUpdate);
+
+  useEffect(() => {
+    onUpdateRef.current = onUpdate;
+  });
+
   useEffect(() => {
     if (!tenantId) return;
 
@@ -17,11 +23,16 @@ export function useRealtimeSync(table: string, tenantId: string | undefined, onU
     const filter = `tenant_id=eq.${tenantId}`;
     
     // Create a uniquely named channel for this table and tenant
-    const channelName = `realtime:${table}:${tenantId}`;
+    const channelName = `realtime:${table}:${tenantId}:${Date.now()}`;
     
     const channel = supabase
       .channel(channelName)
-      .on('postgres_changes', { event: '*', schema: 'public', table, filter }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table }, (payload) => {
+        const record = (payload.new || payload.old) as any;
+        if (record && record.tenant_id && tenantId && record.tenant_id !== tenantId) {
+          return;
+        }
+
         if (table === 'orders' && payload) {
           const mutablePayload = { ...payload };
           if (mutablePayload.new) {
@@ -30,9 +41,9 @@ export function useRealtimeSync(table: string, tenantId: string | undefined, onU
           if (mutablePayload.old) {
             mutablePayload.old = decodeOrderRow(mutablePayload.old);
           }
-          onUpdate(mutablePayload);
+          onUpdateRef.current(mutablePayload);
         } else {
-          onUpdate(payload);
+          onUpdateRef.current(payload);
         }
       })
       .subscribe((status) => {
@@ -46,5 +57,5 @@ export function useRealtimeSync(table: string, tenantId: string | undefined, onU
       console.log(`[Realtime Sync] Unsubscribing from ${table} for tenant ${tenantId}`);
       supabase.removeChannel(channel);
     };
-  }, [table, tenantId, onUpdate]);
+  }, [table, tenantId]);
 }

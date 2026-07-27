@@ -9,9 +9,10 @@
  */
 
 import { useState } from 'react';
+import { CurrencySymbol } from '../CurrencySymbol';
 
 const INK = '#0E2A42', GRAY = '#6B7280', LINE = '#E5EAF1', CTA = '#0BA06B', CTA_TINT = '#F2FBF7';
-type Method = 'cash' | 'card';
+type Method = 'cash' | 'network';
 
 interface Props {
   total: number;
@@ -38,7 +39,7 @@ export default function SimplePayment({ total, onConfirm, onBack, allowPartial =
       <div style={s.center}>
         <div style={s.card}>
           <div style={s.lbl}>المطلوب</div>
-          <div style={s.amt}>{total.toLocaleString('en-US')} <span style={s.cur}>ر.س</span></div>
+          <div style={s.amt}>{total.toLocaleString('en-US')} <span style={s.cur}><CurrencySymbol className="h-[0.9em] w-auto inline-block" /></span></div>
 
           <div style={s.q}>اختر طريقة الدفع</div>
           <div style={s.methods}>
@@ -47,9 +48,9 @@ export default function SimplePayment({ total, onConfirm, onBack, allowPartial =
               <span style={s.mt}>نقدي {method === 'cash' ? '✓' : ''}</span>
               <span style={s.ms}>المبلغ مستلم كامل</span>
             </button>
-            <button onClick={() => setMethod('card')}
-              style={{ ...s.m, ...(method === 'card' ? s.mOn : {}) }}>
-              <span style={s.mt}>شبكة (مدى) {method === 'card' ? '✓' : ''}</span>
+            <button onClick={() => setMethod('network')}
+              style={{ ...s.m, ...(method === 'network' ? s.mOn : {}) }}>
+              <span style={s.mt}>شبكة (مدى) {method === 'network' ? '✓' : ''}</span>
               <span style={s.ms}>بطاقة / Apple Pay</span>
             </button>
           </div>
@@ -63,7 +64,7 @@ export default function SimplePayment({ total, onConfirm, onBack, allowPartial =
                   <span style={s.partialLbl}>المبلغ المدفوع</span>
                   <input type="number" inputMode="numeric" value={paid}
                     onChange={(e) => setPaid(Number(e.target.value) || 0)} style={s.partialInput} />
-                  <span style={s.partialRem}>الباقي: {(total - paidAmount).toLocaleString('en-US')} ر.س</span>
+                  <span style={s.partialRem}>الباقي: {(total - paidAmount).toLocaleString('en-US')} <CurrencySymbol className="h-[1em] w-auto inline-block" /></span>
                 </div>
               )}
             </div>

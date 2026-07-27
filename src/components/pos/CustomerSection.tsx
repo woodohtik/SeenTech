@@ -1,5 +1,6 @@
 import React, { useState, Fragment } from 'react';
 import { Customer } from '../../types/supabase';
+import { formatSaudiPhone } from '../../utils/phoneUtils';
 import { Search, Plus, UserPlus, Save, Loader2, X, Check, ChevronsUpDown } from 'lucide-react';
 import { supabase } from '../../lib/supabase/client';
 import { Combobox, Transition, Dialog } from '@headlessui/react';
@@ -53,7 +54,7 @@ export default function CustomerSection({
       const newCustomer = {
         tenant_id: tenantId,
         name: newName,
-        phone: newPhone,
+        phone: formatSaudiPhone(newPhone),
         vat_number: newVat || undefined,
         measurements: {
           thobe: {
@@ -240,7 +241,9 @@ export default function CustomerSection({
                       <label className="text-sm font-bold text-content">رقم الجوال <span className="text-danger">*</span></label>
                       <input 
                         type="text" 
-                        value={newPhone} onChange={e => setNewPhone(e.target.value)}
+                        value={newPhone} 
+                        onChange={e => setNewPhone(formatSaudiPhone(e.target.value))}
+                        onBlur={e => setNewPhone(formatSaudiPhone(e.target.value))}
                         className="w-full p-3 rounded-xl border border-border bg-surface-muted focus:bg-surface focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all text-content" 
                         placeholder="05xxxxxxxx"
                       />

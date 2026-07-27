@@ -45,6 +45,7 @@ export interface TaxSettings {
   trn: string;
   legalName: string;
   vatRate: number;
+  tailoringTaxType?: 'inclusive' | 'exclusive' | 'exempt';
 }
 
 export interface Tenant {
@@ -106,6 +107,7 @@ export type UserRole =
   | 'support_tech' 
   | 'billing_admin'
   | 'sales' 
+  | 'tenant_admin'
   | 'owner' 
   | 'admin'
   | 'manager' 
@@ -178,7 +180,8 @@ export type PermissionKey =
   | 'shifts.view' | 'shifts.manage'
   | 'action.refund'
   | 'action.discount'
-  | 'suppliers.manage';
+  | 'suppliers.manage'
+  | 'sales.view';
 
 export type PermissionsMap = Record<PermissionKey, boolean>;
 
@@ -191,6 +194,7 @@ export interface Role {
   permissions: PermissionsMap;
   isDefault: boolean;
   createdAt: string;
+  category?: 'merchant' | 'saas';
 }
 
 export interface UserPermissionOverride {

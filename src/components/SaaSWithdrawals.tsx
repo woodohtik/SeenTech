@@ -68,7 +68,7 @@ export default function SaaSWithdrawals() {
             {rows.map(w => (
               <tr key={w.id}>
                 <td style={{ ...st.td, textAlign: isRtl ? 'right' : 'left' }}>{new Date(w.requested_at).toLocaleDateString('en-GB')}</td>
-                <td style={{ ...st.td, fontWeight: 800, color: INK, textAlign: isRtl ? 'right' : 'left' }}>{w.amount.toLocaleString('en-US')} {t('common.currency_saudi_riyal', 'ر.س')}</td>
+                <td style={{ ...st.td, fontWeight: 800, color: INK, textAlign: isRtl ? 'right' : 'left' }}>{w.amount.toLocaleString('en-US')} {t('common.currency_saudi_riyal', '﷼')}</td>
                 <td style={{ ...st.td, textAlign: isRtl ? 'right' : 'left' }}>{w.beneficiary || '—'}</td>
                 <td style={{ ...st.td, direction: 'ltr', fontSize: 13, textAlign: isRtl ? 'right' : 'left' }}>{w.iban || '—'}</td>
                 <td style={{ ...st.td, textAlign: isRtl ? 'right' : 'left' }}>

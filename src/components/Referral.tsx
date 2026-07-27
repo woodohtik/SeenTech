@@ -11,6 +11,7 @@ import {
   requestWithdrawal, MIN_WITHDRAWAL, REWARD_PER_REFERRAL,
   type Wallet, type ReferralRow, type Withdrawal,
 } from '../services/referralService';
+import { CurrencySymbol } from './CurrencySymbol';
 
 const INK = '#0E2A42', BRAND = '#34BBED', CTA = '#0BA06B', CTA2 = '#0A8A5C';
 const SURF = '#F5F7FA', GRAY = '#6B7280', TEXT = '#34404D', LINE = '#E5EAF1', MINT = '#E7F7EE', TINT = '#EAF6FD';
@@ -52,21 +53,21 @@ export default function Referral({ tenantId }: { tenantId: string }) {
     <div dir="rtl" style={s.wrap}>
       <div style={s.head}>
         <h2 style={s.title}>برنامج الإحالة</h2>
-        <p style={s.sub}>ادعُ محلات خياطة أخرى لسين — لك {REWARD_PER_REFERRAL} ر.س عن كل محل يشترك عبر رابطك.</p>
+        <p style={s.sub}>ادعُ محلات خياطة أخرى لسين — لك {REWARD_PER_REFERRAL} ﷼ عن كل محل يشترك عبر رابطك.</p>
       </div>
 
       <div style={s.grid}>
         {/* wallet */}
         <div style={{ ...s.card, ...s.walletCard }}>
           <div style={s.cardLbl}>رصيد محفظتك</div>
-          <div style={s.balance}>{wallet.balance.toLocaleString('en-US')} <span style={s.cur}>ر.س</span></div>
+          <div style={s.balance}>{wallet.balance.toLocaleString('en-US')} <span style={s.cur}><CurrencySymbol className="h-[0.9em] w-auto inline-block" /></span></div>
           <div style={s.barTrack}><div style={{ ...s.barFill, width: `${pct}%` }} /></div>
           <div style={s.barNote}>
-            {canWithdraw ? 'جاهز للسحب ✓' : `باقي ${(MIN_WITHDRAWAL - wallet.balance).toLocaleString('en-US')} ر.س للسحب (فوق ${MIN_WITHDRAWAL})`}
+            {canWithdraw ? 'جاهز للسحب ✓' : `باقي ${(MIN_WITHDRAWAL - wallet.balance).toLocaleString('en-US')} ﷼ للسحب (فوق ${MIN_WITHDRAWAL})`}
           </div>
           <button disabled={!canWithdraw} onClick={() => setShowModal(true)}
             style={{ ...s.cta, ...(canWithdraw ? {} : s.ctaDisabled) }}>اطلب تحويل المبلغ</button>
-          <div style={s.earned}>إجمالي ما كسبته: {wallet.total_earned.toLocaleString('en-US')} ر.س · {refs.length} إحالة</div>
+          <div style={s.earned}>إجمالي ما كسبته: {wallet.total_earned.toLocaleString('en-US')} ﷼ · {refs.length} إحالة</div>
         </div>
 
         {/* link */}
@@ -77,7 +78,7 @@ export default function Referral({ tenantId }: { tenantId: string }) {
             <button onClick={copy} style={s.copyBtn}>{copied ? 'تم النسخ ✓' : 'نسخ'}</button>
           </div>
           <button onClick={shareWhatsApp} style={s.waBtn}>شارك عبر واتساب</button>
-          <div style={s.hint}>عند اشتراك أي محل سجّل من رابطك (خلال شهر من تسجيله) تُضاف لك {REWARD_PER_REFERRAL} ر.س تلقائياً في محفظتك.</div>
+          <div style={s.hint}>عند اشتراك أي محل سجّل من رابطك (خلال شهر من تسجيله) تُضاف لك {REWARD_PER_REFERRAL} ﷼ تلقائياً في محفظتك.</div>
         </div>
       </div>
 
@@ -103,7 +104,7 @@ export default function Referral({ tenantId }: { tenantId: string }) {
             <div key={w.id} style={s.rowItem}>
               <span style={{ ...s.badge, background: wStatusColor(w.status).bg, color: wStatusColor(w.status).fg }}>{wStatusLabel(w.status)}</span>
               <span style={s.rowDate}>{new Date(w.requested_at).toLocaleDateString('en-GB')}</span>
-              <span style={s.rowText}>{w.amount.toLocaleString('en-US')} ر.س</span>
+              <span style={s.rowText}>{w.amount.toLocaleString('en-US')} ﷼</span>
             </div>
           ))}
         </div>
@@ -127,7 +128,7 @@ function WithdrawModal({ tenantId, balance, onClose, onDone }:
     setErr('');
     if (!/^SA\d{22}$/.test(iban.replace(/\s/g, ''))) { setErr('أدخل رقم آيبان سعودي صحيح (SA + 22 رقم).'); return; }
     if (!name.trim()) { setErr('أدخل اسم المستفيد.'); return; }
-    if (amount <= MIN_WITHDRAWAL || amount > balance) { setErr(`المبلغ أكثر من ${MIN_WITHDRAWAL} وحتى ${balance} ر.س.`); return; }
+    if (amount <= MIN_WITHDRAWAL || amount > balance) { setErr(`المبلغ أكثر من ${MIN_WITHDRAWAL} وحتى ${balance} ﷼.`); return; }
     setBusy(true);
     try { await requestWithdrawal(tenantId, amount, iban.replace(/\s/g, ''), name.trim()); onDone(); }
     catch (e: any) { setErr(e?.message || 'تعذّر إرسال الطلب.'); setBusy(false); }
@@ -142,7 +143,7 @@ function WithdrawModal({ tenantId, balance, onClose, onDone }:
           <input value={name} onChange={e => setName(e.target.value)} style={s.input} /></label>
         <label style={s.field}><span style={s.flbl}>رقم الآيبان (IBAN)</span>
           <input value={iban} onChange={e => setIban(e.target.value)} placeholder="SAxxxxxxxxxxxxxxxxxxxxxx" dir="ltr" style={s.input} /></label>
-        <label style={s.field}><span style={s.flbl}>المبلغ (ر.س)</span>
+        <label style={s.field}><span style={s.flbl}>المبلغ (﷼)</span>
           <input type="number" value={amount} onChange={e => setAmount(Number(e.target.value) || 0)} style={s.input} /></label>
         {err && <div style={s.err}>{err}</div>}
         <button onClick={submit} disabled={busy} style={{ ...s.cta, marginTop: 8, ...(busy ? s.ctaDisabled : {}) }}>
@@ -155,7 +156,7 @@ function WithdrawModal({ tenantId, balance, onClose, onDone }:
 
 function refStatus(r: ReferralRow): { label: string; text: string; bg: string; fg: string } {
   const expiredByTime = r.status === 'pending' && r.qualified_until && new Date(r.qualified_until).getTime() < Date.now();
-  if (r.status === 'credited') return { label: `+${r.reward_amount} ر.س`, text: 'اشترك — أُضيفت المكافأة', bg: MINT, fg: CTA2 };
+  if (r.status === 'credited') return { label: `+${r.reward_amount} ﷼`, text: 'اشترك — أُضيفت المكافأة', bg: MINT, fg: CTA2 };
   if (r.status === 'expired' || expiredByTime) return { label: 'انتهت المهلة', text: 'لم يشترك خلال شهر', bg: '#EEF1F4', fg: GRAY };
   if (r.status === 'rejected') return { label: 'مرفوضة', text: 'إحالة غير مؤهّلة', bg: '#F7D9D5', fg: '#C0392B' };
   return { label: 'بانتظار الاشتراك', text: 'سجّل — المكافأة عند اشتراكه', bg: '#FBEAD0', fg: '#B9770E' };

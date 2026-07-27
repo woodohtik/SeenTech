@@ -5,6 +5,7 @@ import { Download, ShoppingBag, Loader2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { generateZatcaQR } from '../services/zatcaService';
 import html2pdf from 'html2pdf.js';
+import { CurrencySymbol } from '../components/CurrencySymbol';
 
 export default function PublicInvoice() {
   const { id } = useParams<{ id: string }>();
@@ -159,7 +160,7 @@ export default function PublicInvoice() {
 
           <div className="flex justify-between">
             <span className="text-slate-500">تاريخ الإصدار / Issue Date:</span>
-            <span className="font-bold text-slate-800" dir="ltr">{invoiceDate.toLocaleString('ar-SA')}</span>
+            <span className="font-bold text-slate-800" dir="ltr">{invoiceDate.toLocaleString('ar-SA-u-nu-latn')}</span>
           </div>
 
           <div className="flex justify-between">
@@ -186,8 +187,8 @@ export default function PublicInvoice() {
                 <span className="w-16 text-center font-mono text-slate-500">
                   {qty}
                 </span>
-                <span className="w-20 text-left font-mono font-bold text-slate-900">
-                  {total.toFixed(2)} ر.س
+                <span className="w-20 text-left font-mono font-bold text-slate-900 inline-flex items-center justify-end gap-1">
+                  {total.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto shrink-0" />
                 </span>
               </div>
             );
@@ -198,17 +199,17 @@ export default function PublicInvoice() {
         <div className="space-y-2 border-b border-dashed border-slate-200 pb-4 mb-5 text-[11px]">
           <div className="flex justify-between text-slate-500">
             <span>المجموع غير شامل الضريبة:</span>
-            <span className="font-mono font-bold">{(Number(order.totalAmount) - Number(order.vatAmount || 0)).toFixed(2)} ر.س</span>
+            <span className="font-mono font-bold inline-flex items-center gap-1">{(Number(order.totalAmount) - Number(order.vatAmount || 0)).toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto shrink-0" /></span>
           </div>
 
           <div className="flex justify-between text-slate-500">
             <span>ضريبة القيمة المضافة (15%):</span>
-            <span className="font-mono font-bold">{Number(order.vatAmount || 0).toFixed(2)} ر.س</span>
+            <span className="font-mono font-bold inline-flex items-center gap-1">{Number(order.vatAmount || 0).toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto shrink-0" /></span>
           </div>
 
           <div className="flex justify-between text-base font-black text-slate-900 pt-1.5 border-t border-dotted border-slate-200">
             <span>الإجمالي المستحق / Total:</span>
-            <span className="font-mono">{Number(order.totalAmount || 0).toFixed(2)} ر.س</span>
+            <span className="font-mono inline-flex items-center gap-1">{Number(order.totalAmount || 0).toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto shrink-0" /></span>
           </div>
         </div>
 

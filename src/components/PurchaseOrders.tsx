@@ -147,7 +147,7 @@ export default function PurchaseOrders({
         .single();
       
       if (poError) throw poError;
-      if (!poData) throw new Error('فشل إنشاء الطلب');
+      if (!poData) throw new Error(t('procurement.failed_to_create_po', 'فشل إنشاء الطلب'));
 
       // 2. Insert items
       const itemsToInsert = items.map(item => ({
@@ -169,7 +169,7 @@ export default function PurchaseOrders({
 
       if (itemsError) throw itemsError;
 
-      toastSuccess(modalType === 'purchase' ? 'تم إنشاء السند كمسودة' : 'تم إنشاء مرتجع المشتريات كمسودة');
+      toastSuccess(modalType === 'purchase' ? t('procurement.po_draft_created', 'تم إنشاء السند كمسودة') : t('procurement.return_draft_created', 'تم إنشاء مرتجع المشتريات كمسودة'));
 
       const foundSupplier = suppliers.find(s => (s.id || '').toLowerCase().trim() === (poData.supplier_id || '').toLowerCase().trim());
 
@@ -198,7 +198,7 @@ export default function PurchaseOrders({
         onRefresh?.();
       }
     } catch (error: any) {
-      toastError(error.message || 'فشل بناء السند');
+      toastError(error.message || t('procurement.failed_to_create_po', 'فشل بناء السند'));
     } finally {
       setIsSubmitting(false);
     }
@@ -206,7 +206,7 @@ export default function PurchaseOrders({
 
   const handleConfirmOrder = async (order: any, skipConfirmationAlert = false) => {
     if (!order || !order.id) {
-      toastError('خطأ: لم يتم تلقي معرّف السند بشكل صحيح.');
+      toastError(t('procurement.invalid_po_id', 'خطأ: لم يتم تلقي معرّف السند بشكل صحيح.'));
       return;
     }
 
@@ -443,9 +443,9 @@ export default function PurchaseOrders({
         <div>
           <h2 className="text-xl font-bold text-content flex items-center gap-2">
             <ArrowLeftRight className="text-brand" size={24} />
-            <span>حركة المشتريات والمرتجعات</span>
+            <span>{t('procurement.po_movement_title', 'حركة المشتريات والمرتجعات')}</span>
           </h2>
-          <p className="text-xs text-content-muted mt-1">تتبع وإدارة فواتير المشتريات المباشرة ومرتجعات الموردين مع التزامن الآلي للمخازن وحسابات الموردين.</p>
+          <p className="text-xs text-content-muted mt-1">{t('procurement.po_movement_subtitle', 'تتبع وإدارة فواتير المشتريات المباشرة ومرتجعات الموردين مع التزامن الآلي للمخازن وحسابات الموردين.')}</p>
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
           <button 
@@ -456,7 +456,7 @@ export default function PurchaseOrders({
             className="flex-1 sm:flex-initial bg-brand text-white px-5 py-3 rounded-2xl font-black text-sm flex items-center justify-center gap-2 hover:bg-brand/95 transition-all shadow-lg shadow-brand/10 active:scale-95 duration-100"
           >
             <Plus size={18} />
-            <span>إنشاء أمر شراء</span>
+            <span>{t('procurement.create_po', 'إنشاء أمر شراء')}</span>
           </button>
           <button 
             onClick={() => {
@@ -466,7 +466,7 @@ export default function PurchaseOrders({
             className="flex-1 sm:flex-initial bg-danger text-white px-5 py-3 rounded-2xl font-black text-sm flex items-center justify-center gap-2 hover:bg-danger/95 transition-all shadow-lg shadow-danger/10 active:scale-95 duration-100"
           >
             <Plus size={18} />
-            <span>أمر إرجاع بضاعة</span>
+            <span>{t('procurement.create_return_order', 'أمر إرجاع بضاعة')}</span>
           </button>
         </div>
       </div>
@@ -475,10 +475,10 @@ export default function PurchaseOrders({
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* Search Input */}
         <div className="relative lg:col-span-2">
-          <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-content-muted" size={18} />
+          <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-content-muted pointer-events-none" size={18} />
           <input
             type="text"
-            placeholder="بحث برقم السند أو اسم المورد..."
+            placeholder={t('procurement.search_po_placeholder', 'بحث برقم السند أو اسم المورد...')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-4 pr-12 py-3.5 bg-surface border border-border rounded-2xl focus:ring-2 focus:ring-brand outline-none text-content font-bold placeholder:text-content-muted/80 text-sm"
@@ -494,7 +494,7 @@ export default function PurchaseOrders({
               typeFilter === 'all' ? "bg-brand/10 text-brand font-extrabold" : "text-content-muted hover:text-content"
             )}
           >
-            الكل
+            {t('procurement.category_all', 'الكل')}
           </button>
           <button
             onClick={() => setTypeFilter('purchase')}
@@ -503,7 +503,7 @@ export default function PurchaseOrders({
               typeFilter === 'purchase' ? "bg-brand text-white font-extrabold shadow" : "text-content-muted hover:text-content"
             )}
           >
-            المشتريات
+            {t('procurement.filter_purchase', 'المشتريات')}
           </button>
           <button
             onClick={() => setTypeFilter('return')}
@@ -512,7 +512,7 @@ export default function PurchaseOrders({
               typeFilter === 'return' ? "bg-danger text-white font-extrabold shadow" : "text-content-muted hover:text-content"
             )}
           >
-            المرتجعات
+            {t('procurement.returns', 'المرتجعات')}
           </button>
         </div>
 
@@ -525,7 +525,7 @@ export default function PurchaseOrders({
               statusFilter === 'all' ? "bg-brand/10 text-brand" : "text-content-muted hover:text-content"
             )}
           >
-            الحالة: الكل
+            {t('procurement.po_status', 'الحالة')}: {t('procurement.category_all', 'الكل')}
           </button>
           <button
             onClick={() => setStatusFilter('draft')}
@@ -534,7 +534,7 @@ export default function PurchaseOrders({
               statusFilter === 'draft' ? "bg-neutral-200 dark:bg-neutral-800 text-content" : "text-content-muted hover:text-content"
             )}
           >
-            مسودة
+            {t('procurement.po_status_draft', 'مسودة')}
           </button>
           <button
             onClick={() => setStatusFilter('confirmed')}
@@ -543,7 +543,7 @@ export default function PurchaseOrders({
               statusFilter === 'confirmed' ? "bg-success/10 text-success" : "text-content-muted hover:text-content"
             )}
           >
-            مؤكد
+            {t('procurement.po_status_confirmed_short', 'مؤكد')}
           </button>
         </div>
       </div>
@@ -555,12 +555,12 @@ export default function PurchaseOrders({
           <table className="w-full text-right min-w-max">
             <thead className="bg-surface-muted text-content-muted border-b border-border">
               <tr>
-                <th className="px-6 py-4 font-black text-xs uppercase tracking-wider">نوع السند</th>
-                <th className="px-6 py-4 font-black text-xs uppercase tracking-wider">رقم السند</th>
-                <th className="px-6 py-4 font-black text-xs uppercase tracking-wider">المورد</th>
-                <th className="px-6 py-4 font-black text-xs uppercase tracking-wider">مبلغ السند</th>
-                <th className="px-6 py-4 font-black text-xs uppercase tracking-wider">التاريخ</th>
-                <th className="px-6 py-4 font-black text-xs uppercase tracking-wider">الحالة</th>
+                <th className="px-6 py-4 font-black text-xs uppercase tracking-wider">{t('procurement.po_type', 'نوع السند')}</th>
+                <th className="px-6 py-4 font-black text-xs uppercase tracking-wider">{t('procurement.po_number', 'رقم السند')}</th>
+                <th className="px-6 py-4 font-black text-xs uppercase tracking-wider">{t('procurement.po_supplier', 'المورد')}</th>
+                <th className="px-6 py-4 font-black text-xs uppercase tracking-wider">{t('procurement.po_amount', 'مبلغ السند')}</th>
+                <th className="px-6 py-4 font-black text-xs uppercase tracking-wider">{t('procurement.po_date', 'التاريخ')}</th>
+                <th className="px-6 py-4 font-black text-xs uppercase tracking-wider">{t('procurement.po_status', 'الحالة')}</th>
                 <th className="px-6 py-4 font-black text-xs uppercase tracking-wider"></th>
               </tr>
             </thead>
@@ -572,25 +572,25 @@ export default function PurchaseOrders({
                   <tr key={po.id} className="text-content hover:bg-surface-muted/40 transition-colors">
                     <td className="px-6 py-4 font-bold text-sm">
                       {poType === 'purchase' ? (
-                        <span className="px-2.5 py-1 text-xs font-black bg-brand/10 text-brand border border-brand/10 rounded-full">أمر شراء</span>
+                        <span className="px-2.5 py-1 text-xs font-black bg-brand/10 text-brand border border-brand/10 rounded-full">{t('procurement.po_type_purchase', 'أمر شراء')}</span>
                       ) : (
-                        <span className="px-2.5 py-1 text-xs font-black bg-danger/10 text-danger border border-danger/10 rounded-full">أمر إرجاع</span>
+                        <span className="px-2.5 py-1 text-xs font-black bg-danger/10 text-danger border border-danger/10 rounded-full">{t('procurement.po_type_return', 'أمر إرجاع')}</span>
                       )}
                     </td>
                     <td className="px-6 py-4 font-mono font-bold text-sm text-content-muted">{po.poNumber || (po as any).po_number || po.id.slice(0, 8)}</td>
                     <td className="px-6 py-4 font-black text-sm text-content">{po.supplierName}</td>
                     <td className="px-6 py-4 font-black text-sm text-brand"><PriceDisplay amount={po.totalAmount} /></td>
-                    <td className="px-6 py-4 text-xs font-bold text-content-muted">{new Date(po.orderDate).toLocaleDateString('ar-SA')}</td>
+                    <td className="px-6 py-4 text-xs font-bold text-content-muted">{new Date(po.orderDate).toLocaleDateString('ar-SA-u-nu-latn')}</td>
                     <td className="px-6 py-4">
                       {poStatus === 'confirmed' || poStatus === 'received' || poStatus === 'returned' ? (
                         <div className="flex items-center gap-1.5 text-success bg-success/10 px-3 py-1 rounded-full w-fit border border-success/10">
                           <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
-                          <span className="text-[10px] font-black">مؤكد ومرحل</span>
+                          <span className="text-[10px] font-black">{t('procurement.po_status_confirmed', 'مؤكد ومرحل')}</span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-1.5 text-content-muted bg-neutral-100 dark:bg-neutral-800 px-3 py-1 rounded-full w-fit">
                           <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
-                          <span className="text-[10px] font-black">مسودة (غير مفعل)</span>
+                          <span className="text-[10px] font-black">{t('procurement.po_status_draft', 'مسودة')}</span>
                         </div>
                       )}
                     </td>
@@ -598,6 +598,7 @@ export default function PurchaseOrders({
                       <button
                         onClick={() => setSelectedOrder(po)}
                         className="p-2 bg-brand/10 text-brand hover:bg-brand hover:text-white rounded-xl transition-all flex items-center justify-center cursor-pointer"
+                        title={t('procurement.po_detail_title', 'عرض التفاصيل')}
                       >
                         <Eye size={16} />
                       </button>
@@ -609,7 +610,7 @@ export default function PurchaseOrders({
                 <tr>
                   <td colSpan={7} className="px-6 py-20 text-center text-content-muted bg-surface-muted/50">
                     <Package className="mx-auto mb-4 opacity-20" size={56} />
-                    <p className="font-bold text-base">لم يعثر على أي مستندات شراء تطابق الفلترة الحالية</p>
+                    <p className="font-bold text-base">{t('procurement.po_no_data', 'لم يعثر على أي مستندات شراء تطابق الفلترة الحالية')}</p>
                   </td>
                 </tr>
               )}
@@ -626,13 +627,13 @@ export default function PurchaseOrders({
               <div key={po.id} className="p-4 space-y-3 hover:bg-surface-muted/10 transition-colors">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[10px] text-content-muted font-bold">
-                    {new Date(po.orderDate).toLocaleDateString('ar-SA')}
+                    {new Date(po.orderDate).toLocaleDateString('ar-SA-u-nu-latn')}
                   </span>
                   <div>
                     {poType === 'purchase' ? (
-                      <span className="px-2 py-0.5 text-[9px] font-black bg-brand/10 text-brand rounded-full">أمر شراء</span>
+                      <span className="px-2 py-0.5 text-[9px] font-black bg-brand/10 text-brand rounded-full">{t('procurement.po_type_purchase', 'أمر شراء')}</span>
                     ) : (
-                      <span className="px-2 py-0.5 text-[9px] font-black bg-danger/10 text-danger rounded-full">أمر إرجاع</span>
+                      <span className="px-2 py-0.5 text-[9px] font-black bg-danger/10 text-danger rounded-full">{t('procurement.po_type_return', 'أمر إرجاع')}</span>
                     )}
                   </div>
                 </div>
@@ -641,11 +642,11 @@ export default function PurchaseOrders({
                   <div>
                     <h3 className="font-black text-content text-sm">{po.supplierName}</h3>
                     <p className="text-[10px] text-content-muted font-mono mt-0.5">
-                      رقم السند: {po.poNumber || (po as any).po_number || po.id.slice(0, 8)}
+                      {t('procurement.po_number', 'رقم السند')}: {po.poNumber || (po as any).po_number || po.id.slice(0, 8)}
                     </p>
                   </div>
                   <div className="text-left">
-                    <span className="text-xs text-content-muted block text-[10px] font-bold">القيمة</span>
+                    <span className="text-xs text-content-muted block text-[10px] font-bold">{t('procurement.po_amount', 'القيمة')}</span>
                     <span className="text-sm font-black text-brand">
                       <PriceDisplay amount={po.totalAmount} />
                     </span>
@@ -657,12 +658,12 @@ export default function PurchaseOrders({
                     {poStatus === 'confirmed' || poStatus === 'received' || poStatus === 'returned' ? (
                       <div className="flex items-center gap-1 text-success bg-success/10 px-2.5 py-0.5 rounded-full border border-success/10">
                         <span className="w-1 h-1 rounded-full bg-success"></span>
-                        <span className="text-[9px] font-black">مؤكد ومرحل</span>
+                        <span className="text-[9px] font-black">{t('procurement.po_status_confirmed', 'مؤكد ومرحل')}</span>
                       </div>
                     ) : (
                       <div className="flex items-center gap-1 text-content-muted bg-neutral-100 dark:bg-neutral-800 px-2.5 py-0.5 rounded-full">
                         <span className="w-1 h-1 rounded-full bg-neutral-400"></span>
-                        <span className="text-[9px] font-black">مسودة</span>
+                        <span className="text-[9px] font-black">{t('procurement.po_status_draft', 'مسودة')}</span>
                       </div>
                     )}
                   </div>
@@ -672,7 +673,7 @@ export default function PurchaseOrders({
                     className="flex items-center justify-center gap-1.5 bg-brand/10 text-brand px-3 py-1.5 rounded-xl text-[10px] font-black hover:bg-brand hover:text-white transition-all cursor-pointer min-h-[38px]"
                   >
                     <Eye size={13} />
-                    <span>عرض التفاصيل</span>
+                    <span>{t('procurement.po_detail_title', 'عرض التفاصيل')}</span>
                   </button>
                 </div>
               </div>
@@ -682,7 +683,7 @@ export default function PurchaseOrders({
           {filteredOrders.length === 0 && (
             <div className="p-8 text-center text-content-muted bg-surface-muted/30">
               <Package className="mx-auto mb-3 opacity-20" size={40} />
-              <p className="text-xs font-bold">لم يعثر على أي مستندات شراء تطابق الفلترة الحالية</p>
+              <p className="text-xs font-bold">{t('procurement.po_no_data', 'لم يعثر على أي مستندات شراء تطابق الفلترة الحالية')}</p>
             </div>
           )}
         </div>
@@ -695,15 +696,15 @@ export default function PurchaseOrders({
             <div className="p-6 border-b border-border flex justify-between items-center bg-surface-muted/40">
               <div>
                 <div className="flex items-center gap-3">
-                  <h2 className="text-lg font-black text-content">عرض تفاصيل المستند</h2>
+                  <h2 className="text-lg font-black text-content">{t('procurement.po_detail_title', 'عرض تفاصيل المستند')}</h2>
                   <span className={cn(
                     "text-xs font-black px-2.5 py-1 rounded-full",
                     (selectedOrder.orderType || (selectedOrder as any).order_type) === 'purchase' ? "bg-brand/15 text-brand" : "bg-danger/15 text-danger"
                   )}>
-                    {(selectedOrder.orderType || (selectedOrder as any).order_type) === 'purchase' ? 'مشتريات' : 'مرتجع مشتريات'}
+                    {(selectedOrder.orderType || (selectedOrder as any).order_type) === 'purchase' ? t('procurement.po_type_purchase', 'أمر شراء') : t('procurement.po_type_return', 'أمر إرجاع')}
                   </span>
                 </div>
-                <p className="text-xs text-content-muted mt-1">السند: <span className="font-mono font-bold text-content">{selectedOrder.poNumber || (selectedOrder as any).po_number || selectedOrder.id}</span></p>
+                <p className="text-xs text-content-muted mt-1">{t('procurement.po_number', 'رقم السند')}: <span className="font-mono font-bold text-content">{selectedOrder.poNumber || (selectedOrder as any).po_number || selectedOrder.id}</span></p>
               </div>
               <button 
                 onClick={() => setSelectedOrder(null)} 
@@ -717,20 +718,20 @@ export default function PurchaseOrders({
               {/* Order Info Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-4 bg-surface-muted/50 rounded-2xl border border-border">
-                  <span className="text-[10px] font-black uppercase text-content-muted">المورد المسؤول</span>
+                  <span className="text-[10px] font-black uppercase text-content-muted">{t('procurement.po_responsible_supplier', 'المورد المسؤول')}</span>
                   <p className="text-sm font-black text-content mt-1">{selectedOrder.supplierName}</p>
                 </div>
                 <div className="p-4 bg-surface-muted/50 rounded-2xl border border-border">
-                  <span className="text-[10px] font-black uppercase text-content-muted">التاريخ</span>
-                  <p className="text-sm font-black text-content mt-1">{new Date(selectedOrder.orderDate).toLocaleDateString('ar-SA')}</p>
+                  <span className="text-[10px] font-black uppercase text-content-muted">{t('procurement.po_date', 'التاريخ')}</span>
+                  <p className="text-sm font-black text-content mt-1">{new Date(selectedOrder.orderDate).toLocaleDateString('ar-SA-u-nu-latn')}</p>
                 </div>
                 <div className="p-4 bg-surface-muted/50 rounded-2xl border border-border">
-                  <span className="text-[10px] font-black uppercase text-content-muted">حالة السند</span>
+                  <span className="text-[10px] font-black uppercase text-content-muted">{t('procurement.po_status_lbl', 'حالة السند')}</span>
                   <div className="mt-1">
                     {(selectedOrder.status || 'draft') === 'confirmed' || (selectedOrder.status || 'draft') === 'received' ? (
-                      <span className="text-success text-xs font-black bg-success/15 px-2.5 py-1 rounded-full">مؤكد ومرحل للمخزن</span>
+                      <span className="text-success text-xs font-black bg-success/15 px-2.5 py-1 rounded-full">{t('procurement.po_status_confirmed_desc', 'مؤكد ومرحل للمخزن')}</span>
                     ) : (
-                      <span className="text-content-muted text-xs font-black bg-neutral-100 dark:bg-neutral-800 px-2.5 py-1 rounded-full">مسودة (انتظار التأكيد)</span>
+                      <span className="text-content-muted text-xs font-black bg-neutral-100 dark:bg-neutral-800 px-2.5 py-1 rounded-full">{t('procurement.po_status_draft_desc', 'مسودة (انتظار التأكيد)')}</span>
                     )}
                   </div>
                 </div>
@@ -738,7 +739,7 @@ export default function PurchaseOrders({
 
               {selectedOrder.notes && (
                 <div className="p-4 bg-warning/5 border border-warning/10 rounded-2xl text-xs text-content">
-                  <span className="font-black text-warning">ملاحظات:</span> {selectedOrder.notes}
+                  <span className="font-black text-warning">{t('procurement.po_notes', 'ملاحظات')}:</span> {selectedOrder.notes}
                 </div>
               )}
 
@@ -747,10 +748,10 @@ export default function PurchaseOrders({
                 <table className="w-full text-right min-w-max">
                   <thead className="bg-surface-muted text-content-muted">
                     <tr>
-                      <th className="p-3 text-xs font-black">اسم المنتج / الصنف</th>
-                      <th className="p-3 text-xs font-black">الكمية</th>
-                      <th className="p-3 text-xs font-black">السعر للوحدة</th>
-                      <th className="p-3 text-xs font-black">الإجمالي</th>
+                      <th className="p-3 text-xs font-black">{t('procurement.item_name', 'اسم المنتج / الصنف')}</th>
+                      <th className="p-3 text-xs font-black">{t('procurement.quantity', 'الكمية')}</th>
+                      <th className="p-3 text-xs font-black">{t('procurement.price_per_unit', 'السعر للوحدة')}</th>
+                      <th className="p-3 text-xs font-black">{t('procurement.total', 'الإجمالي')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -769,14 +770,14 @@ export default function PurchaseOrders({
 
             <div className="p-6 border-t border-border bg-surface-muted/40 flex flex-col sm:flex-row justify-between items-center gap-4">
               <div className="text-lg font-bold text-content">
-                إجمالي قيمة السند: <span className="text-brand font-black text-2xl mr-2"><PriceDisplay amount={selectedOrder.totalAmount} /></span>
+                {t('procurement.total_po_amount', 'إجمالي قيمة السند')}: <span className="text-brand font-black text-2xl mr-2"><PriceDisplay amount={selectedOrder.totalAmount} /></span>
               </div>
               <div className="flex gap-3 w-full sm:w-auto">
                 <button
                   onClick={() => setSelectedOrder(null)} 
                   className="flex-1 sm:flex-initial px-6 py-3 bg-surface border border-border hover:bg-surface-muted rounded-xl text-xs font-black transition-all"
                 >
-                  إغلاق نافذة التفاصيل
+                  {t('procurement.close_detail_modal', 'إغلاق نافذة التفاصيل')}
                 </button>
                 {selectedOrder.status === 'draft' && (
                   <button 
@@ -785,11 +786,11 @@ export default function PurchaseOrders({
                     className="flex-1 sm:flex-initial bg-success text-white px-8 py-3 rounded-xl font-black text-xs flex items-center justify-center gap-2 hover:bg-success/90 transition-all shadow-lg active:scale-95 disabled:opacity-50"
                   >
                     {isConfirming ? (
-                      <span>جاري المعالجة...</span>
+                      <span>{t('procurement.processing', 'جاري المعالجة...')}</span>
                     ) : (
                       <>
                         <CheckCircle2 size={16} />
-                        <span>تأكيد العملية (ترحيل ومزامنة)</span>
+                        <span>{t('procurement.confirm_process_sync', 'تأكيد العملية (ترحيل ومزامنة)')}</span>
                       </>
                     )}
                   </button>
@@ -807,10 +808,10 @@ export default function PurchaseOrders({
             <div className="p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
               <div>
                 <h2 className="text-xl font-black text-content">
-                  {modalType === 'purchase' ? 'تسجيل أمر شراء جديد' : 'تسجيل مرتجع مشتريات'}
+                  {modalType === 'purchase' ? t('procurement.register_new_po', 'تسجيل أمر شراء جديد') : t('procurement.register_po_return', 'تسجيل مرتجع مشتريات')}
                 </h2>
                 <p className="text-xs text-content-muted mt-1">
-                  قم باختيار المورد وتحديد قائمة الأصناف والأسعار لبناء فاتورة.
+                  {t('procurement.register_po_subtitle', 'قم باختيار المورد وتحديد قائمة الأصناف والأسعار لبناء فاتورة.')}
                 </p>
               </div>
               <button onClick={() => {
@@ -824,30 +825,30 @@ export default function PurchaseOrders({
             
             <div className="p-6 overflow-y-auto flex-1 space-y-6">
               <div className="space-y-2">
-                <label className="block text-xs font-black text-content-muted uppercase tracking-widest">المورد</label>
+                <label className="block text-xs font-black text-content-muted uppercase tracking-widest">{t('procurement.supplier', 'المورد')}</label>
                 <SmartSelect 
                   value={selectedSupplier}
                   onChange={(val) => setSelectedSupplier(val)}
-                  placeholder="اختر المورد المسؤول..."
+                  placeholder={t('procurement.select_responsible_supplier', 'اختر المورد المسؤول...')}
                   options={suppliers.map(s => ({ value: s.id, label: s.name }))}
                 />
               </div>
 
               <div className="bg-surface-muted/40 p-4 rounded-2xl border border-border space-y-4">
-                <h3 className="font-bold text-sm text-content">إضافة أصناف لقائمة الفاتورة</h3>
+                <h3 className="font-bold text-sm text-content">{t('procurement.add_items_to_invoice', 'إضافة أصناف لقائمة الفاتورة')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="md:col-span-2">
                     <SmartSelect 
                       value={selectedItem}
                       onChange={(val) => setSelectedItem(val)}
-                      placeholder="اختر صنف المخزن..."
+                      placeholder={t('procurement.select_inventory_item', 'اختر صنف المخزن...')}
                       options={inventory.map(i => ({ value: i.id, label: `${i.name} (${i.unit}) - متوفر: ${i.quantity}` }))}
                     />
                   </div>
                   <div>
                     <input 
                       type="number" 
-                      placeholder="الكمية"
+                      placeholder={t('procurement.quantity', 'الكمية')}
                       value={quantity || ''}
                       onChange={(e) => setQuantity(Number(e.target.value))}
                       className="w-full px-4 py-2 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-content font-bold text-sm"
@@ -856,7 +857,7 @@ export default function PurchaseOrders({
                   <div>
                     <input 
                       type="number" 
-                      placeholder="السعر / وحدة"
+                      placeholder={t('procurement.price_per_unit_short', 'السعر / وحدة')}
                       value={pricePerUnit || ''}
                       onChange={(e) => setPricePerUnit(Number(e.target.value))}
                       className="w-full px-4 py-2 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-content font-bold text-sm"
@@ -868,7 +869,7 @@ export default function PurchaseOrders({
                   disabled={!selectedItem || quantity <= 0 || pricePerUnit <= 0}
                   className="w-full bg-brand/10 text-brand py-3 rounded-xl font-bold text-xs hover:bg-brand hover:text-white transition-all disabled:opacity-50"
                 >
-                  أضف الصنف لقائمة المستند
+                  {t('procurement.add_item_to_doc_list', 'أضف الصنف لقائمة المستند')}
                 </button>
               </div>
 
@@ -877,10 +878,10 @@ export default function PurchaseOrders({
                   <table className="w-full text-right min-w-max">
                     <thead className="bg-surface-muted text-content-muted">
                       <tr>
-                        <th className="p-3 text-xs font-black">الصنف</th>
-                        <th className="p-3 text-xs font-black">الكمية</th>
-                        <th className="p-3 text-xs font-black">السعر</th>
-                        <th className="p-3 text-xs font-black">الإجمالي</th>
+                        <th className="p-3 text-xs font-black">{t('procurement.item', 'الصنف')}</th>
+                        <th className="p-3 text-xs font-black">{t('procurement.quantity', 'الكمية')}</th>
+                        <th className="p-3 text-xs font-black">{t('procurement.price', 'السعر')}</th>
+                        <th className="p-3 text-xs font-black">{t('procurement.total', 'الإجمالي')}</th>
                         <th className="p-3"></th>
                       </tr>
                     </thead>
@@ -907,11 +908,11 @@ export default function PurchaseOrders({
               )}
 
               <div className="space-y-1">
-                <label className="text-xs font-black text-content-muted uppercase">ملاحظات المستند</label>
+                <label className="text-xs font-black text-content-muted uppercase">{t('procurement.doc_notes', 'ملاحظات المستند')}</label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="ملاحظات تفصيلية حول السند أو سبب الارتجاع إن وجد..."
+                  placeholder={t('procurement.doc_notes_placeholder', 'ملاحظات تفصيلية حول السند أو سبب الارتجاع إن وجد...')}
                   className="w-full px-4 py-3 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none h-20 resize-none font-medium text-sm text-content"
                 />
               </div>
@@ -919,7 +920,7 @@ export default function PurchaseOrders({
             
             <div className="p-6 border-t border-border bg-surface-muted/50 flex flex-col sm:flex-row justify-between items-center gap-4">
               <div className="text-lg font-bold text-content">
-                إجمالي القائمة: <span className="text-brand font-black"><PriceDisplay amount={items.reduce((sum, item) => sum + item.total, 0)} /></span>
+                {t('procurement.total_list', 'إجمالي القائمة')}: <span className="text-brand font-black"><PriceDisplay amount={items.reduce((sum, item) => sum + item.total, 0)} /></span>
               </div>
               <div className="flex gap-3 w-full sm:w-auto">
                 <button
@@ -927,14 +928,14 @@ export default function PurchaseOrders({
                   disabled={isSubmitting || items.length === 0 || !selectedSupplier}
                   className="flex-1 sm:flex-initial bg-neutral-200 dark:bg-neutral-800 text-content px-5 py-3 rounded-xl font-bold text-xs hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50"
                 >
-                  {isSubmitting ? 'جاري الحفظ...' : 'حفظ كمسودة (بدون ترحيل)'}
+                  {isSubmitting ? t('procurement.saving_loading', 'جاري الحفظ...') : t('procurement.save_as_draft', 'حفظ كمسودة (بدون ترحيل)')}
                 </button>
                 <button 
                   onClick={() => handleCreateOrder(true)}
                   disabled={isSubmitting || items.length === 0 || !selectedSupplier}
                   className="flex-1 sm:flex-initial bg-success text-white px-6 py-3 rounded-xl font-black text-xs hover:bg-success/90 transition-colors disabled:opacity-50"
                 >
-                  {isSubmitting ? 'جاري الحفظ...' : 'حفظ وتأكيد السند (ترحيل آلي)'}
+                  {isSubmitting ? t('procurement.saving_loading', 'جاري الحفظ...') : t('procurement.save_confirm_sync', 'حفظ وتأكيد السند (ترحيل آلي)')}
                 </button>
               </div>
             </div>

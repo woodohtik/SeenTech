@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatSaudiPhone } from '../utils/phoneUtils';
 import { Store, MapPin, Phone, Globe, Bell, Shield, CreditCard, MessageSquare, CheckCircle2, AlertCircle, ChevronRight, ExternalLink, Zap, Upload, X as CloseIcon, Database, Trash2, ShieldCheck, Palette, FileText, HelpCircle, Layout, Mail, Printer } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
@@ -16,17 +17,22 @@ import { IconInput } from './ui/IconInput';
 
 import WarehouseManagement from './Inventory/WarehouseManagement';
 import Staff from './Staff';
+import RolePermissionsSettings from './RolePermissionsSettings';
 import InvoiceLayoutSettings from './InvoiceLayoutSettings';
 import TenantSupportHistory from './TenantSupportHistory';
 import PrinterSettings from './PrinterSettings';
+import WhatsAppSettings from './WhatsAppSettings';
+import BillingSettings from './BillingSettings';
 
 import Branding from './Branding';
+
+import { deleteTestDataForTenant } from '../services/trialService';
 
 interface SettingsProps {
   tenantId: string;
 }
 
-type TabType = 'profile' | 'appearance' | 'invoice' | 'printer' | 'tax' | 'branches' | 'staff' | 'whatsapp' | 'billing' | 'support' | 'notifications' | 'data';
+type TabType = 'profile' | 'appearance' | 'invoice' | 'printer' | 'tax' | 'branches' | 'staff' | 'permissions' | 'whatsapp' | 'billing' | 'support' | 'notifications' | 'data';
 
 export default function Settings({ tenantId }: SettingsProps) {
   const [loading, setLoading] = useState(true);
@@ -34,6 +40,7 @@ export default function Settings({ tenantId }: SettingsProps) {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isDeletingTestData, setIsDeletingTestData] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const { currentStaff } = useStaff();
 
   useEffect(() => {
@@ -75,13 +82,15 @@ export default function Settings({ tenantId }: SettingsProps) {
         enabled: false,
         trn: '',
         legalName: '',
-        vatRate: 15
+        vatRate: 15,
+        tailoringTaxType: 'exclusive'
       }
     }
   });
 
   const currentStrategy = watch('inventoryStrategy');
   const taxEnabled = watch('taxSettings.enabled');
+  const tailoringTaxType = watch('taxSettings.tailoringTaxType') || 'exclusive';
 
   useEffect(() => {
     const fetchTenant = async () => {
@@ -97,19 +106,30 @@ export default function Settings({ tenantId }: SettingsProps) {
           .single();
 
         if (data && !error) {
+          const hasVat = Boolean(data.vat_number && data.vat_number.trim().length > 0);
+          const rawTax = data.tax_settings;
+          const loadedTaxSettings = rawTax ? {
+            ...rawTax,
+            enabled: rawTax.enabled ?? (hasVat || Boolean(rawTax.trn)),
+            trn: rawTax.trn || data.vat_number || '',
+            legalName: rawTax.legalName || data.name || '',
+            vatRate: rawTax.vatRate ?? 15,
+            tailoringTaxType: rawTax.tailoringTaxType || 'exclusive'
+          } : {
+            enabled: hasVat,
+            trn: data.vat_number || '',
+            legalName: data.name || '',
+            vatRate: 15,
+            tailoringTaxType: 'exclusive'
+          };
+
           reset({
             name: data.name || '',
             phone: data.phone || '',
             address: data.address || '',
-            currencySymbol: data.currency_symbol || '',
             inventoryStrategy: data.inventory_strategy || 'centralized',
             logoUrl: data.logo_url || '',
-            taxSettings: data.tax_settings || {
-              enabled: false,
-              trn: '',
-              legalName: '',
-              vatRate: 15
-            }
+            taxSettings: loadedTaxSettings
           });
           setLogoPreview(data.logo_url || null);
           if (data.owner_email) {
@@ -149,19 +169,21 @@ export default function Settings({ tenantId }: SettingsProps) {
         .from('tenants')
         .update({
           name: data.name,
-          phone: data.phone,
+          phone: data.phone ? formatSaudiPhone(data.phone) : '',
           address: data.address,
-          currency_symbol: data.currencySymbol,
           inventory_strategy: data.inventoryStrategy,
           logo_url: data.logoUrl,
-          tax_settings: data.taxSettings
+          vat_number: data.taxSettings?.trn || '',
+          is_tax_enabled: Boolean(data.taxSettings?.enabled),
+          default_tax_rate: data.taxSettings?.vatRate || 15
         })
         .eq('id', tenantId);
 
       if (error) throw error;
 
-      alert('تم حفظ الإعدادات بنجاح');
-      window.location.reload(); // Refresh to update logo in layout
+      setSaveSuccess(true);
+      window.dispatchEvent(new CustomEvent('tenant_settings_updated'));
+      setTimeout(() => setSaveSuccess(false), 4000);
     } catch (error) {
       handleError(error, OperationType.UPDATE, 'tenants');
     }
@@ -173,20 +195,13 @@ export default function Settings({ tenantId }: SettingsProps) {
 
     setIsDeletingTestData(true);
     try {
-      const tables = ['orders', 'customers', 'inventory_items', 'staff', 'notifications'];
-      
-      for (const tableName of tables) {
-        const { error } = await supabase
-          .from(tableName)
-          .delete()
-          .eq('tenant_id', tenantId)
-          .eq('is_test', true);
-        
-        if (error) throw error;
+      const result = await deleteTestDataForTenant(tenantId);
+      if (result.success) {
+        alert(`تم حذف البيانات التجريبية بنجاح (${result.deletedCount} سجل)`);
+        window.dispatchEvent(new CustomEvent('data_cleared'));
+      } else {
+        alert(`حدث خطأ أثناء حذف البيانات التجريبية: ${result.error || ''}`);
       }
-
-      alert(`تم حذف البيانات التجريبية بنجاح`);
-      window.location.reload();
     } catch (error) {
       handleError(error, OperationType.DELETE, 'test_data');
       alert('حدث خطأ أثناء حذف البيانات التجريبية');
@@ -214,7 +229,8 @@ export default function Settings({ tenantId }: SettingsProps) {
     { id: 'notifications', label: 'التنبيهات', icon: Bell, visible: canViewNotifications, group: 'system' },
     { id: 'whatsapp', label: 'تكامل واتساب', icon: MessageSquare, visible: canViewWhatsApp, group: 'system' },
     
-    { id: 'staff', label: 'الموظفين والصلاحيات', icon: Shield, visible: hasPermission('staff.manage'), group: 'admin' },
+    { id: 'staff', label: 'طاقم الموظفين', icon: Shield, visible: hasPermission('staff.manage'), group: 'admin' },
+    { id: 'permissions', label: 'صلاحيات الأدوار والموظفين', icon: ShieldCheck, visible: hasPermission('staff.manage') || currentStaff?.role === 'owner' || currentStaff?.role === 'admin', group: 'admin' },
     { id: 'billing', label: 'الاشتراك والمدفوعات', icon: CreditCard, visible: canViewBilling, group: 'admin' },
     { id: 'data', label: 'إدارة البيانات', icon: Database, visible: currentStaff?.role === 'owner' || currentStaff?.role === 'super_admin', group: 'admin' },
   ];
@@ -354,6 +370,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                       <IconInput 
                         type="text" 
                         {...register('phone')}
+                        placeholder="05XXXXXXXX / 9200XXXXX"
                         startIcon={Phone}
                         error={errors.phone?.message}
                       />
@@ -380,20 +397,6 @@ export default function Settings({ tenantId }: SettingsProps) {
                         startIcon={MapPin}
                         error={errors.address?.message}
                       />
-                    </div>
-
-                    <div className="md:col-span-2 space-y-3 p-6 bg-surface-muted/50 rounded-3xl border border-border/50">
-                      <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">رمز العملة الرسمي</label>
-                      <div className="max-w-xs">
-                        <IconInput 
-                          type="text" 
-                          placeholder="SR أو ﷼"
-                          {...register('currencySymbol')}
-                          startIcon={CheckCircle2}
-                          error={errors.currencySymbol?.message}
-                        />
-                      </div>
-                      <p className="text-[10px] text-content-muted font-bold mt-1 px-1 opacity-60">سيتم استخدامه في جميع شاشات البيع والتقارير المالية.</p>
                     </div>
 
                     <div className="md:col-span-2 space-y-4">
@@ -435,15 +438,33 @@ export default function Settings({ tenantId }: SettingsProps) {
                   </div>
 
                   <div className="pt-6 md:pt-8 border-t border-border flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-4 w-full">
+                    {saveSuccess && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold"
+                      >
+                        <CheckCircle2 size={16} />
+                        <span>تم حفظ البيانات بنجاح</span>
+                      </motion.div>
+                    )}
                     <p className="text-[10px] text-content-muted font-bold text-left hidden md:block">يتم حفظ هذه البيانات تلقائياً وتنعكس على جميع فروع المتجر</p>
                     {canEdit && (
                       <button 
                         type="submit"
                         disabled={isSubmitting}
-                        className="bg-brand text-white px-6 md:px-10 py-3.5 md:py-4 rounded-xl md:rounded-[1.5rem] font-black hover:bg-brand/90 transition-all shadow-xl shadow-brand/20 disabled:opacity-50 hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+                        className={cn(
+                          "px-6 md:px-10 py-3.5 md:py-4 rounded-xl md:rounded-[1.5rem] font-black transition-all shadow-xl disabled:opacity-50 hover:scale-105 active:scale-95 flex items-center justify-center gap-2 text-white",
+                          saveSuccess ? "bg-emerald-600 shadow-emerald-500/20" : "bg-brand hover:bg-brand/90 shadow-brand/20"
+                        )}
                       >
-                        {isSubmitting && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-                        <span>حفظ إعدادات المنشأة</span>
+                        {isSubmitting ? (
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : saveSuccess ? (
+                          <CheckCircle2 size={18} />
+                        ) : null}
+                        <span>{isSubmitting ? 'جاري الحفظ...' : saveSuccess ? 'تم الحفظ بنجاح' : 'حفظ إعدادات المنشأة'}</span>
                       </button>
                     )}
                   </div>
@@ -463,13 +484,19 @@ export default function Settings({ tenantId }: SettingsProps) {
                       <Shield size={28} />
                     </div>
                     <div className="space-y-1">
-                      <h4 className="text-lg font-black text-content">إدارة الطاقم والصلاحيات</h4>
-                      <p className="text-sm text-content-muted font-medium">قم بإضافة الموظفين وتعيين الأدوار الوظيفية لهم للتحكم في ما يمكنهم رؤيته أو تعديله في النظام.</p>
+                      <h4 className="text-lg font-black text-content">إدارة الطاقم الموظفين</h4>
+                      <p className="text-sm text-content-muted font-medium">قم بإضافة الموظفين وتعيين الفروع والأدوار الوظيفية لهم في النظام.</p>
                     </div>
                   </div>
                   <div className="bg-surface rounded-[3rem] border border-border shadow-xl shadow-brand/5 overflow-hidden">
                     <Staff tenantId={tenantId} />
                   </div>
+                </div>
+              )}
+
+              {activeTab === 'permissions' && (
+                <div className="bg-surface rounded-[3rem] border border-border shadow-xl shadow-brand/5 overflow-hidden p-2 md:p-6">
+                  <Staff tenantId={tenantId} initialViewMode="permissions" />
                 </div>
               )}
 
@@ -497,11 +524,22 @@ export default function Settings({ tenantId }: SettingsProps) {
                       <ThemeSwitcher />
                     </div>
 
-                    <div className="bg-surface-muted/30 p-6 rounded-[2rem] border border-border flex items-center justify-center">
-                       <div className="text-center space-y-2 opacity-50">
-                          <Layout size={40} className="mx-auto text-content-muted" />
-                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-content-muted">قريباً: تخصيص الخطوط والرموز</p>
-                       </div>
+                    <div className="bg-surface-muted/30 p-6 rounded-[2rem] border border-border space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-brand text-white rounded-lg">
+                          <HelpCircle size={18} />
+                        </div>
+                        <h4 className="font-black text-content uppercase tracking-widest text-xs">الجولة الإرشادية التفاعلية</h4>
+                      </div>
+                      <p className="text-xs text-content-muted font-medium">إذا كنت بحاجة لإعادة استكشاف وظائف النظام وتدريب الموظفين الجدد، يمكنك إعادة تشغيل الجولة الإرشادية في أي وقت.</p>
+                      <button
+                        type="button"
+                        onClick={() => window.dispatchEvent(new CustomEvent('start_onboarding_tour'))}
+                        className="w-full bg-brand text-white font-black py-3 px-5 rounded-xl shadow-lg shadow-brand/20 hover:bg-brand/90 active:scale-95 transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
+                      >
+                        <HelpCircle size={18} />
+                        <span>إعادة تشغيل الجولة الإرشادية</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -606,6 +644,31 @@ export default function Settings({ tenantId }: SettingsProps) {
                             </div>
                             {errors.taxSettings?.vatRate && <p className="text-xs text-red-500 font-bold">{errors.taxSettings.vatRate.message}</p>}
                           </div>
+
+                          <div className="space-y-3 md:col-span-2 border-t border-border/50 pt-6">
+                            <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">طريقة احتساب ضريبة التفصيل والقص</label>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              {[
+                                { id: 'inclusive', label: 'شامل الضريبة', desc: 'سعر التفصيل شامل لضريبة القيمة المضافة' },
+                                { id: 'exclusive', label: 'غير شامل الضريبة', desc: 'يتم احتساب الضريبة بشكل إضافي فوق سعر التفصيل' },
+                                { id: 'exempt', label: 'معفي من الضريبة', desc: 'لا يتم احتساب أي ضريبة على التفصيل والقص' }
+                              ].map((option) => (
+                                <div
+                                  key={option.id}
+                                  onClick={() => setValue('taxSettings.tailoringTaxType', option.id as any)}
+                                  className={cn(
+                                    "flex flex-col p-4 rounded-2xl border-2 cursor-pointer transition-all gap-1 text-right",
+                                    tailoringTaxType === option.id
+                                      ? "border-brand bg-brand/5 shadow-md shadow-brand/5"
+                                      : "border-border hover:border-brand/20 bg-surface"
+                                  )}
+                                >
+                                  <span className="text-sm font-black text-content">{option.label}</span>
+                                  <span className="text-xs text-content-muted font-medium">{option.desc}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -622,6 +685,17 @@ export default function Settings({ tenantId }: SettingsProps) {
                   </div>
 
                   <div className="pt-6 md:pt-8 border-t border-border flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-4 w-full">
+                    {saveSuccess && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold"
+                      >
+                        <CheckCircle2 size={16} />
+                        <span>تم حفظ البيانات الضريبية بنجاح</span>
+                      </motion.div>
+                    )}
                      <p className="text-[10px] text-warning font-bold max-w-xs text-left leading-tight hidden md:block">
                         تأكد من صحة الرقم الضريبي؛ أي خطأ قد يؤدي إلى رفض الفاتورة من قبل منصة فاتورة.
                      </p>
@@ -629,9 +703,17 @@ export default function Settings({ tenantId }: SettingsProps) {
                       <button 
                         type="submit"
                         disabled={isSubmitting}
-                        className="bg-brand text-white px-6 md:px-10 py-3.5 md:py-4 rounded-xl md:rounded-[1.5rem] font-black hover:bg-brand/90 transition-all shadow-xl shadow-brand/20 disabled:opacity-50 hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+                        className={cn(
+                          "px-6 md:px-10 py-3.5 md:py-4 rounded-xl md:rounded-[1.5rem] font-black transition-all shadow-xl disabled:opacity-50 hover:scale-105 active:scale-95 flex items-center justify-center gap-2 text-white",
+                          saveSuccess ? "bg-emerald-600 shadow-emerald-500/20" : "bg-brand hover:bg-brand/90 shadow-brand/20"
+                        )}
                       >
-                        {isSubmitting ? 'جاري المزامنة...' : 'حفظ بيانات التكليف'}
+                        {isSubmitting ? (
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : saveSuccess ? (
+                          <CheckCircle2 size={18} />
+                        ) : null}
+                        <span>{isSubmitting ? 'جاري المزامنة...' : saveSuccess ? 'تم الحفظ بنجاح' : 'حفظ بيانات التكليف'}</span>
                       </button>
                     )}
                   </div>
@@ -643,118 +725,11 @@ export default function Settings({ tenantId }: SettingsProps) {
               )}
 
               {activeTab === 'whatsapp' && (
-                <div className="bg-surface p-5 sm:p-8 md:p-10 rounded-2xl md:rounded-[3rem] border border-border shadow-xl shadow-brand/5 space-y-6 md:space-y-10 w-full">
-                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 border-b border-border pb-6 sm:pb-8 text-center sm:text-right">
-                    <div className="p-4 bg-success/10 text-success rounded-[1.5rem] shadow-inner">
-                      <MessageSquare size={32} />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-black text-content">محرك واتساب (WhatsApp)</h3>
-                      <p className="text-sm text-content-muted font-medium mt-1 uppercase tracking-tight">إرسال الفواتير والتنبيهات للعملاء آلياً</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-6 md:space-y-8 w-full">
-                    <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between p-5 sm:p-8 bg-success/5 rounded-2xl sm:rounded-[2.5rem] border border-success/10 gap-6">
-                      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 flex-1 text-center sm:text-right">
-                        <div className="p-4 bg-white rounded-2xl shadow-sm shrink-0">
-                          <Zap size={28} className="text-success animate-pulse" />
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-lg font-black text-content">الفواتير الذكية</p>
-                          <p className="text-sm text-content-muted font-medium leading-relaxed">بمجرد الضغط على "الدفع"، سيتم إرسال نسخة من الفاتورة إلى رقم واتساب الخاص بالعميل بشكل فوري.</p>
-                        </div>
-                      </div>
-                      <div className="flex justify-end sm:justify-start">
-                        <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                          <input type="checkbox" className="sr-only peer" defaultChecked />
-                          <div className="w-16 h-8 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-success"></div>
-                        </label>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                       <div className="flex items-center justify-between px-2">
-                          <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em]">قالب الرسالة المخصص</label>
-                          <span className="text-[10px] font-black text-success bg-success/10 px-2 py-0.5 rounded-full">دعم المتغيرات الذكية</span>
-                       </div>
-                       <div className="relative group">
-                          <textarea 
-                            defaultValue="مرحباً {customer_name}، تم استلام طلبك رقم {order_id}. يمكنك متابعة حالة الطلب من هنا: {invoice_url}"
-                            className="w-full bg-surface-muted border-2 border-transparent focus:border-brand/20 focus:bg-surface rounded-2xl sm:rounded-3xl p-5 sm:p-8 font-bold transition-all outline-none h-48 resize-none text-sm leading-relaxed text-content shadow-inner"
-                          />
-                          <div className="absolute left-4 bottom-4 flex flex-wrap gap-2">
-                            {['{customer_name}', '{order_id}', '{invoice_url}'].map(tag => (
-                              <button key={tag} className="text-[8px] bg-brand/10 text-brand px-2 py-1 rounded-md font-black hover:bg-brand hover:text-white transition-colors uppercase tracking-tight">{tag}</button>
-                            ))}
-                          </div>
-                       </div>
-                    </div>
-                  </div>
-                </div>
+                <WhatsAppSettings />
               )}
 
               {activeTab === 'billing' && (
-                <div className="space-y-6 md:space-y-8 max-w-5xl mx-auto w-full">
-                  {/* Premium Plan Dashboard */}
-                  <div className="bg-brand text-white p-6 sm:p-12 rounded-3xl sm:rounded-[3.5rem] shadow-2xl shadow-brand/20 relative overflow-hidden group w-full">
-                    <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_left,_var(--tw-gradient-stops))] from-white/10 via-transparent to-transparent opacity-50" />
-                    <div className="relative z-10 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-6 md:gap-10">
-                      <div className="space-y-4 text-center md:text-right">
-                        <div className="inline-flex items-center gap-2 bg-white/20 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest text-white border border-white/10 backdrop-blur-md">
-                          <Zap size={14} className="fill-white" />
-                          خطة التشغيل الفعالة
-                        </div>
-                        <h3 className="text-3xl sm:text-5xl font-black tracking-tighter">سين برو <span className="text-white/40 text-lg sm:text-2xl">SEEN PRO</span></h3>
-                        <p className="text-white/80 font-medium max-w-md text-sm sm:text-lg leading-relaxed">أنت تستخدم أعلى باقة متوفرة؛ صلاحيات كاملة، تخزين غير محدود، ودعم فني مباشر عبر الواتساب.</p>
-                      </div>
-                      <div className="bg-white/10 backdrop-blur-xl p-6 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-white/20 text-center min-w-[240px] w-full md:w-auto">
-                        <p className="text-white/60 font-black uppercase tracking-[0.2em] text-[10px] mb-2">تاريخ الفوترة القادم</p>
-                        <p className="text-2xl sm:text-3xl font-black text-white mb-6">15 أبريل 2026</p>
-                        <button className="w-full bg-white text-brand px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl sm:rounded-2xl font-black transition-all hover:scale-105 active:scale-95 shadow-xl shadow-brand/20">
-                          إدارة الاشتراك
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Billing Table */}
-                  <div className="bg-surface p-5 sm:p-8 md:p-10 rounded-2xl md:rounded-[3rem] border border-border shadow-xl shadow-brand/5 space-y-6 md:space-y-8 w-full">
-                    <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between mb-4 sm:mb-8 px-2 gap-4">
-                       <h4 className="text-sm font-black text-content-muted uppercase tracking-[0.2em] flex items-center gap-3">
-                        <CreditCard size={18} className="text-brand" />
-                        سجل العمليات المالية والرسوم
-                      </h4>
-                      <button className="text-[10px] font-black text-brand bg-brand/10 px-4 py-2 rounded-xl hover:bg-brand hover:text-white transition-all uppercase w-full sm:w-auto">تحميل السجل بالكامل</button>
-                    </div>
-
-                    <div className="space-y-4 w-full">
-                      {[
-                        { date: '15 مارس 2026', amount: 299, desc: 'اشتراك شهري SEEN PRO' },
-                        { date: '15 فبراير 2026', amount: 299, desc: 'اشتراك شهري SEEN PRO' },
-                        { date: '15 يناير 2026', amount: 299, desc: 'اشتراك شهري SEEN PRO' },
-                      ].map((inv, idx) => (
-                        <div key={inv.date} className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center p-4 sm:p-6 bg-surface-muted/30 hover:bg-surface border-2 border-transparent hover:border-brand/10 hover:shadow-lg hover:shadow-brand/5 rounded-2xl sm:rounded-[2rem] transition-all group gap-4">
-                          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-right">
-                            <div className="w-12 h-12 bg-success/10 text-success rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                              <CheckCircle2 size={24} />
-                            </div>
-                            <div>
-                              <p className="font-black text-content text-lg">{inv.desc}</p>
-                              <p className="text-[10px] text-content-muted font-bold uppercase tracking-widest mt-0.5">{inv.date} • رقم مرجعي #{idx + 8921}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between sm:justify-start gap-8">
-                            <span className="text-xl font-black text-content"><PriceDisplay amount={inv.amount} /></span>
-                            <button className="p-3 bg-white text-content-muted hover:text-brand hover:bg-brand/5 transition-all rounded-xl shadow-sm">
-                              <FileText size={20} />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                <BillingSettings tenantId={tenantId} />
               )}
 
               {activeTab === 'notifications' && (
@@ -864,6 +839,20 @@ export default function Settings({ tenantId }: SettingsProps) {
       
       <div className="mt-12 opacity-30">
       </div>
+
+      <AnimatePresence>
+        {saveSuccess && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            className="fixed bottom-6 left-6 z-50 bg-emerald-600 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 font-black text-sm border border-emerald-400/30"
+          >
+            <CheckCircle2 size={22} className="text-white" />
+            <span>تم حفظ الإعدادات بنجاح</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

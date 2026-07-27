@@ -3,6 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import Barcode from 'react-barcode';
 import { generateZatcaQR } from '../../services/zatcaService';
 import { FileText, Printer, Mail, Phone, MapPin, Layers, Globe } from 'lucide-react';
+import { CurrencySymbol } from '../CurrencySymbol';
 
 export interface InvoiceItem {
   id?: string;
@@ -199,7 +200,7 @@ export default function TaxInvoice({
                 <span className="text-xs font-black text-slate-800">تاريخ الإصدار</span>
                 <span className="block text-[9px] text-slate-400 uppercase font-sans font-bold">Date of Issue</span>
               </div>
-              <span className="font-bold text-slate-800 text-sm" dir="ltr">{invoiceDate.toLocaleString('ar-SA')}</span>
+              <span className="font-bold text-slate-800 text-sm" dir="ltr">{invoiceDate.toLocaleString('ar-SA-u-nu-latn')}</span>
             </div>
 
             <div className="flex justify-between pb-1">
@@ -207,7 +208,7 @@ export default function TaxInvoice({
                 <span className="text-xs font-black text-slate-800">تاريخ التوريد</span>
                 <span className="block text-[9px] text-slate-400 uppercase font-sans font-bold">Date of Supply</span>
               </div>
-              <span className="font-bold text-slate-800 text-sm" dir="ltr">{new Date(supplyDate || issueDate).toLocaleDateString('ar-SA')}</span>
+              <span className="font-bold text-slate-800 text-sm" dir="ltr">{new Date(supplyDate || issueDate).toLocaleDateString('ar-SA-u-nu-latn')}</span>
             </div>
           </div>
 
@@ -345,8 +346,8 @@ export default function TaxInvoice({
                 <span className="font-black text-slate-700">الإجمالي غير شامل ضريبة القيمة المضافة</span>
                 <span className="block text-[9px] text-slate-400 uppercase font-sans">Total (Excluding VAT)</span>
               </div>
-              <span className="font-mono font-extrabold text-slate-800 text-sm">
-                {computedTotals.subtotal.toFixed(2)} ر.س
+              <span className="font-mono font-extrabold text-slate-800 text-sm flex items-center gap-1">
+                {computedTotals.subtotal.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" />
               </span>
             </div>
 
@@ -356,8 +357,8 @@ export default function TaxInvoice({
                   <span className="font-black text-red-700">الخصم المستقطع</span>
                   <span className="block text-[9px] text-slate-400 uppercase font-sans">Discount</span>
                 </div>
-                <span className="font-mono font-extrabold text-red-600 text-sm">
-                  -{computedTotals.discount.toFixed(2)} ر.س
+                <span className="font-mono font-extrabold text-red-600 text-sm flex items-center gap-1">
+                  -{computedTotals.discount.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" />
                 </span>
               </div>
             )}
@@ -367,8 +368,8 @@ export default function TaxInvoice({
                 <span className="font-black text-slate-700">المبلغ الخاضع للضريبة</span>
                 <span className="block text-[9px] text-slate-400 uppercase font-sans">Total Taxable Amount</span>
               </div>
-              <span className="font-mono font-extrabold text-slate-800 text-sm">
-                {computedTotals.taxableAmount.toFixed(2)} ر.س
+              <span className="font-mono font-extrabold text-slate-800 text-sm flex items-center gap-1">
+                {computedTotals.taxableAmount.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" />
               </span>
             </div>
 
@@ -377,8 +378,8 @@ export default function TaxInvoice({
                 <span className="font-black text-slate-700">إجمالي ضريبة القيمة المضافة (15%)</span>
                 <span className="block text-[9px] text-slate-400 uppercase font-sans">Total VAT (15%)</span>
               </div>
-              <span className="font-mono font-extrabold text-slate-800 text-sm">
-                {computedTotals.vatAmount.toFixed(2)} ر.س
+              <span className="font-mono font-extrabold text-slate-800 text-sm flex items-center gap-1">
+                {computedTotals.vatAmount.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" />
               </span>
             </div>
 
@@ -387,8 +388,8 @@ export default function TaxInvoice({
                 <span className="font-black text-lg">المجموع المستحق (شامل الضريبة)</span>
                 <span className="block text-[10px] text-slate-300 uppercase font-sans font-bold tracking-widest mt-0.5">Grand Total (Inc VAT)</span>
               </div>
-              <span className="font-mono text-xl font-black text-white">
-                {computedTotals.grandTotal.toFixed(2)} ر.س
+              <span className="font-mono text-xl font-black text-white flex items-center gap-1">
+                {computedTotals.grandTotal.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" />
               </span>
             </div>
           </div>

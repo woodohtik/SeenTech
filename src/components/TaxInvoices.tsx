@@ -32,9 +32,27 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
           .maybeSingle();
 
         if (tenantData) {
+          const hasVat = Boolean(tenantData.vat_number && tenantData.vat_number.trim().length > 0);
+          const rawTax = tenantData.tax_settings;
+          const resolvedTax = rawTax ? {
+            ...rawTax,
+            enabled: rawTax.enabled ?? (hasVat || Boolean(rawTax.trn)),
+            trn: rawTax.trn || tenantData.vat_number || '',
+            legalName: rawTax.legalName || tenantData.name || '',
+            vatRate: rawTax.vatRate ?? 15,
+            tailoringTaxType: rawTax.tailoringTaxType || 'exclusive'
+          } : {
+            enabled: hasVat,
+            trn: tenantData.vat_number || '',
+            legalName: tenantData.name || '',
+            vatRate: 15,
+            tailoringTaxType: 'exclusive'
+          };
+
           setTenant({
             ...tenantData,
-            taxSettings: tenantData.tax_settings,
+            vatNumber: tenantData.vat_number || resolvedTax.trn,
+            taxSettings: resolvedTax,
             logoUrl: tenantData.logo_url,
             commercialRegister: tenantData.commercial_register,
             legalName: tenantData.legal_name,
@@ -100,7 +118,7 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
             status: d.status === 'issued' ? 'valid' : 'cancelled',
             paidAmount: d.paid_amount !== undefined && d.paid_amount !== null ? Number(d.paid_amount) : Number(d.total_amount),
             remainingAmount: Math.max(0, Number(d.total_amount) - (d.paid_amount !== undefined && d.paid_amount !== null ? Number(d.paid_amount) : Number(d.total_amount))),
-            branchName: d.order_id ? (orderBranchMap.get(d.order_id) || 'الفرع الرئيسي') : 'الفرع الرئيسي'
+            branchName: d.order_id ? (orderBranchMap.get(d.order_id) || t('common.main_branch', 'الفرع الرئيسي')) : t('common.main_branch', 'الفرع الرئيسي')
           } as TaxInvoice;
         });
 
@@ -158,7 +176,7 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
                     <td className="p-4">
                       <span className="font-mono font-bold text-content">{inv.invoiceNumber}</span>
                     </td>
-                    <td className="p-4 text-content-muted font-bold" dir="ltr">{new Date(inv.issuedAt).toLocaleString(i18n.language === 'ar' ? 'ar-SA' : (i18n.language === 'ur' ? 'ur-PK' : 'en-US'))}</td>
+                    <td className="p-4 text-content-muted font-bold" dir="ltr">{new Date(inv.issuedAt).toLocaleString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'))}</td>
                     <td className="p-4 text-content font-bold">{inv.customerName || t('tax_invoices.walk_in_customer', 'عميل نقدي')}</td>
                     <td className="p-4 text-content-muted text-xs">
                       <span className="bg-brand/10 text-brand px-2 py-1 rounded-lg font-bold">{invoiceType}</span>
@@ -194,7 +212,7 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
                 </div>
                 <div className="text-left">
                   <p className="font-black text-brand"><PriceDisplay amount={inv.totalAmount} /></p>
-                  <p className="text-[10px] text-content-muted" dir="ltr">{new Date(inv.issuedAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : (i18n.language === 'ur' ? 'ur-PK' : 'en-US'))}</p>
+                  <p className="text-[10px] text-content-muted" dir="ltr">{new Date(inv.issuedAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'))}</p>
                 </div>
               </div>
               <div className="flex justify-between items-center mt-3">
@@ -284,7 +302,10 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
   };
 
   const handleShareWhatsApp = async () => {
-    const text = `السلام عليكم ورحمة الله وبركاته،\nمرفق الفاتورة الضريبية الصادرة من المتجر:\nرقم الفاتورة: #${order.invoiceNumber || order.id}\nالإجمالي شامل الضريبة: ${totalIncVat.toFixed(2)} ر.س\nشاكرين ومقدرين لكم تواصلكم معنا.`;
+    const text = t('sales_record.whatsapp_share_text', { 
+      invoiceNumber: order.invoiceNumber || order.id, 
+      total: totalIncVat.toFixed(2) 
+    });
     try {
       await shareInvoiceAsPDFFile('print-area', `Invoice-${order.invoiceNumber || order.id}.pdf`, text);
     } catch (e) {
@@ -294,12 +315,12 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
   
   // Use pre-computed QR, or fallback logic
   const sellerName = order.sellerName || tenant.name || 'المنشأة';
-  const vatNumber = order.sellerTRN || tenant.taxSettings?.trn || '000000000000000';
+  const vatNumber = order.sellerTRN || tenant.taxSettings?.trn || tenant.vatNumber || '000000000000000';
   const qrCodeBase64 = order.qrCodeBase64 || generateZatcaQR(sellerName, vatNumber, invoiceDate.toISOString(), totalIncVat.toFixed(2), vatAmount.toFixed(2));
 
   // Build items list
   const formattedItems = order.items.map((item: any) => ({
-    name: item.type === 'custom' ? item.garmentType || 'تفصيل ثوب' : item.name || 'صنف جاهز',
+    name: item.type === 'custom' ? item.garmentType || t('orders.custom_thobe', 'تفصيل ثوب') : item.name || t('orders.ready_made', 'صنف جاهز'),
     quantity: Number(item.quantity || 0),
     unitPrice: Number(item.price || item.unitPrice || 0),
     vatAmount: Number((item.price || item.unitPrice || 0) * item.quantity - ((item.price || item.unitPrice || 0) * item.quantity) / 1.15),
@@ -319,7 +340,7 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
   };
 
   const buyerInfo = {
-    name: order.b2bCompanyName || order.customerName || 'عميل نقدي / Guest Customer',
+    name: order.b2bCompanyName || order.customerName || t('tax_invoices.walk_in_customer', 'عميل نقدي / Guest Customer'),
     nameEn: (order as any).customer_name_en || 'Guest Client',
     vatNumber: order.b2bTRN,
     address: (order as any).customer_address || '',
@@ -338,8 +359,8 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
   // Extract payment method safely if defined
   // @ts-ignore
   const orderPayMethod = order.paymentMethod || order.payment_method;
-  const paymentMethodAr = orderPayMethod === 'card' ? 'بطاقة مادية' : 'نقدي';
-  const paymentMethodEn = orderPayMethod === 'card' ? 'Card/Mada' : 'Cash';
+  const paymentMethodAr = orderPayMethod === 'network' ? t('pos.card', 'شبكة/بطاقة') : orderPayMethod === 'bank_transfer' ? t('pos.bank_transfer', 'تحويل بنكي') : orderPayMethod === 'partial' ? t('pos.partial_credit', 'آجل / دفع جزئي') : t('pos.cash', 'نقدي');
+  const paymentMethodEn = orderPayMethod === 'network' ? 'Card/Mada' : orderPayMethod === 'bank_transfer' ? 'Bank Transfer' : orderPayMethod === 'partial' ? 'Credit/Partial' : 'Cash';
 
   return (
     <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
@@ -354,13 +375,13 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
               onClick={handleDownloadPDF}
               className="px-4 py-2 bg-brand text-white rounded-xl font-bold flex items-center gap-2 hover:bg-brand/90 transition-all shadow-sm cursor-pointer text-xs"
             >
-              <Download size={16} /> تحميل PDF
+              <Download size={16} /> {t('sales_record.download_pdf', 'تحميل كـ PDF')}
             </button>
             <button 
               onClick={handleShareWhatsApp}
               className="px-4 py-2 bg-[#25D366] text-white rounded-xl font-bold flex items-center gap-2 hover:bg-[#20ba56] transition-all shadow-sm cursor-pointer text-xs"
             >
-              <Share2 size={16} /> مشاركة واتساب
+              <Share2 size={16} /> {t('sales_record.share_whatsapp', 'مشاركة عبر واتساب')}
             </button>
             <button 
               onClick={() => {

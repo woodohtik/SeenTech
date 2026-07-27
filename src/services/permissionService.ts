@@ -10,41 +10,143 @@ const createPermissions = (allowedIds: string[] = []): PermissionsMap => {
   return map as PermissionsMap;
 };
 
-export const DEFAULT_ROLES: Record<string, { name: string; description: string; permissions: PermissionsMap }> = {
+export const MERCHANT_ROLE_KEYS = [
+  'owner',
+  'admin',
+  'manager',
+  'branch_manager',
+  'accountant',
+  'warehouse_manager',
+  'cashier',
+  'tailor'
+];
+
+export const SAAS_ROLE_KEYS = [
+  'super_admin',
+  'support_tech',
+  'billing_admin',
+  'sales'
+];
+
+export const isMerchantRole = (roleKey: string): boolean => {
+  return MERCHANT_ROLE_KEYS.includes(roleKey);
+};
+
+export const isSaaSRole = (roleKey: string): boolean => {
+  return SAAS_ROLE_KEYS.includes(roleKey);
+};
+
+export const DEFAULT_ROLES: Record<string, { name: string; description: string; category: 'merchant' | 'saas'; permissions: PermissionsMap }> = {
+  // === أدوار التجار والمتاجر (Merchant Roles) ===
   owner: {
     name: 'صاحب العمل (Owner)',
-    description: 'وصول كامل ومطلق لجميع وحدات النظام مع صلاحيات حصرية للإدارة العليا',
+    description: 'وصول كامل ومطلق لجميع وحدات النظام مع صلاحيات حصرية للإدارة العليا والإشتراكات',
+    category: 'merchant',
     permissions: createPermissions(SYSTEM_PERMISSIONS.map(p => p.id))
   },
+  admin: {
+    name: 'مسؤول النظام (Admin)',
+    description: 'إدارة تشغيل المتجر والفروع والموظفين والمخزون مع إمكانية تعديل الإعدادات والتقارير',
+    category: 'merchant',
+    permissions: createPermissions(SYSTEM_PERMISSIONS.filter(p => p.id !== 'system.delete' && p.id !== 'settings.billing').map(p => p.id))
+  },
   manager: {
-    name: 'المدير (Manager)',
-    description: 'إدارة المبيعات والمخزون والموظفين والتقارير المالية المتقدمة',
-    permissions: createPermissions(SYSTEM_PERMISSIONS.filter(p => p.id !== 'system.delete' && p.id !== 'settings.billing' && p.id !== 'shifts.manage').map(p => p.id))
+    name: 'المدير العام (Manager)',
+    description: 'إدارة المبيعات والمخزون والموظفين والتقارير المالية المتقدمة ومتابعة الأداء',
+    category: 'merchant',
+    permissions: createPermissions(SYSTEM_PERMISSIONS.filter(p => p.id !== 'system.delete' && p.id !== 'settings.billing' && p.id !== 'settings.tax' && p.id !== 'staff.permissions').map(p => p.id))
+  },
+  branch_manager: {
+    name: 'مدير الفرع (Branch Manager)',
+    description: 'إدارة مبيعات ومخزون وموظفي الفرع ومتابعة الورديات والطلبات اليومية',
+    category: 'merchant',
+    permissions: createPermissions([
+      'dashboard.view', 'sales.view', 'orders.view', 'customers.view', 'inventory.view', 
+      'suppliers.manage', 'reports.view', 'orders.create', 'orders.view_details', 
+      'orders.update_status', 'orders.edit', 'invoices.view', 'payments.collect', 
+      'payments.view_prices', 'action.discount', 'action.refund', 'shifts.manage', 
+      'inventory.manage', 'inventory.create', 'inventory.edit', 'inventory.reconcile', 
+      'customers.create', 'customers.edit', 'dashboard.revenue', 'dashboard.orders', 
+      'dashboard.inventory', 'dashboard.customers', 'reports.financial', 'reports.export',
+      'staff.view', 'staff.create', 'staff.edit', 'branches.view'
+    ])
   },
   accountant: {
     name: 'المحاسب (Accountant)',
-    description: 'إدارة التقارير المالية والضرائب والمصروفات',
+    description: 'إدارة التقارير المالية والضرائب والمصروفات والموردين وتصدير البيانات',
+    category: 'merchant',
     permissions: createPermissions([
-      'orders.view', 'invoices.view',
-      'reports.view', 'reports.financial', 'reports.tax',
-      'payments.view_prices', 'dashboard.view', 'dashboard.revenue'
+      'dashboard.view', 'orders.view', 'suppliers.manage', 'reports.view',
+      'invoices.view', 'reports.financial', 'reports.tax', 'reports.export',
+      'payments.view_prices', 'dashboard.revenue', 'settings.tax', 'action.refund'
+    ])
+  },
+  warehouse_manager: {
+    name: 'مدير المستودع (Warehouse Manager)',
+    description: 'إدارة كافة عمليات الأقمشة والمخزون والتوريد والتسويات ومتابعة الجرد والتحويلات',
+    category: 'merchant',
+    permissions: createPermissions([
+      'dashboard.view', 'inventory.view', 'inventory.manage', 'inventory.create', 
+      'inventory.edit', 'inventory.delete', 'inventory.reconcile', 'inventory.transfer', 
+      'suppliers.manage', 'orders.view', 'orders.view_details', 'dashboard.inventory'
     ])
   },
   cashier: {
     name: 'الكاشير (Cashier)',
-    description: 'إضافة العملاء والطلبات وتحصيل المدفوعات وإدارة الورديات',
+    description: 'إضافة العملاء والطلبات ونقطة البيع وتحصيل المدفوعات وإدارة الورديات والخصومات',
+    category: 'merchant',
     permissions: createPermissions([
-      'orders.create', 'orders.view', 'orders.view_details',
+      'dashboard.view', 'sales.view', 'orders.view', 'customers.view', 'inventory.view',
+      'orders.create', 'orders.view_details', 'invoices.view',
       'payments.collect', 'shifts.manage', 'action.discount',
-      'inventory.view', 'customers.create', 'customers.view',
-      'dashboard.view', 'dashboard.orders', 'dashboard.customers'
+      'customers.create', 'dashboard.orders', 'dashboard.customers'
     ])
   },
   tailor: {
     name: 'الخياط / الفني (Tailor)',
-    description: 'عرض الطلبات المحالة وتفاصيل المقاسات وتحديث حالة الإنتاج',
+    description: 'عرض الطلبات المحالة وتفاصيل المقاسات وتحديث حالة الإنتاج والتفصيل',
+    category: 'merchant',
     permissions: createPermissions([
-      'orders.view', 'orders.view_details', 'orders.update_status'
+      'orders.view', 'orders.view_details', 'orders.update_status', 'customers.view'
+    ])
+  },
+
+  // === أدوار منصة ساس (SaaS Company Roles) ===
+  super_admin: {
+    name: 'المدير العام للمنصة (Super Admin)',
+    description: 'تحكم كامل وشامل بمنصة ساس والتجار والاشتراكات وإدارة النظام بالكامل',
+    category: 'saas',
+    permissions: createPermissions(SYSTEM_PERMISSIONS.map(p => p.id))
+  },
+  support_tech: {
+    name: 'الدعم الفني للمنصة (Support Tech)',
+    description: 'معاينة شاشات التاجر والمنصة لمساعدة التجار وحل المشكلات التشغيلية (استعراض فقط)',
+    category: 'saas',
+    permissions: createPermissions([
+      'dashboard.view', 'sales.view', 'orders.view', 'orders.view_details', 
+      'customers.view', 'inventory.view', 'suppliers.manage', 'reports.view', 
+      'settings.view', 'staff.view', 'branches.view', 'invoices.view'
+    ])
+  },
+  billing_admin: {
+    name: 'مسؤول الفوترة بالمنصة (Billing Admin)',
+    description: 'إدارة اشتراكات التجار والفوترة والتقارير المالية والضرائب بالمنصة',
+    category: 'saas',
+    permissions: createPermissions([
+      'dashboard.view', 'reports.view', 'reports.financial', 'reports.tax', 
+      'reports.export', 'settings.billing', 'settings.tax', 'payments.view_prices', 
+      'invoices.view', 'dashboard.revenue'
+    ])
+  },
+  sales: {
+    name: 'مبيعات المنصة والتسويق (Sales)',
+    description: 'إدارة مبيعات المنصة والتسويق وإحصائيات المشتركين والتقارير',
+    category: 'saas',
+    permissions: createPermissions([
+      'dashboard.view', 'sales.view', 'orders.view', 'orders.create', 'orders.view_details',
+      'customers.view', 'customers.create', 'customers.edit', 'payments.collect', 
+      'action.discount', 'dashboard.orders', 'dashboard.revenue', 'dashboard.customers',
+      'reports.view'
     ])
   }
 };
@@ -158,31 +260,71 @@ export const getEffectivePermissions = async (staff: Staff): Promise<Permissions
     }
   }
 
-  // Search for role in tenant roles first
-  const { data: tenantRoleData } = await supabase
-    .from('roles')
-    .select('permissions')
-    .eq('tenant_id', staff.tenantId)
-    .eq('role_key', staff.role)
-    .single();
-  
   let permissions: PermissionsMap = DEFAULT_ROLES[staff.role] 
     ? { ...DEFAULT_ROLES[staff.role].permissions } 
-    : { ...DEFAULT_ROLES.tailor.permissions }; // Fallback
+    : { ...DEFAULT_ROLES.tailor.permissions };
 
-  if (tenantRoleData) {
-    permissions = tenantRoleData.permissions as PermissionsMap;
-  } else {
-    // Check system roles
-    const { data: systemRoleData } = await supabase
-      .from('roles')
-      .select('permissions')
-      .is('tenant_id', null)
-      .eq('role_key', staff.role)
-      .single();
-    if (systemRoleData) {
-      permissions = systemRoleData.permissions as PermissionsMap;
+  // Check localStorage for immediate local cache
+  if (typeof localStorage !== 'undefined' && staff.tenantId && staff.role) {
+    const cached = localStorage.getItem(`role_permissions_${staff.tenantId}_${staff.role}`);
+    if (cached) {
+      try {
+        permissions = JSON.parse(cached) as PermissionsMap;
+      } catch (e) {
+        // ignore invalid JSON
+      }
     }
+  }
+
+  // Search for role in roles_permissions table first
+  try {
+    const { data: rpData } = await supabase
+      .from('roles_permissions')
+      .select('permissions')
+      .eq('tenant_id', staff.tenantId)
+      .eq('role_key', staff.role)
+      .maybeSingle();
+    
+    if (rpData?.permissions) {
+      permissions = rpData.permissions as PermissionsMap;
+    } else {
+      // Search for role in tenant roles
+      const { data: tenantRoleData } = await supabase
+        .from('roles')
+        .select('permissions')
+        .eq('tenant_id', staff.tenantId)
+        .eq('role_key', staff.role)
+        .maybeSingle();
+
+      if (tenantRoleData?.permissions) {
+        permissions = tenantRoleData.permissions as PermissionsMap;
+      } else {
+        // Check system roles_permissions (Super Admin global default)
+        const { data: sysRpData } = await supabase
+          .from('roles_permissions')
+          .select('permissions')
+          .is('tenant_id', null)
+          .eq('role_key', staff.role)
+          .maybeSingle();
+
+        if (sysRpData?.permissions) {
+          permissions = sysRpData.permissions as PermissionsMap;
+        } else {
+          // Check system roles
+          const { data: systemRoleData } = await supabase
+            .from('roles')
+            .select('permissions')
+            .is('tenant_id', null)
+            .eq('role_key', staff.role)
+            .maybeSingle();
+          if (systemRoleData?.permissions) {
+            permissions = systemRoleData.permissions as PermissionsMap;
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Error querying roles_permissions:', err);
   }
 
   // 2. Get User Overrides
@@ -246,7 +388,14 @@ export const createCustomRole = async (tenantId: string, name: string, descripti
   return data.id;
 };
 
-export const updateRolePermissions = async (roleId: string, permissions: PermissionsMap, performedBy: string | null, performedByEmail: string, tenantId: string) => {
+export const updateRolePermissions = async (
+  roleId: string, 
+  permissions: PermissionsMap, 
+  performedBy: string | null, 
+  performedByEmail: string, 
+  tenantId: string | null,
+  isSuperAdmin: boolean = false
+) => {
   const { data: roleData, error: roleFetchError } = await supabase
     .from('roles')
     .select('*')
@@ -255,7 +404,79 @@ export const updateRolePermissions = async (roleId: string, permissions: Permiss
   
   if (roleFetchError || !roleData) return;
 
-  // FORKING LOGIC
+  const roleKeyToSave = roleData.role_key || roleData.name?.toLowerCase().replace(/\s+/g, '_');
+
+  // Prevent merchants from editing default system roles
+  if (!isSuperAdmin) {
+    const isDefault = !roleData.tenant_id || roleData.tenant_id === 'system' || Boolean(DEFAULT_ROLES[roleKeyToSave]) || roleData.is_default;
+    if (isDefault) {
+      throw new Error('المهن الافتراضية محمية بالنظام ولا يمكن للتاجر تعديلها. يرجى إنشاء مهنة مخصصة بدلاً من ذلك.');
+    }
+  }
+
+  // SUPER ADMIN MODE: Save System Global Role Default (tenant_id IS NULL)
+  if (isSuperAdmin || !tenantId) {
+    // 1. Update roles table where tenant_id IS NULL or eq id
+    await supabase.from('roles').update({ 
+      permissions, 
+      updated_at: new Date().toISOString() 
+    }).eq('id', roleId);
+
+    // 2. Cache in localStorage
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(`role_permissions_global_${roleKeyToSave}`, JSON.stringify(permissions));
+    }
+
+    // 3. Upsert into roles_permissions where tenant_id IS NULL
+    try {
+      const { data: existingSysRp } = await supabase
+        .from('roles_permissions')
+        .select('id')
+        .is('tenant_id', null)
+        .eq('role_key', roleKeyToSave)
+        .maybeSingle();
+
+      if (existingSysRp) {
+        await supabase.from('roles_permissions').update({
+          permissions,
+          updated_at: new Date().toISOString()
+        }).eq('id', existingSysRp.id);
+      } else {
+        await supabase.from('roles_permissions').insert({
+          role_id: roleId,
+          role_key: roleKeyToSave,
+          tenant_id: null,
+          permissions,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+      }
+    } catch (err) {
+      console.warn('roles_permissions global update error:', err);
+    }
+
+    // 4. Dispatch real-time event across app
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('permissions_updated', { 
+        detail: { tenantId: null, roleKey: roleKeyToSave, isGlobal: true } 
+      }));
+    }
+
+    // 5. Audit Log
+    await supabase.from('audit_logs').insert({
+      action: 'تحديث صلاحيات النظام القياسية',
+      performed_by: performedBy,
+      performed_by_email: performedByEmail,
+      target_tenant_id: null,
+      details: `تم تحديث صلاحيات النظام القياسية لدور: ${roleData.name}`,
+      occurred_at: new Date().toISOString(),
+      type: 'security'
+    });
+
+    return;
+  }
+
+  // MERCHANT MODE: Save Tenant-Specific Custom Role / Override
   if (roleData.tenant_id === null || roleData.tenant_id === 'system') {
     const newRoleKey = roleData.role_key;
     
@@ -289,13 +510,34 @@ export const updateRolePermissions = async (roleId: string, permissions: Permiss
     }).eq('id', roleId);
   }
 
+  // Save to roles_permissions table in Supabase & localStorage cache
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(`role_permissions_${tenantId}_${roleKeyToSave}`, JSON.stringify(permissions));
+    }
+    await supabase.from('roles_permissions').upsert({
+      role_id: roleId,
+      role_key: roleKeyToSave,
+      tenant_id: tenantId,
+      permissions,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'tenant_id,role_key' });
+  } catch (err) {
+    console.warn('roles_permissions table update note:', err);
+  }
+
+  // Dispatch real-time update event across app
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('permissions_updated', { detail: { tenantId, roleKey: roleKeyToSave } }));
+  }
+
   // Audit Log
   await supabase.from('audit_logs').insert({
-    action: 'تحديث صلاحيات المهنة',
+    action: 'تحديث صلاحيات المهنة للتاجر',
     performed_by: performedBy,
     performed_by_email: performedByEmail,
     target_tenant_id: tenantId,
-    details: `تم تحديث صلاحيات المهنة: ${roleData.name}`,
+    details: `تم تحديث صلاحيات المهنة المخصصة للتاجر: ${roleData.name}`,
     occurred_at: new Date().toISOString(),
     type: 'security'
   });
@@ -319,6 +561,10 @@ export const updateUserOverrides = async (staffId: string, tenantId: string, ove
     occurred_at: new Date().toISOString(),
     type: 'security'
   });
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('permissions_updated', { detail: { tenantId, staffId } }));
+  }
 };
 
 export interface PermissionDetail {

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Printer } from 'lucide-react';
 import Barcode from 'react-barcode';
+import { CurrencySymbol } from '../CurrencySymbol';
 
 export type PrintSize = '58mm' | '80mm' | 'A5' | 'A4';
 
@@ -39,6 +40,7 @@ export interface InvoiceData {
 export interface InvoiceLayoutSettingsType {
   printSize: string;
   layoutTemplate: string;
+  fastThermalMode?: boolean;
   header: {
     logoUrl: string;
     facilityName: string;
@@ -94,10 +96,12 @@ export const ThermalInvoice = ({
   settings?: InvoiceLayoutSettingsType;
 }) => {
   const is58 = size === '58mm';
+  const isFastThermal = settings?.fastThermalMode ?? (localStorage.getItem('pos_fast_thermal_mode') === 'true');
+
   const containerClass = is58 ? 'w-[58mm]' : 'w-[80mm]';
-  const textBase = is58 ? 'text-[9px]' : 'text-[10px]';
-  const textSm = is58 ? 'text-[10px]' : 'text-xs';
-  const textLg = is58 ? 'text-xs' : 'text-sm';
+  const textBase = is58 ? 'text-[9px]' : (isFastThermal ? 'text-[9px]' : 'text-[10px]');
+  const textSm = is58 ? 'text-[10px]' : (isFastThermal ? 'text-[9.5px]' : 'text-xs');
+  const textLg = is58 ? 'text-xs' : (isFastThermal ? 'text-xs font-black' : 'text-sm');
 
   // Apply customizable settings if provided
   const logoUrl = settings?.header?.logoUrl || '';
@@ -128,26 +132,42 @@ export const ThermalInvoice = ({
   const branchName = data.branchName || 'الفرع الرئيسي';
   const sellerName = data.sellerName || 'النظام';
 
+  const paddingClass = isFastThermal ? 'p-1.5 sm:p-2' : 'p-4';
+  const marginHeader = isFastThermal ? 'mb-2 pb-1.5' : 'mb-4 pb-3';
+  const marginInfo = isFastThermal ? 'mb-2 pb-1.5 space-y-0.5' : 'mb-3 pb-2 space-y-1';
+  const marginTable = isFastThermal ? 'mb-2' : 'mb-3';
+  const spaceItems = isFastThermal ? 'space-y-1 mb-1 pb-1' : 'space-y-2 mb-2 pb-2';
+  const marginTotals = isFastThermal ? 'space-y-0.5 mb-2 pb-1.5' : 'space-y-1 mb-4 pb-3';
+  const marginPayment = isFastThermal ? 'mb-2 pb-1.5 space-y-0.5' : 'mb-3 pb-2 space-y-1';
+  const qrSize = isFastThermal ? (is58 ? 75 : 85) : (is58 ? 95 : 110);
+  const barcodeHeight = isFastThermal ? 22 : 35;
+
   return (
-    <div className={`${containerClass} bg-white text-black p-4 mx-auto font-sans print:w-full print:max-w-full print:p-0 print:m-0 shrink-0 shadow-sm border border-gray-200 print:shadow-none print:border-none`} dir="rtl">
+    <div className={`${containerClass} ${isFastThermal ? 'fast-thermal-print' : ''} bg-white text-black ${paddingClass} mx-auto font-sans print:w-full print:max-w-full print:p-0 print:m-0 shrink-0 shadow-sm border border-gray-200 print:shadow-none print:border-none`} dir="rtl">
+      {isFastThermal && (
+        <div className="print:hidden text-[8px] bg-amber-50 text-amber-900 font-bold py-0.5 px-1.5 rounded mb-1 text-center border border-amber-200 flex items-center justify-center gap-1">
+          <span>⚡ الوضع السريع المضغوط (80mm)</span>
+        </div>
+      )}
+
       {/* Header */}
-      <div className={`mb-4 border-b border-dashed border-gray-400 pb-3 flex flex-col ${alignmentClass}`}>
+      <div className={`${marginHeader} border-b border-dashed border-gray-400 flex flex-col ${alignmentClass}`}>
         {logoUrl && (
-          <img src={logoUrl} alt="Logo" className="w-14 h-14 object-contain mb-2.5 filter drop-shadow-sm" />
+          <img src={logoUrl} alt="Logo" className={`${isFastThermal ? 'w-10 h-10 mb-1' : 'w-14 h-14 mb-2.5'} object-contain filter drop-shadow-sm`} />
         )}
-        <h2 className={`${textLg} font-black mb-1`}>{facilityName}</h2>
-        <p className={`${textBase} font-bold mb-1 font-mono`}>الرقم الضريبي: {vatNumber}</p>
+        <h2 className={`${textLg} font-black mb-0.5`}>{facilityName}</h2>
+        <p className={`${textBase} font-bold mb-0.5 font-mono`}>الرقم الضريبي: {vatNumber}</p>
         {address && <p className={`${textBase} text-gray-700 leading-tight mb-0.5`}>{address}</p>}
         {phone && <p className={`${textBase} text-gray-700 font-mono`}>Tel: {phone}</p>}
         
-        <div className="mt-3 font-bold bg-gray-100 py-1 px-4 uppercase border border-gray-200 rounded-md text-[9px]">
+        <div className={`${isFastThermal ? 'mt-1.5 py-0.5 px-2 text-[8px]' : 'mt-3 py-1 px-4 text-[9px]'} font-bold bg-gray-100 uppercase border border-gray-200 rounded-md`}>
           {settings?.layoutTemplate === 'tax' ? 'فاتورة ضريبية مبسطة' : 
            settings?.layoutTemplate === 'detailed' ? 'فاتورة مبيعات مفصلة' : 'فاتورة ضريبية مبسطة'}
         </div>
       </div>
 
       {/* Info */}
-      <div className={`mb-3 ${textBase} border-b border-dashed border-gray-400 pb-2 space-y-1`}>
+      <div className={`${marginInfo} ${textBase} border-b border-dashed border-gray-400`}>
         <div className="flex justify-between items-center">
           <div>
             <span className="text-gray-500">العنوان: </span>
@@ -167,7 +187,7 @@ export const ThermalInvoice = ({
         <div className="flex justify-between items-center">
           <div>
             <span className="text-gray-500">التاريخ والوقت: </span>
-            <span className="font-bold">{new Date(data.issueDate).toLocaleString('ar-SA')}</span>
+            <span className="font-bold">{new Date(data.issueDate).toLocaleString('ar-SA-u-nu-latn')}</span>
           </div>
           <span className="text-gray-400 font-sans text-[8px]">Issue Date</span>
         </div>
@@ -211,7 +231,7 @@ export const ThermalInvoice = ({
       </div>
 
       {/* Items Table */}
-      <div className={`mb-3 ${textBase}`}>
+      <div className={`${marginTable} ${textBase}`}>
         <div className="flex border-b border-gray-900 pb-1 mb-1 font-bold">
           <div className="flex-1 text-right">الصنف</div>
           <div className="w-8 text-center">الكمية</div>
@@ -219,12 +239,12 @@ export const ThermalInvoice = ({
           <div className="w-14 text-left">المجموع</div>
         </div>
         
-        <div className="space-y-2 mb-2 border-b border-dashed border-gray-400 pb-2">
+        <div className={`${spaceItems} border-b border-dashed border-gray-400`}>
           {data.items.map((item, index) => {
             const itemTotal = item.quantity * item.unitPrice;
             return (
               <div key={index} className="flex flex-col">
-                 <div className="font-bold text-gray-900">
+                 <div className="font-bold text-gray-900 leading-tight">
                    {item.name}
                    {showMeasurements && (
                      <span className="block text-[8px] text-gray-500 font-semibold font-sans mt-0.5">
@@ -232,7 +252,7 @@ export const ThermalInvoice = ({
                      </span>
                    )}
                  </div>
-                 <div className="flex mt-1 text-gray-700 items-center">
+                 <div className="flex mt-0.5 text-gray-700 items-center">
                    <div className="flex-1"></div>
                    <div className="w-8 text-center font-mono">{item.quantity}</div>
                    {showUnitPrice && <div className="w-12 text-center font-mono">{item.unitPrice.toFixed(2)}</div>}
@@ -245,7 +265,7 @@ export const ThermalInvoice = ({
       </div>
 
       {/* Totals */}
-      <div className={`${textSm} space-y-1 mb-4 border-b border-dashed border-gray-400 pb-3`}>
+      <div className={`${textSm} ${marginTotals} border-b border-dashed border-gray-400`}>
          <div className="flex justify-between">
            <span>الإجمالي غير شامل الضريبة:</span>
            <span className="font-mono">{data.subtotal.toFixed(2)}</span>
@@ -260,21 +280,21 @@ export const ThermalInvoice = ({
            <span>ضريبة القيمة المضافة (15%):</span>
            <span className="font-mono">{data.vatAmount.toFixed(2)}</span>
          </div>
-         <div className="flex justify-between font-black text-xs mt-1.5 pt-1.5 border-t border-gray-400">
+         <div className={`flex justify-between font-black text-xs ${isFastThermal ? 'mt-1 pt-1' : 'mt-1.5 pt-1.5'} border-t border-gray-400`}>
            <span>الإجمالي شامل الضريبة:</span>
-           <span className="font-mono">{data.grandTotal.toFixed(2)} ر.س</span>
+           <span className="font-mono flex items-center gap-1">{data.grandTotal.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" /></span>
          </div>
       </div>
 
       {/* Payment & Pieces Details */}
-      <div className={`mb-3 ${textBase} border-b border-dashed border-gray-400 pb-2 space-y-1`}>
+      <div className={`${marginPayment} ${textBase} border-b border-dashed border-gray-400`}>
         <div className="flex justify-between">
           <span>المدفوع / Paid Amount:</span>
-          <span className="font-mono font-bold">{paidAmount.toFixed(2)} ر.س</span>
+          <span className="font-mono font-bold flex items-center gap-1">{paidAmount.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" /></span>
         </div>
         <div className="flex justify-between">
           <span>المتبقي / Remaining Amount:</span>
-          <span className="font-mono font-bold">{remainingAmount.toFixed(2)} ر.س</span>
+          <span className="font-mono font-bold flex items-center gap-1">{remainingAmount.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" /></span>
         </div>
         <div className="flex justify-between">
           <span>عدد القطع / Total Pieces:</span>
@@ -288,28 +308,28 @@ export const ThermalInvoice = ({
 
       {/* QR Code */}
       {showZatcaQr && data.qrValue && (
-        <div className="flex flex-col items-center justify-center mb-3">
-           <QRCodeSVG value={data.qrValue} size={is58 ? 95 : 110} />
+        <div className={`flex flex-col items-center justify-center ${isFastThermal ? 'mb-2' : 'mb-3'}`}>
+           <QRCodeSVG value={data.qrValue} size={qrSize} />
            <p className="text-center mt-1 text-[8px] text-gray-400 font-bold uppercase">ZATCA Approved</p>
         </div>
       )}
 
       {/* Barcode */}
       {showBarcode && (
-        <div className="flex flex-col items-center justify-center py-2 border-t border-dashed border-gray-200 mt-2">
-          <Barcode value={data.invoiceNumber} width={1.1} height={35} fontSize={8} margin={0} />
+        <div className={`flex flex-col items-center justify-center ${isFastThermal ? 'py-1 mt-1' : 'py-2 mt-2'} border-t border-dashed border-gray-200`}>
+          <Barcode value={data.invoiceNumber} width={1.1} height={barcodeHeight} fontSize={8} margin={0} />
         </div>
       )}
 
       {/* Return Policy and Policies */}
       {returnPolicy && (
-        <div className="text-gray-400 text-[8px] leading-relaxed border-t border-dashed border-gray-200 pt-3 mt-3 text-center">
-          <p className="font-bold text-gray-600 mb-1">شروط الاستبدال والضمان:</p>
-          <p className="whitespace-pre-wrap px-2">{returnPolicy}</p>
+        <div className={`text-gray-400 text-[8px] leading-relaxed border-t border-dashed border-gray-200 ${isFastThermal ? 'pt-1.5 mt-1.5' : 'pt-3 mt-3'} text-center`}>
+          <p className="font-bold text-gray-600 mb-0.5">شروط الاستبدال والضمان:</p>
+          <p className="whitespace-pre-wrap px-1">{returnPolicy}</p>
         </div>
       )}
 
-      <div className="text-center text-[9px] font-black text-gray-800 mt-4 mb-1 italic">
+      <div className={`text-center text-[9px] font-black text-gray-800 ${isFastThermal ? 'mt-2 mb-0.5' : 'mt-4 mb-1'} italic`}>
         {thankYouMessage}
       </div>
     </div>
@@ -397,7 +417,7 @@ export const StandardInvoice = ({
             </p>
             <p className={textSm}>
               <span className="font-bold text-gray-500 ml-2">التاريخ والوقت / Issue Date:</span>
-              <span className="font-mono font-bold">{new Date(data.issueDate).toLocaleString('ar-SA')}</span>
+              <span className="font-mono font-bold">{new Date(data.issueDate).toLocaleString('ar-SA-u-nu-latn')}</span>
             </p>
             <p className={textSm}>
               <span className="font-bold text-gray-500 ml-2">الفرع / Branch:</span>
@@ -500,31 +520,31 @@ export const StandardInvoice = ({
           <div className="space-y-3 border-2 border-gray-100 rounded-xl p-5 bg-gray-50">
             <div className={`flex justify-between ${textSm} text-gray-600`}>
               <span className="font-bold">الإجمالي غير شامل الضريبة:</span>
-              <span className="font-mono font-bold text-gray-900">{data.subtotal.toFixed(2)} ر.س</span>
+              <span className="font-mono font-bold text-gray-900 flex items-center gap-1">{data.subtotal.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" /></span>
             </div>
             {showDiscount && data.discountAmount ? (
                <div className={`flex justify-between ${textSm} text-gray-600`}>
                  <span className="font-bold">الخصم:</span>
-                 <span className="font-mono font-bold text-gray-900">-{data.discountAmount.toFixed(2)} ر.س</span>
+                 <span className="font-mono font-bold text-gray-900 flex items-center gap-1">-{data.discountAmount.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" /></span>
                </div>
             ) : null}
             <div className={`flex justify-between ${textSm} text-gray-600`}>
               <span className="font-bold">مجموع ضريبة القيمة المضافة (15%):</span>
-              <span className="font-mono font-bold text-gray-900">{data.vatAmount.toFixed(2)} ر.س</span>
+              <span className="font-mono font-bold text-gray-900 flex items-center gap-1">{data.vatAmount.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" /></span>
             </div>
             <div className={`flex justify-between ${textBase} font-black text-gray-900 border-t-2 border-gray-300 pt-3 mt-1`}>
               <span>الإجمالي شامل الضريبة:</span>
-              <span className="font-mono text-xl">{data.grandTotal.toFixed(2)} ر.س</span>
+              <span className="font-mono text-xl flex items-center gap-1">{data.grandTotal.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" /></span>
             </div>
             
             {/* Added details for paid, remaining, pieces and payment method */}
             <div className={`flex justify-between ${textSm} text-gray-600 border-t border-dashed border-gray-200 pt-2 mt-2`}>
               <span className="font-bold">المدفوع / Paid Amount:</span>
-              <span className="font-mono font-bold text-gray-900">{paidAmount.toFixed(2)} ر.س</span>
+              <span className="font-mono font-bold text-gray-900 flex items-center gap-1">{paidAmount.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" /></span>
             </div>
             <div className={`flex justify-between ${textSm} text-gray-600`}>
               <span className="font-bold">المتبقي / Remaining Amount:</span>
-              <span className="font-mono font-bold text-gray-900">{remainingAmount.toFixed(2)} ر.س</span>
+              <span className="font-mono font-bold text-gray-900 flex items-center gap-1">{remainingAmount.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" /></span>
             </div>
             <div className={`flex justify-between ${textSm} text-gray-600`}>
               <span className="font-bold">عدد القطع / Total Pieces:</span>
@@ -565,8 +585,21 @@ export default function InvoiceReceipt({
   // Use provided data or fallback to mock data
   const data = invoiceData || MOCK_INVOICE;
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    try {
+      const { printElementDetailed } = await import('../../utils/printManager');
+      const res = await printElementDetailed('receipt-printable-content', {
+        paperSize: printSize,
+        title: 'إيصال فاتورة ضريبية',
+      });
+      if (!res.ok) {
+        console.error('[InvoiceReceipt] فشل الطباعة:', res.message);
+        alert(`تعذّرت الطباعة: ${res.message}`);
+      }
+    } catch (e) {
+      console.error('[InvoiceReceipt] خطأ الطباعة:', e);
+      window.print();
+    }
   };
 
   return (
@@ -619,7 +652,7 @@ export default function InvoiceReceipt({
         }
       `}} />
 
-      <div className="w-full flex justify-center pb-12 print:pb-0">
+      <div id="receipt-printable-content" data-paper={printSize} className="w-full flex justify-center pb-12 print:pb-0">
         {['58mm', '80mm'].includes(printSize) 
           ? <ThermalInvoice data={data} size={printSize as '58mm' | '80mm'} />
           : <StandardInvoice data={data} size={printSize as 'A4' | 'A5'} />

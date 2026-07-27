@@ -1,134 +1,211 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Users, ShoppingCart, CreditCard, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useEffect, useRef } from 'react';
+import { driver, Driver } from 'driver.js';
 import { useTranslation } from 'react-i18next';
+import { supabase } from '../lib/supabase/client';
 
-const TOUR_STEPS = [
-  {
-    icon: Users,
-    title: 'اختيار العميل',
-    description: 'قم بالبحث عن العميل أو إضافة عميل جديد مع مقاساته من القسم العلوي.',
-    color: 'text-blue-500',
-    bg: 'bg-blue-500/10'
-  },
-  {
-    icon: ShoppingCart,
-    title: 'إضافة المنتجات',
-    description: 'اختر الخدمات أو المنتجات المطلوبة من القائمة لإضافتها إلى السلة.',
-    color: 'text-brand',
-    bg: 'bg-brand/10'
-  },
-  {
-    icon: CreditCard,
-    title: 'إتمام الدفع',
-    description: 'راجع السلة على اليسار واضغط على الدفع لإصدار الفاتورة وتأكيد الطلب.',
-    color: 'text-emerald-500',
-    bg: 'bg-emerald-500/10'
-  }
-];
+interface OnboardingTourProps {
+  role?: string | null;
+  tenantId?: string | null;
+  staffId?: string | null;
+}
 
-export default function OnboardingTour({ role }: { role?: string | null }) {
-  
-  const { t } = useTranslation();
-  const [isOpen, setIsOpen] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
+export const TOUR_COMPLETED_KEY = 'hasSeenOnboarding';
 
-  useEffect(() => {
-    if (role === 'staff') {
-      const isDismissed = localStorage.getItem('staff_onboarding_tour_dismissed');
-      if (!isDismissed) {
-        setIsOpen(true);
+/**
+ * Helper to restart onboarding tour from any component/button
+ */
+export function restartOnboardingTour() {
+  window.dispatchEvent(new CustomEvent('start_onboarding_tour'));
+}
+
+export default function OnboardingTour({ role, tenantId, staffId }: OnboardingTourProps) {
+  const { t, i18n } = useTranslation();
+  const driverRef = useRef<Driver | null>(null);
+  const hasTriggeredRef = useRef<boolean>(false);
+
+  const getStorageKey = () => {
+    if (tenantId && staffId) return `${TOUR_COMPLETED_KEY}_${tenantId}_${staffId}`;
+    if (tenantId) return `${TOUR_COMPLETED_KEY}_${tenantId}`;
+    return TOUR_COMPLETED_KEY;
+  };
+
+  const checkIsCompleted = () => {
+    const key = getStorageKey();
+    return (
+      localStorage.getItem(key) === 'true' ||
+      localStorage.getItem(TOUR_COMPLETED_KEY) === 'true' ||
+      localStorage.getItem('onboarding_tour_completed') === 'true' ||
+      sessionStorage.getItem('has_seen_tour_this_session') === 'true'
+    );
+  };
+
+  const markTourCompleted = async () => {
+    const key = getStorageKey();
+    localStorage.setItem(key, 'true');
+    localStorage.setItem(TOUR_COMPLETED_KEY, 'true');
+    localStorage.setItem('onboarding_tour_completed', 'true');
+    sessionStorage.setItem('has_seen_tour_this_session', 'true');
+
+    // Attempt to persist completion state to database if staff/tenant present
+    if (tenantId && staffId && staffId !== 'super_admin_mock_id') {
+      try {
+        await supabase
+          .from('staff')
+          .update({ has_seen_onboarding: true })
+          .eq('id', staffId);
+      } catch (e) {
+        console.warn('Could not save onboarding state to DB:', e);
       }
     }
-  }, [role]);
-
-  const handleDismiss = () => {
-    localStorage.setItem('staff_onboarding_tour_dismissed', 'true');
-    setIsOpen(false);
   };
 
-  const nextStep = () => {
-    if (currentStep < TOUR_STEPS.length - 1) {
-      setCurrentStep(prev => prev + 1);
-    } else {
-      handleDismiss();
+  const startTour = (force = false) => {
+    const isCompleted = checkIsCompleted();
+
+    if (isCompleted && !force) {
+      return;
     }
-  };
 
-  const prevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
+    // Immediately mark as completed so that refreshes or navigation won't re-trigger it
+    markTourCompleted();
+    hasTriggeredRef.current = true;
+
+    // Destroy any existing driver instance before initializing
+    if (driverRef.current) {
+      driverRef.current.destroy();
     }
+
+    // 5 Required Steps as requested
+    const rawSteps = [
+      {
+        element: '#tour-dashboard-nav',
+        fallbackElement: '#tour-dashboard-container',
+        popover: {
+          title: t('tour.step1.title', 'مرحباً بك في نظام سين! 👋'),
+          description: t('tour.step1.desc', 'هنا تجد ملخصاً لمبيعاتك وأداء محلك بشكل يومي'),
+          side: 'bottom' as const,
+          align: 'center' as const
+        }
+      },
+      {
+        element: '#tour-sidebar',
+        fallbackElement: '#tour-sidebar-mobile',
+        popover: {
+          title: t('tour.step2.title', 'تنقل بسهولة 🧭'),
+          description: t('tour.step2.desc', 'من هنا يمكنك الوصول إلى كافة أقسام النظام مثل الطلبات، العملاء، والتقارير'),
+          side: 'right' as const,
+          align: 'start' as const
+        }
+      },
+      {
+        element: '#tour-pos-nav',
+        fallbackElement: '#tour-sales-btn',
+        popover: {
+          title: t('tour.step3.title', 'ابدأ البيع ✂️'),
+          description: t('tour.step3.desc', 'اضغط هنا لإنشاء فاتورة تفصيل جديدة أو بيع منتج جاهز'),
+          side: 'right' as const,
+          align: 'center' as const
+        }
+      },
+      {
+        element: '#tour-suppliers-nav',
+        fallbackElement: '#tour-inventory-nav',
+        popover: {
+          title: t('tour.step4.title', 'الموردين والمشتريات 🚛'),
+          description: t('tour.step4.desc', 'من هنا يمكنك إدارة قائمة الموردين ومشتريات الأقمشة والمستلزمات ومتابعة الحسابات والفواتير المستحقة للموردين'),
+          side: 'right' as const,
+          align: 'center' as const
+        }
+      },
+      {
+        element: '#tour-orders-nav',
+        fallbackElement: '#tour-pos-nav',
+        popover: {
+          title: t('tour.step5.title', 'سجل الطلبات والفواتير 🧾'),
+          description: t('tour.step5.desc', 'النظام يصدر فواتير ضريبية مبسطة متوافقة مع متطلبات هيئة الزكاة والضريبة والجمارك (ZATCA) مع تتبع حالة الخياطة والتسليم'),
+          side: 'right' as const,
+          align: 'center' as const
+        }
+      }
+    ];
+
+    // Filter valid steps that have matching elements or fallbacks in DOM
+    const validSteps = rawSteps.map(step => {
+      let targetEl = step.element;
+      if (!document.querySelector(targetEl) && step.fallbackElement && document.querySelector(step.fallbackElement)) {
+        targetEl = step.fallbackElement;
+      }
+      return {
+        element: targetEl,
+        popover: step.popover
+      };
+    });
+
+    const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+
+    const driverObj = driver({
+      showProgress: true,
+      animate: true,
+      stagePadding: 8,
+      stageRadius: 10,
+      overlayColor: 'rgba(15, 23, 42, 0.2)',
+      popoverClass: 'seen-tour-popover',
+      nextBtnText: isRtl ? 'التالي ←' : 'Next →',
+      prevBtnText: isRtl ? '→ السابق' : '← Back',
+      doneBtnText: isRtl ? 'تم وإكمال الجولة 🎉' : 'Finish Tour 🎉',
+      progressText: isRtl ? 'الخطوة {{current}} من {{total}}' : 'Step {{current}} of {{total}}',
+      showButtons: ['next', 'previous', 'close'],
+      allowClose: true,
+      onDestroyed: () => {
+        markTourCompleted();
+      },
+      onCloseClick: () => {
+        markTourCompleted();
+        driverObj.destroy();
+      },
+      steps: validSteps
+    });
+
+    driverRef.current = driverObj;
+
+    // Small delay to ensure layout rendering and animations complete
+    setTimeout(() => {
+      driverObj.drive();
+    }, 400);
   };
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    // Listener for custom trigger from settings or user menu
+    const handleCustomStart = () => {
+      startTour(true);
+    };
 
-  const StepIcon = TOUR_STEPS[currentStep].icon;
+    window.addEventListener('start_onboarding_tour', handleCustomStart);
 
-  return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl">
-        <motion.div
-          key="modal"
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="bg-surface w-full max-w-md rounded-3xl shadow-2xl overflow-hidden relative border border-border flex flex-col"
-        >
-          <div className="p-4 flex justify-between items-center absolute top-0 left-0 right-0 z-10">
-             <button
-              onClick={handleDismiss}
-              className="px-4 py-1.5 bg-surface-muted hover:bg-border rounded-full text-content-muted text-sm font-bold transition-colors"
-            >
-              تخطي الجولة
-            </button>
-            <div className="flex gap-1.5" dir="ltr">
-              {TOUR_STEPS.map((_, idx) => (
-                <div key={idx} className={`h-1.5 rounded-full transition-all ${idx === currentStep ? 'w-6 bg-brand' : 'w-2 bg-border'}`} />
-              ))}
-            </div>
-          </div>
-          
-          <div className="pt-20 pb-8 px-8 flex flex-col items-center text-center">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentStep}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-                className="flex flex-col items-center w-full"
-              >
-                <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-6 ${TOUR_STEPS[currentStep].bg}`}>
-                  <StepIcon size={48} className={TOUR_STEPS[currentStep].color} />
-                </div>
-                <h3 className="text-2xl font-black text-content mb-3">{TOUR_STEPS[currentStep].title}</h3>
-                <p className="text-content-muted leading-relaxed">
-                  {TOUR_STEPS[currentStep].description}
-                </p>
-              </motion.div>
-            </AnimatePresence>
-          </div>
+    // Auto-start check on initial login
+    const isCompleted = checkIsCompleted();
 
-          <div className="p-6 border-t border-border bg-surface-muted flex justify-between items-center gap-3">
-            <button
-              onClick={prevStep}
-              disabled={currentStep === 0}
-              className={`p-3 rounded-xl flex items-center justify-center transition-colors ${currentStep === 0 ? 'opacity-50 cursor-not-allowed text-content-muted' : 'text-content hover:bg-border bg-surface border border-border'}`}
-            >
-              <ChevronRight size={24} />
-            </button>
-            <button
-              onClick={nextStep}
-              className="flex-1 py-3 bg-brand text-white rounded-xl font-bold text-base hover:bg-brand-dark transition-colors flex items-center justify-center gap-2"
-            >
-              {currentStep === TOUR_STEPS.length - 1 ? 'ابدأ العمل 🎉' : 'التالي'}
-              {currentStep !== TOUR_STEPS.length - 1 && <ChevronLeft size={20} />}
-            </button>
-          </div>
-        </motion.div>
-      </div>
-    </AnimatePresence>
-  );
+    let autoTimer: NodeJS.Timeout | null = null;
+
+    if (!isCompleted && !hasTriggeredRef.current) {
+      autoTimer = setTimeout(() => {
+        if (!checkIsCompleted() && !hasTriggeredRef.current) {
+          startTour(false);
+        }
+      }, 1500);
+    }
+
+    return () => {
+      window.removeEventListener('start_onboarding_tour', handleCustomStart);
+      if (autoTimer) {
+        clearTimeout(autoTimer);
+      }
+      if (driverRef.current) {
+        driverRef.current.destroy();
+      }
+    };
+  }, [tenantId, staffId, i18n.language]);
+
+  return null;
 }
+

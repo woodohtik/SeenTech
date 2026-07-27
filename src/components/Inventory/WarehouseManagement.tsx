@@ -108,9 +108,9 @@ const WarehouseManagement: React.FC<WarehouseManagementProps> = ({ tenantId }) =
         <div>
           <h1 className="text-3xl font-black text-content flex items-center gap-3">
             <Building2 className="text-brand" size={32} />
-            إدارة الفروع والمواقع
+            {t('branches.title')}
           </h1>
-          <p className="text-content-muted font-medium mt-1">إدارة مواقع الفروع</p>
+          <p className="text-content-muted font-medium mt-1">{t('branches.subtitle')}</p>
         </div>
         
         <button 

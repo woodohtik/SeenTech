@@ -63,6 +63,8 @@ import { useTranslation } from 'react-i18next';
 import SaaSLogin from './components/SaaSLogin';
 import SaaSLayout from './components/SaaSLayout';
 import RoleGuard from './components/RoleGuard';
+import ProtectedRoute from './components/ProtectedRoute';
+import AccessDenied from './components/AccessDenied';
 
 // Lazy loaded SaaS Super Admin components
 const SuperAdminDashboard = React.lazy(() => import('./components/SuperAdminDashboard'));
@@ -71,8 +73,9 @@ const SaaSReports = React.lazy(() => import('./components/SaaSReports'));
 const SaaSAuditLogs = React.lazy(() => import('./components/SaaSAuditLogs'));
 const SaaSSystemSettings = React.lazy(() => import('./components/SaaSSystemSettings'));
 const SaaSWithdrawals = React.lazy(() => import('./components/SaaSWithdrawals'));
-const SaaSTeamManagement = React.lazy(() => import('./components/SaaSTeamManagement'));
-const TenantAnalyticsDashboard = React.lazy(() => import('./components/TenantAnalyticsDashboard'));
+import SaaSTeamManagement from './components/SaaSTeamManagement';
+import TenantAnalyticsDashboard from './components/TenantAnalyticsDashboard';
+import { RolePermissionsSettings } from './components/RolePermissionsSettings';
 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
@@ -193,7 +196,7 @@ function AppContent() {
           .maybeSingle();
 
         if (tenant && !error) {
-          setGlobalCurrencySymbol(tenant.currency || 'ر.س');
+          setGlobalCurrencySymbol(tenant.currency || '﷼');
         }
       } catch (err) {
         console.warn("Failed to fetch tenant settings from Supabase:", err);
@@ -463,7 +466,24 @@ function AppContent() {
 
   const effectiveRole = currentStaff?.role || userRole || 'tailor';
   const layoutModeKey = `layoutMode_${effectiveTenantId}_${currentStaff?.id || effectiveRole}`;
-  const savedLayoutMode = localStorage.getItem(layoutModeKey) || 'sidebar';
+
+  const [savedLayoutMode, setSavedLayoutMode] = useState<'sidebar' | 'grid'>(() => {
+    return (localStorage.getItem(layoutModeKey) as 'sidebar' | 'grid') || 'sidebar';
+  });
+
+  useEffect(() => {
+    const handleLayoutChange = () => {
+      const current = (localStorage.getItem(layoutModeKey) as 'sidebar' | 'grid') || 'sidebar';
+      setSavedLayoutMode(current);
+    };
+    handleLayoutChange();
+    window.addEventListener('layout_mode_changed', handleLayoutChange);
+    window.addEventListener('storage', handleLayoutChange);
+    return () => {
+      window.removeEventListener('layout_mode_changed', handleLayoutChange);
+      window.removeEventListener('storage', handleLayoutChange);
+    };
+  }, [layoutModeKey]);
 
   // PIN Access Logic
   const needsPinSetup = user && isApproved && !needsOnboarding && authState.userRole === 'owner' && authState.currentUserStaff?.mustChangePin === true && !isSaaSStaff && !!tenantId && tenantId !== 'null';
@@ -509,7 +529,7 @@ function AppContent() {
             <div className="flex justify-between items-center text-slate-300 mb-0.5">
               <span className="text-slate-400 font-medium">تاريخ البداية:</span>
               <span className="font-mono text-white">
-                {tenantCreatedAt ? new Date(tenantCreatedAt).toLocaleDateString('ar-SA', { dateStyle: 'long' }) : '-'}
+                {tenantCreatedAt ? new Date(tenantCreatedAt).toLocaleDateString('ar-SA-u-nu-latn', { dateStyle: 'long' }) : '-'}
               </span>
             </div>
           </div>
@@ -589,6 +609,11 @@ function AppContent() {
                     <Routes>
                       <Route path="/dashboard" element={<SuperAdminDashboard />} />
                       <Route path="/tailors" element={<AdminTailors />} />
+                      <Route path="/roles" element={
+                        <RoleGuard allowedRoles={['super_admin']}>
+                          <RolePermissionsSettings isSuperAdmin={true} />
+                        </RoleGuard>
+                      } />
                       <Route path="/tailors/:tenantId/analytics" element={
                         <RoleGuard allowedRoles={['super_admin', 'billing_admin', 'sales']}>
                           <TenantAnalyticsDashboard />
@@ -722,15 +747,53 @@ function AppContent() {
                         >
                           <React.Suspense fallback={<PageSkeleton />}>
                             <Routes>
-                              <Route path="/" element={userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> : <Dashboard tenantId={effectiveTenantId!} />} />
-                              <Route path="/dashboard" element={userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> : <Dashboard tenantId={effectiveTenantId!} />} />
-                              <Route path="/sales" element={<Sales tenantId={effectiveTenantId!} />} />
-                              <Route path="/orders" element={<Orders tenantId={effectiveTenantId!} />} />
-                              <Route path="/customers" element={<Customers tenantId={effectiveTenantId!} />} />
-                              <Route path="/inventory" element={<InventoryManager tenantId={effectiveTenantId!} />} />
-                              <Route path="/suppliers" element={<Suppliers tenantId={effectiveTenantId!} />} />
-                              <Route path="/reports" element={<Reports tenantId={effectiveTenantId!} />} />
-                              <Route path="/settings" element={<Settings tenantId={effectiveTenantId!} />} />
+                              <Route path="/" element={
+                                userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> : 
+                                (effectiveRole === 'cashier' ? <Navigate to="/sales" /> :
+                                 effectiveRole === 'tailor' ? <Navigate to="/orders" /> :
+                                 <Dashboard tenantId={effectiveTenantId!} />)
+                              } />
+                              <Route path="/dashboard" element={
+                                <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager']} permission="dashboard.view" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                  {userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> : <Dashboard tenantId={effectiveTenantId!} />}
+                                </ProtectedRoute>
+                              } />
+                              <Route path="/sales" element={
+                                <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'cashier']} permission="sales.view" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                  <Sales tenantId={effectiveTenantId!} />
+                                </ProtectedRoute>
+                              } />
+                              <Route path="/orders" element={
+                                <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'cashier', 'tailor']} permission="orders.view" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                  <Orders tenantId={effectiveTenantId!} />
+                                </ProtectedRoute>
+                              } />
+                              <Route path="/customers" element={
+                                <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'cashier']} permission="customers.view" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                  <Customers tenantId={effectiveTenantId!} />
+                                </ProtectedRoute>
+                              } />
+                              <Route path="/inventory" element={
+                                <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'warehouse_manager']} permission="inventory.view" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                  <InventoryManager tenantId={effectiveTenantId!} />
+                                </ProtectedRoute>
+                              } />
+                              <Route path="/suppliers" element={
+                                <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'accountant']} permission="suppliers.manage" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                  <Suppliers tenantId={effectiveTenantId!} />
+                                </ProtectedRoute>
+                              } />
+                              <Route path="/reports" element={
+                                <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'accountant']} permission="reports.view" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                  <Reports tenantId={effectiveTenantId!} />
+                                </ProtectedRoute>
+                              } />
+                              <Route path="/settings" element={
+                                <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin']} permission="settings.view" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                  <Settings tenantId={effectiveTenantId!} />
+                                </ProtectedRoute>
+                              } />
+                              <Route path="/403" element={<AccessDenied userRole={effectiveRole} />} />
                               <Route path="*" element={<Navigate to="/" />} />
                             </Routes>
                           </React.Suspense>
@@ -778,15 +841,53 @@ function AppContent() {
                     >
                       <React.Suspense fallback={<PageSkeleton />}>
                         <Routes>
-                          <Route path="/" element={userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> : <Dashboard tenantId={effectiveTenantId!} />} />
-                          <Route path="/dashboard" element={userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> : <Dashboard tenantId={effectiveTenantId!} />} />
-                          <Route path="/sales" element={<Sales tenantId={effectiveTenantId!} />} />
-                          <Route path="/orders" element={<Orders tenantId={effectiveTenantId!} />} />
-                          <Route path="/customers" element={<Customers tenantId={effectiveTenantId!} />} />
-                          <Route path="/inventory" element={<InventoryManager tenantId={effectiveTenantId!} />} />
-                          <Route path="/suppliers" element={<Suppliers tenantId={effectiveTenantId!} />} />
-                          <Route path="/reports" element={<Reports tenantId={effectiveTenantId!} />} />
-                          <Route path="/settings" element={<Settings tenantId={effectiveTenantId!} />} />
+                          <Route path="/" element={
+                            userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> : 
+                            (effectiveRole === 'cashier' ? <Navigate to="/sales" /> :
+                             effectiveRole === 'tailor' ? <Navigate to="/orders" /> :
+                             <Dashboard tenantId={effectiveTenantId!} />)
+                          } />
+                          <Route path="/dashboard" element={
+                            <ProtectedRoute permission="dashboard.view" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                              {userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> : <Dashboard tenantId={effectiveTenantId!} />}
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/sales" element={
+                            <ProtectedRoute permission="sales.view" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'cashier']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                              <Sales tenantId={effectiveTenantId!} />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/orders" element={
+                            <ProtectedRoute permission="orders.view" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'cashier', 'tailor']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                              <Orders tenantId={effectiveTenantId!} />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/customers" element={
+                            <ProtectedRoute permission="customers.view" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'cashier']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                              <Customers tenantId={effectiveTenantId!} />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/inventory" element={
+                            <ProtectedRoute permission="inventory.view" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'warehouse_manager']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                              <InventoryManager tenantId={effectiveTenantId!} />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/suppliers" element={
+                            <ProtectedRoute permission="suppliers.manage" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'accountant']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                              <Suppliers tenantId={effectiveTenantId!} />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/reports" element={
+                            <ProtectedRoute permission="reports.view" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'accountant']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                              <Reports tenantId={effectiveTenantId!} />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/settings" element={
+                            <ProtectedRoute permission="settings.view" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                              <Settings tenantId={effectiveTenantId!} />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/403" element={<AccessDenied userRole={effectiveRole} />} />
                           <Route path="*" element={<Navigate to="/" />} />
                         </Routes>
                       </React.Suspense>

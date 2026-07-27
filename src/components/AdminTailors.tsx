@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import SubscriptionRequestsAdminManager from './SubscriptionRequestsAdminManager';
 import { 
   CheckCircle, 
   XCircle, 
@@ -182,7 +183,7 @@ export default function AdminTailors() {
     let totalSales = 0;
 
     orders?.forEach(order => {
-      const date = new Date(order.order_date).toLocaleDateString('ar-SA', { day: 'numeric', month: 'short' });
+      const date = new Date(order.order_date).toLocaleDateString('ar-SA-u-nu-latn', { day: 'numeric', month: 'short' });
       const current = dailyMap.get(date) || { sales: 0, count: 0 };
       dailyMap.set(date, {
         sales: current.sales + Number(order.total_amount),
@@ -339,13 +340,14 @@ export default function AdminTailors() {
       onConfirm: async () => {
         setConfirmDialog(null);
         try {
+          const today = new Date().toISOString();
           const { error } = await supabase
             .from('tenants')
-            .update({ plan_id: newPlanId })
+            .update({ plan_id: newPlanId, created_at: today })
             .eq('id', tenantId);
           
           if (error) throw error;
-          setTenants(prev => prev.map(t => t.id === tenantId ? { ...t, planId: newPlanId } : t));
+          setTenants(prev => prev.map(t => t.id === tenantId ? { ...t, planId: newPlanId, createdAt: today } : t));
           showToast('تم تحديث الباقة بنجاح', 'success');
         } catch (error) {
           console.warn("Error updating tenant plan:", error);
@@ -521,7 +523,10 @@ export default function AdminTailors() {
 
   const getSubscriptionInfo = (tenant: Tenant) => {
     const plan = plans.find(p => p.id === tenant.planId);
-    const isTrial = !plan || plan.price === 0 || (tenant.planId && typeof tenant.planId === 'string' && tenant.planId.includes('trial'));
+    const isTrial = tenant.planId === 'free' || 
+                    (!plan && tenant.planId !== 'basic') || 
+                    (plan && plan.price === 0) || 
+                    (tenant.planId && typeof tenant.planId === 'string' && tenant.planId.includes('trial'));
     const creationDate = new Date(tenant.createdAt);
     const now = new Date();
     
@@ -858,6 +863,9 @@ export default function AdminTailors() {
            animate={{ opacity: 1, y: 0 }}
            className="space-y-10"
         >
+          {/* Subscription Requests & Proof of Payment Section */}
+          <SubscriptionRequestsAdminManager />
+
           <div className="bg-surface rounded-[3rem] border border-border shadow-sm overflow-hidden">
             <div className="p-8 border-b border-border bg-brand/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
@@ -1058,8 +1066,8 @@ export default function AdminTailors() {
                               />
                             </div>
                             <div className="flex justify-between items-center text-[10px] text-content-muted font-bold">
-                              <span>تاريخ الانضمام: {new Date(selectedTenant.createdAt).toLocaleDateString('ar-SA')}</span>
-                              <span>تاريخ الانتهاء المتوقع: {info.expiryDate.toLocaleDateString('ar-SA')}</span>
+                              <span>تاريخ الانضمام: {new Date(selectedTenant.createdAt).toLocaleDateString('ar-SA-u-nu-latn')}</span>
+                              <span>تاريخ الانتهاء المتوقع: {info.expiryDate.toLocaleDateString('ar-SA-u-nu-latn')}</span>
                             </div>
                           </div>
                           <div className="w-full md:w-auto">
@@ -1220,7 +1228,7 @@ export default function AdminTailors() {
                       <div>
                         <p className="text-[10px] text-content-muted font-bold">تاريخ الانضمام</p>
                         <p className="text-sm font-medium text-content">
-                          {new Date(selectedTenant.createdAt).toLocaleDateString('ar-SA')}
+                          {new Date(selectedTenant.createdAt).toLocaleDateString('ar-SA-u-nu-latn')}
                         </p>
                       </div>
                     </div>
@@ -1312,7 +1320,7 @@ export default function AdminTailors() {
                         <h4 className="font-bold">تاريخ التسجيل</h4>
                       </div>
                       <p className="text-content font-black text-lg">
-                        {new Date(drawerTenant.createdAt).toLocaleDateString('ar-SA', {
+                        {new Date(drawerTenant.createdAt).toLocaleDateString('ar-SA-u-nu-latn', {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric'
@@ -1326,7 +1334,7 @@ export default function AdminTailors() {
                         <h4 className="font-bold">آخر دخول / نشاط</h4>
                       </div>
                       <p className="text-content font-black text-lg">
-                        {drawerStats.lastLogin ? new Date(drawerStats.lastLogin).toLocaleDateString('ar-SA', {
+                        {drawerStats.lastLogin ? new Date(drawerStats.lastLogin).toLocaleDateString('ar-SA-u-nu-latn', {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric',

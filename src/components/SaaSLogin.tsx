@@ -14,7 +14,8 @@ import {
   BarChart3,
   Zap,
   Eye,
-  EyeOff
+  EyeOff,
+  Home
 } from 'lucide-react';
 import { 
   signInWithEmailAndPassword, 
@@ -27,6 +28,7 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { logSaaSSecurityEvent, verifySaaSStaff } from '../services/saasSecurityService';
 import { AdminIconInput } from './ui/AdminIconInput';
+import { getAuthErrorMessage } from '../utils/authErrorUtils';
 
 export default function SaaSLogin() {
   const [step, setStep] = useState<'login' | '2fa'>('login');
@@ -85,7 +87,14 @@ export default function SaaSLogin() {
         if (email.toLowerCase() === "nomansa2566512@gmail.com" && 
            (signInErr.code === 'auth/invalid-credential' || signInErr.code === 'auth/user-not-found')) {
           console.log("[DEBUG] Super Admin account not found, auto-creating...");
-          await createUserWithEmailAndPassword(auth, email, password);
+          try {
+            await createUserWithEmailAndPassword(auth, email, password);
+          } catch (createErr: any) {
+            if (createErr.code === 'auth/email-already-in-use' || createErr.code === 'auth/credential-already-in-use') {
+              throw signInErr;
+            }
+            throw createErr;
+          }
         } else {
           throw signInErr;
         }
@@ -99,7 +108,7 @@ export default function SaaSLogin() {
       setLoading(false);
     } catch (err: any) {
       console.error('Login error:', err);
-      setError(err.message || 'فشل تسجيل الدخول. يرجى التحقق من البيانات.');
+      setError(getAuthErrorMessage(err));
       setLoading(false);
     }
   };
@@ -133,7 +142,19 @@ export default function SaaSLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 font-sans" dir="rtl">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 font-sans relative" dir="rtl">
+      {/* Back to Landing Page Button */}
+      <div className="absolute top-4 right-4 z-50">
+        <button 
+          onClick={() => navigate('/')}
+          title="الرجوع لصفحة الهبوط"
+          aria-label="الرجوع لصفحة الهبوط"
+          className="p-3 bg-white hover:bg-indigo-600 border border-gray-200/80 hover:border-indigo-600 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 text-gray-700 hover:text-white cursor-pointer group flex items-center justify-center active:scale-95"
+        >
+          <Home size={20} className="transition-all duration-300 group-hover:scale-110 text-current" />
+        </button>
+      </div>
+
       {/* Background Decoration */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-600/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />

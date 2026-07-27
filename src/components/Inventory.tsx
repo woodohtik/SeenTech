@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatSaudiPhone } from '../utils/phoneUtils';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Package, 
@@ -43,6 +44,9 @@ import { analytics, AnalyticsEvent } from '../services/analyticsService';
 import { useTranslation } from 'react-i18next';
 
 import { useSearchParams } from 'react-router-dom';
+
+const isUuid = (val: string | undefined | null) => 
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val || '');
 
 export default function Inventory({ tenantId }: { tenantId: string }) {
   const { t } = useTranslation();
@@ -101,6 +105,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
     register: registerSupplier, 
     handleSubmit: handleSubmitSupplier, 
     reset: resetSupplier, 
+    setValue: setSupplierValue,
     formState: { errors: supplierErrors, isSubmitting: isSubmittingSupplier } 
   } = useForm({
     resolver: zodResolver(supplierSchema),
@@ -296,7 +301,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
         conversion_rate: formData.conversionRate,
         min_threshold: formData.minThreshold,
         price_per_unit: formData.pricePerUnit,
-        supplier_id: formData.supplierId,
+        supplier_id: (formData.supplierId && isUuid(formData.supplierId)) ? formData.supplierId : null,
         images: formData.mainImage ? [{ url: formData.mainImage }] : undefined,
         sku: formData.sku ? formData.sku.replace(/\D/g, '') : Math.floor(10000000 + Math.random() * 90000000).toString(),
         is_test: formData.isTest,
@@ -334,7 +339,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
         name: formData.name,
         contact_person: formData.contactPerson,
         email: formData.email,
-        phone: formData.phone,
+        phone: formatSaudiPhone(formData.phone),
         address: formData.address,
         category: formData.category,
         is_test: formData.isTest,
@@ -383,7 +388,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
           actual_quantity: formData.actualQuantity,
           difference: diff,
           reason: formData.reason,
-          staff_id: formData.staffId,
+          staff_id: (formData.staffId && isUuid(formData.staffId)) ? formData.staffId : null,
           staff_name: staffMember?.name || 'Unknown',
           created_at: new Date().toISOString()
         });
@@ -488,6 +493,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
         .delete()
         .eq('id', id);
       if (error) throw error;
+      setSuppliers(prev => prev.filter(s => s.id !== id));
     } catch (error) {
       handleError(error as any, OperationType.DELETE, 'suppliers');
     }
@@ -616,7 +622,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                     : 'bg-surface text-content-muted border border-border hover:bg-surface-muted'
                   }`}
                 >
-                  {cat === 'all' ? t('common.all') : 
+                  {cat === 'all' ? t('common.all', 'الكل') : 
                    cat === 'low_stock' ? t('inventory.low_stock') :
                    cat === 'fabric' ? t('inventory.fabric') : 
                    cat === 'thread' ? t('inventory.thread') : 
@@ -856,7 +862,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                     <h4 className="font-black text-content text-xs truncate">{recon.itemName}</h4>
                     <p className="text-[9px] text-content-muted font-bold flex items-center gap-1 mt-0.5">
                       <History size={10} />
-                      {new Date(recon.createdAt).toLocaleDateString('ar-SA')}
+                      {new Date(recon.createdAt).toLocaleDateString('ar-SA-u-nu-latn')}
                     </p>
                   </div>
                 </div>
@@ -1228,6 +1234,14 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                     <label className="block text-sm font-medium text-content-muted mb-1">{t('suppliers.phone')}</label>
                     <input 
                       {...registerSupplier('phone')}
+                      onChange={(e) => {
+                        const formatted = formatSaudiPhone(e.target.value);
+                        setSupplierValue('phone', formatted);
+                      }}
+                      onBlur={(e) => {
+                        const formatted = formatSaudiPhone(e.target.value);
+                        setSupplierValue('phone', formatted);
+                      }}
                       className={cn(
                         "w-full px-4 py-2 bg-surface-muted border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-content placeholder-content-muted",
                         supplierErrors.phone && "border-red-500"
@@ -1248,10 +1262,11 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                     {supplierErrors.email && <p className="text-xs text-red-500 font-bold mt-1">{supplierErrors.email.message}</p>}
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-content-muted mb-1">{t('suppliers.address')}</label>
+                    <label className="block text-sm font-medium text-content-muted mb-1">{t('suppliers.address', 'العنوان (اختياري)')}</label>
                     <input 
                       type="text"
                       {...registerSupplier('address')}
+                      placeholder={t('suppliers.address_placeholder', 'العنوان (اختياري)')}
                       className={cn(
                         "w-full px-4 py-2 bg-surface-muted border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-content placeholder-content-muted",
                         supplierErrors.address && "border-red-500"

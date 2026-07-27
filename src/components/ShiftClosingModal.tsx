@@ -8,6 +8,7 @@ import { logEmployeeAction } from '../services/employeeAuditService';
 import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
 import ZReport from './ZReport';
+import { useTranslation } from 'react-i18next';
 
 interface ShiftClosingModalProps {
   shift: Shift;
@@ -17,6 +18,9 @@ interface ShiftClosingModalProps {
 }
 
 export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }: ShiftClosingModalProps) {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+
   const [actualCash, setActualCash] = useState('');
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -136,7 +140,7 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
     e.preventDefault();
     if (!actualCash) return;
     if (hasDiscrepancy && !reason) {
-      alert('يرجى إدخال سبب العجز/الزيادة');
+      alert(t('shift_closing.reason_required', 'يرجى إدخال سبب العجز/الزيادة'));
       return;
     }
 
@@ -212,7 +216,7 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
     <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
       <div 
         className="relative w-full max-w-[clamp(320px,94vw,560px)] max-h-[90vh] overflow-y-auto rounded-[var(--radius-card)] bg-[var(--surface)] shadow-2xl flex flex-col my-auto text-right"
-        dir="rtl"
+        dir={isRtl ? 'rtl' : 'ltr'}
       >
         <form onSubmit={handleSubmit} className="flex flex-col h-full">
           {/* Header (Fixed) */}
@@ -222,11 +226,11 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
                 <Calculator size={22} />
               </div>
               <div>
-                <h2 className="text-base sm:text-lg font-black text-content">إغلاق الوردية</h2>
-                <p className="text-xs text-content-muted font-bold mt-0.5">تسوية الصندوق وإصدار التقرير</p>
+                <h2 className="text-base sm:text-lg font-black text-content">{t('shift_closing.title', 'إغلاق الوردية')}</h2>
+                <p className="text-xs text-content-muted font-bold mt-0.5">{t('shift_closing.desc', 'تسوية الصندوق وإصدار التقرير')}</p>
               </div>
             </div>
-            <button type="button" onClick={onClose} className="p-2 hover:bg-surface-muted rounded-full transition-colors shadow-sm text-content-muted">
+            <button type="button" onClick={onClose} className="p-2 hover:bg-surface-muted rounded-full transition-colors shadow-sm text-content-muted cursor-pointer">
               <X size={20} />
             </button>
           </div>
@@ -235,33 +239,33 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
             <div className="bg-surface-muted p-4 rounded-2xl space-y-2">
               <div className="flex justify-between text-xs sm:text-sm font-bold text-content-muted">
-                <span>رصيد الافتتاح:</span>
+                <span>{t('shift_closing.opening_balance', 'رصيد الافتتاح:')}</span>
                 <span><PriceDisplay amount={shift.openingBalance} /></span>
               </div>
               <div className="flex justify-between text-xs sm:text-sm font-bold text-content-muted">
-                <span>مبيعات نقدية:</span>
+                <span>{t('shift_closing.cash_sales', 'مبيعات نقدية:')}</span>
                 <span className="text-success">+<PriceDisplay amount={totals.cash} /></span>
               </div>
               <div className="flex justify-between text-xs sm:text-sm font-bold text-content-muted">
-                <span>مرتجعات نقدية:</span>
+                <span>{t('shift_closing.cash_returns', 'مرتجعات نقدية:')}</span>
                 <span className="text-danger">-<PriceDisplay amount={totals.cashReturns} /></span>
               </div>
               <div className="flex justify-between text-xs sm:text-sm font-bold text-content-muted">
-                <span>إيداعات نقدية:</span>
+                <span>{t('shift_closing.cash_deposits', 'إيداعات نقدية:')}</span>
                 <span className="text-success">+<PriceDisplay amount={totals.totalDeposits} /></span>
               </div>
               <div className="flex justify-between text-xs sm:text-sm font-bold text-content-muted">
-                <span>مصروفات (سحب):</span>
+                <span>{t('shift_closing.cash_withdrawals', 'مسحوبات نقدية:')}</span>
                 <span className="text-danger">-<PriceDisplay amount={totals.expenses} /></span>
               </div>
               <div className="pt-2 border-t border-border flex justify-between text-sm sm:text-base font-black text-content">
-                <span>المبلغ المتوقع في الدرج:</span>
+                <span>{t('shift_closing.expected_cash', 'المبلغ المتوقع في الدرج:')}</span>
                 <span><PriceDisplay amount={expectedCash} /></span>
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">المبلغ الفعلي في الدرج (Blind Close)</label>
+              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">{t('shift_closing.actual_cash_label', 'صافي الكاش الفعلي بالدرج')}</label>
               <input 
                 type="number"
                 required
@@ -293,7 +297,7 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
                     "font-black text-xs sm:text-sm",
                     discrepancy === 0 ? "text-success" : "text-danger"
                   )}>
-                    {discrepancy === 0 ? 'المبلغ مطابق' : discrepancy > 0 ? <span className="flex items-center gap-1">زيادة بقيمة <PriceDisplay amount={Math.abs(discrepancy)} /></span> : <span className="flex items-center gap-1">عجز بقيمة <PriceDisplay amount={Math.abs(discrepancy)} /></span>}
+                    {discrepancy === 0 ? t('shift_closing.match_status', 'المبلغ مطابق') : discrepancy > 0 ? <span className="flex items-center gap-1">{t('shift_closing.surplus', 'زيادة بقيمة')} <PriceDisplay amount={Math.abs(discrepancy)} /></span> : <span className="flex items-center gap-1">{t('shift_closing.shortage', 'عجز بقيمة')} <PriceDisplay amount={Math.abs(discrepancy)} /></span>}
                   </span>
                 </div>
                 
@@ -303,7 +307,7 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                     className="w-full p-3 bg-surface border-none rounded-xl focus:ring-2 focus:ring-danger font-bold text-xs sm:text-sm resize-none text-content"
-                    placeholder="يرجى توضيح سبب العجز أو الزيادة..."
+                    placeholder={t('shift_closing.reason_placeholder', 'أدخل سبباً تفصيلياً للفارق...')}
                     rows={2}
                   />
                 )}
@@ -316,9 +320,9 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
             <button 
               type="submit"
               disabled={isSubmitting || !actualCash || (hasDiscrepancy && !reason)}
-              className="w-full bg-brand text-white py-3 sm:py-3.5 rounded-2xl font-black text-sm sm:text-base hover:bg-brand/90 transition-all shadow-lg shadow-brand/20 disabled:opacity-50"
+              className="w-full bg-brand text-white py-3 sm:py-3.5 rounded-2xl font-black text-sm sm:text-base hover:bg-brand/90 transition-all shadow-lg shadow-brand/20 disabled:opacity-50 cursor-pointer"
             >
-              {isSubmitting ? 'جاري الإغلاق...' : 'تأكيد وإغلاق الوردية'}
+              {isSubmitting ? t('shift_closing.closing_shift', 'جاري الإغلاق...') : t('shift_closing.confirm_close', 'تأكيد وإغلاق الوردية')}
             </button>
           </div>
         </form>

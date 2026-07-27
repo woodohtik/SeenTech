@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
+import { PriceDisplay } from './PriceDisplay';
 
 interface AnalyticsData {
   tenant: any;
@@ -249,7 +250,7 @@ export default function TenantAnalyticsDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <StatCard 
                 title="إجمالي الإيرادات" 
-                value={`${data.finance.totalRevenue.toLocaleString()} ر.س`}
+                value={<PriceDisplay amount={data.finance.totalRevenue} />}
                 trend={data.finance.trend}
                 trendValue={data.finance.trendValue}
                 icon={TrendingUp}
@@ -258,14 +259,14 @@ export default function TenantAnalyticsDashboard() {
               />
               <StatCard 
                 title="متوسط الدخل اليومي" 
-                value={`${data.finance.dailyAvg.toLocaleString(undefined, { maximumFractionDigits: 0 })} ر.س`}
+                value={<PriceDisplay amount={data.finance.dailyAvg} />}
                 icon={Calendar}
                 color="text-brand"
                 bg="bg-brand/10"
               />
               <StatCard 
                 title="متوسط قيمة الفاتورة" 
-                value={`${data.finance.avgOrderValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} ر.س`}
+                value={<PriceDisplay amount={data.finance.avgOrderValue} />}
                 icon={Briefcase}
                 color="text-indigo-500"
                 bg="bg-indigo-500/10"
@@ -374,7 +375,7 @@ export default function TenantAnalyticsDashboard() {
                       <h4 className="font-bold text-sm text-content">{staff.name}</h4>
                       <p className="text-xs text-content-muted flex items-center gap-1">
                         <Clock size={10} />
-                        آخر نشاط: {new Date(staff.lastSeen).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                        آخر نشاط: {new Date(staff.lastSeen).toLocaleTimeString('ar-SA-u-nu-latn', { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
                   </div>
@@ -400,7 +401,7 @@ function StatCard({
   trendValue 
 }: { 
   title: string; 
-  value: string; 
+  value: string | React.ReactNode; 
   icon: any; 
   color: string; 
   bg: string; 

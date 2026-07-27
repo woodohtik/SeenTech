@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 interface DashboardGridCardProps {
   title: string;
-  detail: string;
+  detail: string | React.ReactNode;
   icon: LucideIcon;
   color: string; // Tailwind class for icon color
   isActive?: boolean;

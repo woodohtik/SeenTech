@@ -1,29 +1,23 @@
-/**
- * Dashboard — موجّه حسب الرول.
- * خياط/كاشير → شاشة «اليوم» التشغيلية. مالك/مدير/محاسب/super_admin → لوحة التحليلات.
- * المحتوى داخل كلٍّ يُفصَّل بالصلاحيات (hasPermission).
- */
 import React from 'react';
-import { useStaff } from '../contexts/StaffContext';
+import DashboardOwner from './DashboardOwner';
 import PageSkeleton from './PageSkeleton';
 
-const DashboardOwner = React.lazy(() => import('./DashboardOwner'));
-const DashboardToday = React.lazy(() => import('./DashboardToday'));
+interface DashboardProps {
+  tenantId: string;
+}
 
-const OPERATIONAL_ROLES = ['tailor', 'cashier'];
-
-export default function Dashboard({ tenantId }: { tenantId: string }) {
-  const { currentStaff } = useStaff();
-  const role = currentStaff?.role || 'tailor';
-  
+/**
+ * Main Dynamic Dashboard Component
+ * Renders the unified DashboardOwner component with strict role-based data filtering:
+ * - Administrative & Financial data (Total Revenue, Receivables, Net Profits, Financial Charts)
+ *   are restricted to tenant_admin, owner, admin, manager, accountant, super_admin or users with dashboard.revenue permission.
+ * - Operational data (Active Orders, Tailor Workshop Stages, Inventory Items, Customer Queue)
+ *   are visible for operational roles (cashier, tailor) with zero financial data leakage.
+ */
+export default function Dashboard({ tenantId }: DashboardProps) {
   return (
     <React.Suspense fallback={<PageSkeleton />}>
-      {OPERATIONAL_ROLES.includes(role) ? (
-        <DashboardToday tenantId={tenantId} />
-      ) : (
-        <DashboardOwner tenantId={tenantId} />
-      )}
+      <DashboardOwner tenantId={tenantId} />
     </React.Suspense>
   );
 }
-

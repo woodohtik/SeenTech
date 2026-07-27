@@ -19,6 +19,7 @@ import { SupplierTransaction } from '../types/supplierLedger';
 import { Supplier } from '../types';
 import { PriceDisplay } from './PriceDisplay';
 import { cn } from '../lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface SuppliersRegistryProps {
   suppliers: Supplier[];
@@ -39,6 +40,7 @@ export default function SuppliersRegistry({
   onEdit,
   onDelete,
 }: SuppliersRegistryProps) {
+  const { t } = useTranslation();
   // Store computed aggregates for each supplier to populate Total Purchases and Total Paid columns
   const [aggregates, setAggregates] = useState<Record<string, { totalPurchases: number; totalPaid: number }>>({});
 
@@ -79,9 +81,9 @@ export default function SuppliersRegistry({
         <div>
           <h2 className="text-sm font-black text-slate-900 flex items-center gap-2">
             <span className="w-1.5 h-6 bg-red-600 rounded-full inline-block" />
-            <span>بيانات المديونيات وأرصدة الموردين</span>
+            <span>{t('procurement.registry_title', 'بيانات المديونيات وأرصدة الموردين')}</span>
           </h2>
-          <p className="text-[11px] text-slate-400 font-bold mt-1">تتبع إجمالي المشتريات والمبالغ المسددة وأرصدة الذمم والديون القائمة</p>
+          <p className="text-[11px] text-slate-400 font-bold mt-1">{t('procurement.registry_subtitle', 'تتبع إجمالي المشتريات والمبالغ المسددة وأرصدة الذمم والديون القائمة')}</p>
         </div>
       </div>
 
@@ -90,12 +92,12 @@ export default function SuppliersRegistry({
         <table className="w-full text-right border-collapse whitespace-nowrap text-xs md:text-sm">
           <thead>
             <tr className="bg-slate-100 text-[11px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-200/50">
-              <th className="p-4 text-right">اسم المورد والمسؤول</th>
-              <th className="p-4 text-center">إجمالي المشتريات (دائن)</th>
-              <th className="p-4 text-center">إجمالي المبالغ المدفوعة (مدين)</th>
-              <th className="p-4 text-center">الرصيد المتبقي المستحق (الذمة)</th>
-              <th className="p-4 text-center">حالة الحساب</th>
-              <th className="p-4 text-center">إجراءات الحساب والجرد</th>
+              <th className="p-4 text-right">{t('procurement.supplier_name_contact', 'اسم المورد والمسؤول')}</th>
+              <th className="p-4 text-center">{t('procurement.total_purchases', 'إجمالي المشتريات (دائن)')}</th>
+              <th className="p-4 text-center">{t('procurement.total_paid', 'إجمالي المبالغ المدفوعة (مدين)')}</th>
+              <th className="p-4 text-center">{t('procurement.outstanding_balance', 'الرصيد المتبقي المستحق (الذمة)')}</th>
+              <th className="p-4 text-center">{t('procurement.account_status', 'حالة الحساب')}</th>
+              <th className="p-4 text-center">{t('procurement.actions_and_inventory', 'إجراءات الحساب والجرد')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -122,7 +124,7 @@ export default function SuppliersRegistry({
                           {supplier.name}
                         </span>
                         <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1.5 mt-0.5">
-                          <span>المسؤول: {supplier.contactPerson || '—'}</span>
+                          <span>{t('procurement.contact_person', 'الشخص المسؤول')}: {supplier.contactPerson || '—'}</span>
                           {supplier.phone && (
                             <>
                               <span className="text-slate-300">|</span>
@@ -159,15 +161,15 @@ export default function SuppliersRegistry({
                     {currentDue <= 0 ? (
                       <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-[10px] font-black border border-emerald-100 uppercase">
                         <CheckCircle size={12} />
-                        <span>مخلص بالكامل</span>
+                        <span>{t('procurement.status_paid_full', 'مخلص بالكامل')}</span>
                       </span>
                     ) : currentDue > 10000 ? (
                       <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 px-2.5 py-1 rounded-full text-[10px] font-black border border-rose-100 uppercase">
-                        <span>ذمة معلقة مرتفعة</span>
+                        <span>{t('procurement.status_high_due', 'ذمة معلقة مرتفعة')}</span>
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full text-[10px] font-black border border-amber-100 uppercase">
-                        <span>قرض قيد السداد</span>
+                        <span>{t('procurement.status_partially_paid', 'قرض قيد السداد')}</span>
                       </span>
                     )}
                   </td>
@@ -178,21 +180,21 @@ export default function SuppliersRegistry({
                       {/* Statement of accounts / Ledger */}
                       <button
                         onClick={() => onSelectLedger(supplier)}
-                        title="كشف حساب تفصيلي"
+                        title={t('procurement.statement_of_account', 'كشف الحساب (Ledger)')}
                         className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200/80 hover:border-slate-300 rounded-xl text-[11px] font-black flex items-center gap-1.5 transition-all cursor-pointer"
                       >
                         <BookOpen size={13} className="text-red-600" />
-                        <span>كشف الحساب (Ledger)</span>
+                        <span>{t('procurement.statement_of_account', 'كشف الحساب (Ledger)')}</span>
                       </button>
 
                       {/* Cash out voucher */}
                       <button
                         onClick={() => onOpenPayout(supplier)}
-                        title="إصدار سند صرف مالي"
+                        title={t('procurement.payout_voucher', 'سند صرف')}
                         className="p-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-[11px] font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
                       >
                         <DollarSign size={13} />
-                        <span>سند صرف</span>
+                        <span>{t('procurement.payout_voucher', 'سند صرف')}</span>
                       </button>
 
                       {/* Edit */}
@@ -220,7 +222,7 @@ export default function SuppliersRegistry({
             {suppliers.length === 0 && (
               <tr>
                 <td colSpan={6} className="p-12 text-center text-slate-400 font-bold">
-                  لا يوجد موردون مسجلون لتعدين سجلات المحاسبة حالياً.
+                  {t('procurement.no_suppliers_registered', 'لا يوجد موردين مسجلين حالياً لقيد الحساب')}
                 </td>
               </tr>
             )}
@@ -251,7 +253,7 @@ export default function SuppliersRegistry({
                   <div className="min-w-0">
                     <h3 className="font-extrabold text-slate-900 text-sm truncate">{supplier.name}</h3>
                     <p className="text-[10px] text-slate-400 font-bold mt-0.5 truncate">
-                      {supplier.contactPerson && `المسؤول: ${supplier.contactPerson}`}
+                      {supplier.contactPerson && `${t('procurement.contact_person', 'الشخص المسؤول')}: ${supplier.contactPerson}`}
                       {supplier.phone && ` | ${supplier.phone}`}
                     </p>
                   </div>
@@ -259,15 +261,15 @@ export default function SuppliersRegistry({
                 <div className="shrink-0">
                   {currentDue <= 0 ? (
                     <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[9px] font-black border border-emerald-100">
-                      <span>مخلص بالكامل</span>
+                      <span>{t('procurement.status_paid_full', 'مخلص بالكامل')}</span>
                     </span>
                   ) : currentDue > 10000 ? (
                     <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 px-2 py-0.5 rounded-full text-[9px] font-black border border-rose-100">
-                      <span>ذمة معلقة مرتفعة</span>
+                      <span>{t('procurement.status_high_due', 'ذمة معلقة مرتفعة')}</span>
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full text-[9px] font-black border border-amber-100">
-                      <span>قيد السداد</span>
+                      <span>{t('procurement.status_partially_paid', 'قرض قيد السداد')}</span>
                     </span>
                   )}
                 </div>
@@ -276,19 +278,19 @@ export default function SuppliersRegistry({
               {/* Balances grid */}
               <div className="grid grid-cols-3 gap-2 bg-white p-2.5 rounded-xl border border-slate-200/40 text-center">
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] text-slate-400 font-bold">المشتريات</span>
+                  <span className="text-[9px] text-slate-400 font-bold">{t('procurement.purchases_label', 'المشتريات')}</span>
                   <span className="font-mono font-extrabold text-xs text-slate-800">
                     <PriceDisplay amount={totalPurchases} />
                   </span>
                 </div>
                 <div className="flex flex-col gap-0.5 border-r border-slate-100">
-                  <span className="text-[9px] text-slate-400 font-bold">المدفوع</span>
+                  <span className="text-[9px] text-slate-400 font-bold">{t('procurement.paid_label', 'المدفوع')}</span>
                   <span className="font-mono font-extrabold text-xs text-slate-500">
                     <PriceDisplay amount={totalPaid} />
                   </span>
                 </div>
                 <div className="flex flex-col gap-0.5 border-r border-slate-100">
-                  <span className="text-[9px] text-slate-400 font-bold">الرصيد المستحق</span>
+                  <span className="text-[9px] text-slate-400 font-bold">{t('procurement.due_balance_label', 'الرصيد المستحق')}</span>
                   <span className={cn(
                     "font-mono font-black text-xs",
                     currentDue > 0 ? "text-red-600" : "text-emerald-600"
@@ -305,14 +307,14 @@ export default function SuppliersRegistry({
                   className="flex items-center justify-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-xl py-2 px-3 text-[10px] font-black transition-all cursor-pointer min-h-[44px]"
                 >
                   <BookOpen size={13} className="text-red-600 shrink-0" />
-                  <span>كشف حساب</span>
+                  <span>{t('procurement.statement_of_account_short', 'كشف حساب')}</span>
                 </button>
                 <button
                   onClick={() => onOpenPayout(supplier)}
                   className="flex items-center justify-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl py-2 px-3 text-[10px] font-black transition-all cursor-pointer shadow-sm min-h-[44px]"
                 >
                   <DollarSign size={13} className="shrink-0" />
-                  <span>سند صرف</span>
+                  <span>{t('procurement.payout_voucher', 'سند صرف')}</span>
                 </button>
               </div>
 
@@ -320,14 +322,14 @@ export default function SuppliersRegistry({
                 <button
                   onClick={() => onEdit(supplier)}
                   className="flex-1 max-w-[60px] flex items-center justify-center p-2 text-slate-400 hover:text-slate-800 bg-white border border-slate-200 rounded-xl transition-all cursor-pointer min-h-[38px]"
-                  title="تعديل"
+                  title={t('procurement.edit_supplier', 'تعديل')}
                 >
                   <Edit2 size={13} />
                 </button>
                 <button
                   onClick={() => onDelete(supplier.id)}
                   className="flex-1 max-w-[60px] flex items-center justify-center p-2 text-slate-400 hover:text-red-600 bg-white border border-slate-200 rounded-xl transition-all cursor-pointer min-h-[38px]"
-                  title="حذف"
+                  title={t('procurement.delete_supplier', 'حذف')}
                 >
                   <Trash2 size={13} />
                 </button>
@@ -338,7 +340,7 @@ export default function SuppliersRegistry({
 
         {suppliers.length === 0 && (
           <div className="p-8 text-center text-slate-400 font-bold text-xs bg-slate-50/30 rounded-2xl border border-dashed border-slate-200">
-            لا يوجد موردون مسجلون لتعدين سجلات المحاسبة حالياً.
+            {t('procurement.no_suppliers_registered', 'لا يوجد موردين مسجلين حالياً لقيد الحساب')}
           </div>
         )}
       </div>

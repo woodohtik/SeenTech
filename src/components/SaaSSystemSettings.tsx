@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase/client';
+import { deleteTestDataForTenant } from '../services/trialService';
 import { auth } from '../lib/firebase';
 import { 
   Settings, 
@@ -226,22 +227,13 @@ export default function SaaSSystemSettings() {
     setIsDeleting(true);
     setConfirmModal(prev => ({ ...prev, isOpen: false }));
     try {
-      const tables = ['customers', 'orders', 'inventory_items', 'notifications'];
-      let totalDeleted = 0;
-
-      for (const table of tables) {
-        const { error, count } = await supabase
-          .from(table)
-          .delete({ count: 'exact' })
-          .eq('tenant_id', tenantId)
-          .eq('is_test', true);
-        
-        if (error) console.error(`Error deleting test data from ${table}:`, error);
-        if (count) totalDeleted += count;
-      }
-
+      const result = await deleteTestDataForTenant(tenantId);
       await logAuditAction('delete_test_data', `Deleted test records for tenant ${tenantId}`, tenantId);
-      alert(`تم حذف سجلات الاختبار بنجاح (${totalDeleted} سجل)`);
+      if (result.success) {
+        alert(`تم حذف سجلات الاختبار بنجاح (${result.deletedCount} سجل)`);
+      } else {
+        alert(`حدث خطأ أثناء حذف بيانات الاختبار: ${result.error || ''}`);
+      }
     } catch (error) {
       console.error('Error deleting test data:', error);
       alert('حدث خطأ أثناء حذف بيانات الاختبار');

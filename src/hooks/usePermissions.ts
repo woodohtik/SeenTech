@@ -12,30 +12,45 @@ export function usePermissions(staff: Staff | null) {
 
   const isGlobalSuperAdmin = dbUser?.role === 'super_admin';
 
-  useEffect(() => {
+  const fetchPermissions = async () => {
     if (!staff) {
       setPermissions(null);
       setLoading(false);
       return;
     }
 
-    const fetchPermissions = async () => {
-      try {
-        const effective = await getEffectivePermissions(staff);
-        setPermissions(effective);
-      } catch (err) {
-        console.error('Error fetching permissions:', err);
-      } finally {
-        setLoading(false);
-      }
+    try {
+      const effective = await getEffectivePermissions(staff);
+      setPermissions(effective);
+    } catch (err) {
+      console.error('Error fetching permissions:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPermissions();
+
+    const handlePermissionsUpdated = () => {
+      fetchPermissions();
     };
 
-    fetchPermissions();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('permissions_updated', handlePermissionsUpdated);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('permissions_updated', handlePermissionsUpdated);
+      }
+    };
   }, [staff]);
 
   const hasPermission = (key: PermissionKey): boolean => {
     if (isGlobalSuperAdmin) return true;
     if (!staff) return false;
+    // Owners & Super Admins have absolute full system access
     if (staff.role === 'owner' || staff.role === 'super_admin') return true;
     if (!permissions) return false;
     return permissions[key] === true;

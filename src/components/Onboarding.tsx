@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Coins, Globe, MapPin, Store, ArrowLeft, ArrowRight, Loader2, Navigation, Upload, ShieldCheck, CheckCircle, ChevronDown, CheckCircle2, Image as ImageIcon, Check } from 'lucide-react';
+import { Coins, Globe, MapPin, Store, Phone, ArrowLeft, ArrowRight, Loader2, Navigation, Upload, ShieldCheck, CheckCircle, ChevronDown, CheckCircle2, Image as ImageIcon, Check } from 'lucide-react';
 import { Controller } from 'react-hook-form';
 import { SmartSelect } from './ui/SmartSelect';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
@@ -33,6 +33,7 @@ import { hashPin } from '../services/staffService';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { onboardingSchema } from '../lib/validations';
+import { formatSaudiPhone } from '../utils/phoneUtils';
 import { cn } from '../lib/utils';
 import { analytics, AnalyticsEvent } from '../services/analyticsService';
 import { logEmployeeAction } from '../services/employeeAuditService';
@@ -110,6 +111,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     defaultValues: {
       customerId: `SN-${Math.floor(100000 + Math.random() * 900000)}`,
       shopName: '',
+      phone: auth.currentUser?.phoneNumber || '',
       category: 'tailor' as const,
       taxNumber: '',
       taxStatus: 'registered' as const,
@@ -253,13 +255,26 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
       // 2. Update Tenant
       console.log("[Onboarding] Updating tenant...");
+      const isTaxRegistered = data.taxStatus === 'registered' || Boolean(data.taxNumber && data.taxNumber.trim().length > 0);
+      const taxSettingsObj = {
+        enabled: isTaxRegistered,
+        trn: data.taxNumber?.trim() || '',
+        legalName: data.shopName?.trim() || '',
+        vatRate: 15,
+        tailoringTaxType: 'exclusive'
+      };
+
+      const storePhone = data.phone ? formatSaudiPhone(data.phone) : (user.phoneNumber || '');
+
       const { error: tenantError } = await supabase.from('tenants').update({
         name: data.shopName,
         address: data.address,
-        phone: user.phoneNumber || '',
+        phone: storePhone,
         inventory_strategy: data.inventoryStrategy,
         status: 'active',
         vat_number: data.taxNumber || '',
+        is_tax_enabled: isTaxRegistered,
+        default_tax_rate: 15,
         logo_url: data.logoUrl || '',
         default_layout: data.defaultLayout || 'sidebar'
       }).eq('id', tenantId);
@@ -282,14 +297,14 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         branchId = existingBranch.id;
         await supabase.from('branches').update({
           location: data.address,
-          phone: user.phoneNumber || ''
+          phone: storePhone
         }).eq('id', branchId);
       } else {
          const { data: branchData, error: branchError } = await supabase.from('branches').insert({
           tenant_id: tenantId,
           name: t('common.branches.main_branch', 'المعرض الرئيسي'),
           location: data.address,
-          phone: user.phoneNumber || '',
+          phone: storePhone,
           type: 'store',
           is_main: true
         }).select('id').single();
@@ -452,6 +467,29 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                       </div>
 
                       <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center gap-2">
+                          رقم التواصل الموحد
+                        </label>
+                        <div className={cn(
+                          "group flex items-center bg-white border rounded-xl overflow-hidden focus-within:border-brand transition-all shadow-sm focus-within:ring-1 focus-within:ring-brand/30",
+                          errors.phone ? "border-rose-500 bg-rose-50/30" : "border-slate-200"
+                        )}>
+                          <div className={cn(
+                            "flex items-center justify-center p-2.5 sm:p-3 border-e transition-colors shrink-0",
+                            errors.phone ? "text-rose-500 border-rose-500/20" : "text-slate-400 border-slate-100 group-focus-within:border-brand/40 group-focus-within:text-brand"
+                          )}>
+                            <Phone size={18} />
+                          </div>
+                          <input 
+                            {...register('phone')}
+                            placeholder="05XXXXXXXX / 9200XXXXX"
+                            className="flex-1 w-full bg-transparent border-none py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none ring-0 placeholder:text-slate-300 text-content"
+                          />
+                        </div>
+                        {errors.phone && <p className="text-xs text-rose-500 font-bold mt-1 ps-2">{errors.phone.message as string}</p>}
+                      </div>
+
+                      <div className="md:col-span-2 space-y-2">
                         <label className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center gap-2">
                           {t('onboarding.fields.activity_type')}
                         </label>
@@ -684,28 +722,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                         </h3>
                       </div>
 
-                      <div className="space-y-2">
-                        <label className={cn("text-xs font-bold text-slate-700 uppercase tracking-widest", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.currency')}</label>
-                        <Controller
-                          control={control}
-                          name="currency"
-                          render={({ field }) => (
-                            <SmartSelect
-                              {...field}
-                              className="w-full bg-white border border-slate-200 focus-within:border-brand rounded-xl py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none transition-all shadow-sm"
-                              options={[
-                                { value: 'SAR', label: 'ریال سعودي (SAR)' },
-                                { value: 'AED', label: 'درهم إماراتي (AED)' },
-                                { value: 'KWD', label: 'دينار كويتي (KWD)' },
-                                { value: 'PKR', label: 'روپیہ (PKR)' },
-                                { value: 'USD', label: 'Dollar (USD)' }
-                              ]}
-                            />
-                          )}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
+                      <div className="md:col-span-2 space-y-2">
                         <label className={cn("text-xs font-bold text-slate-700 uppercase tracking-widest", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.language')}</label>
                         <Controller
                           control={control}
