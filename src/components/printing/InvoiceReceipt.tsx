@@ -89,19 +89,43 @@ const MOCK_INVOICE: InvoiceData = {
 export const ThermalInvoice = ({ 
   data, 
   size = '80mm',
-  settings
+  settings: propSettings
 }: { 
   data: InvoiceData; 
   size?: '58mm' | '80mm';
   settings?: InvoiceLayoutSettingsType;
 }) => {
+  const [localSettings, setLocalSettings] = React.useState<InvoiceLayoutSettingsType | null>(() => {
+    try {
+      const stored = localStorage.getItem('pos_invoice_settings');
+      return stored ? JSON.parse(stored) : null;
+    } catch { return null; }
+  });
+
+  React.useEffect(() => {
+    const handleUpdate = () => {
+      try {
+        const stored = localStorage.getItem('pos_invoice_settings');
+        if (stored) setLocalSettings(JSON.parse(stored));
+      } catch { /* ignore */ }
+    };
+    window.addEventListener('invoice_settings_updated', handleUpdate);
+    window.addEventListener('tenant_settings_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('invoice_settings_updated', handleUpdate);
+      window.removeEventListener('tenant_settings_updated', handleUpdate);
+    };
+  }, []);
+
+  const settings = propSettings || localSettings;
+
   const is58 = size === '58mm';
   const isFastThermal = settings?.fastThermalMode ?? (localStorage.getItem('pos_fast_thermal_mode') === 'true');
 
   const containerClass = is58 ? 'w-[58mm]' : 'w-[80mm]';
-  const textBase = is58 ? 'text-[9px]' : (isFastThermal ? 'text-[9px]' : 'text-[10px]');
-  const textSm = is58 ? 'text-[10px]' : (isFastThermal ? 'text-[9.5px]' : 'text-xs');
-  const textLg = is58 ? 'text-xs' : (isFastThermal ? 'text-xs font-black' : 'text-sm');
+  const textBase = is58 ? 'text-[8px]' : (isFastThermal ? 'text-[8.5px]' : 'text-[9px]');
+  const textSm = is58 ? 'text-[9px]' : (isFastThermal ? 'text-[9px]' : 'text-[10px]');
+  const textLg = is58 ? 'text-[10px]' : (isFastThermal ? 'text-[11px] font-black' : 'text-xs');
 
   // Apply customizable settings if provided
   const logoUrl = settings?.header?.logoUrl || '';
@@ -132,15 +156,15 @@ export const ThermalInvoice = ({
   const branchName = data.branchName || 'الفرع الرئيسي';
   const sellerName = data.sellerName || 'النظام';
 
-  const paddingClass = isFastThermal ? 'p-1.5 sm:p-2' : 'p-4';
-  const marginHeader = isFastThermal ? 'mb-2 pb-1.5' : 'mb-4 pb-3';
+  const paddingClass = isFastThermal ? 'px-2 py-1.5' : 'px-3.5 py-3 sm:px-4 sm:py-4';
+  const marginHeader = isFastThermal ? 'mb-2 pb-1.5' : 'mb-3 pb-2.5';
   const marginInfo = isFastThermal ? 'mb-2 pb-1.5 space-y-0.5' : 'mb-3 pb-2 space-y-1';
   const marginTable = isFastThermal ? 'mb-2' : 'mb-3';
-  const spaceItems = isFastThermal ? 'space-y-1 mb-1 pb-1' : 'space-y-2 mb-2 pb-2';
-  const marginTotals = isFastThermal ? 'space-y-0.5 mb-2 pb-1.5' : 'space-y-1 mb-4 pb-3';
+  const spaceItems = isFastThermal ? 'space-y-1 mb-1 pb-1' : 'space-y-1.5 mb-2 pb-2';
+  const marginTotals = isFastThermal ? 'space-y-0.5 mb-2 pb-1.5' : 'space-y-1 mb-3 pb-2.5';
   const marginPayment = isFastThermal ? 'mb-2 pb-1.5 space-y-0.5' : 'mb-3 pb-2 space-y-1';
   const qrSize = isFastThermal ? (is58 ? 75 : 85) : (is58 ? 95 : 110);
-  const barcodeHeight = isFastThermal ? 22 : 35;
+  const barcodeHeight = isFastThermal ? 22 : 32;
 
   return (
     <div className={`${containerClass} ${isFastThermal ? 'fast-thermal-print' : ''} bg-white text-black ${paddingClass} mx-auto font-sans print:w-full print:max-w-full print:p-0 print:m-0 shrink-0 shadow-sm border border-gray-200 print:shadow-none print:border-none`} dir="rtl">
@@ -153,14 +177,14 @@ export const ThermalInvoice = ({
       {/* Header */}
       <div className={`${marginHeader} border-b border-dashed border-gray-400 flex flex-col ${alignmentClass}`}>
         {logoUrl && (
-          <img src={logoUrl} alt="Logo" className={`${isFastThermal ? 'w-10 h-10 mb-1' : 'w-14 h-14 mb-2.5'} object-contain filter drop-shadow-sm`} />
+          <img src={logoUrl} alt="Logo" className={`${isFastThermal ? 'w-10 h-10 mb-1' : 'w-12 h-12 mb-2'} object-contain filter drop-shadow-sm`} />
         )}
         <h2 className={`${textLg} font-black mb-0.5`}>{facilityName}</h2>
         <p className={`${textBase} font-bold mb-0.5 font-mono`}>الرقم الضريبي: {vatNumber}</p>
         {address && <p className={`${textBase} text-gray-700 leading-tight mb-0.5`}>{address}</p>}
         {phone && <p className={`${textBase} text-gray-700 font-mono`}>Tel: {phone}</p>}
         
-        <div className={`${isFastThermal ? 'mt-1.5 py-0.5 px-2 text-[8px]' : 'mt-3 py-1 px-4 text-[9px]'} font-bold bg-gray-100 uppercase border border-gray-200 rounded-md`}>
+        <div className={`${isFastThermal ? 'mt-1 py-0.5 px-2 text-[8px]' : 'mt-2 py-0.5 px-3 text-[8.5px]'} font-bold bg-gray-100 uppercase border border-gray-200 rounded-md`}>
           {settings?.layoutTemplate === 'tax' ? 'فاتورة ضريبية مبسطة' : 
            settings?.layoutTemplate === 'detailed' ? 'فاتورة مبيعات مفصلة' : 'فاتورة ضريبية مبسطة'}
         </div>
@@ -168,20 +192,22 @@ export const ThermalInvoice = ({
 
       {/* Info */}
       <div className={`${marginInfo} ${textBase} border-b border-dashed border-gray-400`}>
-        <div className="flex justify-between items-center">
-          <div>
-            <span className="text-gray-500">العنوان: </span>
-            <span className="font-bold">{address}</span>
+        {address && (
+          <div className="flex justify-between items-center">
+            <div>
+              <span className="text-gray-500">العنوان: </span>
+              <span className="font-bold">{address}</span>
+            </div>
+            <span className="text-gray-400 font-sans text-[7.5px]">Address</span>
           </div>
-          <span className="text-gray-400 font-sans text-[8px]">Address</span>
-        </div>
+        )}
         {phone && (
           <div className="flex justify-between items-center">
             <div>
               <span className="text-gray-500">رقم الهاتف: </span>
               <span className="font-mono font-bold" dir="ltr">{phone}</span>
             </div>
-            <span className="text-gray-400 font-sans text-[8px]">Phone No.</span>
+            <span className="text-gray-400 font-sans text-[7.5px]">Phone No.</span>
           </div>
         )}
         <div className="flex justify-between items-center">
@@ -189,35 +215,35 @@ export const ThermalInvoice = ({
             <span className="text-gray-500">التاريخ والوقت: </span>
             <span className="font-bold">{new Date(data.issueDate).toLocaleString('ar-SA-u-nu-latn')}</span>
           </div>
-          <span className="text-gray-400 font-sans text-[8px]">Issue Date</span>
+          <span className="text-gray-400 font-sans text-[7.5px]">Issue Date</span>
         </div>
         <div className="flex justify-between items-center">
           <div>
             <span className="text-gray-500">رقم الفاتورة: </span>
             <span className="font-mono font-bold uppercase">#{data.invoiceNumber}</span>
           </div>
-          <span className="text-gray-400 font-sans text-[8px]">Invoice No.</span>
+          <span className="text-gray-400 font-sans text-[7.5px]">Invoice No.</span>
         </div>
         <div className="flex justify-between items-center">
           <div>
             <span className="text-gray-500">الفرع: </span>
             <span className="font-bold">{branchName}</span>
           </div>
-          <span className="text-gray-400 font-sans text-[8px]">Branch</span>
+          <span className="text-gray-400 font-sans text-[7.5px]">Branch</span>
         </div>
         <div className="flex justify-between items-center">
           <div>
             <span className="text-gray-500">البائع: </span>
             <span className="font-bold">{sellerName}</span>
           </div>
-          <span className="text-gray-400 font-sans text-[8px]">Seller</span>
+          <span className="text-gray-400 font-sans text-[7.5px]">Seller</span>
         </div>
         <div className="flex justify-between items-center">
           <div>
             <span className="text-gray-500">العميل: </span>
             <span className="font-bold">{data.customer.name}</span>
           </div>
-          <span className="text-gray-400 font-sans text-[8px]">Customer</span>
+          <span className="text-gray-400 font-sans text-[7.5px]">Customer</span>
         </div>
         {data.customer.vatNumber && (
           <div className="flex justify-between items-center">
@@ -225,7 +251,7 @@ export const ThermalInvoice = ({
               <span className="text-gray-500">الرقم الضريبي للعميل: </span>
               <span className="font-mono font-bold">{data.customer.vatNumber}</span>
             </div>
-            <span className="text-gray-400 font-sans text-[8px]">Customer VAT</span>
+            <span className="text-gray-400 font-sans text-[7.5px]">Customer VAT</span>
           </div>
         )}
       </div>
@@ -247,7 +273,7 @@ export const ThermalInvoice = ({
                  <div className="font-bold text-gray-900 leading-tight">
                    {item.name}
                    {showMeasurements && (
-                     <span className="block text-[8px] text-gray-500 font-semibold font-sans mt-0.5">
+                     <span className="block text-[7.5px] text-gray-500 font-semibold font-sans mt-0.5">
                        (طول: 155 | كتف: 48 | صدر: 58 | كم: 62)
                      </span>
                    )}
@@ -306,11 +332,10 @@ export const ThermalInvoice = ({
         </div>
       </div>
 
-      {/* QR Code */}
+      {/* QR Code (ONLY QR Code, no text) */}
       {showZatcaQr && data.qrValue && (
         <div className={`flex flex-col items-center justify-center ${isFastThermal ? 'mb-2' : 'mb-3'}`}>
            <QRCodeSVG value={data.qrValue} size={qrSize} />
-           <p className="text-center mt-1 text-[8px] text-gray-400 font-bold uppercase">ZATCA Approved</p>
         </div>
       )}
 
@@ -329,7 +354,7 @@ export const ThermalInvoice = ({
         </div>
       )}
 
-      <div className={`text-center text-[9px] font-black text-gray-800 ${isFastThermal ? 'mt-2 mb-0.5' : 'mt-4 mb-1'} italic`}>
+      <div className={`text-center text-[9px] font-black text-gray-800 ${isFastThermal ? 'mt-2 mb-0.5' : 'mt-3 mb-1'} italic`}>
         {thankYouMessage}
       </div>
     </div>
@@ -506,7 +531,6 @@ export const StandardInvoice = ({
           {showZatcaQr && data.qrValue && (
             <div className="bg-gray-50 p-4 border border-gray-200 rounded-xl flex flex-col items-center justify-center">
               <QRCodeSVG value={data.qrValue} size={isA5 ? 100 : 130} />
-              <p className="text-center mt-3 text-xs text-gray-500 font-bold tracking-widest uppercase">ZATCA Approved</p>
             </div>
           )}
 
@@ -567,7 +591,6 @@ export const StandardInvoice = ({
             </div>
           )}
           <p className={`${textSm} font-black text-gray-900 text-base italic tracking-tight`}>{thankYouMessage}</p>
-          <p className={`${textSm} font-bold text-gray-500`}>هذه الفاتورة مصدّرة إلكترونياً ومتوافقة مع متطلبات هيئة الزكاة والضريبة والجمارك</p>
       </div>
     </div>
   );

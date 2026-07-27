@@ -215,7 +215,6 @@ export default function PublicInvoice() {
 
         {/* ZATCA QR Code */}
         <div className="flex flex-col items-center justify-center py-2 mb-4">
-          <p className="text-[9px] text-slate-400 font-bold mb-2">فاتورة إلكترونية متوافقة / Compliant E-Invoice</p>
           <div className="bg-slate-50 p-2 rounded-xl border border-slate-100">
             <QRCodeSVG value={zatcaQR} size={110} level="M" />
           </div>

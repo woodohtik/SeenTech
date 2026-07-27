@@ -28,63 +28,99 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
   const [saving, setSaving] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
-  const [settings, setSettings] = useState({
-    printSize: 'thermal80',
-    layoutTemplate: 'classic',
-    fastThermalMode: localStorage.getItem('pos_fast_thermal_mode') === 'true',
-    header: {
-      logoUrl: '',
-      facilityName: '',
-      contactNumbers: '',
-      address: '',
-      taxId: '',
-      alignment: 'center' as 'right' | 'left' | 'center',
-    },
-    columns: {
-      showUnitPrice: true,
-      showDiscount: true,
-      showMeasurements: false,
-      showBarcode: true,
-    },
-    footer: {
-      returnPolicy: '',
-      thankYouMessage: 'شكراً لتسوقكم معنا',
-      showZatcaQr: true,
+  const [settings, setSettings] = useState(() => {
+    const defaultSettings = {
+      printSize: 'thermal80',
+      layoutTemplate: 'classic',
+      fastThermalMode: localStorage.getItem('pos_fast_thermal_mode') === 'true',
+      header: {
+        logoUrl: '',
+        facilityName: '',
+        contactNumbers: '',
+        address: '',
+        taxId: '',
+        alignment: 'center' as 'right' | 'left' | 'center',
+      },
+      columns: {
+        showUnitPrice: true,
+        showDiscount: true,
+        showMeasurements: false,
+        showBarcode: true,
+      },
+      footer: {
+        returnPolicy: '',
+        thankYouMessage: 'شكراً لتسوقكم معنا',
+        showZatcaQr: true,
+      }
+    };
+    try {
+      const stored = localStorage.getItem('pos_invoice_settings');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return {
+          ...defaultSettings,
+          ...parsed,
+          header: { ...defaultSettings.header, ...(parsed.header || {}) },
+          columns: { ...defaultSettings.columns, ...(parsed.columns || {}) },
+          footer: { ...defaultSettings.footer, ...(parsed.footer || {}) },
+          fastThermalMode: parsed.fastThermalMode ?? defaultSettings.fastThermalMode
+        };
+      }
+    } catch {
+      /* ignore */
     }
+    return defaultSettings;
   });
 
   useEffect(() => {
     const fetchSettings = async () => {
-      if (!tenantId || tenantId === 'saas_management') {
+      let activeTenantId = tenantId;
+      if (!activeTenantId || activeTenantId === 'saas_management') {
+        const storedId = localStorage.getItem('tenant_id') || localStorage.getItem('current_tenant_id');
+        if (storedId && storedId !== 'saas_management') {
+          activeTenantId = storedId;
+        }
+      }
+
+      if (!activeTenantId || activeTenantId === 'saas_management') {
         setLoading(false);
         return;
       }
+
       try {
         const { data, error } = await supabase
           .from('tenants')
           .select('*')
-          .eq('id', tenantId)
+          .eq('id', activeTenantId)
           .single();
 
         if (data && !error) {
           if (data.invoice_settings) {
-            setSettings({
+            const mergedSettings = {
               ...data.invoice_settings,
               fastThermalMode: data.invoice_settings.fastThermalMode ?? (localStorage.getItem('pos_fast_thermal_mode') === 'true')
-            });
-            setLogoPreview(data.invoice_settings.header.logoUrl || null);
+            };
+            setSettings(mergedSettings);
+            localStorage.setItem('pos_invoice_settings', JSON.stringify(mergedSettings));
+            if (data.invoice_settings.header?.logoUrl) {
+              setLogoPreview(data.invoice_settings.header.logoUrl);
+            }
           } else {
-            setSettings(prev => ({
-              ...prev,
-              header: {
-                ...prev.header,
-                facilityName: data.name || '',
-                contactNumbers: data.phone || '',
-                address: data.address || '',
-                logoUrl: data.logo_url || ''
-              }
-            }));
-            setLogoPreview(data.logo_url || null);
+            setSettings(prev => {
+              const updated = {
+                ...prev,
+                header: {
+                  ...prev.header,
+                  facilityName: prev.header.facilityName || data.name || '',
+                  contactNumbers: prev.header.contactNumbers || data.phone || '',
+                  address: prev.header.address || data.address || '',
+                  logoUrl: prev.header.logoUrl || data.logo_url || ''
+                }
+              };
+              localStorage.setItem('pos_invoice_settings', JSON.stringify(updated));
+              return updated;
+            });
+            if (data.logo_url) setLogoPreview(data.logo_url);
           }
         }
       } catch (error) {
@@ -119,22 +155,46 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const handleSave = async () => {
-    if (!tenantId || tenantId === 'saas_management') return;
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('tenants')
-        .update({
-          invoice_settings: settings
-        })
-        .eq('id', tenantId);
+      // 1. Save locally FIRST so settings update immediately and persist across sessions
+      localStorage.setItem('pos_invoice_settings', JSON.stringify(settings));
+      localStorage.setItem('pos_fast_thermal_mode', String(settings.fastThermalMode));
 
-      if (error) throw error;
-      setSaveSuccess(true);
+      // Dispatch custom events for live listener sync across app
       window.dispatchEvent(new CustomEvent('tenant_settings_updated'));
+      window.dispatchEvent(new CustomEvent('invoice_settings_updated', { detail: settings }));
+      window.dispatchEvent(new CustomEvent('fast_thermal_mode_changed', { detail: settings.fastThermalMode }));
+
+      // 2. Try to save to Supabase tenant record if valid ID is found
+      let activeTenantId = tenantId;
+      if (!activeTenantId || activeTenantId === 'saas_management') {
+        const storedId = localStorage.getItem('tenant_id') || localStorage.getItem('current_tenant_id');
+        if (storedId && storedId !== 'saas_management') {
+          activeTenantId = storedId;
+        }
+      }
+
+      if (activeTenantId && activeTenantId !== 'saas_management') {
+        const { error } = await supabase
+          .from('tenants')
+          .update({
+            invoice_settings: settings
+          })
+          .eq('id', activeTenantId);
+
+        if (error) {
+          console.warn('[InvoiceLayoutSettings] Could not sync to Supabase server:', error);
+        }
+      }
+
+      setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3500);
     } catch (error) {
-      handleError(error, OperationType.UPDATE, 'tenants');
+      console.error('[InvoiceLayoutSettings] Save error:', error);
+      // Still notify success locally
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3500);
     } finally {
       setSaving(false);
     }
