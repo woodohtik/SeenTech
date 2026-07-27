@@ -474,10 +474,29 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       }
 
       // 6. Print receipt with Ctrl+P (if completedOrder is set)
+      // نمر عبر محرك الطباعة الموحّد بدل window.print() حتى يخرج الاختصار
+      // بنفس شكل وهوامش زر الطباعة تماماً.
       if (e.ctrlKey && e.key.toLowerCase() === 'p') {
         if (completedOrderRef.current) {
           e.preventDefault();
-          window.print();
+          void (async () => {
+            try {
+              const { printElementDetailed, getConfiguredPaperSize } = await import(
+                '../utils/printManager'
+              );
+              const res = await printElementDetailed('pos-invoice-print-area', {
+                paperSize:
+                  (completedOrderRef.current as any)?.invoiceType === 'standard_b2b'
+                    ? 'A4'
+                    : getConfiguredPaperSize('80mm'),
+                title: 'إيصال فاتورة',
+              });
+              if (!res.ok) console.error('[POS] فشل الطباعة السريعة:', res.message);
+            } catch (err) {
+              console.error('[POS] خطأ الطباعة السريعة:', err);
+              window.print();
+            }
+          })();
           return;
         }
       }
@@ -2404,12 +2423,22 @@ const invoiceData: InvoiceData | null = completedOrder ? {
         </Dialog>
       </Transition>
 
-      {/* Hidden Invoice to Print */}
+      {/*
+        Hidden Invoice to Print
+        ------------------------------------------------------------------
+        ⚠️ عرض هذا العنصر يجب أن يطابق مقاس الورق المستهدف.
+        كان ثابتاً على `w-[80mm]` دائماً، فالفاتورة الضريبية A4 كانت
+        تُخطَّط داخل صندوق بعرض 80mm — وهذا سبب خروج مقاسها وهوامشها
+        "مضروبة" عند الطباعة من صفحة البيع، وكذلك عند تنزيلها PDF لأن
+        مُولِّد الـ PDF يصوّر العنصر بعرضه الفعلي على الشاشة.
+      */}
       {completedOrder && invoiceData && (
         <div
           id="pos-invoice-print-area"
           data-paper={invoiceData.invoiceType === 'standard_b2b' ? 'A4' : '80mm'}
-          className="fixed top-0 left-0 opacity-0 pointer-events-none w-[80mm] print:opacity-100 print:pointer-events-auto print:static print:w-full print:block print:max-w-none print:m-0 print:p-0 bg-white z-[99999]"
+          className={`fixed top-0 left-0 opacity-0 pointer-events-none ${
+            invoiceData.invoiceType === 'standard_b2b' ? 'w-[194mm]' : 'w-[80mm]'
+          } print:opacity-100 print:pointer-events-auto print:static print:w-full print:block print:max-w-none print:m-0 print:p-0 bg-white z-[99999]`}
           dir="rtl"
         >
           {invoiceData.invoiceType === "standard_b2b" ? (

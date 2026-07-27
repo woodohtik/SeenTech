@@ -405,7 +405,10 @@ export const StandardInvoice = ({
   const sellerName = data.sellerName || 'النظام';
 
   return (
-    <div className={`${containerClass} bg-white text-black p-8 mx-auto font-sans print:w-full print:max-w-full print:m-0 print:border-none shrink-0 shadow-sm border border-gray-200`} dir="rtl">
+    // ملاحظة على الطباعة: `min-h-[297mm]` مع `p-8` كانا يجعلان ارتفاع الفاتورة
+    // أكبر من ارتفاع منطقة الطباعة في ورقة A4، فتخرج ورقة ثانية فارغة. لذلك
+    // نُصفّر الحد الأدنى للارتفاع والحشو عند الطباعة ونعتمد على هوامش @page.
+    <div className={`${containerClass} bg-white text-black p-8 mx-auto font-sans print:w-full print:max-w-full print:min-h-0 print:p-0 print:m-0 print:border-none shrink-0 shadow-sm border border-gray-200`} dir="rtl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-center sm:items-start border-b-2 border-gray-900 pb-6 mb-6 gap-6">
         <div className={`flex flex-col flex-1 ${alignmentClass}`}>
