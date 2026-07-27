@@ -154,7 +154,7 @@ export default function PurchaseReturns({
                     {t('procurement.return', 'مرتجع')}
                   </span>
                 </div>
-                <p className="text-sm text-content-muted">{t('common.date', 'التاريخ')}: {new Date(ret.returnDate).toLocaleDateString('ar-SA')}</p>
+                <p className="text-sm text-content-muted">{t('common.date', 'التاريخ')}: {new Date(ret.returnDate).toLocaleDateString('ar-SA-u-nu-latn')}</p>
                 <p className="text-sm text-content-muted">{t('common.reason', 'السبب')}: {ret.reason}</p>
                 <p className="text-sm text-content-muted mt-2">{t('procurement.return_value', 'قيمة المرتجع')}: <span className="font-bold text-danger"><PriceDisplay amount={ret.totalAmount} /></span></p>
               </div>

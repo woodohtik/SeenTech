@@ -1,5 +1,7 @@
 import { ThermalInvoice, StandardInvoice, InvoiceData } from "./printing/InvoiceReceipt";
 import React, { useState, useEffect, useCallback } from 'react';
+import { formatSaudiPhone } from '../utils/phoneUtils';
+import { flushSync } from 'react-dom';
 import { 
   Search, 
   Plus, 
@@ -63,6 +65,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [customerUnpaidBalance, setCustomerUnpaidBalance] = useState<number>(0);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isCustomOrderModalOpen, setIsCustomOrderModalOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -356,7 +359,23 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
           .maybeSingle();
         
         if (tenantData) {
-          setTaxSettings(tenantData.tax_settings || null);
+          const hasVat = Boolean(tenantData.vat_number && tenantData.vat_number.trim().length > 0);
+          const rawTax = tenantData.tax_settings;
+          const resolvedTax = rawTax ? {
+            ...rawTax,
+            enabled: rawTax.enabled ?? (hasVat || Boolean(rawTax.trn)),
+            trn: rawTax.trn || tenantData.vat_number || '',
+            legalName: rawTax.legalName || tenantData.name || '',
+            vatRate: rawTax.vatRate ?? 15,
+            tailoringTaxType: rawTax.tailoringTaxType || 'exclusive'
+          } : {
+            enabled: hasVat,
+            trn: tenantData.vat_number || '',
+            legalName: tenantData.name || '',
+            vatRate: 15,
+            tailoringTaxType: 'exclusive'
+          };
+          setTaxSettings(resolvedTax);
         }
       } catch (error) {
         console.error('Error fetching POS data:', error);
@@ -364,6 +383,32 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     };
     fetchData();
   }, [tenantId, mapCustomer, mapInventoryItem, refreshCounter]);
+
+  useEffect(() => {
+    if (!selectedCustomer) {
+      setCustomerUnpaidBalance(0);
+      return;
+    }
+
+    const fetchCustomerUnpaidBalance = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('remaining_amount')
+          .eq('customer_id', selectedCustomer.id)
+          .neq('status', 'cancelled');
+        
+        if (error) throw error;
+        
+        const total = (data || []).reduce((sum, order) => sum + (Number(order.remaining_amount) || 0), 0);
+        setCustomerUnpaidBalance(total);
+      } catch (err) {
+        console.error('Error fetching customer unpaid balance:', err);
+      }
+    };
+
+    fetchCustomerUnpaidBalance();
+  }, [selectedCustomer, isPaymentModalOpen, refreshCounter]);
 
   // Sync state values to refs to avoid stale closure issues in global shortcut event listeners
   const cartRef = React.useRef(cart);
@@ -561,19 +606,63 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   
   const [customMeasurements, setCustomMeasurements] = useState<any>({});
 
-  const handleAddCustomItem = () => {
+  const handleAddCustomItem = async () => {
+    if (!selectedCustomer) {
+      toastError('خطأ', 'يجب اختيار العميل أولاً لطلبات التفصيل');
+      return;
+    }
+
     if (!customItemForm.garmentType || !customItemForm.price || customItemForm.price <= 0) {
       toastError('خطأ في البيانات', 'الرجاء إدخال نوع الثوب والسعر');
       return;
     }
 
+    // Merge measurements: if the customer has existing measurements, and the user provided new ones, combine them
+    const mergedMeasurements = {
+      ...(selectedCustomer.measurements || {}),
+      ...customMeasurements
+    };
+
+    // If there are measurements provided in the modal that weren't in the customer record, update the customer
+    if (Object.keys(customMeasurements).length > 0) {
+      try {
+        await supabase
+          .from('customers')
+          .update({ measurements: mergedMeasurements })
+          .eq('id', selectedCustomer.id);
+        
+        // Update local state so it reflects immediately
+        setSelectedCustomer({
+          ...selectedCustomer,
+          measurements: mergedMeasurements
+        });
+      } catch (error) {
+        console.error('Error updating customer measurements:', error);
+      }
+    }
+
+    // Separate numeric measurements and styling fields
+    const measurementKeys = ['neck', 'chest', 'waist', 'hips', 'shoulder', 'sleeve', 'length', 'bottomWidth'];
+    
+    const numericMeasurements: any = {};
+    const stylingFields: any = {};
+
+    for (const [key, value] of Object.entries(mergedMeasurements)) {
+      if (measurementKeys.includes(key)) {
+        numericMeasurements[key] = value;
+      } else {
+        stylingFields[key] = value;
+      }
+    }
+
     setCart(prev => [...prev, {
       id: Math.random().toString(36).substr(2, 9),
       ...customItemForm,
-      ...customMeasurements,
+      ...stylingFields,
+      measurements: numericMeasurements,
       type: 'custom',
       status: 'measurements_taken'
-    } as OrderItem]);
+    } as any]);
     setIsCustomOrderModalOpen(false);
     
     // Reset form
@@ -604,11 +693,11 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         .insert({
           tenant_id: tenantId,
           name: newCustomerName,
-          phone: newCustomerPhone,
-          trn: newCustomerVat || null,
+          phone: formatSaudiPhone(newCustomerPhone),
+          vat_number: newCustomerVat || null,
           company_name: newCustomerVat ? newCustomerName : null,
-          is_b2b: !!newCustomerVat,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
         .select()
         .single();
@@ -649,13 +738,16 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     }));
   };
 
+  const isTaxEnabled = taxSettings?.enabled ?? Boolean(taxSettings?.trn);
+  const effectiveVatRate = isTaxEnabled ? ((Number(taxSettings?.vatRate ?? 15)) / 100) : 0;
+
   const subTotalAmount = cart.reduce((sum, item) => {
-    const calc = calculateItemTax(item.price, (item.taxType as any) || 'exclusive', 0.15, item.quantity);
+    const calc = calculateItemTax(item.price, (item.taxType as any) || 'exclusive', effectiveVatRate, item.quantity);
     return sum + calc.basePrice;
   }, 0);
 
   const taxAmountPerItem = cart.reduce((sum, item) => {
-    const calc = calculateItemTax(item.price, (item.taxType as any) || 'exclusive', 0.15, item.quantity);
+    const calc = calculateItemTax(item.price, (item.taxType as any) || 'exclusive', effectiveVatRate, item.quantity);
     return sum + calc.taxAmount;
   }, 0);
   
@@ -673,9 +765,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const discountedSubtotal = subTotalAmount - calculatedDiscountAmount;
 
   const discountRatio = subTotalAmount > 0 ? (subTotalAmount - calculatedDiscountAmount) / subTotalAmount : 1;
-  const taxAmount = taxAmountPerItem * discountRatio;
-  const vatRate = 15;
-  const isTaxEnabled = taxAmount > 0 || (taxSettings?.enabled ?? true);
+  const taxAmount = isTaxEnabled ? taxAmountPerItem * discountRatio : 0;
+  const vatRate = isTaxEnabled ? Number(taxSettings?.vatRate ?? 15) : 0;
   const totalAmount = discountedSubtotal + taxAmount;
   totalAmountRef.current = totalAmount;
 
@@ -720,35 +811,37 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       qrCodeBase64 = generateZatcaQR(sellerName, trn, timestamp, totalAmount.toFixed(2), taxAmount.toFixed(2));
 
       const isUuid = (val: string | undefined | null) => 
-        val ? /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val) : false;
+        val ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val) : false;
 
       const orderData = {
         order_number: orderNumber,
         customer_id: (selectedCustomer?.id && isUuid(selectedCustomer.id)) ? selectedCustomer.id : null,
         customer_name: selectedCustomer?.name || 'عميل نقدي',
         tenant_id: tenantId,
-        shift_id: shiftId || null,
-        items: cart,
-        subtotal_amount: subTotalAmount,
-        total_amount: totalAmount,
-        paid_amount: paidAmount,
-        discount_amount: calculatedDiscountAmount,
+        shift_id: (shiftId && isUuid(shiftId)) ? shiftId : null,
+        branch_id: (currentStaff?.branchId && isUuid(currentStaff.branchId)) ? currentStaff.branchId : null,
+        total_amount: Number(totalAmount) >= 0 ? Number(totalAmount) : 0,
+        paid_amount: Number(paidAmount) >= 0 ? Number(paidAmount) : 0,
+        discount_amount: Number(calculatedDiscountAmount) >= 0 ? Number(calculatedDiscountAmount) : 0,
         payment_method: paymentMethod,
         status: orderStatus,
         order_date: timestamp,
         delivery_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         created_by: (currentStaff?.id && isUuid(currentStaff.id)) ? currentStaff.id : null,
-        tax_amount: taxAmount,
-        tax_rate: vatRate,
+        tax_amount: Number(taxAmount) >= 0 ? Number(taxAmount) : 0,
+        tax_rate: 0.15,
         notes: encodeOrderB2BNotes(isB2B ? b2bCompanyName : '', isB2B ? b2bTRN : ''),
         qr_code: qrCodeBase64,
+        created_at: timestamp,
+        // For the supabase interceptor (Orders.tsx compat)
+        items: cart,
         history: [{
-          status: orderStatus as OrderStatus,
+          status: orderStatus,
           updatedAt: timestamp,
           updatedBy: currentStaff?.name || 'System',
-          updatedByUid: currentStaff?.id
-        }],
-        created_at: timestamp
+          updatedByUid: currentStaff?.id || auth.currentUser?.uid,
+          notes: 'إنشاء الطلب عبر نقطة البيع'
+        }]
       };
 
       const { data: newOrder, error: orderError } = await supabase
@@ -759,6 +852,55 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
 
       if (orderError) throw orderError;
 
+      // Insert into order_items
+      const VALID_INVENTORY_UNITS = ['meter', 'yard', 'roll', 'bolt', 'piece', 'spool', 'box'];
+      const VALID_CLOSURE_TYPES = ['zipper', 'buttons'];
+      const VALID_CLOSURE_VISIBILITIES = ['hidden', 'visible'];
+      const VALID_COLLAR_PADDINGS = ['hard', 'soft'];
+
+      const orderItemsData = cart.map(item => ({
+        tenant_id: tenantId,
+        order_id: newOrder.id,
+        type: item.type,
+        status: item.type === 'custom' ? orderStatus : null,
+        item_id: (item.type === 'ready_made' && item.itemId && isUuid(item.itemId)) ? item.itemId : null,
+        name: item.name || item.garmentType || 'منتج مخصص',
+        garment_type: item.garmentType || null,
+        fabric: item.fabric || null,
+        fabric_id: (item.type === 'custom' && item.fabricId && isUuid(item.fabricId)) ? item.fabricId : null,
+        quantity: Number(item.quantity) > 0 ? Number(item.quantity) : 1,
+        selected_unit: (item.selectedUnit && VALID_INVENTORY_UNITS.includes(item.selectedUnit)) ? item.selectedUnit : null,
+        consumed_meters: item.consumedMeters ? Number(item.consumedMeters) : null,
+        price: Number(item.price) >= 0 ? Number(item.price) : 0,
+        closure_type: (item.closureType && VALID_CLOSURE_TYPES.includes(item.closureType)) ? item.closureType : null,
+        closure_visibility: (item.closureVisibility && VALID_CLOSURE_VISIBILITIES.includes(item.closureVisibility)) ? item.closureVisibility : null,
+        collar_type: item.collarType || null,
+        cuff_type: item.cuffType || null,
+        pocket_type: item.pocketType || null,
+        chest_style: item.chestStyle || null,
+        collar_padding: (item.collarPadding && VALID_COLLAR_PADDINGS.includes(item.collarPadding)) ? item.collarPadding : null,
+        additions: item.additions || null,
+        embroidery: item.embroidery || null,
+        measurements: (item as any).measurements || {}
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItemsData);
+
+      if (itemsError) throw itemsError;
+
+      // Insert into order_history
+      await supabase.from('order_history').insert({
+        tenant_id: tenantId,
+        order_id: newOrder.id,
+        status: orderStatus,
+        notes: 'إنشاء الطلب عبر نقطة البيع',
+        updated_by_staff: (currentStaff?.id && isUuid(currentStaff.id)) ? currentStaff.id : null,
+        updated_by_name: currentStaff?.name || 'System',
+        updated_at: timestamp
+      });
+
       // Generate Invoice entry
       const { error: invoiceError } = await supabase
         .from('tax_invoices')
@@ -768,12 +910,12 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
           tenant_id: tenantId,
           customer_id: orderData.customer_id,
           customer_name: orderData.customer_name,
-          subtotal: subTotalAmount,
-          tax_rate: vatRate,
-          tax_amount: taxAmount,
-          discount_amount: calculatedDiscountAmount,
-          paid_amount: paidAmount,
-          total_amount: totalAmount,
+          subtotal: Number(subTotalAmount) >= 0 ? Number(subTotalAmount) : 0,
+          tax_rate: 0.15,
+          tax_amount: Number(taxAmount) >= 0 ? Number(taxAmount) : 0,
+          discount_amount: Number(calculatedDiscountAmount) >= 0 ? Number(calculatedDiscountAmount) : 0,
+          paid_amount: Number(paidAmount) >= 0 ? Number(paidAmount) : 0,
+          total_amount: Number(totalAmount) >= 0 ? Number(totalAmount) : 0,
           vat_number: b2bTRN || null,
           qr_payload: qrCodeBase64,
           issued_at: timestamp,
@@ -785,8 +927,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
             b2bCompanyName: isB2B ? b2bCompanyName : undefined,
             items: cart.map(item => ({ 
               name: item.name || item.garmentType || 'منتج مخصص', 
-              quantity: item.quantity, 
-              price: item.price,
+              quantity: Number(item.quantity) > 0 ? Number(item.quantity) : 1, 
+              price: Number(item.price) >= 0 ? Number(item.price) : 0,
               type: item.type
             })),
             createdBy: currentStaff?.name || 'System'
@@ -872,11 +1014,34 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       toastSuccess('تم إصدار الفاتورة الضريبية بنجاح');
       
       if (isAutoPrintEnabled) {
-        setTimeout(() => {
-          window.print();
-          setCompletedOrder(null);
-          setIsPaymentModalOpen(false);
-        }, 300);
+        flushSync(() => {
+          // ensure state is flushed before printing
+        });
+        setTimeout(async () => {
+          try {
+            const { printElementDetailed } = await import('../utils/printManager');
+            // الفاتورة الضريبية الكاملة (B2B) تُطبع على ورق A4، أما إيصال الكاشير
+            // فيتبع حجم الورق المضبوط للطابعة الافتراضية في إعدادات الطابعة.
+            const storedSize = (localStorage.getItem('active_printer_size') || '80mm') as
+              | '80mm'
+              | '58mm'
+              | 'A4';
+            const paperSize =
+              invoiceData?.invoiceType === 'standard_b2b' ? 'A4' : storedSize;
+
+            const res = await printElementDetailed('pos-invoice-print-area', {
+              paperSize,
+              title: 'فاتورة كاشير',
+            });
+            if (!res.ok) {
+              console.error('Print failed in POS:', res.message);
+              toastError('تعذّرت الطباعة', res.message);
+            }
+          } catch (printErr) {
+            console.error('Print error in POS:', printErr);
+            window.print();
+          }
+        }, 250);
       }
     } catch (error) {
       console.error('Checkout error:', error);
@@ -985,6 +1150,30 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
               <UserPlus size={20} />
             </button>
           </div>
+          {selectedCustomer && (
+            <div className="p-3 bg-surface-muted border border-border rounded-xl space-y-1.5 text-xs">
+              <div className="flex justify-between items-center text-content-muted">
+                <span className="font-medium">{t('pos.customer_name', 'اسم العميل:')}</span>
+                <span className="font-bold text-content">{selectedCustomer.name}</span>
+              </div>
+              <div className="flex justify-between items-center text-content-muted">
+                <span className="font-medium">{t('pos.customer_phone', 'رقم الجوال:')}</span>
+                <span className="font-mono text-content">{selectedCustomer.phone}</span>
+              </div>
+              {customerUnpaidBalance > 0 ? (
+                <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 text-red-600 rounded-lg flex justify-between items-center font-bold">
+                  <span>{t('pos.previous_due_balance', 'مستحقات سابقة على العميل:')}</span>
+                  <span className="font-mono font-black text-sm text-red-700">
+                    <PriceDisplay amount={customerUnpaidBalance} />
+                  </span>
+                </div>
+              ) : (
+                <div className="mt-2 p-1.5 px-2 bg-green-500/5 border border-green-500/10 text-green-600 rounded-lg text-center font-bold">
+                  {t('pos.no_previous_due', 'الحساب سليم (لا توجد مبالغ متبقية)')}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Cart Items List */}
@@ -1446,10 +1635,25 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   </div>
                   <div className="grid grid-cols-2 gap-3 w-full pt-4 print:hidden">
                     <button 
-                      onClick={() => {
-                        window.print();
+                      onClick={async () => {
+                        try {
+                          const { printElementDetailed, getConfiguredPaperSize } = await import(
+                            '../utils/printManager'
+                          );
+                          const res = await printElementDetailed('pos-invoice-print-area', {
+                            paperSize:
+                              invoiceData?.invoiceType === 'standard_b2b'
+                                ? 'A4'
+                                : getConfiguredPaperSize('80mm'),
+                            title: 'إيصال فاتورة',
+                          });
+                          if (!res.ok) toastError('تعذّرت الطباعة', res.message);
+                        } catch (e) {
+                          console.error('[POS] خطأ الطباعة:', e);
+                          window.print();
+                        }
                       }}
-                      className="flex flex-col items-center justify-center p-4 rounded-2xl border border-border hover:border-brand hover:bg-brand/5 transition-all text-content group"
+                      className="flex flex-col items-center justify-center p-4 rounded-2xl border border-border hover:border-brand hover:bg-brand/5 transition-all text-content group cursor-pointer"
                     >
                       <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">🖨️</span>
                       <span className="text-sm font-bold">إيصال / طباعة</span>
@@ -1498,17 +1702,32 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                 // Payment form
                 <div className="flex flex-col min-h-full">
                   <div className="flex justify-between items-center mb-6 border-b border-border pb-4">
-                    <h2 className="text-2xl font-black text-content">إتمام الطلب</h2>
+                    <h2 className="text-2xl font-black text-content">{t('pos.complete_order', 'إتمام الطلب')}</h2>
                     <button onClick={() => setIsPaymentModalOpen(false)} className="p-2 hover:bg-surface-muted rounded-full">
                       <X size={24} />
                     </button>
                   </div>
                   
                   <div className="space-y-6 flex-1">
+                    {/* Customer Unpaid Balance Alert */}
+                    {selectedCustomer && customerUnpaidBalance > 0 && (
+                      <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl flex items-center justify-between text-red-600 gap-3">
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-2xl">⚠️</span>
+                          <div>
+                            <div className="text-sm font-black">{t('pos.customer_has_due', 'تنبيه: يوجد متبقي مستحق سابق على العميل')}</div>
+                            <div className="text-xs opacity-80">{selectedCustomer.name}</div>
+                          </div>
+                        </div>
+                        <span className="font-mono font-black text-lg text-red-700 whitespace-nowrap">
+                          <PriceDisplay amount={customerUnpaidBalance} />
+                        </span>
+                      </div>
+                    )}
 
                     {/* Invoice Type */}
                     <div className="bg-surface p-4 rounded-2xl border border-border">
-                      <label className="block text-sm font-bold text-content mb-3">نوع الفاتورة</label>
+                      <label className="block text-sm font-bold text-content mb-3">{t('pos.invoice_type', 'نوع الفاتورة')}</label>
                       <div className="flex bg-surface-muted p-1 rounded-xl">
                         <button
                           className={cn("flex-1 py-2 text-sm font-bold rounded-lg transition-colors", !isB2B ? "bg-white shadow-sm text-brand" : "text-content-muted hover:text-content")}
@@ -1517,7 +1736,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                             setB2bData({ companyName: '', trn: '' });
                           }}
                         >
-                          عادي (ضريبية مبسطة)
+                          {t('pos.simple_invoice', 'عادي (ضريبية مبسطة)')}
                         </button>
                         <button
                           className={cn("flex-1 py-2 text-sm font-bold rounded-lg transition-colors", isB2B ? "bg-white shadow-sm text-brand" : "text-content-muted hover:text-content")}
@@ -1526,16 +1745,16 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                             setIsB2bModalOpen(true);
                           }}
                         >
-                          ضريبية (أعمال B2B)
+                          {t('pos.b2b_invoice', 'ضريبية (أعمال B2B)')}
                         </button>
                       </div>
                       {isB2B && b2bData.companyName && (
                         <div className="mt-3 p-3 bg-brand/5 border border-brand/20 rounded-xl text-sm">
                            <div className="flex justify-between items-center mb-1">
                              <span className="font-bold text-brand">{b2bData.companyName}</span>
-                             <button onClick={() => setIsB2bModalOpen(true)} className="text-brand text-xs font-bold hover:underline">تعديل</button>
+                             <button onClick={() => setIsB2bModalOpen(true)} className="text-brand text-xs font-bold hover:underline">{t('common.edit', 'تعديل')}</button>
                            </div>
-                           <div className="text-content-muted">الرقم الضريبي: {b2bData.trn}</div>
+                           <div className="text-content-muted">{t('pos.trn_label', 'الرقم الضريبي:')} {b2bData.trn}</div>
                         </div>
                       )}
                     </div>
@@ -1543,7 +1762,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     {/* Discount */}
                     <div className="bg-surface p-4 rounded-2xl border border-border">
                       <div className="flex justify-between items-center mb-3">
-                        <label className="text-sm font-bold text-content">الخصم</label>
+                        <label className="text-sm font-bold text-content">{t('pos.discount', 'الخصم')}</label>
                         <div className="flex bg-surface-muted rounded-lg p-0.5">
                           <button
                             type="button"
@@ -1556,7 +1775,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                               if (discountValue > 100) setDiscountValue(100);
                             }}
                           >
-                            نسبة (%)
+                            {t('pos.percentage_label', 'نسبة (%)')}
                           </button>
                           <button
                             type="button"
@@ -1566,7 +1785,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                             )}
                             onClick={() => setDiscountType('fixed')}
                           >
-                            مبلغ ثابت
+                            {t('pos.fixed_amount', 'مبلغ ثابت')}
                           </button>
                         </div>
                       </div>
@@ -1580,11 +1799,6 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                              let val = Number(e.target.value);
                              if (discountType === 'percent' && val > 100) val = 100;
                              setDiscountValue(val);
-                             // Also update paidAmount if they are paying in full
-                             if (paidAmount >= (totalAmount - calculatedDiscountAmount)) {
-                               // It's tricky to auto update here accurately, but we can do our best.
-                               // Just let the effect handle it or let user adjust.
-                             }
                           }}
                           placeholder="0"
                           className="w-full bg-surface-muted border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-brand text-left tabular-nums font-bold text-lg"
@@ -1595,19 +1809,19 @@ const invoiceData: InvoiceData | null = completedOrder ? {
 
                     {/* Payment Method */}
                     <div className="bg-surface p-4 rounded-2xl border border-border">
-                      <label className="block text-sm font-bold text-content mb-3">طريقة الدفع</label>
+                      <label className="block text-sm font-bold text-content mb-3">{t('pos.payment_method', 'طريقة الدفع')}</label>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {[
-                          { id: 'cash', label: 'كاش', icon: Banknote },
-                          { id: 'card', label: 'شبكة', icon: CreditCard },
-                          { id: 'bank_transfer', label: 'تحويل', icon: Landmark },
-                          { id: 'credit', label: 'آجل / عربون', icon: Wallet }
+                          { id: 'cash', label: t('pos.cash', 'كاش'), icon: Banknote },
+                          { id: 'network', label: t('pos.card', 'شبكة'), icon: CreditCard },
+                          { id: 'bank_transfer', label: t('pos.bank_transfer', 'تحويل بنكي'), icon: Landmark },
+                          { id: 'partial', label: t('pos.partial_credit', 'آجل / دفع جزئي'), icon: Wallet }
                         ].map(method => (
                           <button
                             key={method.id}
                             onClick={() => {
                               setPaymentMethod(method.id as PaymentMethod);
-                              if (method.id === 'credit') {
+                              if (method.id === 'partial') {
                                 setPaidAmount(0);
                               } else {
                                 setPaidAmount(totalAmount);
@@ -1628,7 +1842,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     </div>
 
                     <div className="bg-surface p-4 rounded-2xl border border-border">
-                      <label className="block text-sm font-bold text-content mb-3">المبلغ المدفوع الآن</label>
+                      <label className="block text-sm font-bold text-content mb-3">{t('pos.paid_amount_now', 'المبلغ المدفوع الآن')}</label>
                       <input
                         type="number"
                         value={paidAmount}
@@ -1645,36 +1859,36 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   <div className="absolute bottom-0 right-0 left-0 p-4 md:p-6 bg-surface border-t border-border md:static md:mt-8 md:mb-4 md:border-none md:p-0">
                     <div className="hidden md:block">
                       <div className="flex justify-between items-center mb-2 px-1 text-content-muted">
-                        <span>الإجمالي المطلوب:</span>
+                        <span>{t('pos.total_required', 'الإجمالي المطلوب:')}</span>
                         <span className="font-bold text-content line-through opacity-70"><PriceDisplay amount={totalAmount + calculatedDiscountAmount} /></span>
                       </div>
                       {calculatedDiscountAmount > 0 && (
                         <div className="flex justify-between items-center mb-2 px-1 text-red-500 font-bold">
-                          <span>الخصم:</span>
+                          <span>{t('pos.discount', 'الخصم')}:</span>
                           <span>-<PriceDisplay amount={calculatedDiscountAmount} /></span>
                         </div>
                       )}
                       <div className="flex justify-between items-center bg-surface-muted p-4 rounded-2xl border border-border mb-4">
-                        <span className="font-bold text-content">الصافي:</span>
+                        <span className="font-bold text-content">{t('pos.net_amount', 'الصافي:')}</span>
                         <span className="font-black text-2xl text-brand"><PriceDisplay amount={totalAmount} /></span>
                       </div>
                     </div>
                     
                     <div className="md:hidden flex justify-between items-center mb-4">
                         <div className="flex flex-col">
-                            <span className="text-[10px] text-content-muted font-bold uppercase">الصافي للدفع</span>
+                            <span className="text-[10px] text-content-muted font-bold uppercase">{t('pos.net_payable', 'الصافي للدفع')}</span>
                             <span className="text-xl font-black text-brand"><PriceDisplay amount={totalAmount} /></span>
                         </div>
                         {totalAmount - paidAmount > 0 && (
                             <div className="flex flex-col items-end">
-                                <span className="text-[10px] text-red-500 font-bold uppercase">المتبقي</span>
+                                <span className="text-[10px] text-red-500 font-bold uppercase">{t('pos.remaining_amount', 'المتبقي')}</span>
                                 <span className="text-lg font-bold text-red-600"><PriceDisplay amount={totalAmount - paidAmount} /></span>
                             </div>
                         )}
                     </div>
 
                     <div className="flex items-center justify-between bg-surface p-4 rounded-xl border border-border mb-4">
-                      <span className="text-sm font-bold text-content">الطباعة التلقائية عند الإصدار</span>
+                      <span className="text-sm font-bold text-content">{t('pos.auto_print_enabled', 'الطباعة التلقائية عند الإصدار')}</span>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input 
                           type="checkbox" 
@@ -1695,10 +1909,10 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       disabled={loading}
                       className="w-full py-4 bg-brand text-white rounded-xl md:rounded-2xl font-black text-lg hover:bg-brand/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg active:scale-95"
                     >
-                      {loading ? 'جاري التنفيذ...' : (
+                      {loading ? t('common.processing', 'جاري التنفيذ...') : (
                         <>
                           <CheckCircle2 size={24} />
-                          إصدار الفاتورة
+                          {t('pos.issue_invoice', 'إصدار الفاتورة')}
                         </>
                       )}
                     </button>
@@ -1730,8 +1944,8 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     <Wallet size={24} />
                   </div>
                   <div>
-                    <h2 className="text-lg font-black text-content">تدفق نقدية الصندوق</h2>
-                    <p className="text-xs font-bold text-content-muted mt-0.5">تفاصيل وحالة نقدية الوردية الحالية</p>
+                    <h2 className="text-lg font-black text-content">{t('pos.cash_flow_details', 'تدفق نقدية الصندوق')}</h2>
+                    <p className="text-xs font-bold text-content-muted mt-0.5">{t('pos.cash_flow_desc', 'تفاصيل وحالة نقدية الوردية الحالية')}</p>
                   </div>
                 </div>
                 <button 
@@ -1746,26 +1960,26 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               <div className="p-6 space-y-6">
                 {/* Employee / Shift info */}
                 <div className="flex justify-between items-center text-xs font-bold text-content-muted bg-surface-muted/35 px-4 py-2.5 rounded-xl border border-border">
-                  <span>الموظف: <span className="text-content font-extrabold">{currentStaff?.name || 'غير معروف'}</span></span>
-                  <span>رقم الوردية: <span className="font-sans text-content font-extrabold">#{shiftId?.slice(-6).toUpperCase()}</span></span>
+                  <span>{t('pos.employee_label', 'الموظف:')} <span className="text-content font-extrabold">{currentStaff?.name || t('common.unknown', 'غير معروف')}</span></span>
+                  <span>{t('pos.shift_id_label', 'رقم الوردية:')} <span className="font-sans text-content font-extrabold">#{shiftId?.slice(-6).toUpperCase()}</span></span>
                 </div>
 
                 {/* Main Cash Drawer Indicator */}
                 <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-3xl p-5 text-center space-y-2">
                   <span className="text-xs font-black text-emerald-600 block uppercase tracking-widest">
-                    صافي النقدية المتوقعة بالصندوق (كاش)
+                    {t('pos.expected_cash', 'صافي النقدية المتوقعة بالصندوق (كاش)')}
                   </span>
                   <div className="text-3xl font-black text-emerald-500 tracking-tight">
                     <PriceDisplay amount={cashDrawerBalance} />
                   </div>
                   <p className="text-[10px] text-content-muted">
-                    * هذا المبلغ يمثل الرصيد المسجل بالإضافة للمبيعات والإيداعات مخصوماً منه المصروفات والمرتجعات.
+                    {t('pos.cash_calc_note', '* هذا المبلغ يمثل الرصيد المسجل بالإضافة للمبيعات والإيداعات مخصوماً منه المصروفات والمرتجعات.')}
                   </p>
                 </div>
 
                 {/* Operations Breakdown Grid */}
                 <div className="space-y-3.5">
-                  <h3 className="text-xs font-black text-content-muted uppercase tracking-widest">تفاصيل التدفق المالي</h3>
+                  <h3 className="text-xs font-black text-content-muted uppercase tracking-widest">{t('pos.cash_breakdown_title', 'تفاصيل التدفق المالي')}</h3>
                   
                   <div className="grid grid-cols-1 gap-3">
                     {/* Opening Balance */}
@@ -1774,7 +1988,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                         <div className="p-2 bg-blue-500/10 text-blue-500 rounded-xl">
                           <Coins size={18} />
                         </div>
-                        <span className="text-xs font-bold text-content">الرصيد الافتتاحي</span>
+                        <span className="text-xs font-bold text-content">{t('pos.opening_balance_label', 'الرصيد الافتتاحي')}</span>
                       </div>
                       <span className="text-sm font-black text-content">
                         <PriceDisplay amount={cashDrawerBreakdown.opening} />
@@ -1787,7 +2001,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                         <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-xl">
                           <TrendingUp size={18} />
                         </div>
-                        <span className="text-xs font-bold text-content">مبيعات كاش</span>
+                        <span className="text-xs font-bold text-content">{t('pos.cash_sales_label', 'مبيعات كاش')}</span>
                       </div>
                       <span className="text-sm font-black text-emerald-500">
                         + <PriceDisplay amount={cashDrawerBreakdown.sales} />
@@ -1801,7 +2015,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                           <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-xl">
                             <Plus size={18} />
                           </div>
-                          <span className="text-xs font-bold text-content">عمليات الإيداع كاش</span>
+                          <span className="text-xs font-bold text-content">{t('pos.cash_deposits_label', 'عمليات الإيداع كاش')}</span>
                         </div>
                         <span className="text-sm font-black text-emerald-500">
                           + <PriceDisplay amount={cashDrawerBreakdown.deposits} />
@@ -1816,7 +2030,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                           <div className="p-2 bg-red-500/10 text-red-500 rounded-xl">
                             <TrendingDown size={18} />
                           </div>
-                          <span className="text-xs font-bold text-content">مرتجعات مبيعات (كاش)</span>
+                          <span className="text-xs font-bold text-content">{t('pos.cash_returns_label', 'مرتجعات مبيعات (كاش)')}</span>
                         </div>
                         <span className="text-sm font-black text-red-500">
                           - <PriceDisplay amount={cashDrawerBreakdown.returns} />
@@ -1831,7 +2045,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                           <div className="p-2 bg-red-500/10 text-red-500 rounded-xl">
                             <X size={18} />
                           </div>
-                          <span className="text-xs font-bold text-content">المصروفات والمسحوبات</span>
+                          <span className="text-xs font-bold text-content">{t('pos.cash_withdrawals_label', 'المصروفات والمسحوبات')}</span>
                         </div>
                         <span className="text-sm font-black text-red-500">
                           - <PriceDisplay amount={cashDrawerBreakdown.withdrawals} />
@@ -1846,18 +2060,18 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   <button
                     onClick={() => {
                       fetchCashDrawerBalance();
-                      toastSuccess('تم تحديث نقدية الصندوق فورا');
+                      toastSuccess(t('pos.cash_drawer_refreshed', 'تم تحديث نقدية الصندوق فورا'));
                     }}
                     className="flex-1 py-3 bg-surface border border-border text-content hover:bg-surface-muted rounded-xl transition-all font-bold text-xs sm:text-sm text-center flex items-center justify-center gap-2 active:scale-95"
                   >
                     <Coins size={16} />
-                    <span>تحديث البيانات</span>
+                    <span>{t('common.refresh', 'تحديث البيانات')}</span>
                   </button>
                   <button
                     onClick={() => setShowCashDrawerDetails(false)}
                     className="flex-1 py-3 bg-brand text-white hover:bg-brand/90 rounded-xl transition-all font-bold text-xs sm:text-sm text-center active:scale-95"
                   >
-                    إغلاق النافذة
+                    {t('common.close', 'إغلاق النافذة')}
                   </button>
                 </div>
               </div>
@@ -1884,7 +2098,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   <div className="p-2.5 bg-brand text-white rounded-2xl shrink-0 shadow-sm">
                     <Scissors size={20} />
                   </div>
-                  تفصيل جديد
+                  {t('pos.custom_tailoring_title', 'تفصيل جديد')}
                 </h2>
                 <button onClick={() => setIsCustomOrderModalOpen(false)} className="p-2 hover:bg-surface-muted rounded-full transition-colors shadow-sm text-content-muted">
                   <X size={20} />
@@ -1893,9 +2107,95 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               
               {/* Body (Scrollable) */}
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+                {/* Customer Selector inside Modal */}
+                <div className="bg-brand/5 p-4 rounded-xl border border-brand/10 space-y-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-black text-content flex items-center gap-2">
+                      <User size={18} className="text-brand" />
+                      {t('pos.customer', 'العميل')}
+                    </label>
+                    {!selectedCustomer && (
+                      <span className="text-xs text-danger font-bold">
+                        {t('pos.customer_required_for_custom', '* مطلوب لطلبات التفصيل')}
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-2 relative z-50">
+                    <Combobox value={selectedCustomer} onChange={(customer: Customer | null) => {
+                      setSelectedCustomer(customer);
+                      if (customer) {
+                         setIsB2B(customer.isB2B || !!customer.companyName || !!customer.trn);
+                         setB2bData({
+                            companyName: customer.companyName || '',
+                            trn: customer.trn || ''
+                         });
+                         // Auto-fill measurements if exist
+                         if (customer.measurements) {
+                           setCustomMeasurements(customer.measurements);
+                         } else {
+                           setCustomMeasurements({});
+                         }
+                      } else {
+                         setIsB2B(false);
+                         setB2bData({ companyName: '', trn: '' });
+                         setCustomMeasurements({});
+                      }
+                    }}>
+                      <div className="relative flex-1">
+                        <Combobox.Input
+                          className="w-full p-3 bg-[#FFFFFF] dark:bg-[#1D1D1D] text-content border border-border rounded-xl focus:ring-2 focus:ring-[#1C8FFF] focus:border-[#1C8FFF] shadow-sm font-medium rtl:pr-10 ltr:pl-10"
+                          placeholder={t('pos.search_customer', 'ابحث عن عميل...')}
+                          displayValue={(person: Customer) => person?.name || ''}
+                          onChange={(event) => setCustomerQuery(event.target.value)}
+                        />
+                        <Combobox.Button className="absolute inset-y-0 ltr:right-0 rtl:left-0 flex items-center px-3">
+                          <User className="w-5 h-5 text-[#6B7280]" aria-hidden="true" />
+                        </Combobox.Button>
+                        <Transition
+                          as={React.Fragment}
+                          leave="transition ease-in duration-100"
+                          leaveFrom="opacity-100"
+                          leaveTo="opacity-0"
+                          afterLeave={() => setCustomerQuery('')}
+                        >
+                          <Combobox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-xl bg-[#FFFFFF] dark:bg-[#1D1D1D] border border-border text-content py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-[100]">
+                            {customers
+                              .filter((person) =>
+                                person.name.toLowerCase().includes(customerQuery.toLowerCase()) ||
+                                person.phone.includes(customerQuery)
+                              )
+                              .map((person) => (
+                              <Combobox.Option
+                                key={person.id}
+                                className={({ active }) =>
+                                  `relative cursor-pointer select-none py-2 px-4 ${
+                                    active ? 'bg-[#1C8FFF] text-white' : 'text-content'
+                                  }`
+                                }
+                                value={person}
+                              >
+                                <span className="block truncate font-medium">{person.name}</span>
+                                <span className="block text-xs opacity-75">{person.phone}</span>
+                              </Combobox.Option>
+                            ))}
+                          </Combobox.Options>
+                        </Transition>
+                      </div>
+                    </Combobox>
+                    <button 
+                      onClick={() => setIsAddCustomerModalOpen(true)}
+                      className="px-3 bg-[var(--surface)] border border-border rounded-xl text-brand hover:bg-brand hover:text-white transition-all flex items-center justify-center shrink-0 shadow-sm"
+                      title={t('pos.add_new_customer', 'إضافة عميل جديد')}
+                    >
+                      <UserPlus size={20} />
+                    </button>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                   <div>
-                    <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">نوع الثوب</label>
+                    <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">{t('pos.garment_type_label', 'نوع الثوب')}</label>
                     <input 
                       type="text" 
                       value={customItemForm.garmentType}
@@ -1904,7 +2204,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">السعر</label>
+                    <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">{t('pos.price_label', 'السعر')}</label>
                     <input 
                       type="number" 
                       value={customItemForm.price}
@@ -1913,7 +2213,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">القماش</label>
+                    <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">{t('pos.fabric_label', 'القماش')}</label>
                     <SmartSelect 
                       value={customItemForm.fabricId}
                       onChange={(val) => {
@@ -1926,14 +2226,14 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       }}
                       className="w-full"
                       options={[
-                        { value: '', label: 'اختر قماش...' },
+                        { value: '', label: t('pos.select_fabric_placeholder', 'اختر قماش...') },
                         ...inventory.filter(i => i.category === 'fabric').map(item => ({ value: item.id, label: `${item.name} (${item.quantity} ${item.unit})` })),
-                        { value: 'custom', label: 'قماش خارجي' }
+                        { value: 'custom', label: t('pos.external_fabric_label', 'قماش خارجي') }
                       ]}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">الكمية</label>
+                    <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">{t('pos.quantity_label', 'الكمية')}</label>
                     <input 
                       type="number" 
                       value={customItemForm.quantity}
@@ -1948,14 +2248,14 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   <div className="bg-brand/5 p-4 rounded-xl border border-brand/10 space-y-4">
                     <div className="flex items-center gap-2 text-brand mb-2">
                       <Ruler size={18} />
-                      <h4 className="font-bold text-sm">مقاسات العميل المحددة</h4>
+                      <h4 className="font-bold text-sm">{t('pos.customer_saved_measurements', 'مقاسات العميل المحددة')}</h4>
                     </div>
                     <div className="grid grid-cols-4 gap-2">
                       {[
-                        { label: 'الطول', value: selectedCustomer.measurements?.length },
-                        { label: 'الكتف', value: selectedCustomer.measurements?.shoulder },
-                        { label: 'الصدر', value: selectedCustomer.measurements?.chest },
-                        { label: 'الكم', value: selectedCustomer.measurements?.sleeve },
+                        { label: t('measurements.length', 'الطول'), value: selectedCustomer.measurements?.length },
+                        { label: t('measurements.shoulder', 'الكتف'), value: selectedCustomer.measurements?.shoulder },
+                        { label: t('measurements.chest', 'الصدر'), value: selectedCustomer.measurements?.chest },
+                        { label: t('measurements.sleeve', 'الكم'), value: selectedCustomer.measurements?.sleeve },
                       ].map((m) => (
                         <div key={m.label} className="bg-surface p-2 rounded-lg border border-brand/10 text-center">
                           <p className="text-[10px] text-content-muted">{m.label}</p>
@@ -1965,7 +2265,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     </div>
                     <p className="text-xs text-content-muted mt-2 flex items-center gap-1">
                       <Zap size={12} />
-                      سيتم إرفاق المقاسات الحالية للعميل مع هذا الطلب تلقائياً.
+                      {t('pos.measurements_auto_attached_note', 'سيتم إرفاق المقاسات الحالية للعميل مع هذا الطلب تلقائياً.')}
                     </p>
                   </div>
                 )}
@@ -1973,7 +2273,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                 <div className="space-y-4 border-t border-border pt-6">
                   <h4 className="text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest flex items-center gap-2">
                     <Zap size={16} />
-                    التفاصيل البصرية والمقاسات التفاعلية
+                    {t('pos.visual_details_interactive_measurements', 'التفاصيل البصرية والمقاسات التفاعلية')}
                   </h4>
                   <VisualMeasurements 
                     values={customMeasurements} 
@@ -1983,7 +2283,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   <div className="mt-8 pt-8 border-t border-border">
                     <h3 className="text-sm font-black text-content flex items-center gap-2 mb-4">
                       <div className="w-1.5 h-4 bg-brand rounded-full" />
-                      مُحدد المقاسات البصري التفاعلي
+                      {t('pos.interactive_visual_measurement_selector', 'مُحدد المقاسات البصري التفاعلي')}
                     </h3>
                     <ThobeMeasurementSelector 
                       values={customMeasurements as any || {}}
@@ -2000,7 +2300,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   className="w-full py-3 sm:py-3.5 bg-brand text-white rounded-xl font-bold hover:bg-brand/90 transition-all shadow-lg shadow-brand/20 flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer"
                 >
                   <Plus size={18} />
-                  إضافة للسلة
+                  {t('pos.add_to_cart_btn', 'إضافة للسلة')}
                 </button>
               </div>
             </motion.div>
@@ -2010,7 +2310,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
 
       {/* Add Customer Modal Refactored to Bottom Sheet */}
       <Transition appear show={isAddCustomerModalOpen} as={React.Fragment}>
-        <Dialog as="div" className="relative z-50 flex items-end sm:items-center justify-center" onClose={() => setIsAddCustomerModalOpen(false)}>
+        <Dialog as="div" className="relative z-[200] flex items-end sm:items-center justify-center" onClose={() => setIsAddCustomerModalOpen(false)}>
           <Transition.Child
             as={React.Fragment}
             enter="ease-out duration-300"
@@ -2039,7 +2339,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     as="h3"
                     className="text-lg font-bold leading-6 text-gray-900 mb-4 flex items-center justify-between"
                   >
-                    إضافة عميل جديد
+                    {t('pos.add_new_customer', 'إضافة عميل جديد')}
                     <button title="Close" onClick={() => setIsAddCustomerModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
                       <X size={20} />
                     </button>
@@ -2047,7 +2347,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">اسم العميل <span className="text-red-500">*</span></label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('pos.customer_name', 'اسم العميل')} <span className="text-red-500">*</span></label>
                       <input 
                         type="text" 
                         value={newCustomerName}
@@ -2057,24 +2357,25 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">رقم الجوال <span className="text-red-500">*</span></label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('pos.mobile_number', 'رقم الجوال')} <span className="text-red-500">*</span></label>
                       <input 
                         type="tel" 
                         value={newCustomerPhone}
-                        onChange={(e) => setNewCustomerPhone(e.target.value)}
+                        onChange={(e) => setNewCustomerPhone(formatSaudiPhone(e.target.value))}
+                        onBlur={(e) => setNewCustomerPhone(formatSaudiPhone(e.target.value))}
                         className="w-full p-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand focus:border-brand text-right" 
                         placeholder="05XXXXXXXX"
                         dir="ltr"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">الرقم الضريبي <span className="text-gray-400 text-xs font-normal">(للأعمال B2B)</span></label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('pos.trn_label_clean', 'الرقم الضريبي')} <span className="text-gray-400 text-xs font-normal">{t('pos.for_b2b_only', '(للأعمال B2B)')}</span></label>
                       <input 
                         type="text" 
                         value={newCustomerVat}
                         onChange={(e) => setNewCustomerVat(e.target.value)}
                         className="w-full p-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand focus:border-brand" 
-                        placeholder="اختياري (سيعتبر العميل شركة)"
+                        placeholder={t('pos.optional_b2b_desc', 'اختياري (سيعتبر العميل شركة)')}
                       />
                     </div>
                   </div>
@@ -2085,7 +2386,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       className="px-4 py-2 font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
                       onClick={() => setIsAddCustomerModalOpen(false)}
                     >
-                      إلغاء
+                      {t('common.cancel', 'إلغاء')}
                     </button>
                     <button
                       type="button"
@@ -2093,7 +2394,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       className="px-4 py-2 font-medium text-white bg-brand hover:bg-brand/90 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
                       onClick={handleSaveCustomer}
                     >
-                      {isSavingCustomer ? 'جاري الحفظ...' : 'حفظ العميل'}
+                      {isSavingCustomer ? t('common.saving', 'جاري الحفظ...') : t('pos.save_customer', 'حفظ العميل')}
                     </button>
                   </div>
                 </Dialog.Panel>
@@ -2105,7 +2406,12 @@ const invoiceData: InvoiceData | null = completedOrder ? {
 
       {/* Hidden Invoice to Print */}
       {completedOrder && invoiceData && (
-        <div id="pos-invoice-print-area" className="fixed top-[100%] left-[100%] w-[800px] -z-50 pointer-events-none bg-white font-sans text-black print:static print:w-full print:block print:max-w-none print:m-0 print:p-0" dir="rtl">
+        <div
+          id="pos-invoice-print-area"
+          data-paper={invoiceData.invoiceType === 'standard_b2b' ? 'A4' : '80mm'}
+          className="fixed top-0 left-0 opacity-0 pointer-events-none w-[80mm] print:opacity-100 print:pointer-events-auto print:static print:w-full print:block print:max-w-none print:m-0 print:p-0 bg-white z-[99999]"
+          dir="rtl"
+        >
           {invoiceData.invoiceType === "standard_b2b" ? (
              <StandardInvoice data={invoiceData} size="A4" />
           ) : (
@@ -2120,7 +2426,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <Dialog.Panel className="w-full max-w-md bg-surface p-6 rounded-2xl shadow-xl border border-border">
             <div className="flex justify-between items-center mb-6">
-              <Dialog.Title className="text-xl font-bold text-content">بيانات الفاتورة الضريبية (B2B)</Dialog.Title>
+              <Dialog.Title className="text-xl font-bold text-content">{t('pos.b2b_data_title', 'بيانات الفاتورة الضريبية (B2B)')}</Dialog.Title>
               <button onClick={() => setIsB2bModalOpen(false)} className="p-2 hover:bg-surface-muted rounded-full">
                 <X size={20} />
               </button>
@@ -2128,17 +2434,17 @@ const invoiceData: InvoiceData | null = completedOrder ? {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-bold text-content mb-2">اسم الشركة <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-bold text-content mb-2">{t('pos.company_name', 'اسم الشركة')} <span className="text-red-500">*</span></label>
                 <input
                   type="text"
-                  placeholder="مثال: شركة وضوح الشاملة"
+                  placeholder={t('pos.company_name_placeholder', 'مثال: شركة وضوح الشاملة')}
                   value={b2bData.companyName}
                   onChange={e => setB2bData({...b2bData, companyName: e.target.value})}
                   className="w-full p-3 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand"
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-content mb-2">الرقم الضريبي <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-bold text-content mb-2">{t('pos.trn_label_clean', 'الرقم الضريبي')} <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   placeholder="300000000000003"
@@ -2155,7 +2461,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                 className="flex-1 py-3 bg-brand text-white font-bold rounded-xl hover:bg-brand/90 transition-colors"
                 disabled={!b2bData.companyName || !b2bData.trn}
               >
-                تحديث ومتابعة
+                {t('pos.update_and_continue', 'تحديث ومتابعة')}
               </button>
               <button
                 onClick={() => {
@@ -2167,7 +2473,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                 }}
                 className="py-3 px-6 bg-surface-muted text-content font-bold rounded-xl hover:bg-border transition-colors"
               >
-                إلغاء
+                {t('common.cancel', 'إلغاء')}
               </button>
             </div>
           </Dialog.Panel>
@@ -2183,7 +2489,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               <div className="flex justify-between items-center mb-6 border-b border-border pb-4">
                 <Dialog.Title className="text-xl font-black text-content flex items-center gap-2">
                   <span>⌨️</span>
-                  <span>اختصارات لوحة المفاتيح للكاشير</span>
+                  <span>{t('pos.keyboard_shortcuts_title', 'اختصارات لوحة المفاتيح للكاشير')}</span>
                 </Dialog.Title>
                 <button onClick={() => setIsShortcutsModalOpen(false)} className="p-2 hover:bg-surface-muted rounded-full transition-colors">
                   <X size={20} />
@@ -2192,21 +2498,21 @@ const invoiceData: InvoiceData | null = completedOrder ? {
 
               <div className="space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
                 <p className="text-sm text-content-muted font-bold mb-4">
-                  استخدم هذه الاختصارات لتسريع عملية البيع وإصدار الفواتير دون الحاجة لاستخدام الماوس:
+                  {t('pos.keyboard_shortcuts_desc', 'استخدم هذه الاختصارات لتسريع عملية البيع وإصدار الفواتير دون الحاجة لاستخدام الماوس:')}
                 </p>
 
                 <div className="grid grid-cols-1 gap-2">
                   {[
-                    { keys: ['F1', 'Ctrl + /'], label: 'فتح / إغلاق دليل الاختصارات' },
-                    { keys: ['F3', 'Ctrl + F'], label: 'التركيز على حقل البحث عن منتج' },
-                    { keys: ['F8', 'Ctrl + Enter'], label: 'فتح نافذة الدفع وإتمام الطلب' },
-                    { keys: ['F9'], label: 'تأكيد الدفع وإصدار الفاتورة (داخل نافذة الدفع)' },
-                    { keys: ['Ctrl + 1'], label: 'اختيار الدفع النقدي (داخل نافذة الدفع)' },
-                    { keys: ['Ctrl + 2'], label: 'اختيار الدفع بالشبكة/مدى (داخل نافذة الدفع)' },
-                    { keys: ['Ctrl + P'], label: 'الطباعة السريعة للإيصال (بعد إصدار الفاتورة)' },
-                    { keys: ['F2', 'Esc'], label: 'إغلاق شاشة الفاتورة وبدء طلب جديد' },
-                    { keys: ['F7', 'Ctrl + Shift + A'], label: 'فتح نافذة تفصيل ثوب جديد مخصص' },
-                    { keys: ['F4'], label: 'إفراغ سلة المشتريات بالكامل' },
+                    { keys: ['F1', 'Ctrl + /'], label: t('pos.shortcut_toggle_help', 'فتح / إغلاق دليل الاختصارات') },
+                    { keys: ['F3', 'Ctrl + F'], label: t('pos.shortcut_focus_search', 'التركيز على حقل البحث عن منتج') },
+                    { keys: ['F8', 'Ctrl + Enter'], label: t('pos.shortcut_open_payment', 'فتح نافذة الدفع وإتمام الطلب') },
+                    { keys: ['F9'], label: t('pos.shortcut_confirm_payment', 'تأكيد الدفع وإصدار الفاتورة (داخل نافذة الدفع)') },
+                    { keys: ['Ctrl + 1'], label: t('pos.shortcut_cash_payment', 'اختيار الدفع النقدي (داخل نافذة الدفع)') },
+                    { keys: ['Ctrl + 2'], label: t('pos.shortcut_card_payment', 'اختيار الدفع بالشبكة/مدى (داخل نافذة الدفع)') },
+                    { keys: ['Ctrl + P'], label: t('pos.shortcut_quick_print', 'الطباعة السريعة للإيصال (بعد إصدار الفاتورة)') },
+                    { keys: ['F2', 'Esc'], label: t('pos.shortcut_close_invoice_new', 'إغلاق شاشة الفاتورة وبدء طلب جديد') },
+                    { keys: ['F7', 'Ctrl + Shift + A'], label: t('pos.shortcut_open_custom_thobe', 'فتح نافذة تفصيل ثوب جديد مخصص') },
+                    { keys: ['F4'], label: t('pos.shortcut_clear_cart', 'إفراغ سلة المشتريات بالكامل') },
                   ].map((shortcut, idx) => (
                     <div key={idx} className="flex justify-between items-center p-3 bg-surface-muted rounded-xl border border-border/50 hover:bg-brand/5 transition-all">
                       <span className="text-sm font-bold text-content">{shortcut.label}</span>
@@ -2230,7 +2536,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   onClick={() => setIsShortcutsModalOpen(false)}
                   className="px-6 py-2.5 bg-brand text-white font-bold rounded-xl hover:bg-brand/90 transition-all text-sm shadow-md"
                 >
-                  فهمت، إغلاق
+                  {t('common.got_it_close', 'فهمت، إغلاق')}
                 </button>
               </div>
             </Dialog.Panel>

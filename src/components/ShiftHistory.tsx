@@ -6,6 +6,7 @@ import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
 import { FileText, Calendar, Search, Download, Printer } from 'lucide-react';
 import Branding from './Branding';
+import { useTranslation } from 'react-i18next';
 
 interface ShiftHistoryProps {
   tenantId: string;
@@ -14,6 +15,9 @@ interface ShiftHistoryProps {
 }
 
 export default function ShiftHistory({ tenantId, staffId, isManager }: ShiftHistoryProps) {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -115,30 +119,30 @@ export default function ShiftHistory({ tenantId, staffId, isManager }: ShiftHist
   }
 
   return (
-    <div className="p-6 space-y-6 font-sans">
+    <div className="p-6 space-y-6 font-sans bg-surface" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-black text-content">سجل الورديات</h2>
-          <p className="text-content-muted mt-1">مراجعة الورديات السابقة وتقارير Z</p>
+          <h2 className="text-2xl font-black text-content">{t('shift_history.title', 'سجل الورديات')}</h2>
+          <p className="text-content-muted mt-1">{t('shift_history.desc', 'مراجعة الورديات السابقة وتقارير Z')}</p>
         </div>
         <div className="flex gap-3 w-full md:w-auto">
           <div className="relative flex-1 md:w-64">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-content-muted" size={18} />
+            <Search className={cn("absolute top-1/2 -translate-y-1/2 text-content-muted", isRtl ? "right-3" : "left-3")} size={18} />
             <input 
               type="text" 
-              placeholder="بحث باسم الموظف..."
+              placeholder={t('shift_history.search_employee', 'بحث باسم الموظف...')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pr-10 pl-4 py-2 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-sm font-bold"
+              className={cn("w-full py-2 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-sm font-bold", isRtl ? "pr-10 pl-4" : "pl-10 pr-4")}
             />
           </div>
           <div className="relative">
-            <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 text-content-muted" size={18} />
+            <Calendar className={cn("absolute top-1/2 -translate-y-1/2 text-content-muted", isRtl ? "right-3" : "left-3")} size={18} />
             <input 
               type="date" 
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="pr-10 pl-4 py-2 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-sm font-bold"
+              className={cn("py-2 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-sm font-bold", isRtl ? "pr-10 pl-4" : "pl-10 pr-4")}
             />
           </div>
         </div>
@@ -146,31 +150,31 @@ export default function ShiftHistory({ tenantId, staffId, isManager }: ShiftHist
 
       <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
         <div className="overflow-x-auto whitespace-nowrap scrollbar-hide">
-          <table className="w-full text-right min-w-max">
+          <table className={cn("w-full min-w-max", isRtl ? "text-right" : "text-left")}>
             <thead className="bg-surface-muted border-b border-border">
               <tr>
-                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-wider">الموظف</th>
-                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-wider">وقت البداية</th>
-                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-wider">وقت النهاية</th>
-                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-wider">الحالة</th>
-                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-wider">المتوقع</th>
-                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-wider">الفعلي</th>
-                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-wider">الفارق</th>
-                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-wider">إجراءات</th>
+                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-wider">{t('shift_history.employee', 'الموظف')}</th>
+                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-wider">{t('shift_history.start_time', 'وقت البداية')}</th>
+                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-wider">{t('shift_history.end_time', 'وقت النهاية')}</th>
+                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-wider">{t('shift_history.status', 'الحالة')}</th>
+                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-wider">{t('shift_history.expected', 'المتوقع')}</th>
+                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-wider">{t('shift_history.actual', 'الفعلي')}</th>
+                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-wider">{t('shift_history.discrepancy', 'الفارق')}</th>
+                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-wider">{t('shift_history.actions', 'إجراءات')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {filteredShifts.map((shift) => (
                 <tr key={shift.id} className="hover:bg-surface-muted/50 transition-colors">
                   <td className="px-6 py-4 font-bold text-content">{shift.staffName}</td>
-                  <td className="px-6 py-4 text-sm text-content-muted">{new Date(shift.startTime).toLocaleString('ar-SA')}</td>
-                  <td className="px-6 py-4 text-sm text-content-muted">{shift.endTime ? new Date(shift.endTime).toLocaleString('ar-SA') : '-'}</td>
+                  <td className="px-6 py-4 text-sm text-content-muted" dir="ltr">{new Date(shift.startTime).toLocaleString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'))}</td>
+                  <td className="px-6 py-4 text-sm text-content-muted" dir="ltr">{shift.endTime ? new Date(shift.endTime).toLocaleString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US')) : '-'}</td>
                   <td className="px-6 py-4">
                     <span className={cn(
                       "px-3 py-1 rounded-full text-xs font-bold",
                       shift.status === 'open' ? "bg-success/10 text-success" : "bg-content-muted/10 text-content-muted"
                     )}>
-                      {shift.status === 'open' ? 'مفتوحة' : 'مغلقة'}
+                      {shift.status === 'open' ? t('shift_history.open', 'مفتوحة') : t('shift_history.closed', 'مغلقة')}
                     </span>
                   </td>
                   <td className="px-6 py-4 font-bold text-content"><PriceDisplay amount={shift.expectedCash || 0} /></td>
@@ -190,7 +194,7 @@ export default function ShiftHistory({ tenantId, staffId, isManager }: ShiftHist
                       <button 
                          onClick={() => handlePrintZReport(shift)}
                         className="p-2 text-brand hover:bg-brand/10 rounded-lg transition-colors"
-                        title="طباعة تقرير Z"
+                        title={t('shift_history.print_z_report', 'طباعة تقرير Z')}
                       >
                         <Printer size={18} />
                       </button>
@@ -201,7 +205,7 @@ export default function ShiftHistory({ tenantId, staffId, isManager }: ShiftHist
               {filteredShifts.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-6 py-8 text-center text-content-muted font-bold">
-                    لا توجد ورديات مطابقة للبحث
+                    {t('shift_history.no_shifts', 'لا توجد ورديات مطابقة للبحث')}
                   </td>
                 </tr>
               )}
@@ -212,90 +216,90 @@ export default function ShiftHistory({ tenantId, staffId, isManager }: ShiftHist
 
       {/* Printable Z-Report */}
       {selectedShift && (
-        <div className="hidden print:block fixed inset-0 bg-white z-[200] p-8 text-black" dir="rtl">
+        <div className="hidden print:block fixed inset-0 bg-white z-[200] p-8 text-black" dir={isRtl ? 'rtl' : 'ltr'}>
           <div className="max-w-md mx-auto">
             <div className="text-center mb-6 border-b border-dashed border-gray-400 pb-4">
-              <h1 className="text-2xl font-black mb-2">تقرير الوردية (Z-Report)</h1>
-              <p className="text-sm">الموظف: {selectedShift.staffName}</p>
-              <p className="text-sm">البداية: {new Date(selectedShift.startTime).toLocaleString('ar-SA')}</p>
-              <p className="text-sm">النهاية: {selectedShift.endTime ? new Date(selectedShift.endTime).toLocaleString('ar-SA') : '-'}</p>
+              <h1 className="text-2xl font-black mb-2">{t('shift_closing.title', 'تقرير الوردية (Z-Report)')}</h1>
+              <p className="text-sm">{t('shift_history.employee', 'الموظف')}: {selectedShift.staffName}</p>
+              <p className="text-sm">{t('shift_history.start_time', 'وقت البداية')}: {new Date(selectedShift.startTime).toLocaleString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'))}</p>
+              <p className="text-sm">{t('shift_history.end_time', 'وقت النهاية')}: {selectedShift.endTime ? new Date(selectedShift.endTime).toLocaleString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US')) : '-'}</p>
             </div>
 
             <div className="space-y-4 mb-6">
               <div className="flex justify-between font-bold">
-                <span>رصيد الافتتاح:</span>
+                <span>{t('shift_closing.opening_balance', 'رصيد الافتتاح:')}</span>
                 <span><PriceDisplay amount={selectedShift.openingBalance} /></span>
               </div>
               
               <div className="border-t border-gray-200 pt-2">
-                <h3 className="font-black mb-2">المبيعات حسب طريقة الدفع</h3>
+                <h3 className="font-black mb-2">{t('shift_history.sales_by_payment', 'المبيعات حسب طريقة الدفع')}</h3>
                 <div className="flex justify-between text-sm">
-                  <span>نقدي:</span>
+                  <span>{t('pos.cash', 'نقدي:')}</span>
                   <span><PriceDisplay amount={Number(selectedShift.totals?.cash || 0)} /></span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>شبكة/بطاقة:</span>
+                  <span>{t('pos.card', 'شبكة/بطاقة:')}</span>
                   <span><PriceDisplay amount={Number(selectedShift.totals?.card || 0)} /></span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>تحويل بنكي:</span>
+                  <span>{t('pos.bank_transfer', 'تحويل بنكي:')}</span>
                   <span><PriceDisplay amount={Number(selectedShift.totals?.bank_transfer || 0)} /></span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>آجل/أخرى:</span>
+                  <span>{t('pos.other', 'آجل/أخرى:')}</span>
                   <span><PriceDisplay amount={Number(selectedShift.totals?.credit || 0)} /></span>
                 </div>
                 <div className="flex justify-between font-bold mt-2 pt-2 border-t border-gray-200">
-                  <span>إجمالي المبيعات:</span>
+                  <span>{t('shift_history.total_sales', 'إجمالي المبيعات:')}</span>
                   <span><PriceDisplay amount={Number(selectedShift.totals?.totalSales || 0)} /></span>
                 </div>
               </div>
 
               <div className="border-t border-border pt-2">
                 <div className="flex justify-between text-sm text-danger">
-                  <span>إجمالي المرتجعات:</span>
+                  <span>{t('shift_history.total_returns', 'إجمالي المرتجعات:')}</span>
                   <span>-<PriceDisplay amount={Number(selectedShift.totals?.totalReturns || 0)} /></span>
                 </div>
                 <div className="flex justify-between text-sm text-danger">
-                  <span>المرتجعات النقدية:</span>
+                  <span>{t('shift_closing.cash_returns', 'المرتجعات النقدية:')}</span>
                   <span>-<PriceDisplay amount={Number(selectedShift.totals?.cashReturns || (selectedShift.totals as any)?.returns || 0)} /></span>
                 </div>
                 <div className="flex justify-between text-sm text-danger">
-                  <span>المصروفات (سحب نقدي):</span>
+                  <span>{t('shift_closing.cash_withdrawals', 'المصروفات (سحب نقدي):')}</span>
                   <span>-<PriceDisplay amount={Number(selectedShift.totals?.expenses || 0)} /></span>
                 </div>
                 <div className="flex justify-between text-sm text-success">
-                  <span>الإيداعات النقدية:</span>
+                  <span>{t('shift_closing.cash_deposits', 'الإيداعات النقدية:')}</span>
                   <span>+<PriceDisplay amount={Number(selectedShift.totals?.totalDeposits || 0)} /></span>
                 </div>
               </div>
 
               <div className="border-t border-gray-200 pt-2">
                 <div className="flex justify-between text-sm">
-                  <span>الضرائب المحصلة:</span>
+                  <span>{t('shift_history.collected_taxes', 'الضرائب المحصلة:')}</span>
                   <span><PriceDisplay amount={Number(selectedShift.totals?.taxes || 0)} /></span>
                 </div>
               </div>
 
               <div className="border-t border-gray-800 pt-4 mt-4">
                 <div className="flex justify-between font-black text-lg">
-                  <span>المبلغ المتوقع في الدرج:</span>
+                  <span>{t('shift_history.expected_cash_drawer', 'المبلغ المتوقع في الدرج:')}</span>
                   <span><PriceDisplay amount={selectedShift.expectedCash || 0} /></span>
                 </div>
                 <div className="flex justify-between font-black text-lg mt-2">
-                  <span>المبلغ الفعلي (المدخل):</span>
+                  <span>{t('shift_history.actual_cash_drawer', 'المبلغ الفعلي (المدخل):')}</span>
                   <span><PriceDisplay amount={selectedShift.actualCash || 0} /></span>
                 </div>
                 <div className={cn(
                   "flex justify-between font-black mt-2 pt-2 border-t border-dashed border-border",
                   selectedShift.discrepancy === 0 ? "text-success" : "text-danger"
                 )}>
-                  <span>الفارق:</span>
+                  <span>{t('shift_history.discrepancy_label', 'الفارق:')}</span>
                   <span><PriceDisplay amount={selectedShift.discrepancy || 0} /></span>
                 </div>
                 {selectedShift.discrepancyReason && (
                   <div className="mt-2 text-sm text-content-muted">
-                    <span className="font-bold">السبب: </span>
+                    <span className="font-bold">{t('shift_history.reason_label', 'السبب: ')}</span>
                     {selectedShift.discrepancyReason}
                   </div>
                 )}
@@ -304,7 +308,7 @@ export default function ShiftHistory({ tenantId, staffId, isManager }: ShiftHist
 
             {selectedShift.payouts && selectedShift.payouts.length > 0 && (
               <div className="border-t border-gray-800 pt-4 mb-6">
-                <h3 className="font-black mb-2">تفاصيل المصروفات</h3>
+                <h3 className="font-black mb-2">{t('shift_history.expenses_details', 'تفاصيل المصروفات')}</h3>
                 {selectedShift.payouts.map(p => (
                   <div key={p.id} className="flex justify-between text-sm mb-1">
                     <span>{p.reason}</span>

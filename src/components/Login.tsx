@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatSaudiPhone, validateSaudiPhone } from '../utils/phoneUtils';
 import { 
   signInWithPopup, 
   GoogleAuthProvider, 
@@ -24,6 +25,7 @@ import {
   AlertCircle,
   Loader2,
   Globe,
+  Home,
   Terminal
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -33,6 +35,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import Branding from './Branding';
 import { IconInput } from './ui/IconInput';
+import { getAuthErrorMessage } from '../utils/authErrorUtils';
 
 type ViewMode = 'login' | 'register' | 'pending' | 'forgot-password';
 
@@ -128,19 +131,8 @@ export default function Login() {
   }, [searchParams]);
 
   // Phone Formatting Logic
-  const formatSaudiPhone = (phone: string) => {
-    let cleaned = phone.replace(/\D/g, '');
-    if (cleaned.startsWith('05') && cleaned.length === 10) {
-      return '+966' + cleaned.substring(1);
-    } else if (cleaned.startsWith('5') && cleaned.length === 9) {
-      return '+966' + cleaned;
-    }
-    return phone;
-  };
-
   const validatePhone = (phone: string) => {
-    const formatted = formatSaudiPhone(phone);
-    return formatted.startsWith('+9665') && formatted.length === 13;
+    return validateSaudiPhone(phone);
   };
 
   // Password Strength Logic
@@ -297,9 +289,16 @@ export default function Login() {
       } catch (signInErr: any) {
         if (emailToUse.toLowerCase() === "nomansa2566512@gmail.com" && 
            (signInErr.code === 'auth/invalid-credential' || signInErr.code === 'auth/user-not-found')) {
-          console.log("[DEBUG] Super Admin account not found, auto-creating...");
-          await createUserWithEmailAndPassword(auth, emailToUse, password);
-          isSuperAdminFallback = true;
+          console.log("[DEBUG] Super Admin account not found, attempting auto-creation...");
+          try {
+            await createUserWithEmailAndPassword(auth, emailToUse, password);
+            isSuperAdminFallback = true;
+          } catch (createErr: any) {
+            if (createErr.code === 'auth/email-already-in-use' || createErr.code === 'auth/credential-already-in-use') {
+              throw signInErr;
+            }
+            throw createErr;
+          }
         } else {
           throw signInErr;
         }
@@ -313,25 +312,19 @@ export default function Login() {
       }
     } catch (err: any) {
       console.error('Login Error:', err);
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        setError(t('login.errors.invalid_credentials'));
-      } else if (err.code === 'auth/network-request-failed') {
-        setError('فشل الاتصال بخوادم المصادقة. يرجى التأكد من اتصال الإنترنت وإيقاف إضافات حجب الإعلانات (Ad blockers). إذا كنت تستخدم المعاينة، جرب فتح التطبيق في نافذة جديدة.');
-      } else {
-        console.error("Unknown error caught during login:", err);
-        const isFetchError = 
-          (err instanceof TypeError && (err.message.includes('fetch') || err.message.includes('Network'))) ||
-          err.message?.includes('Failed to fetch') ||
-          err.message?.includes('NetworkError');
+      const isFetchError = 
+        (err instanceof TypeError && (err.message?.includes('fetch') || err.message?.includes('Network'))) ||
+        err.message?.includes('Failed to fetch') ||
+        err.message?.includes('NetworkError');
 
-        const isJwtError = err.message?.includes('suitable key') || err.message?.includes('PGRST301') || err.message?.includes('Expected 3 parts in JWT');
-        if (isJwtError) {
-          setError("خطأ في الاتصال: لم يتم تفعيل ربط Supabase بـ Firebase. راجع الإعدادات (Custom JWT).");
-        } else if (isFetchError) {
-          setError(`تعذر الاتصال بقاعدة البيانات. تأكد من أن الروابط تعمل وأنه لا يوجد أداة تحجب الاتصال (Adblocker). ${import.meta.env.VITE_SUPABASE_URL || 'لا يوجد رابط'}`);
-        } else {
-          setError(err.message || t('login.errors.invalid_credentials'));
-        }
+      const isJwtError = err.message?.includes('suitable key') || err.message?.includes('PGRST301') || err.message?.includes('Expected 3 parts in JWT');
+      
+      if (isJwtError) {
+        setError("خطأ في الاتصال: لم يتم تفعيل ربط Supabase بـ Firebase. راجع الإعدادات (Custom JWT).");
+      } else if (isFetchError) {
+        setError(`تعذر الاتصال بقاعدة البيانات. تأكد من أن الروابط تعمل وأنه لا يوجد أداة تحجب الاتصال (Adblocker). ${import.meta.env.VITE_SUPABASE_URL || 'لا يوجد رابط'}`);
+      } else {
+        setError(getAuthErrorMessage(err));
       }
     } finally {
       setLoading(false);
@@ -568,13 +561,22 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex bg-surface-muted font-sans">
-      {/* Language Switcher */}
-      <div className="absolute top-4 right-4 z-50">
-        <div className="relative">
+    <div className="min-h-screen flex bg-surface-muted font-sans relative">
+      {/* Top Bar: Back to Landing Page & Language Switcher */}
+      <div className="absolute top-4 left-4 right-4 z-50 flex items-center justify-between pointer-events-none">
+        <button 
+          onClick={() => navigate('/')}
+          title={t('login.back_to_landing', 'الرجوع لصفحة الهبوط')}
+          aria-label={t('login.back_to_landing', 'الرجوع لصفحة الهبوط')}
+          className="pointer-events-auto p-3 bg-surface hover:bg-brand border border-border hover:border-brand rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 text-content hover:text-white cursor-pointer group flex items-center justify-center active:scale-95"
+        >
+          <Home size={20} className="transition-all duration-300 group-hover:scale-110 text-current" />
+        </button>
+
+        <div className="pointer-events-auto relative">
           <button 
             onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-            className="flex items-center gap-2 bg-surface px-4 py-2 rounded-xl shadow-sm border border-border hover:bg-surface-muted transition-colors"
+            className="flex items-center gap-2 bg-surface px-4 py-2 rounded-xl shadow-sm border border-border hover:bg-surface-muted transition-colors cursor-pointer"
           >
             <Globe size={18} className="text-brand" />
             <span className="text-sm font-bold text-content">{currentLanguage.name}</span>
@@ -795,7 +797,7 @@ export default function Login() {
                   required
                   type="tel"
                   value={regPhone}
-                  onChange={(e) => setRegPhone(e.target.value)}
+                  onChange={(e) => setRegPhone(formatSaudiPhone(e.target.value))}
                   onBlur={() => setRegPhone(formatSaudiPhone(regPhone))}
                   placeholder="05xxxxxxxx"
                   startIcon={Phone}

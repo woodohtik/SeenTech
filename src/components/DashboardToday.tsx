@@ -10,6 +10,7 @@ import { useStaff } from '../contexts/StaffContext';
 import { usePermissions } from '../hooks/usePermissions';
 import ExpansionPrompt from './ExpansionPrompt';
 import UsageGuide from './UsageGuide';
+import { PriceDisplay } from './PriceDisplay';
 import { HelpCircle } from 'lucide-react';
 
 
@@ -51,10 +52,25 @@ export default function DashboardToday({ tenantId }: { tenantId: string }) {
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [tenantId]);
 
   async function advance(o: any) {
-    await supabase.from('orders').update({ status: nextStage(o.status) }).eq('id', o.id);
+    const nextStatus = nextStage(o.status);
+    const historyEntry = {
+      status: nextStatus,
+      updatedAt: new Date().toISOString(),
+      updatedBy: currentStaff?.name || 'المالك',
+      notes: `تحديث الحالة من لوحة اليوم إلى ${STAGE_AR[nextStatus] || nextStatus}`
+    };
+    
+    // We must decode the raw database row before retrieving history/items
+    // Since o is fetched from the database, it's already decoded because of the fetch interceptor.
+    // However, we must preserve both items and history when calling update to prevent them being erased.
+    await supabase.from('orders').update({ 
+      status: nextStatus,
+      items: o.items || [],
+      history: [...(o.history || []), historyEntry]
+    }).eq('id', o.id);
     load();
   }
-  const todayStr = new Date().toLocaleDateString('ar-SA', { weekday:'long', day:'numeric', month:'long' });
+  const todayStr = new Date().toLocaleDateString('ar-SA-u-nu-latn', { weekday:'long', day:'numeric', month:'long' });
 
   return (
     <div dir="rtl" className="w-full max-w-4xl mx-auto p-3 sm:p-5 lg:p-6">
@@ -107,7 +123,9 @@ export default function DashboardToday({ tenantId }: { tenantId: string }) {
 
         {hasPermission('dashboard.revenue') && (
           <Section title="تحصيل اليوم">
-            <div className="text-3xl font-black text-content">{collectedToday.toLocaleString('en-US')} <span className="text-base text-content-muted">ر.س</span></div>
+            <div className="text-3xl font-black text-content">
+              <PriceDisplay amount={collectedToday} />
+            </div>
           </Section>
         )}
 

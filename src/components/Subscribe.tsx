@@ -26,7 +26,7 @@ const CORE_FEATURES = [
   'إدارة مخزون وخصم تلقائي', 'تقارير ولوحة تحكم', 'دعم فني',
 ];
 const FREE_FEATURES = [
-  'تجربة جميع المزايا لمدة ١٤ يوم', 'عدد لا محدود من الفواتير', 
+  'تجربة جميع المزايا لمدة 14 يوم', 'عدد لا محدود من الفواتير', 
   'إدارة عملاء متكاملة', 'تقارير أساسية', 'بدون ربط بطاقة'
 ];
 
@@ -62,7 +62,7 @@ export default function Subscribe({ onCheckout, onContactSales, logoSrc = '/Logo
           <p style={st.planDesc}>جرّب سين وجميع الأدوات قبل ما تدفع أي ريال.</p>
           <div style={st.priceRow}>
             <span style={st.price}>0</span>
-            <span style={st.cur}>﷼ / ١٤ يوم</span>
+            <span style={st.cur}>﷼ / 14 يوم</span>
           </div>
           <ul style={st.feats}>
             {FREE_FEATURES.map((f) => (

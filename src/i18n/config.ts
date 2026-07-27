@@ -1,3 +1,5 @@
+import '../lib/intlSetup';
+import { toLatinDigits } from '../lib/intlSetup';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
@@ -30,6 +32,13 @@ if (typeof window !== 'undefined') {
   }
 }
 
+// Add custom postProcessor to guarantee all i18n output uses English (Latin) digits (0-9)
+i18n.use({
+  type: 'postProcessor',
+  name: 'latinDigits',
+  process: (value: string) => toLatinDigits(value),
+});
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
@@ -41,14 +50,24 @@ i18n
       ur: { translation: ur },
     },
     fallbackLng: 'ar',
+    postProcess: ['latinDigits'],
     interpolation: {
       escapeValue: false,
+      format: (value: any) => {
+        if (typeof value === 'number') {
+          return new Intl.NumberFormat('en-US').format(value);
+        }
+        if (typeof value === 'string') {
+          return toLatinDigits(value);
+        }
+        return value;
+      },
     },
     detection: {
       order: ['localStorage'],
       caches: ['localStorage'],
     },
-  });
+  } as any);
 
 // Synchronize document dir and lang immediately on load
 if (typeof window !== 'undefined') {

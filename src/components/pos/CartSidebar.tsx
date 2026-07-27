@@ -5,9 +5,9 @@ import { supabase } from '../../lib/supabase/client';
 import { generateZatcaQR } from '../../lib/zatca';
 import { PriceDisplay } from '../PriceDisplay';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../../lib/utils';
+import { cn, generateOrderNumber } from '../../lib/utils';
 import { InvoiceModal } from './InvoiceModal';
-import { decodeInventoryDescription, calculateItemTax } from '../../utils/b2bHelper';
+import { decodeInventoryDescription, calculateItemTax, encodeInvoiceExtendedNotes } from '../../utils/b2bHelper';
 
 export interface CartItem {
   id: string;
@@ -84,7 +84,7 @@ export default function CartSidebar({
       const { data: tenant } = await supabase.from('tenants').select('*').eq('id', tenantId).single();
       if (!tenant) throw new Error('تعذر العثور على بيانات المتجر');
       
-      const orderNumber = Math.floor(100000 + Math.random() * 900000);
+      const orderNumber = generateOrderNumber();
       const qrCode = generateZatcaQR(
         tenant.name || 'Local Shop', 
         tenant.vat_number || '300000000000003',
@@ -93,35 +93,44 @@ export default function CartSidebar({
         vatAmount.toFixed(2)
       );
 
-      // 2. Insert Order
+      const isUuid = (val: string | undefined | null) => 
+        val ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val) : false;
+
+      // 2. Insert Order (complying with schema requirements)
       const { data: order, error: orderError } = await supabase.from('orders').insert([{
         tenant_id: tenantId,
-        customer_id: selectedCustomer?.id || null,
+        customer_id: (selectedCustomer?.id && isUuid(selectedCustomer.id)) ? selectedCustomer.id : null,
+        customer_name: selectedCustomer?.name || 'عميل نقدي',
         order_number: orderNumber,
-        subtotal: subTotal,
-        discount_amount: discountAmount, // Include discount
-        tax_amount: vatAmount,
-        total_amount: grandTotal,
-        status: 'draft',
+        discount_amount: Number(discountAmount) >= 0 ? Number(discountAmount) : 0, // Include discount
+        tax_amount: Number(vatAmount) >= 0 ? Number(vatAmount) : 0,
+        tax_rate: 0.15,
+        total_amount: Number(grandTotal) >= 0 ? Number(grandTotal) : 0,
+        paid_amount: Number(grandTotal) >= 0 ? Number(grandTotal) : 0,
+        status: 'delivered', // valid order_status enum value
+        delivery_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        order_date: new Date().toISOString(),
         created_at: new Date().toISOString()
       }]).select().single();
 
       if (orderError) throw orderError;
       if (!order) throw new Error('فشل في إنشاء الطلب');
 
-      // 3. Insert Order Lines
-      const orderLines = cartItems.map(cartItem => ({
+      // 3. Insert Order Items (order_items table with proper columns)
+      const orderItemsToInsert = cartItems.map(cartItem => ({
+        tenant_id: tenantId,
         order_id: order.id,
-        inventory_item_id: cartItem.item.id,
-        quantity: cartItem.quantity,
-        unit_price: cartItem.item.price_per_unit,
-        total_price: Number(cartItem.item.price_per_unit || 0) * cartItem.quantity
+        type: 'ready_made',
+        item_id: cartItem.item.id,
+        name: cartItem.item.name,
+        quantity: Number(cartItem.quantity) > 0 ? Number(cartItem.quantity) : 1,
+        price: Number(cartItem.item.price_per_unit) >= 0 ? Number(cartItem.item.price_per_unit) : 0
       }));
 
-      const { error: linesError } = await supabase.from('order_lines').insert(orderLines);
+      const { error: linesError } = await supabase.from('order_items').insert(orderItemsToInsert);
       if (linesError) throw linesError;
 
-      // 4. Create immutable ZATCA tax invoice
+      // 4. Create immutable ZATCA tax invoice (matching tax_invoices schema)
       const invoiceType = (selectedCustomer && selectedCustomer.vat_number) ? 'standard_b2b' : 'simplified_b2c';
       
       // Get sequential number for tenant
@@ -133,23 +142,37 @@ export default function CartSidebar({
       const sequenceNumber = (count || 0) + 1;
       const invoiceNumber = `INV-${new Date().getFullYear()}-${String(sequenceNumber).padStart(6, '0')}`;
 
+      // We encode the details including invoiceType inside notes via encodeInvoiceExtendedNotes
+      const extendedNotesStr = encodeInvoiceExtendedNotes({
+         invoiceType: invoiceType,
+         isB2B: invoiceType === 'standard_b2b',
+         b2bCompanyName: selectedCustomer?.name || undefined,
+         items: cartItems.map(cartItem => ({
+            name: cartItem.item.name,
+            quantity: cartItem.quantity,
+            price: Number(cartItem.item.price_per_unit || 0),
+            type: 'ready_made'
+         })),
+         createdBy: 'System'
+      });
+
       const { data: taxInvoice, error: invoiceError } = await supabase.from('tax_invoices').insert([{
          tenant_id: tenantId,
          order_id: order.id,
          invoice_number: invoiceNumber,
-         invoice_type: invoiceType,
          issued_at: new Date().toISOString(),
          status: 'issued',
-         customer_id: selectedCustomer?.id || null,
+         customer_id: (selectedCustomer?.id && isUuid(selectedCustomer.id)) ? selectedCustomer.id : null,
          customer_name: selectedCustomer?.name || 'Customer',
-         subtotal: subTotal,
+         subtotal: Number(subTotal) >= 0 ? Number(subTotal) : 0,
          tax_rate: 0.15,
-         tax_amount: vatAmount,
-         discount_amount: discountAmount,
-         total_amount: grandTotal,
-         paid_amount: grandTotal,
+         tax_amount: Number(vatAmount) >= 0 ? Number(vatAmount) : 0,
+         discount_amount: Number(discountAmount) >= 0 ? Number(discountAmount) : 0,
+         total_amount: Number(grandTotal) >= 0 ? Number(grandTotal) : 0,
+         paid_amount: Number(grandTotal) >= 0 ? Number(grandTotal) : 0,
          qr_payload: qrCode,
          vat_number: selectedCustomer?.vat_number || null,
+         notes: extendedNotesStr
       }]).select().single();
 
       if (invoiceError) throw invoiceError;
@@ -164,7 +187,13 @@ export default function CartSidebar({
       }));
       setInvoiceItems(printItems);
       
-      setCurrentInvoice(taxInvoice);
+      // Since supabase type expects TaxInvoice to have invoice_type, we can inject it locally on the returned object for the UI representation
+      const invoiceForModal = {
+        ...taxInvoice,
+        invoice_type: invoiceType
+      } as TaxInvoice;
+
+      setCurrentInvoice(invoiceForModal);
       setInvoiceModalOpen(true);
       
       // Do not clear yet, wait for user to close modal, or let the parent do it onCheckoutSuccess

@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../../types/supabase';
-import { encodeOrderPayload, decodeOrderPayload } from '../../utils/orderHistoryHelper';
+import { encodeOrderPayload, decodeOrderPayload, decodeOrderRow } from '../../utils/orderHistoryHelper';
 
 let supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
 if (supabaseUrl?.endsWith('/')) {
@@ -31,7 +31,7 @@ export const supabase: SupabaseClient<any> =
             },
             global: {
                 headers: { 'x-client-info': 'wdooh-web' },
-                fetch: (url, options) => {
+                fetch: async (url, options) => {
                     const headers = new Headers(options?.headers);
                     if (currentAuthToken) {
                         headers.set('Authorization', `Bearer ${currentAuthToken}`);
@@ -52,7 +52,49 @@ export const supabase: SupabaseClient<any> =
                     if (isOrdersRequest && options?.body && (options.method === 'POST' || options.method === 'PATCH' || options.method === 'PUT')) {
                         try {
                             const rawBody = typeof options.body === 'string' ? options.body : new TextDecoder().decode(options.body as any);
-                            const parsedBody = JSON.parse(rawBody);
+                            let parsedBody = JSON.parse(rawBody);
+                            
+                            // If PATCH or PUT, dynamically retrieve existing order to merge virtual columns and prevent data loss
+                            if (options.method === 'PATCH' || options.method === 'PUT') {
+                                let orderId = parsedBody.id;
+                                if (!orderId) {
+                                    const match = urlStr.match(/orders\?id=eq\.([a-f0-9-]{36})/i);
+                                    if (match) {
+                                        orderId = match[1];
+                                    }
+                                }
+                                
+                                if (orderId) {
+                                    const baseUrl = urlStr.split('?')[0];
+                                    const fetchUrl = `${baseUrl}?id=eq.${orderId}`;
+                                    try {
+                                        const getRes = await window.fetch(fetchUrl, { method: 'GET', headers });
+                                        if (getRes.ok) {
+                                            const text = await getRes.text();
+                                            if (text) {
+                                                const data = JSON.parse(text);
+                                                const existingRaw = Array.isArray(data) ? data[0] : data;
+                                                if (existingRaw) {
+                                                    const decodedExisting = decodeOrderRow(existingRaw);
+                                                    // Merge missing virtual columns
+                                                    if (!('items' in parsedBody) && decodedExisting.items) {
+                                                        parsedBody.items = decodedExisting.items;
+                                                    }
+                                                    if (!('history' in parsedBody) && decodedExisting.history) {
+                                                        parsedBody.history = decodedExisting.history;
+                                                    }
+                                                    if (!('subtotal_amount' in parsedBody) && decodedExisting.subtotal_amount !== undefined) {
+                                                        parsedBody.subtotal_amount = decodedExisting.subtotal_amount;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } catch (fetchErr) {
+                                        console.warn('[Supabase Fetch Interceptor] Failed to fetch existing order for merge:', fetchErr);
+                                    }
+                                }
+                            }
+                            
                             const encodedBody = encodeOrderPayload(parsedBody);
                             modifiedOptions = {
                                 ...options,

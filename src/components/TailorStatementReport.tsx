@@ -96,7 +96,7 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
     commissions.forEach(c => {
       const date = new Date(c.created_at);
       const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const label = date.toLocaleString('ar-SA', { month: 'short', year: 'numeric' });
+      const label = date.toLocaleString('ar-SA-u-nu-latn', { month: 'short', year: 'numeric' });
       if (!map.has(yearMonth)) {
         map.set(yearMonth, { label, total: 0, dateVal: new Date(date.getFullYear(), date.getMonth(), 1).getTime() });
       }
@@ -190,7 +190,7 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
                   <Tooltip 
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    formatter={(value: number) => [`${value.toFixed(2)} ريال`, 'العمولات']}
+                    formatter={(value: number) => [`${value.toFixed(2)} ﷼`, 'العمولات']}
                   />
                   <Area type="monotone" dataKey="total" stroke="#4F46E5" strokeWidth={3} fillOpacity={1} fill="url(#colorCommission)" />
                 </AreaChart>
@@ -210,7 +210,7 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
                     <Tooltip 
                       cursor={{ fill: '#f9fafb' }}
                       contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                      formatter={(value: number) => [`${value.toFixed(2)} ريال`, 'العمولات']}
+                      formatter={(value: number) => [`${value.toFixed(2)} ﷼`, 'العمولات']}
                     />
                     <Bar dataKey="total" fill="#10B981" radius={[0, 4, 4, 0]} barSize={24} />
                   </BarChart>
@@ -257,7 +257,7 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
                         {tailor?.name || 'غير معروف'}
                       </td>
                       <td className="px-6 py-4 text-gray-500" dir="ltr">
-                        {new Date(item.created_at).toLocaleString('ar-SA')}
+                        {new Date(item.created_at).toLocaleString('ar-SA-u-nu-latn')}
                       </td>
                       <td className="px-6 py-4">
                         <span className="inline-flex items-center px-3 py-1 bg-emerald-50 text-emerald-700 font-bold rounded-lg text-sm">

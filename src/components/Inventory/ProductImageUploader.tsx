@@ -3,6 +3,7 @@ import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { uploadImageToSupabase } from '../../lib/supabase/storage';
 import { cn } from '../../lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface ProductImageUploaderProps {
   tenantId: string;
@@ -17,6 +18,7 @@ export default function ProductImageUploader({
   initialImageUrl,
   className
 }: ProductImageUploaderProps) {
+  const { t } = useTranslation();
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(initialImageUrl || null);
@@ -38,7 +40,7 @@ export default function ProductImageUploader({
 
     // Validate type
     if (!file.type.startsWith('image/')) {
-      setError('يرجى اختيار ملف صورة صالح');
+      setError(t('inventory.select_valid_image'));
       return;
     }
 
@@ -88,10 +90,10 @@ export default function ProductImageUploader({
       setIsUploading(false);
     } catch (err: any) {
       console.error('Upload error:', err);
-      setError(err.message || 'فشل في رفع الصورة');
+      setError(err.message || t('inventory.upload_failed'));
       setIsUploading(false);
     }
-  }, [tenantId, onUploadComplete, convertToBase64]);
+  }, [tenantId, onUploadComplete, convertToBase64, t]);
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -112,7 +114,7 @@ export default function ProductImageUploader({
 
   return (
     <div className={cn("space-y-2", className)}>
-      <label className="block text-sm font-bold text-content mb-1">صورة المنتج</label>
+      <label className="block text-sm font-bold text-content mb-1">{t('inventory.product_image')}</label>
       
       <div
         onDragOver={(e) => e.preventDefault()}
@@ -165,8 +167,8 @@ export default function ProductImageUploader({
             <div className="w-12 h-12 bg-surface rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-3 text-content-muted">
               {isUploading ? <Loader2 className="animate-spin text-brand" /> : <Upload size={24} />}
             </div>
-            <p className="text-sm font-bold text-content">اسحب وأفلت صورة المنتج هنا</p>
-            <p className="text-xs text-content-muted mt-1 underline">أو انقر للاختيار من جهازك</p>
+            <p className="text-sm font-bold text-content">{t('inventory.drag_drop_image')}</p>
+            <p className="text-xs text-content-muted mt-1 underline">{t('inventory.click_to_browse')}</p>
           </div>
         )}
 
@@ -177,7 +179,7 @@ export default function ProductImageUploader({
 
       <p className="text-[10px] text-content-muted flex items-center gap-1">
         <ImageIcon size={10} />
-        تنسيقات مدعومة: JPG, PNG. سيتم ضغط الصورة تلقائياً لسرعة التحميل.
+        {t('inventory.supported_formats')}
       </p>
     </div>
   );

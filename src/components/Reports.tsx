@@ -441,38 +441,39 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
       {/* Filters Bar */}
       <div id="reports-filters-bar" className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm flex flex-col lg:flex-row lg:items-center gap-4 sm:gap-6">
-        <div className="w-full lg:flex-1 relative">
-          <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-content-muted" size={18} />
+        <div className="w-full lg:flex-1 flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-2xl border border-transparent focus-within:ring-2 focus-within:ring-brand focus-within:border-transparent transition-all">
+          <Search className="text-content-muted shrink-0" size={18} />
           <input 
             id="reports-search-input"
             type="text" 
             placeholder="بحث برقم الطلب أو اسم العميل..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pr-12 pl-4 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-sm text-content"
+            className="w-full bg-transparent border-none p-0 focus:ring-0 font-bold text-sm text-content outline-none"
           />
         </div>
         
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
-          <div id="reports-date-picker-wrapper" className="flex flex-col xs:flex-row flex-1 items-stretch xs:items-center justify-between gap-2 bg-surface-muted px-4 py-2.5 rounded-2xl border border-border">
-            <div className="flex items-center gap-2 flex-1">
+          <div id="reports-date-picker-wrapper" className="flex flex-col xs:flex-row flex-1 items-stretch xs:items-center justify-between gap-3 bg-surface-muted px-4 py-2.5 rounded-2xl border border-border">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
               <CalendarIcon size={16} className="text-content-muted shrink-0" />
               <input 
                 id="reports-date-start"
                 type="date" 
                 value={dateRange.start}
                 onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                className="bg-transparent border-none p-0 focus:ring-0 text-xs font-bold text-content w-full"
+                className="bg-transparent border-none p-0 focus:ring-0 text-xs font-bold text-content w-full cursor-pointer outline-none"
               />
             </div>
-            <span className="text-content-muted/30 font-bold text-xs shrink-0 text-center xs:px-1">إلى</span>
-            <div className="flex items-center gap-2 flex-1">
+            <span className="text-content-muted/40 font-bold text-xs shrink-0 text-center xs:px-1">إلى</span>
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <CalendarIcon size={16} className="text-content-muted shrink-0" />
               <input 
                 id="reports-date-end"
                 type="date" 
                 value={dateRange.end}
                 onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                className="bg-transparent border-none p-0 focus:ring-0 text-xs font-bold text-content w-full"
+                className="bg-transparent border-none p-0 focus:ring-0 text-xs font-bold text-content w-full cursor-pointer outline-none"
               />
             </div>
           </div>
@@ -561,7 +562,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     <h3 className="text-xs sm:text-xl lg:text-2xl font-black text-content mt-0.5 sm:mt-1 truncate">
                       {typeof stat.value === 'number' && (stat.label.includes('إيرادات') || stat.label.includes('مبيعات'))
                         ? <PriceDisplay amount={stat.value} />
-                        : stat.value.toLocaleString()}
+                        : stat.value.toLocaleString('en-US')}
                     </h3>
                   </div>
                 </div>
@@ -585,23 +586,44 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     <AreaChart data={financialStats.trendChartData}>
                       <defs>
                         <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#1C8FFF" stopOpacity={0.1}/>
-                          <stop offset="95%" stopColor="#1C8FFF" stopOpacity={0}/>
+                          <stop offset="0%" stopColor="#1C8FFF" stopOpacity={0.35}/>
+                          <stop offset="100%" stopColor="#1C8FFF" stopOpacity={0.0}/>
                         </linearGradient>
                         <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#22C55E" stopOpacity={0.1}/>
-                          <stop offset="95%" stopColor="#22C55E" stopOpacity={0}/>
+                          <stop offset="0%" stopColor="#22C55E" stopOpacity={0.4}/>
+                          <stop offset="100%" stopColor="#22C55E" stopOpacity={0.0}/>
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-border" />
-                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
+                      <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="var(--border)" opacity={0.5} />
+                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'var(--content-muted)' }} dy={6} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'var(--content-muted)' }} />
                       <Tooltip 
-                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
-                        formatter={(value: number) => <PriceDisplay amount={value} />}
+                        cursor={{ stroke: 'var(--brand)', strokeWidth: 1.5, strokeDasharray: '4 4', opacity: 0.5 }}
+                        content={({ active, payload, label }) => {
+                          if (active && payload && payload.length) {
+                            const salesVal = payload.find(p => p.dataKey === 'sales')?.value as number || 0;
+                            const revVal = payload.find(p => p.dataKey === 'revenue')?.value as number || 0;
+                            return (
+                              <div className="bg-surface/95 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-border text-right min-w-[200px] animate-in fade-in zoom-in-95 duration-150">
+                                <div className="text-xs font-black text-content pb-2 mb-2 border-b border-border/60">{label}</div>
+                                <div className="space-y-2 text-xs font-bold">
+                                  <div className="flex items-center justify-between gap-4">
+                                    <span className="text-content-muted flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#1C8FFF]" />المبيعات:</span>
+                                    <span className="font-black text-[#1C8FFF]"><PriceDisplay amount={salesVal} /></span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-4">
+                                    <span className="text-content-muted flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#22C55E]" />الإيرادات:</span>
+                                    <span className="font-black text-emerald-600"><PriceDisplay amount={revVal} /></span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
                       />
-                      <Area type="monotone" dataKey="sales" stroke="#1C8FFF" strokeWidth={2.5} fillOpacity={1} fill="url(#colorSales)" />
-                      <Area type="monotone" dataKey="revenue" stroke="#22C55E" strokeWidth={2.5} fillOpacity={1} fill="url(#colorRevenue)" />
+                      <Area type="monotone" dataKey="sales" stroke="#1C8FFF" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" activeDot={{ r: 6, strokeWidth: 2, stroke: 'var(--surface)' }} />
+                      <Area type="monotone" dataKey="revenue" stroke="#22C55E" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" activeDot={{ r: 6, strokeWidth: 2, stroke: 'var(--surface)' }} />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -933,12 +955,15 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 <div className="flex flex-col gap-4 max-w-sm mx-auto">
                   <div className="space-y-1.5 sm:space-y-2 text-right">
                     <label className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest mr-2">اختر التاريخ</label>
-                    <input 
-                      type="date" 
-                      value={selectedZDate}
-                      onChange={(e) => setSelectedZDate(e.target.value)}
-                      className="w-full px-4 py-3 sm:px-6 sm:py-4 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-black text-base sm:text-lg text-center text-content"
-                    />
+                    <div className="flex items-center gap-3 px-4 py-3 sm:py-3.5 bg-surface-muted border border-border rounded-2xl focus-within:ring-2 focus-within:ring-brand focus-within:border-transparent transition-all">
+                      <CalendarIcon size={20} className="text-content-muted shrink-0" />
+                      <input 
+                        type="date" 
+                        value={selectedZDate}
+                        onChange={(e) => setSelectedZDate(e.target.value)}
+                        className="w-full bg-transparent border-none p-0 focus:ring-0 font-black text-base sm:text-lg text-content cursor-pointer text-right outline-none"
+                      />
+                    </div>
                   </div>
                   <button 
                     onClick={() => fetchDailyZReport(selectedZDate)}
@@ -1033,7 +1058,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                           {drillDown.columns.map((col, idx) => (
                             <td key={idx} className="px-6 py-4 text-sm font-bold text-content">
                               {col.type === 'currency' ? <PriceDisplay amount={row[col.key]} /> :
-                               col.type === 'date' ? new Date(row[col.key]).toLocaleDateString('ar-SA') :
+                               col.type === 'date' ? new Date(row[col.key]).toLocaleDateString('ar-SA-u-nu-latn') :
                                col.type === 'status' ? (
                                  <span className="px-2 py-1 bg-surface-muted rounded-lg text-[10px] text-content-muted">
                                    {row[col.key]}

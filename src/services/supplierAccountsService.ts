@@ -30,12 +30,12 @@ export async function getSupplierTransactions(
       if (data.length > 0) {
         return data as SupplierTransaction[];
       }
-    } else if (error && error.code !== '42P01') {
-      // Other database error (relation not found is 42P01 in PG)
-      console.error('Database error loading supplier transactions:', error);
+    } else if (error) {
+      // Table may not exist in database yet; fallback gracefully without throwing console.error
+      console.warn('supplier_transactions table query notice:', error.message || error);
     }
   } catch (err) {
-    console.error('Exception querying supplier_transactions from DB:', err);
+    console.warn('Exception querying supplier_transactions from DB:', err);
   }
 
   // 2. Fallback to LocalStorage sync
@@ -45,16 +45,37 @@ export async function getSupplierTransactions(
   if (stored) {
     try {
       const parsed = JSON.parse(stored) as SupplierTransaction[];
-      return parsed.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      // Filter out legacy auto-seeded mock transactions (e.g. starting with 'mock-')
+      const realTransactions = parsed.filter(tx => !tx.id || !tx.id.toString().startsWith('mock-'));
+      if (realTransactions.length > 0) {
+        return realTransactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      }
+      // Clean up stale mock data key from localStorage
+      localStorage.removeItem(localKey);
     } catch (e) {
       console.error('Error parsing local supplier ledger:', e);
     }
   }
 
-  // 3. Auto-Seed beautiful, realistic sample transactions to display a fully functional ERP state
-  const sampleTransactions = generateSampleTransactions(supplierId, tenantId, supplierName, supplierBalance);
-  localStorage.setItem(localKey, JSON.stringify(sampleTransactions));
-  return sampleTransactions;
+  // 3. For new or clean suppliers without transaction records:
+  // If supplier has a non-zero opening balance, create a single opening balance entry.
+  if (supplierBalance && supplierBalance > 0) {
+    const openingTx: SupplierTransaction = {
+      id: `opening-${supplierId}`,
+      supplier_id: supplierId,
+      type: 'adjustment',
+      credit: supplierBalance,
+      debit: 0,
+      running_balance: supplierBalance,
+      reference_number: 'OP-001',
+      date: new Date().toISOString(),
+      notes: 'رصيد افتتاحي للمورد / Opening balance',
+      tenant_id: tenantId,
+    };
+    return [openingTx];
+  }
+
+  return [];
 }
 
 /**
@@ -139,101 +160,6 @@ export async function addSupplierTransaction(
   }
 
   return fullTransaction;
-}
-
-/**
- * Generates initial realistic ERP audit history based on the current balance.
- */
-function generateSampleTransactions(
-  supplierId: string,
-  tenantId: string,
-  supplierName: string,
-  finalBalance: number
-): SupplierTransaction[] {
-  const now = new Date();
-  const t1 = new Date(now.getTime() - 25 * 24 * 60 * 60 * 1000); // 25 days ago
-  const t2 = new Date(now.getTime() - 17 * 24 * 60 * 60 * 1000); // 17 days ago
-  const t3 = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000); // 10 days ago
-  const t4 = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);  // 3 days ago
-
-  const openingBalance = Math.max(0, finalBalance - 1500 + 1200);
-
-  const txs: SupplierTransaction[] = [
-    {
-      id: `mock-1-${supplierId}`,
-      supplier_id: supplierId,
-      type: 'adjustment',
-      credit: openingBalance,
-      debit: 0,
-      running_balance: openingBalance,
-      reference_number: 'OP-001',
-      date: t1.toISOString(),
-      notes: 'رصيد تحويلي افتتاحي لبداية السنة المالية / Opening balance adjustment',
-      tenant_id: tenantId,
-    },
-    {
-      id: `mock-2-${supplierId}`,
-      supplier_id: supplierId,
-      type: 'purchase',
-      credit: 3500.0,
-      debit: 0,
-      running_balance: openingBalance + 3500.0,
-      reference_number: 'PO-3081',
-      date: t2.toISOString(),
-      notes: 'شراء رولات أقمشة رجالية شتوية وصيفية / Purchase male fabrics PO-3081',
-      tenant_id: tenantId,
-    },
-    {
-      id: `mock-3-${supplierId}`,
-      supplier_id: supplierId,
-      type: 'payment',
-      credit: 0,
-      debit: 2000.0,
-      running_balance: openingBalance + 3500.0 - 2000.0,
-      reference_number: 'PV-9011',
-      date: t3.toISOString(),
-      notes: 'دفعة نقدية تحت الحساب - سند صرف رقم 9011 / Payment voucher cash PV-9011',
-      tenant_id: tenantId,
-    },
-  ];
-
-  // Adjust final entry to perfectly equal the current supplier.balance
-  const currentTotal = txs[txs.length - 1].running_balance;
-  const difference = finalBalance - currentTotal;
-
-  if (difference !== 0) {
-    if (difference > 0) {
-      // More credit (purchases)
-      txs.push({
-        id: `mock-4-${supplierId}`,
-        supplier_id: supplierId,
-        type: 'purchase',
-        credit: difference,
-        debit: 0,
-        running_balance: finalBalance,
-        reference_number: 'PO-3094',
-        date: t4.toISOString(),
-        notes: 'بضائع وإكسسوارات مستلمة / Supplied accessory stocks PO-3094',
-        tenant_id: tenantId,
-      });
-    } else {
-      // More debit (payments)
-      txs.push({
-        id: `mock-4-${supplierId}`,
-        supplier_id: supplierId,
-        type: 'payment',
-        credit: 0,
-        debit: Math.abs(difference),
-        running_balance: finalBalance,
-        reference_number: 'PV-9015',
-        date: t4.toISOString(),
-        notes: 'تسوية فروقات مالية - سند صرف 9015 / Payment/Settlement voucher PV-9015',
-        tenant_id: tenantId,
-      });
-    }
-  }
-
-  return txs;
 }
 
 /**

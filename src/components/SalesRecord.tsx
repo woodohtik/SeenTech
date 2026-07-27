@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
 import { Order } from '../types';
-import { cn } from '../lib/utils';
+import { cn, getCurrencySymbol } from '../lib/utils';
 import { decodeOrderB2BNotes } from '../utils/b2bHelper';
 import { PriceDisplay } from './PriceDisplay';
 import { FileText, Eye, X, Download, Package, Scissors, User, Calendar, CreditCard, ShoppingBag, Clock, Printer, Share2 } from 'lucide-react';
@@ -10,7 +10,9 @@ import { useTranslation } from 'react-i18next';
 import { downloadInvoicePDF, shareInvoiceAsPDFFile } from '../utils/pdfGenerator';
 
 export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenantId: string, shiftId?: string, filterStatus?: string }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,12 +29,16 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
 
   const handleShareWhatsApp = async () => {
     if (!selectedOrder) return;
-    const paymentMethodText = selectedOrder.paymentMethod === 'cash' ? 'نقدي' : 
-                          selectedOrder.paymentMethod === 'network' ? 'شبكة / مدى' : 
-                          selectedOrder.paymentMethod === 'partial' ? 'جزئي' : 
-                          selectedOrder.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' : 'أخرى';
-    const statusText = selectedOrder.status === 'delivered' ? 'مكتمل / تم التسليم' : 'قيد المعالجة / الانتظار';
-    const text = `السلام عليكم ورحمة الله وبركاته،\nتفاصيل الفاتورة من المتجر:\nرقم الفاتورة: #${selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase()}\nالإجمالي: ${selectedOrder.totalAmount} ر.س\nطريقة الدفع: ${paymentMethodText}\nحالة الطلب: ${statusText}\nشكراً لتواصلك معنا!`;
+    const paymentMethodText = selectedOrder.paymentMethod === 'cash' ? t('pos.cash') : 
+                          selectedOrder.paymentMethod === 'network' ? t('pos.card') : 
+                          selectedOrder.paymentMethod === 'partial' ? t('pos.partial') : 
+                          selectedOrder.paymentMethod === 'bank_transfer' ? t('pos.bank_transfer') : t('pos.other');
+    const statusText = selectedOrder.status === 'delivered' ? t('pos.delivered') : t('pos.pending');
+    
+    const text = isRtl
+      ? `السلام عليكم ورحمة الله وبركاته،\nتفاصيل الفاتورة من المتجر:\nرقم الفاتورة: #${selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase()}\nالإجمالي: ${selectedOrder.totalAmount} ${getCurrencySymbol()}\nطريقة الدفع: ${paymentMethodText}\nحالة الطلب: ${statusText}\nشكراً لتواصلك معنا!`
+      : `Hello,\nInvoice details from store:\nInvoice No: #${selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase()}\nTotal: ${selectedOrder.totalAmount} ${getCurrencySymbol()}\nPayment Method: ${paymentMethodText}\nOrder Status: ${statusText}\nThank you for choosing us!`;
+    
     try {
       await shareInvoiceAsPDFFile('sales-record-print-area', `Invoice-${selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase()}.pdf`, text);
     } catch (e) {
@@ -114,15 +120,15 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
 
   if (error) {
     return (
-      <div className="p-6 font-sans flex flex-col items-center justify-center h-64 text-center bg-surface border border-border rounded-2xl max-w-md mx-auto my-12 shadow-sm animate-fade-in" dir="rtl">
+      <div className="p-6 font-sans flex flex-col items-center justify-center h-64 text-center bg-surface border border-border rounded-2xl max-w-md mx-auto my-12 shadow-sm animate-fade-in" dir={isRtl ? 'rtl' : 'ltr'}>
         <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4 font-black text-xl">⚠️</div>
-        <h3 className="text-sm font-black text-content mb-2">فشل تحميل سجل المبيعات</h3>
+        <h3 className="text-sm font-black text-content mb-2">{t('sales_record.failed_to_load', 'فشل تحميل سجل المبيعات')}</h3>
         <p className="text-xs text-content-muted mb-4 font-bold max-w-[280px] leading-relaxed">{error}</p>
         <button
           onClick={fetchOrders}
           className="px-5 py-2 bg-brand text-white text-xs font-black rounded-xl hover:bg-brand/90 transition-colors shadow-md shadow-brand/10 cursor-pointer"
         >
-          إعادة المحاولة
+          {t('common.retry', 'إعادة المحاولة')}
         </button>
       </div>
     );
@@ -156,7 +162,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                       )}
                     </div>
                   </td>
-                  <td className="p-4 text-content-muted" dir="ltr">{new Date(order.orderDate).toLocaleString('ar-SA')}</td>
+                  <td className="p-4 text-content-muted" dir="ltr">{new Date(order.orderDate).toLocaleString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'))}</td>
                   <td className="p-4 font-bold text-brand"><PriceDisplay amount={order.totalAmount} /></td>
                   <td className="p-4">
                     <span className={cn(
@@ -205,7 +211,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                     <span className="bg-brand/10 text-brand px-2 py-0.5 rounded text-[10px] font-black uppercase">B2B</span>
                   )}
                 </div>
-                <span className="text-[10px] text-content-muted" dir="ltr">{new Date(order.orderDate).toLocaleDateString('ar-SA')}</span>
+                <span className="text-[10px] text-content-muted" dir="ltr">{new Date(order.orderDate).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'))}</span>
               </div>
             </div>
           ))}
@@ -229,7 +235,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                 </div>
                 <div>
                   <h2 className="text-base sm:text-xl font-black text-content">{t('pos.order_details')} #{selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase()}</h2>
-                  <p className="text-[10px] sm:text-xs text-content-muted font-bold uppercase tracking-widest">{new Date(selectedOrder.orderDate).toLocaleString('ar-SA')}</p>
+                  <p className="text-[10px] sm:text-xs text-content-muted font-bold uppercase tracking-widest">{new Date(selectedOrder.orderDate).toLocaleString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'))}</p>
                 </div>
               </div>
               <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-surface-muted rounded-full transition-colors">
@@ -356,14 +362,14 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                 className="flex-1 min-w-[110px] bg-brand text-white py-2.5 px-3 rounded-xl font-bold text-xs shadow-md hover:bg-brand/90 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Download size={16} />
-                تحميل PDF
+                {t('sales_record.download_pdf', 'تحميل PDF')}
               </button>
               <button 
                 onClick={handleShareWhatsApp}
                 className="flex-1 min-w-[110px] bg-[#25D366] text-white py-2.5 px-3 rounded-xl font-bold text-xs shadow-md hover:bg-[#20ba56] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Share2 size={16} />
-                واتساب
+                {t('sales_record.whatsapp', 'واتساب')}
               </button>
               <button 
                 onClick={() => window.print()}

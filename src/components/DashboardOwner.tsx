@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   Package,
   CheckCircle2,
+  Info,
   Bell,
   X,
   Download,
@@ -23,11 +24,13 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
+import { deleteTestDataForTenant } from '../services/trialService';
 import { auth, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Customer, Order, InventoryItem, AppNotification, OrderStatus, Tenant, BranchInventory } from '../types';
 import { STATUS_CONFIG } from './Orders';
 import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
+import { CurrencySymbol } from './CurrencySymbol';
 import { motion, AnimatePresence } from 'motion/react';
 import { SmartSelect } from './ui/SmartSelect';
 import Header from './Header';
@@ -217,6 +220,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
   const [allInventory, setAllInventory] = useState<InventoryItem[]>([]);
   const [branchInventory, setBranchInventory] = useState<BranchInventory[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
+  const [chartViewMode, setChartViewMode] = useState<'both' | 'revenue' | 'orders'>('both');
   const [statusDistribution, setStatusDistribution] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [drillDown, setDrillDown] = useState<{ type: string, title: string, data: any[] } | null>(null);
@@ -229,6 +233,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
   const [branches, setBranches] = useState<any[]>([]);
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [trialDays, setTrialDays] = useState<number | null>(null);
+  const [isTrialPlan, setIsTrialPlan] = useState<boolean>(true);
 
   useEffect(() => {
     if (tenant && tenant.createdAt) {
@@ -236,7 +241,12 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       const now = new Date();
       const diffTime = now.getTime() - createdDate.getTime();
       const diffDays = diffTime / (1000 * 60 * 60 * 24);
-      setTrialDays(Math.max(0, 14 - Math.floor(diffDays)));
+      
+      const isTrial = tenant.planId === 'free' || tenant.planId?.includes('trial') || (!tenant.planId && tenant.planId !== 'basic');
+      const durationDays = isTrial ? 14 : 365;
+      
+      setIsTrialPlan(isTrial);
+      setTrialDays(Math.max(0, durationDays - Math.floor(diffDays)));
     }
   }, [tenant]);
 
@@ -258,7 +268,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr;
     try {
-      return d.toLocaleDateString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK' : 'en-US'), {
+      return d.toLocaleDateString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'), {
         year: 'numeric',
         month: 'short',
         day: 'numeric'
@@ -480,8 +490,8 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
           const dayRev = dayOrders.reduce((acc, o) => acc + (o.paidAmount || 0), 0);
           return {
             date: revenueRange > 7 
-              ? new Date(date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK' : 'en-US'), { day: 'numeric', month: 'short' })
-              : new Date(date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK' : 'en-US'), { weekday: 'short' }),
+              ? new Date(date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'), { day: 'numeric', month: 'short' })
+              : new Date(date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'), { weekday: 'short' }),
             revenue: dayRev,
             ordersCount: dayOrders.length
           };
@@ -509,22 +519,6 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         setIsLoading(false);
       }
     };
-
-    if (hasPermission('dashboard.view')) {
-      fetchStats();
-    }
-
-    // Real-time listeners for Recent Orders and Notifications
-    const ordersSubscription = supabase
-      .channel('dashboard_updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `tenant_id=eq.${tenantId}` }, () => {
-        fetchStats();
-        fetchRecentOrders();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `tenant_id=eq.${tenantId}` }, () => {
-        fetchNotifications();
-      })
-      .subscribe();
 
     const fetchRecentOrders = async () => {
       if (!hasPermission('orders.view') && !hasPermission('dashboard.orders')) return;
@@ -563,19 +557,41 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
           id: d.id,
           title: d.title,
           message: d.message,
-          type: d.type,
-          status: d.status,
+          type: d.type || 'info',
           createdAt: d.created_at,
-          tenantId: d.tenant_id
-        } as AppNotification)));
+          read: d.status === 'read'
+        } as unknown as AppNotification)));
       }
     };
 
-    fetchRecentOrders();
-    fetchNotifications();
+    if (hasPermission('dashboard.view') || hasPermission('orders.view') || hasPermission('dashboard.orders')) {
+      fetchStats();
+      fetchRecentOrders();
+      fetchNotifications();
+    }
+
+    // Real-time listeners for Recent Orders and Notifications
+    const ordersSubscription = supabase
+      .channel('dashboard_updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `tenant_id=eq.${tenantId}` }, () => {
+        fetchStats();
+        fetchRecentOrders();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `tenant_id=eq.${tenantId}` }, () => {
+        fetchNotifications();
+      })
+      .subscribe();
+
+    const handleDataCleared = () => {
+      fetchStats();
+      fetchRecentOrders();
+      fetchNotifications();
+    };
+    window.addEventListener('data_cleared', handleDataCleared);
 
     return () => {
       supabase.removeChannel(ordersSubscription);
+      window.removeEventListener('data_cleared', handleDataCleared);
     };
   }, [tenantId, revenueRange, currentStaff?.branchId, selectedBranchId]);
 
@@ -609,7 +625,12 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
     },
     { 
       title: t('dashboard.grid.finance', 'التقارير المالية'), 
-      detail: stats.revenue > 0 ? t('dashboard.grid.finance_desc_active', 'الدخل: {{amount}} ر.س', { amount: stats.revenue.toLocaleString() }) : t('dashboard.grid.finance_desc_empty', 'مراجعة أداء الشهر'), 
+      detail: stats.revenue > 0 ? (
+        <span className="inline-flex items-center gap-1 font-bold">
+          <span>{t('dashboard.income_label', 'الدخل')}:</span>
+          <PriceDisplay amount={stats.revenue} />
+        </span>
+      ) : t('dashboard.grid.finance_desc_empty', 'مراجعة أداء الشهر'), 
       icon: BarChart3, 
       color: 'bg-success',
       onClick: () => navigate('/reports')
@@ -632,7 +653,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
   };
 
   const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   useEffect(() => {
     if (toast) {
@@ -642,20 +663,34 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
   }, [toast]);
 
   const deleteTestData = async () => {
+    // Instantly close confirm dialog and show immediate response
+    setIsDeleteConfirmVisible(false);
+    setToast({ 
+      message: t('dashboard.deleting_test_data', 'جاري حذف البيانات التجريبية...'), 
+      type: 'info' 
+    });
+
     try {
-      const tables = ['customers', 'orders', 'inventory_items', 'suppliers', 'staff'];
-      for (const tableName of tables) {
-        const { error } = await supabase
-          .from(tableName)
-          .delete()
-          .eq('tenant_id', tenantId)
-          .eq('is_test', true);
-        
-        if (error) throw error;
+      const result = await deleteTestDataForTenant(tenantId);
+      if (result.success) {
+        setToast({ 
+          message: t('dashboard.delete_test_data_success', `تم حذف البيانات التجريبية بنجاح (${result.deletedCount} سجل)`), 
+          type: 'success' 
+        });
+
+        // Optimistically clean local state immediately
+        setRecentOrders(prev => prev.filter(o => !(o as any).isTest && !(o as any).is_test));
+        setAllOrders(prev => prev.filter(o => !(o as any).isTest && !(o as any).is_test));
+        setNotifications(prev => prev.filter(n => !(n as any).isTest && !(n as any).is_test));
+
+        // Notify app components to refresh data without forcing a full page reload
+        window.dispatchEvent(new CustomEvent('data_cleared'));
+      } else {
+        setToast({ 
+          message: t('dashboard.delete_test_data_error', `حدث خطأ أثناء حذف البيانات: ${result.error || ''}`), 
+          type: 'error' 
+        });
       }
-      setToast({ message: t('dashboard.delete_test_data_success', 'تم حذف البيانات التجريبية بنجاح'), type: 'success' });
-      setIsDeleteConfirmVisible(false);
-      setTimeout(() => window.location.reload(), 1500);
     } catch (error) {
       setToast({ message: t('dashboard.delete_test_data_error', 'حدث خطأ أثناء حذف البيانات'), type: 'error' });
       handleFirestoreError(error as any, OperationType.DELETE, 'test_data');
@@ -900,7 +935,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                                   <p className="text-xs font-black text-content group-hover:text-brand transition-colors">{notif.title}</p>
                                   <p className="text-[10px] text-content-muted mt-0.5 leading-relaxed">{notif.message}</p>
                                   <p className="text-[9px] text-content-muted mt-1 font-bold">
-                                    {new Date(notif.createdAt).toLocaleTimeString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK' : 'en-US'), { hour: '2-digit', minute: '2-digit' })}
+                                    {new Date(notif.createdAt).toLocaleTimeString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'), { hour: '2-digit', minute: '2-digit' })}
                                   </p>
                                 </div>
                               </div>
@@ -934,17 +969,17 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             </div>
             <div>
               <h3 className="text-base sm:text-lg font-black text-amber-950 dark:text-amber-200">
-                {i18n.language === 'en' ? 'Trial Period Ending Soon!' : 'اقتراب انتهاء الفترة التجريبية!'}
+                {i18n.language === 'en' ? (isTrialPlan ? 'Trial Period Ending Soon!' : 'Subscription Expiring Soon!') : (isTrialPlan ? 'اقتراب انتهاء الفترة التجريبية!' : 'اقتراب انتهاء الاشتراك!')}
               </h3>
               <p className="text-xs sm:text-sm font-medium text-amber-700/85 dark:text-amber-400/85 mt-1 leading-relaxed">
                 {i18n.language === 'en' ? (
                   trialDays === 0 
-                  ? "Your 14-day free trial has ended today. Contact support to keep access."
-                  : `Only ${trialDays} day${trialDays === 1 ? '' : 's'} remaining in your 14-day free trial. Contact support to upgrade.`
+                  ? (isTrialPlan ? "Your free trial has ended today. Contact support to keep access." : "Your subscription has ended today. Contact support to renew.")
+                  : `Only ${trialDays} day${trialDays === 1 ? '' : 's'} remaining. Contact support to upgrade.`
                 ) : (
                   trialDays === 0 
-                  ? "لقد انتهت الفترة التجريبية للـ 14 يوماً اليوم. يرجى التواصل مع الدعم لتفعيل الحساب ومتابعة أعمالك بسلاسة."
-                  : `متبقي ${trialDays === 1 ? 'يوم واحد فقط' : (trialDays === 2 ? 'يومان فقط' : `${trialDays} أيام`)} على انتهاء الفترة التجريبية المجانية (14 يومًا). يرجى التواصل مع الدعم لتفعيل الاشتراك.`
+                  ? (isTrialPlan ? "لقد انتهت الفترة التجريبية اليوم. يرجى التواصل مع الدعم لتفعيل الحساب ومتابعة أعمالك بسلاسة." : "لقد انتهى الاشتراك اليوم. يرجى التواصل مع الدعم لتجديد الاشتراك.")
+                  : `متبقي ${trialDays === 1 ? 'يوم واحد فقط' : (trialDays === 2 ? 'يومان فقط' : `${trialDays} أيام`)} على انتهاء ${isTrialPlan ? 'الفترة التجريبية' : 'الاشتراك'}. يرجى التواصل مع الدعم.`
                 )}
               </p>
             </div>
@@ -1046,10 +1081,10 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             exit={{ opacity: 0, y: 50, x: '-50%' }}
             className={cn(
               "fixed bottom-8 left-1/2 z-[120] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border min-w-[300px]",
-              toast.type === 'success' ? "bg-success/10 text-success border-success/20" : "bg-danger/10 text-danger border-danger/20"
+              toast.type === 'success' ? "bg-success/10 text-success border-success/20" : toast.type === 'info' ? "bg-brand/10 text-brand border-brand/20" : "bg-danger/10 text-danger border-danger/20"
             )}
           >
-            {toast.type === 'success' ? <CheckCircle2 size={20} /> : <AlertTriangle size={20} />}
+            {toast.type === 'success' ? <CheckCircle2 size={20} /> : toast.type === 'info' ? <Info size={20} /> : <AlertTriangle size={20} />}
             <span className="font-black text-sm">{toast.message}</span>
           </motion.div>
         )}
@@ -1087,115 +1122,299 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         {/* Revenue Chart */}
-        {hasRevenuePermission && (
-          <div className="lg:col-span-2 bg-surface rounded-2xl sm:rounded-3xl md:rounded-[2.5rem] border border-border shadow-sm p-4 sm:p-6 md:p-8 flex flex-col justify-between">
-            <div className="flex justify-between items-center mb-8">
-              <div>
-                <h3 className="text-xl font-black text-content">{t('dashboard.revenue_analysis')}</h3>
-                <p className="text-sm text-content-muted font-medium">{t('dashboard.revenue_analysis_desc', 'مقارنة الدخل خلال الفترة المختارة')}</p>
-              </div>
-              <div className="w-40 sm:w-48 shrink-0">
-                <SmartSelect 
-                  value={revenueRange.toString()}
-                  onChange={(val) => setRevenueRange(Number(val))}
-                  className="w-auto"
-                  options={[
-                    { value: '7', label: t('dashboard.last_7_days') },
-                    { value: '30', label: t('dashboard.last_30_days') }
-                  ]}
-                />
-              </div>
-            </div>
-            <div className="h-80 relative flex-1">
-              {(chartData.length === 0 || chartData.every(d => d.revenue === 0)) && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface/80 backdrop-blur-[1px] z-10 p-6 rounded-3xl text-center">
-                  <div className="p-4 bg-brand/5 text-brand rounded-full mb-3 border border-brand/10 mx-auto">
-                    <DollarSign size={28} />
+        {hasRevenuePermission && (() => {
+          const totalPeriodRevenue = chartData.reduce((acc, curr) => acc + (Number(curr.revenue) || 0), 0);
+          const totalPeriodOrders = chartData.reduce((acc, curr) => acc + (Number(curr.ordersCount) || 0), 0);
+          const avgDailyRevenue = chartData.length > 0 ? Math.round(totalPeriodRevenue / chartData.length) : 0;
+          const maxRevenueDay = chartData.length > 0 
+            ? chartData.reduce((max, d) => (d.revenue > (max?.revenue || 0) ? d : max), chartData[0]) 
+            : { revenue: 0, date: '-' };
+
+          return (
+            <div className="lg:col-span-2 bg-surface rounded-2xl sm:rounded-3xl md:rounded-[2.5rem] border border-border shadow-sm p-4 sm:p-6 md:p-8 flex flex-col justify-between transition-all">
+              {/* Header with Title and Control Pills */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div>
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2.5 bg-brand/10 text-brand rounded-2xl shrink-0">
+                      <TrendingUp size={20} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg sm:text-xl font-black text-content">{t('dashboard.revenue_analysis', 'مخطط تحليل الإيرادات')}</h3>
+                      <p className="text-xs sm:text-sm text-content-muted font-medium mt-0.5">
+                        {t('dashboard.revenue_analysis_desc', 'مقارنة تفصيلية للأداء المالي وعدد الطلبات خلال الفترة')}
+                      </p>
+                    </div>
                   </div>
-                  <h4 className="text-base font-black text-content mb-1">{t('dashboard.no_revenue_analytics_yet', 'لا توجد تحليلات مالية بعد')}</h4>
-                  <p className="text-xs text-content-muted font-bold max-w-sm mx-auto">{t('dashboard.no_revenue_analytics_yet_desc', 'بمجرد تسجيل مبيعات أو فواتير مدفوعة، ستظهر البيانات التحليلية والرسوم البيانية هنا.')}</p>
                 </div>
-              )}
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--brand)" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="var(--brand)" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-                  <XAxis 
-                    dataKey="date" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: 'var(--content-muted)', fontSize: 12, fontWeight: 600 }}
-                    dy={10}
-                  />
-                  <YAxis 
-                    yAxisId="left"
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: 'var(--content-muted)', fontSize: 12, fontWeight: 600 }}
-                    tickFormatter={(value) => `${value}`}
-                    dx={-10}
-                  />
-                  <YAxis 
-                    yAxisId="right"
-                    orientation="right"
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: 'var(--content-muted)', fontSize: 12, fontWeight: 600 }}
-                    tickFormatter={(value) => `${value}`}
-                    dx={10}
-                  />
-                  <Tooltip 
-                    content={({ active, payload, label }) => {
-                      if (active && payload && payload.length) {
-                        return (
-                          <div className="bg-surface p-4 rounded-2xl shadow-2xl border border-border animate-in fade-in zoom-in duration-200">
-                            <p className="text-[10px] font-black text-content-muted uppercase mb-1">{label}</p>
-                            <div className="space-y-1">
-                              <p className="text-lg font-black text-brand flex items-center justify-between gap-4">
-                                <span>{t('dashboard.revenue', 'المبيعات')}</span>
-                                <PriceDisplay amount={payload[0]?.value as number || 0} />
-                              </p>
-                              <p className="text-sm font-bold text-info flex items-center justify-between gap-4">
-                                <span>{t('dashboard.orders', 'الطلبات')}</span>
-                                <span>{payload[1]?.value as number || 0}</span>
-                              </p>
+
+                {/* Controls: View Mode & Time Range */}
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
+                  {/* View Mode Toggle */}
+                  <div className="bg-surface-muted p-1 rounded-2xl flex items-center border border-border text-xs font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setChartViewMode('both')}
+                      className={cn(
+                        "px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer",
+                        chartViewMode === 'both' ? "bg-surface text-brand shadow-sm font-black" : "text-content-muted hover:text-content"
+                      )}
+                    >
+                      <span>{t('dashboard.chart_both', 'الكل')}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setChartViewMode('revenue')}
+                      className={cn(
+                        "px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer",
+                        chartViewMode === 'revenue' ? "bg-surface text-brand shadow-sm font-black" : "text-content-muted hover:text-content"
+                      )}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-brand"></span>
+                      <span>{t('dashboard.revenue', 'المبيعات')}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setChartViewMode('orders')}
+                      className={cn(
+                        "px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer",
+                        chartViewMode === 'orders' ? "bg-surface text-info shadow-sm font-black" : "text-content-muted hover:text-content"
+                      )}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-info"></span>
+                      <span>{t('dashboard.orders', 'الطلبات')}</span>
+                    </button>
+                  </div>
+
+                  {/* Days Selector */}
+                  <div className="bg-surface-muted p-1 rounded-2xl flex items-center border border-border text-xs font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setRevenueRange(7)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-xl transition-all cursor-pointer",
+                        revenueRange === 7 ? "bg-brand text-white shadow-sm font-black" : "text-content-muted hover:text-content"
+                      )}
+                    >
+                      7 {t('common.days', 'أيام')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRevenueRange(30)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-xl transition-all cursor-pointer",
+                        revenueRange === 30 ? "bg-brand text-white shadow-sm font-black" : "text-content-muted hover:text-content"
+                      )}
+                    >
+                      30 {t('common.day', 'يوم')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Summary Metric Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 mb-6">
+                <div className="bg-surface-muted/60 border border-border/80 rounded-2xl p-3 flex flex-col justify-between">
+                  <span className="text-[10px] font-bold text-content-muted uppercase tracking-wider">{t('dashboard.total_in_period', 'إجمالي الفترة')}</span>
+                  <span className="text-sm sm:text-base md:text-lg font-black text-brand mt-1 truncate">
+                    <PriceDisplay amount={totalPeriodRevenue} />
+                  </span>
+                </div>
+
+                <div className="bg-surface-muted/60 border border-border/80 rounded-2xl p-3 flex flex-col justify-between">
+                  <span className="text-[10px] font-bold text-content-muted uppercase tracking-wider">{t('dashboard.daily_avg', 'المتوسط اليومي')}</span>
+                  <span className="text-sm sm:text-base md:text-lg font-black text-content mt-1 truncate">
+                    <PriceDisplay amount={avgDailyRevenue} />
+                  </span>
+                </div>
+
+                <div className="bg-surface-muted/60 border border-border/80 rounded-2xl p-3 flex flex-col justify-between">
+                  <span className="text-[10px] font-bold text-content-muted uppercase tracking-wider">{t('dashboard.peak_day', 'أعلى يوم مبيعات')}</span>
+                  <div className="flex items-baseline gap-1 mt-1 truncate">
+                    <span className="text-sm sm:text-base md:text-lg font-black text-success">
+                      <PriceDisplay amount={maxRevenueDay?.revenue || 0} />
+                    </span>
+                    {maxRevenueDay?.date && maxRevenueDay.revenue > 0 && (
+                      <span className="text-[10px] font-bold text-content-muted truncate">({maxRevenueDay.date})</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-surface-muted/60 border border-border/80 rounded-2xl p-3 flex flex-col justify-between">
+                  <span className="text-[10px] font-bold text-content-muted uppercase tracking-wider">{t('dashboard.period_orders', 'الطلبات الإجمالية')}</span>
+                  <span className="text-sm sm:text-base md:text-lg font-black text-info mt-1 truncate">
+                    {totalPeriodOrders.toLocaleString('en-US')} <span className="text-xs font-bold text-content-muted">{t('common.order', 'طلب')}</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Main Graph Area */}
+              <div className="h-72 sm:h-80 relative flex-1">
+                {(chartData.length === 0 || chartData.every(d => d.revenue === 0 && d.ordersCount === 0)) && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface/90 backdrop-blur-md z-10 p-6 rounded-3xl text-center border border-border/50">
+                    <div className="p-4 bg-brand/10 text-brand rounded-full mb-3 border border-brand/20 shadow-sm mx-auto">
+                      <DollarSign size={28} />
+                    </div>
+                    <h4 className="text-base font-black text-content mb-1">{t('dashboard.no_revenue_analytics_yet', 'لا توجد تحليلات مالية بعد')}</h4>
+                    <p className="text-xs text-content-muted font-medium max-w-sm mx-auto">{t('dashboard.no_revenue_analytics_yet_desc', 'بمجرد تسجيل مبيعات أو فواتير مدفوعة، ستظهر البيانات التحليلية والرسوم البيانية هنا.')}</p>
+                  </div>
+                )}
+
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={chartData} margin={{ top: 15, right: 10, left: 10, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="colorRevenueGlow" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="var(--brand)" stopOpacity={0.4}/>
+                        <stop offset="50%" stopColor="var(--brand)" stopOpacity={0.12}/>
+                        <stop offset="100%" stopColor="var(--brand)" stopOpacity={0.0}/>
+                      </linearGradient>
+                      <linearGradient id="colorOrdersBar" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="var(--info)" stopOpacity={0.8}/>
+                        <stop offset="100%" stopColor="var(--info)" stopOpacity={0.3}/>
+                      </linearGradient>
+                    </defs>
+                    
+                    <CartesianGrid 
+                      strokeDasharray="4 4" 
+                      vertical={false} 
+                      stroke="var(--border)" 
+                      opacity={0.5} 
+                    />
+
+                    <XAxis 
+                      dataKey="date" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: 'var(--content-muted)', fontSize: 11, fontWeight: 700 }}
+                      dy={10}
+                    />
+
+                    <YAxis 
+                      yAxisId="left"
+                      hide={chartViewMode === 'orders'}
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: 'var(--content-muted)', fontSize: 11, fontWeight: 700 }}
+                      tickFormatter={(value) => {
+                        if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+                        if (value >= 1000) return `${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}k`;
+                        return value;
+                      }}
+                      dx={isRtl ? 10 : -10}
+                    />
+
+                    <YAxis 
+                      yAxisId="right"
+                      orientation="right"
+                      hide={chartViewMode === 'revenue'}
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: 'var(--content-muted)', fontSize: 11, fontWeight: 700 }}
+                      allowDecimals={false}
+                      dx={isRtl ? -10 : 10}
+                    />
+
+                    <Tooltip 
+                      cursor={{ stroke: 'var(--brand)', strokeWidth: 1.5, strokeDasharray: '4 4', opacity: 0.6 }}
+                      content={({ active, payload, label }) => {
+                        if (active && payload && payload.length) {
+                          const revVal = payload.find(p => p.dataKey === 'revenue')?.value as number || 0;
+                          const ordersVal = payload.find(p => p.dataKey === 'ordersCount')?.value as number || 0;
+                          const isPeak = revVal > 0 && revVal === maxRevenueDay?.revenue;
+                          const sharePct = totalPeriodRevenue > 0 ? ((revVal / totalPeriodRevenue) * 100).toFixed(1) : '0';
+                          const avgOrderVal = ordersVal > 0 ? Math.round(revVal / ordersVal) : 0;
+
+                          return (
+                            <div className="bg-surface/95 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-border text-right min-w-[220px] animate-in fade-in zoom-in-95 duration-150">
+                              <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-border/60">
+                                <span className="text-xs font-black text-content">{label}</span>
+                                {isPeak ? (
+                                  <span className="text-[10px] font-black bg-success/15 text-success px-2 py-0.5 rounded-full flex items-center gap-1">
+                                    🔥 {t('dashboard.peak_day_badge', 'أعلى مبيعات')}
+                                  </span>
+                                ) : revVal > avgDailyRevenue && revVal > 0 ? (
+                                  <span className="text-[10px] font-bold bg-brand/10 text-brand px-2 py-0.5 rounded-full">
+                                    📈 {t('dashboard.above_avg', 'فوق المتوسط')}
+                                  </span>
+                                ) : null}
+                              </div>
+
+                              <div className="space-y-2.5">
+                                {(chartViewMode === 'both' || chartViewMode === 'revenue') && (
+                                  <div className="flex flex-col gap-0.5">
+                                    <div className="flex items-center justify-between gap-4 text-xs font-bold">
+                                      <div className="flex items-center gap-1.5 text-content-muted">
+                                        <span className="w-2.5 h-2.5 rounded-full bg-brand shrink-0"></span>
+                                        <span>{t('dashboard.revenue', 'المبيعات')}:</span>
+                                      </div>
+                                      <span className="font-black text-brand text-sm">
+                                        <PriceDisplay amount={revVal} />
+                                      </span>
+                                    </div>
+                                    {totalPeriodRevenue > 0 && (
+                                      <div className="text-[10px] font-semibold text-content-muted text-left">
+                                        {sharePct}% {t('dashboard.of_total_period', 'من إجمالي الفترة')}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                {(chartViewMode === 'both' || chartViewMode === 'orders') && (
+                                  <div className="flex flex-col gap-0.5">
+                                    <div className="flex items-center justify-between gap-4 text-xs font-bold">
+                                      <div className="flex items-center gap-1.5 text-content-muted">
+                                        <span className="w-2.5 h-2.5 rounded-full bg-info shrink-0"></span>
+                                        <span>{t('dashboard.orders', 'الطلبات')}:</span>
+                                      </div>
+                                      <span className="font-black text-info text-sm">
+                                        {ordersVal} {t('common.order', 'طلب')}
+                                      </span>
+                                    </div>
+                                    {ordersVal > 0 && (
+                                      <div className="text-[10px] font-semibold text-content-muted text-left">
+                                        {t('dashboard.avg_basket', 'متوسط الطلب')}: <PriceDisplay amount={avgOrderVal} />
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
-                  <Legend verticalAlign="top" height={36} />
-                  <Area 
-                    yAxisId="left"
-                    name={t('dashboard.revenue', 'المبيعات')}
-                    type="monotone" 
-                    dataKey="revenue" 
-                    stroke="var(--brand)" 
-                    strokeWidth={4}
-                    fillOpacity={1} 
-                    fill="url(#colorRevenue)"
-                    activeDot={{ r: 8, strokeWidth: 0, fill: 'var(--brand)' }}
-                  />
-                  <Bar 
-                    yAxisId="right"
-                    name={t('dashboard.orders', 'الطلبات الجديدة')}
-                    dataKey="ordersCount" 
-                    fill="var(--info)" 
-                    radius={[4, 4, 0, 0]} 
-                    barSize={20}
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+
+                    {(chartViewMode === 'both' || chartViewMode === 'orders') && (
+                      <Bar 
+                        yAxisId="right"
+                        name={t('dashboard.orders', 'الطلبات')}
+                        dataKey="ordersCount" 
+                        fill="url(#colorOrdersBar)" 
+                        radius={[6, 6, 0, 0]} 
+                        barSize={18}
+                      />
+                    )}
+
+                    {(chartViewMode === 'both' || chartViewMode === 'revenue') && (
+                      <Area 
+                        yAxisId="left"
+                        name={t('dashboard.revenue', 'المبيعات')}
+                        type="monotone" 
+                        dataKey="revenue" 
+                        stroke="var(--brand)" 
+                        strokeWidth={3.5}
+                        fillOpacity={1} 
+                        fill="url(#colorRevenueGlow)"
+                        activeDot={{ r: 7, strokeWidth: 3, stroke: 'var(--surface)', fill: 'var(--brand)' }}
+                      />
+                    )}
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Status Breakdown */}
         {hasOrdersPermission && (

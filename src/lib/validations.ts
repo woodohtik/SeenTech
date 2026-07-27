@@ -1,14 +1,19 @@
 import { z } from 'zod';
 import i18n from '../i18n/config';
+import { formatSaudiPhone } from '../utils/phoneUtils';
 
-// Common regex patterns
-const phoneRegex = /^(\+?\d{1,3}[- ]?)?\d{10}$/;
+// Common regex patterns - accepts +9665XXXXXXXX, 05XXXXXXXX, 5XXXXXXXX, +9661XXXXXXXX, 01XXXXXXXX, etc.
+const phoneRegex = /^(\+?\d{1,3}[- ]?)?\d{8,12}$/;
 
 const t = (key: string, options?: any) => i18n.t(key, options) as string;
 
+const phoneField = z.string().transform((val) => formatSaudiPhone(val)).pipe(
+  z.string().regex(phoneRegex, t('validation.phone_format'))
+);
+
 export const customerSchema = z.object({
   name: z.string().min(2, t('validation.min_length', { count: 2 })).max(100, t('validation.max_length', { count: 100 })),
-  phone: z.string().regex(phoneRegex, t('validation.phone_format')),
+  phone: phoneField,
   email: z.string().email(t('validation.invalid_email')).optional().or(z.literal('')),
   companyName: z.string().optional(),
   trn: z.string().optional(),
@@ -105,7 +110,7 @@ export const inventorySchema = z.object({
 export const staffSchema = z.object({
   name: z.string().min(2, t('validation.min_length', { count: 2 })),
   email: z.string().email(t('validation.invalid_email')),
-  phone: z.string().regex(phoneRegex, t('validation.phone_format')),
+  phone: phoneField,
   role: z.string().min(1, t('validation.required')),
   branchId: z.string().min(1, t('validation.required')),
   status: z.enum(['active', 'inactive']),
@@ -117,6 +122,7 @@ export const staffSchema = z.object({
 export const onboardingSchema = z.object({
   customerId: z.string().min(5, t('validation.customer_id_format')).optional(),
   shopName: z.string().min(2, t('validation.min_length', { count: 2 })),
+  phone: z.string().optional().or(z.literal('')),
   logoUrl: z.string().optional(),
   category: z.enum(['tailor', 'tailor-female', 'uniform']),
   taxNumber: z.string().regex(/^\d{15}$/, t('validation.tax_number_format')).optional().or(z.literal('')),
@@ -138,9 +144,9 @@ export const supplierSchema = z.object({
   name: z.string().min(2, t('validation.min_length', { count: 2 })),
   contactPerson: z.string().min(2, t('validation.min_length', { count: 2 })),
   email: z.string().email(t('validation.invalid_email')).optional().or(z.literal('')),
-  phone: z.string().regex(phoneRegex, t('validation.phone_format')),
-  address: z.string().min(5, t('validation.min_length', { count: 5 })),
-  taxNumber: z.string().optional(),
+  phone: phoneField,
+  address: z.string().optional().or(z.literal('')),
+  taxNumber: z.string().optional().or(z.literal('')),
   category: z.enum(['fabric', 'accessories', 'thread', 'button', 'lining', 'other']),
   isTest: z.boolean().optional().default(false),
 });
@@ -155,7 +161,7 @@ export const reconciliationSchema = z.object({
 
 export const settingsSchema = z.object({
   name: z.string().min(2, t('validation.min_length', { count: 2 })),
-  phone: z.string().regex(phoneRegex, t('validation.phone_format')),
+  phone: z.string().optional().or(z.literal('')),
   address: z.string().min(5, t('validation.min_length', { count: 5 })),
   inventoryStrategy: z.enum(['centralized', 'decentralized']),
   logoUrl: z.string().optional(),
@@ -164,7 +170,8 @@ export const settingsSchema = z.object({
     enabled: z.boolean(),
     trn: z.string().optional(),
     legalName: z.string().optional(),
-    vatRate: z.coerce.number().min(0).max(100)
+    vatRate: z.coerce.number().min(0).max(100),
+    tailoringTaxType: z.enum(['inclusive', 'exclusive', 'exempt']).optional().default('exclusive')
   }).optional(),
 });
 

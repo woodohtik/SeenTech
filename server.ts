@@ -4,11 +4,29 @@ import path from "path";
 import fs from "fs";
 import dotenv from 'dotenv';
 import { authenticate, authorize } from "./src/server/middleware/authMiddleware.ts";
+import { registerPrintRelay } from "./src/server/printRelay.ts";
 
 dotenv.config();
 
 const app = express();
-app.use(express.json());
+// حجم كبير لأن بيانات الرسم النقطي للفاتورة قد تصل لعدة ميغابايت
+app.use(express.json({ limit: '25mb' }));
+
+/* ================================================================
+   وسيط الطباعة  —  SEEN POS Printing
+   ----------------------------------------------------------------
+   كل مسارات /api/print/* معرّفة في src/server/printRelay.ts:
+
+     • الوسيط السحابي (relay): جهاز الكاشير يتصل خارجاً وينتظر المهام،
+       فتعمل الطباعة الصامتة من أي جهاز — ويندوز أو أندرويد — بدون أي
+       اتصال بـ localhost، وبذلك نتجاوز حجب Local Network Access و
+       Mixed Content الذي كان يجعل الوسيط يبدو «غير مُشغَّل».
+
+     • الطباعة المباشرة على طابعة شبكة (TCP 9100) عند تشغيل السيرفر
+       داخل شبكة المتجر.
+   ================================================================ */
+
+registerPrintRelay(app);
 
 // API Routes
 

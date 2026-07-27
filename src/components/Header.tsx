@@ -20,6 +20,7 @@ export default function Header({ tenantId, title, subtitle, children }: HeaderPr
   const { t, i18n } = useTranslation();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [trialDays, setTrialDays] = useState<number | null>(null);
+  const [isTrialPlan, setIsTrialPlan] = useState<boolean>(true);
 
   const currentLanguageCode = i18n.language || 'ar';
   const isRtl = currentLanguageCode !== 'en';
@@ -30,7 +31,12 @@ export default function Header({ tenantId, title, subtitle, children }: HeaderPr
       const now = new Date();
       const diffTime = now.getTime() - createdDate.getTime();
       const diffDays = diffTime / (1000 * 60 * 60 * 24);
-      setTrialDays(Math.max(0, 14 - Math.floor(diffDays)));
+      
+      const isTrial = tenant.planId === 'free' || (!tenant.planId && tenant.planId !== 'basic') || (typeof tenant.planId === 'string' && tenant.planId.includes('trial'));
+      const durationDays = isTrial ? 14 : 365;
+      
+      setIsTrialPlan(isTrial);
+      setTrialDays(Math.max(0, durationDays - Math.floor(diffDays)));
     }
   }, [tenant]);
 
@@ -45,12 +51,31 @@ export default function Header({ tenantId, title, subtitle, children }: HeaderPr
           .maybeSingle();
         
         if (data && !error) {
+          const hasVat = Boolean(data.vat_number && data.vat_number.trim().length > 0);
+          const rawTax = data.tax_settings;
+          const resolvedTax = rawTax ? {
+            ...rawTax,
+            enabled: rawTax.enabled ?? (hasVat || Boolean(rawTax.trn)),
+            trn: rawTax.trn || data.vat_number || '',
+            legalName: rawTax.legalName || data.name || '',
+            vatRate: rawTax.vatRate ?? 15,
+            tailoringTaxType: rawTax.tailoringTaxType || 'exclusive'
+          } : {
+            enabled: hasVat,
+            trn: data.vat_number || '',
+            legalName: data.name || '',
+            vatRate: 15,
+            tailoringTaxType: 'exclusive'
+          };
+
           setTenant({
             ...data,
-            taxSettings: data.tax_settings,
+            vatNumber: data.vat_number || resolvedTax.trn,
+            taxSettings: resolvedTax,
             logoUrl: data.logo_url,
             commercialRegister: data.commercial_register,
             legalName: data.legal_name,
+            planId: data.plan_id,
             createdAt: data.created_at,
             updatedAt: data.updated_at
           } as Tenant);
@@ -60,6 +85,10 @@ export default function Header({ tenantId, title, subtitle, children }: HeaderPr
       }
     };
     fetchTenantData();
+    window.addEventListener('tenant_settings_updated', fetchTenantData);
+    return () => {
+      window.removeEventListener('tenant_settings_updated', fetchTenantData);
+    };
   }, [tenantId]);
 
   // Handle outside clicks to close language dropdown
@@ -119,7 +148,7 @@ export default function Header({ tenantId, title, subtitle, children }: HeaderPr
                   : "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-900/30"
               )}>
                 <Calendar size={13} strokeWidth={2.5} />
-                {trialDays === 0 ? "انتهت التجربة" : `تجربة: متبقي ${trialDays} يوم`}
+                {trialDays === 0 ? (isTrialPlan ? "انتهت التجربة" : "انتهى الاشتراك") : `${isTrialPlan ? 'تجربة' : 'اشتراك'}: متبقي ${trialDays} يوم`}
               </span>
             )}
           </div>

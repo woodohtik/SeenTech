@@ -3,6 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import Barcode from 'react-barcode';
 import { generateZatcaQR } from '../../services/zatcaService';
 import { ShoppingBag, Printer } from 'lucide-react';
+import { CurrencySymbol } from '../CurrencySymbol';
 
 export interface SimplifiedInvoiceItem {
   id?: string;
@@ -192,7 +193,7 @@ export default function SimplifiedTaxInvoice({
           <div className="flex justify-between items-center py-0.5">
             <div className="text-right font-bold text-slate-900">
               <span className="text-slate-500 font-medium">التاريخ والوقت: </span>
-              <span dir="ltr">{invoiceDate.toLocaleString('ar-SA')}</span>
+              <span dir="ltr">{invoiceDate.toLocaleString('ar-SA-u-nu-latn')}</span>
             </div>
             <span className="text-slate-400 font-sans text-[10px]">Issue Date</span>
           </div>
@@ -253,11 +254,11 @@ export default function SimplifiedTaxInvoice({
                   <span className="font-bold text-slate-900 block leading-snug">{item.name}</span>
                   <span className="text-[10px] text-slate-400 block mt-0.5">الكمية / Qty: {item.quantity}</span>
                 </div>
-                <span className="w-20 text-center font-mono text-slate-500">
-                  {item.unitPrice.toFixed(2)} ر.س
+                <span className="w-20 text-center font-mono text-slate-500 inline-flex items-center justify-center gap-0.5">
+                  {item.unitPrice.toFixed(2)} <CurrencySymbol className="h-[1em] w-auto shrink-0" />
                 </span>
-                <span className="w-24 text-left font-mono font-bold text-slate-900">
-                  {itemTotalInc.toFixed(2)} ر.س
+                <span className="w-24 text-left font-mono font-bold text-slate-900 inline-flex items-center justify-end gap-0.5">
+                  {itemTotalInc.toFixed(2)} <CurrencySymbol className="h-[1em] w-auto shrink-0" />
                 </span>
               </div>
             );
@@ -269,27 +270,27 @@ export default function SimplifiedTaxInvoice({
           {/* Subtotal excluding VAT */}
           <div className="flex justify-between text-slate-600">
             <span>الإجمالي غير شامل الضريبة / Subtotal (Exc. VAT):</span>
-            <span className="font-mono font-bold">{computedTotals.subtotal.toFixed(2)} ر.س</span>
+            <span className="font-mono font-bold inline-flex items-center gap-1">{computedTotals.subtotal.toFixed(2)} <CurrencySymbol className="h-[1em] w-auto shrink-0" /></span>
           </div>
 
           {/* Discount */}
           {computedTotals.discount > 0 && (
             <div className="flex justify-between text-red-600 font-bold">
               <span>الخصم / Discount:</span>
-              <span className="font-mono">-{computedTotals.discount.toFixed(2)} ر.s</span>
+              <span className="font-mono inline-flex items-center gap-1">-{computedTotals.discount.toFixed(2)} <CurrencySymbol className="h-[1em] w-auto shrink-0" /></span>
             </div>
           )}
 
           {/* VAT Amount */}
           <div className="flex justify-between text-slate-600">
             <span>الضريبة (15%) / VAT Amount:</span>
-            <span className="font-mono font-bold">{computedTotals.vatAmount.toFixed(2)} ر.س</span>
+            <span className="font-mono font-bold inline-flex items-center gap-1">{computedTotals.vatAmount.toFixed(2)} <CurrencySymbol className="h-[1em] w-auto shrink-0" /></span>
           </div>
 
           {/* Grand total including VAT */}
           <div className="flex justify-between text-base font-black text-slate-900 pt-2 border-t border-dotted border-slate-300">
             <span>الإجمالي شامل الضريبة / Grand Total:</span>
-            <span className="font-mono">{computedTotals.grandTotal.toFixed(2)} ر.س</span>
+            <span className="font-mono inline-flex items-center gap-1">{computedTotals.grandTotal.toFixed(2)} <CurrencySymbol className="h-[1em] w-auto shrink-0" /></span>
           </div>
         </div>
 
@@ -298,13 +299,13 @@ export default function SimplifiedTaxInvoice({
           {/* Paid */}
           <div className="flex justify-between text-slate-600">
             <span>المدفوع / Paid Amount:</span>
-            <span className="font-mono font-bold">{paidAmount.toFixed(2)} ر.س</span>
+            <span className="font-mono font-bold inline-flex items-center gap-1">{paidAmount.toFixed(2)} <CurrencySymbol className="h-[1em] w-auto shrink-0" /></span>
           </div>
 
           {/* Remaining */}
           <div className="flex justify-between text-slate-600">
             <span>المتبقي / Remaining Amount:</span>
-            <span className="font-mono font-bold">{remainingAmount.toFixed(2)} ر.س</span>
+            <span className="font-mono font-bold inline-flex items-center gap-1">{remainingAmount.toFixed(2)} <CurrencySymbol className="h-[1em] w-auto shrink-0" /></span>
           </div>
 
           {/* Number of Pieces */}

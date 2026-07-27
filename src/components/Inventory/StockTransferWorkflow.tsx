@@ -242,7 +242,7 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
 
   const statusMap: Record<string, { label: string, color: string, icon: any }> = {
     pending: { label: t('inventory.status_pending'), color: 'bg-warning/10 text-warning', icon: Clock },
-    in_transit: { label: t('inventory.status_info/10 text-brand'), color: 'bg-brand/10 text-brand', icon: Truck },
+    in_transit: { label: t('inventory.status_in_transit'), color: 'bg-brand/10 text-brand', icon: Truck },
     completed: { label: t('inventory.status_completed'), color: 'bg-success/10 text-success', icon: CheckCircle2 },
     rejected: { label: t('inventory.status_rejected'), color: 'bg-danger/10 text-danger', icon: XCircle }
   };
@@ -273,7 +273,7 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
                   : "bg-surface-muted text-content-muted hover:bg-border/20"
               )}
             >
-              {status === 'all' ? t('common.all') : t(`inventory.status_${status}`)}
+              {status === 'all' ? t('common.all', 'الكل') : t(`inventory.status_${status}`, statusMap[status]?.label || status)}
             </button>
           ))}
         </div>
@@ -306,7 +306,7 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
                       </div>
                       <div className="flex items-center gap-4 text-xs font-bold text-content-muted uppercase tracking-widest">
                         <span className="flex items-center gap-1"><Package size={12} /> {transfer.items.length} {t('inventory.items')}</span>
-                        <span className="flex items-center gap-1"><Calendar size={12} /> {new Date(transfer.createdAt).toLocaleDateString()}</span>
+                        <span className="flex items-center gap-1"><Calendar size={12} /> {new Date(transfer.createdAt).toLocaleDateString('ar-SA-u-nu-latn')}</span>
                         <span className="flex items-center gap-1"><User size={12} /> {transfer.requestedByName}</span>
                       </div>
                     </div>
@@ -348,6 +348,7 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
             transfer={selectedTransfer} 
             onClose={() => setSelectedTransfer(null)} 
             onReceive={handleReceive}
+            getBranchName={getBranchName}
           />
         )}
       </AnimatePresence>
@@ -355,7 +356,7 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
   );
 };
 
-const TransferDetailsModal = ({ transfer, onClose, onReceive }: any) => {
+const TransferDetailsModal = ({ transfer, onClose, onReceive, getBranchName }: any) => {
   const { t } = useTranslation();
   const [receivedQuantities, setReceivedQuantities] = useState<Record<string, number>>(
     transfer.items.reduce((acc: any, item: any) => ({ ...acc, [item.itemId]: item.shippedQuantity || item.requestedQuantity }), {})
@@ -397,14 +398,14 @@ const TransferDetailsModal = ({ transfer, onClose, onReceive }: any) => {
             <div className="space-y-4">
               <h3 className="text-xs font-black text-content-muted uppercase tracking-widest">{t('inventory.from')}</h3>
               <div className="p-4 bg-surface-muted rounded-2xl border border-border">
-                <p className="font-black text-content">{transfer.fromBranchId}</p>
+                <p className="font-black text-content">{getBranchName(transfer.fromBranchId)}</p>
                 <p className="text-xs font-bold text-content-muted uppercase tracking-widest mt-1">{t('inventory.source_location')}</p>
               </div>
             </div>
             <div className="space-y-4">
               <h3 className="text-xs font-black text-content-muted uppercase tracking-widest">{t('inventory.to')}</h3>
               <div className="p-4 bg-surface-muted rounded-2xl border border-border">
-                <p className="font-black text-content">{transfer.toBranchId}</p>
+                <p className="font-black text-content">{getBranchName(transfer.toBranchId)}</p>
                 <p className="text-xs font-bold text-content-muted uppercase tracking-widest mt-1">{t('inventory.destination_location')}</p>
               </div>
             </div>

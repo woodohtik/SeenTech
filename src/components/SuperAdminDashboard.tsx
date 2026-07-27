@@ -23,8 +23,10 @@ import {
   MousePointer2,
   Lock,
   Globe,
-  Database
+  Database,
+  CreditCard
 } from 'lucide-react';
+import SubscriptionRequestsAdminManager from './SubscriptionRequestsAdminManager';
 import { 
   AreaChart, 
   Area, 
@@ -127,12 +129,12 @@ export default function SuperAdminDashboard() {
           const last7Days = Array.from({ length: 7 }, (_, i) => {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            return d.toLocaleDateString(i18n.language === 'en' ? 'en-US' : isRtl ? 'ar-SA' : 'en-US', { weekday: 'short' });
+            return d.toLocaleDateString(i18n.language === 'en' ? 'en-US' : isRtl ? 'ar-SA-u-nu-latn' : 'en-US', { weekday: 'short' });
           }).reverse();
 
           const revenueByDay = new Map();
           ordersMapped.forEach(o => {
-            const day = new Date(o.orderDate).toLocaleDateString(i18n.language === 'en' ? 'en-US' : isRtl ? 'ar-SA' : 'en-US', { weekday: 'short' });
+            const day = new Date(o.orderDate).toLocaleDateString(i18n.language === 'en' ? 'en-US' : isRtl ? 'ar-SA-u-nu-latn' : 'en-US', { weekday: 'short' });
             const current = revenueByDay.get(day) || { revenue: 0, count: 0 };
             revenueByDay.set(day, {
               revenue: current.revenue + o.totalAmount,
@@ -238,7 +240,7 @@ export default function SuperAdminDashboard() {
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      const dayName = date.toLocaleDateString(i18n.language === 'en' ? 'en-US' : isRtl ? 'ar-SA' : 'en-US', { weekday: 'short' });
+      const dayName = date.toLocaleDateString(i18n.language === 'en' ? 'en-US' : isRtl ? 'ar-SA-u-nu-latn' : 'en-US', { weekday: 'short' });
       
       // Calculate MRR up to this date
       const activeUpToDate = sortedTenants.filter(t => new Date(t.createdAt) <= date && (t.status === 'active' || t.status === 'onboarding'));
@@ -306,6 +308,7 @@ export default function SuperAdminDashboard() {
       <div className="flex flex-wrap items-center gap-2 bg-surface p-2 rounded-[2rem] border border-border shadow-sm inline-flex">
         {[
           { id: 'overview', label: t('saas.overview', 'الرئيسية'), icon: LayoutDashboard },
+          { id: 'subscriptions', label: 'طلبات الاشتراكات والإثباتات', icon: CreditCard },
           { id: 'financials', label: t('saas.financials', 'المالية'), icon: DollarSign },
           { id: 'performance', label: t('saas.performance', 'الأداء'), icon: Server },
           { id: 'security', label: t('saas.security', 'الأمان'), icon: Shield },
@@ -445,6 +448,18 @@ export default function SuperAdminDashboard() {
           </motion.div>
         )}
 
+        {activeTab === 'subscriptions' && (
+          <motion.div
+            key="subscriptions"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-8"
+          >
+            <SubscriptionRequestsAdminManager />
+          </motion.div>
+        )}
+
         {activeTab === 'financials' && (
           <motion.div
             key="financials"
@@ -524,7 +539,7 @@ export default function SuperAdminDashboard() {
                     <div className="text-right rtl:text-right ltr:text-left shrink-0">
                         <div className="text-[10px] font-black text-content-muted uppercase tracking-widest">
                           {new Date(log.timestamp).toLocaleTimeString(
-                            i18n.language === 'en' ? 'en-US' : i18n.language === 'ur' ? 'ur-PK' : 'ar-SA'
+                            i18n.language === 'en' ? 'en-US' : i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'ar-SA-u-nu-latn'
                           )}
                         </div>
                         <div className="text-[10px] font-bold text-brand mt-1 uppercase tracking-widest leading-none">Branch: {log.branchName || 'Remote'}</div>
@@ -575,7 +590,7 @@ export default function SuperAdminDashboard() {
                       <div className="mt-3 flex items-center gap-3">
                         <span className="text-[10px] font-black text-content-muted uppercase tracking-widest">
                           {new Date(log.timestamp).toLocaleString(
-                            i18n.language === 'en' ? 'en-US' : i18n.language === 'ur' ? 'ur-PK' : 'ar-SA'
+                            i18n.language === 'en' ? 'en-US' : i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'ar-SA-u-nu-latn'
                           )}
                         </span>
                         <span className="w-1 h-1 bg-border rounded-full" />

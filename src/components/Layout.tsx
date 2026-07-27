@@ -38,6 +38,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { AlertCircle } from 'lucide-react';
 
 import { UserRole, Staff as StaffType, PermissionKey } from '../types';
+import { getFilteredNavItems } from '../config/navigation';
 import { usePermissions } from '../hooks/usePermissions';
 import UserPreferencesMenu from './UserPreferencesMenu';
 import SupportConsentModal from './SupportConsentModal';
@@ -100,13 +101,36 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
       }
     };
     fetchTenant();
+    window.addEventListener('tenant_settings_updated', fetchTenant);
+    return () => {
+      window.removeEventListener('tenant_settings_updated', fetchTenant);
+    };
   }, [tenantId, t, currentStaff?.id, role]);
+
+  React.useEffect(() => {
+    const handleLayoutSync = () => {
+      const savedMode = localStorage.getItem(`layoutMode_${tenantId}_${currentStaff?.id || role}`);
+      if (savedMode) {
+        setLayoutMode(savedMode as 'sidebar' | 'grid');
+      }
+    };
+    window.addEventListener('layout_mode_changed', handleLayoutSync);
+    return () => {
+      window.removeEventListener('layout_mode_changed', handleLayoutSync);
+    };
+  }, [tenantId, currentStaff?.id, role]);
 
   const toggleLayoutMode = () => {
     const newMode = layoutMode === 'sidebar' ? 'grid' : 'sidebar';
     setLayoutMode(newMode);
-    if (tenantId) {
-      localStorage.setItem(`layoutMode_${tenantId}_${currentStaff?.id || role}`, newMode);
+    const storageKey = `layoutMode_${tenantId}_${currentStaff?.id || role}`;
+    localStorage.setItem(storageKey, newMode);
+    window.dispatchEvent(new CustomEvent('layout_mode_changed'));
+
+    if (newMode === 'grid') {
+      navigate('/');
+    } else {
+      navigate('/dashboard');
     }
   };
 
@@ -138,34 +162,16 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
 
   const { hasPermission } = usePermissions(currentStaff);
 
-  const navItems = [
-    // SaaS Level Navigation
-    ...(isActingAsSaaS ? [
-      { to: '/admin/dashboard', icon: LayoutDashboard, label: t('sidebar.saas_dashboard'), roles: ['super_admin', 'support_tech', 'billing_admin'] },
-      { to: '/admin/tailors', icon: Users, label: t('sidebar.manage_subscribers'), roles: ['super_admin', 'support_tech'] }
-    ] : []),
-    
-    // Tenant Level Navigation
-    ...(!isActingAsSaaS ? [
-      { to: '/dashboard', icon: Home, label: t('common.dashboard'), permission: 'dashboard.view' },
-      { to: '/sales', icon: Monitor, label: t('common.sales', 'المبيعات'), permissions: ['orders.view', 'shifts.manage', 'orders.create'] },
-      { to: '/customers', icon: UserCircle, label: t('common.customers'), permission: 'customers.view' },
-      { to: '/orders', icon: ShoppingBag, label: t('common.orders'), permission: 'orders.view' },
-      { to: '/inventory', icon: Package, label: t('common.inventory'), permission: 'inventory.view' },
-      { to: '/suppliers', icon: Briefcase, label: t('common.suppliers', 'الموردين والمشتريات'), permission: 'suppliers.manage' },
-      { to: '/reports', icon: BarChart3, label: t('common.reports'), permission: 'reports.view' },
-    ] : []),
-    
-    { to: '/settings', icon: Settings, label: t('common.settings'), permission: 'settings.view' },
-  ].filter(item => {
-    if (isActingAsSaaS) return !item.roles || item.roles.includes(effectiveRole as string);
-    if (isImpersonatingSaaS) return true; // Give super admin access to everything when impersonating
-    if (isOwner) return true;
-    if (effectiveRole === 'admin' || effectiveRole === 'manager') return true; // Manager has full access to tenant items
-    if (item.roles) return item.roles.includes(effectiveRole as string);
+  // Dynamic RBAC Menu Configuration
+  const navItems = getFilteredNavItems(effectiveRole, isActingAsSaaS, isImpersonatingSaaS).map(item => ({
+    ...item,
+    label: t(item.labelKey, item.defaultLabel)
+  })).filter(item => {
+    // Secondary check for fine-grained permissions if explicitly required
+    if (isImpersonatingSaaS || isOwner || effectiveRole === 'super_admin') return true;
     if (item.permissions) return item.permissions.some(p => hasPermission(p as PermissionKey));
     if (item.permission) return hasPermission(item.permission as PermissionKey);
-    return false;
+    return true;
   });
 
   return (
@@ -231,6 +237,8 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
       {/* Sidebar */}
       {layoutMode === 'sidebar' && (
         <aside 
+          id="tour-sidebar"
+          data-tour="sidebar"
           className={cn(
             "bg-surface flex flex-col transition-all duration-300 z-40",
             isRtl ? "border-l border-border" : "border-r border-border",
@@ -303,7 +311,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
 
         {currentStaff && (
           <div className={cn(
-            "px-4 py-4 border-b border-border",
+            "px-4 py-4 border-b border-border hidden lg:block",
             isCollapsed ? "lg:flex lg:justify-center" : ""
           )}>
             <UserPreferencesMenu
@@ -322,34 +330,46 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
         )}
 
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto overflow-x-hidden">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={({ isActive }) => cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative",
-                (isActive || (item.to === '/dashboard' && location.pathname === '/'))
-                  ? "bg-brand/10 text-brand font-medium" 
-                  : "text-content-muted hover:bg-surface-muted hover:text-content",
-                isCollapsed && "lg:justify-center lg:px-0"
-              )}
-            >
-              {({ isActive }) => (
-                <>
-                  <item.icon size={20} className={cn("shrink-0", !isActive && "group-hover:scale-110 transition-transform")} />
-                  {(!isCollapsed || isMobileMenuOpen) && <span className="truncate">{item.label}</span>}
-                  
-                  {/* Tooltip for collapsed state */}
-                  {isCollapsed && (
-                    <div className="hidden lg:block absolute right-full mr-2 px-2 py-1 bg-brand text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-lg">
-                      {item.label}
-                    </div>
-                  )}
-                </>
-              )}
-            </NavLink>
-          ))}
+          {navItems.map((item) => {
+            let tourId: string | undefined = undefined;
+            if (item.to === '/dashboard') tourId = 'tour-dashboard-nav';
+            else if (item.to === '/sales') tourId = 'tour-pos-nav';
+            else if (item.to === '/orders') tourId = 'tour-orders-nav';
+            else if (item.to === '/suppliers') tourId = 'tour-suppliers-nav';
+            else if (item.to === '/reports') tourId = 'tour-reports-nav';
+            else if (item.to === '/settings') tourId = 'tour-settings-nav';
+
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                id={tourId}
+                data-tour={tourId ? tourId.replace('tour-', '') : undefined}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={({ isActive }) => cn(
+                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative",
+                  (isActive || (item.to === '/dashboard' && location.pathname === '/'))
+                    ? "bg-brand/10 text-brand font-medium" 
+                    : "text-content-muted hover:bg-surface-muted hover:text-content",
+                  isCollapsed && "lg:justify-center lg:px-0"
+                )}
+              >
+                {({ isActive }) => (
+                  <>
+                    <item.icon size={20} className={cn("shrink-0", !isActive && "group-hover:scale-110 transition-transform")} />
+                    {(!isCollapsed || isMobileMenuOpen) && <span className="truncate">{item.label}</span>}
+                    
+                    {/* Tooltip for collapsed state */}
+                    {isCollapsed && (
+                      <div className="hidden lg:block absolute right-full mr-2 px-2 py-1 bg-brand text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-lg">
+                        {item.label}
+                      </div>
+                    )}
+                  </>
+                )}
+              </NavLink>
+            );
+          })}
         </nav>
 
         <div className="p-4 border-t border-border mt-auto hidden lg:block">
@@ -459,33 +479,36 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
           </header>
         )}
 
-        <main className={cn(
+        <main 
+          id="tour-dashboard-container"
+          data-tour="dashboard-container"
+          className={cn(
           "flex-1 overflow-x-hidden flex flex-col",
           layoutMode === 'sidebar' ? "mt-20 lg:mt-0" : "", // Add margin for fixed mobile header only in sidebar mode
           layoutMode === 'grid' && location.pathname === '/' ? "p-4 md:p-8" : "p-4 md:p-8"
         )}>
           {layoutMode === 'grid' && location.pathname === '/' ? (
-            <div className="max-w-5xl mx-auto space-y-12 py-8 flex-1">
+            <div className="max-w-7xl mx-auto space-y-12 py-8 flex-1">
               <div className="text-center space-y-2">
-                <h2 className="text-4xl font-black text-content">
+                <h2 className="text-3xl sm:text-4xl font-black text-content">
                   {t('dashboard.welcome_to', `مرحباً بك في ${tenantName}`, { name: tenantName })}
                 </h2>
-                <p className="text-content-muted font-medium text-lg">
+                <p className="text-content-muted font-medium text-base sm:text-lg">
                   {t('dashboard.select_system', 'اختر النظام الذي تود إدارته')}
                 </p>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {navItems.filter(i => i.to !== '/' && i.to !== '/settings').map(item => (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
+                {navItems.filter(i => i.to !== '/').map(item => (
                   <button
                     key={item.to}
                     onClick={() => navigate(item.to)}
-                    className="bg-surface p-8 rounded-3xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-2xl hover:shadow-brand/10 hover:-translate-y-1 active:scale-95 active:translate-y-0 active:shadow-sm transition-all duration-300 flex flex-col items-center justify-center gap-5 group border border-border"
+                    className="bg-surface p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-2xl hover:shadow-brand/10 hover:-translate-y-1 active:scale-95 active:translate-y-0 active:shadow-sm transition-all duration-300 flex flex-col items-center justify-center gap-3 sm:gap-4 lg:gap-5 group border border-border"
                   >
-                    <div className="w-20 h-20 rounded-2xl bg-brand/5 flex items-center justify-center text-brand transition-transform duration-300 group-hover:scale-110">
-                      <item.icon size={40} strokeWidth={1.5} />
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-xl sm:rounded-2xl bg-brand/5 flex items-center justify-center text-brand transition-transform duration-300 group-hover:scale-110">
+                      <item.icon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10" strokeWidth={1.5} />
                     </div>
-                    <span className="text-xl font-bold text-content">{item.label}</span>
+                    <span className="text-sm sm:text-base lg:text-xl font-bold text-content text-center">{item.label}</span>
                   </button>
                 ))}
               </div>
@@ -495,7 +518,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
               {children}
           
           <SeenAIFab />
-          <OnboardingTour role={role} />
+          <OnboardingTour role={role} tenantId={tenantId} staffId={currentStaff?.id} />
             </div>
           )}
           

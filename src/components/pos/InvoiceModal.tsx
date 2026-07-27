@@ -36,9 +36,21 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
 
   if (!invoice) return null;
 
-  const handlePrintThermal = () => {
-    // Basic implementation for thermal print
-    window.print();
+  const handlePrintThermal = async () => {
+    try {
+      const { printElementDetailed, getConfiguredPaperSize } = await import('../../utils/printManager');
+      const res = await printElementDetailed('print-area', {
+        paperSize: getConfiguredPaperSize('80mm'),
+        title: `فاتورة-${invoice.invoice_number}`,
+      });
+      if (!res.ok) {
+        console.error('[InvoiceModal] فشل الطباعة:', res.message);
+        alert(`تعذّرت الطباعة: ${res.message}`);
+      }
+    } catch (e) {
+      console.error('[InvoiceModal] خطأ الطباعة:', e);
+      window.print();
+    }
   };
 
   const handleDownloadPDF = async () => {
@@ -104,7 +116,7 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
                 </div>
 
                 {/* Printable Area */}
-                <div id="print-area" className="bg-surface border border-border rounded-xl p-6 mb-6 print:m-0 print:border-none print:p-0">
+                <div id="print-area" data-paper="80mm" className="bg-surface border border-border rounded-xl p-6 mb-6 print:m-0 print:border-none print:p-0">
                   <div className="text-center mb-6 border-b border-dashed border-border pb-6">
                     <h2 className="text-2xl font-bold text-content mb-1">{tenantName}</h2>
                     {tenantVatNumber && (
@@ -124,7 +136,7 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
                     </div>
                     <div className="text-left">
                       <p className="text-content-muted mb-1">التاريخ والوقت</p>
-                      <p className="font-bold text-content">{new Date(invoice.issued_at).toLocaleString('ar-SA')}</p>
+                      <p className="font-bold text-content">{new Date(invoice.issued_at).toLocaleString('ar-SA-u-nu-latn')}</p>
                     </div>
                   </div>
 

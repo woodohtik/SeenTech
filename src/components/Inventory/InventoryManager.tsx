@@ -340,7 +340,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
         if (error) throw error;
         setSelectedItemIds([]);
         setIsBulkDeleteConfirm(false);
-        toastSuccess("تم حذف الأصناف المحددة بنجاح");
+        toastSuccess(t("inventory.bulk_delete_success", "Selected items deleted successfully"));
       } else if (deleteConfirmId) {
         // Delete related stock_ledger rows
         await supabase
@@ -675,11 +675,11 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                 }}
                 className="text-xs font-black text-brand bg-brand/10 hover:bg-brand/15 px-4 py-2 rounded-xl transition-all"
               >
-                {selectedItemIds.length === filteredItems.length ? "إلغاء تحديد الكل" : "تحديد الكل"}
+                {selectedItemIds.length === filteredItems.length ? t("inventory.unselect_all") : t("inventory.select_all")}
               </button>
               {selectedItemIds.length > 0 && (
                 <span className="text-xs font-bold text-content-muted">
-                  تم تحديد {selectedItemIds.length} عنصر
+                  {t("inventory.selected_items_count", { count: selectedItemIds.length })}
                 </span>
               )}
             </div>
@@ -774,13 +774,13 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                         </div>
                         <div className="flex flex-col gap-0.5 border-l border-border/50 pl-2 sm:pl-4 rtl:pr-2 rtl:pl-0 sm:rtl:pr-4 rtl:border-l-0 rtl:border-r">
                           <span className="text-[9px] sm:text-[10px] font-black text-content-muted uppercase tracking-wider">
-                            الظهور في POS
+                            {t("inventory.visible_in_pos")}
                           </span>
                           <span className={cn(
                             "text-[10px] sm:text-xs font-black",
                             item.showInPos ? "text-success" : "text-content-muted"
                           )}>
-                            {item.showInPos ? "ظاهر" : "مخفي"}
+                            {item.showInPos ? t("inventory.status_visible") : t("inventory.status_hidden")}
                           </span>
                         </div>
                       </div>
@@ -868,7 +868,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                       {t("inventory.collar_type")}
                                     </p>
                                     <p className="text-xs font-black text-content">
-                                      {item.collarType}
+                                      {t(item.collarType ? `inventory.collar_${item.collarType}` : 'inventory.collar_default', item.collarType || 'Default')}
                                     </p>
                                   </div>
                                 )}
@@ -981,7 +981,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                       {t("inventory.price_per_unit")}
                     </th>
                     <th className="px-8 py-6 text-xs font-black text-content-muted uppercase tracking-widest">
-                      الظهور في POS
+                      {t("inventory.visible_in_pos")}
                     </th>
                     <th className="px-8 py-6 text-xs font-black text-content-muted uppercase tracking-widest">
                       {t("inventory.status")}
@@ -1076,12 +1076,12 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                             {item.showInPos ? (
                               <div className="flex items-center gap-1.5 text-success bg-success/10 px-3 py-1 rounded-full w-fit">
                                 <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
-                                <span className="text-[10px] font-black">ظاهر</span>
+                                <span className="text-[10px] font-black">{t("inventory.status_visible")}</span>
                               </div>
                             ) : (
                               <div className="flex items-center gap-1.5 text-content-muted bg-neutral-100 dark:bg-neutral-800 px-3 py-1 rounded-full w-fit">
                                 <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
-                                <span className="text-[10px] font-black">مخفي</span>
+                                <span className="text-[10px] font-black">{t("inventory.status_hidden")}</span>
                               </div>
                             )}
                           </td>
@@ -1224,7 +1224,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                                       )}
                                                     </p>
                                                     <p className="text-sm font-black text-content">
-                                                      {item.collarType}
+                                                      {t(item.collarType ? `inventory.collar_${item.collarType}` : 'inventory.collar_default', item.collarType || 'Default')}
                                                     </p>
                                                   </div>
                                                 )}
@@ -1234,7 +1234,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                                       {t("inventory.cuff_type")}
                                                     </p>
                                                     <p className="text-sm font-black text-content">
-                                                      {item.cuffType}
+                                                      {t(item.cuffType ? `inventory.cuff_${item.cuffType}` : 'inventory.cuff_default', item.cuffType || 'Default')}
                                                     </p>
                                                   </div>
                                                 )}
@@ -1246,7 +1246,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                                       )}
                                                     </p>
                                                     <p className="text-sm font-black text-content">
-                                                      {item.pocketType}
+                                                      {t(item.pocketType ? `inventory.pocket_${item.pocketType}` : 'inventory.pocket_default', item.pocketType || 'Default')}
                                                     </p>
                                                   </div>
                                                 )}
@@ -1258,7 +1258,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                                       )}
                                                     </p>
                                                     <p className="text-sm font-black text-content">
-                                                      {item.chestStyle}
+                                                      {t(item.chestStyle ? `inventory.chest_${item.chestStyle}` : 'inventory.chest_default', item.chestStyle || 'Default')}
                                                     </p>
                                                   </div>
                                                 )}
@@ -1464,12 +1464,12 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                 </div>
                 <div className="space-y-2 col-span-1">
                   <h3 className="text-xl font-black text-content">
-                    {isBulkDeleteConfirm ? "حذف الأصناف المحددة؟" : "تأكيد حذف الصنف؟"}
+                    {isBulkDeleteConfirm ? t("inventory.confirm_delete_title") : t("inventory.confirm_delete_single_title")}
                   </h3>
                   <p className="text-sm font-bold text-content-muted leading-relaxed">
                     {isBulkDeleteConfirm
-                      ? `هل أنت متأكد من رغبتك في حذف ${selectedItemIds.length} صنف من المخزون؟ هذا الإجراء غير قابل للتراجع وسيتم إزالة كافة السجلات المرتبطة بها.`
-                      : "هل أنت متأكد من رغبتك في حذف هذا الصنف من المخزون؟ هذا الإجراء غير قابل للتراجع وسيتم إزالة كافة السجلات المرتبطة به."}
+                      ? t("inventory.confirm_delete_bulk_desc")
+                      : t("inventory.confirm_delete_single_desc")}
                   </p>
                 </div>
                 <div className="flex items-center gap-3 w-full">
@@ -1481,7 +1481,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                     }}
                     className="flex-1 py-3.5 bg-surface border-2 border-border text-content font-bold rounded-2xl hover:bg-surface-muted transition-all active:scale-[0.98]"
                   >
-                    إلغاء
+                    {t("common.cancel")}
                   </button>
                   <button
                     type="button"
@@ -1489,7 +1489,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                     className="flex-1 py-3.5 bg-danger text-white font-black rounded-2xl hover:bg-danger/90 transition-all active:scale-[0.98] shadow-lg shadow-danger/10 flex items-center justify-center gap-2"
                   >
                     <Trash2 size={18} />
-                    نعم، احذف
+                    {t("inventory.yes_delete")}
                   </button>
                 </div>
               </div>
@@ -1509,10 +1509,10 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
           >
             <div className="flex items-center gap-3">
               <div className="bg-brand/10 text-brand px-3 py-1.5 rounded-full text-sm font-black">
-                {selectedItemIds.length} محدد
+                {selectedItemIds.length} {t("inventory.selected")}
               </div>
               <p className="text-sm font-bold text-content-muted">
-                عمليات جماعية للمنتجات المحددة
+                {t("inventory.bulk_actions")}
               </p>
             </div>
             <div className="flex items-center gap-2 w-full md:w-auto">
@@ -1525,14 +1525,14 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                 className="flex-1 md:flex-initial bg-danger hover:bg-danger/90 text-white font-black text-sm px-5 py-2.5 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-danger/20 transition-all active:scale-95"
               >
                 <Trash2 size={16} />
-                حذف محدد ({selectedItemIds.length})
+                {t("inventory.delete_selected")} ({selectedItemIds.length})
               </button>
               <button
                 type="button"
                 onClick={() => setSelectedItemIds([])}
                 className="bg-surface-muted text-content font-bold text-sm px-4 py-2.5 rounded-2xl transition-all"
               >
-                إلغاء
+                {t("common.cancel")}
               </button>
             </div>
           </motion.div>
@@ -1549,6 +1549,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
   const { error: toastError, success: toastSuccess, handleError } = useToast();
   const [suppliersList, setSuppliersList] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const isAddItem = true;
   const [formData, setFormData] = useState({
     name: "",
     category: "fabric",
@@ -1663,10 +1664,10 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
 
       onClose();
       router.refresh();
-      toastSuccess("تم إضافة الصنف للمخزون بنجاح");
+      toastSuccess(t("inventory.add_success", "Product added successfully"));
     } catch (error) {
       setSubmitting(false);
-      handleError(error as any, "فشل في إضافة الصنف");
+      handleError(error as any, t("inventory.add_failed", "Failed to add product"));
     }
   };
 
@@ -1752,7 +1753,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                     { value: "thread", label: t("inventory.category_thread") },
                     { value: "button", label: t("inventory.category_button") },
                     { value: "lining", label: t("inventory.category_lining") },
-                    { value: "accessories", label: "إكسسوارات" },
+                    { value: "accessories", label: t("inventory.category_accessories") },
                     { value: "other", label: t("inventory.category_other") },
                   ]}
                   className="bg-surface border-none text-right"
@@ -1760,14 +1761,14 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
               </div>
               <div className="space-y-2 col-span-1 md:col-span-12 text-right">
                 <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-                  الوصف
+                  {t("inventory.description_label")}
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  placeholder="تفاصيل ووصف إضافي للمنتج..."
+                  placeholder={t("inventory.description_placeholder")}
                   className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content resize-none h-16 text-right"
                 />
               </div>
@@ -1785,13 +1786,13 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                   <div className="flex items-center gap-2 mb-2">
                     <Shirt className="text-brand" size={18} />
                     <h3 className="text-sm font-black text-content uppercase tracking-widest text-brand">
-                      تخصيصات الثوب الجاهز
+                      {t("inventory.specs_ready_made")}
                     </h3>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
                     <div className="space-y-2 col-span-1 md:col-span-6 text-right">
                       <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-                        نوع الياقة
+                        {t("inventory.collar_type")}
                       </label>
                       <SmartSelect
                         value={formData.collarType}
@@ -1799,18 +1800,18 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                           setFormData({ ...formData, collarType: val })
                         }
                         options={[
-                          { value: "", label: "افتراضي" },
-                          { value: "qatari", label: "قطري" },
-                          { value: "kuwaiti", label: "كويتي" },
-                          { value: "saudi", label: "سعودي" },
-                          { value: "marini", label: "ماريني" },
+                          { value: "", label: t("inventory.collar_default") },
+                          { value: "qatari", label: t("inventory.collar_qatari") },
+                          { value: "kuwaiti", label: t("inventory.collar_kuwaiti") },
+                          { value: "saudi", label: t("inventory.collar_saudi") },
+                          { value: "marini", label: t("inventory.collar_marini") },
                         ]}
                         className="bg-surface border-none text-right"
                       />
                     </div>
                     <div className="space-y-2 col-span-1 md:col-span-6 text-right">
                       <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-                        نوع الكبك
+                        {t("inventory.cuff_type")}
                       </label>
                       <SmartSelect
                         value={formData.cuffType}
@@ -1818,17 +1819,17 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                           setFormData({ ...formData, cuffType: val })
                         }
                         options={[
-                          { value: "", label: "افتراضي" },
-                          { value: "regular", label: "عادي" },
-                          { value: "double", label: "مزدوج (للأزرار)" },
-                          { value: "french", label: "فرنسي" },
+                          { value: "", label: t("inventory.collar_default") },
+                          { value: "regular", label: t("inventory.cuff_regular") },
+                          { value: "double", label: t("inventory.cuff_double") },
+                          { value: "french", label: t("inventory.cuff_french") },
                         ]}
                         className="bg-surface border-none text-right"
                       />
                     </div>
                     <div className="space-y-2 col-span-1 md:col-span-6 text-right">
                       <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-                        نوع الجيب
+                        {t("inventory.pocket_type")}
                       </label>
                       <SmartSelect
                         value={formData.pocketType}
@@ -1836,17 +1837,17 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                           setFormData({ ...formData, pocketType: val })
                         }
                         options={[
-                          { value: "", label: "افتراضي" },
-                          { value: "hidden", label: "مخفي" },
-                          { value: "visible", label: "ظاهري" },
-                          { value: "none", label: "بدون جيب" },
+                          { value: "", label: t("inventory.collar_default") },
+                          { value: "hidden", label: t("inventory.pocket_hidden") },
+                          { value: "visible", label: t("inventory.pocket_visible") },
+                          { value: "none", label: t("inventory.pocket_none") },
                         ]}
                         className="bg-surface border-none text-right"
                       />
                     </div>
                     <div className="space-y-2 col-span-1 md:col-span-6 text-right">
                       <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-                        شكل الصدر
+                        {t("inventory.chest_style")}
                       </label>
                       <SmartSelect
                         value={formData.chestStyle}
@@ -1854,10 +1855,10 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                           setFormData({ ...formData, chestStyle: val })
                         }
                         options={[
-                          { value: "", label: "افتراضي" },
-                          { value: "plain", label: "سادة" },
-                          { value: "pleated", label: "بكسرات" },
-                          { value: "embroided", label: "مطرز" },
+                          { value: "", label: t("inventory.collar_default") },
+                          { value: "plain", label: t("inventory.chest_plain") },
+                          { value: "pleated", label: t("inventory.chest_pleated") },
+                          { value: "embroided", label: t("inventory.chest_embroided") },
                         ]}
                         className="bg-surface border-none text-right"
                       />
@@ -1883,16 +1884,16 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                     { value: "meter", label: t("inventory.unit_meter") },
                     { value: "yard", label: t("inventory.unit_yard") },
                     { value: "roll", label: t("inventory.unit_roll") },
-                    { value: "bolt", label: "طاقة (Bolt)" },
+                    { value: "bolt", label: t("inventory.unit_bolt") },
                     { value: "piece", label: t("inventory.unit_piece") },
-                    { value: "box", label: "صندوق (Box)" },
+                    { value: "box", label: t("inventory.unit_box") },
                   ]}
                   className="bg-surface border-none text-right"
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-4 text-right">
                 <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-                  معامل التحويل
+                  {t("inventory.conversion_rate")}
                 </label>
                 <input
                   type="number"
@@ -1932,7 +1933,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
               <div className="space-y-2 col-span-1 md:col-span-3 text-right">
                 <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-                  سعر الشراء (التكلفة)
+                  {t("inventory.cost_price_label")}
                 </label>
                 <input
                   type="number"
@@ -1952,7 +1953,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
 
               <div className="space-y-2 col-span-1 md:col-span-3 text-right">
                 <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-                  سعر البيع
+                  {t("inventory.selling_price_label")}
                 </label>
                 <input
                   type="number"
@@ -1972,21 +1973,21 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
 
               <div className="space-y-2 col-span-1 md:col-span-6 text-right">
                 <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-                  الحالة الضريبية للمنتج
+                  {t("inventory.tax_status_label")}
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     {
                       id: "inclusive",
-                      label: "شامل الضريبة",
+                      label: t("inventory.tax_inclusive"),
                       desc: "VAT Inclusive (15%)",
                     },
                     {
                       id: "exclusive",
-                      label: "غير شامل",
+                      label: t("inventory.tax_exclusive"),
                       desc: "VAT Exclusive (+15%)",
                     },
-                    { id: "exempt", label: "معفى من الضريبة", desc: "VAT Exempt (0%)" },
+                    { id: "exempt", label: t("inventory.tax_exempt"), desc: "VAT Exempt (0%)" },
                   ].map((tax) => (
                     <button
                       key={tax.id}
@@ -2014,13 +2015,13 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
               <div className="space-y-2 col-span-1 md:col-span-6">
                 <label className="text-xs font-black text-content uppercase tracking-widest mx-1 block">
-                  المورد
+                  {t("inventory.supplier_label")}
                 </label>
                 <SmartSelect
                   value={formData.supplierId}
                   onChange={(val) => setFormData({ ...formData, supplierId: val })}
                   options={[
-                    { value: "", label: "اختر مورد..." },
+                    { value: "", label: t("inventory.select_supplier") },
                     ...suppliersList.map((s: any) => ({ value: s.id, label: s.name }))
                   ]}
                   className="bg-surface border-none text-right"
@@ -2028,7 +2029,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
               </div>
               <div className="space-y-2 col-span-1 md:col-span-6">
                 <label className="text-xs font-black text-content uppercase tracking-widest mx-1 block">
-                  الرصيد الافتتاحي
+                  {t("inventory.initial_stock")}
                 </label>
                 <input
                   type="number"
@@ -2051,7 +2052,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                   {t("inventory.sku")}
                 </label>
                 <input
-                  placeholder="رقمي فقط (توليد آلي إن تُرك فارغاً)"
+                  placeholder={t("inventory.sku_placeholder")}
                   value={formData.sku}
                   onChange={(e) =>
                     setFormData({ ...formData, sku: e.target.value.replace(/\D/g, "") })
@@ -2077,8 +2078,8 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
 
           <div className="flex items-center justify-between p-6 bg-brand/5 rounded-[2rem] border border-brand/10">
             <div>
-              <h4 className="text-sm font-black text-content">إظهار في شاشة البيع (POS)</h4>
-              <p className="text-xs text-content-muted">إذا تم تفعيله، سيتمكن الكاشير من بيع هذا المنتج مباشرة من شاشة البيع</p>
+              <h4 className="text-sm font-black text-content">{t("inventory.visible_in_pos")}</h4>
+              <p className="text-xs text-content-muted">{t("inventory.show_in_pos_desc")}</p>
             </div>
             <button
               type="button"
@@ -2111,7 +2112,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-                <span>جاري الحفظ...</span>
+                <span>{t("inventory.saving_loading")}</span>
               </>
             ) : (
               t("inventory.save_item")
@@ -2870,7 +2871,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
       <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
         <h3 className="text-xl font-black text-content mb-8 flex items-center gap-3">
           <TrendingUp className="text-brand" />
-          حركة المخزون (آخر 30 يوم)
+          {t("inventory.stock_movement_trend")}
         </h3>
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
@@ -3036,6 +3037,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
   const { error: toastError, success: toastSuccess, handleError } = useToast();
   const [suppliersList, setSuppliersList] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const isEditItem = true;
   const [formData, setFormData] = useState({
     name: item.name || "",
     category: item.category || "fabric",
@@ -3114,10 +3116,10 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
 
       onClose();
       router.refresh();
-      toastSuccess("تم تحديث الصنف بنجاح");
+      toastSuccess(t("inventory.edit_success", "Product updated successfully"));
     } catch (error) {
       setSubmitting(false);
-      handleError(error as any, "فشل في تحديث الصنف");
+      handleError(error as any, t("inventory.edit_failed", "Failed to update product"));
     }
   };
 
@@ -3203,7 +3205,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                     { value: "thread", label: t("inventory.category_thread") },
                     { value: "button", label: t("inventory.category_button") },
                     { value: "lining", label: t("inventory.category_lining") },
-                    { value: "accessories", label: "إكسسوارات" },
+                    { value: "accessories", label: t("inventory.category_accessories") },
                     { value: "other", label: t("inventory.category_other") },
                   ]}
                   className="bg-surface border-none text-right"
@@ -3211,14 +3213,14 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
               </div>
               <div className="space-y-2 col-span-1 md:col-span-12 text-right">
                 <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-                  الوصف
+                  {t("inventory.description_label")}
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  placeholder="تفاصيل ووصف إضافي للمنتج..."
+                  placeholder={t("inventory.description_placeholder")}
                   className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content resize-none h-16 text-right"
                 />
               </div>
@@ -3236,13 +3238,13 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                   <div className="flex items-center gap-2 mb-2">
                     <Shirt className="text-brand" size={18} />
                     <h3 className="text-sm font-black text-content uppercase tracking-widest text-brand">
-                      تخصيصات الثوب الجاهز
+                      {t("inventory.specs_ready_made")}
                     </h3>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
                     <div className="space-y-2 col-span-1 md:col-span-6 text-right">
                       <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-                        نوع الياقة
+                        {t("inventory.collar_type")}
                       </label>
                       <SmartSelect
                         value={formData.collarType}
@@ -3250,18 +3252,18 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                           setFormData({ ...formData, collarType: val })
                         }
                         options={[
-                          { value: "", label: "افتراضي" },
-                          { value: "qatari", label: "قطري" },
-                          { value: "kuwaiti", label: "كويتي" },
-                          { value: "saudi", label: "سعودي" },
-                          { value: "marini", label: "ماريني" },
+                          { value: "", label: t("inventory.collar_default") },
+                          { value: "qatari", label: t("inventory.collar_qatari") },
+                          { value: "kuwaiti", label: t("inventory.collar_kuwaiti") },
+                          { value: "saudi", label: t("inventory.collar_saudi") },
+                          { value: "marini", label: t("inventory.collar_marini") },
                         ]}
                         className="bg-surface border-none text-right"
                       />
                     </div>
                     <div className="space-y-2 col-span-1 md:col-span-6 text-right">
                       <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-                        نوع الكبك
+                        {t("inventory.cuff_type")}
                       </label>
                       <SmartSelect
                         value={formData.cuffType}
@@ -3269,17 +3271,17 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                           setFormData({ ...formData, cuffType: val })
                         }
                         options={[
-                          { value: "", label: "افتراضي" },
-                          { value: "regular", label: "عادي" },
-                          { value: "double", label: "مزدوج (للأزرار)" },
-                          { value: "french", label: "فرنسي" },
+                          { value: "", label: t("inventory.collar_default") },
+                          { value: "regular", label: t("inventory.cuff_regular") },
+                          { value: "double", label: t("inventory.cuff_double") },
+                          { value: "french", label: t("inventory.cuff_french") },
                         ]}
                         className="bg-surface border-none text-right"
                       />
                     </div>
                     <div className="space-y-2 col-span-1 md:col-span-6 text-right">
                       <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-                        نوع الجيب
+                        {t("inventory.pocket_type")}
                       </label>
                       <SmartSelect
                         value={formData.pocketType}
@@ -3287,17 +3289,17 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                           setFormData({ ...formData, pocketType: val })
                         }
                         options={[
-                          { value: "", label: "افتراضي" },
-                          { value: "hidden", label: "مخفي" },
-                          { value: "visible", label: "ظاهري" },
-                          { value: "none", label: "بدون جيب" },
+                          { value: "", label: t("inventory.collar_default") },
+                          { value: "hidden", label: t("inventory.pocket_hidden") },
+                          { value: "visible", label: t("inventory.pocket_visible") },
+                          { value: "none", label: t("inventory.pocket_none") },
                         ]}
                         className="bg-surface border-none text-right"
                       />
                     </div>
                     <div className="space-y-2 col-span-1 md:col-span-6 text-right">
                       <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-                        شكل الصدر
+                        {t("inventory.chest_style")}
                       </label>
                       <SmartSelect
                         value={formData.chestStyle}
@@ -3305,10 +3307,10 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                           setFormData({ ...formData, chestStyle: val })
                         }
                         options={[
-                          { value: "", label: "افتراضي" },
-                          { value: "plain", label: "سادة" },
-                          { value: "pleated", label: "بكسرات" },
-                          { value: "embroided", label: "مطرز" },
+                          { value: "", label: t("inventory.collar_default") },
+                          { value: "plain", label: t("inventory.chest_plain") },
+                          { value: "pleated", label: t("inventory.chest_pleated") },
+                          { value: "embroided", label: t("inventory.chest_embroided") },
                         ]}
                         className="bg-surface border-none text-right"
                       />
@@ -3334,16 +3336,16 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                     { value: "meter", label: t("inventory.unit_meter") },
                     { value: "yard", label: t("inventory.unit_yard") },
                     { value: "roll", label: t("inventory.unit_roll") },
-                    { value: "bolt", label: "طاقة (Bolt)" },
+                    { value: "bolt", label: t("inventory.unit_bolt") },
                     { value: "piece", label: t("inventory.unit_piece") },
-                    { value: "box", label: "صندوق (Box)" },
+                    { value: "box", label: t("inventory.unit_box") },
                   ]}
                   className="bg-surface border-none text-right"
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-4 text-right">
                 <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-                  معامل التحويل
+                  {t("inventory.conversion_rate")}
                 </label>
                 <input
                   type="number"
@@ -3383,7 +3385,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
               <div className="space-y-2 col-span-1 md:col-span-3 text-right">
                 <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-                  سعر الشراء (التكلفة)
+                  {t("inventory.cost_price_label")}
                 </label>
                 <input
                   type="number"
@@ -3403,7 +3405,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
 
               <div className="space-y-2 col-span-1 md:col-span-3 text-right">
                 <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-                  سعر البيع
+                  {t("inventory.selling_price_label")}
                 </label>
                 <input
                   type="number"
@@ -3423,21 +3425,21 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
 
               <div className="space-y-2 col-span-1 md:col-span-6 text-right">
                 <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-                  الحالة الضريبية للمنتج
+                  {t("inventory.tax_status_label")}
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     {
                       id: "inclusive",
-                      label: "شامل الضريبة",
+                      label: t("inventory.tax_inclusive"),
                       desc: "VAT Inclusive (15%)",
                     },
                     {
                       id: "exclusive",
-                      label: "غير شامل",
+                      label: t("inventory.tax_exclusive"),
                       desc: "VAT Exclusive (+15%)",
                     },
-                    { id: "exempt", label: "معفى من الضريبة", desc: "VAT Exempt (0%)" },
+                    { id: "exempt", label: t("inventory.tax_exempt"), desc: "VAT Exempt (0%)" },
                   ].map((tax) => (
                     <button
                       key={tax.id}
@@ -3465,13 +3467,13 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
               <div className="space-y-2 col-span-1 md:col-span-6">
                 <label className="text-xs font-black text-content uppercase tracking-widest mx-1 block">
-                  المورد
+                  {t("inventory.supplier_label")}
                 </label>
                 <SmartSelect
                   value={formData.supplierId}
                   onChange={(val) => setFormData({ ...formData, supplierId: val })}
                   options={[
-                    { value: "", label: "اختر مورد..." },
+                    { value: "", label: t("inventory.select_supplier") },
                     ...suppliersList.map((s: any) => ({ value: s.id, label: s.name }))
                   ]}
                   className="bg-surface border-none text-right"
@@ -3479,7 +3481,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
               </div>
               <div className="space-y-2 col-span-1 md:col-span-6">
                 <label className="text-xs font-black text-content uppercase tracking-widest mx-1 block">
-                  الرصيد الافتتاحي
+                  {t("inventory.initial_stock")}
                 </label>
                 <input
                   type="number"
@@ -3496,10 +3498,10 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
               <div className="space-y-2 col-span-1 md:col-span-6">
                 <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-                  الرقم المرجعي (SKU)
+                  {t("inventory.ref_sku")}
                 </label>
                 <input
-                  placeholder="أرقام فقط (مثال: 82749301)"
+                  placeholder={t("inventory.sku_placeholder_edit")}
                   value={formData.sku}
                   onChange={(e) =>
                     setFormData({ ...formData, sku: e.target.value.replace(/\D/g, "") })
@@ -3509,7 +3511,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
               </div>
               <div className="space-y-2 col-span-1 md:col-span-6">
                 <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-                  الباركود (Barcode)
+                  {t("inventory.barcode")}
                 </label>
                 <input
                   value={formData.barcode}
@@ -3524,8 +3526,8 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
 
           <div className="flex items-center justify-between p-6 bg-brand/5 rounded-[2rem] border border-brand/10">
             <div>
-              <h4 className="text-sm font-black text-content">إظهار في شاشة البيع (POS)</h4>
-              <p className="text-xs text-content-muted">إذا تم تفعيله، سيتمكن الكاشير من بيع هذا المنتج مباشرة من شاشة البيع</p>
+              <h4 className="text-sm font-black text-content">{t("inventory.visible_in_pos")}</h4>
+              <p className="text-xs text-content-muted">{t("inventory.show_in_pos_desc")}</p>
             </div>
             <button
               type="button"
@@ -3566,7 +3568,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
-                  <span>جاري الحفظ...</span>
+                  <span>{t("inventory.saving_loading")}</span>
                 </>
               ) : (
                 t("common.save_changes")

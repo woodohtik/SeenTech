@@ -13,7 +13,8 @@ import {
   Zap,
   X as CloseIcon,
   Save,
-  Eye
+  Eye,
+  CheckCircle2
 } from 'lucide-react';
 import Branding from './Branding';
 import { ThermalInvoice, StandardInvoice, InvoiceData, InvoiceLayoutSettingsType } from './printing/InvoiceReceipt';
@@ -30,6 +31,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
   const [settings, setSettings] = useState({
     printSize: 'thermal80',
     layoutTemplate: 'classic',
+    fastThermalMode: localStorage.getItem('pos_fast_thermal_mode') === 'true',
     header: {
       logoUrl: '',
       facilityName: '',
@@ -66,7 +68,10 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
 
         if (data && !error) {
           if (data.invoice_settings) {
-            setSettings(data.invoice_settings);
+            setSettings({
+              ...data.invoice_settings,
+              fastThermalMode: data.invoice_settings.fastThermalMode ?? (localStorage.getItem('pos_fast_thermal_mode') === 'true')
+            });
             setLogoPreview(data.invoice_settings.header.logoUrl || null);
           } else {
             setSettings(prev => ({
@@ -111,6 +116,8 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
     }
   };
 
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
   const handleSave = async () => {
     if (!tenantId || tenantId === 'saas_management') return;
     setSaving(true);
@@ -123,6 +130,9 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
         .eq('id', tenantId);
 
       if (error) throw error;
+      setSaveSuccess(true);
+      window.dispatchEvent(new CustomEvent('tenant_settings_updated'));
+      setTimeout(() => setSaveSuccess(false), 3500);
     } catch (error) {
       handleError(error, OperationType.UPDATE, 'tenants');
     } finally {
@@ -188,10 +198,19 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
           <button 
             onClick={handleSave}
             disabled={saving}
-            className="w-full sm:w-auto bg-brand text-white px-8 py-3.5 rounded-2xl font-black hover:bg-brand/90 transition-all shadow-xl shadow-brand/20 flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-105 active:scale-95"
+            className={cn(
+              "w-full sm:w-auto text-white px-8 py-3.5 rounded-2xl font-black transition-all shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-105 active:scale-95",
+              saveSuccess ? "bg-emerald-600 shadow-emerald-500/20" : "bg-brand hover:bg-brand/90 shadow-brand/20"
+            )}
           >
-            {saving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save size={20} />}
-            {saving ? 'جاري الحفظ...' : 'اعتماد التصميم'}
+            {saving ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : saveSuccess ? (
+              <CheckCircle2 size={20} />
+            ) : (
+              <Save size={20} />
+            )}
+            <span>{saving ? 'جاري الحفظ...' : saveSuccess ? 'تم الحفظ بنجاح' : 'اعتماد التصميم'}</span>
           </button>
         </div>
 
@@ -250,6 +269,42 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Fast Thermal Print Mode Toggle */}
+            <div className="pt-2 border-t border-border/50">
+              <label className="flex items-center justify-between p-4 bg-amber-500/5 rounded-2xl border border-amber-500/20 cursor-pointer hover:bg-amber-500/10 transition-all gap-4">
+                <div className="flex items-center gap-3 text-right">
+                  <div className="p-2.5 bg-amber-500 text-white rounded-xl shrink-0 shadow-sm">
+                    <Zap size={20} className="animate-pulse" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-black text-content text-xs sm:text-sm">الوضع السريع للطباعة الحرارية (80mm)</p>
+                      <span className="text-[9px] bg-amber-500/10 text-amber-700 px-2 py-0.5 rounded-full font-black border border-amber-500/20">
+                        توفير الورق
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-content-muted font-medium mt-0.5">
+                      يقوم آلياً بضغط فواتير المبيعات وتقليل المسافات لتناسب طابعات الكاشير 80mm بسرعة فائقة
+                    </p>
+                  </div>
+                </div>
+                <div className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer"
+                    checked={settings.fastThermalMode}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setSettings(s => ({ ...s, fastThermalMode: checked }));
+                      localStorage.setItem('pos_fast_thermal_mode', String(checked));
+                      window.dispatchEvent(new CustomEvent('fast_thermal_mode_changed', { detail: checked }));
+                    }}
+                  />
+                  <div className="w-12 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
+                </div>
+              </label>
             </div>
           </div>
         </div>

@@ -15,6 +15,7 @@ export type UserRole =
     | 'support_tech'
     | 'billing_admin'
     | 'sales'
+    | 'tenant_admin'
     | 'owner'
     | 'admin'
     | 'manager'

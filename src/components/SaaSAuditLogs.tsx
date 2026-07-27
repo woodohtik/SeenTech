@@ -211,7 +211,7 @@ export default function SaaSAuditLogs() {
                       <Clock size={14} />
                       <span>
                         {new Date(log.timestamp).toLocaleString(
-                          i18n.language === 'en' ? 'en-US' : i18n.language === 'ur' ? 'ur-PK' : 'ar-SA'
+                          i18n.language === 'en' ? 'en-US' : i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'ar-SA-u-nu-latn'
                         )}
                       </span>
                     </div>

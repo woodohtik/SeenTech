@@ -74,7 +74,7 @@ export default function PaymentVoucherModal({
           currentStaff.id,
           currentStaff.name,
           'payout_cash',
-          `إصدار سند صرف رقم ${voucherNo} للمورد ${supplier.name} بقيمة ${payAmt} ر.س - طريقة الدفع: ${paymentMethod === 'cash' ? 'نقداً' : 'تحويل بنكي'}`
+          `إصدار سند صرف رقم ${voucherNo} للمورد ${supplier.name} بقيمة ${payAmt} ﷼ - طريقة الدفع: ${paymentMethod === 'cash' ? 'نقداً' : 'تحويل بنكي'}`
         );
       }
 
@@ -181,9 +181,9 @@ export default function PaymentVoucherModal({
                   <button
                     type="button"
                     onClick={() => setAmount(supplier.balance.toFixed(2))}
-                    className="text-red-600 hover:underline hover:text-red-700"
+                    className="text-red-600 hover:underline hover:text-red-700 flex items-center gap-1"
                   >
-                    صرف كامل المديونية ({supplier.balance.toFixed(2)} ر.س)
+                    صرف كامل المديونية (<PriceDisplay amount={supplier.balance} />)
                   </button>
                 )}
               </div>
@@ -327,7 +327,7 @@ export default function PaymentVoucherModal({
               
               <div className="flex justify-between">
                 <span className="text-slate-400">تاريخ صرف السند:</span>
-                <span className="font-bold text-slate-800">{new Date(issuedVoucher.date).toLocaleDateString('ar-SA')}</span>
+                <span className="font-bold text-slate-800">{new Date(issuedVoucher.date).toLocaleDateString('ar-SA-u-nu-latn')}</span>
               </div>
 
               <div className="flex justify-between">
@@ -344,8 +344,8 @@ export default function PaymentVoucherModal({
             {/* The financial accounting figures */}
             <div className="py-5 border-b border-dashed border-slate-200 text-center bg-red-50/40 rounded-2xl border border-red-100/50 my-3">
               <p className="text-xs font-bold text-slate-500 mb-1">المبلغ المصروف المعتمد</p>
-              <h3 className="text-2xl font-black text-red-600 font-mono tracking-tight text-center">
-                {issuedVoucher.amount.toFixed(2)} ر.س
+              <h3 className="text-2xl font-black text-red-600 font-mono tracking-tight text-center flex items-center justify-center gap-1.5">
+                <PriceDisplay amount={issuedVoucher.amount} />
               </h3>
               <p className="text-[10px] font-bold text-slate-400 mt-1">مدفوع بالكامل وتحت الحساب</p>
             </div>
@@ -376,16 +376,16 @@ export default function PaymentVoucherModal({
             <div className="py-4 space-y-1.5 text-[11px] bg-slate-50/50 rounded-2xl px-4 mt-3 border border-slate-100">
               <div className="flex justify-between text-slate-500">
                 <span>الرصيد قبل الدفع:</span>
-                <span className="font-mono font-semibold">{(issuedVoucher.supplierBalanceAfter + issuedVoucher.amount).toFixed(2)} ر.س</span>
+                <span className="font-mono font-semibold"><PriceDisplay amount={issuedVoucher.supplierBalanceAfter + issuedVoucher.amount} /></span>
               </div>
               <div className="flex justify-between text-red-600 font-bold">
                 <span>إجمالي المدفوع بالسند:</span>
-                <span className="font-mono">-{issuedVoucher.amount.toFixed(2)} ر.س</span>
+                <span className="font-mono">-<PriceDisplay amount={issuedVoucher.amount} /></span>
               </div>
               <div className="h-px bg-slate-200/60 my-1" />
               <div className="flex justify-between text-slate-950 font-black">
                 <span>المتبقي للمورد (الرصيد الحالي):</span>
-                <span className="font-mono">{issuedVoucher.supplierBalanceAfter.toFixed(2)} ر.س</span>
+                <span className="font-mono"><PriceDisplay amount={issuedVoucher.supplierBalanceAfter} /></span>
               </div>
             </div>
 

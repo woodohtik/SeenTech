@@ -37,7 +37,7 @@ import Branding from './Branding';
 import { useStaff } from '../contexts/StaffContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { generateSecurePin, hashPin, isPinUnique } from '../services/staffService';
-import { updateRolePermissions, createCustomRole, DEFAULT_ROLES, updateUserOverrides, seedGlobalRoles } from '../services/permissionService';
+import { updateRolePermissions, createCustomRole, DEFAULT_ROLES, updateUserOverrides, seedGlobalRoles, isMerchantRole } from '../services/permissionService';
 import { SYSTEM_PERMISSIONS } from '../constants/permissions';
 import EmployeeActivityLogTab from './EmployeeActivityLog';
 import AddEmployeeModal from './AddEmployeeModal';
@@ -51,7 +51,12 @@ interface StaffMember extends StaffMemberType {
   };
 }
 
-export default function Staff({ tenantId }: { tenantId: string }) {
+interface StaffProps {
+  tenantId: string;
+  initialViewMode?: 'list' | 'performance' | 'permissions' | 'employee_activity' | 'tailor_commissions';
+}
+
+export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps) {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -61,13 +66,21 @@ export default function Staff({ tenantId }: { tenantId: string }) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [selectedStaffForDetails, setSelectedStaffForDetails] = useState<StaffMember | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'performance' | 'permissions' | 'employee_activity' | 'tailor_commissions'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'performance' | 'permissions' | 'employee_activity' | 'tailor_commissions'>(initialViewMode);
   const [permissionTabMode, setPermissionTabMode] = useState<'roles' | 'staff'>('roles');
+  const [sidebarSearchTerm, setSidebarSearchTerm] = useState('');
   const [selectedRoleForPermissions, setSelectedRoleForPermissions] = useState<Role | null>(null);
   const [selectedStaffForPermissions, setSelectedStaffForPermissions] = useState<StaffMember | null>(null);
   const [overrides, setOverrides] = useState<Record<string, Partial<PermissionsMap>>>({});
+
+  useEffect(() => {
+    if (initialViewMode) {
+      setViewMode(initialViewMode);
+    }
+  }, [initialViewMode]);
   const { currentStaff } = useStaff();
   const { hasPermission } = usePermissions(currentStaff);
+  const isSuperAdmin = currentStaff?.role === 'super_admin';
   const [isSeeding, setIsSeeding] = useState(false);
 
   const handleSeedRoles = async () => {
@@ -122,10 +135,25 @@ export default function Staff({ tenantId }: { tenantId: string }) {
   });
 
   useEffect(() => {
-    if (activeRoles.length > 0 && !selectedRoleForPermissions) {
+    if (selectedRoleForPermissions) {
+      const updated = roles.find(r => r.id === selectedRoleForPermissions.id);
+      if (updated && updated !== selectedRoleForPermissions) {
+        setSelectedRoleForPermissions(updated);
+      }
+    } else if (activeRoles.length > 0) {
       setSelectedRoleForPermissions(activeRoles[0]);
     }
-  }, [activeRoles, selectedRoleForPermissions]);
+  }, [roles, activeRoles]);
+
+  useEffect(() => {
+    if (viewMode === 'permissions') {
+      if (permissionTabMode === 'roles' && !selectedRoleForPermissions && activeRoles.length > 0) {
+        setSelectedRoleForPermissions(activeRoles[0]);
+      } else if (permissionTabMode === 'staff' && !selectedStaffForPermissions && staff.length > 0) {
+        setSelectedStaffForPermissions(staff[0]);
+      }
+    }
+  }, [viewMode, permissionTabMode, activeRoles, staff, selectedRoleForPermissions, selectedStaffForPermissions]);
 
   const [isSavingPermissions, setIsSavingPermissions] = useState(false);
   const [showCreateRole, setShowCreateRole] = useState(false);
@@ -240,13 +268,58 @@ export default function Staff({ tenantId }: { tenantId: string }) {
     if (error) {
       handleFirestoreError(error, OperationType.LIST, 'roles');
     } else {
-      setRoles(data.map(d => ({
-        ...d,
-        tenantId: d.tenant_id,
-        roleKey: d.role_key,
-        createdAt: d.created_at,
-        updatedAt: d.updated_at
-      }) as Role));
+      const combinedMap = new Map<string, Role>();
+
+      // 1. Seed base default roles
+      Object.entries(DEFAULT_ROLES).forEach(([key, roleInfo]) => {
+        if (roleInfo.category === 'merchant' || isMerchantRole(key)) {
+          combinedMap.set(key, {
+            id: key,
+            name: roleInfo.name,
+            description: roleInfo.description,
+            roleKey: key,
+            permissions: roleInfo.permissions,
+            tenantId: null,
+            isDefault: true,
+            createdAt: new Date().toISOString(),
+            category: 'merchant'
+          });
+        }
+      });
+
+      // 2. Override with DB roles
+      (data || []).forEach(d => {
+        const key = d.role_key || d.id;
+        const defaultCategory = DEFAULT_ROLES[key]?.category;
+        if (defaultCategory === 'merchant' || isMerchantRole(key) || d.tenant_id) {
+          combinedMap.set(key, {
+            ...d,
+            tenantId: d.tenant_id,
+            roleKey: key,
+            createdAt: d.created_at,
+            updatedAt: d.updated_at,
+            category: 'merchant'
+          } as Role);
+        }
+      });
+
+      setRoles(Array.from(combinedMap.values()));
+    }
+  };
+
+  const fetchOverrides = async () => {
+    if (!tenantId) return;
+    const { data } = await supabase
+      .from('user_permission_overrides')
+      .select('*')
+      .eq('tenant_id', tenantId);
+    
+    if (data) {
+      const overridesData: Record<string, Partial<PermissionsMap>> = {};
+      data.forEach(item => {
+        overridesData[item.user_id] = item.overrides;
+      });
+      setOverrides(overridesData);
     }
   };
 
@@ -256,10 +329,22 @@ export default function Staff({ tenantId }: { tenantId: string }) {
     // Supabase real-time subscriptions
     const staffChannel = supabase
       .channel('staff-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff', filter: `tenant_id=eq.${tenantId}` }, (payload) => {
-        // We could selectively update state here, but for simplicity we re-fetch or use the snapshot approach if available.
-        // Supabase client doesn't have an exact "onSnapshot" that maps 1:1, but many use the channel for events.
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff', filter: `tenant_id=eq.${tenantId}` }, () => {
         fetchStaff();
+      })
+      .subscribe();
+
+    const rolesChannel = supabase
+      .channel('roles-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'roles' }, () => {
+        fetchRoles();
+      })
+      .subscribe();
+
+    const overridesChannel = supabase
+      .channel('overrides-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_permission_overrides', filter: `tenant_id=eq.${tenantId}` }, () => {
+        fetchOverrides();
       })
       .subscribe();
 
@@ -334,21 +419,6 @@ export default function Staff({ tenantId }: { tenantId: string }) {
       }) as Branch));
     };
 
-    const fetchOverrides = async () => {
-      const { data } = await supabase
-        .from('user_permission_overrides')
-        .select('*')
-        .eq('tenant_id', tenantId);
-      
-      if (data) {
-        const overridesData: Record<string, Partial<PermissionsMap>> = {};
-        data.forEach(item => {
-          overridesData[item.user_id] = item.overrides;
-        });
-        setOverrides(overridesData);
-      }
-    };
-
     fetchStaff();
     fetchOrders();
     fetchRoles();
@@ -357,6 +427,8 @@ export default function Staff({ tenantId }: { tenantId: string }) {
 
     return () => {
       supabase.removeChannel(staffChannel);
+      supabase.removeChannel(rolesChannel);
+      supabase.removeChannel(overridesChannel);
     };
   }, [tenantId]);
 
@@ -495,10 +567,20 @@ export default function Staff({ tenantId }: { tenantId: string }) {
       const role = roles.find(r => r.id === roleId);
       if (!role) return;
 
+      const isDefaultRole = Boolean(!role.tenantId || role.tenantId === 'system' || DEFAULT_ROLES[role.roleKey] || role.isDefault);
+      if (!isSuperAdmin && (role.roleKey === 'owner' || isDefaultRole)) {
+        setToast({ message: 'المهن الافتراضية محمية بالنظام. للتعديل، يرجى إنشاء مهنة مخصصة جديدة.', type: 'error' });
+        return;
+      }
+
       const newPermissions = {
         ...role.permissions,
         [key]: !role.permissions[key]
       };
+
+      // Optimistically update roles state and selected role view immediately
+      setRoles(prevRoles => prevRoles.map(r => r.id === roleId ? { ...r, permissions: newPermissions } : r));
+      setSelectedRoleForPermissions(prev => prev && prev.id === roleId ? { ...prev, permissions: newPermissions } : prev);
 
       await updateRolePermissions(
         roleId,
@@ -507,9 +589,10 @@ export default function Staff({ tenantId }: { tenantId: string }) {
         auth.currentUser?.email || '',
         tenantId!
       );
-      setToast({ message: 'تم تحديث الصلاحيات بنجاح', type: 'success' });
+      setToast({ message: 'تم تحديث الصلاحية بنجاح', type: 'success' });
     } catch (error) {
       setToast({ message: 'حدث خطأ أثناء تحديث الصلاحيات', type: 'error' });
+      await fetchRoles(); // Revert back to database state on failure
     }
   };
 
@@ -543,9 +626,10 @@ export default function Staff({ tenantId }: { tenantId: string }) {
         auth.currentUser?.uid || null,
         auth.currentUser?.email || ''
       );
+      setToast({ message: 'تم تحديث استثناء الصلاحية بنجاح', type: 'success' });
     } catch (err) {
       setToast({ message: 'فشل تحديث استثناء الصلاحية', type: 'error' });
-      // Revert logic would be complex here, relying on onSnapshot (or our fetch) to fix it
+      await fetchOverrides();
     }
   };
 
@@ -989,12 +1073,26 @@ export default function Staff({ tenantId }: { tenantId: string }) {
                 >
                   {member.status === 'active' ? 'تعطيل' : 'تفعيل'}
                 </button>
-                <button 
-                  onClick={() => setSelectedStaffForDetails(member)}
-                  className="text-[10px] font-black px-4 py-2 rounded-xl bg-surface-muted text-content hover:bg-surface-muted/80 transition-all"
-                >
-                  التفاصيل
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button 
+                    onClick={() => {
+                      setViewMode('permissions');
+                      setPermissionTabMode('staff');
+                      setSelectedStaffForPermissions(member);
+                    }}
+                    className="text-[10px] font-black px-3 py-2 rounded-xl bg-brand/10 text-brand hover:bg-brand hover:text-white transition-all flex items-center gap-1"
+                    title="إدارة صلاحيات الموظف"
+                  >
+                    <Shield size={12} />
+                    <span>الصلاحيات</span>
+                  </button>
+                  <button 
+                    onClick={() => setSelectedStaffForDetails(member)}
+                    className="text-[10px] font-black px-3 py-2 rounded-xl bg-surface-muted text-content hover:bg-surface-muted/80 transition-all"
+                  >
+                    التفاصيل
+                  </button>
+                </div>
               </div>
             </motion.div>
           ))}
@@ -1130,8 +1228,20 @@ export default function Staff({ tenantId }: { tenantId: string }) {
                       <Plus size={16} />
                     </button>
                   </div>
+                  <div className="p-3 border-b border-border bg-surface-muted/20">
+                    <div className="relative">
+                      <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-content-muted" size={14} />
+                      <input 
+                        type="text" 
+                        placeholder="بحث في المهن..." 
+                        value={sidebarSearchTerm} 
+                        onChange={e => setSidebarSearchTerm(e.target.value)} 
+                        className="w-full bg-surface border border-border rounded-xl py-2 pr-9 pl-3 text-xs font-bold outline-none text-content focus:border-brand" 
+                      />
+                    </div>
+                  </div>
                   <div className="max-h-[600px] overflow-y-auto">
-                    {activeRoles.map(role => (
+                    {activeRoles.filter(r => r.name.toLowerCase().includes(sidebarSearchTerm.toLowerCase())).map(role => (
                       <div
                         key={role.id}
                         onClick={() => setSelectedRoleForPermissions(role)}
@@ -1208,6 +1318,36 @@ export default function Staff({ tenantId }: { tenantId: string }) {
                         <div>
                           <h3 className="text-2xl font-black text-content">صلاحيات {selectedRoleForPermissions.name}</h3>
                           <p className="text-sm text-content-muted font-bold mt-1">{selectedRoleForPermissions.description}</p>
+                          {(() => {
+                            const roleStaffMembers = staff.filter(s => s.role === selectedRoleForPermissions.roleKey);
+                            return roleStaffMembers.length > 0 ? (
+                              <div className="flex items-center gap-2 flex-wrap pt-2.5 mt-2 border-t border-border/50">
+                                <span className="text-xs font-black text-content-muted">الموظفون في هذا الدور ({roleStaffMembers.length}):</span>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {roleStaffMembers.map(s => (
+                                    <button
+                                      key={s.id}
+                                      onClick={() => {
+                                        setPermissionTabMode('staff');
+                                        setSelectedStaffForPermissions(s);
+                                        setSelectedRoleForPermissions(null);
+                                      }}
+                                      className="px-2.5 py-1 bg-brand/10 hover:bg-brand text-brand hover:text-white rounded-xl text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer border border-brand/20"
+                                      title="عرض وتعديل استثناءات صلاحيات هذا الموظف"
+                                    >
+                                      <User size={12} />
+                                      <span>{s.name}</span>
+                                      {Object.keys(overrides[s.id] || {}).length > 0 && (
+                                        <span className="bg-amber-500 text-white text-[9px] px-1.5 rounded-full font-bold">
+                                          {Object.keys(overrides[s.id] || {}).length}
+                                        </span>
+                                      )}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : null;
+                          })()}
                         </div>
                       </div>
                       
@@ -1230,6 +1370,26 @@ export default function Staff({ tenantId }: { tenantId: string }) {
                         </div>
                       </div>
                     </div>
+
+                    {!isSuperAdmin && (!selectedRoleForPermissions.tenantId || selectedRoleForPermissions.tenantId === 'system' || DEFAULT_ROLES[selectedRoleForPermissions.roleKey] || selectedRoleForPermissions.isDefault) && (
+                      <div className="p-5 bg-amber-500/10 rounded-2xl border border-amber-500/30 text-right flex items-center justify-between flex-wrap gap-3 shadow-sm">
+                        <div className="flex items-center gap-2.5 text-amber-700 dark:text-amber-400 font-black text-xs">
+                          <Lock size={18} />
+                          <span>مهنة افتراضية محمية. تعديل المهن الافتراضية متاح فقط من السوبر أدمن.</span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setNewRoleName(`${selectedRoleForPermissions.name} مخصص`);
+                            setNewRoleDesc(`نسخة مخصصة من ${selectedRoleForPermissions.name}`);
+                            setShowCreateRole(true);
+                          }}
+                          className="px-4 py-2 bg-brand text-white font-black text-xs rounded-xl shadow-sm hover:bg-brand/90 transition-all flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Plus size={14} />
+                          <span>إنشاء مهنة مخصصة</span>
+                        </button>
+                      </div>
+                    )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {categories.map(category => {
@@ -1274,21 +1434,22 @@ export default function Staff({ tenantId }: { tenantId: string }) {
                                   <div className="p-6 space-y-4">
                                     {categoryPerms.map(perm => {
                                       const isEnabled = selectedRoleForPermissions.permissions[perm.id as PermissionKey];
-                                      const isOwner = selectedRoleForPermissions.roleKey === 'owner';
+                                      const isDefaultRole = Boolean(!selectedRoleForPermissions.tenantId || selectedRoleForPermissions.tenantId === 'system' || DEFAULT_ROLES[selectedRoleForPermissions.roleKey] || selectedRoleForPermissions.isDefault);
+                                      const isReadOnlyRole = selectedRoleForPermissions.roleKey === 'owner' || (!isSuperAdmin && isDefaultRole);
                                       
                                       return (
-                                        <div key={perm.id} className="flex items-center justify-between p-4 bg-surface-muted/50 rounded-2xl border border-border/50 hover:border-brand/30 transition-all group">
+                                        <div key={perm.id} className={cn("flex items-center justify-between p-4 bg-surface-muted/50 rounded-2xl border border-border/50 transition-all group", isReadOnlyRole ? "opacity-70 cursor-not-allowed" : "hover:border-brand/30")}>
                                           <div className="flex flex-col gap-1">
                                             <span className="text-sm font-bold text-content group-hover:text-brand transition-colors">{perm.name}</span>
                                             <span className="text-[10px] text-content-muted font-medium leading-relaxed">{perm.description}</span>
                                           </div>
                                           <button
-                                            onClick={() => !isOwner && handleTogglePermission(selectedRoleForPermissions.id, perm.id as PermissionKey)}
-                                            disabled={isOwner}
+                                            onClick={() => !isReadOnlyRole && handleTogglePermission(selectedRoleForPermissions.id, perm.id as PermissionKey)}
+                                            disabled={isReadOnlyRole}
                                             className={cn(
                                               "w-12 h-6 rounded-full relative transition-all duration-300",
-                                              isEnabled ? (isOwner ? "bg-content-muted" : "bg-brand") : "bg-border",
-                                              isOwner && "opacity-50 cursor-not-allowed"
+                                              isEnabled ? (isReadOnlyRole ? "bg-brand/50" : "bg-brand") : "bg-border",
+                                              isReadOnlyRole && "opacity-50 cursor-not-allowed"
                                             )}
                                           >
                                             <div className={cn(
@@ -1319,8 +1480,20 @@ export default function Staff({ tenantId }: { tenantId: string }) {
                   <div className="p-4 bg-surface-muted border-b border-border">
                     <h4 className="text-xs font-black text-content-muted uppercase tracking-widest">اختر الموظف</h4>
                   </div>
+                  <div className="p-3 border-b border-border bg-surface-muted/20">
+                    <div className="relative">
+                      <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-content-muted" size={14} />
+                      <input 
+                        type="text" 
+                        placeholder="بحث في الموظفين..." 
+                        value={sidebarSearchTerm} 
+                        onChange={e => setSidebarSearchTerm(e.target.value)} 
+                        className="w-full bg-surface border border-border rounded-xl py-2 pr-9 pl-3 text-xs font-bold outline-none text-content focus:border-brand" 
+                      />
+                    </div>
+                  </div>
                   <div className="max-h-[600px] overflow-y-auto">
-                    {staff.map(member => (
+                    {staff.filter(m => m.name.toLowerCase().includes(sidebarSearchTerm.toLowerCase()) || m.role.toLowerCase().includes(sidebarSearchTerm.toLowerCase())).map(member => (
                       <button
                         key={member.id}
                         onClick={() => setSelectedStaffForPermissions(member)}
@@ -1361,6 +1534,37 @@ export default function Staff({ tenantId }: { tenantId: string }) {
                           <p className="text-xs text-content-muted font-bold mt-1">
                             تعديل استثناءات الصلاحيات لهذا الموظف بشكل خاص
                           </p>
+                          {(() => {
+                            const staffRoleObj = roles.find(r => r.roleKey === selectedStaffForPermissions.role);
+                            const staffOverrideCount = Object.keys(overrides[selectedStaffForPermissions.id] || {}).length;
+                            return (
+                              <div className="flex items-center gap-2 flex-wrap mt-2">
+                                <button
+                                  onClick={() => {
+                                    setPermissionTabMode('roles');
+                                    if (staffRoleObj) setSelectedRoleForPermissions(staffRoleObj);
+                                    setSelectedStaffForPermissions(null);
+                                  }}
+                                  className="px-3 py-1 bg-brand/10 hover:bg-brand text-brand hover:text-white rounded-xl text-xs font-black flex items-center gap-1.5 transition-all border border-brand/20 cursor-pointer"
+                                  title="الانتقال لتعديل صلاحيات هذا الدور الوظيفي"
+                                >
+                                  <Shield size={14} />
+                                  <span>الدور الأساسي: {staffRoleObj?.name || selectedStaffForPermissions.role}</span>
+                                  <span className="text-[10px] underline">(تعديل صلاحيات الدور)</span>
+                                </button>
+                                {staffOverrideCount > 0 ? (
+                                  <span className="bg-amber-500/10 text-amber-600 border border-amber-500/20 px-3 py-1 rounded-xl text-xs font-black flex items-center gap-1">
+                                    <Zap size={12} />
+                                    <span>يوجد {staffOverrideCount} استثناء مخصص</span>
+                                  </span>
+                                ) : (
+                                  <span className="bg-surface-muted text-content-muted px-3 py-1 rounded-xl text-xs font-bold border border-border">
+                                    يتبع صلاحيات الدور تماماً
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                       
@@ -1704,7 +1908,7 @@ export default function Staff({ tenantId }: { tenantId: string }) {
                             </div>
                             <div>
                               <p className="font-bold text-content">طلب #{order.orderNumber}</p>
-                              <p className="text-[10px] text-content-muted font-bold">{new Date(order.updatedAt || '').toLocaleDateString('ar-SA')}</p>
+                              <p className="text-[10px] text-content-muted font-bold">{new Date(order.updatedAt || '').toLocaleDateString('ar-SA-u-nu-latn')}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-3">

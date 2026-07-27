@@ -4,8 +4,12 @@ import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
 import { Order } from '../types';
 import { PriceDisplay } from './PriceDisplay';
+import { useTranslation } from 'react-i18next';
 
 export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, shiftId?: string }) {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+
   const [searchQuery, setSearchQuery] = useState('');
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(false);
@@ -50,7 +54,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
           updatedAt: foundDoc.updated_at
         } as Order);
       } else {
-        alert('لم يتم العثور على الفاتورة');
+        alert(t('sales_returns.invoice_not_found', 'لم يتم العثور على الفاتورة'));
         setOrder(null);
       }
     } catch (error) {
@@ -62,23 +66,32 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
 
   const handleReturn = async () => {
     if (!order) return;
-    if (!confirm('هل أنت متأكد من إرجاع هذه الفاتورة؟')) return;
+    if (!confirm(t('sales_returns.confirm_return_msg', 'هل أنت متأكد من إرجاع هذه الفاتورة؟'))) return;
     
     setIsSubmitting(true);
     try {
+      const historyEntry = {
+        status: 'cancelled',
+        updatedAt: new Date().toISOString(),
+        updatedBy: t('common.roles.owner', 'المالك'),
+        notes: `تم إرجاع الفاتورة: ${returnReason}`
+      };
+
       const { error } = await supabase
         .from('orders')
         .update({
           status: 'cancelled',
           returnReason: returnReason,
           returnedAt: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          items: order.items || [],
+          history: [...(order.history || []), historyEntry]
         })
         .eq('id', order.id);
 
       if (error) throw error;
       
-      alert('تم إرجاع الفاتورة بنجاح');
+      alert(t('sales_returns.return_success_msg', 'تم إرجاع الفاتورة بنجاح'));
       setOrder(null);
       setSearchQuery('');
       setReturnReason('');
@@ -90,10 +103,10 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto font-sans">
+    <div className="p-4 md:p-6 max-w-4xl mx-auto font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="bg-white dark:bg-[#1D1D1D] p-4 sm:p-6 rounded-2xl md:rounded-[2rem] border border-gray-200 dark:border-gray-800 shadow-sm space-y-6">
         <div>
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">إرجاع فاتورة مبيعات</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">{t('sales_returns.title', 'إرجاع فاتورة مبيعات')}</h2>
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="group flex-1 flex items-center bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-xl focus-within:ring-2 focus-within:ring-[#1C8FFF] transition-all overflow-hidden h-12">
               <div className="flex items-center justify-center px-4 border-e border-gray-200/60 dark:border-gray-700 text-gray-400 group-focus-within:text-[#1C8FFF] h-full shrink-0 bg-gray-100/50 dark:bg-slate-900/50">
@@ -101,7 +114,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
               </div>
               <input 
                 type="text"
-                placeholder="أدخل رقم الفاتورة للبحث..."
+                placeholder={t('sales_returns.search_placeholder', 'أدخل رقم الفاتورة للبحث...')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -113,7 +126,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
               disabled={loading || !searchQuery}
               className="bg-[#1C8FFF] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#1C8FFF]/90 transition-all active:scale-95 disabled:opacity-50 cursor-pointer h-12"
             >
-              {loading ? 'جاري البحث...' : 'بحث'}
+              {loading ? t('sales_returns.searching', 'جاري البحث...') : t('sales_returns.search_btn', 'بحث')}
             </button>
           </div>
         </div>
@@ -122,40 +135,40 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
           <div className="border-t border-gray-100 dark:border-gray-800 pt-6 space-y-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-gray-50 dark:bg-slate-850 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">رقم الفاتورة</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('sales_returns.invoice_no', 'رقم الفاتورة')}</p>
                 <p className="font-bold text-gray-800 dark:text-gray-100">#{order.orderNumber || order.id.slice(-6).toUpperCase()}</p>
               </div>
               <div className="bg-gray-50 dark:bg-slate-850 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">العميل</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('sales_returns.customer', 'العميل')}</p>
                 <p className="font-bold text-gray-800 dark:text-gray-100">{order.customerName}</p>
               </div>
               <div className="bg-gray-50 dark:bg-slate-850 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">التاريخ</p>
-                <p className="font-bold text-gray-800 dark:text-gray-100" dir="ltr">{new Date(order.orderDate).toLocaleDateString('ar-SA')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('sales_returns.date', 'التاريخ')}</p>
+                <p className="font-bold text-gray-800 dark:text-gray-100" dir="ltr">{new Date(order.orderDate).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'))}</p>
               </div>
               <div className="bg-gray-50 dark:bg-slate-850 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">الإجمالي</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('sales_returns.total', 'الإجمالي')}</p>
                 <p className="font-bold text-[#1C8FFF]"><PriceDisplay amount={order.totalAmount} /></p>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">سبب الإرجاع</label>
+              <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">{t('sales_returns.return_reason', 'سبب الإرجاع')}</label>
               <textarea 
                 value={returnReason}
                 onChange={(e) => setReturnReason(e.target.value)}
                 className="w-full p-4 bg-gray-50 dark:bg-slate-850 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-[#1C8FFF] outline-none h-24 resize-none text-gray-800 dark:text-gray-100"
-                placeholder="اكتب سبب الإرجاع هنا..."
+                placeholder={t('sales_returns.reason_placeholder', 'اكتب سبب الإرجاع هنا...')}
               />
             </div>
 
             <button 
               onClick={handleReturn}
               disabled={isSubmitting || order.status === 'cancelled'}
-              className="w-full bg-red-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full bg-red-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
             >
               <RotateCcw size={20} />
-              {order.status === 'cancelled' ? 'الفاتورة مرتجعة مسبقاً' : 'تأكيد الإرجاع'}
+              {order.status === 'cancelled' ? t('sales_returns.already_returned', 'الفاتورة مرتجعة مسبقاً') : t('sales_returns.confirm_return', 'تأكيد الإرجاع')}
             </button>
           </div>
         )}

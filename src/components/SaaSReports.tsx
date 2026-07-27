@@ -59,7 +59,7 @@ export default function SaaSReports() {
       const monthsMap = new Map();
       orders.forEach(o => {
         const date = new Date(o.order_date);
-        const month = date.toLocaleDateString(i18n.language === 'en' ? 'en-US' : isRtl ? 'ar-SA' : 'en-US', { month: 'short' });
+        const month = date.toLocaleDateString(i18n.language === 'en' ? 'en-US' : isRtl ? 'ar-SA-u-nu-latn' : 'en-US', { month: 'short' });
         monthsMap.set(month, (monthsMap.get(month) || 0) + Number(o.total_amount));
       });
 

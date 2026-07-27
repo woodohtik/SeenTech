@@ -6,6 +6,15 @@ export interface Permission {
 }
 
 export const SYSTEM_PERMISSIONS: Permission[] = [
+  // Navigation Tabs (التبويبات والشاشات الرئيسية)
+  { id: 'dashboard.view', name: 'تبويب الرئيسية (اللوحة)', description: 'إظهار/إخفاء الشاشة الرئيسية ولوحة التحكم في القائمة الجانبية', category: 'التبويبات والشاشات' },
+  { id: 'sales.view', name: 'تبويب نقطة البيع (POS)', description: 'إظهار/إخفاء شاشة المبيعات والكاشير في القائمة الجانبية', category: 'التبويبات والشاشات' },
+  { id: 'orders.view', name: 'تبويب سجل الطلبات', description: 'إظهار/إخفاء شاشة متابعة الطلبات وحالات الإنتاج في القائمة الجانبية', category: 'التبويبات والشاشات' },
+  { id: 'customers.view', name: 'تبويب إدارة العملاء', description: 'إظهار/إخفاء شاشة سجل العملاء والمقاسات في القائمة الجانبية', category: 'التبويبات والشاشات' },
+  { id: 'inventory.view', name: 'تبويب المخزون والأقمشة', description: 'إظهار/إخفاء شاشة الأقمشة والمخزون في القائمة الجانبية', category: 'التبويبات والشاشات' },
+  { id: 'suppliers.manage', name: 'تبويب الموردين والمشتريات', description: 'إظهار/إخفاء شاشة الموردين والمشتريات في القائمة الجانبية', category: 'التبويبات والشاشات' },
+  { id: 'reports.view', name: 'تبويب التقارير المالية', description: 'إظهار/إخفاء شاشة التقارير والتحليلات في القائمة الجانبية', category: 'التبويبات والشاشات' },
+  { id: 'settings.view', name: 'تبويب إعدادات المحل', description: 'إظهار/إخفاء شاشة إعدادات المتجر في القائمة الجانبية', category: 'التبويبات والشاشات' },
   // Orders
   { id: 'orders.create', name: 'إنشاء طلب', description: 'السماح بإنشاء طلبات جديدة للعملاء', category: 'الطلبات' },
   { id: 'orders.view', name: 'عرض الطلبات', description: 'السماح باستعراض قائمة الطلبات', category: 'الطلبات' },

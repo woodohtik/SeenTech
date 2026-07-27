@@ -101,11 +101,11 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
   const handleIssueCreditNote = async () => {
     if (!selectedInvoice) return;
     if (!reason.trim()) {
-      alert(t('credit_notes.reason_required', 'يجب إدخال سبب المرتجع'));
+      toastError(t('credit_notes.reason_required', 'يجب إدخال سبب المرتجع'));
       return;
     }
     if (refundAmount <= 0 || refundAmount > selectedInvoice.totalAmount) {
-      alert(t('credit_notes.invalid_amount', 'المبلغ المسترجع غير صحيح'));
+      toastError(t('credit_notes.invalid_amount', 'المبلغ المسترجع غير صحيح'));
       return;
     }
 
@@ -322,7 +322,7 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
                         </span>
                       </td>
                       <td className="p-4 font-mono text-content-muted">{note.invoiceNumber}</td>
-                      <td className="p-4 text-content-muted font-bold" dir="ltr">{new Date(note.issuedAt).toLocaleString(i18n.language === 'ar' ? 'ar-SA' : (i18n.language === 'ur' ? 'ur-PK' : 'en-US'))}</td>
+                      <td className="p-4 text-content-muted font-bold" dir="ltr">{new Date(note.issuedAt).toLocaleString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'))}</td>
                       <td className="p-4 text-content truncate max-w-[200px]" title={note.reason}>{note.reason}</td>
                       <td className="p-4 font-black text-content"><PriceDisplay amount={note.refundedAmount} /></td>
                     </tr>

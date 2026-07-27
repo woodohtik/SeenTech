@@ -8,14 +8,12 @@ import {
   Globe, 
   Sun, 
   Moon, 
-  LayoutGrid, 
+  LayoutGrid,
   Maximize2, 
   Minimize2, 
   Sparkles, 
   Compass, 
-  Monitor, 
-  ChevronDown,
-  Scaling
+  ChevronDown
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTheme, ThemeType } from '../contexts/ThemeContext';
@@ -50,32 +48,6 @@ export default function UserPreferencesMenu({
   const { t, i18n } = useState({ t: (s: string, def?: string) => def || s, i18n: { language: 'ar', changeLanguage: (l: string) => {} } }) && { t: useTranslation().t, i18n: useTranslation().i18n };
   const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
-  const [density, setDensity] = useState<'comfortable' | 'compact'>(() => {
-    return (localStorage.getItem('app-density') as 'comfortable' | 'compact') || 'comfortable';
-  });
-  const [desktopView, setDesktopView] = useState<boolean>(() => {
-    const saved = localStorage.getItem('desktop_view');
-    if (saved === null) {
-      return false; // Default to false to keep standard mobile layout optimized and responsive by default
-    }
-    return saved === 'true';
-  });
-
-  const handleDesktopViewToggle = () => {
-    const newValue = !desktopView;
-    setDesktopView(newValue);
-    localStorage.setItem('desktop_view', newValue ? 'true' : 'false');
-    window.dispatchEvent(new CustomEvent('desktop-view-changed', { detail: newValue }));
-  };
-
-  useEffect(() => {
-    const handleSync = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      setDesktopView(customEvent.detail);
-    };
-    window.addEventListener('desktop-view-changed', handleSync);
-    return () => window.removeEventListener('desktop-view-changed', handleSync);
-  }, []);
 
   const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
 
@@ -86,22 +58,10 @@ export default function UserPreferencesMenu({
   } else if (layoutMode === 'sidebar') {
     alignmentClass = isRtl ? 'right-0' : 'left-0';
   } else {
-    // grid mode
     alignmentClass = isRtl ? 'left-0' : 'right-0';
   }
 
   const menuRef = useRef<HTMLDivElement>(null);
-
-  // Apply global density mode
-  useEffect(() => {
-    const root = window.document.documentElement;
-    if (density === 'compact') {
-      root.classList.add('compact-mode');
-    } else {
-      root.classList.remove('compact-mode');
-    }
-    localStorage.setItem('app-density', density);
-  }, [density]);
 
   // Click outside to close menu
   useEffect(() => {
@@ -122,10 +82,6 @@ export default function UserPreferencesMenu({
     i18n.changeLanguage(nextLang);
     document.documentElement.dir = (nextLang === 'ar' || nextLang === 'ur') ? 'rtl' : 'ltr';
     document.documentElement.lang = nextLang;
-  };
-
-  const handleDensityToggle = () => {
-    setDensity(prev => prev === 'comfortable' ? 'compact' : 'comfortable');
   };
 
   const handleThemeToggle = () => {
@@ -201,43 +157,29 @@ export default function UserPreferencesMenu({
 
             {/* Menu Items */}
             
-            {/* 1. View Mode (Density Toggle) */}
-            <button
-              onClick={handleDensityToggle}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-muted text-content-muted hover:text-content text-sm transition-all cursor-pointer focus:outline-none w-full",
-                isRtl ? "text-right" : "text-left"
-              )}
-            >
-              <Scaling size={18} className="text-brand" />
-              <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
-                <span className="font-bold">{t('common.view_density', 'طريقة العرض')}</span>
-                <span className="text-[10px] text-content-muted">
-                  {density === 'compact' ? t('common.compact', 'مكثف ومضغوط') : t('common.comfortable', 'مريح وفضفاض')}
-                </span>
-              </div>
-            </button>
+            {/* 1. Navigation Style Toggle (Grid vs Sidebar) */}
+            {onToggleLayout && (
+              <button
+                onClick={() => {
+                  onToggleLayout();
+                  setIsOpen(false);
+                }}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-muted text-content-muted hover:text-content text-sm transition-all cursor-pointer focus:outline-none w-full",
+                  isRtl ? "text-right" : "text-left"
+                )}
+              >
+                <LayoutGrid size={18} className="text-brand" />
+                <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
+                  <span className="font-bold">{t('common.navigation_style', 'نمط التنقل')}</span>
+                  <span className="text-[10px] text-content-muted">
+                    {layoutMode === 'grid' ? t('common.layout_grid', 'شبكة لوحة القيادة') : t('common.layout_sidebar', 'شريط جانبي')}
+                  </span>
+                </div>
+              </button>
+            )}
 
-            {/* Desktop View Toggle */}
-            <button
-              onClick={handleDesktopViewToggle}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-muted text-content-muted hover:text-content text-sm transition-all cursor-pointer focus:outline-none w-full",
-                isRtl ? "text-right" : "text-left"
-              )}
-            >
-              <Monitor size={18} className="text-brand" />
-              <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
-                <span className="font-bold">{t('common.desktop_view', 'عرض نسخة الكمبيوتر')}</span>
-                <span className="text-[10px] text-content-muted">
-                  {desktopView 
-                    ? t('common.desktop_view_enabled', 'مفعّل (منظم ومناسب للتاب والجوال)') 
-                    : t('common.desktop_view_disabled', 'معطّل (الوضع المتجاوب الافتراضي)')}
-                </span>
-              </div>
-            </button>
-
-            {/* 2. Language Switcher - Direct Picker */}
+            {/* 3. Language Switcher - Direct Picker */}
             <div className="flex flex-col gap-1 p-2 bg-surface-muted/60 rounded-2xl border border-border/80">
               <div className="flex items-center gap-2 px-2 pb-1 text-xs font-black text-content-muted">
                 <Globe size={14} className="text-brand" />
@@ -273,7 +215,7 @@ export default function UserPreferencesMenu({
               </div>
             </div>
 
-            {/* 3. Theme Mode */}
+            {/* 4. Theme Mode */}
             <button
               onClick={handleThemeToggle}
               className={cn(
@@ -294,31 +236,27 @@ export default function UserPreferencesMenu({
               </div>
             </button>
 
-            {/* Optional Layout mode Grid vs Sidebar button if offered */}
-            {onToggleLayout && (
-              <button
-                onClick={() => {
-                  onToggleLayout();
-                  setIsOpen(false);
-                }}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-muted text-content-muted hover:text-content text-sm transition-all cursor-pointer focus:outline-none w-full",
-                  isRtl ? "text-right" : "text-left"
-                )}
-              >
-                <LayoutGrid size={18} className="text-brand" />
-                <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
-                  <span className="font-bold">{t('common.navigation_style', 'نمط التنقل')}</span>
-                  <span className="text-[10px] text-content-muted">
-                    {layoutMode === 'grid' ? t('common.layout_grid', 'شبكة لوحة القيادة') : t('common.layout_sidebar', 'شريط جانبي')}
-                  </span>
-                </div>
-              </button>
-            )}
+            {/* 4.5 Restart Onboarding Tour */}
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                window.dispatchEvent(new CustomEvent('start_onboarding_tour'));
+              }}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-brand/5 text-content hover:text-brand text-sm transition-all cursor-pointer focus:outline-none w-full",
+                isRtl ? "text-right" : "text-left"
+              )}
+            >
+              <Compass size={18} className="text-brand" />
+              <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
+                <span className="font-bold">{t('common.restart_tour', 'إعادة تشغيل الجولة الإرشادية')}</span>
+                <span className="text-[10px] text-content-muted">{t('common.restart_tour_desc', 'تعلم كيفية استخدام سين')}</span>
+              </div>
+            </button>
 
             <div className="h-px bg-border my-1" />
 
-            {/* 4. Lock Screen */}
+            {/* 5. Lock Screen */}
             {currentStaff?.pin && (
               <button
                 onClick={() => {
@@ -338,7 +276,7 @@ export default function UserPreferencesMenu({
               </button>
             )}
 
-            {/* 5. Log Out */}
+            {/* 6. Log Out */}
             <button
               onClick={() => {
                 setIsOpen(false);
@@ -362,3 +300,4 @@ export default function UserPreferencesMenu({
     </div>
   );
 }
+

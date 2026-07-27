@@ -127,9 +127,9 @@ export default function EmployeeActivityLogTab({ tenantId }: { tenantId: string 
               return (
                 <tr key={log.id} className="hover:bg-surface-muted/50 transition-colors">
                   <td className="p-4" dir="ltr">
-                    <span className="font-mono font-bold text-content">{new Date(log.timestamp).toLocaleTimeString('ar-SA')}</span>
+                    <span className="font-mono font-bold text-content">{new Date(log.timestamp).toLocaleTimeString('ar-SA-u-nu-latn')}</span>
                     <br />
-                    <span className="text-[10px]">{new Date(log.timestamp).toLocaleDateString('ar-SA')}</span>
+                    <span className="text-[10px]">{new Date(log.timestamp).toLocaleDateString('ar-SA-u-nu-latn')}</span>
                   </td>
                   <td className="p-4 font-bold text-content">{log.staffName}</td>
                   <td className="p-4 font-bold">{log.branchName || '-'}</td>

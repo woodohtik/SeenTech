@@ -32,7 +32,7 @@ export const PriceDisplay: React.FC<PriceDisplayProps> = ({
         </span>
       )}
 
-      <span className="font-semibold text-gray-900 tabular-nums leading-none">
+      <span className="font-semibold tabular-nums leading-none">
         {formatCurrency(amount)}
       </span>
       

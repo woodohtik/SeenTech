@@ -1,11 +1,14 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { toLatinDigits } from './intlSetup';
+
+export { toLatinDigits };
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-let globalCurrencySymbol = 'ر.س';
+let globalCurrencySymbol = '﷼';
 
 export function setGlobalCurrencySymbol(symbol: string) {
   globalCurrencySymbol = symbol;
