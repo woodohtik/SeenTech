@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
 import { EmployeeActivityLog } from '../types';
 import { Shield, Search, Calendar, User, Clock, CheckCircle2, Box, Store } from 'lucide-react';
+import DateTimeDisplay from './DateTimeDisplay';
 
 export default function EmployeeActivityLogTab({ tenantId }: { tenantId: string }) {
   const [logs, setLogs] = useState<EmployeeActivityLog[]>([]);
@@ -126,10 +127,8 @@ export default function EmployeeActivityLogTab({ tenantId }: { tenantId: string 
               const isDeleted = log.action.includes('delete');
               return (
                 <tr key={log.id} className="hover:bg-surface-muted/50 transition-colors">
-                  <td className="p-4" dir="ltr">
-                    <span className="font-mono font-bold text-content">{new Date(log.timestamp).toLocaleTimeString('ar-SA-u-nu-latn')}</span>
-                    <br />
-                    <span className="text-[10px]">{new Date(log.timestamp).toLocaleDateString('ar-SA-u-nu-latn')}</span>
+                  <td className="p-4">
+                    <DateTimeDisplay date={log.timestamp} showTime={true} size="xs" />
                   </td>
                   <td className="p-4 font-bold text-content">{log.staffName}</td>
                   <td className="p-4 font-bold">{log.branchName || '-'}</td>

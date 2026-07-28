@@ -54,7 +54,7 @@ export default function SimplifiedTaxInvoice({
   issueDate,
   paymentMethod,
   paymentMethodEn = 'Cash',
-  seller,
+  seller: rawSeller,
   customerName = 'عميل نقدي / Guest Customer',
   items,
   totals,
@@ -66,6 +66,22 @@ export default function SimplifiedTaxInvoice({
   sellerName = 'النظام',
 }: SimplifiedTaxInvoiceProps) {
   const [fontSizeScale, setFontSizeScale] = React.useState<number>(100);
+
+  const [layoutSettings] = React.useState(() => {
+    try {
+      const stored = localStorage.getItem('pos_invoice_settings');
+      return stored ? JSON.parse(stored) : null;
+    } catch { return null; }
+  });
+
+  const seller = {
+    ...rawSeller,
+    name: layoutSettings?.header?.facilityName || rawSeller.name,
+    vatNumber: layoutSettings?.header?.taxId || rawSeller.vatNumber,
+    address: layoutSettings?.header?.address || rawSeller.address,
+    phone: layoutSettings?.header?.contactNumbers || rawSeller.phone,
+    logoUrl: layoutSettings?.header?.logoUrl || rawSeller.logoUrl,
+  };
 
   // If totals are not provided, compute them dynamically (assuming unitPrice is VAT-inclusive)
   const computedTotals = totals || (() => {
@@ -191,9 +207,14 @@ export default function SimplifiedTaxInvoice({
 
           {/* Date */}
           <div className="flex justify-between items-center py-0.5">
-            <div className="text-right font-bold text-slate-900">
+            <div className="text-right font-bold text-slate-900 flex items-center gap-1.5 flex-wrap">
               <span className="text-slate-500 font-medium">التاريخ والوقت: </span>
-              <span dir="ltr">{invoiceDate.toLocaleString('ar-SA-u-nu-latn')}</span>
+              <span className="font-mono text-slate-800" dir="ltr">
+                {invoiceDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+              </span>
+              <span className="text-slate-500 font-mono text-[9px]" dir="ltr">
+                {invoiceDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+              </span>
             </div>
             <span className="text-slate-400 font-sans text-[8px]">Issue Date</span>
           </div>

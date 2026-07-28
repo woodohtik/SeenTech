@@ -7,6 +7,7 @@ import { cn, formatCurrency, getCurrencySymbol } from '../lib/utils';
 import { handleError, OperationType } from '../lib/firebase';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import { useTranslation } from 'react-i18next';
+import DateTimeDisplay from './DateTimeDisplay';
 
 interface CashOperationsModalProps {
   shift: Shift;
@@ -520,15 +521,8 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
                         </p>
 
                         {/* Bottom Line: Timestamp */}
-                        <div className="flex items-center justify-between text-[9px] text-slate-400 font-bold pr-1 border-t border-slate-50 pt-1.5 mt-0.5">
-                          <span className="flex items-center gap-1">
-                            <Clock size={10} />
-                            {new Date(entry.occurred_at).toLocaleTimeString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'), { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-
-                          <span className="opacity-0 group-hover:opacity-100 transition-opacity font-mono text-[8px]">
-                            {new Date(entry.occurred_at).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'))}
-                          </span>
+                        <div className="flex items-center justify-between border-t border-slate-50 pt-1.5 mt-0.5">
+                          <DateTimeDisplay date={entry.occurred_at} showTime={true} size="xs" />
                         </div>
                       </div>
                     );

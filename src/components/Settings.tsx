@@ -242,38 +242,63 @@ export default function Settings({ tenantId }: SettingsProps) {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-8 text-right pb-20" dir="rtl">
+    <div className="p-3 sm:p-5 lg:p-8 max-w-7xl mx-auto space-y-6 lg:space-y-8 text-right pb-20 w-full overflow-hidden" dir="rtl">
       <Header 
         tenantId={tenantId} 
         title="الإعدادات" 
         subtitle="تخصيص تجربة متجرك وإدارة اشتراكك"
       />
 
-      {/* Mobile Navigation Tabs (Horizontally Scrollable) */}
-      <div className="lg:hidden w-full overflow-x-auto scrollbar-hide py-2 px-1 select-none flex gap-2 border-b border-border mb-6">
-        {TABS.filter(t => t.visible).map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer",
-              activeTab === tab.id
-                ? "bg-brand text-white shadow-md shadow-brand/10 scale-105"
-                : "bg-surface text-content-muted border border-border hover:border-brand/30 hover:text-brand"
-            )}
+      {/* Responsive Mobile/Tablet Navigation Header (< lg) */}
+      <div className="lg:hidden w-full space-y-3 mb-4">
+        {/* Quick Dropdown Select for Small Screens */}
+        <div className="relative w-full">
+          <select
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value as TabType)}
+            className="w-full bg-surface text-content font-black text-sm p-3.5 pl-10 rounded-2xl border-2 border-brand/30 shadow-md shadow-brand/5 focus:outline-none focus:border-brand appearance-none cursor-pointer"
           >
-            <tab.icon size={14} />
-            <span>{tab.label}</span>
-          </button>
-        ))}
+            {Object.entries(groupedTabs).map(([key, group]) => group.tabs.length > 0 && (
+              <optgroup key={key} label={group.label}>
+                {group.tabs.map((tab) => (
+                  <option key={tab.id} value={tab.id}>
+                    {tab.label}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-brand">
+            <ChevronRight size={20} className="rotate-90" />
+          </div>
+        </div>
+
+        {/* Scrollable Pills Bar for Quick Switching */}
+        <div className="w-full overflow-x-auto scrollbar-hide py-1 px-0.5 flex gap-2 select-none border-b border-border pb-3">
+          {TABS.filter(t => t.visible).map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer",
+                activeTab === tab.id
+                  ? "bg-brand text-white shadow-md shadow-brand/10"
+                  : "bg-surface text-content-muted border border-border hover:border-brand/30 hover:text-brand"
+              )}
+            >
+              <tab.icon size={15} />
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8 items-start w-full">
-        {/* Navigation Sidebar (Desktop) */}
-        <aside className="hidden lg:block lg:w-72 shrink-0 space-y-8 sticky top-8">
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start w-full">
+        {/* Navigation Sidebar (Desktop lg+) */}
+        <aside className="hidden lg:block lg:w-64 xl:w-72 shrink-0 space-y-6 sticky top-8">
           {Object.entries(groupedTabs).map(([key, group], gIdx) => group.tabs.length > 0 && (
-            <div key={key} className="space-y-3">
-              <h4 className="px-6 text-[10px] font-black text-content-muted uppercase tracking-widest">{group.label}</h4>
+            <div key={key} className="space-y-2">
+              <h4 className="px-4 text-[10px] font-black text-content-muted uppercase tracking-widest">{group.label}</h4>
               <div className="space-y-1">
                 {group.tabs.map((tab, tIdx) => (
                   <motion.button 
@@ -283,14 +308,14 @@ export default function Settings({ tenantId }: SettingsProps) {
                     transition={{ delay: (gIdx * 0.1) + (tIdx * 0.05) }}
                     onClick={() => setActiveTab(tab.id)}
                     className={cn(
-                      "w-full flex items-center gap-3 px-6 py-3.5 rounded-2xl text-sm font-bold transition-all group relative",
+                      "w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs xl:text-sm font-bold transition-all group relative cursor-pointer",
                       activeTab === tab.id 
                         ? "bg-brand text-white shadow-lg shadow-brand/10" 
                         : "text-content-muted hover:bg-surface-muted hover:text-brand"
                     )}
                   >
-                    <tab.icon size={18} className={cn("transition-transform group-hover:scale-110", activeTab === tab.id ? "text-white" : "text-content-muted")} />
-                    <span>{tab.label}</span>
+                    <tab.icon size={18} className={cn("transition-transform group-hover:scale-110 shrink-0", activeTab === tab.id ? "text-white" : "text-content-muted")} />
+                    <span className="truncate">{tab.label}</span>
                     {activeTab === tab.id && (
                       <motion.div layoutId="activeTabIndicator" className="absolute -left-1 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-white rounded-full" />
                     )}
@@ -302,54 +327,54 @@ export default function Settings({ tenantId }: SettingsProps) {
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 min-w-0 w-full">
+        <main className="flex-1 min-w-0 w-full overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
               className="w-full"
             >
               {activeTab === 'profile' && (
-                <form onSubmit={handleSubmit(onSave)} className="bg-surface p-5 sm:p-8 md:p-10 rounded-2xl md:rounded-[3rem] border border-border shadow-xl shadow-brand/5 space-y-6 md:space-y-10 w-full">
-                  <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-10 border-b border-border pb-6 md:pb-10">
-                    <div className="relative group">
-                      <div className="w-32 h-32 md:w-40 md:h-40 bg-surface-muted rounded-2xl md:rounded-[2.5rem] border-2 border-dashed border-border flex items-center justify-center overflow-hidden transition-all group-hover:border-brand/40 group-hover:bg-brand/5">
+                <form onSubmit={handleSubmit(onSave)} className="bg-surface p-4 sm:p-6 lg:p-8 rounded-2xl lg:rounded-3xl border border-border shadow-xl shadow-brand/5 space-y-6 lg:space-y-8 w-full">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 lg:gap-8 border-b border-border pb-6">
+                    <div className="relative group shrink-0">
+                      <div className="w-28 h-28 sm:w-36 sm:h-36 bg-surface-muted rounded-2xl sm:rounded-3xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden transition-all group-hover:border-brand/40 group-hover:bg-brand/5">
                         {logoPreview ? (
                           <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
                         ) : (
-                          <Store size={48} className="text-content-muted/30" />
+                          <Store size={40} className="text-content-muted/30" />
                         )}
                       </div>
-                      <label className="absolute -bottom-3 -right-3 p-3.5 bg-brand text-white rounded-2xl shadow-xl cursor-pointer hover:bg-brand/90 transition-all hover:scale-110 active:scale-95 group-hover:rotate-6">
-                        <Upload size={22} />
+                      <label className="absolute -bottom-2 -right-2 p-3 bg-brand text-white rounded-xl shadow-xl cursor-pointer hover:bg-brand/90 transition-all hover:scale-110 active:scale-95">
+                        <Upload size={18} />
                         <input type="file" className="hidden" accept="image/*" onChange={handleLogoChange} />
                       </label>
                       {logoPreview && (
                         <button 
                           type="button"
                           onClick={() => { setLogoPreview(null); setValue('logoUrl', ''); }}
-                          className="absolute -top-3 -right-3 p-2 bg-danger text-white rounded-xl shadow-xl hover:bg-danger/90 transition-all hover:scale-110"
+                          className="absolute -top-2 -right-2 p-1.5 bg-danger text-white rounded-lg shadow-xl hover:bg-danger/90 transition-all hover:scale-110"
                         >
-                          <CloseIcon size={18} />
+                          <CloseIcon size={16} />
                         </button>
                       )}
                     </div>
-                    <div className="text-center md:text-right py-4 space-y-2">
-                      <h3 className="text-2xl font-black text-content">هوية المتجر</h3>
-                      <p className="text-sm text-content-muted font-medium leading-relaxed max-w-sm">
+                    <div className="text-center sm:text-right py-1 space-y-1.5 flex-1">
+                      <h3 className="text-xl sm:text-2xl font-black text-content">هوية المتجر</h3>
+                      <p className="text-xs sm:text-sm text-content-muted font-medium leading-relaxed max-w-sm">
                         قم بتحميل شعار متجرك وتعديل المعلومات الأساسية التي تظهر لعملائك في النظام وعلى الفواتير الضريبية.
                       </p>
-                      <div className="flex flex-wrap justify-center md:justify-start gap-2 pt-2">
-                         <span className="px-3 py-1 bg-surface-muted rounded-full text-[10px] font-black text-content-muted uppercase tracking-tighter border border-border">Base64 Support</span>
-                         <span className="px-3 py-1 bg-brand/5 rounded-full text-[10px] font-black text-brand uppercase tracking-tighter border border-brand/10">Bilingual Print</span>
+                      <div className="flex flex-wrap justify-center sm:justify-start gap-2 pt-1">
+                         <span className="px-2.5 py-0.5 bg-surface-muted rounded-full text-[10px] font-black text-content-muted uppercase tracking-tighter border border-border">Base64 Support</span>
+                         <span className="px-2.5 py-0.5 bg-brand/5 rounded-full text-[10px] font-black text-brand uppercase tracking-tighter border border-brand/10">Bilingual Print</span>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between px-1">
                         <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em]">اسم المنشأة التجاري</label>
@@ -375,7 +400,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                         error={errors.phone?.message}
                       />
                     </div>
-                    <div className="md:col-span-2 space-y-1.5">
+                    <div className="sm:col-span-2 space-y-1.5">
                       <div className="flex items-center justify-between px-1">
                         <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em]">البريد الإلكتروني (غير قابل للتعديل)</label>
                         <span className="text-[10px] text-slate-400 font-black bg-slate-100 dark:bg-slate-800 rounded px-2 py-0.5 select-none" dir="rtl">رسمي ومحمي</span>
@@ -389,7 +414,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                         placeholder="لا يوجد بريد إلكتروني مسجل"
                       />
                     </div>
-                    <div className="md:col-span-2 space-y-1.5">
+                    <div className="sm:col-span-2 space-y-1.5">
                       <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">العنوان الجغرافي للمقر الرئيسي</label>
                       <IconInput 
                         type="text" 
@@ -399,37 +424,37 @@ export default function Settings({ tenantId }: SettingsProps) {
                       />
                     </div>
 
-                    <div className="md:col-span-2 space-y-4">
+                    <div className="sm:col-span-2 space-y-3">
                       <div className="flex items-center gap-2 px-1">
                         <Database size={14} className="text-brand" />
                         <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em]">هندسة إدارة المخزون</label>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {[
                           { val: 'centralized', label: 'مخزون مركزي', sub: 'Centralized Strategy', desc: 'يتم السحب من مستودع موحد لجميع الفروع.', icon: Store },
                           { val: 'decentralized', label: 'مخزون فرعي', sub: 'Point-of-Sale Strategy', desc: 'كل فرع يتحكم في رصيده الخاص بشكل مستقل.', icon: MapPin },
                         ].map((strat) => (
                           <label key={strat.val} className={cn(
-                            "relative flex flex-col p-4 sm:p-6 rounded-2xl md:rounded-[2rem] border-2 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] group",
-                            currentStrategy === strat.val ? "border-brand bg-brand/5 ring-4 ring-brand/5 shadow-lg shadow-brand/5" : "border-border bg-surface hover:border-brand/30 hover:bg-surface-muted/30"
+                            "relative flex flex-col p-4 rounded-2xl border-2 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] group",
+                            currentStrategy === strat.val ? "border-brand bg-brand/5 ring-4 ring-brand/5 shadow-md shadow-brand/5" : "border-border bg-surface hover:border-brand/30 hover:bg-surface-muted/30"
                           )}>
                             <input type="radio" value={strat.val} {...register('inventoryStrategy')} className="sr-only" />
-                            <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center justify-between mb-3">
                               <div className={cn(
-                                "p-3 rounded-2xl transition-colors",
+                                "p-2.5 rounded-xl transition-colors",
                                 currentStrategy === strat.val ? "bg-brand text-white" : "bg-surface-muted text-content-muted"
                               )}>
-                                <strat.icon size={24} />
+                                <strat.icon size={20} />
                               </div>
                               <div className={cn(
-                                "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+                                "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
                                 currentStrategy === strat.val ? "border-brand bg-brand" : "border-border group-hover:border-brand/30"
                               )}>
                                 {currentStrategy === strat.val && <div className="w-2 h-2 bg-white rounded-full" />}
                               </div>
                             </div>
-                            <p className="font-black text-content text-lg mb-1">{strat.label}</p>
-                            <p className="text-[10px] text-brand/80 font-black uppercase tracking-wider mb-2" dir="ltr">{strat.sub}</p>
+                            <p className="font-black text-content text-base mb-0.5">{strat.label}</p>
+                            <p className="text-[9px] text-brand/80 font-black uppercase tracking-wider mb-1.5" dir="ltr">{strat.sub}</p>
                             <p className="text-xs text-content-muted font-medium leading-relaxed">{strat.desc}</p>
                           </label>
                         ))}
@@ -437,13 +462,13 @@ export default function Settings({ tenantId }: SettingsProps) {
                     </div>
                   </div>
 
-                  <div className="pt-6 md:pt-8 border-t border-border flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-4 w-full">
+                  <div className="pt-5 border-t border-border flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-3 w-full">
                     {saveSuccess && (
                       <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
-                        className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold"
+                        className="flex items-center gap-2 px-3.5 py-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold"
                       >
                         <CheckCircle2 size={16} />
                         <span>تم حفظ البيانات بنجاح</span>
@@ -455,7 +480,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                         type="submit"
                         disabled={isSubmitting}
                         className={cn(
-                          "px-6 md:px-10 py-3.5 md:py-4 rounded-xl md:rounded-[1.5rem] font-black transition-all shadow-xl disabled:opacity-50 hover:scale-105 active:scale-95 flex items-center justify-center gap-2 text-white",
+                          "px-6 sm:px-8 py-3 rounded-xl font-black transition-all shadow-lg disabled:opacity-50 hover:scale-102 active:scale-98 flex items-center justify-center gap-2 text-white cursor-pointer text-sm",
                           saveSuccess ? "bg-emerald-600 shadow-emerald-500/20" : "bg-brand hover:bg-brand/90 shadow-brand/20"
                         )}
                       >
@@ -501,30 +526,30 @@ export default function Settings({ tenantId }: SettingsProps) {
               )}
 
               {activeTab === 'appearance' && (
-                <div className="bg-surface p-10 rounded-[3rem] border border-border shadow-xl shadow-brand/5 space-y-10">
-                  <div className="flex items-center gap-5 border-b border-border pb-8">
-                    <div className="p-4 bg-brand/10 text-brand rounded-[1.5rem] shadow-inner">
-                      <Palette size={32} />
+                <div className="bg-surface p-4 sm:p-6 lg:p-8 rounded-2xl lg:rounded-3xl border border-border shadow-xl shadow-brand/5 space-y-6 sm:space-y-8">
+                  <div className="flex items-center gap-4 border-b border-border pb-6">
+                    <div className="p-3 bg-brand/10 text-brand rounded-2xl shadow-inner shrink-0">
+                      <Palette size={28} />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-black text-content">هوية النظام البصرية</h3>
-                      <p className="text-sm text-content-muted font-medium mt-1 uppercase tracking-tight">خصص ألوان الواجهة والخطوط لتناسب العلامة التجارية لمتجرك</p>
+                      <h3 className="text-xl sm:text-2xl font-black text-content">هوية النظام البصرية</h3>
+                      <p className="text-xs sm:text-sm text-content-muted font-medium mt-0.5">خصص ألوان الواجهة والخطوط لتناسب العلامة التجارية لمتجرك</p>
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="bg-surface-muted/30 p-6 rounded-[2rem] border border-border space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="bg-surface-muted/30 p-4 sm:p-6 rounded-2xl border border-border space-y-4">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-brand text-white rounded-lg">
                           <Palette size={18} />
                         </div>
                         <h4 className="font-black text-content uppercase tracking-widest text-xs">ثيم الواجهة (Themes)</h4>
                       </div>
-                      <p className="text-xs text-content-muted font-medium px-2">اختر الثيم الذي يرتاح له موظفوك أثناء العمل الطويل على النظام.</p>
+                      <p className="text-xs text-content-muted font-medium px-1">اختر الثيم الذي يرتاح له موظفوك أثناء العمل الطويل على النظام.</p>
                       <ThemeSwitcher />
                     </div>
 
-                    <div className="bg-surface-muted/30 p-6 rounded-[2rem] border border-border space-y-4">
+                    <div className="bg-surface-muted/30 p-4 sm:p-6 rounded-2xl border border-border space-y-4">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-brand text-white rounded-lg">
                           <HelpCircle size={18} />
@@ -550,24 +575,24 @@ export default function Settings({ tenantId }: SettingsProps) {
               )}
 
               {activeTab === 'tax' && (
-                <form onSubmit={handleSubmit(onSave)} className="bg-surface p-5 sm:p-8 md:p-10 rounded-2xl md:rounded-[3rem] border border-border shadow-xl shadow-brand/5 space-y-6 md:space-y-10 w-full">
-                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 border-b border-border pb-6 sm:pb-8 text-center sm:text-right">
-                    <div className="p-4 bg-brand/10 text-brand rounded-[1.5rem] shadow-inner">
-                      <FileText size={32} />
+                <form onSubmit={handleSubmit(onSave)} className="bg-surface p-4 sm:p-6 lg:p-8 rounded-2xl lg:rounded-3xl border border-border shadow-xl shadow-brand/5 space-y-6 w-full">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 border-b border-border pb-6 text-center sm:text-right">
+                    <div className="p-3 bg-brand/10 text-brand rounded-2xl shadow-inner shrink-0">
+                      <FileText size={28} />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-black text-content">الامتثال الضريبي</h3>
-                      <p className="text-sm text-content-muted font-medium mt-1 uppercase tracking-tight">إدارة معايير هيئة الزكاة والضريبة والجمارك (ZATCA)</p>
+                      <h3 className="text-xl sm:text-2xl font-black text-content">الامتثال الضريبي</h3>
+                      <p className="text-xs sm:text-sm text-content-muted font-medium mt-0.5">إدارة معايير هيئة الزكاة والضريبة والجمارك (ZATCA)</p>
                     </div>
                   </div>
 
-                  <div className="space-y-6 md:space-y-8 w-full">
+                  <div className="space-y-6 w-full">
                     <label className={cn(
-                      "flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-5 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border-2 cursor-pointer transition-all gap-4 group",
-                      taxEnabled ? "border-brand bg-brand/5 shadow-lg shadow-brand/5" : "border-border hover:border-brand/20 bg-surface-muted/30"
+                      "flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-4 sm:p-6 rounded-2xl border-2 cursor-pointer transition-all gap-4 group",
+                      taxEnabled ? "border-brand bg-brand/5 shadow-md shadow-brand/5" : "border-border hover:border-brand/20 bg-surface-muted/30"
                     )}>
                       <div className="max-w-xl text-right">
-                        <h4 className="text-lg font-black text-content flex items-center gap-3">
+                        <h4 className="text-base sm:text-lg font-black text-content flex items-center gap-2 sm:gap-3">
                           وضع الفوترة الإلكترونية المتقدمة
                           {taxEnabled && (
                             <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="bg-success text-white p-1 rounded-full">
@@ -575,16 +600,16 @@ export default function Settings({ tenantId }: SettingsProps) {
                             </motion.span>
                           )}
                         </h4>
-                        <p className="text-sm text-content-muted mt-2 font-medium leading-relaxed">تفعيل الضريبة يضمن توافق متجرك مع متطلبات المرحلة الثانية من الفوترة الإلكترونية، بما في ذلك التوقيع الرقمي ورمز الاستجابة السريع المحمي.</p>
+                        <p className="text-xs sm:text-sm text-content-muted mt-1.5 font-medium leading-relaxed">تفعيل الضريبة يضمن توافق متجرك مع متطلبات المرحلة الثانية من الفوترة الإلكترونية، بما في ذلك التوقيع الرقمي ورمز الاستجابة السريع المحمي.</p>
                       </div>
-                      <div className="relative flex justify-end sm:justify-start">
+                      <div className="relative flex justify-end sm:justify-start shrink-0">
                         <input type="checkbox" {...register('taxSettings.enabled')} className="sr-only" />
                         <div className={cn(
-                          "w-16 h-8 rounded-full transition-all relative overflow-hidden",
+                          "w-14 h-7.5 rounded-full transition-all relative overflow-hidden",
                           taxEnabled ? "bg-brand" : "bg-surface-muted"
                         )}>
                           <div className={cn(
-                            "absolute top-1 w-6 h-6 rounded-full bg-white transition-all shadow-md",
+                            "absolute top-1 w-5.5 h-5.5 rounded-full bg-white transition-all shadow-md",
                             taxEnabled ? "left-1" : "right-1 text-content-muted flex items-center justify-center text-[8px]"
                           )} />
                         </div>
@@ -594,49 +619,49 @@ export default function Settings({ tenantId }: SettingsProps) {
                     <AnimatePresence>
                       {taxEnabled && (
                         <motion.div 
-                          initial={{ opacity: 0, scale: 0.95 }}
+                          initial={{ opacity: 0, scale: 0.98 }}
                           animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 bg-surface-muted/30 p-5 sm:p-10 rounded-2xl sm:rounded-[2.5rem] border border-border/50"
+                          exit={{ opacity: 0, scale: 0.98 }}
+                          className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 bg-surface-muted/30 p-4 sm:p-6 rounded-2xl border border-border/50"
                         >
-                          <div className="space-y-3">
+                          <div className="space-y-2">
                             <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">الرقم الضريبي (TRN - 15 خانة)</label>
                             <input 
                               type="text" 
                               {...register('taxSettings.trn')}
                               className={cn(
-                                "w-full bg-surface border-2 border-transparent focus:border-brand/30 rounded-2xl p-4 font-black transition-all outline-none text-content text-left tracking-widest shadow-inner shadow-black/5",
+                                "w-full bg-surface border-2 border-transparent focus:border-brand/30 rounded-xl p-3 font-black transition-all outline-none text-content text-left tracking-widest shadow-inner shadow-black/5 text-sm",
                                 errors.taxSettings?.trn && "border-red-500"
                               )}
                               dir="ltr"
                             />
                             {errors.taxSettings?.trn && <p className="text-xs text-red-500 font-bold">{errors.taxSettings.trn.message}</p>}
                           </div>
-                          <div className="space-y-3">
+                          <div className="space-y-2">
                             <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">اسم المكلف القانوني</label>
                             <input 
                               type="text" 
                               {...register('taxSettings.legalName')}
                               className={cn(
-                                "w-full bg-surface border-2 border-transparent focus:border-brand/30 rounded-2xl p-4 font-bold transition-all outline-none text-content shadow-inner shadow-black/5",
+                                "w-full bg-surface border-2 border-transparent focus:border-brand/30 rounded-xl p-3 font-bold transition-all outline-none text-content shadow-inner shadow-black/5 text-sm",
                                 errors.taxSettings?.legalName && "border-red-500"
                               )}
                               placeholder="الاسم المسجل في الشهادة الضريبية"
                             />
                             {errors.taxSettings?.legalName && <p className="text-xs text-red-500 font-bold">{errors.taxSettings.legalName.message}</p>}
                           </div>
-                          <div className="space-y-3 md:col-span-2">
+                          <div className="space-y-2 sm:col-span-2">
                              <div className="flex items-center justify-between px-1">
                                 <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em]">نسبة الضريبة القياسية</label>
                                 <span className="text-[10px] font-black text-brand bg-brand/10 px-2 py-0.5 rounded-full">المملكة العربية السعودية: 15%</span>
                              </div>
                             <div className="relative group">
-                              <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-content-muted">%</span>
+                              <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-content-muted">%</span>
                               <input 
                                 type="number" 
                                 {...register('taxSettings.vatRate')}
                                 className={cn(
-                                  "w-full bg-surface border-2 border-transparent focus:border-brand/30 rounded-2xl p-4 pl-12 font-black transition-all outline-none text-content shadow-inner shadow-black/5",
+                                  "w-full bg-surface border-2 border-transparent focus:border-brand/30 rounded-xl p-3 pl-10 font-black transition-all outline-none text-content shadow-inner shadow-black/5 text-sm",
                                   errors.taxSettings?.vatRate && "border-red-500"
                                 )}
                                 min="0" max="100"
@@ -645,9 +670,9 @@ export default function Settings({ tenantId }: SettingsProps) {
                             {errors.taxSettings?.vatRate && <p className="text-xs text-red-500 font-bold">{errors.taxSettings.vatRate.message}</p>}
                           </div>
 
-                          <div className="space-y-3 md:col-span-2 border-t border-border/50 pt-6">
+                          <div className="space-y-3 sm:col-span-2 border-t border-border/50 pt-4">
                             <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">طريقة احتساب ضريبة التفصيل والقص</label>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                               {[
                                 { id: 'inclusive', label: 'شامل الضريبة', desc: 'سعر التفصيل شامل لضريبة القيمة المضافة' },
                                 { id: 'exclusive', label: 'غير شامل الضريبة', desc: 'يتم احتساب الضريبة بشكل إضافي فوق سعر التفصيل' },
@@ -657,14 +682,14 @@ export default function Settings({ tenantId }: SettingsProps) {
                                   key={option.id}
                                   onClick={() => setValue('taxSettings.tailoringTaxType', option.id as any)}
                                   className={cn(
-                                    "flex flex-col p-4 rounded-2xl border-2 cursor-pointer transition-all gap-1 text-right",
+                                    "flex flex-col p-3.5 rounded-xl border-2 cursor-pointer transition-all gap-1 text-right",
                                     tailoringTaxType === option.id
                                       ? "border-brand bg-brand/5 shadow-md shadow-brand/5"
                                       : "border-border hover:border-brand/20 bg-surface"
                                   )}
                                 >
-                                  <span className="text-sm font-black text-content">{option.label}</span>
-                                  <span className="text-xs text-content-muted font-medium">{option.desc}</span>
+                                  <span className="text-xs sm:text-sm font-black text-content">{option.label}</span>
+                                  <span className="text-[11px] text-content-muted font-medium">{option.desc}</span>
                                 </div>
                               ))}
                             </div>
@@ -673,24 +698,24 @@ export default function Settings({ tenantId }: SettingsProps) {
                       )}
                     </AnimatePresence>
 
-                    {/* Overall Form Errors (Helpful if errors are in other tabs) */}
+                    {/* Overall Form Errors */}
                     {Object.keys(errors).length > 0 && (
-                      <div className="p-4 bg-danger/5 border border-danger/10 rounded-2xl flex items-center gap-3 text-danger">
-                        <AlertCircle size={20} />
-                        <div className="text-sm font-bold">
-                          يوجد أخطاء في البيانات المدخلة. يرجى التأكد من ملء جميع الحقول المطلوبة (بماه في ذلك الاسم والعنوان في تبويب الملف الشخصي).
+                      <div className="p-3.5 bg-danger/5 border border-danger/10 rounded-xl flex items-center gap-3 text-danger">
+                        <AlertCircle size={18} className="shrink-0" />
+                        <div className="text-xs sm:text-sm font-bold">
+                          يوجد أخطاء في البيانات المدخلة. يرجى التأكد من ملء جميع الحقول المطلوبة (بما في ذلك الاسم والعنوان في تبويب الملف الشخصي).
                         </div>
                       </div>
                     )}
                   </div>
 
-                  <div className="pt-6 md:pt-8 border-t border-border flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-4 w-full">
+                  <div className="pt-5 border-t border-border flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-3 w-full">
                     {saveSuccess && (
                       <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
-                        className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold"
+                        className="flex items-center gap-2 px-3.5 py-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold"
                       >
                         <CheckCircle2 size={16} />
                         <span>تم حفظ البيانات الضريبية بنجاح</span>
@@ -704,7 +729,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                         type="submit"
                         disabled={isSubmitting}
                         className={cn(
-                          "px-6 md:px-10 py-3.5 md:py-4 rounded-xl md:rounded-[1.5rem] font-black transition-all shadow-xl disabled:opacity-50 hover:scale-105 active:scale-95 flex items-center justify-center gap-2 text-white",
+                          "px-6 sm:px-8 py-3 rounded-xl font-black transition-all shadow-lg disabled:opacity-50 hover:scale-102 active:scale-98 flex items-center justify-center gap-2 text-white cursor-pointer text-sm",
                           saveSuccess ? "bg-emerald-600 shadow-emerald-500/20" : "bg-brand hover:bg-brand/90 shadow-brand/20"
                         )}
                       >

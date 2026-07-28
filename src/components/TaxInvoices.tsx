@@ -11,6 +11,7 @@ import { generateZatcaQR } from '../services/zatcaService';
 import { useTranslation } from 'react-i18next';
 import StandardTaxInvoice from './printing/TaxInvoice';
 import SimplifiedTaxInvoice from './printing/SimplifiedTaxInvoice';
+import DateTimeDisplay from './DateTimeDisplay';
 import { downloadInvoicePDF, shareInvoiceAsPDFFile } from '../utils/pdfGenerator';
 
 export default function TaxInvoices({ tenantId }: { tenantId: string }) {
@@ -176,7 +177,9 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
                     <td className="p-4">
                       <span className="font-mono font-bold text-content">{inv.invoiceNumber}</span>
                     </td>
-                    <td className="p-4 text-content-muted font-bold" dir="ltr">{new Date(inv.issuedAt).toLocaleString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'))}</td>
+                    <td className="p-4 text-content-muted font-bold">
+                      <DateTimeDisplay date={inv.issuedAt} showTime={true} />
+                    </td>
                     <td className="p-4 text-content font-bold">{inv.customerName || t('tax_invoices.walk_in_customer', 'عميل نقدي')}</td>
                     <td className="p-4 text-content-muted text-xs">
                       <span className="bg-brand/10 text-brand px-2 py-1 rounded-lg font-bold">{invoiceType}</span>
@@ -212,7 +215,7 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
                 </div>
                 <div className="text-left">
                   <p className="font-black text-brand"><PriceDisplay amount={inv.totalAmount} /></p>
-                  <p className="text-[10px] text-content-muted" dir="ltr">{new Date(inv.issuedAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'))}</p>
+                  <DateTimeDisplay date={inv.issuedAt} showTime={true} size="xs" />
                 </div>
               </div>
               <div className="flex justify-between items-center mt-3">
@@ -384,9 +387,17 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
 
   // Extract payment method safely if defined
   // @ts-ignore
-  const orderPayMethod = order.paymentMethod || order.payment_method;
-  const paymentMethodAr = orderPayMethod === 'network' ? t('pos.card', 'شبكة/بطاقة') : orderPayMethod === 'bank_transfer' ? t('pos.bank_transfer', 'تحويل بنكي') : orderPayMethod === 'partial' ? t('pos.partial_credit', 'آجل / دفع جزئي') : t('pos.cash', 'نقدي');
-  const paymentMethodEn = orderPayMethod === 'network' ? 'Card/Mada' : orderPayMethod === 'bank_transfer' ? 'Bank Transfer' : orderPayMethod === 'partial' ? 'Credit/Partial' : 'Cash';
+  const orderPayMethod = String(order.paymentMethod || (order as any).payment_method || 'cash').toLowerCase();
+  const paymentMethodAr = (orderPayMethod === 'network' || orderPayMethod === 'card' || orderPayMethod === 'mada') ? t('pos.card', 'شبكة/بطاقة') : 
+    (orderPayMethod === 'bank_transfer' || orderPayMethod === 'transfer') ? t('pos.bank_transfer', 'تحويل بنكي') : 
+    (orderPayMethod === 'partial' || orderPayMethod === 'credit') ? t('pos.partial_credit', 'آجل / دفع جزئي') : 
+    (orderPayMethod === 'cash_on_delivery' || orderPayMethod === 'cod') ? 'الدفع عند الاستلام' : 
+    t('pos.cash', 'نقدي');
+  const paymentMethodEn = (orderPayMethod === 'network' || orderPayMethod === 'card' || orderPayMethod === 'mada') ? 'Card/Mada' : 
+    (orderPayMethod === 'bank_transfer' || orderPayMethod === 'transfer') ? 'Bank Transfer' : 
+    (orderPayMethod === 'partial' || orderPayMethod === 'credit') ? 'Credit/Partial' : 
+    (orderPayMethod === 'cash_on_delivery' || orderPayMethod === 'cod') ? 'Cash on Delivery' : 
+    'Cash';
 
   return (
     <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">

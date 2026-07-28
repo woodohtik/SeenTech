@@ -65,7 +65,7 @@ export default function TaxInvoice({
   supplyDate,
   paymentMethod,
   paymentMethodEn = 'Cash',
-  seller,
+  seller: rawSeller,
   buyer,
   items,
   totals,
@@ -74,6 +74,21 @@ export default function TaxInvoice({
   onPrint,
   hidePrintButton = false,
 }: TaxInvoiceProps) {
+  const [layoutSettings] = React.useState(() => {
+    try {
+      const stored = localStorage.getItem('pos_invoice_settings');
+      return stored ? JSON.parse(stored) : null;
+    } catch { return null; }
+  });
+
+  const seller = {
+    ...rawSeller,
+    name: layoutSettings?.header?.facilityName || rawSeller.name,
+    vatNumber: layoutSettings?.header?.taxId || rawSeller.vatNumber,
+    address: layoutSettings?.header?.address || rawSeller.address,
+    phone: layoutSettings?.header?.contactNumbers || rawSeller.phone,
+    logoUrl: layoutSettings?.header?.logoUrl || rawSeller.logoUrl,
+  };
   // If totals are not provided, compute them dynamically (assuming unitPrice is VAT-inclusive)
   const computedTotals = totals || (() => {
     let grandTotal = 0;
@@ -200,7 +215,14 @@ export default function TaxInvoice({
                 <span className="text-xs font-black text-slate-800">تاريخ الإصدار</span>
                 <span className="block text-[9px] text-slate-400 uppercase font-sans font-bold">Date of Issue</span>
               </div>
-              <span className="font-bold text-slate-800 text-sm" dir="ltr">{invoiceDate.toLocaleString('ar-SA-u-nu-latn')}</span>
+              <div className="text-left font-bold text-slate-800 text-sm flex items-center gap-2">
+                <span className="font-mono text-slate-900" dir="ltr">
+                  {invoiceDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                </span>
+                <span className="text-xs font-mono text-slate-500" dir="ltr">
+                  {invoiceDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                </span>
+              </div>
             </div>
 
             <div className="flex justify-between pb-1">

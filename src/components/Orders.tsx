@@ -56,6 +56,7 @@ import ThobeMeasurementSelector from './ThobeMeasurementSelector';
 import { motion, AnimatePresence } from 'motion/react';
 import { usePermissions } from '../hooks/usePermissions';
 import { useTranslation } from 'react-i18next';
+import DateTimeDisplay from './DateTimeDisplay';
 import { useToast } from '../contexts/ToastContext';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -1447,14 +1448,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                             </div>
                           </div>
                           <div className="flex flex-col items-end">
-                            <span className="text-[9px] text-content-muted font-medium flex items-center gap-1">
-                              <Calendar size={10} />
-                              {new Date(h.updatedAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US')}
-                            </span>
-                            <span className="text-[9px] text-content-muted font-medium flex items-center gap-1 mt-0.5">
-                              <Clock size={10} />
-                              {new Date(h.updatedAt).toLocaleTimeString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
-                            </span>
+                            <DateTimeDisplay date={h.updatedAt} showTime={true} size="xs" />
                           </div>
                         </div>
                         <p className="text-[11px] text-content-muted bg-surface/50 p-2 rounded-lg border border-border">{h.notes}</p>
@@ -1772,7 +1766,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               </div>
               <div className="text-left">
                 <p className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('common.date', 'التاريخ')}</p>
-                <p className="font-bold text-content">{new Date(order.orderDate).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US')}</p>
+                <DateTimeDisplay date={order.orderDate} showTime={true} size="xs" />
               </div>
             </div>
 
@@ -2066,12 +2060,20 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-6 mt-2 text-sm text-content-muted">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-2 text-sm text-content-muted">
                   <span className="flex items-center gap-1.5 font-bold">
-                    <Calendar size={16} className="text-brand" />
-                    {new Date(order.orderDate).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US')}
+                    <Calendar size={16} className="text-brand shrink-0" />
+                    <DateTimeDisplay date={order.orderDate} showTime={true} size="xs" />
                   </span>
-                  <div className="w-1 h-1 bg-border rounded-full" />
+                  <div className="w-1 h-1 bg-border rounded-full hidden sm:block" />
+                  <span className="text-xs font-bold bg-surface-muted px-2.5 py-1 rounded-lg border border-border flex items-center gap-1">
+                    <CreditCard size={12} className="text-brand" />
+                    {(order.paymentMethod as any) === 'network' || (order.paymentMethod as any) === 'card' ? 'شبكة / بطاقة' :
+                     order.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' :
+                     order.paymentMethod === 'partial' ? 'آجل / دفع جزئي' :
+                     order.paymentMethod === 'cash_on_delivery' ? 'الدفع عند الاستلام' : 'نقدي'}
+                  </span>
+                  <div className="w-1 h-1 bg-border rounded-full hidden sm:block" />
                   <span className="font-black text-brand text-lg">
                     <PriceDisplay amount={order.totalAmount} />
                   </span>

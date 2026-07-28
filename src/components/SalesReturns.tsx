@@ -5,6 +5,7 @@ import { handleError, OperationType } from '../lib/firebase';
 import { Order } from '../types';
 import { PriceDisplay } from './PriceDisplay';
 import { useTranslation } from 'react-i18next';
+import DateTimeDisplay from './DateTimeDisplay';
 
 export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, shiftId?: string }) {
   const { t, i18n } = useTranslation();
@@ -144,7 +145,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
               </div>
               <div className="bg-gray-50 dark:bg-slate-850 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('sales_returns.date', 'التاريخ')}</p>
-                <p className="font-bold text-gray-800 dark:text-gray-100" dir="ltr">{new Date(order.orderDate).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'))}</p>
+                <DateTimeDisplay date={order.orderDate} showTime={true} size="xs" />
               </div>
               <div className="bg-gray-50 dark:bg-slate-850 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('sales_returns.total', 'الإجمالي')}</p>

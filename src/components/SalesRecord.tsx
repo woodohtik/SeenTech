@@ -8,6 +8,10 @@ import { PriceDisplay } from './PriceDisplay';
 import { FileText, Eye, X, Download, Package, Scissors, User, Calendar, CreditCard, ShoppingBag, Clock, Printer, Share2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { downloadInvoicePDF, shareInvoiceAsPDFFile } from '../utils/pdfGenerator';
+import SimplifiedTaxInvoice from './printing/SimplifiedTaxInvoice';
+import TaxInvoice from './printing/TaxInvoice';
+import DateTimeDisplay from './DateTimeDisplay';
+import { generateZatcaQR } from '../services/zatcaService';
 
 export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenantId: string, shiftId?: string, filterStatus?: string }) {
   const { t, i18n } = useTranslation();
@@ -187,7 +191,9 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                       )}
                     </div>
                   </td>
-                  <td className="p-4 text-content-muted" dir="ltr">{new Date(order.orderDate).toLocaleString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'))}</td>
+                  <td className="p-4 text-content-muted">
+                    <DateTimeDisplay date={order.orderDate} showTime={true} />
+                  </td>
                   <td className="p-4 font-bold text-brand"><PriceDisplay amount={order.totalAmount} /></td>
                   <td className="p-4">
                     <span className={cn(
@@ -236,7 +242,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                     <span className="bg-brand/10 text-brand px-2 py-0.5 rounded text-[10px] font-black uppercase">B2B</span>
                   )}
                 </div>
-                <span className="text-[10px] text-content-muted" dir="ltr">{new Date(order.orderDate).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'))}</span>
+                <DateTimeDisplay date={order.orderDate} showTime={true} size="xs" />
               </div>
             </div>
           ))}
@@ -260,7 +266,9 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                 </div>
                 <div>
                   <h2 className="text-base sm:text-xl font-black text-content">{t('pos.order_details')} #{selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase()}</h2>
-                  <p className="text-[10px] sm:text-xs text-content-muted font-bold uppercase tracking-widest">{new Date(selectedOrder.orderDate).toLocaleString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'))}</p>
+                  <div className="mt-0.5">
+                    <DateTimeDisplay date={selectedOrder.orderDate} showTime={true} size="xs" />
+                  </div>
                 </div>
               </div>
               <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-surface-muted rounded-full transition-colors">
@@ -268,118 +276,91 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
               </button>
             </div>
 
-            <div className="flex-1 overflow-auto p-4 sm:p-8 space-y-6 sm:space-y-8" id="sales-record-print-area">
-              {/* Customer & Info Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-                <div className="bg-surface-muted p-4 rounded-xl sm:rounded-2xl border border-border">
-                  <div className="flex items-center gap-3 mb-2 text-content-muted">
-                    <User size={16} />
-                    <span className="text-xs font-bold uppercase tracking-tighter">{t('common.customer')}</span>
-                  </div>
-                  <p className="font-bold text-content text-sm sm:text-base">
-                    {selectedOrder.isB2B ? selectedOrder.b2bCompanyName : selectedOrder.customerName}
-                    {selectedOrder.isB2B && (
-                       <span className="bg-brand/10 text-brand px-2 py-0.5 rounded-lg text-[10px] font-black uppercase ms-2">B2B</span>
-                    )}
-                  </p>
-                  {selectedOrder.isB2B && (
-                    <p className="text-xs text-content-muted mt-1 font-mono">{selectedOrder.b2bTRN}</p>
+            {(() => {
+              const sellerInfo = {
+                name: (selectedOrder as any).sellerName || 'المنشأة',
+                vatNumber: (selectedOrder as any).sellerTRN || '000000000000000',
+                address: 'المملكة العربية السعودية',
+                phone: '',
+                logoUrl: '',
+              };
+
+              const formattedItems = (selectedOrder.items || []).map((item: any) => ({
+                name: item.type === 'custom' ? item.garmentType || t('orders.custom_thobe', 'تفصيل ثوب') : item.name || t('orders.ready_made', 'صنف جاهز'),
+                quantity: Number(item.quantity || 0),
+                unitPrice: Number(item.price || item.unitPrice || 0),
+                vatAmount: Number((item.price || item.unitPrice || 0) * item.quantity - ((item.price || item.unitPrice || 0) * item.quantity) / 1.15),
+                total: Number((item.price || item.unitPrice || 0) * item.quantity)
+              }));
+
+              const subtotalExcVat = selectedOrder.totalAmount / 1.15;
+              const vatAmt = selectedOrder.totalAmount - subtotalExcVat;
+
+              const totals = {
+                subtotal: subtotalExcVat,
+                discount: selectedOrder.discountAmount || 0,
+                taxableAmount: subtotalExcVat,
+                vatAmount: vatAmt,
+                grandTotal: selectedOrder.totalAmount,
+                paidAmount: selectedOrder.paidAmount,
+                remainingAmount: selectedOrder.totalAmount - selectedOrder.paidAmount
+              };
+
+              const qrCodeBase64 = selectedOrder.qrCode || generateZatcaQR(
+                sellerInfo.name,
+                sellerInfo.vatNumber,
+                new Date(selectedOrder.orderDate).toISOString(),
+                selectedOrder.totalAmount.toFixed(2),
+                vatAmt.toFixed(2)
+              );
+
+              const invNumber = String(selectedOrder.orderNumber || selectedOrder.id.slice(0, 8));
+
+              return (
+                <div className="flex-1 overflow-auto p-4 sm:p-8 flex justify-center bg-gray-50" id="sales-record-print-area">
+                  {selectedOrder.isB2B ? (
+                    <TaxInvoice
+                      invoiceNumber={invNumber}
+                      issueDate={selectedOrder.orderDate}
+                      supplyDate={selectedOrder.orderDate}
+                      paymentMethod={
+                        (selectedOrder.paymentMethod as any) === 'network' || (selectedOrder.paymentMethod as any) === 'card' ? 'شبكة / بطاقة' :
+                        selectedOrder.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' :
+                        selectedOrder.paymentMethod === 'partial' ? 'آجل / دفع جزئي' :
+                        selectedOrder.paymentMethod === 'cash_on_delivery' ? 'الدفع عند الاستلام' : 'نقدي'
+                      }
+                      seller={sellerInfo}
+                      buyer={{
+                        name: selectedOrder.b2bCompanyName || selectedOrder.customerName,
+                        vatNumber: selectedOrder.b2bTRN
+                      }}
+                      items={formattedItems}
+                      totals={totals}
+                      qrCodeBase64={qrCodeBase64}
+                      hidePrintButton={true}
+                    />
+                  ) : (
+                    <SimplifiedTaxInvoice
+                      invoiceNumber={invNumber}
+                      issueDate={selectedOrder.orderDate}
+                      paymentMethod={
+                        (selectedOrder.paymentMethod as any) === 'network' || (selectedOrder.paymentMethod as any) === 'card' ? 'شبكة / بطاقة' :
+                        selectedOrder.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' :
+                        selectedOrder.paymentMethod === 'partial' ? 'آجل / دفع جزئي' :
+                        selectedOrder.paymentMethod === 'cash_on_delivery' ? 'الدفع عند الاستلام' : 'نقدي'
+                      }
+                      seller={sellerInfo}
+                      customerName={selectedOrder.customerName || t('tax_invoices.walk_in_customer', 'عميل نقدي / Guest Customer')}
+                      items={formattedItems}
+                      totals={totals}
+                      qrCodeBase64={qrCodeBase64}
+                      hidePrintButton={true}
+                      sellerName="النظام"
+                    />
                   )}
                 </div>
-                <div className="bg-surface-muted p-4 rounded-xl sm:rounded-2xl border border-border">
-                  <div className="flex items-center gap-3 mb-2 text-content-muted">
-                    <CreditCard size={16} />
-                    <span className="text-xs font-bold uppercase tracking-tighter">{t('pos.payment_method')}</span>
-                  </div>
-                  <p className="font-bold text-content text-sm sm:text-base">
-                    {selectedOrder.paymentMethod === 'cash' ? t('pos.cash') : 
-                     selectedOrder.paymentMethod === 'network' ? t('pos.card') : 
-                     selectedOrder.paymentMethod === 'partial' ? t('pos.partial') : 
-                     selectedOrder.paymentMethod === 'bank_transfer' ? t('pos.bank_transfer') : t('pos.other')}
-                  </p>
-                </div>
-                <div className="bg-surface-muted p-4 rounded-xl sm:rounded-2xl border border-border">
-                  <div className="flex items-center gap-3 mb-2 text-content-muted">
-                    <ShoppingBag size={16} />
-                    <span className="text-xs font-bold uppercase tracking-tighter">{t('pos.order_status')}</span>
-                  </div>
-                  <p className="font-bold text-brand text-sm sm:text-base">
-                    {selectedOrder.status === 'delivered' ? t('pos.delivered') : t('pos.pending')}
-                  </p>
-                </div>
-              </div>
-
-              {/* Items Table */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-black text-content uppercase tracking-widest flex items-center gap-2">
-                  <Package size={18} className="text-brand" />
-                  {t('pos.products_services')}
-                </h3>
-                <div className="border border-border rounded-xl sm:rounded-3xl overflow-x-auto whitespace-nowrap">
-                  <table className="w-full text-right min-w-max">
-                    <thead className="bg-surface-muted text-content-muted text-[10px] font-black uppercase tracking-widest">
-                      <tr>
-                        <th className="p-3 sm:p-4">{t('pos.item')}</th>
-                        <th className="p-3 sm:p-4">{t('inventory.quantity')}</th>
-                        <th className="p-3 sm:p-4">{t('pos.price')}</th>
-                        <th className="p-3 sm:p-4">{t('pos.total')}</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {selectedOrder.items.map((item, idx) => (
-                        <tr key={idx}>
-                          <td className="p-3 sm:p-4">
-                            <div className="flex items-center gap-3">
-                              {item.image ? (
-                                <img 
-                                  src={item.image} 
-                                  alt="" 
-                                  className="w-10 h-10 rounded-lg object-cover border border-border"
-                                  referrerPolicy="no-referrer"
-                                />
-                              ) : (
-                                <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center text-content-muted">
-                                  {item.type === 'custom' ? <Scissors size={20} /> : <Package size={20} />}
-                                </div>
-                              )}
-                              <div>
-                                <p className="font-bold text-content text-sm">{item.type === 'custom' ? item.garmentType : item.name}</p>
-                                <p className="text-[10px] text-content-muted font-bold uppercase">{item.type === 'custom' ? t('pos.tailoring') : t('pos.ready_made')}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="p-3 sm:p-4 text-content-muted font-bold text-sm">{item.quantity}</td>
-                          <td className="p-3 sm:p-4 text-content-muted text-sm"><PriceDisplay amount={item.price} /></td>
-                          <td className="p-3 sm:p-4 font-bold text-content text-sm"><PriceDisplay amount={item.price * item.quantity} /></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Summary */}
-              <div className="flex justify-end pt-4 border-t border-border">
-                <div className="w-full max-w-xs space-y-3">
-                  <div className="flex justify-between items-center text-content-muted font-medium text-sm">
-                    <span>{t('pos.subtotal')}</span>
-                    <span><PriceDisplay amount={selectedOrder.totalAmount} /></span>
-                  </div>
-                  <div className="flex justify-between items-center font-black text-content pt-3 border-t-2 border-brand/20 text-base sm:text-lg">
-                    <span>{t('pos.total')}</span>
-                    <span className="text-brand text-xl sm:text-2xl"><PriceDisplay amount={selectedOrder.totalAmount} /></span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs sm:text-sm font-bold pt-1">
-                    <span className="text-content-muted">{t('pos.paid_amount')}</span>
-                    <span className="text-success"><PriceDisplay amount={selectedOrder.paidAmount} /></span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs sm:text-sm font-bold">
-                    <span className="text-content-muted">{t('pos.remaining_amount')}</span>
-                    <span className="text-danger"><PriceDisplay amount={selectedOrder.totalAmount - selectedOrder.paidAmount} /></span>
-                  </div>
-                </div>
-              </div>
-            </div>
+              );
+            })()}
 
             <div className="p-4 bg-surface-muted border-t border-border flex flex-wrap gap-2.5 shrink-0 mt-auto print:hidden">
               <button 

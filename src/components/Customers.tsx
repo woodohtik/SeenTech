@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import DateTimeDisplay from './DateTimeDisplay';
 import { formatSaudiPhone } from '../utils/phoneUtils';
 import { 
   Plus, 
@@ -30,8 +31,16 @@ import {
   AlertCircle,
   Printer,
   CreditCard,
-  Check
+  Check,
+  FileSpreadsheet,
+  CheckSquare,
+  Square,
+  SlidersHorizontal,
+  Building2,
+  DollarSign,
+  Download
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 import { supabase } from '../lib/supabase/client';
 import { auth, handleFirestoreError, OperationType } from '../lib/firebase';
@@ -64,8 +73,15 @@ export default function Customers({ tenantId }: CustomersProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState<'name' | 'date'>('date');
-  const [filter, setFilter] = useState<'all' | 'measurements' | 'recent' | 'test'>('all');
+  const [sortBy, setSortBy] = useState<'date' | 'date_asc' | 'name' | 'balance_desc'>('date');
+  const [filter, setFilter] = useState<'all' | 'measurements' | 'recent' | 'test' | 'b2b' | 'b2c'>('all');
+  const [balanceFilter, setBalanceFilter] = useState<'all' | 'debtor' | 'creditor' | 'balanced'>('all');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  
+  // Selection & Bulk Actions State
+  const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([]);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -422,19 +438,141 @@ export default function Customers({ tenantId }: CustomersProps) {
     'double': <div className="w-10 h-10 border-2 border-current flex flex-col gap-1.5 p-1.5"><div className="h-0.5 w-full bg-current"/><div className="h-0.5 w-full bg-current"/></div>
   };
 
+  // Selection Helper Handlers
+  const toggleSelectCustomer = (id: string) => {
+    setSelectedCustomerIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedCustomerIds.length === filteredCustomers.length && filteredCustomers.length > 0) {
+      setSelectedCustomerIds([]);
+    } else {
+      setSelectedCustomerIds(filteredCustomers.map(c => c.id));
+    }
+  };
+
+  // Excel Export Handler
+  const handleExportExcel = (targetCustomers?: Customer[]) => {
+    const listToExport = targetCustomers || (selectedCustomerIds.length > 0 
+      ? customers.filter(c => selectedCustomerIds.includes(c.id))
+      : filteredCustomers);
+
+    if (listToExport.length === 0) {
+      toastError(t('customers.no_data_to_export', 'لا توجد بيانات عملاء لتصديرها'));
+      return;
+    }
+
+    try {
+      const exportData = listToExport.map((c, index) => {
+        const balance = customerBalances[c.id] || 0;
+        let balanceStatus = 'متزن';
+        if (balance > 0) balanceStatus = 'مدين (عليه مديونية)';
+        else if (balance < 0) balanceStatus = 'دائن (له رصيد)';
+
+        return {
+          '#': index + 1,
+          'اسم العميل': c.name || '',
+          'رقم الهاتف': c.phone || '',
+          'نوع العميل': c.isB2B ? 'شركة B2B' : 'فرد B2C',
+          'اسم الشركة': c.companyName || '-',
+          'الرقم الضريبي': c.trn || '-',
+          'الرصيد المالي (ر.س)': balance,
+          'حالة الرصيد': balanceStatus,
+          'المدينة': c.styles?.city || c.city || '-',
+          'العنوان': c.styles?.address || c.address || '-',
+          'الطول (سم)': c.measurements?.length || '-',
+          'الكتف (سم)': c.measurements?.shoulder || '-',
+          'الصدر (سم)': c.measurements?.chest || '-',
+          'الخصر (سم)': c.measurements?.waist || '-',
+          'الورك (سم)': c.measurements?.hips || '-',
+          'طول الكم (سم)': c.measurements?.sleeve || '-',
+          'رقبة (سم)': c.measurements?.neck || '-',
+          'ملاحظات': c.notes || '-',
+          'تاريخ التسجيل': c.createdAt ? new Date(c.createdAt).toLocaleDateString('ar-SA') : '-'
+        };
+      });
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      
+      // Right-to-Left alignment for Arabic excel sheet
+      worksheet['!dir'] = 'rtl';
+      
+      worksheet['!cols'] = [
+        { wch: 6 },  // #
+        { wch: 25 }, // Name
+        { wch: 18 }, // Phone
+        { wch: 12 }, // Type
+        { wch: 20 }, // Company
+        { wch: 18 }, // TRN
+        { wch: 18 }, // Balance
+        { wch: 20 }, // Balance status
+        { wch: 15 }, // City
+        { wch: 25 }, // Address
+        { wch: 12 }, // Length
+        { wch: 12 }, // Shoulder
+        { wch: 12 }, // Chest
+        { wch: 12 }, // Waist
+        { wch: 12 }, // Hips
+        { wch: 12 }, // Sleeve
+        { wch: 12 }, // Neck
+        { wch: 25 }, // Notes
+        { wch: 15 }, // Date
+      ];
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'العملاء');
+
+      const dateStr = new Date().toISOString().slice(0, 10);
+      XLSX.writeFile(workbook, `العملاء_${dateStr}.xlsx`);
+
+      toastSuccess(t('customers.export_success', 'تم تصدير ملف الإكسل بنجاح ({{count}} عميل)', { count: listToExport.length }));
+    } catch (err) {
+      console.error('Failed to export excel:', err);
+      toastError(t('customers.export_error', 'حدث خطأ أثناء تصدير ملف الإكسل'));
+    }
+  };
+
+  // Bulk Delete Handler
+  const handleBulkDelete = async () => {
+    const allowed = await checkPermission('customers.delete', t('customers.manage_customers', 'إدارة العملاء'));
+    if (!allowed) return;
+
+    if (selectedCustomerIds.length === 0) return;
+
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .in('id', selectedCustomerIds);
+
+      if (error) throw error;
+
+      toastSuccess(t('customers.bulk_delete_success', 'تم حذف {{count}} عميل بنجاح', { count: selectedCustomerIds.length }));
+      setSelectedCustomerIds([]);
+      setIsBulkDeleteModalOpen(false);
+    } catch (error) {
+      handleError(error as any, t('customers.bulk_delete_fail', 'فشل حذف العملاء المحددين'));
+    }
+  };
+
   const filteredCustomers = customers
     .filter(c => {
       // Search filter
       const searchLower = search.toLowerCase().trim();
       const matchesSearch = !searchLower || searchLower.split(/\s+/).every(term => 
         c.name.toLowerCase().includes(term) || 
-        c.phone.includes(term)
+        c.phone.includes(term) ||
+        (c.companyName && c.companyName.toLowerCase().includes(term)) ||
+        (c.trn && c.trn.includes(term)) ||
+        (c.styles?.city && c.styles.city.toLowerCase().includes(term))
       );
       if (!matchesSearch) return false;
 
       // Category filter
       if (filter === 'measurements') {
-        const hasMeasurements = c.measurements && Object.values(c.measurements).some(v => v !== undefined && v !== null && v !== '');
+        const hasMeasurements = c.measurements && Object.values(c.measurements).some(v => v !== undefined && v !== null && v !== '' && v !== 0);
         if (!hasMeasurements) return false;
       }
       if (filter === 'recent') {
@@ -445,11 +583,29 @@ export default function Customers({ tenantId }: CustomersProps) {
       if (filter === 'test') {
         if (!c.isTest) return false;
       }
+      if (filter === 'b2b') {
+        if (!c.isB2B) return false;
+      }
+      if (filter === 'b2c') {
+        if (c.isB2B) return false;
+      }
+
+      // Balance Filter
+      const balance = customerBalances[c.id] || 0;
+      if (balanceFilter === 'debtor' && balance <= 0) return false;
+      if (balanceFilter === 'creditor' && balance >= 0) return false;
+      if (balanceFilter === 'balanced' && balance !== 0) return false;
       
       return true;
     })
     .sort((a, b) => {
-      if (sortBy === 'name') return a.name.localeCompare(b.name);
+      if (sortBy === 'name') return a.name.localeCompare(b.name, 'ar');
+      if (sortBy === 'date_asc') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      if (sortBy === 'balance_desc') {
+        const balA = customerBalances[a.id] || 0;
+        const balB = customerBalances[b.id] || 0;
+        return balB - balA;
+      }
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
@@ -460,59 +616,226 @@ export default function Customers({ tenantId }: CustomersProps) {
   }
 
   return (
-    <div className={cn("space-y-6", isRtl ? "text-right" : "text-left")} dir={isRtl ? "rtl" : "ltr"}>
+    <div className={cn("space-y-6 pb-20", isRtl ? "text-right" : "text-left")} dir={isRtl ? "rtl" : "ltr"}>
       <Header 
         tenantId={tenantId} 
         title={t('common.customers', 'العملاء')} 
         subtitle={t('customers.subtitle', 'إدارة بيانات العملاء وقياساتهم')}
       >
-        {canCreate && (
+        <div className="flex items-center gap-2">
           <button 
-            onClick={() => { setEditingCustomer(null); reset({}); setIsModalOpen(true); }}
-            className="bg-brand text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-brand/90 transition-all shadow-lg shadow-brand/10 text-sm sm:text-base"
+            onClick={() => handleExportExcel()}
+            className="bg-surface text-content border border-border px-4 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-surface-muted transition-all text-xs sm:text-sm cursor-pointer shadow-sm hover:border-brand/30"
+            title={t('customers.export_excel', 'تصدير قائمة العملاء إلى ملف إكسل')}
           >
-            <UserPlus size={20} />
-            <span>{t('customers.add_new', 'إضافة عميل جديد')}</span>
+            <FileSpreadsheet size={18} className="text-emerald-600 dark:text-emerald-400" />
+            <span className="hidden sm:inline">{t('customers.export_excel', 'تصدير إكسل')}</span>
           </button>
-        )}
+
+          {canCreate && (
+            <button 
+              onClick={() => { setEditingCustomer(null); reset({}); setIsModalOpen(true); }}
+              className="bg-brand text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-brand/90 transition-all shadow-lg shadow-brand/10 text-sm sm:text-base cursor-pointer"
+            >
+              <UserPlus size={20} />
+              <span>{t('customers.add_new', 'إضافة عميل جديد')}</span>
+            </button>
+          )}
+        </div>
       </Header>
 
       <div className="space-y-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 bg-surface p-4 rounded-3xl border border-border shadow-sm flex items-center gap-3 group focus-within:border-brand/40 transition-all">
-            <Search size={20} className="text-content-muted group-focus-within:text-brand transition-colors" />
+        <div className="flex flex-col lg:flex-row gap-3">
+          {/* Search Box */}
+          <div className="flex-1 bg-surface p-3 sm:p-4 rounded-3xl border border-border shadow-sm flex items-center gap-3 group focus-within:border-brand/40 transition-all">
+            <Search size={20} className="text-content-muted group-focus-within:text-brand transition-colors shrink-0" />
             <input 
               type="text" 
-              placeholder={t('customers.search_placeholder', 'ابحث عن عميل بالاسم أو رقم الهاتف...')} 
-              className={cn("flex-1 bg-transparent border-none focus:ring-0 text-content placeholder-content-muted font-bold", isRtl ? "text-right" : "text-left")}
+              placeholder={t('customers.search_placeholder', 'ابحث باسم العميل، رقم الهاتف، اسم الشركة، المدينة...')} 
+              className={cn("flex-1 bg-transparent border-none focus:ring-0 text-content placeholder-content-muted font-bold text-sm sm:text-base outline-none", isRtl ? "text-right" : "text-left")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
             {search && (
               <button 
                 onClick={() => setSearch('')}
-                className="p-1 hover:bg-surface-muted rounded-full text-content-muted hover:text-brand transition-all"
+                className="p-1 hover:bg-surface-muted rounded-full text-content-muted hover:text-brand transition-all shrink-0"
               >
                 <X size={16} />
               </button>
             )}
           </div>
-          <div className="flex gap-2">
-            <button 
-              onClick={() => setSortBy(sortBy === 'name' ? 'date' : 'name')}
-              className="bg-surface px-6 py-3 rounded-2xl border border-border shadow-sm flex items-center gap-2 text-content font-bold hover:bg-surface-muted transition-all active:scale-95 whitespace-nowrap"
+
+          {/* Action & Filter Controls */}
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {/* Select All Toggle Button */}
+            <button
+              onClick={toggleSelectAll}
+              className={cn(
+                "px-4 py-3 rounded-2xl border font-bold flex items-center gap-2 transition-all cursor-pointer text-xs sm:text-sm shadow-sm",
+                selectedCustomerIds.length > 0 && selectedCustomerIds.length === filteredCustomers.length
+                  ? "bg-brand text-white border-brand shadow-md shadow-brand/10"
+                  : "bg-surface text-content border-border hover:bg-surface-muted"
+              )}
             >
-              <ArrowUpDown size={18} className="text-brand" />
-              <span>{sortBy === 'name' ? t('customers.sort_by_name', 'ترتيب حسب الاسم') : t('customers.sort_by_date', 'ترتيب حسب التاريخ')}</span>
+              {selectedCustomerIds.length > 0 && selectedCustomerIds.length === filteredCustomers.length ? (
+                <CheckSquare size={18} />
+              ) : (
+                <Square size={18} />
+              )}
+              <span>
+                {selectedCustomerIds.length > 0 && selectedCustomerIds.length === filteredCustomers.length
+                  ? t('customers.deselect_all', 'إلغاء الكل')
+                  : t('customers.select_all', 'تحديد الكل')}
+              </span>
             </button>
+
+            {/* Advanced Filters Drawer Toggle Button */}
+            <button
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className={cn(
+                "px-4 py-3 rounded-2xl border font-bold flex items-center gap-2 transition-all cursor-pointer text-xs sm:text-sm shadow-sm relative",
+                showAdvancedFilters || balanceFilter !== 'all' || filter === 'b2b' || filter === 'b2c'
+                  ? "bg-brand/10 text-brand border-brand/30"
+                  : "bg-surface text-content border-border hover:bg-surface-muted"
+              )}
+            >
+              <SlidersHorizontal size={18} />
+              <span>{t('customers.filters', 'فلاتر متقدمة')}</span>
+              {(balanceFilter !== 'all' || filter === 'b2b' || filter === 'b2c') && (
+                <span className="w-2.5 h-2.5 rounded-full bg-brand animate-pulse" />
+              )}
+            </button>
+
+            {/* Sort Select Dropdown */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="bg-surface text-content border border-border px-4 py-3 rounded-2xl font-bold text-xs sm:text-sm outline-none cursor-pointer hover:bg-surface-muted shadow-sm"
+            >
+              <option value="date">{t('customers.sort_recent', 'الأحدث تسجيلاً')}</option>
+              <option value="date_asc">{t('customers.sort_oldest', 'الأقدم تسجيلاً')}</option>
+              <option value="name">{t('customers.sort_name', 'ترتيب أبجدي (الاسم)')}</option>
+              <option value="balance_desc">{t('customers.sort_highest_debt', 'الأعلى مديونية')}</option>
+            </select>
           </div>
         </div>
 
-        {/* Filter Chips */}
-        <div className="flex overflow-x-auto pb-1.5 gap-2 scrollbar-hide select-none w-full">
+        {/* Advanced Filters Panel Expansion */}
+        <AnimatePresence>
+          {showAdvancedFilters && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden bg-surface p-4 sm:p-6 rounded-3xl border border-border shadow-sm space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <h4 className="text-sm font-black text-content flex items-center gap-2">
+                  <Filter size={16} className="text-brand" />
+                  <span>تصفية العملاء المتقدمة</span>
+                </h4>
+                <button
+                  onClick={() => {
+                    setFilter('all');
+                    setBalanceFilter('all');
+                    setSearch('');
+                  }}
+                  className="text-xs font-bold text-brand hover:underline cursor-pointer"
+                >
+                  إعادة ضبط جميع الفلاتر
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Filter by Type */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-content-muted">نوع العميل / الهوية</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { id: 'all', label: 'الكل' },
+                      { id: 'b2c', label: 'أفراد (B2C)' },
+                      { id: 'b2b', label: 'شركات (B2B)' },
+                      { id: 'test', label: 'بيانات تجريبية' },
+                    ].map(typeItem => (
+                      <button
+                        key={typeItem.id}
+                        onClick={() => setFilter(typeItem.id as any)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer",
+                          filter === typeItem.id
+                            ? "bg-brand text-white border-brand shadow-sm"
+                            : "bg-surface-muted text-content-muted border-border hover:text-content"
+                        )}
+                      >
+                        {typeItem.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Filter by Balance */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-content-muted">الحساب والمديونية</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { id: 'all', label: 'الكل' },
+                      { id: 'debtor', label: 'مدين (عليه مديونية)' },
+                      { id: 'creditor', label: 'دائن (له رصيد)' },
+                      { id: 'balanced', label: 'متزن (صفر)' },
+                    ].map(balItem => (
+                      <button
+                        key={balItem.id}
+                        onClick={() => setBalanceFilter(balItem.id as any)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer",
+                          balanceFilter === balItem.id
+                            ? "bg-brand text-white border-brand shadow-sm"
+                            : "bg-surface-muted text-content-muted border-border hover:text-content"
+                        )}
+                      >
+                        {balItem.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Filter by Measurements */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-content-muted">القياسات والتفاصيل</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { id: 'all', label: 'الكل' },
+                      { id: 'measurements', label: 'يوجد قياسات مسجلة' },
+                      { id: 'recent', label: 'مسجل خلال 7 أيام' },
+                    ].map(mItem => (
+                      <button
+                        key={mItem.id}
+                        onClick={() => setFilter(mItem.id as any)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer",
+                          filter === mItem.id
+                            ? "bg-brand text-white border-brand shadow-sm"
+                            : "bg-surface-muted text-content-muted border-border hover:text-content"
+                        )}
+                      >
+                        {mItem.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Filter Chips Bar */}
+        <div className="flex overflow-x-auto pb-1.5 gap-2 scrollbar-hide select-none w-full items-center">
           {[
             { id: 'all', label: t('common.all', 'الكل'), icon: Users },
             { id: 'measurements', label: t('customers.filter_measurements', 'بقياسات'), icon: Ruler },
+            { id: 'b2c', label: 'أفراد B2C', icon: User },
+            { id: 'b2b', label: 'شركات B2B', icon: Building2 },
             { id: 'recent', label: t('customers.filter_recent', 'أضيف حديثاً'), icon: History },
             { id: 'test', label: t('common.test_data', 'تجريبي'), icon: Zap },
           ].map((chip) => (
@@ -520,13 +843,13 @@ export default function Customers({ tenantId }: CustomersProps) {
               key={chip.id}
               onClick={() => setFilter(chip.id as any)}
               className={cn(
-                "flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-black transition-all border-2 shrink-0 whitespace-nowrap",
+                "flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-black transition-all border shrink-0 whitespace-nowrap cursor-pointer",
                 filter === chip.id 
-                  ? "bg-brand border-brand text-white shadow-lg shadow-brand/20 scale-105" 
+                  ? "bg-brand border-brand text-white shadow-md shadow-brand/20 scale-102" 
                   : "bg-surface border-border text-content-muted hover:border-brand/30 hover:text-brand"
               )}
             >
-              <chip.icon size={16} />
+              <chip.icon size={15} />
               <span>{chip.label}</span>
               {filter === chip.id && (
                 <span className="bg-white/20 px-2 py-0.5 rounded-full text-[10px]">
@@ -538,25 +861,51 @@ export default function Customers({ tenantId }: CustomersProps) {
         </div>
       </div>
 
+      {/* Customer Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredCustomers.length > 0 ? filteredCustomers.map((customer) => (
-          <motion.div
-            layout
-            key={customer.id}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-surface p-6 rounded-3xl border border-border shadow-sm hover:shadow-xl transition-all group relative overflow-hidden"
-          >
-            {customer.isTest && (
-              <div className={cn("absolute top-0 bg-warning/10 text-warning px-4 py-1.5 text-[10px] font-black uppercase flex items-center gap-1 z-10", isRtl ? "left-0 rounded-br-2xl" : "right-0 rounded-bl-2xl")}>
-                <Zap size={10} />
-                {t('common.test_data', 'تجريبي')}
-              </div>
-            )}
+        {filteredCustomers.length > 0 ? filteredCustomers.map((customer) => {
+          const isSelected = selectedCustomerIds.includes(customer.id);
+          return (
+            <motion.div
+              layout
+              key={customer.id}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className={cn(
+                "bg-surface p-6 rounded-3xl border transition-all group relative overflow-hidden",
+                isSelected
+                  ? "border-brand ring-2 ring-brand/30 bg-brand/5 shadow-md"
+                  : "border-border shadow-sm hover:shadow-xl"
+              )}
+            >
+              {customer.isTest && (
+                <div className={cn("absolute top-0 bg-warning/10 text-warning px-4 py-1.5 text-[10px] font-black uppercase flex items-center gap-1 z-10", isRtl ? "left-0 rounded-br-2xl" : "right-0 rounded-bl-2xl")}>
+                  <Zap size={10} />
+                  {t('common.test_data', 'تجريبي')}
+                </div>
+              )}
 
-            <div className="flex justify-between items-start mb-6">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-brand/10 text-brand rounded-2xl flex items-center justify-center text-xl font-black shadow-inner">
+            <div className="flex justify-between items-start mb-6 pt-1">
+              <div className="flex items-center gap-3">
+                {/* Checkbox Button */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleSelectCustomer(customer.id);
+                  }}
+                  className={cn(
+                    "p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0",
+                    isSelected
+                      ? "bg-brand text-white shadow-md shadow-brand/20 scale-105"
+                      : "bg-surface-muted/90 text-content-muted hover:text-brand hover:bg-brand/10 border border-border"
+                  )}
+                  title={isSelected ? "إلغاء تحديد العميل" : "تحديد العميل"}
+                >
+                  {isSelected ? <CheckSquare size={18} /> : <Square size={18} />}
+                </button>
+
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-brand/10 text-brand rounded-2xl flex items-center justify-center text-lg sm:text-xl font-black shadow-inner shrink-0">
                   {getInitials(customer.name)}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -679,7 +1028,8 @@ export default function Customers({ tenantId }: CustomersProps) {
               </div>
             </div>
           </motion.div>
-        )) : (
+          );
+        }) : (
           <div className="col-span-full py-20 flex flex-col items-center justify-center bg-surface rounded-[3rem] border-2 border-dashed border-border text-content-muted">
             <div className="p-6 bg-surface-muted rounded-full mb-4">
               <Search size={48} className="opacity-20" />
@@ -687,14 +1037,109 @@ export default function Customers({ tenantId }: CustomersProps) {
             <h3 className="text-xl font-black text-content mb-2">{t('customers.no_results', 'لم يتم العثور على نتائج')}</h3>
             <p className="text-sm font-bold">{t('customers.no_results_desc', 'جرب تغيير كلمات البحث أو الفلاتر المختارة')}</p>
             <button 
-              onClick={() => { setSearch(''); setFilter('all'); }}
-              className="mt-6 text-brand font-black hover:underline"
+              onClick={() => { setSearch(''); setFilter('all'); setBalanceFilter('all'); }}
+              className="mt-6 text-brand font-black hover:underline cursor-pointer"
             >
               {t('customers.reset_search', 'إعادة تعيين البحث')}
             </button>
           </div>
         )}
       </div>
+
+      {/* Floating Sticky Bulk Actions Bar */}
+      <AnimatePresence>
+        {selectedCustomerIds.length > 0 && (
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] bg-content text-surface px-6 py-3.5 rounded-2xl shadow-2xl border border-white/10 flex items-center gap-4 max-w-2xl w-[92vw] sm:w-auto justify-between"
+          >
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="bg-brand text-white font-black px-3 py-1 rounded-xl text-xs sm:text-sm">
+                {selectedCustomerIds.length}
+              </span>
+              <span className="text-xs sm:text-sm font-bold truncate">
+                عميل محدد من أصل {filteredCustomers.length}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => handleExportExcel()}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+                title="تصدير المحددين إلى إكسل"
+              >
+                <FileSpreadsheet size={16} />
+                <span className="hidden sm:inline">تصدير إكسل</span>
+              </button>
+
+              {canDelete && (
+                <button
+                  onClick={() => setIsBulkDeleteModalOpen(true)}
+                  className="bg-danger/80 hover:bg-danger text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+                  title="حذف العملاء المحددين"
+                >
+                  <Trash2 size={16} />
+                  <span className="hidden sm:inline">حذف المحدد</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => setSelectedCustomerIds([])}
+                className="p-2 hover:bg-white/10 rounded-xl text-content-muted hover:text-white transition-colors cursor-pointer"
+                title="إلغاء التحديد"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Bulk Delete Modal */}
+      <AnimatePresence>
+        {isBulkDeleteModalOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-surface p-6 sm:p-8 rounded-3xl border border-border shadow-2xl max-w-md w-full text-right space-y-6"
+              dir={isRtl ? "rtl" : "ltr"}
+            >
+              <div className="flex items-center gap-4 text-danger">
+                <div className="p-3 bg-danger/10 rounded-2xl">
+                  <AlertCircle size={32} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-content">تأكيد الحذف الجماعي</h3>
+                  <p className="text-xs text-content-muted mt-1 font-medium">عملية غير قابلة للتراجع</p>
+                </div>
+              </div>
+
+              <p className="text-sm font-bold text-content leading-relaxed">
+                هل أنت متأكد من حذف <span className="text-danger font-black">{selectedCustomerIds.length}</span> عميل من النظام؟ سيتم إزالة جميع بياناتهم المسجلة.
+              </p>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={handleBulkDelete}
+                  className="flex-1 bg-danger hover:bg-danger/90 text-white py-3 rounded-xl font-bold text-sm transition-all shadow-lg shadow-danger/20 cursor-pointer"
+                >
+                  نعم، حذف المحددين
+                </button>
+                <button
+                  onClick={() => setIsBulkDeleteModalOpen(false)}
+                  className="px-6 py-3 bg-surface-muted text-content font-bold text-sm hover:bg-surface border border-border rounded-xl transition-all cursor-pointer"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Modals */}
       <AnimatePresence>
@@ -1106,7 +1551,7 @@ const CustomerDetailsModal = ({
                       </div>
                       <div>
                         <p className="text-xs sm:text-sm font-bold text-content">#{order.id.slice(-6).toUpperCase()}</p>
-                        <p className="text-[9px] sm:text-[10px] text-content-muted">{new Date(order.orderDate).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US')}</p>
+                        <DateTimeDisplay date={order.orderDate} showTime={true} size="xs" />
                       </div>
                     </div>
                     <div className={cn(isRtl ? "text-left" : "text-right")}>
@@ -1308,7 +1753,10 @@ const CustomerStatementModal = ({
             <div className="flex justify-between items-start">
               <div>
                 <h1 className="text-xl font-bold text-black">{t('customers.store_statement', 'كشف حساب مالي')}</h1>
-                <p className="text-xs text-black">{t('customers.statement_date', 'تاريخ الإصدار')}: {new Date().toLocaleDateString(isRtl ? 'ar-SA-u-nu-latn' : 'en-US')} {new Date().toLocaleTimeString(isRtl ? 'ar-SA-u-nu-latn' : 'en-US')}</p>
+                <div className="text-xs text-black flex items-center gap-2 mt-1">
+                  <span>{t('customers.statement_date', 'تاريخ الإصدار')}:</span>
+                  <DateTimeDisplay date={new Date()} showTime={true} size="xs" />
+                </div>
               </div>
               <div className="text-left">
                 <p className="text-sm font-bold text-black">{customer.name}</p>
@@ -1398,7 +1846,7 @@ const CustomerStatementModal = ({
                               #{order.orderNumber || order.id.slice(-6).toUpperCase()}
                             </td>
                             <td className="p-3 text-content-muted print:text-black text-xs">
-                              {new Date(order.orderDate).toLocaleDateString(isRtl ? 'ar-SA-u-nu-latn' : 'en-US')}
+                              <DateTimeDisplay date={order.orderDate} showTime={true} size="xs" />
                             </td>
                             <td className="p-3 font-bold text-content print:text-black">
                               <PriceDisplay amount={order.totalAmount} />

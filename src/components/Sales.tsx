@@ -18,6 +18,7 @@ import { useStaff } from '../contexts/StaffContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
+import DateTimeDisplay from './DateTimeDisplay';
 
 export default function Sales({ tenantId }: { tenantId: string }) {
   const { t, i18n } = useTranslation();
@@ -577,7 +578,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-border/50">
                     <span className="text-content-muted font-medium">{t('sales.start_time', 'وقت البداية')}</span>
-                    <span className="font-bold text-content" dir="ltr">{new Date(activeShift.startTime).toLocaleString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'))}</span>
+                    <DateTimeDisplay date={activeShift.startTime} showTime={true} />
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-border/50">
                     <span className="text-content-muted font-medium">{t('sales.opening_balance', 'الرصيد الافتتاحي')}</span>
