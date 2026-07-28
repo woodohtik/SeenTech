@@ -137,14 +137,21 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-center mb-6 text-sm">
+                  <div className="flex justify-between items-center mb-6 text-sm flex-wrap gap-4">
                     <div>
-                      <p className="text-content-muted mb-1">رقم الفاتورة</p>
+                      <p className="text-content-muted mb-1 text-xs font-medium">رقم الفاتورة</p>
                       <p className="font-bold text-content">{invoice.invoice_number}</p>
                     </div>
                     <div className="text-left">
-                      <p className="text-content-muted mb-1">التاريخ والوقت</p>
-                      <p className="font-bold text-content">{new Date(invoice.issued_at).toLocaleString('ar-SA-u-nu-latn')}</p>
+                      <p className="text-content-muted mb-1 text-xs font-medium">التاريخ والوقت</p>
+                      <div className="font-bold text-content text-xs flex items-center gap-1.5 justify-end">
+                        <span className="font-mono" dir="ltr">
+                          {new Date(invoice.issued_at).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                        </span>
+                        <span className="font-mono text-content-muted text-[10px]" dir="ltr">
+                          {new Date(invoice.issued_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -186,9 +193,19 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-end">
+                  <div className="flex justify-between items-end mb-3">
                     <p className="font-bold text-content text-lg">الإجمالي شامل الضريبة</p>
                     <PriceDisplay amount={Number(invoice.total_amount)} className="text-2xl font-black text-brand" />
+                  </div>
+
+                  <div className="flex justify-between items-center text-xs font-bold text-content-muted pt-3 border-t border-dashed border-border">
+                    <span>طريقة الدفع</span>
+                    <span className="text-brand font-black bg-brand/10 px-2.5 py-1 rounded-lg">
+                      {(invoice as any).payment_method === 'network' || (invoice as any).paymentMethod === 'network' ? 'شبكة / بطاقة' :
+                       (invoice as any).payment_method === 'bank_transfer' || (invoice as any).paymentMethod === 'bank_transfer' ? 'تحويل بنكي' :
+                       (invoice as any).payment_method === 'partial' || (invoice as any).paymentMethod === 'partial' ? 'آجل / دفع جزئي' :
+                       (invoice as any).payment_method === 'cash_on_delivery' || (invoice as any).paymentMethod === 'cash_on_delivery' ? 'الدفع عند الاستلام' : 'نقدي'}
+                    </span>
                   </div>
 
                   {/* QR Code */}

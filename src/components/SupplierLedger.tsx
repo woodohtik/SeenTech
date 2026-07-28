@@ -23,6 +23,7 @@ import { CurrencySymbol } from './CurrencySymbol';
 import { getSupplierTransactions } from '../services/supplierAccountsService';
 import { SupplierTransaction } from '../types/supplierLedger';
 import { supabase } from '../lib/supabase/client';
+import DateTimeDisplay from './DateTimeDisplay';
 import PaymentVoucherModal from './PaymentVoucherModal';
 import { PriceDisplay } from './PriceDisplay';
 import { cn } from '../lib/utils';
@@ -541,9 +542,7 @@ export default function SupplierLedger({
               return (
                 <div key={tx.id} className="p-4 space-y-3 bg-white hover:bg-slate-50/30 transition-colors">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] text-slate-400 font-bold font-mono">
-                      {txDate.toLocaleDateString('ar-SA-u-nu-latn')} | {txDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
+                    <DateTimeDisplay date={txDate} showTime={true} size="xs" />
                     <span className={cn(
                       "px-2 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase",
                       tx.type === 'payment' ? "bg-rose-50 text-rose-600 border border-rose-100" :

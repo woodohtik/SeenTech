@@ -929,6 +929,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
           tenant_id: tenantId,
           customer_id: orderData.customer_id,
           customer_name: orderData.customer_name,
+          payment_method: paymentMethod,
           subtotal: Number(subTotalAmount) >= 0 ? Number(subTotalAmount) : 0,
           tax_rate: 0.15,
           tax_amount: Number(taxAmount) >= 0 ? Number(taxAmount) : 0,
@@ -1014,6 +1015,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
          id: newOrder.id,
          invoiceNumber: `INV-${orderNumber}`,
          invoiceType,
+         paymentMethod: paymentMethod,
          total: totalAmount,
          subTotal: subTotalAmount,
          taxAmount: taxAmount,
@@ -1356,6 +1358,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
 const invoiceData: InvoiceData | null = completedOrder ? {
   invoiceNumber: completedOrder.invoiceNumber,
   issueDate: completedOrder.issuedAt,
+  paymentMethod: completedOrder.paymentMethod || 'cash',
   seller: {
     name: brandingSettings?.storeName || 'مؤسسة وضوح الشاملة',
     vatNumber: taxSettings?.trn || '300000000000003',

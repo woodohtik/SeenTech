@@ -27,6 +27,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [mobileTab, setMobileTab] = useState<'controls' | 'preview'>('controls');
 
   const [settings, setSettings] = useState(() => {
     const defaultSettings = {
@@ -242,33 +243,62 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
   };
 
   return (
-    <div className="bg-surface rounded-2xl md:rounded-[3rem] border border-border shadow-xl shadow-brand/5 overflow-hidden flex flex-col lg:flex-row min-h-[900px] w-full" dir="rtl">
+    <div className="bg-surface rounded-2xl lg:rounded-3xl border border-border shadow-xl shadow-brand/5 overflow-hidden flex flex-col xl:flex-row min-h-[750px] w-full" dir="rtl">
+      {/* Mobile/Tablet Switcher (< xl) */}
+      <div className="xl:hidden flex items-center p-1.5 bg-surface-muted rounded-2xl border border-border m-3 sm:m-4 mb-0">
+        <button
+          type="button"
+          onClick={() => setMobileTab('controls')}
+          className={cn(
+            "flex-1 py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer",
+            mobileTab === 'controls' ? "bg-brand text-white shadow-md shadow-brand/10" : "text-content-muted hover:text-content"
+          )}
+        >
+          <FileText size={16} />
+          <span>خيارات التخطيط</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab('preview')}
+          className={cn(
+            "flex-1 py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer",
+            mobileTab === 'preview' ? "bg-brand text-white shadow-md shadow-brand/10" : "text-content-muted hover:text-content"
+          )}
+        >
+          <Eye size={16} />
+          <span>المعاينة المباشرة</span>
+        </button>
+      </div>
+
       {/* Controls Section */}
-      <div className="w-full lg:w-1/2 p-4 sm:p-6 md:p-10 border-b lg:border-b-0 lg:border-l border-border overflow-y-auto max-h-[900px] space-y-6 md:space-y-10 custom-scrollbar">
+      <div className={cn(
+        "w-full xl:w-1/2 p-4 sm:p-6 lg:p-8 border-b xl:border-b-0 xl:border-l border-border overflow-y-auto max-h-[850px] space-y-6 sm:space-y-8 custom-scrollbar",
+        mobileTab === 'controls' ? "block" : "hidden xl:block"
+      )}>
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-center sm:text-right">
-            <h2 className="text-2xl font-black text-content flex items-center justify-center sm:justify-start gap-3">
-              <div className="p-2 bg-brand/10 text-brand rounded-xl">
-                <FileText size={24} />
+            <h2 className="text-xl sm:text-2xl font-black text-content flex items-center justify-center sm:justify-start gap-2.5">
+              <div className="p-2 bg-brand/10 text-brand rounded-xl shrink-0">
+                <FileText size={22} />
               </div>
-              تخطيط الفاتورة الاحترافية
+              <span>تخطيط الفاتورة الاحترافية</span>
             </h2>
-            <p className="text-content-muted text-sm font-medium mt-1">صمم مظهر فواتيرك بما يتناسب مع هوية متجرك</p>
+            <p className="text-content-muted text-xs sm:text-sm font-medium mt-1">صمم مظهر فواتيرك بما يتناسب مع هوية متجرك</p>
           </div>
           <button 
             onClick={handleSave}
             disabled={saving}
             className={cn(
-              "w-full sm:w-auto text-white px-8 py-3.5 rounded-2xl font-black transition-all shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-105 active:scale-95",
+              "w-full sm:w-auto text-white px-6 py-3 rounded-xl font-black transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-102 active:scale-98 cursor-pointer text-sm",
               saveSuccess ? "bg-emerald-600 shadow-emerald-500/20" : "bg-brand hover:bg-brand/90 shadow-brand/20"
             )}
           >
             {saving ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : saveSuccess ? (
-              <CheckCircle2 size={20} />
+              <CheckCircle2 size={18} />
             ) : (
-              <Save size={20} />
+              <Save size={18} />
             )}
             <span>{saving ? 'جاري الحفظ...' : saveSuccess ? 'تم الحفظ بنجاح' : 'اعتماد التصميم'}</span>
           </button>
@@ -436,25 +466,40 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+            <div className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">العنوان المطبوع</label>
+                <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">اسم المنشأة / المتجر المطبوع</label>
                 <input 
                   type="text" 
-                  value={settings.header.address}
-                  onChange={e => setSettings(s => ({ ...s, header: { ...s.header, address: e.target.value } }))}
+                  value={settings.header.facilityName}
+                  onChange={e => setSettings(s => ({ ...s, header: { ...s.header, facilityName: e.target.value } }))}
+                  placeholder="أدخل اسم المتجر أو المنشأة المطبوع بالفاتورة"
                   className="w-full bg-white border border-border/50 rounded-xl p-3.5 text-sm font-bold focus:ring-2 focus:ring-brand outline-none shadow-sm"
                 />
               </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">الرقم الضريبي للمنشأة</label>
-                <input 
-                  type="text" 
-                  value={settings.header.taxId}
-                  onChange={e => setSettings(s => ({ ...s, header: { ...s.header, taxId: e.target.value } }))}
-                  className="w-full bg-white border border-border/50 rounded-xl p-3.5 text-sm font-black focus:ring-2 focus:ring-brand outline-none shadow-sm text-left tracking-widest"
-                  dir="ltr"
-                />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">العنوان المطبوع يدويًا (مُخصص)</label>
+                  <input 
+                    type="text" 
+                    value={settings.header.address}
+                    onChange={e => setSettings(s => ({ ...s, header: { ...s.header, address: e.target.value } }))}
+                    placeholder="أدخل العنوان المطبوع المختصر لتجنب طول الترويسة"
+                    className="w-full bg-white border border-border/50 rounded-xl p-3.5 text-sm font-bold focus:ring-2 focus:ring-brand outline-none shadow-sm"
+                  />
+                  <p className="text-[11px] text-content-muted px-1">يمكنك إدخال عنوان مختصر هنا لطباعته في الفاتورة بدلاً من العنوان الرئيسي الطويل.</p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">الرقم الضريبي للمنشأة</label>
+                  <input 
+                    type="text" 
+                    value={settings.header.taxId}
+                    onChange={e => setSettings(s => ({ ...s, header: { ...s.header, taxId: e.target.value } }))}
+                    className="w-full bg-white border border-border/50 rounded-xl p-3.5 text-sm font-black focus:ring-2 focus:ring-brand outline-none shadow-sm text-left tracking-widest"
+                    dir="ltr"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -547,7 +592,10 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
       </div>
 
       {/* Live Preview Section */}
-      <div className="w-full lg:w-1/2 bg-surface-muted/40 p-4 sm:p-10 flex flex-col items-center justify-start overflow-auto max-h-[900px] border-t lg:border-t-0 border-border custom-scrollbar">
+      <div className={cn(
+        "w-full xl:w-1/2 bg-surface-muted/40 p-4 sm:p-8 flex flex-col items-center justify-start overflow-auto max-h-[850px] border-t xl:border-t-0 border-border custom-scrollbar",
+        mobileTab === 'preview' ? "flex" : "hidden xl:flex"
+      )}>
         <div className="bg-white/80 backdrop-blur-md px-6 py-2 rounded-full border border-border/50 flex items-center gap-2 mb-6 sm:mb-10 text-content-muted font-black uppercase tracking-widest text-[10px] sticky top-0 z-10 shadow-sm shadow-brand/5 whitespace-nowrap">
           <Eye size={12} className="text-brand" />
           <span>محاكاة حية للفاتورة المطبوعة</span>

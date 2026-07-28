@@ -10,6 +10,7 @@ import { FileText, ArrowDownLeft, Search, Eye, X, CheckCircle2, ShieldAlert } fr
 import { useStaff } from '../contexts/StaffContext';
 import { useToast } from '../contexts/ToastContext';
 import { useTranslation } from 'react-i18next';
+import DateTimeDisplay from './DateTimeDisplay';
 
 export default function CreditNotes({ tenantId }: { tenantId: string }) {
   const { t, i18n } = useTranslation();
@@ -322,7 +323,9 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
                         </span>
                       </td>
                       <td className="p-4 font-mono text-content-muted">{note.invoiceNumber}</td>
-                      <td className="p-4 text-content-muted font-bold" dir="ltr">{new Date(note.issuedAt).toLocaleString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'))}</td>
+                      <td className="p-4 text-content-muted font-bold">
+                        <DateTimeDisplay date={note.issuedAt} showTime={true} />
+                      </td>
                       <td className="p-4 text-content truncate max-w-[200px]" title={note.reason}>{note.reason}</td>
                       <td className="p-4 font-black text-content"><PriceDisplay amount={note.refundedAmount} /></td>
                     </tr>

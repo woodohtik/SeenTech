@@ -7,6 +7,7 @@ import { PriceDisplay } from './PriceDisplay';
 import { FileText, Calendar, Search, Download, Printer } from 'lucide-react';
 import Branding from './Branding';
 import { useTranslation } from 'react-i18next';
+import DateTimeDisplay from './DateTimeDisplay';
 
 interface ShiftHistoryProps {
   tenantId: string;
@@ -167,8 +168,12 @@ export default function ShiftHistory({ tenantId, staffId, isManager }: ShiftHist
               {filteredShifts.map((shift) => (
                 <tr key={shift.id} className="hover:bg-surface-muted/50 transition-colors">
                   <td className="px-6 py-4 font-bold text-content">{shift.staffName}</td>
-                  <td className="px-6 py-4 text-sm text-content-muted" dir="ltr">{new Date(shift.startTime).toLocaleString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'))}</td>
-                  <td className="px-6 py-4 text-sm text-content-muted" dir="ltr">{shift.endTime ? new Date(shift.endTime).toLocaleString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US')) : '-'}</td>
+                  <td className="px-6 py-4 text-sm text-content-muted">
+                    <DateTimeDisplay date={shift.startTime} showTime={true} />
+                  </td>
+                  <td className="px-6 py-4 text-sm text-content-muted">
+                    {shift.endTime ? <DateTimeDisplay date={shift.endTime} showTime={true} /> : '-'}
+                  </td>
                   <td className="px-6 py-4">
                     <span className={cn(
                       "px-3 py-1 rounded-full text-xs font-bold",
@@ -221,8 +226,14 @@ export default function ShiftHistory({ tenantId, staffId, isManager }: ShiftHist
             <div className="text-center mb-6 border-b border-dashed border-gray-400 pb-4">
               <h1 className="text-2xl font-black mb-2">{t('shift_closing.title', 'تقرير الوردية (Z-Report)')}</h1>
               <p className="text-sm">{t('shift_history.employee', 'الموظف')}: {selectedShift.staffName}</p>
-              <p className="text-sm">{t('shift_history.start_time', 'وقت البداية')}: {new Date(selectedShift.startTime).toLocaleString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'))}</p>
-              <p className="text-sm">{t('shift_history.end_time', 'وقت النهاية')}: {selectedShift.endTime ? new Date(selectedShift.endTime).toLocaleString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US')) : '-'}</p>
+              <div className="text-sm flex items-center justify-center gap-2 my-1">
+                <span>{t('shift_history.start_time', 'وقت البداية')}:</span>
+                <DateTimeDisplay date={selectedShift.startTime} showTime={true} size="xs" />
+              </div>
+              <div className="text-sm flex items-center justify-center gap-2 my-1">
+                <span>{t('shift_history.end_time', 'وقت النهاية')}:</span>
+                {selectedShift.endTime ? <DateTimeDisplay date={selectedShift.endTime} showTime={true} size="xs" /> : '-'}
+              </div>
             </div>
 
             <div className="space-y-4 mb-6">

@@ -100,6 +100,8 @@ export interface Customer {
   companyName?: string; // For B2B
   trn?: string; // For B2B
   isB2B?: boolean;
+  address?: string;
+  city?: string;
 }
 
 export type UserRole = 
