@@ -284,12 +284,14 @@ export default function AddEmployeeModal({
       ];
       const dbRoleValue = VALID_DB_ROLES.includes(data.role) ? data.role : 'tailor';
       const selectedRole = roles.find(r => r.roleKey === data.role);
+      const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+      const validRoleId = selectedRole?.id && isUuid(selectedRole.id) ? selectedRole.id : null;
 
       const { error: insertErr } = await supabase.from('staff').insert({
         uid: uid,
         name: data.name,
         role: dbRoleValue,
-        role_id: selectedRole?.id || null,
+        role_id: validRoleId,
         branch_id: data.branchId || null,
         email: data.email.toLowerCase(),
         phone: data.phone,

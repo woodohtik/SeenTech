@@ -25,8 +25,6 @@
  *  relay   → الطباعة الصامتة عبر وسيط سين المقترن بالسيرفر. المسار الموصى
  *            به على ويندوز، والوحيد الذي يعمل من الأندرويد على طابعة
  *            موصولة بكمبيوتر المتجر.
- *  rawbt   → تطبيق RawBT على الأندرويد. الطريق الوحيد لطابعات
- *            Bluetooth Classic والطابعات المدمجة في أجهزة POS.
  *  agent   → الوسيط المحلي القديم (127.0.0.1). محتفظ به كمسار سريع
  *            اختياري فقط — تحجبه المتصفحات الحديثة في الغالب.
  *  network → طابعة شبكة على منفذ 9100، تُمرَّر عبر الوسيط أو السيرفر.
@@ -38,8 +36,7 @@ export type PrinterTransport =
   | 'bluetooth'
   | 'network'
   | 'agent'
-  | 'relay'
-  | 'rawbt';
+  | 'relay';
 export type PaperSize = '80mm' | '58mm' | 'A4';
 
 export interface DiscoveredPrinter {
@@ -473,8 +470,7 @@ const sendToUsb = async (id: string, data: Uint8Array): Promise<void> => {
       // على الأندرويد لا يوجد usbprint.sys يحجز الجهاز، فسبب الفشل مختلف
       if (onAndroid) {
         throw new Error(
-          'تم رفض الوصول للطابعة عبر USB. على الأندرويد جرّب: فصل كابل OTG وإعادة توصيله، ثم اختر «سين» عند سؤال النظام عن التطبيق الذي يفتح الجهاز. ' +
-            'إن استمرت المشكلة فالطابعة على الأغلب تحتاج تطبيق RawBT — اختر «طباعة عبر RawBT» من إعدادات الطابعة.'
+          'تم رفض الوصول للطابعة عبر USB. على الأندرويد جرّب: فصل كابل OTG وإعادة توصيله، ثم اختر «سين» عند سؤال النظام عن التطبيق الذي يفتح الجهاز.'
         );
       }
 
@@ -769,24 +765,6 @@ export const sendRawToPrinter = async (
         copies: conn.copies || 1,
         docName: conn.docName,
       });
-    }
-
-    case 'rawbt': {
-      /*
-       * RawBT على الأندرويد. ننتبه إلى أنه Intent وليس طلب شبكة: لا يمكن
-       * معرفة نتيجة الطباعة برمجياً، ولا يمكن تنفيذ نسخ متعددة في نداء
-       * واحد. لذلك نكرّر النداء بفاصل زمني يسمح للتطبيق بمعالجة كل نسخة.
-       */
-      const { sendBytesToRawBT, canUseRawBT } = await import('./printAndroid');
-      if (!canUseRawBT()) {
-        throw new Error('تطبيق RawBT متاح على أجهزة الأندرويد فقط.');
-      }
-      const copies = Math.max(1, conn.copies || 1);
-      for (let i = 0; i < copies; i++) {
-        if (i > 0) await new Promise((r) => setTimeout(r, 1200));
-        sendBytesToRawBT(data);
-      }
-      return;
     }
 
     case 'agent': {

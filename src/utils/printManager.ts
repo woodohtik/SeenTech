@@ -60,7 +60,6 @@ export type PrintMethod =
   | 'raw-bluetooth'
   | 'raw-network'
   | 'raw-relay'
-  | 'raw-rawbt'
   | 'raw-agent'
   | 'dialog-iframe'
   | 'dialog-popup'
@@ -572,7 +571,6 @@ export interface ActivePrinterConfig {
     | 'network'
     | 'agent'
     | 'relay'
-    | 'rawbt'
     | 'system';
   size: PrintPaperSize;
   ipAddress?: string;
@@ -583,7 +581,7 @@ export interface ActivePrinterConfig {
 }
 
 /** أنواع النقل التي تدعم الإرسال المباشر بأوامر ESC/POS (طباعة صامتة). */
-const RAW_TRANSPORTS = ['usb', 'serial', 'bluetooth', 'network', 'agent', 'relay', 'rawbt'];
+const RAW_TRANSPORTS = ['usb', 'serial', 'bluetooth', 'network', 'agent', 'relay'];
 
 /* ----------------------------------------------------------------
    تفضيل الطباعة الصامتة + قاطع الدائرة (Circuit Breaker)
@@ -634,21 +632,10 @@ export interface SilentPrintToken {
 
 /**
  * هل الطباعة الصامتة مفعّلة؟
- * الافتراضي: مفعّلة تلقائياً متى ما رُبطت طابعة مباشرة، ومعطّلة إن كانت
- * الطابعة من نوع "طابعة النظام" (لأنها تعمل عبر مربع الحوار أصلاً).
+ * الافتراضي: معطلة تماماً ومحذوفة.
  */
 export const isSilentPrintEnabled = (): boolean => {
-  try {
-    const stored = localStorage.getItem(SILENT_PREF_KEY);
-    if (stored === 'false') return false;
-
-    // مفعّلة فقط عندما تكون هناك طابعة مربوطة فعلاً؛ "طابعة النظام" تعمل
-    // عبر مربع الحوار أصلاً فلا معنى لمحاولة صامتة معها.
-    const cfg = getActivePrinterConfig();
-    return !!cfg && RAW_TRANSPORTS.includes(cfg.transport);
-  } catch {
-    return false;
-  }
+  return false;
 };
 
 /** تفعيل/تعطيل الطباعة الصامتة (من صفحة إعدادات الطابعة). */
@@ -847,9 +834,6 @@ const buildTransportChain = async (
   // 3) طابعة شبكة إن كان عنوانها محفوظاً
   if (cfg.ipAddress) push('network');
 
-  // 4) مسار الأندرويد الأصلي
-  if (platform.isAndroid()) push('rawbt');
-
   /*
    * لا نضيف 'agent' (الوسيط المحلي على 127.0.0.1) تلقائياً. الوسيط الحالي
    * لم يعد يفتح خادماً محلياً إطلاقاً، فمحاولته تعني انتظار مهلة 2.5 ثانية
@@ -925,7 +909,7 @@ export const printElementViaRawDevice = async (
     }
 
     // كل هذه المسارات تتولى تكرار النسخ داخلياً في نداء واحد
-    const handlesCopies = transport === 'relay' || transport === 'network' || transport === 'rawbt';
+    const handlesCopies = transport === 'relay' || transport === 'network';
 
     const conn = {
       ipAddress: cfg.ipAddress,
@@ -968,13 +952,6 @@ export const printElementViaRawDevice = async (
 
       if (options.openCashDrawer) {
         try {
-          /*
-           * RawBT يعمل عبر Intent (تغيير window.location)، والنداءان
-           * المتتاليان بلا فاصل يُلغي أحدهما الآخر فتُفقد إحدى المهمتين.
-           * ننتظر قبل أمر الدرج تماماً كما نفعل بين النسخ.
-           */
-          if (transport === 'rawbt') await new Promise((r) => setTimeout(r, 1200));
-
           await discovery.sendRawToPrinter(cfg.id, transport, discovery.openCashDrawerCommand(), {
             ...conn,
             copies: 1,
@@ -1367,28 +1344,6 @@ export const printElementDirectly = async (
 ): Promise<boolean> => {
   const res = await printElementDetailed(elementId, options);
   return res.ok;
-};
-
-/**
- * تشغيل بروتوكول RawBT لأجهزة أندرويد POS المتصلة بـ USB أو البلوتوث.
- *
- * كان في هذه الدالة عيبان أصلحناهما:
- *   • اسم الحزمة كان خطأ (`ru.a404m` بدل `ru.a402d`) فلا يفتح التطبيق أصلاً.
- *   • كانت ترسل نصاً فقط، والعربية تخرج رموزاً مشوّشة لأن أغلب الطابعات
- *     الحرارية لا تحتوي خطاً عربياً مدمجاً.
- *
- * للفواتير العربية استخدم `printElementDetailed` مع طابعة من نوع 'rawbt' —
- * فتُرسل الفاتورة كصورة نقطية وتخرج العربية سليمة.
- */
-export const printViaRawBT = async (textData: string): Promise<void> => {
-  const { sendTextToRawBT } = await import('./printAndroid');
-  sendTextToRawBT(textData);
-};
-
-/** إرسال بايتات ESC/POS خام إلى RawBT (المسار الصحيح للعربية). */
-export const printBytesViaRawBT = async (data: Uint8Array): Promise<void> => {
-  const { sendBytesToRawBT } = await import('./printAndroid');
-  sendBytesToRawBT(data);
 };
 
 /**

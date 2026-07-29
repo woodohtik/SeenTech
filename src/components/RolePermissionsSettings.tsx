@@ -273,6 +273,9 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
         localStorage.setItem(cacheKey, JSON.stringify(permissionsState));
       }
 
+      const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+      const validRoleId = selectedRole && isUuid(selectedRole.id) ? selectedRole.id : null;
+
       if (isSuperAdmin) {
         // Upsert system global role permissions
         const { data: existingSysRp } = await supabase
@@ -289,7 +292,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
           }).eq('id', existingSysRp.id);
         } else {
           await supabase.from('roles_permissions').insert({
-            role_id: selectedRole.id,
+            role_id: validRoleId,
             role_key: roleKey,
             tenant_id: null,
             permissions: permissionsState,
@@ -298,7 +301,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
         }
       } else if (targetTenantId) {
         await supabase.from('roles_permissions').upsert({
-          role_id: selectedRole.id,
+          role_id: validRoleId,
           role_key: roleKey,
           tenant_id: targetTenantId,
           permissions: permissionsState,

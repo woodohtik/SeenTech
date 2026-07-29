@@ -110,7 +110,11 @@ export const inventorySchema = z.object({
 export const staffSchema = z.object({
   name: z.string().min(2, t('validation.min_length', { count: 2 })),
   email: z.string().email(t('validation.invalid_email')),
-  phone: phoneField,
+  phone: z.string().transform((val) => formatSaudiPhone(val)).pipe(
+    z.string().refine((val) => val === '' || phoneRegex.test(val), {
+      message: t('validation.phone_format')
+    })
+  ).optional().or(z.literal('')),
   role: z.string().min(1, t('validation.required')),
   branchId: z.string().min(1, t('validation.required')),
   status: z.enum(['active', 'inactive']),

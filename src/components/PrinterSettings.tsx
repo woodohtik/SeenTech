@@ -57,9 +57,6 @@ import {
 } from '../utils/printRelayClient';
 import {
   getPlatformPrintAdvice,
-  canUseRawBT,
-  sendBytesToRawBT,
-  RAWBT_STORE_URL,
 } from '../utils/printAndroid';
 
 export interface PrinterDevice {
@@ -108,8 +105,6 @@ export default function PrinterSettings() {
 
   const [autoPrint, setAutoPrint] = useState(true);
   const [fastThermalMode, setFastThermalMode] = useState(true);
-  /** الطباعة الصامتة: إرسال الفاتورة للطابعة بلا أي نافذة طباعة. */
-  const [silentPrint, setSilentPrint] = useState(true);
   const [showHelpGuide, setShowHelpGuide] = useState(false);
 
   // وسيط سين المقترن بالسيرفر — المسار الأساسي للطباعة الصامتة
@@ -332,32 +327,6 @@ export default function PrinterSettings() {
     });
   };
 
-  /** ربط مسار RawBT على الأندرويد (للطابعات البلوتوث الكلاسيك والمدمجة). */
-  const handleLinkRawBT = () => {
-    const id = 'rawbt-android';
-    const updated = printers.map((x) => ({ ...x, isDefault: false }));
-    const idx = updated.findIndex((x) => x.id === id);
-
-    const entry: PrinterDevice = {
-      id,
-      name: 'طابعة الأندرويد عبر RawBT',
-      type: 'rawbt',
-      size: idx !== -1 ? updated[idx].size : '80mm',
-      status: 'online',
-      isDefault: true,
-      isRealDevice: true,
-    };
-
-    if (idx !== -1) updated[idx] = entry;
-    else updated.unshift(entry);
-
-    persist(updated);
-    setFeedback({
-      kind: 'info',
-      text: 'تم تعيين RawBT كمسار الطباعة. تأكد أن تطبيق RawBT مثبّت ومضبوط على طابعتك، ثم اضغط "اختبار".',
-    });
-  };
-
   /* ------------------- الوسيط المحلي القديم (اختياري) ------------------- */
 
   const refreshAgent = useCallback(async (announce = false) => {
@@ -438,8 +407,7 @@ export default function PrinterSettings() {
               p.type === 'system' ||
               p.type === 'network' ||
               p.type === 'agent' ||
-              p.type === 'relay' ||
-              p.type === 'rawbt'
+              p.type === 'relay'
           );
           base = cleaned.length ? cleaned : [SYSTEM_PRINTER];
         }
@@ -455,14 +423,6 @@ export default function PrinterSettings() {
     if (auto !== null) setAutoPrint(auto === 'true');
     const fast = localStorage.getItem('pos_fast_thermal_mode');
     if (fast !== null) setFastThermalMode(fast === 'true');
-    /*
-     * نقرأ الحالة الفعلية من printManager لا من المفتاح الخام: الطباعة
-     * الصامتة تكون معطّلة فعلياً إن لم تكن هناك طابعة مربوطة، فلا يصح أن
-     * يظهر المفتاح مُفعّلاً والميزة غير عاملة.
-     */
-    void import('../utils/printManager').then(({ isSilentPrintEnabled }) => {
-      setSilentPrint(isSilentPrintEnabled());
-    });
   }, [syncPairedDevices, refreshRelay]);
 
   /*
@@ -634,7 +594,6 @@ export default function PrinterSettings() {
       'network',
       'agent',
       'relay',
-      'rawbt',
     ].includes(printer.type);
     const thermal = printer.size === '80mm' || printer.size === '58mm';
 
@@ -713,36 +672,6 @@ export default function PrinterSettings() {
             ? `طباعة صامتة ناجحة على "${name}" بدون أي مربع حوار — خرج إيصالان: اختبار اتصال وفاتورة عربية.`
             : `تمت الطباعة الصامتة لإيصال الاختبار، لكن فشلت الفاتورة العربية (${arabicError}).`,
         });
-        return;
-      }
-
-      /* --- 0ب) RawBT على الأندرويد --- */
-      if (printer.type === 'rawbt') {
-        if (!canUseRawBT()) {
-          setFeedback({
-            kind: 'error',
-            text: 'تطبيق RawBT متاح على أجهزة الأندرويد فقط. على الويندوز استخدم الاقتران مع وسيط سين.',
-          });
-          return;
-        }
-
-        try {
-          const el = document.getElementById('print-area');
-          if (!el) throw new Error('لم يتم العثور على قالب الاختبار.');
-          const canvas = await rasterizeElement(el, printer.size === '58mm' ? 384 : 576);
-          sendBytesToRawBT(canvasToEscPosRaster(canvas));
-
-          /*
-           * RawBT يعمل عبر Intent وليس طلب شبكة، فلا يمكن معرفة النتيجة
-           * برمجياً. نُبلّغ المستخدم بذلك صراحةً بدل الإيحاء بنجاح مؤكد.
-           */
-          setFeedback({
-            kind: 'info',
-            text: 'تم تحويل الفاتورة إلى تطبيق RawBT. إن لم يفتح التطبيق أو لم يخرج ورق، فتأكد من تنصيب RawBT ومن اختيار الطابعة الصحيحة داخل إعداداته.',
-          });
-        } catch (e: any) {
-          setFeedback({ kind: 'error', text: e?.message || 'تعذر تجهيز الفاتورة لتطبيق RawBT.' });
-        }
         return;
       }
 
@@ -895,7 +824,6 @@ export default function PrinterSettings() {
     bluetooth: 'بلوتوث',
     network: 'شبكة LAN مباشر',
     relay: 'طباعة صامتة (وسيط سين)',
-    rawbt: 'RawBT (أندرويد)',
     agent: 'وسيط محلي قديم (127.0.0.1)',
   };
 
@@ -1239,37 +1167,6 @@ export default function PrinterSettings() {
                 </div>
               );
             })}
-          </div>
-        )}
-
-        {/* ---- مسار الأندرويد: RawBT ---- */}
-        {canUseRawBT() && (
-          <div className="pt-3 border-t border-border space-y-2.5">
-            <p className="text-xs font-black text-content">طابعة موصولة بهذا الجهاز (أندرويد)</p>
-            <div className="p-3.5 bg-surface border border-border rounded-2xl space-y-3">
-              <p className="text-[11px] text-content-muted font-medium leading-relaxed">
-                إن كانت الطابعة بلوتوث <strong className="text-content">كلاسيك</strong> أو مدمجة في جهاز POS
-                (Sunmi وشبيهاتها)، فلا يستطيع المتصفح مخاطبتها مباشرة — استخدم تطبيق RawBT المجاني. أما طابعات
-                USB-OTG و بلوتوث BLE فاربطها مباشرة من أزرار الربط بالأسفل.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <button
-                  type="button"
-                  onClick={handleLinkRawBT}
-                  className="flex-1 px-4 py-2.5 bg-brand hover:bg-brand-hover text-white rounded-xl text-xs font-black transition-all"
-                >
-                  استخدام RawBT للطباعة
-                </button>
-                <a
-                  href={RAWBT_STORE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 px-4 py-2.5 bg-surface-hover hover:bg-brand/10 text-content hover:text-brand border border-border rounded-xl text-xs font-black transition-all text-center"
-                >
-                  تنصيب RawBT من متجر Play
-                </a>
-              </div>
-            </div>
           </div>
         )}
 
@@ -1685,57 +1582,6 @@ export default function PrinterSettings() {
             localStorage.setItem('pos_fast_thermal_mode', String(v));
           }}
         />
-        <ToggleCard
-          icon={Printer}
-          title="الطباعة الصامتة (بلا نافذة طباعة)"
-          desc="إرسال الفاتورة مباشرةً للطابعة الحرارية المربوطة بلا أي نافذة. إن فشلت تُفتح نافذة الطباعة تلقائياً."
-          value={silentPrint}
-          onChange={async (v) => {
-            setSilentPrint(v);
-            const { setSilentPrintEnabled } = await import('../utils/printManager');
-            setSilentPrintEnabled(v);
-          }}
-        />
-      </div>
-
-      {/* شرح الطباعة بلا نافذة */}
-      <div className="bg-brand/5 p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-brand/15 space-y-3">
-        <div className="flex items-start gap-3 min-w-0">
-          <div className="p-2.5 bg-brand text-white rounded-xl shrink-0 shadow-sm">
-            <Zap size={18} />
-          </div>
-          <div className="min-w-0 space-y-1">
-            <h3 className="text-sm sm:text-base font-black text-content">كيف تختفي نافذة الطباعة تماماً؟</h3>
-            <p className="text-[11px] sm:text-xs text-content-muted font-medium leading-relaxed">
-              المتصفح لا يسمح لأي موقع بإغلاق نافذة الطباعة تلقائياً (قيد أمني)، لذلك الحل أن
-              لا تظهر من الأصل — وذلك بطريقين:
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="bg-surface p-3.5 rounded-xl border border-border space-y-1.5">
-            <p className="text-xs font-black text-content flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full bg-brand text-white text-[10px] flex items-center justify-center shrink-0">1</span>
-              <span>الطباعة الصامتة (بالأعلى)</span>
-            </p>
-            <p className="text-[10px] sm:text-[11px] text-content-muted font-medium leading-relaxed">
-              اربط طابعة حرارية 80mm أو 58mm واجعلها الافتراضية. تعمل على الويندوز
-              والأندرويد والتابلت. لا تدعم الورق العادي A4.
-            </p>
-          </div>
-
-          <div className="bg-surface p-3.5 rounded-xl border border-border space-y-1.5">
-            <p className="text-xs font-black text-content flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full bg-brand text-white text-[10px] flex items-center justify-center shrink-0">2</span>
-              <span>وضع الطباعة الفورية (ويندوز)</span>
-            </p>
-            <p className="text-[10px] sm:text-[11px] text-content-muted font-medium leading-relaxed">
-              افتح النظام من ملف <span className="font-mono font-bold" dir="ltr">kiosk-print/طباعة-فورية-بدون-نافذة.bat</span>{' '}
-              فتُطبع كل الفواتير فوراً بلا نافذة — ويشمل A4.
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* إرشادات حل المشاكل */}
