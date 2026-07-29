@@ -297,7 +297,7 @@ const buildPrintDocument = (bodyHtml: string, options: PrintOptions): string => 
 <html dir="rtl" lang="ar">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=${layoutPx}, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>${(options.title || 'فاتورة').replace(/[<>&"]/g, '')}</title>
 ${links.map((h) => `<link rel="stylesheet" href="${h}">`).join('\n')}
 <style>
@@ -330,9 +330,9 @@ html, body {
   padding: 0 !important;
   background: #ffffff !important;
   color: #000000 !important;
-  width: ${contentWidth} !important;
+  width: ${geo.thermal ? '100%' : contentWidth} !important;
   min-width: 0 !important;
-  max-width: ${contentWidth} !important;
+  max-width: ${geo.thermal ? '100%' : contentWidth} !important;
   overflow: visible !important;
   visibility: visible !important;
   display: block !important;
@@ -395,12 +395,13 @@ html, body {
 }
 
 #seen-print-root {
-  width: ${contentWidth} !important;
-  max-width: ${contentWidth} !important;
+  width: ${geo.thermal ? '100%' : contentWidth} !important;
+  max-width: ${geo.thermal ? '100%' : contentWidth} !important;
   padding: ${geo.rootPadding} !important;
   margin: 0 auto !important;
+  box-sizing: border-box !important;
   font-family: 'Tajawal', 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
-  ${geo.thermal ? 'font-size: 11.5px; line-height: 1.45;' : ''}
+  ${geo.thermal ? 'font-size: 13px; line-height: 1.4;' : ''}
   color: #000000 !important;
 }
 
@@ -457,9 +458,9 @@ th, td { padding: 1px 2px !important; }
 ${
   geo.thermal
     ? `#seen-print-root, #seen-print-root * { font-weight: 600 !important; }
-       #seen-print-root h1 { font-size: 15px !important; }
-       #seen-print-root h2 { font-size: 13.5px !important; }
-       #seen-print-root h3 { font-size: 12.5px !important; }`
+       #seen-print-root h1 { font-size: 18px !important; }
+       #seen-print-root h2 { font-size: 16px !important; }
+       #seen-print-root h3 { font-size: 14px !important; }`
     : ''
 }
 </style>
@@ -1015,7 +1016,7 @@ const printViaIframe = async (html: string, layoutPx: number): Promise<PrintResu
     'position:fixed',
     'left:-20000px',
     'top:0',
-    `width:${layoutPx}px`,
+    'width:100%',
     'height:100vh',
     'border:0',
     'padding:0',
