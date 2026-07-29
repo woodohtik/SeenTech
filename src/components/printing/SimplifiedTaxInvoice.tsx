@@ -141,7 +141,7 @@ export default function SimplifiedTaxInvoice({
   // RIGHT edge of the paper. Keeping the auto side margins is what actually
   // centres the receipt on the roll.
   return (
-    <div className="w-full max-w-[80mm] mx-auto bg-white p-1 font-sans text-right print:p-0" dir="rtl">
+    <div className="w-full max-w-[80mm] mx-auto bg-white p-1 font-sans text-right print:px-3 print:py-1.5" dir="rtl">
       
       {/* Print Controls (Hidden in Print Mode) */}
       {!hidePrintButton && (
@@ -165,8 +165,7 @@ export default function SimplifiedTaxInvoice({
       )}
 
       {/* Invoice Frame - 80mm Thermal Style */}
-      {/* Print padding is set in the @media print block below, not here. */}
-      <div id="simplified-invoice-container" className="bg-white px-0.5 py-1 text-slate-900 text-[10.5px] leading-tight" style={{ zoom: `${fontSizeScale}%` }}>
+      <div id="simplified-invoice-container" className="bg-white px-2 py-1 print:px-2.5 print:py-1 text-slate-900 text-[10.5px] leading-tight" style={{ zoom: `${fontSizeScale}%` }}>
 
         {/* Store Name & Logo - Centered */}
         <div className="text-center mb-1.5">
@@ -368,35 +367,38 @@ export default function SimplifiedTaxInvoice({
       {/* Styled Printable thermal Setup */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          /* Only a fallback for a bare window.print(); the print engine emits
-             its own @page with !important for the paper size actually chosen. */
-          @page { margin: 0; size: auto; }
+          @page { margin: 3mm 4mm 3mm 4mm; size: auto; }
           html, body {
             background: white !important;
             color: black !important;
             margin: 0 !important;
             padding: 0 !important;
+            height: auto !important;
+            min-height: 0 !important;
             -webkit-text-size-adjust: 100% !important;
             text-size-adjust: 100% !important;
           }
           #print-area, #simplified-invoice-container, #simplified-invoice-container * {
             visibility: visible;
             box-sizing: border-box !important;
+            min-height: 0 !important;
+            max-height: none !important;
           }
           .print\\:hidden, #app-navigation, header, aside, button {
             display: none !important;
           }
           #simplified-invoice-container {
             border: none !important;
-            padding: 0 !important;
-            margin-left: 0 !important;
-            margin-right: 0 !important;
+            padding: 1.5mm 2.5mm !important;
+            margin: 0 auto !important;
             width: 100% !important;
             max-width: 100% !important;
             box-sizing: border-box !important;
             zoom: 1 !important;
             font-size: 8.5pt !important;
             line-height: 1.25 !important;
+            height: auto !important;
+            min-height: 0 !important;
           }
           #simplified-invoice-container h1 { font-size: 11pt !important; line-height: 1.2 !important; }
           #simplified-invoice-container h2 { font-size: 10.5pt !important; line-height: 1.2 !important; }

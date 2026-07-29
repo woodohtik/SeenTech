@@ -124,7 +124,7 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
                 </div>
 
                 {/* Printable Area */}
-                <div id="print-area" data-paper="80mm" className="bg-surface border border-border rounded-xl p-3 sm:p-4 mb-4 print:mx-auto print:my-0 print:border-none print:p-0 w-full box-border">
+                <div id="print-area" data-paper="80mm" className="bg-surface border border-border rounded-xl p-3 sm:p-4 mb-4 print:mx-auto print:my-0 print:border-none print:p-2 print:px-3 w-full box-border">
                   <div className="text-center mb-6 border-b border-dashed border-border pb-6">
                     <h2 className="text-2xl font-bold text-content mb-1">{tenantName}</h2>
                     {tenantVatNumber && (

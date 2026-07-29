@@ -513,10 +513,9 @@ html, body {
    قواعد وسائط الطباعة الحرارية للفواتير (Thermal POS Print Rules)
    ============================================================ */
 @media print {
-  /* بدون !important — حتى يستطيع مستند الطباعة المعزول (printManager)
-     فرض هوامش @page الصحيحة لكل مقاس ورق. */
+  /* هوامش الصفحة العامة عند الطباعة المباشرة من المتصفح */
   @page {
-    margin: 0;
+    margin: 3mm 4mm 3mm 4mm;
     size: auto;
   }
 
@@ -526,6 +525,9 @@ html, body {
     margin: 0 !important;
     padding: 0 !important;
     width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     -webkit-text-size-adjust: 100% !important;
@@ -540,10 +542,7 @@ html, body {
     display: none !important;
   }
 
-  /* إظهار منطقة الطباعة.
-     ملاحظة مهمة: لا نفرض عرض 80mm هنا — كان ذلك يضغط الفواتير الضريبية
-     مقاس A4 داخل 80mm فتخرج مشوّهة أو شبه فارغة. العرض الحراري يُطبّق
-     فقط عند وجود الصنف .thermal-print أو السمة data-paper="80mm". */
+  /* إظهار منطقة الطباعة وتوفير حشو داخلي متوازن يمنع التصاق النص بالحواف */
   .printable-area,
   #print-area,
   #sales-record-print-area,
@@ -558,33 +557,35 @@ html, body {
     max-width: 100% !important;
     max-height: none !important;
     height: auto !important;
+    min-height: 0 !important;
     overflow: visible !important;
     margin: 0 auto !important;
-    padding: 0 !important;
+    padding: 2mm 3.5mm !important;
+    box-sizing: border-box !important;
     box-shadow: none !important;
     border: none !important;
     background: #ffffff !important;
     color: #000000 !important;
   }
 
-  /* عرض الرول الحراري — يُطبّق بالاختيار فقط */
+  /* عرض الرول الحراري — يُطبّق بالاختيار فقط مع حشو متناسق للجانبين */
   .thermal-print,
   [data-paper="80mm"] {
     width: 80mm !important;
     max-width: 80mm !important;
-    padding: 1.5mm 2mm !important;
+    padding: 2mm 3.5mm !important;
     box-sizing: border-box !important;
-    font-size: 10pt !important;
-    line-height: 1.35 !important;
+    font-size: 8.5pt !important;
+    line-height: 1.25 !important;
   }
 
   [data-paper="58mm"] {
     width: 58mm !important;
     max-width: 58mm !important;
-    padding: 1mm 1.5mm !important;
+    padding: 1.5mm 2.5mm !important;
     box-sizing: border-box !important;
-    font-size: 9.5pt !important;
-    line-height: 1.3 !important;
+    font-size: 8pt !important;
+    line-height: 1.2 !important;
   }
 
   .printable-area *,
@@ -595,6 +596,8 @@ html, body {
     visibility: visible !important;
     color: #000000 !important;
     box-sizing: border-box !important;
+    max-height: none !important;
+    min-height: 0 !important;
   }
 }
 

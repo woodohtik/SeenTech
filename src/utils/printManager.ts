@@ -114,14 +114,14 @@ interface PaperGeometry {
 const getPaperGeometry = (size: PrintPaperSize): PaperGeometry => {
   switch (size) {
     case '58mm':
-      return { pageSize: '58mm auto', marginMm: 0, contentMm: 58, rootPadding: '2mm 1.5mm', thermal: true };
+      return { pageSize: '58mm auto', marginMm: 2, contentMm: 54, rootPadding: '1.5mm 2.5mm', thermal: true };
     case 'A5':
-      return { pageSize: 'A5', marginMm: 8, contentMm: 148 - 16, rootPadding: '0', thermal: false };
+      return { pageSize: 'A5', marginMm: 5, contentMm: 138, rootPadding: '3mm 5mm', thermal: false };
     case 'A4':
-      return { pageSize: 'A4', marginMm: 8, contentMm: 210 - 16, rootPadding: '0', thermal: false };
+      return { pageSize: 'A4', marginMm: 6, contentMm: 198, rootPadding: '4mm 6mm', thermal: false };
     case '80mm':
     default:
-      return { pageSize: '80mm auto', marginMm: 0, contentMm: 80, rootPadding: '2mm 1.5mm', thermal: true };
+      return { pageSize: '80mm auto', marginMm: 2, contentMm: 76, rootPadding: '2mm 3.5mm', thermal: true };
   }
 };
 
@@ -401,8 +401,10 @@ html, body {
   margin: 0 auto !important;
   box-sizing: border-box !important;
   font-family: 'Tajawal', 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
-  ${geo.thermal ? 'font-size: 8.5pt; line-height: 1.25; padding: 0 !important;' : ''}
+  ${geo.thermal ? 'font-size: 8.5pt; line-height: 1.25;' : ''}
   color: #000000 !important;
+  height: auto !important;
+  min-height: 0 !important;
 }
 
 #seen-print-root * { color: #000000 !important; }
@@ -427,6 +429,19 @@ html, body {
 #simplified-invoice-container {
   width: 100% !important;
   max-width: 100% !important;
+  padding: 1.5mm 2.5mm !important;
+  box-sizing: border-box !important;
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+#standard-tax-invoice-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 4mm 6mm !important;
+  box-sizing: border-box !important;
+  height: auto !important;
+  min-height: 0 !important;
 }
 
 /*
@@ -443,7 +458,7 @@ html, body {
 
 /* لا فراغ زائد في أول وآخر الفاتورة */
 #seen-print-root > *:first-child { margin-top: 0 !important; padding-top: 0 !important; }
-#seen-print-root > *:last-child { margin-bottom: 0 !important; padding-bottom: 0 !important; }
+#seen-print-root > *:last-child { margin-bottom: 0 !important; padding-bottom: 1mm !important; }
 
 img, svg { max-width: 100% !important; height: auto !important; }
 table { width: 100% !important; border-collapse: collapse !important; }
@@ -461,7 +476,7 @@ ${
        #seen-print-root h1 { font-size: 11pt !important; line-height: 1.2 !important; }
        #seen-print-root h2 { font-size: 10.5pt !important; line-height: 1.2 !important; }
        #seen-print-root h3 { font-size: 8pt !important; line-height: 1.2 !important; }
-       #simplified-invoice-container { font-size: 8.5pt !important; line-height: 1.25 !important; padding: 0 !important; }`
+       #simplified-invoice-container { font-size: 8.5pt !important; line-height: 1.25 !important; padding: 1.5mm 2.5mm !important; }`
     : ''
 }
 </style>
