@@ -335,7 +335,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
               const invNumber = String(selectedOrder.orderNumber || selectedOrder.id.slice(0, 8));
 
               return (
-                <div className="flex-1 overflow-auto p-4 sm:p-8 flex justify-center bg-gray-50" id="sales-record-print-area">
+                <div className="flex-1 overflow-auto p-4 sm:p-8 flex justify-center bg-gray-50 print:bg-white print:p-2 print:px-3 print:overflow-visible print:max-h-none" id="sales-record-print-area">
                   {selectedOrder.isB2B ? (
                     <TaxInvoice
                       invoiceNumber={invNumber}

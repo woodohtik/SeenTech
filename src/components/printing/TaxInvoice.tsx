@@ -134,7 +134,7 @@ export default function TaxInvoice({
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto bg-white p-1 font-sans text-right print:p-0" dir="rtl">
+    <div className="w-full max-w-3xl mx-auto bg-white p-1 font-sans text-right print:p-2 print:px-4" dir="rtl">
       
       {/* Print Trigger Button (Hidden in Print Mode) */}
       {!hidePrintButton && (
@@ -150,7 +150,7 @@ export default function TaxInvoice({
       )}
 
       {/* Invoice Frame */}
-      <div id="standard-tax-invoice-container" className="bg-white border border-slate-200 rounded-2xl p-8 print:border-none print:p-0">
+      <div id="standard-tax-invoice-container" className="bg-white border border-slate-200 rounded-2xl p-8 print:border-none print:px-5 print:py-4">
         
         {/* Bilingual Title Ribbon */}
         <div className="border-b-2 border-slate-800 pb-6 mb-8 flex flex-col md:flex-row justify-between items-center gap-6">
@@ -422,29 +422,36 @@ export default function TaxInvoice({
       {/* Styled Printable Setup */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
+          @page { margin: 6mm 8mm 6mm 8mm; size: A4; }
           html, body {
             background: white !important;
             color: black !important;
             margin: 0 !important;
             padding: 0 !important;
+            height: auto !important;
+            min-height: 0 !important;
             -webkit-text-size-adjust: 100% !important;
             text-size-adjust: 100% !important;
           }
           #print-area, #standard-tax-invoice-container, #standard-tax-invoice-container * {
             visibility: visible;
             box-sizing: border-box !important;
+            min-height: 0 !important;
+            max-height: none !important;
           }
           .print\\:hidden, #app-navigation, header, aside, button {
             display: none !important;
           }
           #standard-tax-invoice-container {
             border: none !important;
-            padding: 0 !important;
+            padding: 4mm 6mm !important;
             margin-left: auto !important;
             margin-right: auto !important;
             width: 100% !important;
             max-width: 100% !important;
             box-sizing: border-box !important;
+            height: auto !important;
+            min-height: 0 !important;
           }
         }
       `}} />
