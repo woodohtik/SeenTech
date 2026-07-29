@@ -110,9 +110,9 @@ export default function WhatsAppSettings() {
     <div className="bg-surface p-5 sm:p-8 md:p-10 rounded-2xl md:rounded-[3rem] border border-border shadow-xl shadow-brand/5 space-y-6 md:space-y-10 w-full relative">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-5 py-2.5 rounded-2xl shadow-2xl text-xs sm:text-sm font-black flex items-center gap-2 border border-slate-700 animate-bounce">
-          <Sparkles size={16} className="text-amber-400" />
-          <span>{toastMessage}</span>
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-[92vw] bg-slate-900 text-white px-5 py-2.5 rounded-2xl shadow-2xl text-xs sm:text-sm font-black flex items-center gap-2 border border-slate-700 animate-bounce">
+          <Sparkles size={16} className="text-amber-400 shrink-0" />
+          <span className="text-center">{toastMessage}</span>
         </div>
       )}
 
@@ -166,12 +166,13 @@ export default function WhatsAppSettings() {
 
         {/* Variables selector section */}
         <div className="space-y-3 bg-surface-muted/50 p-5 rounded-2xl border border-border">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-black text-content flex items-center gap-2">
-              <Sparkles size={16} className="text-amber-500" />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <label className="text-xs font-black text-content flex items-start gap-2 min-w-0">
+              <Sparkles size={16} className="text-amber-500 shrink-0 mt-0.5" />
               <span>انقر على أي متغير بالأسفل لإضافته لموقع المؤشر في النص:</span>
             </label>
-            <span className="text-[11px] font-bold text-content-muted">
+            {/* Redundant hint — hidden on phones where the row has no room. */}
+            <span className="hidden sm:inline text-[11px] font-bold text-content-muted">
               انقر لإدراج المتغير ↙
             </span>
           </div>
@@ -185,7 +186,7 @@ export default function WhatsAppSettings() {
                 className="flex flex-col items-start p-2.5 bg-surface hover:bg-brand/10 border border-border hover:border-brand/40 rounded-xl transition-all text-right group active:scale-95 shadow-xs"
                 title={`انقر لإضافة ${item.label}`}
               >
-                <span className="text-[11px] font-black text-brand group-hover:text-brand-dark transition-colors dir-ltr font-mono">
+                <span className="text-[11px] font-black text-brand group-hover:text-brand-dark transition-colors dir-ltr font-mono break-all">
                   {item.tag}
                 </span>
                 <span className="text-[10px] text-content-muted font-bold mt-0.5">
@@ -245,8 +246,10 @@ export default function WhatsAppSettings() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-border">
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 pt-4 border-t border-border">
+          {/* Inner row must stack too: side by side at phone width each button
+              was ~120px and its Arabic label broke mid-word. */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             <button
               type="button"
               onClick={handleReset}
@@ -279,8 +282,8 @@ export default function WhatsAppSettings() {
 
       {/* Test Modal Dialog */}
       {showTestModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-surface rounded-3xl p-6 max-w-md w-full border border-border shadow-2xl space-y-5 animate-in fade-in zoom-in-95">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-surface rounded-2xl sm:rounded-3xl p-5 sm:p-6 max-w-md w-full max-h-[92dvh] overflow-y-auto my-auto border border-border shadow-2xl space-y-5 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between border-b border-border pb-4">
               <h4 className="text-lg font-black text-content flex items-center gap-2">
                 <Send size={20} className="text-emerald-600" />

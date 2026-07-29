@@ -169,12 +169,13 @@ export default function PublicInvoice() {
           </div>
         </div>
 
-        {/* Items Line */}
+        {/* Items Line — quantity is folded into the name as "2 × المنتج"
+            instead of occupying its own column. */}
         <div className="mb-5 border-b border-dashed border-slate-200 pb-4 space-y-1.5">
-          <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-wide border-b pb-1.5">
-            <span className="flex-1 text-right">الصنف / Item</span>
-            <span className="w-16 text-center">الكمية</span>
-            <span className="w-20 text-left">المجموع</span>
+          <div className="flex justify-between items-end text-[9px] font-black text-slate-400 uppercase tracking-wide border-b pb-1.5 gap-1">
+            <span className="flex-1 min-w-0 text-right">الصنف / Item</span>
+            <span className="w-14 shrink-0 text-center">السعر</span>
+            <span className="w-16 shrink-0 text-left">المجموع</span>
           </div>
 
           {(order.items || []).map((item: any, idx: number) => {
@@ -182,13 +183,16 @@ export default function PublicInvoice() {
             const price = item.price || 0;
             const total = qty * price;
             return (
-              <div key={idx} className="flex justify-between items-start text-xs py-0.5 text-slate-700">
-                <span className="flex-1 text-right font-bold text-slate-900">{item.name || item.fabricName || 'منتج'}</span>
-                <span className="w-16 text-center font-mono text-slate-500">
-                  {qty}
+              <div key={idx} className="flex justify-between items-start text-[10px] py-0.5 text-slate-700 gap-1">
+                <span className="flex-1 min-w-0 text-right font-bold text-slate-900 leading-snug">
+                  <span className="font-mono text-slate-500" dir="ltr">{qty} ×</span>{' '}
+                  {item.name || item.fabricName || 'منتج'}
                 </span>
-                <span className="w-20 text-left font-mono font-bold text-slate-900 inline-flex items-center justify-end gap-1">
-                  {total.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto shrink-0" />
+                <span className="w-14 shrink-0 text-center font-mono text-slate-500 inline-flex items-center justify-center gap-0.5">
+                  {price.toFixed(2)}<CurrencySymbol className="h-[1em] w-auto shrink-0" />
+                </span>
+                <span className="w-16 shrink-0 text-left font-mono font-bold text-slate-900 inline-flex items-center justify-end gap-0.5">
+                  {total.toFixed(2)}<CurrencySymbol className="h-[1em] w-auto shrink-0" />
                 </span>
               </div>
             );

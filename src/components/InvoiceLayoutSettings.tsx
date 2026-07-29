@@ -245,7 +245,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
   return (
     <div className="bg-surface rounded-2xl lg:rounded-3xl border border-border shadow-xl shadow-brand/5 overflow-hidden flex flex-col xl:flex-row min-h-[750px] w-full" dir="rtl">
       {/* Mobile/Tablet Switcher (< xl) */}
-      <div className="xl:hidden flex items-center p-1.5 bg-surface-muted rounded-2xl border border-border m-3 sm:m-4 mb-0">
+      <div className="xl:hidden flex items-center p-1.5 bg-surface-muted rounded-2xl border border-border m-3 sm:m-4 mb-0 sm:mb-0">
         <button
           type="button"
           onClick={() => setMobileTab('controls')}
@@ -363,13 +363,13 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
 
             {/* Fast Thermal Print Mode Toggle */}
             <div className="pt-2 border-t border-border/50">
-              <label className="flex items-center justify-between p-4 bg-amber-500/5 rounded-2xl border border-amber-500/20 cursor-pointer hover:bg-amber-500/10 transition-all gap-4">
-                <div className="flex items-center gap-3 text-right">
+              <label className="flex items-center justify-between p-3 sm:p-4 bg-amber-500/5 rounded-2xl border border-amber-500/20 cursor-pointer hover:bg-amber-500/10 transition-all gap-3 sm:gap-4">
+                <div className="flex items-start gap-3 text-right min-w-0">
                   <div className="p-2.5 bg-amber-500 text-white rounded-xl shrink-0 shadow-sm">
                     <Zap size={20} className="animate-pulse" />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
                       <p className="font-black text-content text-xs sm:text-sm">الوضع السريع للطباعة الحرارية (80mm)</p>
                       <span className="text-[9px] bg-amber-500/10 text-amber-700 px-2 py-0.5 rounded-full font-black border border-amber-500/20">
                         توفير الورق

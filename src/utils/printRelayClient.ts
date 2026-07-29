@@ -341,5 +341,19 @@ export async function printViaRelay(
   options: SubmitJobOptions = {}
 ): Promise<void> {
   const jobId = await submitJob(data, options);
-  await waitForJob(jobId);
+
+  /*
+   * بعد نجاح submitJob تكون المهمة مُدرَجة في طابور الخادم، وقد يسحبها الوسيط
+   * ويطبعها في أي لحظة. لذلك أي فشل من هنا (انقضاء مهلة انتظار التأكيد، أو
+   * تقرير فشل من الوسيط) هو فشل **غامض**: قد تكون الفاتورة خرجت بالفعل.
+   *
+   * نُعلّم الخطأ بـ `dispatched` ليعرف المتصل أنه لا يجوز إعادة الطباعة
+   * تلقائياً عبر مسار آخر أو عبر مربع الحوار — وإلا خرج إيصالان.
+   */
+  try {
+    await waitForJob(jobId);
+  } catch (e: any) {
+    if (e && typeof e === 'object') e.dispatched = true;
+    throw e;
+  }
 }

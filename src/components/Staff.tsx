@@ -753,39 +753,41 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
   const categories = Array.from(new Set(filteredPermissions.map(p => p.category)));
 
   return (
-    <div className="p-6 space-y-8 text-right" dir="rtl">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-content flex items-center gap-3">
-            <Shield className="text-brand" size={32} />
+    <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 text-right" dir="rtl">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 min-w-0">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-3xl font-black text-content flex items-center gap-2 sm:gap-3">
+            <Shield className="text-brand shrink-0" size={24} />
             إدارة فريق العمل
           </h1>
-          <p className="text-content-muted font-medium mt-1">تتبع أداء الخياطين والموظفين</p>
+          <p className="text-content-muted font-medium mt-1 text-sm sm:text-base">تتبع أداء الخياطين والموظفين</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="bg-surface-muted p-1 rounded-2xl flex">
+        {/* The view switcher holds up to 5 tabs; it scrolls horizontally on
+            narrow screens instead of being clipped by the Settings shell. */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full md:w-auto min-w-0">
+          <div className="bg-surface-muted p-1 rounded-2xl flex w-full md:w-auto overflow-x-auto scrollbar-hide">
             <button 
               onClick={() => setViewMode('list')}
-              className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${viewMode === 'list' ? 'bg-surface text-brand shadow-sm' : 'text-content-muted'}`}
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all shrink-0 whitespace-nowrap ${viewMode === 'list' ? 'bg-surface text-brand shadow-sm' : 'text-content-muted'}`}
             >
               القائمة
             </button>
             <button 
               onClick={() => setViewMode('performance')}
-              className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${viewMode === 'performance' ? 'bg-surface text-brand shadow-sm' : 'text-content-muted'}`}
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all shrink-0 whitespace-nowrap ${viewMode === 'performance' ? 'bg-surface text-brand shadow-sm' : 'text-content-muted'}`}
             >
               الأداء
             </button>
             <button 
               onClick={() => setViewMode('permissions')}
-              className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${viewMode === 'permissions' ? 'bg-surface text-brand shadow-sm' : 'text-content-muted'}`}
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all shrink-0 whitespace-nowrap ${viewMode === 'permissions' ? 'bg-surface text-brand shadow-sm' : 'text-content-muted'}`}
             >
               الصلاحيات
             </button>
             {(hasPermission('reports.view') || currentStaff?.role === 'manager' || currentStaff?.role === 'owner') && (
               <button 
                 onClick={() => setViewMode('employee_activity')}
-                className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${viewMode === 'employee_activity' ? 'bg-surface text-brand shadow-sm' : 'text-content-muted'}`}
+                className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all shrink-0 whitespace-nowrap ${viewMode === 'employee_activity' ? 'bg-surface text-brand shadow-sm' : 'text-content-muted'}`}
               >
                 نشاط الموظفين
               </button>
@@ -793,7 +795,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
             {(hasPermission('staff.edit') || currentStaff?.role === 'manager' || currentStaff?.role === 'owner') && (
               <button 
                 onClick={() => setViewMode('tailor_commissions')}
-                className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${viewMode === 'tailor_commissions' ? 'bg-surface text-brand shadow-sm' : 'text-content-muted'}`}
+                className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all shrink-0 whitespace-nowrap ${viewMode === 'tailor_commissions' ? 'bg-surface text-brand shadow-sm' : 'text-content-muted'}`}
               >
                 عمولات الخياطين
               </button>
@@ -804,7 +806,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
               onClick={() => {
                 setIsAddModalOpen(true);
               }}
-              className="bg-brand text-white px-6 py-3 rounded-2xl flex items-center gap-2 hover:bg-brand/90 transition-all shadow-lg shadow-brand/10 font-bold"
+              className="bg-brand text-white px-5 sm:px-6 py-3 rounded-2xl flex items-center justify-center gap-2 hover:bg-brand/90 transition-all shadow-lg shadow-brand/10 font-bold shrink-0 whitespace-nowrap w-full sm:w-auto"
             >
               <Plus size={20} />
               <span>إضافة موظف</span>
@@ -1050,7 +1052,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                 </div>
               ) : null}
 
-              <div className="flex justify-between items-center pt-4">
+              <div className="flex flex-wrap justify-between items-center gap-2 pt-4">
                 <div className="flex items-center gap-2">
                   {member.status === 'active' ? (
                     <CheckCircle size={16} className="text-success" />
@@ -1100,7 +1102,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       )}
 
       {viewMode === 'performance' && (
-        <div className="bg-surface rounded-[2.5rem] border border-border overflow-x-auto whitespace-nowrap shadow-sm">
+        <div className="bg-surface rounded-2xl sm:rounded-[2.5rem] border border-border overflow-x-auto whitespace-nowrap shadow-sm">
           <table className="w-full text-right min-w-max">
             <thead>
               <tr className="bg-surface-muted border-b border-border">
@@ -1217,7 +1219,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               {/* Roles Sidebar */}
               <div className="lg:col-span-3 space-y-4">
-                <div className="bg-surface rounded-[2.5rem] border border-border shadow-sm overflow-hidden">
+                <div className="bg-surface rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm overflow-hidden">
                   <div className="p-6 bg-surface-muted/50 border-b border-border flex justify-between items-center">
                     <h4 className="text-xs font-black text-content-muted uppercase tracking-widest">الأدوار الوظيفية</h4>
                     <button 
@@ -1305,19 +1307,19 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
               <div className="lg:col-span-9 space-y-8">
                 {selectedRoleForPermissions && (
                   <>
-                    <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                      <div className="flex items-center gap-4">
+                    <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6">
+                      <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0">
                         <div className={cn(
-                          "p-4 rounded-2xl shadow-lg",
-                          selectedRoleForPermissions.roleKey === 'owner' ? "bg-warning text-white shadow-warning/20" : 
+                          "p-3 sm:p-4 rounded-2xl shadow-lg shrink-0",
+                          selectedRoleForPermissions.roleKey === 'owner' ? "bg-warning text-white shadow-warning/20" :
                           selectedRoleForPermissions.roleKey === 'manager' ? "bg-success text-white shadow-success/20" :
                           "bg-brand text-white shadow-brand/20"
                         )}>
-                          <Shield size={28} />
+                          <Shield size={24} />
                         </div>
-                        <div>
-                          <h3 className="text-2xl font-black text-content">صلاحيات {selectedRoleForPermissions.name}</h3>
-                          <p className="text-sm text-content-muted font-bold mt-1">{selectedRoleForPermissions.description}</p>
+                        <div className="min-w-0">
+                          <h3 className="text-lg sm:text-2xl font-black text-content">صلاحيات {selectedRoleForPermissions.name}</h3>
+                          <p className="text-xs sm:text-sm text-content-muted font-bold mt-1">{selectedRoleForPermissions.description}</p>
                           {(() => {
                             const roleStaffMembers = staff.filter(s => s.role === selectedRoleForPermissions.roleKey);
                             return roleStaffMembers.length > 0 ? (
@@ -1402,7 +1404,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                         const isExpanded = expandedCategories.includes(category);
 
                         return (
-                          <div key={category} className="bg-surface rounded-[2.5rem] border border-border shadow-sm overflow-hidden flex flex-col h-fit">
+                          <div key={category} className="bg-surface rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm overflow-hidden flex flex-col h-fit">
                             <button 
                               onClick={() => toggleCategory(category)}
                               className="w-full p-6 bg-surface-muted/30 border-b border-border flex items-center justify-between group transition-colors hover:bg-surface-muted/50"
@@ -1476,7 +1478,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
               {/* Staff List Sidebar */}
               <div className="lg:col-span-1 space-y-4">
-                <div className="bg-surface rounded-[2rem] border border-border shadow-sm overflow-hidden">
+                <div className="bg-surface rounded-2xl sm:rounded-[2rem] border border-border shadow-sm overflow-hidden">
                   <div className="p-4 bg-surface-muted border-b border-border">
                     <h4 className="text-xs font-black text-content-muted uppercase tracking-widest">اختر الموظف</h4>
                   </div>
@@ -1523,14 +1525,14 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
               {/* Permission Matrix for Selected Staff */}
               <div className="lg:col-span-3">
                 {selectedStaffForPermissions ? (
-                  <div className="bg-surface rounded-[2.5rem] border border-border shadow-sm overflow-hidden">
-                    <div className="p-8 border-b border-border flex flex-col md:flex-row justify-between items-start md:items-center bg-surface-muted/50 gap-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 rounded-2xl bg-surface shadow-sm flex items-center justify-center text-brand font-black text-2xl border border-border">
+                  <div className="bg-surface rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm overflow-hidden">
+                    <div className="p-4 sm:p-8 border-b border-border flex flex-col md:flex-row justify-between items-start md:items-center bg-surface-muted/50 gap-4 sm:gap-6">
+                      <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-surface shadow-sm flex items-center justify-center text-brand font-black text-xl sm:text-2xl border border-border shrink-0">
                           {selectedStaffForPermissions.name.charAt(0)}
                         </div>
-                        <div>
-                          <h3 className="text-xl font-black text-content">صلاحيات {selectedStaffForPermissions.name}</h3>
+                        <div className="min-w-0">
+                          <h3 className="text-base sm:text-xl font-black text-content">صلاحيات {selectedStaffForPermissions.name}</h3>
                           <p className="text-xs text-content-muted font-bold mt-1">
                             تعديل استثناءات الصلاحيات لهذا الموظف بشكل خاص
                           </p>
@@ -1596,17 +1598,24 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                       </div>
                     </div>
 
-                    <div className="overflow-x-auto whitespace-nowrap">
-                      <table className="w-full border-collapse min-w-max">
+                    {/*
+                      No `whitespace-nowrap` here: it was inherited by every cell,
+                      and the permission descriptions are full Arabic sentences —
+                      so the table stretched past 900px and one row took several
+                      screens of horizontal scrolling to read. A fixed min-width
+                      keeps the columns readable and lets long text wrap.
+                    */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse min-w-[560px]">
                         <thead>
                           <tr className="bg-surface-muted/30">
-                            <th className="p-6 text-right border-b border-border">
+                            <th className="p-3 sm:p-6 text-right border-b border-border">
                               <span className="text-xs font-black text-content-muted uppercase tracking-widest">الصلاحية</span>
                             </th>
-                            <th className="p-6 text-center border-b border-border w-32">
+                            <th className="p-3 sm:p-6 text-center border-b border-border w-24 sm:w-32">
                               <span className="text-xs font-black text-content-muted uppercase tracking-widest">الحالة</span>
                             </th>
-                            <th className="p-6 text-center border-b border-border w-48">
+                            <th className="p-3 sm:p-6 text-center border-b border-border w-32 sm:w-48">
                               <span className="text-xs font-black text-content-muted uppercase tracking-widest">المصدر</span>
                             </th>
                           </tr>
@@ -1620,7 +1629,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                   className="bg-surface-muted/50 cursor-pointer hover:bg-surface-muted transition-colors"
                                   onClick={() => toggleCategory(category)}
                                 >
-                                  <td colSpan={3} className="p-4 pr-8 border-y border-border">
+                                  <td colSpan={3} className="p-3 pr-4 sm:p-4 sm:pr-8 border-y border-border">
                                     <div className="flex items-center gap-2">
                                       {isExpanded ? <ChevronUp size={14} className="text-brand" /> : <ChevronDown size={14} className="text-brand" />}
                                       <span className="text-xs font-black text-brand uppercase tracking-widest">{category}</span>
@@ -1637,13 +1646,13 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
 
                                   return (
                                     <tr key={perm.id} className="hover:bg-surface-muted/50 transition-all border-b border-border">
-                                      <td className="p-6 pr-12">
+                                      <td className="p-3 pr-4 sm:p-6 sm:pr-12">
                                         <div className="flex flex-col">
-                                          <span className="text-sm font-bold text-content">{perm.name}</span>
-                                          <span className="text-[10px] text-content-muted font-medium mt-0.5">{perm.description}</span>
+                                          <span className="text-xs sm:text-sm font-bold text-content">{perm.name}</span>
+                                          <span className="text-[10px] text-content-muted font-medium mt-0.5 leading-relaxed">{perm.description}</span>
                                         </div>
                                       </td>
-                                      <td className="p-6 text-center">
+                                      <td className="p-3 sm:p-6 text-center">
                                         <button
                                           onClick={() => !isOwner && handleToggleStaffOverride(selectedStaffForPermissions.id, perm.id as PermissionKey)}
                                           disabled={isOwner}
@@ -1659,7 +1668,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                           )} />
                                         </button>
                                       </td>
-                                      <td className="p-6 text-center">
+                                      <td className="p-3 sm:p-6 text-center">
                                         <div className="flex flex-col items-center gap-1">
                                           <span className={cn(
                                             "text-[9px] font-black px-2 py-0.5 rounded-full uppercase",
@@ -1702,7 +1711,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
             </div>
           )}
 
-          <div className="bg-brand/5 rounded-[2rem] p-6 flex items-start gap-4 border border-brand/10">
+          <div className="bg-brand/5 rounded-2xl sm:rounded-[2rem] p-4 sm:p-6 flex items-start gap-3 sm:gap-4 border border-brand/10">
             <div className="p-3 bg-surface rounded-2xl text-brand shadow-sm border border-border">
               <Info size={24} />
             </div>
@@ -1804,7 +1813,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                   initial={{ opacity: 0, scale: 0.95, y: 20 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                  className="relative w-full max-w-sm overflow-hidden bg-surface rounded-[2rem] shadow-2xl border border-border p-8"
+                  className="relative w-full max-w-sm max-h-[92dvh] overflow-y-auto bg-surface rounded-2xl sm:rounded-[2rem] shadow-2xl border border-border p-5 sm:p-8"
                 >
                   <div className="w-20 h-20 bg-danger/10 rounded-full flex items-center justify-center mb-6 mx-auto">
                     <Trash2 size={32} className="text-danger" />

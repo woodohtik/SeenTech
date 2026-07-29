@@ -1875,7 +1875,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             <FileSpreadsheet size={20} />
             <span>{t('orders.export_excel', 'تصدير Excel')}</span>
           </button>
-          <div className="flex bg-surface p-1 rounded-2xl border border-border shadow-sm">
+          <div id="tour-orders-tabs" data-tour="orders-tabs" className="flex bg-surface p-1 rounded-2xl border border-border shadow-sm">
             <button
               onClick={() => setActiveTab('active')}
               className={cn(
@@ -1895,7 +1895,9 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               {t('orders.completed_orders', 'الطلبات المكتملة')}
             </button>
           </div>
-          <button 
+          <button
+            id="tour-orders-new-btn"
+            data-tour="orders-new-btn"
             onClick={() => handleOpenModal()}
             className="bg-brand text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-brand/90 transition-all shadow-lg shadow-brand/10"
           >
@@ -1906,7 +1908,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       </Header>
 
       <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex-1 bg-surface p-4 rounded-3xl border border-border shadow-sm flex items-center gap-3">
+        <div id="tour-orders-search" data-tour="orders-search" className="flex-1 bg-surface p-4 rounded-3xl border border-border shadow-sm flex items-center gap-3">
           <Search size={20} className="text-content-muted" />
           <input 
             type="text" 

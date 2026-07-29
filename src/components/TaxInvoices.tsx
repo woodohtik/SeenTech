@@ -13,6 +13,7 @@ import StandardTaxInvoice from './printing/TaxInvoice';
 import SimplifiedTaxInvoice from './printing/SimplifiedTaxInvoice';
 import DateTimeDisplay from './DateTimeDisplay';
 import { downloadInvoicePDF, shareInvoiceAsPDFFile } from '../utils/pdfGenerator';
+import { useToast } from '../contexts/ToastContext';
 
 export default function TaxInvoices({ tenantId }: { tenantId: string }) {
   const { t, i18n } = useTranslation();
@@ -259,6 +260,7 @@ interface TaxInvoiceModalProps {
 function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const { error: toastError } = useToast();
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -323,7 +325,11 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
         paperSize: isB2B ? 'A4' : getConfiguredPaperSize('80mm'),
         title: `فاتورة-${order.invoiceNumber || order.id}`,
       });
-      if (!res.ok) console.error('[TaxInvoices] فشل الطباعة:', res.message);
+      if (!res.ok) {
+        // مع الطباعة الصامتة قد لا تُفتح نافذة طباعة، فلا بد من إشعار مرئي
+        console.error('[TaxInvoices] فشل الطباعة:', res.message);
+        toastError('تعذّرت الطباعة', res.message);
+      }
     } catch (e) {
       console.error('[TaxInvoices] خطأ الطباعة:', e);
       window.print();

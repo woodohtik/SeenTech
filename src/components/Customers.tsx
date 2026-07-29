@@ -633,7 +633,9 @@ export default function Customers({ tenantId }: CustomersProps) {
           </button>
 
           {canCreate && (
-            <button 
+            <button
+              id="tour-customers-add-btn"
+              data-tour="customers-add-btn"
               onClick={() => { setEditingCustomer(null); reset({}); setIsModalOpen(true); }}
               className="bg-brand text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-brand/90 transition-all shadow-lg shadow-brand/10 text-sm sm:text-base cursor-pointer"
             >
@@ -647,7 +649,7 @@ export default function Customers({ tenantId }: CustomersProps) {
       <div className="space-y-4">
         <div className="flex flex-col lg:flex-row gap-3">
           {/* Search Box */}
-          <div className="flex-1 bg-surface p-3 sm:p-4 rounded-3xl border border-border shadow-sm flex items-center gap-3 group focus-within:border-brand/40 transition-all">
+          <div id="tour-customers-search" data-tour="customers-search" className="flex-1 bg-surface p-3 sm:p-4 rounded-3xl border border-border shadow-sm flex items-center gap-3 group focus-within:border-brand/40 transition-all">
             <Search size={20} className="text-content-muted group-focus-within:text-brand transition-colors shrink-0" />
             <input 
               type="text" 

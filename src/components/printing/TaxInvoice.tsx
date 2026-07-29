@@ -134,7 +134,7 @@ export default function TaxInvoice({
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto my-6 bg-white p-8 border border-slate-200 rounded-3xl shadow-lg relative font-sans text-right print:shadow-none print:border-none print:m-0 print:p-0" dir="rtl">
+    <div className="w-full max-w-4xl mx-auto my-6 bg-white p-8 border border-slate-200 rounded-3xl shadow-lg relative font-sans text-right print:shadow-none print:border-none print:mx-auto print:my-0 print:p-0" dir="rtl">
       
       {/* Print Trigger Button (Hidden in Print Mode) */}
       {!hidePrintButton && (
@@ -297,17 +297,17 @@ export default function TaxInvoice({
 
         {/* Detailed Items Table */}
         <div className="mb-8 border border-slate-200 rounded-2xl overflow-hidden">
-          <table className="w-full text-right border-collapse text-sm">
+          <table className="w-full text-right border-collapse text-[11px]">
             <thead>
-              <tr className="bg-slate-900 text-white text-xs font-black">
-                <th className="p-4 leading-tight text-right w-12">#</th>
-                <th className="p-4 leading-tight text-right">الصنف والوصف<br/><span className="text-[9px] text-slate-300 uppercase font-sans font-normal">Line Item Description</span></th>
-                <th className="p-4 leading-tight text-center w-16">الكمية<br/><span className="text-[9px] text-slate-300 uppercase font-sans font-normal">Qty</span></th>
-                <th className="p-4 leading-tight text-right w-28">سعر الوحدة خاضع<br/><span className="text-[9px] text-slate-300 uppercase font-sans font-normal">Unit Price (Exc)</span></th>
-                <th className="p-4 leading-tight text-right w-24">المبلغ الخاضع للضريبة<br/><span className="text-[9px] text-slate-300 uppercase font-sans font-normal">Taxable Amt</span></th>
-                <th className="p-4 leading-tight text-center w-20">معدل الضريبة<br/><span className="text-[9px] text-slate-300 uppercase font-sans font-normal">VAT Rate</span></th>
-                <th className="p-4 leading-tight text-right w-24">مبلغ الضريبة<br/><span className="text-[9px] text-slate-300 uppercase font-sans font-normal">VAT Amount</span></th>
-                <th className="p-4 leading-tight text-right w-28 bg-slate-800">المجموع (شامل الضريبة)<br/><span className="text-[9px] text-slate-200 uppercase font-sans font-normal">Subtotal (Inc VAT)</span></th>
+              <tr className="bg-slate-900 text-white text-[10px] font-black">
+                <th className="p-2.5 leading-tight text-right w-8">#</th>
+                <th className="p-2.5 leading-tight text-right">الصنف والوصف<br/><span className="text-[8px] text-slate-300 uppercase font-sans font-normal">Line Item Description</span></th>
+                <th className="p-2.5 leading-tight text-center w-12">الكمية<br/><span className="text-[8px] text-slate-300 uppercase font-sans font-normal">Qty</span></th>
+                <th className="p-2.5 leading-tight text-right w-20">سعر الوحدة خاضع<br/><span className="text-[8px] text-slate-300 uppercase font-sans font-normal">Unit Price (Exc)</span></th>
+                <th className="p-2.5 leading-tight text-right w-20">المبلغ الخاضع<br/><span className="text-[8px] text-slate-300 uppercase font-sans font-normal">Taxable Amt</span></th>
+                <th className="p-2.5 leading-tight text-center w-14">الضريبة<br/><span className="text-[8px] text-slate-300 uppercase font-sans font-normal">VAT Rate</span></th>
+                <th className="p-2.5 leading-tight text-right w-20">مبلغ الضريبة<br/><span className="text-[8px] text-slate-300 uppercase font-sans font-normal">VAT Amount</span></th>
+                <th className="p-2.5 leading-tight text-right w-24 bg-slate-800">المجموع شامل الضريبة<br/><span className="text-[8px] text-slate-200 uppercase font-sans font-normal">Subtotal (Inc VAT)</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
@@ -319,16 +319,22 @@ export default function TaxInvoice({
 
                 return (
                   <tr key={index} className="hover:bg-slate-50 transition-colors text-slate-700">
-                    <td className="p-4 font-mono text-xs text-slate-400 text-center">{index + 1}</td>
-                    <td className="p-4">
-                      <p className="font-extrabold text-slate-900">{item.name}</p>
+                    <td className="p-2.5 font-mono text-[10px] text-slate-400 text-center">{index + 1}</td>
+                    <td className="p-2.5">
+                      {/*
+                        No "N ×" prefix on this template, unlike the thermal
+                        receipt: a full B2B tax invoice must carry quantity as
+                        its own ZATCA field, and that column is right here, so
+                        prefixing the name would print the quantity twice.
+                      */}
+                      <p className="font-extrabold text-slate-900 leading-snug">{item.name}</p>
                     </td>
-                    <td className="p-4 text-center font-bold font-mono text-slate-800">{item.quantity}</td>
-                    <td className="p-4 font-mono text-slate-600">{itemUnitExc.toFixed(2)}</td>
-                    <td className="p-4 font-mono text-slate-600">{itemTotalExc.toFixed(2)}</td>
-                    <td className="p-4 text-center font-bold text-slate-500 font-mono text-xs">15%</td>
-                    <td className="p-4 font-mono text-slate-600">{itemVat.toFixed(2)}</td>
-                    <td className="p-4 font-mono font-black text-slate-900 bg-slate-50/50">{itemTotalInc.toFixed(2)}</td>
+                    <td className="p-2.5 text-center font-bold font-mono text-slate-800">{item.quantity}</td>
+                    <td className="p-2.5 font-mono text-slate-600">{itemUnitExc.toFixed(2)}</td>
+                    <td className="p-2.5 font-mono text-slate-600">{itemTotalExc.toFixed(2)}</td>
+                    <td className="p-2.5 text-center font-bold text-slate-500 font-mono text-[10px]">15%</td>
+                    <td className="p-2.5 font-mono text-slate-600">{itemVat.toFixed(2)}</td>
+                    <td className="p-2.5 font-mono font-black text-slate-900 bg-slate-50/50">{itemTotalInc.toFixed(2)}</td>
                   </tr>
                 );
               })}
@@ -426,10 +432,13 @@ export default function TaxInvoice({
           .print\\:hidden, #app-navigation, header, aside, button {
             display: none !important;
           }
+          /* Centre on the page: a zeroed margin left the invoice hugging the
+             right edge of the paper, because the document direction is RTL. */
           #standard-tax-invoice-container {
             border: none !important;
             padding: 0 !important;
-            margin: 0 !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
             width: 100% !important;
           }
         }

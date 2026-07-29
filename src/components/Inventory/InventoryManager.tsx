@@ -406,7 +406,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full lg:w-auto">
+        <div id="tour-inventory-actions" data-tour="inventory-actions" className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full lg:w-auto">
           <div className="flex items-center gap-2 w-full sm:w-auto">
             {hasPermission("inventory.create") && (
               <button
@@ -440,7 +440,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 sm:gap-4 bg-surface p-1.5 rounded-2xl border border-border w-full sm:w-fit overflow-x-auto scrollbar-none">
+      <div id="tour-inventory-tabs" data-tour="inventory-tabs" className="flex items-center gap-1 sm:gap-4 bg-surface p-1.5 rounded-2xl border border-border w-full sm:w-fit overflow-x-auto scrollbar-none">
         <button
           onClick={() => setActiveTab("inventory")}
           className={cn(

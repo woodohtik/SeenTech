@@ -11,15 +11,39 @@ import ur from './locales/ur.json';
 // Get and normalize the language choice, default to 'ar'
 let defaultLanguage = 'ar';
 if (typeof window !== 'undefined') {
-  // Safe localStorage.clear wrapper to preserve user language selection
+  // Safe localStorage.clear wrapper: logout wipes storage, but a few keys must
+  // survive it — the chosen language, and the onboarding-tour state (otherwise
+  // the guided tour would re-launch for the same user after every logout).
   const originalClear = localStorage.clear;
+  const PRESERVED_PREFIXES = ['seenTourState_v2', 'hasSeenOnboarding'];
+
   localStorage.clear = function() {
     const lang = localStorage.getItem('i18nextLng');
+
+    const preserved: Array<[string, string]> = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+      if (PRESERVED_PREFIXES.some((prefix) => key.startsWith(prefix))) {
+        const value = localStorage.getItem(key);
+        if (value !== null) preserved.push([key, value]);
+      }
+    }
+
     originalClear.apply(this);
+
     if (lang) {
       localStorage.setItem('i18nextLng', lang);
     } else {
       localStorage.setItem('i18nextLng', 'ar');
+    }
+
+    for (const [key, value] of preserved) {
+      try {
+        localStorage.setItem(key, value);
+      } catch {
+        /* quota exceeded — non-critical */
+      }
     }
   };
 

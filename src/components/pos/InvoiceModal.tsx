@@ -124,7 +124,7 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
                 </div>
 
                 {/* Printable Area */}
-                <div id="print-area" data-paper="80mm" className="bg-surface border border-border rounded-xl p-6 mb-6 print:m-0 print:border-none print:p-0">
+                <div id="print-area" data-paper="80mm" className="bg-surface border border-border rounded-xl p-6 mb-6 print:mx-auto print:my-0 print:border-none print:p-0">
                   <div className="text-center mb-6 border-b border-dashed border-border pb-6">
                     <h2 className="text-2xl font-bold text-content mb-1">{tenantName}</h2>
                     {tenantVatNumber && (
@@ -155,18 +155,22 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
                     </div>
                   </div>
 
-                  {/* Items */}
-                  <div className="mb-6 border-t border-b border-dashed border-border py-4 space-y-3">
-                    <div className="flex justify-between text-xs font-bold text-content-muted mb-2">
-                      <span>المنتج</span>
-                      <span>الكمية × السعر</span>
-                      <span>المجموع</span>
+                  {/* Items — quantity is folded into the name as "2 × المنتج"
+                      rather than living in its own column. */}
+                  <div className="mb-6 border-t border-b border-dashed border-border py-4 space-y-2">
+                    <div className="flex justify-between items-end text-[10px] font-bold text-content-muted mb-2 gap-2">
+                      <span className="flex-1 min-w-0">المنتج</span>
+                      <span className="w-16 shrink-0 text-center">السعر</span>
+                      <span className="w-20 shrink-0 text-left">المجموع</span>
                     </div>
                     {items.map((item, idx) => (
-                      <div key={idx} className="flex justify-between text-sm font-medium text-content">
-                        <span className="truncate flex-1">{item.name}</span>
-                        <span className="w-24 text-center tabular-nums text-content-muted">{item.quantity} × {formatCurrency(item.price)}</span>
-                        <span className="w-20 text-left tabular-nums">{formatCurrency(item.quantity * item.price)}</span>
+                      <div key={idx} className="flex justify-between text-xs font-medium text-content gap-2">
+                        <span className="flex-1 min-w-0 leading-snug">
+                          <span className="font-mono text-content-muted" dir="ltr">{item.quantity} ×</span>{' '}
+                          {item.name}
+                        </span>
+                        <span className="w-16 shrink-0 text-center tabular-nums text-content-muted">{formatCurrency(item.price)}</span>
+                        <span className="w-20 shrink-0 text-left tabular-nums">{formatCurrency(item.quantity * item.price)}</span>
                       </div>
                     ))}
                   </div>
