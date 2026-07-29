@@ -333,6 +333,9 @@ html, body {
   width: ${geo.thermal ? '100%' : contentWidth} !important;
   min-width: 0 !important;
   max-width: ${geo.thermal ? '100%' : contentWidth} !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
   overflow: visible !important;
   visibility: visible !important;
   display: block !important;
@@ -473,10 +476,10 @@ th, td { padding: 1px 2px !important; }
 ${
   geo.thermal
     ? `#seen-print-root, #seen-print-root * { font-weight: 600 !important; box-sizing: border-box !important; }
-       #seen-print-root h1 { font-size: 11pt !important; line-height: 1.2 !important; }
-       #seen-print-root h2 { font-size: 10.5pt !important; line-height: 1.2 !important; }
-       #seen-print-root h3 { font-size: 8pt !important; line-height: 1.2 !important; }
-       #simplified-invoice-container { font-size: 8.5pt !important; line-height: 1.25 !important; padding: 1.5mm 2.5mm !important; }`
+       #seen-print-root h1 { font-size: 9.5pt !important; line-height: 1.2 !important; }
+       #seen-print-root h2 { font-size: 9pt !important; line-height: 1.2 !important; }
+       #seen-print-root h3 { font-size: 7pt !important; line-height: 1.2 !important; }
+       #simplified-invoice-container { font-size: 7.5pt !important; line-height: 1.25 !important; padding: 1.5mm 2.5mm !important; }`
     : ''
 }
 </style>

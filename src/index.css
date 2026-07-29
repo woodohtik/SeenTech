@@ -538,7 +538,7 @@ html, body {
   header, nav, aside, footer, button, input, select,
   .no-print,
   .print\:hidden,
-  [role="dialog"]:not(:has(#receipt-printable-content, #pos-invoice-print-area, #print-area)) {
+  [role="dialog"]:not(:has(#receipt-printable-content, #pos-invoice-print-area, #print-area, #sales-record-print-area)) {
     display: none !important;
   }
 
@@ -575,7 +575,7 @@ html, body {
     max-width: 80mm !important;
     padding: 2mm 3.5mm !important;
     box-sizing: border-box !important;
-    font-size: 8.5pt !important;
+    font-size: 7.5pt !important;
     line-height: 1.25 !important;
   }
 
@@ -584,7 +584,7 @@ html, body {
     max-width: 58mm !important;
     padding: 1.5mm 2.5mm !important;
     box-sizing: border-box !important;
-    font-size: 8pt !important;
+    font-size: 7pt !important;
     line-height: 1.2 !important;
   }
 

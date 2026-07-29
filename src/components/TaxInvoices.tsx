@@ -450,7 +450,7 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
         </div>
 
         {/* Invoice Content (Printable Area) */}
-        <div className="flex-1 overflow-y-auto p-2 sm:p-4 bg-surface print:p-2 print:px-3 print:overflow-visible print:max-h-none">
+        <div id="print-area" className="flex-1 overflow-y-auto p-2 sm:p-4 bg-surface print:p-2 print:px-3 print:overflow-visible print:max-h-none">
           {isB2B ? (
             <StandardTaxInvoice
               invoiceNumber={order.invoiceNumber || order.id.slice(0, 8)}
