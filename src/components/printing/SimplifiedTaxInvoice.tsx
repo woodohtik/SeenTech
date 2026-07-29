@@ -166,7 +166,7 @@ export default function SimplifiedTaxInvoice({
 
       {/* Invoice Frame - 80mm Thermal Style */}
       {/* Print padding is set in the @media print block below, not here. */}
-      <div id="simplified-invoice-container" className="bg-white px-3.5 py-3 sm:px-4 sm:py-4 text-slate-800 text-[9px]" style={{ zoom: `${fontSizeScale}%` }}>
+      <div id="simplified-invoice-container" className="bg-white px-3.5 py-3 sm:px-4 sm:py-4 text-slate-900 text-[11px]" style={{ zoom: `${fontSizeScale}%` }}>
 
         {/* Store Name - Centered */}
         <div className="text-center mb-3">
@@ -184,20 +184,19 @@ export default function SimplifiedTaxInvoice({
             </div>
           )}
           
-          <h2 className="text-[12px] font-black text-slate-900 leading-tight">{seller.name}</h2>
-          {seller.nameEn && <h3 className="text-[8.5px] font-semibold text-slate-500 font-sans tracking-wide mt-0.5">{seller.nameEn}</h3>}
+          <h2 className="text-[14px] font-black text-slate-900 leading-tight">{seller.name}</h2>
+          {seller.nameEn && <h3 className="text-[10px] font-semibold text-slate-500 font-sans tracking-wide mt-0.5">{seller.nameEn}</h3>}
         </div>
 
-        {/* Invoice Metadata — sizes kept small on purpose so the bilingual
-            label + value pairs always stay on a single line at 80mm. */}
-        <div className="space-y-1 mb-3 border-t border-dashed border-slate-300 pt-2.5 text-[8.5px]">
+        {/* Invoice Metadata — concise bilingual key-values */}
+        <div className="space-y-1 mb-3 border-t border-dashed border-slate-300 pt-2.5 text-[10px]">
           {/* Address */}
           <div className="flex justify-between items-center py-0.5">
             <div className="text-right font-bold text-slate-900 min-w-0 break-words">
               <span className="text-slate-500 font-medium">العنوان: </span>
               <span>{seller.address}</span>
             </div>
-            <span className="text-slate-400 font-sans text-[7px] shrink-0 ps-1 whitespace-nowrap">Address</span>
+            <span className="text-slate-400 font-sans text-[8px] shrink-0 ps-1 whitespace-nowrap">Address</span>
           </div>
 
           {/* Phone */}
@@ -207,7 +206,7 @@ export default function SimplifiedTaxInvoice({
                 <span className="text-slate-500 font-medium">رقم الهاتف: </span>
                 <span className="font-mono" dir="ltr">{seller.phone}</span>
               </div>
-              <span className="text-slate-400 font-sans text-[7px] shrink-0 ps-1 whitespace-nowrap">Phone No.</span>
+              <span className="text-slate-400 font-sans text-[8px] shrink-0 ps-1 whitespace-nowrap">Phone No.</span>
             </div>
           )}
 
@@ -218,11 +217,11 @@ export default function SimplifiedTaxInvoice({
               <span className="font-mono text-slate-800" dir="ltr">
                 {invoiceDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
               </span>
-              <span className="text-slate-500 font-mono text-[8px]" dir="ltr">
+              <span className="text-slate-500 font-mono text-[9px]" dir="ltr">
                 {invoiceDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
               </span>
             </div>
-            <span className="text-slate-400 font-sans text-[7px] shrink-0 ps-1 whitespace-nowrap">Issue Date</span>
+            <span className="text-slate-400 font-sans text-[8px] shrink-0 ps-1 whitespace-nowrap">Issue Date</span>
           </div>
 
           {/* Invoice Number */}
@@ -231,7 +230,7 @@ export default function SimplifiedTaxInvoice({
               <span className="text-slate-500 font-medium">رقم الفاتورة: </span>
               <span className="font-mono uppercase">#{invoiceNumber}</span>
             </div>
-            <span className="text-slate-400 font-sans text-[7px] shrink-0 ps-1 whitespace-nowrap">Invoice No.</span>
+            <span className="text-slate-400 font-sans text-[8px] shrink-0 ps-1 whitespace-nowrap">Invoice No.</span>
           </div>
 
           {/* Branch */}
@@ -240,7 +239,7 @@ export default function SimplifiedTaxInvoice({
               <span className="text-slate-500 font-medium">الفرع: </span>
               <span>{branchName}</span>
             </div>
-            <span className="text-slate-400 font-sans text-[7px] shrink-0 ps-1 whitespace-nowrap">Branch</span>
+            <span className="text-slate-400 font-sans text-[8px] shrink-0 ps-1 whitespace-nowrap">Branch</span>
           </div>
 
           {/* Seller */}
@@ -249,28 +248,25 @@ export default function SimplifiedTaxInvoice({
               <span className="text-slate-500 font-medium">البائع: </span>
               <span>{sellerName}</span>
             </div>
-            <span className="text-slate-400 font-sans text-[7px] shrink-0 ps-1 whitespace-nowrap">Seller</span>
+            <span className="text-slate-400 font-sans text-[8px] shrink-0 ps-1 whitespace-nowrap">Seller</span>
           </div>
         </div>
 
         {/* Invoice Title & Translation */}
-        <div className="text-center my-2.5 py-1 border-y border-dashed border-slate-300">
-          <h1 className="text-[11px] font-black text-slate-800">فاتورة ضريبية مبسطة</h1>
-          <p className="text-[7.5px] font-bold uppercase tracking-wider text-slate-400 font-sans mt-0.5">Simplified Tax Invoice</p>
+        <div className="text-center my-2.5 py-1.5 border-y border-dashed border-slate-300">
+          <h1 className="text-[13px] font-black text-slate-900">فاتورة ضريبية مبسطة</h1>
+          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500 font-sans mt-0.5">Simplified Tax Invoice</p>
         </div>
 
         {/* Tax Registration Number */}
-        <div className="text-center mb-3 text-[9px] font-bold text-slate-800 whitespace-nowrap">
+        <div className="text-center mb-3 text-[11px] font-bold text-slate-900 whitespace-nowrap">
           <span>الرقم الضريبي: </span>
           <span className="font-mono">{seller.vatNumber}</span>
         </div>
 
         {/* Items Table */}
         <div className="mb-4 border-b border-dashed border-slate-200 pb-3 space-y-1">
-          {/* Column widths fit a 5-6 digit amount plus the currency glyph at
-              80mm (and stay inside 58mm). Narrower than this and large totals
-              overflow into the neighbouring column. */}
-          <div className="flex justify-between items-end text-[7.5px] font-black text-slate-400 uppercase tracking-tight border-b pb-1 gap-1">
+          <div className="flex justify-between items-end text-[9px] font-black text-slate-500 uppercase tracking-tight border-b pb-1 gap-1">
             <span className="flex-1 min-w-0 text-right">المنتج / Item</span>
             <span className="w-14 shrink-0 text-center">السعر</span>
             <span className="w-16 shrink-0 text-left font-bold">الإجمالي</span>
@@ -279,19 +275,12 @@ export default function SimplifiedTaxInvoice({
           {items.map((item, idx) => {
             const itemTotalInc = item.unitPrice * item.quantity;
             return (
-              <div key={idx} className="flex justify-between items-start text-[8.5px] py-0.5 text-slate-700 border-b border-slate-50/50 last:border-0 gap-1">
-                {/*
-                  Quantity is written inline as "2 × اسم المنتج" instead of on its
-                  own line. The count is wrapped in dir="ltr" so the bidi
-                  algorithm cannot flip it into "× 2" next to the Arabic name.
-                */}
+              <div key={idx} className="flex justify-between items-start text-[10.5px] py-1 text-slate-800 border-b border-slate-100/80 last:border-0 gap-1">
                 <div className="flex-1 min-w-0 text-right font-bold text-slate-900 leading-snug">
-                  <span className="font-mono text-slate-500" dir="ltr">{item.quantity} ×</span>{' '}
+                  <span className="font-mono text-slate-600" dir="ltr">{item.quantity} ×</span>{' '}
                   {item.name}
                 </div>
-                {/* No literal space before CurrencySymbol — `gap-0.5` already
-                    separates them, and the extra space cost ~5px per column. */}
-                <span className="w-14 shrink-0 text-center font-mono text-slate-500 inline-flex items-center justify-center gap-0.5">
+                <span className="w-14 shrink-0 text-center font-mono text-slate-600 inline-flex items-center justify-center gap-0.5">
                   {item.unitPrice.toFixed(2)}<CurrencySymbol className="h-[1em] w-auto shrink-0" />
                 </span>
                 <span className="w-16 shrink-0 text-left font-mono font-bold text-slate-900 inline-flex items-center justify-end gap-0.5">
@@ -302,11 +291,10 @@ export default function SimplifiedTaxInvoice({
           })}
         </div>
 
-        {/* Totals Breakdown — labels are `whitespace-nowrap` and sized so the
-            long bilingual text never breaks onto a second line at 80mm. */}
-        <div className="space-y-1 border-b border-dashed border-slate-200 pb-2.5 mb-3 text-[8.5px]">
+        {/* Totals Breakdown */}
+        <div className="space-y-1 border-b border-dashed border-slate-200 pb-2.5 mb-3 text-[10px]">
           {/* Subtotal excluding VAT */}
-          <div className="flex justify-between items-center gap-2 text-slate-600">
+          <div className="flex justify-between items-center gap-2 text-slate-700">
             <span className="whitespace-nowrap">الإجمالي غير شامل الضريبة / Subtotal:</span>
             <span className="font-mono font-bold shrink-0 inline-flex items-center gap-0.5">{computedTotals.subtotal.toFixed(2)} <CurrencySymbol className="h-[1em] w-auto shrink-0" /></span>
           </div>
@@ -320,56 +308,56 @@ export default function SimplifiedTaxInvoice({
           )}
 
           {/* VAT Amount */}
-          <div className="flex justify-between items-center gap-2 text-slate-600">
+          <div className="flex justify-between items-center gap-2 text-slate-700">
             <span className="whitespace-nowrap">الضريبة (15%) / VAT Amount:</span>
             <span className="font-mono font-bold shrink-0 inline-flex items-center gap-0.5">{computedTotals.vatAmount.toFixed(2)} <CurrencySymbol className="h-[1em] w-auto shrink-0" /></span>
           </div>
 
           {/* Grand total including VAT */}
-          <div className="flex justify-between items-center gap-2 text-[10.5px] font-black text-slate-900 pt-1.5 border-t border-dotted border-slate-300">
+          <div className="flex justify-between items-center gap-2 text-[12px] font-black text-slate-900 pt-1.5 border-t border-dotted border-slate-300">
             <span className="whitespace-nowrap">الإجمالي شامل الضريبة / Total:</span>
             <span className="font-mono shrink-0 inline-flex items-center gap-0.5">{computedTotals.grandTotal.toFixed(2)} <CurrencySymbol className="h-[1em] w-auto shrink-0" /></span>
           </div>
         </div>
 
         {/* Payment & Pieces Details */}
-        <div className="space-y-1 border-b border-dashed border-slate-200 pb-2.5 mb-3 text-[8.5px]">
+        <div className="space-y-1 border-b border-dashed border-slate-200 pb-2.5 mb-3 text-[10px]">
           {/* Paid */}
-          <div className="flex justify-between items-center gap-2 text-slate-600">
+          <div className="flex justify-between items-center gap-2 text-slate-700">
             <span className="whitespace-nowrap">المدفوع / Paid Amount:</span>
             <span className="font-mono font-bold shrink-0 inline-flex items-center gap-0.5">{paidAmount.toFixed(2)} <CurrencySymbol className="h-[1em] w-auto shrink-0" /></span>
           </div>
 
           {/* Remaining */}
-          <div className="flex justify-between items-center gap-2 text-slate-600">
+          <div className="flex justify-between items-center gap-2 text-slate-700">
             <span className="whitespace-nowrap">المتبقي / Remaining:</span>
             <span className="font-mono font-bold shrink-0 inline-flex items-center gap-0.5">{remainingAmount.toFixed(2)} <CurrencySymbol className="h-[1em] w-auto shrink-0" /></span>
           </div>
 
           {/* Number of Pieces */}
-          <div className="flex justify-between items-center gap-2 text-slate-600">
+          <div className="flex justify-between items-center gap-2 text-slate-700">
             <span className="whitespace-nowrap">عدد القطع / Total Pieces:</span>
             <span className="font-mono font-bold shrink-0">{totalPieces}</span>
           </div>
 
           {/* Payment Method */}
-          <div className="flex justify-between items-center gap-2 text-slate-600">
+          <div className="flex justify-between items-center gap-2 text-slate-700">
             <span className="whitespace-nowrap">طريقة الدفع / Payment:</span>
             <span className="font-bold text-left min-w-0">{paymentMethod} / {paymentMethodEn}</span>
           </div>
         </div>
 
-        {/* ZATCA Compliant QR Code (ONLY QR Code, no label text above or below) */}
-        <div className="flex flex-col items-center justify-center py-1.5 mb-2.5">
-          <div className="bg-slate-50 p-1.5 rounded-2xl border border-slate-200/60 shadow-inner">
-            <QRCodeSVG value={finalQr} size={105} level="M" />
+        {/* ZATCA Compliant QR Code */}
+        <div className="flex flex-col items-center justify-center py-2 mb-2.5">
+          <div className="bg-slate-50 p-2 rounded-2xl border border-slate-200/60 shadow-inner">
+            <QRCodeSVG value={finalQr} size={115} level="M" />
           </div>
         </div>
 
         {/* Retail Slip Bottom note */}
         <div className="pt-2.5 border-t border-dashed border-slate-300 text-center">
-          <p className="font-black text-slate-900 text-[9px] mb-0.5">شكراً لزيارتكم وعودتكم تسعدنا</p>
-          <p className="text-[7.5px] text-slate-400 font-sans uppercase tracking-wider">Thank you for your visit</p>
+          <p className="font-black text-slate-900 text-[11px] mb-0.5">شكراً لزيارتكم وعودتكم تسعدنا</p>
+          <p className="text-[8.5px] text-slate-500 font-sans uppercase tracking-wider">Thank you for your visit</p>
         </div>
 
       </div>

@@ -930,7 +930,6 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         .from('tax_invoices')
         .insert({
           invoice_number: `INV-${orderNumber}`,
-          invoice_type: invoiceType as any,
           order_id: newOrder.id,
           tenant_id: tenantId,
           customer_id: orderData.customer_id,

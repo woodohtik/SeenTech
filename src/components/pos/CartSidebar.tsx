@@ -161,7 +161,6 @@ export default function CartSidebar({
          tenant_id: tenantId,
          order_id: order.id,
          invoice_number: invoiceNumber,
-         invoice_type: invoiceType,
          issued_at: new Date().toISOString(),
          status: 'issued',
          customer_id: (selectedCustomer?.id && isUuid(selectedCustomer.id)) ? selectedCustomer.id : null,
