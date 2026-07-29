@@ -632,10 +632,20 @@ export interface SilentPrintToken {
 
 /**
  * هل الطباعة الصامتة مفعّلة؟
- * الافتراضي: معطلة تماماً ومحذوفة.
+ * نقوم بفحص ما إذا كان المستخدم قد قام بربط طابعة نشطة (غير طابعة النظام)
+ * ونفعلها افتراضياً طالما هناك طابعة حقيقية مرتبطة، إلا إذا عُطّلت صراحة.
  */
 export const isSilentPrintEnabled = (): boolean => {
-  return false;
+  try {
+    const val = localStorage.getItem(SILENT_PREF_KEY);
+    if (val === 'false') return false;
+    
+    // إذا كانت القيمة لم تُحدد بعد، أو حُددت true، نفعّلها افتراضياً طالما هناك طابعة نشطة حقيقية
+    const cfg = getActivePrinterConfig();
+    return !!cfg && RAW_TRANSPORTS.includes(cfg.transport);
+  } catch {
+    return false;
+  }
 };
 
 /** تفعيل/تعطيل الطباعة الصامتة (من صفحة إعدادات الطابعة). */
