@@ -106,25 +106,25 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-lg transform overflow-hidden rounded-2xl bg-surface p-6 text-right align-middle shadow-xl transition-all" dir="rtl">
+              <Dialog.Panel className="w-full max-w-[92mm] sm:max-w-[100mm] transform overflow-hidden rounded-2xl bg-surface p-4 sm:p-5 text-right align-middle shadow-xl transition-all" dir="rtl">
                 
                 {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3 text-success">
-                    <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center">
-                      <CheckCircle2 size={24} />
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2 text-success">
+                    <div className="w-8 h-8 rounded-full bg-success/10 flex items-center justify-center shrink-0">
+                      <CheckCircle2 size={20} />
                     </div>
-                    <Dialog.Title as="h3" className="text-xl font-bold">
+                    <Dialog.Title as="h3" className="text-base font-bold">
                       تم إصدار الفاتورة بنجاح
                     </Dialog.Title>
                   </div>
-                  <button onClick={onClose} className="p-2 text-content-muted hover:text-content hover:bg-surface-muted rounded-lg transition-colors">
-                    <X size={20} />
+                  <button onClick={onClose} className="p-1.5 text-content-muted hover:text-content hover:bg-surface-muted rounded-lg transition-colors">
+                    <X size={18} />
                   </button>
                 </div>
 
                 {/* Printable Area */}
-                <div id="print-area" data-paper="80mm" className="bg-surface border border-border rounded-xl p-6 mb-6 print:mx-auto print:my-0 print:border-none print:p-0">
+                <div id="print-area" data-paper="80mm" className="bg-surface border border-border rounded-xl p-3 sm:p-4 mb-4 print:mx-auto print:my-0 print:border-none print:p-0 w-full box-border">
                   <div className="text-center mb-6 border-b border-dashed border-border pb-6">
                     <h2 className="text-2xl font-bold text-content mb-1">{tenantName}</h2>
                     {tenantVatNumber && (

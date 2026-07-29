@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
 import { Order, Tenant, TaxInvoice } from '../types';
+import { cn } from '../lib/utils';
 import { decodeInvoiceExtendedNotes } from '../utils/b2bHelper';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import { PriceDisplay } from './PriceDisplay';
@@ -63,20 +64,23 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
           } as Tenant);
         }
 
-        const { data: branchesData } = await supabase
-          .from('branches')
-          .select('*')
-          .eq('tenant_id', tenantId);
-
-        const { data: ordersData } = await supabase
-          .from('orders')
-          .select('id, branch_id')
-          .eq('tenant_id', tenantId);
+        const [{ data: branchesData }, { data: ordersData }, { data: staffData }] = await Promise.all([
+          supabase.from('branches').select('*').eq('tenant_id', tenantId),
+          supabase.from('orders').select('id, branch_id').eq('tenant_id', tenantId),
+          supabase.from('staff').select('id, name')
+        ]);
 
         const branchMap = new Map<string, string>();
         if (branchesData) {
           branchesData.forEach(b => {
             branchMap.set(b.id, b.name);
+          });
+        }
+
+        const staffMap = new Map<string, string>();
+        if (staffData) {
+          staffData.forEach(s => {
+            if (s.id && s.name) staffMap.set(s.id, s.name);
           });
         }
 
@@ -99,6 +103,10 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
 
         const invoicesData = data.map(d => {
           const extNotes = decodeInvoiceExtendedNotes(d.notes);
+          const resolvedCreator = extNotes.created_by ||
+            (d.created_by && staffMap.has(d.created_by) ? staffMap.get(d.created_by) : d.created_by) ||
+            'النظام';
+
           return {
             id: d.id,
             invoiceNumber: d.invoice_number,
@@ -116,7 +124,7 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
             b2bTRN: d.vat_number,
             qrCodeBase64: d.zatca_qr_code || d.qr_payload,
             issuedAt: d.issued_at,
-            createdBy: extNotes.created_by || d.created_by || 'System',
+            createdBy: resolvedCreator,
             status: d.status === 'issued' ? 'valid' : 'cancelled',
             paidAmount: d.paid_amount !== undefined && d.paid_amount !== null ? Number(d.paid_amount) : Number(d.total_amount),
             remainingAmount: Math.max(0, Number(d.total_amount) - (d.paid_amount !== undefined && d.paid_amount !== null ? Number(d.paid_amount) : Number(d.total_amount))),
@@ -408,7 +416,10 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
   return (
     <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl relative z-10 overflow-y-auto max-h-[90vh] flex flex-col font-sans border border-border" dir={isRtl ? 'rtl' : 'ltr'}>
+      <div className={cn(
+        "bg-white rounded-3xl shadow-2xl relative z-10 overflow-y-auto max-h-[90vh] flex flex-col font-sans border border-border w-full transition-all duration-200",
+        isB2B ? "max-w-3xl" : "max-w-[92mm] sm:max-w-[100mm]"
+      )} dir={isRtl ? 'rtl' : 'ltr'}>
         
         {/* Modal Controls */}
         <div className="p-4 border-b border-border flex flex-wrap gap-3 justify-between items-center bg-surface-muted/50 print:hidden shrink-0">
@@ -439,7 +450,7 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
         </div>
 
         {/* Invoice Content (Printable Area) */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-surface print:p-0" id="print-area">
+        <div className="flex-1 overflow-y-auto p-2 sm:p-4 bg-surface print:p-0">
           {isB2B ? (
             <StandardTaxInvoice
               invoiceNumber={order.invoiceNumber || order.id.slice(0, 8)}

@@ -85,25 +85,34 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
     setLoading(true);
     setError(null);
     try {
-      let query = supabase
-        .from('orders')
-        .select('*')
-        .eq('tenant_id', tenantId);
-      
-      if (shiftId) {
-        query = query.eq('shift_id', shiftId);
-      }
-      
-      if (filterStatus) {
-        query = query.eq('status', filterStatus);
-      }
+      const [{ data: staffData }, { data: ordersData, error: fetchError }] = await Promise.all([
+        supabase.from('staff').select('id, name'),
+        (() => {
+          let query = supabase.from('orders').select('*').eq('tenant_id', tenantId);
+          if (shiftId) query = query.eq('shift_id', shiftId);
+          if (filterStatus) query = query.eq('status', filterStatus);
+          return query.order('created_at', { ascending: false });
+        })()
+      ]);
 
-      const { data, error: fetchError } = await query.order('created_at', { ascending: false });
-      
       if (fetchError) throw fetchError;
 
-      const mappedOrders = data ? data.map(d => {
+      const staffMap: Record<string, string> = {};
+      if (staffData) {
+        staffData.forEach(s => {
+          if (s.id && s.name) staffMap[s.id] = s.name;
+        });
+      }
+
+      const mappedOrders = ordersData ? ordersData.map(d => {
         const b2bMeta = decodeOrderB2BNotes(d.notes);
+        const resolvedCreator = (d as any).seller_name ||
+          (d as any).sellerName ||
+          (d as any).staff_name ||
+          (d as any).cashier_name ||
+          (d.created_by && staffMap[d.created_by] ? staffMap[d.created_by] : d.created_by) ||
+          'النظام';
+
         return {
           ...d,
           orderNumber: d.order_number,
@@ -119,7 +128,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
           paymentMethod: d.payment_method,
           orderDate: d.order_date,
           deliveryDate: d.delivery_date,
-          createdBy: d.created_by,
+          createdBy: resolvedCreator,
           taxAmount: d.tax_amount,
           taxRate: d.tax_rate,
           isB2B: b2bMeta.isB2B,
@@ -264,7 +273,10 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
       {/* Order Details Modal */}
       {selectedOrder && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-2 sm:p-4">
-          <div className="bg-surface w-full max-w-3xl rounded-2xl md:rounded-[2rem] shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
+          <div className={cn(
+            "bg-surface rounded-2xl md:rounded-[2rem] shadow-2xl flex flex-col max-h-[92vh] overflow-hidden transition-all duration-200",
+            selectedOrder.isB2B ? "w-full max-w-3xl" : "w-full max-w-[92mm] sm:max-w-[100mm]"
+          )}>
             <div className="p-4 sm:p-6 border-b border-border flex justify-between items-center shrink-0">
               <div className="flex items-center gap-3 sm:gap-4">
                 <div className="p-2.5 sm:p-3 bg-brand/10 text-brand rounded-xl sm:rounded-2xl">
@@ -361,7 +373,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                       totals={totals}
                       qrCodeBase64={qrCodeBase64}
                       hidePrintButton={true}
-                      sellerName="النظام"
+                      sellerName={selectedOrder.createdBy || 'النظام'}
                     />
                   )}
                 </div>

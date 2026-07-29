@@ -134,7 +134,7 @@ export default function TaxInvoice({
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto my-6 bg-white p-8 border border-slate-200 rounded-3xl shadow-lg relative font-sans text-right print:shadow-none print:border-none print:mx-auto print:my-0 print:p-0" dir="rtl">
+    <div className="w-full max-w-3xl mx-auto bg-white p-1 font-sans text-right print:p-0" dir="rtl">
       
       {/* Print Trigger Button (Hidden in Print Mode) */}
       {!hidePrintButton && (
