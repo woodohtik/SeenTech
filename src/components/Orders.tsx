@@ -1736,7 +1736,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: '100%', opacity: 0 }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="bg-surface w-full lg:max-w-lg rounded-t-[2.5rem] lg:rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden"
+        className="bg-surface w-full max-w-[92mm] sm:max-w-[100mm] rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl relative z-10 overflow-hidden"
       >
         <div className={cn("p-8 space-y-6", i18n.language === 'ar' ? "text-right" : "text-left")} dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
           <div className="flex justify-between items-start">

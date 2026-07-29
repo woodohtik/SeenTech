@@ -401,7 +401,7 @@ html, body {
   margin: 0 auto !important;
   box-sizing: border-box !important;
   font-family: 'Tajawal', 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
-  ${geo.thermal ? 'font-size: 10pt; line-height: 1.35;' : ''}
+  ${geo.thermal ? 'font-size: 8.5pt; line-height: 1.25; padding: 0 !important;' : ''}
   color: #000000 !important;
 }
 
@@ -458,10 +458,10 @@ th, td { padding: 1px 2px !important; }
 ${
   geo.thermal
     ? `#seen-print-root, #seen-print-root * { font-weight: 600 !important; box-sizing: border-box !important; }
-       #seen-print-root h1 { font-size: 13.5pt !important; line-height: 1.3 !important; }
-       #seen-print-root h2 { font-size: 12pt !important; line-height: 1.3 !important; }
-       #seen-print-root h3 { font-size: 10pt !important; line-height: 1.3 !important; }
-       #simplified-invoice-container { font-size: 10pt !important; line-height: 1.35 !important; }`
+       #seen-print-root h1 { font-size: 11pt !important; line-height: 1.2 !important; }
+       #seen-print-root h2 { font-size: 10.5pt !important; line-height: 1.2 !important; }
+       #seen-print-root h3 { font-size: 8pt !important; line-height: 1.2 !important; }
+       #simplified-invoice-container { font-size: 8.5pt !important; line-height: 1.25 !important; padding: 0 !important; }`
     : ''
 }
 </style>
@@ -747,8 +747,8 @@ export const rasterizeElement = async (
   clone.style.maxWidth = '100%';
   clone.style.background = '#ffffff';
   clone.style.color = '#000000';
-  clone.style.fontSize = '10.5pt';
-  clone.style.lineHeight = '1.35';
+  clone.style.fontSize = '8.5pt';
+  clone.style.lineHeight = '1.25';
   clone.style.fontWeight = '600';
   holder.appendChild(clone);
   document.body.appendChild(holder);
