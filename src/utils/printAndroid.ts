@@ -151,10 +151,27 @@ export function sendBytesToRawBT(data: Uint8Array): void {
 
   // RawBT يفهم البادئة "base64," كبيانات خام لا كنص
   const payload = encodeURIComponent(`base64,${b64}`);
-  const pkg = RAWBT_PACKAGES[0];
+  
+  // صيغة Intent URL الخاصة بأندرويد — تفتح RawBT وتمرر له البيانات.
+  // لا نحدد حزمة (package) لكي يفتح النظام أي نسخة مثبتة (المجانية أو المدفوعة) والتي تشترك في نفس المخطط (scheme=rawbt)
+  // ونضيف رابط بديل (S.browser_fallback_url) لتوجيه المستخدم إلى متجر جوجل بلاي في حال عدم تثبيت التطبيق إطلاقاً.
+  const fallbackUrl = encodeURIComponent('https://play.google.com/store/apps/details?id=ru.a402d.rawbtprinter');
+  const intentUrl = `intent:${payload}#Intent;scheme=rawbt;S.browser_fallback_url=${fallbackUrl};end;`;
 
-  // صيغة Intent URL الخاصة بأندرويد — تفتح RawBT وتمرر له البيانات
-  window.location.href = `intent:${payload}#Intent;scheme=rawbt;package=${pkg};end;`;
+  try {
+    // لتجنب قيود متصفح كروم على الأندرويد الذي يحظر تغيير location.href إلى روابط "intent:" من داخل الـ iframe (مثل شاشة معاينة AI Studio)
+    // نقوم بإنشاء عنصر <a> ديناميكي مع target="_blank" يحفز النظام على فتح التطبيق الخارجي بسلاسة تامة.
+    const link = document.createElement('a');
+    link.href = intentUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (err) {
+    console.error('فشلت محاولة الفتح عبر الرابط الديناميكي، نجرب الطريقة الافتراضية كخيار بديل:', err);
+    window.location.href = intentUrl;
+  }
 }
 
 /**
@@ -165,7 +182,21 @@ export function sendBytesToRawBT(data: Uint8Array): void {
 export function sendTextToRawBT(text: string): void {
   if (typeof window === 'undefined') throw new Error('غير متاح في هذه البيئة.');
   const payload = encodeURIComponent(String(text || ''));
-  window.location.href = `intent:${payload}#Intent;scheme=rawbt;package=${RAWBT_PACKAGES[0]};end;`;
+  const fallbackUrl = encodeURIComponent('https://play.google.com/store/apps/details?id=ru.a402d.rawbtprinter');
+  const intentUrl = `intent:${payload}#Intent;scheme=rawbt;S.browser_fallback_url=${fallbackUrl};end;`;
+
+  try {
+    const link = document.createElement('a');
+    link.href = intentUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (err) {
+    console.error('فشلت محاولة الفتح عبر الرابط الديناميكي، نجرب الطريقة الافتراضية كخيار بديل:', err);
+    window.location.href = intentUrl;
+  }
 }
 
 /** رابط تنصيب RawBT من متجر Play — يُعرض للمستخدم عند اختيار هذا المسار. */
