@@ -282,9 +282,9 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
     <div className="space-y-8 max-w-6xl mx-auto w-full relative">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-6 py-3.5 rounded-2xl shadow-2xl text-xs sm:text-sm font-black flex items-center gap-3 border border-brand/30 animate-bounce">
-          <Sparkles size={18} className="text-amber-400" />
-          <span>{toastMessage}</span>
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-[92vw] bg-slate-900 text-white px-5 sm:px-6 py-3.5 rounded-2xl shadow-2xl text-xs sm:text-sm font-black flex items-center gap-3 border border-brand/30 animate-bounce">
+          <Sparkles size={18} className="text-amber-400 shrink-0" />
+          <span className="text-center">{toastMessage}</span>
         </div>
       )}
 
@@ -350,7 +350,8 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
             </div>
           </div>
 
-          <div className="bg-surface-muted/90 backdrop-blur-md p-6 sm:p-8 rounded-2xl sm:rounded-[2rem] border border-border text-center min-w-[280px] w-full lg:w-auto shrink-0 flex flex-col justify-between shadow-sm space-y-4">
+          {/* min-width only from sm: at 320-360px a hard 280px floor overflowed. */}
+          <div className="bg-surface-muted/90 backdrop-blur-md p-5 sm:p-8 rounded-2xl sm:rounded-[2rem] border border-border text-center sm:min-w-[280px] w-full lg:w-auto shrink-0 flex flex-col justify-between shadow-sm space-y-4">
             <div>
               <p className="text-content-muted font-black uppercase tracking-wider text-[11px] mb-1">حالة الفوترة والتجديد</p>
               <p className="text-2xl sm:text-3xl font-black text-content">{getNextBillingDate()}</p>
@@ -482,19 +483,22 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-right text-xs">
+          {/* min-width so the wrapper's overflow-x-auto actually engages: with a
+              plain w-100% table the three columns were squashed to ~95px each on
+              a phone and every feature name broke to one word per line. */}
+          <table className="w-full min-w-[600px] text-right text-xs">
             <thead>
               <tr className="border-b border-border bg-surface-muted/50 text-content-muted font-black">
-                <th className="p-4 rounded-r-2xl">الخاصية / الميزة</th>
-                <th className="p-4 text-center">الباقة المجانية (14 يوم)</th>
-                <th className="p-4 text-center rounded-l-2xl text-brand font-black">الباقة الأساسية (599 ريال)</th>
+                <th className="p-2.5 sm:p-4 rounded-r-2xl">الخاصية / الميزة</th>
+                <th className="p-2.5 sm:p-4 text-center">الباقة المجانية (14 يوم)</th>
+                <th className="p-2.5 sm:p-4 text-center rounded-l-2xl text-brand font-black">الباقة الأساسية (599 ريال)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
               {COMPARISON_FEATURES.map((item, i) => (
                 <tr key={i} className="hover:bg-surface-muted/30 transition-colors">
-                  <td className="p-4 font-bold text-content">{item.name}</td>
-                  <td className="p-4 text-center">
+                  <td className="p-2.5 sm:p-4 font-bold text-content">{item.name}</td>
+                  <td className="p-2.5 sm:p-4 text-center">
                     {typeof item.free === 'boolean' ? (
                       item.free ? (
                         <CheckCircle2 size={18} className="text-emerald-500 mx-auto" />
@@ -505,7 +509,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                       <span className="font-bold text-amber-600 bg-amber-500/10 px-2.5 py-1 rounded-md">{item.free}</span>
                     )}
                   </td>
-                  <td className="p-4 text-center">
+                  <td className="p-2.5 sm:p-4 text-center">
                     {typeof item.basic === 'boolean' ? (
                       item.basic ? (
                         <CheckCircle2 size={18} className="text-emerald-500 mx-auto" />

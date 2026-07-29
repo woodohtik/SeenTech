@@ -103,33 +103,33 @@ const WarehouseManagement: React.FC<WarehouseManagementProps> = ({ tenantId }) =
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-content flex items-center gap-3">
-            <Building2 className="text-brand" size={32} />
+    <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 min-w-0">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-3xl font-black text-content flex items-center gap-2 sm:gap-3">
+            <Building2 className="text-brand shrink-0" size={24} />
             {t('branches.title')}
           </h1>
-          <p className="text-content-muted font-medium mt-1">{t('branches.subtitle')}</p>
+          <p className="text-content-muted font-medium mt-1 text-sm sm:text-base">{t('branches.subtitle')}</p>
         </div>
-        
-        <button 
+
+        <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 bg-brand text-white px-6 py-2.5 rounded-2xl font-bold hover:bg-brand/90 transition-all shadow-lg shadow-brand/20"
+          className="flex items-center justify-center gap-2 bg-brand text-white px-5 sm:px-6 py-2.5 rounded-2xl font-bold hover:bg-brand/90 transition-all shadow-lg shadow-brand/20 shrink-0 whitespace-nowrap w-full md:w-auto"
         >
           <Plus size={20} />
           {t('branches.add_location')}
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {branches.map((branch) => (
-          <motion.div 
+          <motion.div
             key={branch.id}
             layout
-            className="bg-surface rounded-[2.5rem] border border-border shadow-sm hover:shadow-xl transition-all group overflow-hidden"
+            className="bg-surface rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm hover:shadow-xl transition-all group overflow-hidden"
           >
-            <div className="p-8 space-y-6">
+            <div className="p-5 sm:p-8 space-y-5 sm:space-y-6">
               <div className="flex items-start justify-between">
                 <div className={cn(
                   "p-4 rounded-2xl shadow-lg",
@@ -233,26 +233,26 @@ const BranchModal = ({ onClose, onSave, initialData }: any) => {
         initial={{ scale: 0.9, opacity: 0, y: 20 }} 
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-surface w-full max-w-lg rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden border border-border"
+        className="bg-surface w-full max-w-lg rounded-2xl sm:rounded-[2.5rem] shadow-2xl relative z-10 max-h-[92dvh] overflow-y-auto border border-border"
       >
-        <div className="p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
-          <div className="flex items-center gap-4">
-            <div className="p-4 bg-brand text-white rounded-2xl shadow-lg shadow-brand/20">
-              <Building2 size={24} />
+        <div className="p-5 sm:p-8 border-b border-border flex justify-between items-center gap-3 bg-surface-muted/50">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <div className="p-3 sm:p-4 bg-brand text-white rounded-2xl shadow-lg shadow-brand/20 shrink-0">
+              <Building2 size={22} />
             </div>
-            <div>
-              <h2 className="text-2xl font-black text-content">
+            <div className="min-w-0">
+              <h2 className="text-lg sm:text-2xl font-black text-content truncate">
                 {initialData ? t('branches.edit_location') : t('branches.add_location')}
               </h2>
-              <p className="text-xs text-content-muted font-bold uppercase tracking-widest">{t('branches.location_details')}</p>
+              <p className="text-[10px] sm:text-xs text-content-muted font-bold uppercase tracking-wide sm:tracking-widest truncate">{t('branches.location_details')}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm">
-            <X size={24} className="text-content-muted" />
+          <button onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm shrink-0">
+            <X size={22} className="text-content-muted" />
           </button>
         </div>
 
-        <form onSubmit={(e) => { e.preventDefault(); onSave(formData); }} className="p-8 space-y-6">
+        <form onSubmit={(e) => { e.preventDefault(); onSave(formData); }} className="p-5 sm:p-8 space-y-5 sm:space-y-6">
           <div className="space-y-2">
             <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">{t('branches.name')}</label>
             <input 
@@ -263,7 +263,7 @@ const BranchModal = ({ onClose, onSave, initialData }: any) => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">{t('branches.type')}</label>
               <SmartSelect

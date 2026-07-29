@@ -241,8 +241,17 @@ export default function Settings({ tenantId }: SettingsProps) {
     admin: { label: 'الإدارة والاشتراك', tabs: TABS.filter(t => t.group === 'admin' && t.visible) },
   };
 
+  /*
+   * No `overflow-hidden` on the shell below: it silently clipped any panel that
+   * was wider than the viewport (instead of letting the panel's own scroller
+   * handle it), and it also disabled `position: sticky` on the desktop settings
+   * sidebar. `min-w-0` is what actually keeps the flex children in check.
+   *
+   * pb-20 is repeated per breakpoint because `sm:p-5` / `lg:p-8` reset
+   * padding-bottom, which would otherwise drop the bottom breathing room.
+   */
   return (
-    <div className="p-3 sm:p-5 lg:p-8 max-w-7xl mx-auto space-y-6 lg:space-y-8 text-right pb-20 w-full overflow-hidden" dir="rtl">
+    <div className="p-3 sm:p-5 lg:p-8 pb-20 sm:pb-20 lg:pb-20 max-w-7xl mx-auto space-y-6 lg:space-y-8 text-right w-full min-w-0" dir="rtl">
       <Header 
         tenantId={tenantId} 
         title="الإعدادات" 
@@ -274,7 +283,7 @@ export default function Settings({ tenantId }: SettingsProps) {
         </div>
 
         {/* Scrollable Pills Bar for Quick Switching */}
-        <div className="w-full overflow-x-auto scrollbar-hide py-1 px-0.5 flex gap-2 select-none border-b border-border pb-3">
+        <div id="tour-settings-nav-mobile" data-tour="settings-nav-mobile" className="w-full overflow-x-auto scrollbar-hide py-1 px-0.5 flex gap-2 select-none border-b border-border pb-3">
           {TABS.filter(t => t.visible).map((tab) => (
             <button
               key={tab.id}
@@ -295,7 +304,7 @@ export default function Settings({ tenantId }: SettingsProps) {
 
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start w-full">
         {/* Navigation Sidebar (Desktop lg+) */}
-        <aside className="hidden lg:block lg:w-64 xl:w-72 shrink-0 space-y-6 sticky top-8">
+        <aside id="tour-settings-panel" data-tour="settings-panel" className="hidden lg:block lg:w-64 xl:w-72 shrink-0 space-y-6 sticky top-8">
           {Object.entries(groupedTabs).map(([key, group], gIdx) => group.tabs.length > 0 && (
             <div key={key} className="space-y-2">
               <h4 className="px-4 text-[10px] font-black text-content-muted uppercase tracking-widest">{group.label}</h4>
@@ -327,7 +336,7 @@ export default function Settings({ tenantId }: SettingsProps) {
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 min-w-0 w-full overflow-hidden">
+        <main className="flex-1 min-w-0 w-full">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -377,7 +386,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between px-1">
-                        <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em]">اسم المنشأة التجاري</label>
+                        <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">اسم المنشأة التجاري</label>
                         <HelpCircle size={14} className="text-content-muted/40 cursor-help" />
                       </div>
                       <IconInput 
@@ -389,7 +398,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                     </div>
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between px-1">
-                        <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em]">رقم التواصل الموحد</label>
+                        <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">رقم التواصل الموحد</label>
                         <HelpCircle size={14} className="text-content-muted/40 cursor-help" />
                       </div>
                       <IconInput 
@@ -401,9 +410,9 @@ export default function Settings({ tenantId }: SettingsProps) {
                       />
                     </div>
                     <div className="sm:col-span-2 space-y-1.5">
-                      <div className="flex items-center justify-between px-1">
-                        <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em]">البريد الإلكتروني (غير قابل للتعديل)</label>
-                        <span className="text-[10px] text-slate-400 font-black bg-slate-100 dark:bg-slate-800 rounded px-2 py-0.5 select-none" dir="rtl">رسمي ومحمي</span>
+                      <div className="flex flex-wrap items-center justify-between gap-1 px-1">
+                        <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">البريد الإلكتروني (غير قابل للتعديل)</label>
+                        <span className="text-[10px] text-slate-400 font-black bg-slate-100 dark:bg-slate-800 rounded px-2 py-0.5 select-none shrink-0" dir="rtl">رسمي ومحمي</span>
                       </div>
                       <IconInput 
                         type="email" 
@@ -415,7 +424,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                       />
                     </div>
                     <div className="sm:col-span-2 space-y-1.5">
-                      <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">العنوان الجغرافي للمقر الرئيسي</label>
+                      <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em] px-1">العنوان الجغرافي للمقر الرئيسي</label>
                       <IconInput 
                         type="text" 
                         {...register('address')}
@@ -427,7 +436,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                     <div className="sm:col-span-2 space-y-3">
                       <div className="flex items-center gap-2 px-1">
                         <Database size={14} className="text-brand" />
-                        <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em]">هندسة إدارة المخزون</label>
+                        <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">هندسة إدارة المخزون</label>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {[
@@ -497,30 +506,32 @@ export default function Settings({ tenantId }: SettingsProps) {
               )}
 
               {activeTab === 'branches' && (
-                <div className="bg-surface rounded-[2.5rem] border border-border shadow-sm overflow-hidden">
+                <div className="bg-surface rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm overflow-hidden">
                   <WarehouseManagement tenantId={tenantId} />
                 </div>
               )}
 
               {activeTab === 'staff' && (
-                <div className="space-y-6">
-                  <div className="bg-surface-muted/30 p-6 rounded-[2rem] border border-border flex items-center gap-6">
-                    <div className="w-14 h-14 bg-brand/10 text-brand rounded-2xl flex items-center justify-center shadow-inner">
-                      <Shield size={28} />
+                <div className="space-y-5 sm:space-y-6">
+                  <div className="bg-surface-muted/30 p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-border flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-center sm:text-right">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-brand/10 text-brand rounded-2xl flex items-center justify-center shadow-inner shrink-0">
+                      <Shield size={24} />
                     </div>
-                    <div className="space-y-1">
-                      <h4 className="text-lg font-black text-content">إدارة الطاقم الموظفين</h4>
-                      <p className="text-sm text-content-muted font-medium">قم بإضافة الموظفين وتعيين الفروع والأدوار الوظيفية لهم في النظام.</p>
+                    <div className="space-y-1 min-w-0">
+                      <h4 className="text-base sm:text-lg font-black text-content">إدارة الطاقم الموظفين</h4>
+                      <p className="text-xs sm:text-sm text-content-muted font-medium">قم بإضافة الموظفين وتعيين الفروع والأدوار الوظيفية لهم في النظام.</p>
                     </div>
                   </div>
-                  <div className="bg-surface rounded-[3rem] border border-border shadow-xl shadow-brand/5 overflow-hidden">
+                  {/* No overflow-hidden: the staff view has its own horizontal
+                      scrollers, and clipping here cut its tab bar off instead. */}
+                  <div className="bg-surface rounded-2xl sm:rounded-[3rem] border border-border shadow-xl shadow-brand/5">
                     <Staff tenantId={tenantId} />
                   </div>
                 </div>
               )}
 
               {activeTab === 'permissions' && (
-                <div className="bg-surface rounded-[3rem] border border-border shadow-xl shadow-brand/5 overflow-hidden p-2 md:p-6">
+                <div className="bg-surface rounded-2xl sm:rounded-[3rem] border border-border shadow-xl shadow-brand/5 p-0 sm:p-2 md:p-6">
                   <Staff tenantId={tenantId} initialViewMode="permissions" />
                 </div>
               )}
@@ -625,7 +636,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                           className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 bg-surface-muted/30 p-4 sm:p-6 rounded-2xl border border-border/50"
                         >
                           <div className="space-y-2">
-                            <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">الرقم الضريبي (TRN - 15 خانة)</label>
+                            <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em] px-1">الرقم الضريبي (TRN - 15 خانة)</label>
                             <input 
                               type="text" 
                               {...register('taxSettings.trn')}
@@ -638,7 +649,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                             {errors.taxSettings?.trn && <p className="text-xs text-red-500 font-bold">{errors.taxSettings.trn.message}</p>}
                           </div>
                           <div className="space-y-2">
-                            <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">اسم المكلف القانوني</label>
+                            <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em] px-1">اسم المكلف القانوني</label>
                             <input 
                               type="text" 
                               {...register('taxSettings.legalName')}
@@ -651,9 +662,9 @@ export default function Settings({ tenantId }: SettingsProps) {
                             {errors.taxSettings?.legalName && <p className="text-xs text-red-500 font-bold">{errors.taxSettings.legalName.message}</p>}
                           </div>
                           <div className="space-y-2 sm:col-span-2">
-                             <div className="flex items-center justify-between px-1">
-                                <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em]">نسبة الضريبة القياسية</label>
-                                <span className="text-[10px] font-black text-brand bg-brand/10 px-2 py-0.5 rounded-full">المملكة العربية السعودية: 15%</span>
+                             <div className="flex flex-wrap items-center justify-between gap-1.5 px-1">
+                                <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">نسبة الضريبة القياسية</label>
+                                <span className="text-[10px] font-black text-brand bg-brand/10 px-2 py-0.5 rounded-full shrink-0">المملكة العربية السعودية: 15%</span>
                              </div>
                             <div className="relative group">
                               <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-content-muted">%</span>
@@ -671,7 +682,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                           </div>
 
                           <div className="space-y-3 sm:col-span-2 border-t border-border/50 pt-4">
-                            <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">طريقة احتساب ضريبة التفصيل والقص</label>
+                            <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em] px-1">طريقة احتساب ضريبة التفصيل والقص</label>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                               {[
                                 { id: 'inclusive', label: 'شامل الضريبة', desc: 'سعر التفصيل شامل لضريبة القيمة المضافة' },
@@ -816,9 +827,9 @@ export default function Settings({ tenantId }: SettingsProps) {
                           <div className="p-3 bg-danger text-white rounded-2xl shadow-lg shadow-danger/20">
                             <AlertCircle size={28} />
                           </div>
-                          <h4 className="text-2xl font-black tracking-tight">المنطقة الخطرة (Critical Zone)</h4>
+                          <h4 className="text-lg sm:text-2xl font-black tracking-tight">المنطقة الخطرة (Critical Zone)</h4>
                         </div>
-                        <p className="text-base text-danger/80 font-bold leading-relaxed max-w-2xl text-center sm:text-right">
+                        <p className="text-sm sm:text-base text-danger/80 font-bold leading-relaxed max-w-2xl text-center sm:text-right">
                           حذف البيانات التجريبية سيمسح جميع السجلات التي تم تمييزها كـ "بيانات اختبار". 
                           هذا الإجراء مفيد جداً قبل الانتقال لبيئة التشغيل الفعلية (Go-Live) لتصفير عداد الطلبات والعملاء الوهميين.
                         </p>
@@ -826,14 +837,14 @@ export default function Settings({ tenantId }: SettingsProps) {
                           <button
                             onClick={handleDeleteTestData}
                             disabled={isDeletingTestData}
-                            className="flex items-center justify-center gap-3 bg-danger text-white w-full sm:w-auto px-6 py-4 rounded-xl sm:rounded-[1.5rem] font-black hover:bg-danger/90 transition-all shadow-xl shadow-danger/20 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
+                            className="flex items-center justify-center gap-2 sm:gap-3 bg-danger text-white w-full sm:w-auto px-5 sm:px-6 py-3.5 sm:py-4 rounded-xl sm:rounded-[1.5rem] font-black hover:bg-danger/90 transition-all shadow-xl shadow-danger/20 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
                           >
                             {isDeletingTestData ? (
-                              <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+                              <div className="w-5 h-5 sm:w-6 sm:h-6 border-4 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
                             ) : (
-                              <Trash2 size={24} />
+                              <Trash2 size={20} className="shrink-0" />
                             )}
-                            <span className="text-lg">تصفير النظام وحذف البيانات التجريبية</span>
+                            <span className="text-sm sm:text-lg">تصفير النظام وحذف البيانات التجريبية</span>
                           </button>
                         </div>
                       </div>

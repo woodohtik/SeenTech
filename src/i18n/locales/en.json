@@ -1037,5 +1037,134 @@
     "po_register_desc": "Select a supplier, items, and prices to generate a voucher.",
     "po_select_item_placeholder": "Select stock item...",
     "po_add_to_voucher": "Add Item to Voucher List"
+  },
+  "tour": {
+    "welcome": {
+      "title": "Welcome to Seen Smart System 👋",
+      "title_named": "Welcome, {{name}} 👋",
+      "subtitle": "Let's take a quick tour so you know everything the system can do for you.",
+      "subtitle_tenant": "Let's take a quick tour of {{tenant}} so you know everything you can do here.",
+      "duration": "{{count}} steps • under 2 minutes",
+      "highlight1_title": "Fast point of sale",
+      "highlight1_desc": "ZATCA-compliant simplified tax invoices in seconds",
+      "highlight2_title": "Track every order",
+      "highlight2_desc": "From measurements to cutting, sewing and delivery",
+      "highlight3_title": "Live reports",
+      "highlight3_desc": "Profit, stock and team performance in one live dashboard",
+      "start": "Start the tour",
+      "skip": "Skip",
+      "skip_full": "Skip, I'll explore on my own",
+      "restart_hint": "You can replay this tour any time from the user menu or Settings."
+    },
+    "steps": {
+      "sidebar": {
+        "title": "Main navigation 🧭",
+        "desc": "Your gateway to every part of the system: point of sale, orders, customers, inventory, suppliers, reports and settings. You only see the sections your role allows."
+      },
+      "dashboard": {
+        "title": "Dashboard 📊",
+        "desc": "The first thing you check each morning: today's sales, orders in progress, outstanding balances and low-stock alerts — a quick pulse on your shop."
+      },
+      "pos_intro": {
+        "title": "Point of sale (POS) 🖥️",
+        "desc": "This is where you create invoices and record sales. Three main tabs: POS for direct selling, Returns for refunds, and Shifts for cash drawer management."
+      },
+      "pos_shift": {
+        "title": "Shift & cash drawer 💰",
+        "desc": "A shift is opened under the cashier's name before selling. Track the drawer balance live, log cash in and out, and close the shift with a cash count at day's end."
+      },
+      "pos_subtabs": {
+        "title": "Sales log & tax invoices 🧾",
+        "desc": "Every sale is saved here automatically. You'll find the daily sales log and simplified tax invoices with QR codes, ready to print or share."
+      },
+      "orders_new": {
+        "title": "Create a new tailoring order ✂️",
+        "desc": "The starting point for any order: pick the customer, enter measurements, choose fabric, model and delivery date, then record the deposit."
+      },
+      "orders_tabs": {
+        "title": "Active vs. completed orders 📋",
+        "desc": "Active orders are still in progress (cutting, sewing, ready for pickup). Completed ones have been delivered and paid. Switch with a single click."
+      },
+      "orders_search": {
+        "title": "Search & barcode 🔍",
+        "desc": "Search by order number, customer name or phone — or scan the order tag barcode with your camera to jump straight to it."
+      },
+      "customers_add": {
+        "title": "Add a new customer 👤",
+        "desc": "Record the customer once — name, phone and measurements — and they'll be filled in automatically on every future order."
+      },
+      "customers_search": {
+        "title": "Customer records & statements 📇",
+        "desc": "Search your customer base, review order history and measurements, and print a financial statement for anyone with an outstanding balance."
+      },
+      "inventory_tabs": {
+        "title": "Inventory & fabrics 📦",
+        "desc": "Manage fabrics and supplies here: stock list with quantities and costs, transfers between branches and warehouses, and stock movement reports."
+      },
+      "inventory_actions": {
+        "title": "Opening balances & transfers 🔄",
+        "desc": "Start by entering opening balances for what's physically in your shop, add new items, and move quantities between branches with a full audit trail."
+      },
+      "suppliers": {
+        "title": "Suppliers & procurement 🚛",
+        "desc": "Register your suppliers, raise purchase orders for fabrics and supplies, and log returns. Supplier balances and due invoices are tracked automatically."
+      },
+      "reports_tabs": {
+        "title": "Reports centre 📈",
+        "desc": "Detailed reporting: overview dashboard, financials, order and inventory reports, staff and customer performance, tailor commissions, and Z-reports for end of day."
+      },
+      "reports_filters": {
+        "title": "Filters & export 🎛️",
+        "desc": "Narrow any report by date range, staff member and payment status, then export to Excel or PDF to share with your accountant."
+      },
+      "settings": {
+        "title": "Shop settings ⚙️",
+        "desc": "Customise everything here: shop details and logo, branches, staff and permissions, invoice layout and printer, VAT number, notifications and subscription."
+      },
+      "preferences": {
+        "title": "Your preferences 🌓",
+        "desc": "From your account menu you can switch language (عربي / English / اردو), toggle dark mode, change the layout, and lock the screen when you step away."
+      },
+      "ai_assistant": {
+        "title": "SeenAI assistant 🤖",
+        "desc": "Your in-app assistant — soon it will help analyse your sales and answer questions about how your shop is doing. It's always one click away here."
+      }
+    },
+    "finish": {
+      "title": "You're all set! 🎉",
+      "subtitle": "Tour complete. Here are the first suggested steps to get your shop ready and start working.",
+      "checklist_title": "Quick start steps",
+      "checklist": {
+        "shop_profile": {
+          "title": "Complete your shop profile",
+          "desc": "Name, logo, VAT number and invoice layout"
+        },
+        "add_stock": {
+          "title": "Enter your current stock",
+          "desc": "Fabrics and supplies with opening balances"
+        },
+        "add_customer": {
+          "title": "Add your first customer",
+          "desc": "With measurements, ready for any order"
+        },
+        "first_order": {
+          "title": "Create your first order",
+          "desc": "From measurements to delivery date"
+        },
+        "first_sale": {
+          "title": "Record your first sale",
+          "desc": "Open a shift and issue your first invoice"
+        }
+      },
+      "restart": "Replay tour",
+      "done": "Start working"
+    },
+    "controls": {
+      "next": "Next",
+      "prev": "Back",
+      "done": "Finish",
+      "progress": "{{current}} of {{total}}",
+      "skip": "Skip tour"
+    }
   }
 }

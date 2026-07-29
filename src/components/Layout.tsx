@@ -160,7 +160,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
 
   const effectiveRole = currentStaff?.role || role;
 
-  const { hasPermission } = usePermissions(currentStaff);
+  const { hasPermission, loading: permissionsLoading } = usePermissions(currentStaff);
 
   // Dynamic RBAC Menu Configuration
   const navItems = getFilteredNavItems(effectiveRole, isActingAsSaaS, isImpersonatingSaaS).map(item => ({
@@ -173,6 +173,19 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
     if (item.permission) return hasPermission(item.permission as PermissionKey);
     return true;
   });
+
+  // Stable identities for the guided tour, so its internal memoization holds
+  // instead of rebuilding the step list on every Layout render.
+  const tourNavRoutes = React.useMemo(
+    () => navItems.map(item => item.to),
+    [navItems.map(item => item.to).join('|')] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  const tourHasPermission = React.useCallback(
+    (key: string) => hasPermission(key as PermissionKey),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [permissionsLoading, currentStaff?.id, currentStaff?.role]
+  );
 
   return (
     <div className={cn("flex min-h-[100dvh] h-[100dvh] bg-surface-muted font-sans overflow-hidden w-full transition-all duration-300", isLocked && "blur-xl select-none pointer-events-none scale-98")}>
@@ -310,7 +323,10 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
         </div>
 
         {currentStaff && (
-          <div className={cn(
+          <div
+            id="tour-user-menu"
+            data-tour="user-menu"
+            className={cn(
             "px-4 py-4 border-b border-border hidden lg:block",
             isCollapsed ? "lg:flex lg:justify-center" : ""
           )}>
@@ -335,6 +351,8 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
             if (item.to === '/dashboard') tourId = 'tour-dashboard-nav';
             else if (item.to === '/sales') tourId = 'tour-pos-nav';
             else if (item.to === '/orders') tourId = 'tour-orders-nav';
+            else if (item.to === '/customers') tourId = 'tour-customers-nav';
+            else if (item.to === '/inventory') tourId = 'tour-inventory-nav';
             else if (item.to === '/suppliers') tourId = 'tour-suppliers-nav';
             else if (item.to === '/reports') tourId = 'tour-reports-nav';
             else if (item.to === '/settings') tourId = 'tour-settings-nav';
@@ -383,7 +401,9 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
         {layoutMode === 'sidebar' && (
           <header className="lg:hidden fixed top-0 left-0 right-0 h-20 bg-surface/90 backdrop-blur-xl border-b border-border/60 flex items-center justify-between px-4 sm:px-6 shrink-0 z-40 shadow-[0_8px_30px_rgb(0,0,0,0.02)]" dir={isRtl ? 'rtl' : 'ltr'}>
             <div className="flex items-center gap-3">
-              <button 
+              <button
+                id="tour-mobile-menu-btn"
+                data-tour="mobile-menu-btn"
                 onClick={() => setIsMobileMenuOpen(true)}
                 className="p-2.5 bg-surface-muted hover:bg-border/60 text-content rounded-2xl transition-all active:scale-95 border border-border/40 flex items-center justify-center shadow-sm cursor-pointer"
               >
@@ -422,20 +442,22 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
                 </span>
               </div>
               
-              <UserPreferencesMenu
-                currentStaff={currentStaff}
-                role={effectiveRole || null}
-                onLock={() => {
-                  if (onLock) onLock();
-                }}
-                onLogout={handleLogout}
-                layoutMode={layoutMode}
-                isCollapsed={true}
-                dropdownPosition="bottom"
-                align={isRtl ? 'left' : 'right'}
-                onToggleLayout={toggleLayoutMode}
-                className="shadow-sm"
-              />
+              <div id="tour-user-menu-mobile" data-tour="user-menu-mobile">
+                <UserPreferencesMenu
+                  currentStaff={currentStaff}
+                  role={effectiveRole || null}
+                  onLock={() => {
+                    if (onLock) onLock();
+                  }}
+                  onLogout={handleLogout}
+                  layoutMode={layoutMode}
+                  isCollapsed={true}
+                  dropdownPosition="bottom"
+                  align={isRtl ? 'left' : 'right'}
+                  onToggleLayout={toggleLayoutMode}
+                  className="shadow-sm"
+                />
+              </div>
             </div>
           </header>
         )}
@@ -465,16 +487,18 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
                 </button>
               )}
               
-              <UserPreferencesMenu
-                currentStaff={currentStaff}
-                role={effectiveRole || null}
-                onLock={() => {
-                  if (onLock) onLock();
-                }}
-                onLogout={handleLogout}
-                layoutMode={layoutMode}
-                onToggleLayout={toggleLayoutMode}
-              />
+              <div id="tour-user-menu-grid" data-tour="user-menu-grid">
+                <UserPreferencesMenu
+                  currentStaff={currentStaff}
+                  role={effectiveRole || null}
+                  onLock={() => {
+                    if (onLock) onLock();
+                  }}
+                  onLogout={handleLogout}
+                  layoutMode={layoutMode}
+                  onToggleLayout={toggleLayoutMode}
+                />
+              </div>
             </div>
           </header>
         )}
@@ -498,7 +522,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
                 </p>
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
+              <div id="tour-grid-launcher" data-tour="grid-launcher" className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
                 {navItems.filter(i => i.to !== '/').map(item => (
                   <button
                     key={item.to}
@@ -516,15 +540,26 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
           ) : (
             <div className="flex-1">
               {children}
-          
-          <SeenAIFab />
-          <OnboardingTour role={role} tenantId={tenantId} staffId={currentStaff?.id} />
             </div>
           )}
-          
+
 
         </main>
       </div>
+
+      <SeenAIFab />
+
+      <OnboardingTour
+        role={effectiveRole}
+        tenantId={tenantId}
+        staffId={currentStaff?.id}
+        staffName={currentStaff?.name}
+        tenantName={tenantName}
+        tenantLogo={tenantLogo}
+        hasPermission={tourHasPermission}
+        navRoutes={tourNavRoutes}
+        ready={!permissionsLoading && !isActingAsSaaS}
+      />
 
       {tenantId && <SupportConsentModal tenantId={tenantId} />}
     </div>

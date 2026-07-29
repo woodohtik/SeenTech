@@ -491,7 +491,12 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                     : getConfiguredPaperSize('80mm'),
                 title: 'إيصال فاتورة',
               });
-              if (!res.ok) console.error('[POS] فشل الطباعة السريعة:', res.message);
+              if (!res.ok) {
+                // لا نكتفي بالـ console: مع الطباعة الصامتة قد لا تُفتح نافذة
+                // طباعة إطلاقاً، فيبقى الكاشير بلا ورق وبلا أي إشعار.
+                console.error('[POS] فشل الطباعة السريعة:', res.message);
+                toastError('تعذّرت الطباعة', res.message);
+              }
             } catch (err) {
               console.error('[POS] خطأ الطباعة السريعة:', err);
               window.print();
@@ -925,11 +930,11 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         .from('tax_invoices')
         .insert({
           invoice_number: `INV-${orderNumber}`,
+          invoice_type: invoiceType as any,
           order_id: newOrder.id,
           tenant_id: tenantId,
           customer_id: orderData.customer_id,
           customer_name: orderData.customer_name,
-          payment_method: paymentMethod,
           subtotal: Number(subTotalAmount) >= 0 ? Number(subTotalAmount) : 0,
           tax_rate: 0.15,
           tax_amount: Number(taxAmount) >= 0 ? Number(taxAmount) : 0,

@@ -12,10 +12,12 @@ import SimplifiedTaxInvoice from './printing/SimplifiedTaxInvoice';
 import TaxInvoice from './printing/TaxInvoice';
 import DateTimeDisplay from './DateTimeDisplay';
 import { generateZatcaQR } from '../services/zatcaService';
+import { useToast } from '../contexts/ToastContext';
 
 export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenantId: string, shiftId?: string, filterStatus?: string }) {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const { error: toastError } = useToast();
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +51,11 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
         paperSize: getConfiguredPaperSize('80mm'),
         title: `فاتورة-${selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase()}`,
       });
-      if (!res.ok) console.error('[SalesRecord] فشل الطباعة:', res.message);
+      if (!res.ok) {
+        // مع الطباعة الصامتة قد لا تُفتح نافذة طباعة، فلا بد من إشعار مرئي
+        console.error('[SalesRecord] فشل الطباعة:', res.message);
+        toastError('تعذّرت الطباعة', res.message);
+      }
     } catch (e) {
       console.error('[SalesRecord] خطأ الطباعة:', e);
       window.print();

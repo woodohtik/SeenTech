@@ -350,7 +350,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
           </div>
 
           {activeShift && (
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface-muted/30 p-3 md:p-4 rounded-2xl border border-border/60">
+            <div id="tour-pos-shift" data-tour="pos-shift" className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface-muted/30 p-3 md:p-4 rounded-2xl border border-border/60">
               {/* Active Shift Details */}
               <div className="text-xs md:text-sm text-content-muted flex items-center gap-2">
                 <Clock className="text-brand shrink-0" size={16} />
@@ -398,7 +398,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
         </div>
         
         {/* Primary Top Tabs */}
-        <div className="flex px-4 md:px-6 gap-4 md:gap-8 border-b border-border/50 overflow-x-auto scrollbar-hide whitespace-nowrap scroll-smooth">
+        <div id="tour-pos-tabs" data-tour="pos-tabs" className="flex px-4 md:px-6 gap-4 md:gap-8 border-b border-border/50 overflow-x-auto scrollbar-hide whitespace-nowrap scroll-smooth">
           <button
             onClick={() => handleTopTabChange('pos')}
             className={cn(
@@ -434,7 +434,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
         </div>
 
         {/* Sub Tabs */}
-        <div className="flex px-4 md:px-6 gap-3 py-3 bg-surface-muted/50 overflow-x-auto scrollbar-hide scroll-smooth w-full">
+        <div id="tour-pos-subtabs" data-tour="pos-subtabs" className="flex px-4 md:px-6 gap-3 py-3 bg-surface-muted/50 overflow-x-auto scrollbar-hide scroll-smooth w-full">
           {activeTopTab === 'pos' && (
             <>
               <button

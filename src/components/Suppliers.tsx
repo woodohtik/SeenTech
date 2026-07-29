@@ -388,7 +388,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-border pb-px overflow-x-auto">
+      <div id="tour-suppliers-tabs" data-tour="suppliers-tabs" className="flex gap-2 border-b border-border pb-px overflow-x-auto">
         <button
           onClick={() => setActiveTab('suppliers')}
           className={cn(

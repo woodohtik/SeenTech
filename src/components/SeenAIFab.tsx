@@ -9,7 +9,7 @@ export default function SeenAIFab() {
 
   return (
     <>
-      <div className="fixed bottom-6 left-6 z-50 flex flex-col items-center gap-2">
+      <div id="tour-ai-fab" data-tour="ai-fab" className="fixed bottom-6 left-6 z-50 flex flex-col items-center gap-2">
         <motion.div
           initial={{ y: 10, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}

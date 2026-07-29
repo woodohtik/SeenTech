@@ -3,18 +3,26 @@
  * ------------------------------------------------------------------
  * محرك الطباعة الموحّد لنظام سين POS.
  *
- * ⚠️ تم حذف الطباعة الصامتة (ESC/POS المباشرة) من تدفق طباعة الفواتير.
- *    كل عمليات الطباعة الآن تمر عبر **مسار واحد فقط**:
+ * الطباعة تمر عبر مسارين، بهذا الترتيب:
  *
- *      بناء مستند طباعة معزول داخل iframe → فتح مربع حوار الطباعة →
- *      إغلاقه فوراً بعد الإرسال.
+ *   1) **طباعة صامتة** (ESC/POS مباشرة) — لا تظهر أي نافذة إطلاقاً.
+ *      تعمل فقط عندما تكون هناك طابعة حرارية مربوطة فعلياً
+ *      (USB / سيريال / بلوتوث / شبكة / وسيط سين / RawBT).
  *
- *    لماذا؟
- *      • المسار الصامت كان يحوّل الفاتورة إلى صورة نقطية بعرض الطابعة،
- *        فيخرج شكل مختلف تماماً عن شكل الويندوز (صغير ومضغوط) — وهو
- *        سبب اختلاف الفاتورة على التابلت وأجهزة الأندرويد.
- *      • كان يستهلك ثوانٍ في محاولات USB/بلوتوث/وسيط قبل أن يفشل
- *        ويتحوّل لمربع الحوار، فتبدو الطباعة بطيئة.
+ *   2) **مربع حوار الطباعة** — بناء مستند معزول داخل iframe ثم فتح
+ *      مربع الحوار. هذا هو المسار الاحتياطي دائماً.
+ *
+ *    كانت الطباعة الصامتة محذوفة سابقاً لسببين، وكلاهما معالَج الآن:
+ *      • البطء: كانت كل فاتورة تنتظر فشل محاولات USB/بلوتوث/وسيط قبل
+ *        فتح مربع الحوار. الآن: لا تُجرَّب أصلاً إن لم تكن هناك طابعة
+ *        مربوطة، ولها مهلة قصوى صريحة، ويوقفها قاطع دائرة بعد فشلين
+ *        متتاليين لبقية الجلسة.
+ *      • اختلاف الشكل: المسار الصامت يطبع صورة نقطية بعرض الطابعة، وقد
+ *        يختلف قليلاً عن مخرَج مربع الحوار. يمكن للمستخدم تعطيل الطباعة
+ *        الصامتة من إعدادات الطابعة إن أراد الشكل الأول حرفياً.
+ *
+ *    للورق العادي (A4/A5) لا تنطبق أوامر ESC/POS. الطباعة بلا نافذة هناك
+ *    تتحقق بتشغيل المتصفح بوضع `--kiosk-printing` — انظر `kiosk-print/`.
  *
  * ------------------------------------------------------------------
  * ضمان تطابق الشكل على كل الأجهزة (ويندوز / أندرويد / تابلت):
@@ -34,7 +42,11 @@ export interface PrintOptions {
   paperSize?: PrintPaperSize;
   title?: string;
   autoCloseDelay?: number;
-  /** تخطي محاولة الإرسال المباشر للجهاز المربوط (USB/Serial/Bluetooth/Network) */
+  /**
+   * فرض مربع حوار الطباعة وتخطي المسار الصامت المباشر
+   * (USB/Serial/Bluetooth/Network/وسيط). يستخدمه اختبار الطباعة في
+   * صفحة الإعدادات لاختبار مربع الحوار تحديداً.
+   */
   skipRawDevice?: boolean;
   /** عدد النسخ (للطباعة المباشرة فقط) */
   copies?: number;
@@ -395,6 +407,28 @@ html, body {
 #seen-print-root * { color: #000000 !important; }
 
 /*
+ * توسيط الفاتورة على الورقة.
+ *
+ * قوالب الفواتير تستخدم mx-auto للتوسيط، لكن قواعد الطباعة داخلها كانت
+ * تُصفّر الهوامش (margin: 0) — وفي مستند اتجاهه RTL يعني ذلك أن أي عنصر
+ * أقل عرضاً من الورقة يلتصق بالحافة **اليمنى** بدل أن يكون في الوسط.
+ * هنا نُعيد الهوامش التلقائية بقوة، ونمنع القوالب الحرارية من فرض عرض
+ * ثابت (80mm) أوسع من منطقة المحتوى الفعلية فيفيض المحتوى إلى جانب واحد.
+ */
+#seen-print-root > *,
+#simplified-invoice-container,
+#standard-tax-invoice-container {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  float: none !important;
+}
+
+#simplified-invoice-container {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/*
  * شبكة أمان لتوحيد الشكل:
  *  • min-height: 0 — قوالب A4 تستخدم min-h-[297mm] لعرض الشاشة، وهو مع
  *    هوامش @page يتجاوز ارتفاع منطقة الطباعة فتخرج ورقة ثانية فارغة.
@@ -530,6 +564,110 @@ export interface ActivePrinterConfig {
 
 /** أنواع النقل التي تدعم الإرسال المباشر بأوامر ESC/POS (طباعة صامتة). */
 const RAW_TRANSPORTS = ['usb', 'serial', 'bluetooth', 'network', 'agent', 'relay', 'rawbt'];
+
+/* ----------------------------------------------------------------
+   تفضيل الطباعة الصامتة + قاطع الدائرة (Circuit Breaker)
+   ----------------------------------------------------------------
+   الطباعة الصامتة كانت مُلغاة سابقاً لسببين مذكورين في ترويسة الملف:
+   بطء انتظار فشل المحاولات، واختلاف شكل الفاتورة. نعيدها الآن مع
+   ثلاث ضمانات تعالج السببين:
+
+     1) لا تُجرَّب إطلاقاً إن لم تكن هناك طابعة مربوطة فعلياً
+        (النوع 'system' = طابعة النظام → مربع الحوار مباشرةً بلا تأخير).
+     2) مهلة قصوى صريحة، فلا تتعلّق شاشة الكاشير أبداً.
+     3) قاطع دائرة: بعد فشلين متتاليين نتوقف عن المحاولة لبقية الجلسة
+        ونذهب لمربع الحوار فوراً — فلا يدفع الكاشير ثمن الانتظار
+        في كل فاتورة عندما تكون الطابعة غير متاحة.
+*/
+
+const SILENT_PREF_KEY = 'pos_silent_print';
+/*
+ * 14 ثانية: مسار الوسيط المقترن ينتظر تأكيداً حقيقياً من جهاز الكاشير عبر
+ * long-poll، وقد يستغرق عدة ثوانٍ على شبكة بطيئة. مهلة قصيرة (6 ثوانٍ) كانت
+ * تنقضي قبل وصول التأكيد فتبدو الطباعة فاشلة وهي ناجحة.
+ */
+const SILENT_TIMEOUT_MS = 14000;
+const SILENT_MAX_CONSECUTIVE_FAILURES = 2;
+
+let silentFailureStreak = 0;
+
+/**
+ * رمز إلغاء لمهمة الطباعة الصامتة.
+ *
+ * التمييز بين الحقلين حرج، وأي خلط بينهما يُنتج أحد عيبين خطيرين:
+ *
+ *  • `dispatched` = البايتات **قد تكون** وصلت الطابعة فعلاً: إما نجح الإرسال،
+ *    أو فشل بعد تسليم المهمة للوسيط. في هذه الحالة فقط يُمنع فتح مربع حوار
+ *    الطباعة، لأن فتحه يعني إيصالاً مكرراً.
+ *    ⚠️ لا يُرفع قبل الإرسال: فشل فوري (جهاز غير موصول، عنوان خاطئ، RawBT
+ *    على غير أندرويد) لم يُخرج ورقاً، ويجب أن يفتح مربع الحوار وإلا فُقدت
+ *    الفاتورة تماماً.
+ *
+ *  • `inFlight` = عدد نداءات الإرسال التي لم تُحسم بعد. عند انقضاء المهلة
+ *    ووجود نداء معلّق، نُعامله كـ dispatched: قد ينجح بعد لحظات.
+ */
+export interface SilentPrintToken {
+  aborted: boolean;
+  dispatched: boolean;
+  inFlight: number;
+}
+
+/**
+ * هل الطباعة الصامتة مفعّلة؟
+ * الافتراضي: مفعّلة تلقائياً متى ما رُبطت طابعة مباشرة، ومعطّلة إن كانت
+ * الطابعة من نوع "طابعة النظام" (لأنها تعمل عبر مربع الحوار أصلاً).
+ */
+export const isSilentPrintEnabled = (): boolean => {
+  try {
+    const stored = localStorage.getItem(SILENT_PREF_KEY);
+    if (stored === 'false') return false;
+
+    // مفعّلة فقط عندما تكون هناك طابعة مربوطة فعلاً؛ "طابعة النظام" تعمل
+    // عبر مربع الحوار أصلاً فلا معنى لمحاولة صامتة معها.
+    const cfg = getActivePrinterConfig();
+    return !!cfg && RAW_TRANSPORTS.includes(cfg.transport);
+  } catch {
+    return false;
+  }
+};
+
+/** تفعيل/تعطيل الطباعة الصامتة (من صفحة إعدادات الطابعة). */
+export const setSilentPrintEnabled = (enabled: boolean): void => {
+  try {
+    localStorage.setItem(SILENT_PREF_KEY, enabled ? 'true' : 'false');
+  } catch {
+    /* تجاهل */
+  }
+  resetSilentPrintCircuit();
+};
+
+/**
+ * إعادة تفعيل المحاولات الصامتة بعد أن أوقفها قاطع الدائرة.
+ * تُستدعى عند تغيير الطابعة أو إقران الوسيط أو نجاح اختبار الطباعة.
+ */
+export const resetSilentPrintCircuit = (): void => {
+  silentFailureStreak = 0;
+};
+
+/** هل أوقف قاطع الدائرة الطباعة الصامتة في هذه الجلسة؟ */
+export const isSilentPrintCircuitOpen = (): boolean =>
+  silentFailureStreak >= SILENT_MAX_CONSECUTIVE_FAILURES;
+
+/** تنفيذ وعد بمهلة قصوى — يمنع تعليق شاشة الكاشير على مسار بطيء. */
+const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> =>
+  new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label}: تجاوز المهلة (${ms}ms)`)), ms);
+    promise.then(
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(timer);
+        reject(e);
+      }
+    );
+  });
 
 /** قراءة الطابعة النشطة من التخزين المحلي. */
 export const getActivePrinterConfig = (): ActivePrinterConfig | null => {
@@ -700,16 +838,20 @@ const buildTransportChain = async (
 };
 
 /**
- * @deprecated تم حذف الطباعة الصامتة من تدفق طباعة الفواتير.
+ * الطباعة الصامتة: إرسال الفاتورة كصورة نقطية ESC/POS مباشرةً إلى الطابعة
+ * بلا أي مربع حوار.
  *
- * الدالة باقية فقط ليستخدمها اختبار الطابعة في صفحة الإعدادات
- * (PrinterSettings) عند الرغبة في التحقق من الاتصال بجهاز مربوط.
- * لا تستدعِها من أي مسار طباعة فاتورة — الفواتير تُطبع عبر
- * `printElementDetailed` ومربع حوار الطباعة فقط.
+ * تُرجع `null` عندما لا ينطبق المسار الصامت (لا طابعة مربوطة، أو نوع نقل
+ * لا يدعم ESC/POS، أو ورق عادي A4/A5) — وعندها يتولّى المتصل فتح مربع
+ * حوار الطباعة. تُرجع `{ ok: false }` عندما ينطبق المسار لكنه فشل.
+ *
+ * لا تُستدعَ مباشرةً من المكوّنات: استخدم `printElementDetailed` فهو يجرّب
+ * هذا المسار أولاً ثم يرجع لمربع الحوار تلقائياً.
  */
 export const printElementViaRawDevice = async (
   elementId: string,
-  options: PrintOptions = {}
+  options: PrintOptions = {},
+  token?: SilentPrintToken
 ): Promise<PrintResult | null> => {
   const cfg = getActivePrinterConfig();
   if (!cfg) return null;
@@ -749,6 +891,16 @@ export const printElementViaRawDevice = async (
   const failures: string[] = [];
 
   for (const transport of chain) {
+    // انقضت مهلة المتصل → لا نبدأ مساراً جديداً (يمنع إيصالاً مكرراً)
+    if (token?.aborted) {
+      return {
+        ok: false,
+        method: 'none',
+        message: 'تم إلغاء الطباعة الصامتة بعد تجاوز المهلة.',
+        error: failures.join(' | ') || 'aborted',
+      };
+    }
+
     // كل هذه المسارات تتولى تكرار النسخ داخلياً في نداء واحد
     const handlesCopies = transport === 'relay' || transport === 'network' || transport === 'rawbt';
 
@@ -762,12 +914,32 @@ export const printElementViaRawDevice = async (
       docName: options.title || 'SEEN POS Receipt',
     };
 
+    /*
+     * كل إرسال يمر من هنا حتى نعرف بدقة هل خرج ورق أم لا:
+     *   • نجاح            → dispatched = true
+     *   • فشل بعد التسليم  → الخطأ يحمل e.dispatched (مسار الوسيط) → true
+     *   • فشل فوري        → لا يُلمس dispatched، فيبقى مربع الحوار متاحاً
+     */
+    const send = async (payload: Uint8Array) => {
+      if (token) token.inFlight += 1;
+      try {
+        await discovery.sendRawToPrinter(cfg.id, transport, payload, conn);
+        if (token) token.dispatched = true;
+      } catch (e: any) {
+        if (token && e?.dispatched) token.dispatched = true;
+        throw e;
+      } finally {
+        if (token) token.inFlight -= 1;
+      }
+    };
+
     try {
       if (handlesCopies) {
-        await discovery.sendRawToPrinter(cfg.id, transport, bytes, conn);
+        await send(bytes);
       } else {
         for (let i = 0; i < copies; i++) {
-          await discovery.sendRawToPrinter(cfg.id, transport, bytes, conn);
+          if (token?.aborted) break;
+          await send(bytes);
         }
       }
 
@@ -1022,16 +1194,116 @@ export const printHtmlContentDetailed = async (
    ================================================================ */
 
 /**
- * الطباعة الكاملة لعنصر — مسار واحد فقط: مربع حوار الطباعة.
+ * محاولة الطباعة الصامتة قبل اللجوء لمربع الحوار.
  *
- * ⚠️ تم حذف الطباعة الصامتة نهائياً من هذا التدفق. لم تعد هناك أي محاولة
- * إرسال ESC/POS مباشرة إلى USB/بلوتوث/شبكة/وسيط قبل الطباعة، لسببين:
- *   1) السرعة: كانت كل فاتورة تنتظر فشل تلك المحاولات قبل فتح مربع الحوار.
- *   2) توحيد الشكل: المسار الصامت يطبع صورة نقطية بعرض الطابعة، فتخرج
- *      الفاتورة على الأندرويد بشكل مختلف عن شكل الويندوز.
+ * قيمة الإرجاع تعني:
+ *   • `null`        → المسار الصامت لا ينطبق أو فشل قبل تسليم أي بايت.
+ *                     آمن أن يفتح المتصل مربع حوار الطباعة.
+ *   • `PrintResult` → المهمة تُعتبر مُنجَزة (نجاحاً أو فشلاً)، ولا يجوز
+ *                     فتح مربع الحوار بعدها لأن ذلك قد يطبع إيصالاً مكرراً.
  *
- * خيار `skipRawDevice` أُبقي في الواجهة للتوافق مع الاستدعاءات القديمة
- * فقط، ولم يبقَ له أي أثر.
+ * كل الحالات التي قد تُبطئ الكاشير مقطوعة في الأعلى قبل أي عمل فعلي.
+ */
+const attemptSilentPrint = async (
+  elementId: string,
+  options: PrintOptions
+): Promise<PrintResult | null> => {
+  // المتصل طلب صراحةً مربع الحوار (اختبار الطباعة في الإعدادات مثلاً)
+  if (options.skipRawDevice) return null;
+  if (!isSilentPrintEnabled()) return null;
+
+  // فشل مرتين متتاليتين في هذه الجلسة → لا نُضيّع وقت الكاشير مرة أخرى
+  if (isSilentPrintCircuitOpen()) return null;
+
+  const cfg = getActivePrinterConfig();
+  if (!cfg || !RAW_TRANSPORTS.includes(cfg.transport)) return null;
+
+  // ESC/POS للطابعات الحرارية فقط. الورق العادي يحتاج وضع kiosk أو مربع الحوار.
+  const paperSize = options.paperSize || cfg.size || '80mm';
+  if (!isThermal(paperSize)) return null;
+
+  const token: SilentPrintToken = { aborted: false, dispatched: false, inFlight: 0 };
+
+  try {
+    const res = await withTimeout(
+      printElementViaRawDevice(elementId, { ...options, paperSize }, token),
+      SILENT_TIMEOUT_MS,
+      'الطباعة الصامتة'
+    );
+
+    if (res?.ok) {
+      silentFailureStreak = 0;
+      return res;
+    }
+
+    /*
+     * `null` = المسار الصامت غير منطبق أصلاً (لا عنصر، أو ورق عادي) وليس فشلاً.
+     * احتسابه كفشل كان يفتح قاطع الدائرة بعد حالتين فيُعطّل الطباعة الصامتة
+     * لبقية الجلسة بلا أي عطل حقيقي.
+     */
+    if (!res) return null;
+
+    silentFailureStreak += 1;
+    console.warn(
+      `[printManager] فشلت الطباعة الصامتة (${silentFailureStreak}/${SILENT_MAX_CONSECUTIVE_FAILURES}): ${
+        res.message || 'سبب غير معروف'
+      }`
+    );
+
+    /*
+     * فشل بعد تسليم البايتات فعلاً: قد تكون الفاتورة خرجت. لا نفتح مربع
+     * الحوار — نُبلّغ المستخدم ليتحقق بنفسه بدل طباعة إيصال ثانٍ.
+     */
+    if (token.dispatched) {
+      return {
+        ok: false,
+        method: res.method || 'none',
+        message:
+          'أُرسلت الفاتورة للطابعة لكن لم يصل تأكيد الطباعة. تحقق من الطابعة قبل إعادة الطباعة لتجنب إيصال مكرر.',
+        error: res.error,
+      };
+    }
+
+    return null;
+  } catch (e: any) {
+    // انقضت المهلة — نُلغي المسار الصامت حتى لا يُرسل بعد فتح مربع الحوار
+    token.aborted = true;
+    silentFailureStreak += 1;
+
+    console.warn(
+      `[printManager] تعذرت الطباعة الصامتة (${silentFailureStreak}/${SILENT_MAX_CONSECUTIVE_FAILURES}):`,
+      e?.message || e
+    );
+
+    // نداء إرسال ما زال معلّقاً → قد ينجح بعد لحظات، فلا نطبع نسخة ثانية
+    if (token.dispatched || token.inFlight > 0) {
+      return {
+        ok: false,
+        method: 'none',
+        message:
+          'استغرقت الطباعة وقتاً أطول من المتوقع ولم يصل تأكيد. تحقق من الطابعة قبل إعادة الطباعة لتجنب إيصال مكرر.',
+        error: String(e?.message || e),
+      };
+    }
+
+    return null;
+  }
+};
+
+/**
+ * الطباعة الكاملة لعنصر — نقطة الدخول الوحيدة لكل الفواتير.
+ *
+ * التدفق:
+ *   1) طباعة صامتة مباشرة (ESC/POS) إن كانت هناك طابعة حرارية مربوطة.
+ *      لا تظهر أي نافذة إطلاقاً وتخرج الفاتورة فوراً.
+ *   2) وإلا (أو إن فشلت) → مربع حوار الطباعة كما كان تماماً.
+ *
+ * ملاحظة للورق العادي A4/A5: أوامر ESC/POS لا تنطبق عليه، فالطباعة بلا
+ * نافذة هناك تتحقق بتشغيل المتصفح بوضع `--kiosk-printing`
+ * (انظر مجلد `kiosk-print/` في جذر المشروع). في ذلك الوضع يصبح مربع
+ * الحوار نفسه صامتاً بلا أي تغيير في الكود.
+ *
+ * `skipRawDevice: true` يفرض مربع الحوار ويتخطى المسار الصامت.
  */
 export const printElementDetailed = async (
   elementId: string,
@@ -1053,6 +1325,14 @@ export const printElementDetailed = async (
     }
   }
 
+  /*
+   * 1) المسار الصامت. أي نتيجة غير null تعني "تم التعامل مع المهمة" — نجاحاً
+   *    أو فشلاً بعد تسليم البايتات — ولا يجوز فتح مربع الحوار بعدها.
+   */
+  const silent = await attemptSilentPrint(elementId, options);
+  if (silent) return silent;
+
+  // 2) مربع حوار الطباعة (الاحتياط الدائم)
   const clone = buildPrintableClone(element);
   return printHtmlContentDetailed(clone.outerHTML, options);
 };

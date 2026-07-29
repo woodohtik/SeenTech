@@ -445,9 +445,25 @@ const sendToUsb = async (id: string, data: Uint8Array): Promise<void> => {
     const CHUNK = 4096;
     for (let i = 0; i < data.length; i += CHUNK) {
       const res = await device.transferOut(endpoint.endpointNumber, data.slice(i, i + CHUNK));
-      if (res.status !== 'ok') throw new Error(`الطابعة رفضت البيانات (${res.status}).`);
+      if (res.status !== 'ok') {
+        const err: any = new Error(`الطابعة رفضت البيانات (${res.status}).`);
+        /*
+         * فشل بعد قبول الدفعة الأولى: جزء من الفاتورة خرج على الورق بالفعل.
+         * نُعلّم الخطأ حتى لا يُعاد الطبع تلقائياً فيخرج إيصال ثانٍ كامل
+         * فوق الجزء المطبوع.
+         */
+        if (i > 0) err.dispatched = true;
+        throw err;
+      }
     }
   } catch (err: any) {
+    /*
+     * الأخطاء المُعلّمة بـ dispatched تعني أن جزءاً من الفاتورة خرج على الورق.
+     * نُمرّرها كما هي: الفروع أدناه تبني كائن خطأ جديداً فتفقد العلامة، وفقدانها
+     * يسمح بفتح مربع حوار الطباعة فيخرج إيصال ثانٍ فوق الجزء المطبوع.
+     */
+    if (err?.dispatched) throw err;
+
     if (
       err?.name === 'SecurityError' ||
       /Access denied|failed to execute 'open'|The device is protected/i.test(err?.message || '')
@@ -670,9 +686,12 @@ const sendToNetwork = async (conn: ConnectionOptions, data: Uint8Array): Promise
         body: JSON.stringify({ host: ip, port, dataBase64 }),
       });
     } catch (e: any) {
-      throw new Error(
+      const err: any = new Error(
         `تعذر الوصول لوسيط الطباعة في السيرفر (${e?.message || 'خطأ شبكة'}). تأكد أن السيرفر يعمل وأنه على نفس الشبكة المحلية للطابعة.`
       );
+      // نجحت نسخة على الأقل قبل هذا الفشل → لا يجوز إعادة الطبع تلقائياً
+      if (i > 0) err.dispatched = true;
+      throw err;
     }
 
     let payload: any = null;
@@ -683,10 +702,12 @@ const sendToNetwork = async (conn: ConnectionOptions, data: Uint8Array): Promise
     }
 
     if (!res.ok || payload?.ok === false) {
-      throw new Error(
+      const err: any = new Error(
         payload?.error ||
           `فشل الإرسال إلى الطابعة ${ip}:${port}. تحقّق من تشغيل الطابعة وصحة عنوان IP، وأن السيرفر على نفس الشبكة.`
       );
+      if (i > 0) err.dispatched = true;
+      throw err;
     }
   }
 };
@@ -725,7 +746,14 @@ export const sendRawToPrinter = async (
             docName: conn.docName,
           });
         } catch (e: any) {
-          // نُكمل بالمحاولة عبر السيرفر (تشغيل محلي داخل المتجر)
+          /*
+           * فشل غامض (المهمة سُلّمت للوسيط بالفعل) → لا نُعيد الإرسال عبر
+           * السيرفر، وإلا طُبع الإيصال مرتين: مرة من الوسيط ومرة عبر TCP.
+           * نُمرّر الخطأ كما هو مع علامته ليتعامل معه محرك الطباعة.
+           */
+          if (e?.dispatched) throw e;
+
+          // فشل قبل التسليم → آمن أن نُكمل بالمحاولة عبر السيرفر
           console.warn('[printerDiscovery] فشل مسار الوسيط لطابعة الشبكة:', e?.message || e);
         }
       }

@@ -108,6 +108,8 @@ export default function PrinterSettings() {
 
   const [autoPrint, setAutoPrint] = useState(true);
   const [fastThermalMode, setFastThermalMode] = useState(true);
+  /** الطباعة الصامتة: إرسال الفاتورة للطابعة بلا أي نافذة طباعة. */
+  const [silentPrint, setSilentPrint] = useState(true);
   const [showHelpGuide, setShowHelpGuide] = useState(false);
 
   // وسيط سين المقترن بالسيرفر — المسار الأساسي للطباعة الصامتة
@@ -149,6 +151,13 @@ export default function PrinterSettings() {
       localStorage.setItem('active_printer_size', active.size);
       localStorage.setItem('active_printer_type', active.type);
     }
+
+    /*
+     * تغيّرت إعدادات الطابعة → نُصفّر قاطع دائرة الطباعة الصامتة.
+     * بدون هذا، لو فشلت الطباعة الصامتة مرتين ثم أصلح المستخدم الطابعة،
+     * لظلّ النظام يفتح مربع الحوار لبقية الجلسة بلا سبب.
+     */
+    void import('../utils/printManager').then((m) => m.resetSilentPrintCircuit());
   }, []);
 
   /* --------------------- التحميل الأولي والمزامنة --------------------- */
@@ -446,6 +455,14 @@ export default function PrinterSettings() {
     if (auto !== null) setAutoPrint(auto === 'true');
     const fast = localStorage.getItem('pos_fast_thermal_mode');
     if (fast !== null) setFastThermalMode(fast === 'true');
+    /*
+     * نقرأ الحالة الفعلية من printManager لا من المفتاح الخام: الطباعة
+     * الصامتة تكون معطّلة فعلياً إن لم تكن هناك طابعة مربوطة، فلا يصح أن
+     * يظهر المفتاح مُفعّلاً والميزة غير عاملة.
+     */
+    void import('../utils/printManager').then(({ isSilentPrintEnabled }) => {
+      setSilentPrint(isSilentPrintEnabled());
+    });
   }, [syncPairedDevices, refreshRelay]);
 
   /*
@@ -600,6 +617,9 @@ export default function PrinterSettings() {
     setTestingPrinter(printer);
     setBusyId(printer.id);
     setFeedback(null);
+
+    // المستخدم يختبر الطابعة الآن → أعطِ الطباعة الصامتة فرصة جديدة
+    void import('../utils/printManager').then((m) => m.resetSilentPrintCircuit());
 
     const conn = {
       ipAddress: printer.ipAddress,
@@ -883,8 +903,10 @@ export default function PrinterSettings() {
 
   /* ------------------------------- العرض ------------------------------- */
 
+  // No padding on phones below: Settings already pads the panel, and a third
+  // layer of padding was leaving only ~220px of usable width.
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8 text-right" dir="rtl">
+    <div className="max-w-6xl mx-auto p-0 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 text-right" dir="rtl">
       {/* منطقة الاختبار المخفية القابلة للطباعة */}
       <div
         id="print-area"
@@ -909,13 +931,13 @@ export default function PrinterSettings() {
       </div>
 
       {/* الترويسة */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface p-6 rounded-[2rem] border border-border shadow-xs">
-        <div className="flex items-center gap-4">
-          <div className="p-3.5 bg-brand/10 text-brand rounded-2xl">
-            <Printer size={28} />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-border shadow-xs">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+          <div className="p-3 sm:p-3.5 bg-brand/10 text-brand rounded-2xl shrink-0">
+            <Printer size={24} />
           </div>
-          <div>
-            <h1 className="text-2xl font-black text-content">إعدادات طابعة الفواتير</h1>
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-2xl font-black text-content">إعدادات طابعة الفواتير</h1>
             <p className="text-xs text-content-muted mt-1 font-medium">
               ربط الطابعات الحرارية (80mm / 58mm) عبر USB أو المنفذ التسلسلي أو البلوتوث
             </p>
@@ -1393,7 +1415,7 @@ export default function PrinterSettings() {
       )}
 
       {/* أزرار الربط الحقيقي */}
-      <div className="bg-surface p-6 rounded-[2rem] border border-border shadow-xs space-y-4">
+      <div className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-border shadow-xs space-y-4">
         <div className="flex items-center gap-2">
           <Search size={20} className="text-brand" />
           <h3 className="text-base font-black text-content">ربط طابعة حقيقية</h3>
@@ -1550,7 +1572,7 @@ export default function PrinterSettings() {
       )}
 
       {/* قائمة الطابعات */}
-      <div className="bg-surface p-6 rounded-[2rem] border border-border shadow-xs space-y-4">
+      <div className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-border shadow-xs space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h3 className="text-base font-black text-content">الطابعات ({printers.length})</h3>
           <span className="text-xs text-content-muted font-bold">
@@ -1642,7 +1664,7 @@ export default function PrinterSettings() {
       </div>
 
       {/* خيارات الطباعة */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         <ToggleCard
           icon={Sliders}
           title="الطباعة التلقائية عند إتمام البيع"
@@ -1663,10 +1685,61 @@ export default function PrinterSettings() {
             localStorage.setItem('pos_fast_thermal_mode', String(v));
           }}
         />
+        <ToggleCard
+          icon={Printer}
+          title="الطباعة الصامتة (بلا نافذة طباعة)"
+          desc="إرسال الفاتورة مباشرةً للطابعة الحرارية المربوطة بلا أي نافذة. إن فشلت تُفتح نافذة الطباعة تلقائياً."
+          value={silentPrint}
+          onChange={async (v) => {
+            setSilentPrint(v);
+            const { setSilentPrintEnabled } = await import('../utils/printManager');
+            setSilentPrintEnabled(v);
+          }}
+        />
+      </div>
+
+      {/* شرح الطباعة بلا نافذة */}
+      <div className="bg-brand/5 p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-brand/15 space-y-3">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="p-2.5 bg-brand text-white rounded-xl shrink-0 shadow-sm">
+            <Zap size={18} />
+          </div>
+          <div className="min-w-0 space-y-1">
+            <h3 className="text-sm sm:text-base font-black text-content">كيف تختفي نافذة الطباعة تماماً؟</h3>
+            <p className="text-[11px] sm:text-xs text-content-muted font-medium leading-relaxed">
+              المتصفح لا يسمح لأي موقع بإغلاق نافذة الطباعة تلقائياً (قيد أمني)، لذلك الحل أن
+              لا تظهر من الأصل — وذلك بطريقين:
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="bg-surface p-3.5 rounded-xl border border-border space-y-1.5">
+            <p className="text-xs font-black text-content flex items-center gap-1.5">
+              <span className="w-5 h-5 rounded-full bg-brand text-white text-[10px] flex items-center justify-center shrink-0">1</span>
+              <span>الطباعة الصامتة (بالأعلى)</span>
+            </p>
+            <p className="text-[10px] sm:text-[11px] text-content-muted font-medium leading-relaxed">
+              اربط طابعة حرارية 80mm أو 58mm واجعلها الافتراضية. تعمل على الويندوز
+              والأندرويد والتابلت. لا تدعم الورق العادي A4.
+            </p>
+          </div>
+
+          <div className="bg-surface p-3.5 rounded-xl border border-border space-y-1.5">
+            <p className="text-xs font-black text-content flex items-center gap-1.5">
+              <span className="w-5 h-5 rounded-full bg-brand text-white text-[10px] flex items-center justify-center shrink-0">2</span>
+              <span>وضع الطباعة الفورية (ويندوز)</span>
+            </p>
+            <p className="text-[10px] sm:text-[11px] text-content-muted font-medium leading-relaxed">
+              افتح النظام من ملف <span className="font-mono font-bold" dir="ltr">kiosk-print/طباعة-فورية-بدون-نافذة.bat</span>{' '}
+              فتُطبع كل الفواتير فوراً بلا نافذة — ويشمل A4.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* إرشادات حل المشاكل */}
-      <div className="bg-surface p-6 rounded-[2rem] border border-border shadow-xs space-y-4">
+      <div className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-border shadow-xs space-y-4">
         <button
           type="button"
           onClick={() => setShowHelpGuide(!showHelpGuide)}
@@ -1720,8 +1793,11 @@ export default function PrinterSettings() {
 
       {/* نافذة الإضافة اليدوية */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-surface border border-border rounded-[2.5rem] p-6 sm:p-8 w-full max-w-lg space-y-6 shadow-2xl text-right" dir="rtl">
+        // items-start + overflow-y-auto on the backdrop, and max-h on the panel:
+        // the network form is taller than a phone viewport, so without these the
+        // save/cancel buttons end up off-screen with no way to reach them.
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-surface border border-border rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-8 w-full max-w-lg max-h-[92dvh] overflow-y-auto space-y-5 sm:space-y-6 shadow-2xl text-right my-auto" dir="rtl">
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-black text-content">إضافة طابعة يدوياً</h3>
               <button type="button" onClick={() => setShowAddModal(false)} className="p-2 text-content-muted hover:text-content rounded-xl">
@@ -1748,7 +1824,7 @@ export default function PrinterSettings() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-black text-content mb-1">نوع الاتصال</label>
                   <select
@@ -1776,7 +1852,7 @@ export default function PrinterSettings() {
               </div>
 
               {printerType === 'network' && (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-black text-content mb-1">عنوان IP</label>
                     <input
@@ -1870,7 +1946,7 @@ function ToggleCard({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="bg-surface p-6 rounded-[2rem] border border-border shadow-xs">
+    <div className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-border shadow-xs">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
           <div className="p-3 bg-brand/10 text-brand rounded-2xl shrink-0">
