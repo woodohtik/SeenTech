@@ -422,24 +422,29 @@ export default function TaxInvoice({
       {/* Styled Printable Setup */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          body {
+          html, body {
             background: white !important;
             color: black !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-text-size-adjust: 100% !important;
+            text-size-adjust: 100% !important;
           }
           #print-area, #standard-tax-invoice-container, #standard-tax-invoice-container * {
             visibility: visible;
+            box-sizing: border-box !important;
           }
           .print\\:hidden, #app-navigation, header, aside, button {
             display: none !important;
           }
-          /* Centre on the page: a zeroed margin left the invoice hugging the
-             right edge of the paper, because the document direction is RTL. */
           #standard-tax-invoice-container {
             border: none !important;
             padding: 0 !important;
             margin-left: auto !important;
             margin-right: auto !important;
             width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
           }
         }
       `}} />
