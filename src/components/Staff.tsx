@@ -26,7 +26,7 @@ import {
   Settings
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
-import { auth, handleFirestoreError, OperationType } from '../lib/firebase';
+import { auth, handleFirestoreError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
 import { Order, Staff as StaffMemberType, AuditLog, Role, Branch, PermissionKey, PermissionsMap } from '../types';
 import { Controller, useForm } from 'react-hook-form';
 import { SmartSelect } from './ui/SmartSelect';
@@ -432,6 +432,29 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
     };
   }, [tenantId]);
 
+  const onInvalid = (errors: any) => {
+    console.error("Staff form validation errors:", errors);
+    const messages = Object.entries(errors)
+      .map(([field, err]: [string, any]) => {
+        const fieldNameAr: Record<string, string> = {
+          name: 'الاسم الكامل',
+          email: 'البريد الإلكتروني',
+          phone: 'رقم الهاتف',
+          role: 'الدور الوظيفي',
+          branchId: 'الفرع',
+          pin: 'رمز الدخول'
+        };
+        const label = fieldNameAr[field] || field;
+        return `• ${label}: ${err.message || 'حقل غير صالح'}`;
+      })
+      .join('\n');
+
+    setToast({ 
+      message: `يرجى تصحيح الأخطاء التالية:\n${messages}`, 
+      type: 'error' 
+    });
+  };
+
   const onSubmit = async (data: any) => {
     try {
       let finalPin = data.pin;
@@ -471,12 +494,14 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       ];
       const selectedRole = roles.find(r => r.roleKey === data.role);
       const dbRoleValue = VALID_DB_ROLES.includes(data.role) ? data.role : 'tailor';
+      const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+      const validRoleId = selectedRole?.id && isUuid(selectedRole.id) ? selectedRole.id : null;
 
       if (editingStaff) {
         const updateData: any = {
           name: data.name,
           role: dbRoleValue,
-          role_id: selectedRole?.id || null,
+          role_id: validRoleId,
           branch_id: data.branchId || null,
           email: data.email,
           phone: data.phone,
@@ -504,7 +529,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
         const { error } = await supabase.from('staff').insert({
           name: data.name,
           role: dbRoleValue,
-          role_id: selectedRole?.id || null,
+          role_id: validRoleId,
           branch_id: data.branchId || null,
           email: data.email,
           phone: data.phone,
@@ -534,9 +559,39 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       setIsModalOpen(false);
       setEditingStaff(null);
       reset();
-    } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, 'staff');
-      setToast({ message: 'حدث خطأ أثناء الحفظ', type: 'error' });
+    } catch (error: any) {
+      console.error('Error saving staff:', error);
+      let errorString = 'حدث خطأ في النظام. يرجى المحاولة مرة أخرى لاحقاً.';
+      if (error) {
+        if (error instanceof Error) {
+          errorString = error.message;
+        } else if (typeof error === 'string') {
+          errorString = error;
+        } else if (error.message) {
+          errorString = error.message;
+        } else {
+          try {
+            errorString = JSON.stringify(error);
+          } catch (_) {
+            errorString = String(error);
+          }
+        }
+      }
+      
+      let friendlyMsg = errorString;
+      if (errorString.includes('duplicate key') || errorString.includes('unique constraint') || errorString.includes('already exists')) {
+        if (errorString.includes('email')) {
+          friendlyMsg = 'البريد الإلكتروني مستخدم بالفعل لموظف آخر.';
+        } else if (errorString.includes('phone')) {
+          friendlyMsg = 'رقم الهاتف مستخدم بالفعل لموظف آخر.';
+        } else {
+          friendlyMsg = 'هناك بيانات مكررة مسجلة لموظف آخر بالفعل.';
+        }
+      } else if (errorString.includes('JWT') || errorString.includes('token') || errorString.includes('authenticated') || errorString.includes('Permission')) {
+        friendlyMsg = 'ليس لديك الصلاحيات الكافية للقيام بهذا الإجراء.';
+      }
+
+      setToast({ message: `فشل الحفظ: ${friendlyMsg}`, type: 'error' });
     }
   };
 
@@ -545,8 +600,10 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
     try {
       const { error } = await supabase.from('staff').delete().eq('id', id);
       if (error) throw error;
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, 'staff');
+      setToast({ message: 'تم حذف الموظف بنجاح', type: 'success' });
+    } catch (error: any) {
+      console.error('Error deleting staff:', error);
+      setToast({ message: `فشل حذف الموظف: ${error?.message || 'حدث خطأ غير معروف'}`, type: 'error' });
     }
   };
 
@@ -557,8 +614,10 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
         updated_at: new Date().toISOString()
       }).eq('id', member.id);
       if (error) throw error;
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, 'staff');
+      setToast({ message: 'تم تحديث حالة الموظف بنجاح', type: 'success' });
+    } catch (error: any) {
+      console.error('Error toggling staff status:', error);
+      setToast({ message: `فشل تحديث حالة الموظف: ${error?.message || 'حدث خطأ غير معروف'}`, type: 'error' });
     }
   };
 
@@ -851,7 +910,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             className={cn(
-              "fixed top-6 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-2xl shadow-2xl font-bold text-sm flex items-center gap-2 border",
+              "fixed top-6 left-1/2 -translate-x-1/2 z-[200] px-6 py-3 rounded-2xl shadow-2xl font-bold text-sm flex items-center gap-2 border",
               toast.type === 'success' ? "bg-success/5 text-success border-success/10" : "bg-danger/5 text-danger border-danger/10"
             )}
           >
@@ -1977,7 +2036,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                   <X size={24} className="text-content-muted" />
                 </button>
               </div>
-              <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-6">
+              <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="p-8 space-y-6">
                 <div className="space-y-2">
                   <label className="text-xs font-black text-content-muted uppercase tracking-widest">الاسم الكامل</label>
                   <div className="relative">

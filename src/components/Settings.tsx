@@ -32,7 +32,7 @@ interface SettingsProps {
   tenantId: string;
 }
 
-type TabType = 'profile' | 'appearance' | 'invoice' | 'printer' | 'tax' | 'branches' | 'staff' | 'permissions' | 'whatsapp' | 'billing' | 'support' | 'notifications' | 'data';
+type TabType = 'profile' | 'appearance' | 'invoice' | 'printer' | 'tax' | 'branches' | 'staff' | 'whatsapp' | 'billing' | 'support' | 'notifications' | 'data';
 
 export default function Settings({ tenantId }: SettingsProps) {
   const [loading, setLoading] = useState(true);
@@ -230,7 +230,6 @@ export default function Settings({ tenantId }: SettingsProps) {
     { id: 'whatsapp', label: 'تكامل واتساب', icon: MessageSquare, visible: canViewWhatsApp, group: 'system' },
     
     { id: 'staff', label: 'طاقم الموظفين', icon: Shield, visible: hasPermission('staff.manage'), group: 'admin' },
-    { id: 'permissions', label: 'صلاحيات الأدوار والموظفين', icon: ShieldCheck, visible: hasPermission('staff.manage') || currentStaff?.role === 'owner' || currentStaff?.role === 'admin', group: 'admin' },
     { id: 'billing', label: 'الاشتراك والمدفوعات', icon: CreditCard, visible: canViewBilling, group: 'admin' },
     { id: 'data', label: 'إدارة البيانات', icon: Database, visible: currentStaff?.role === 'owner' || currentStaff?.role === 'super_admin', group: 'admin' },
   ];
@@ -527,12 +526,6 @@ export default function Settings({ tenantId }: SettingsProps) {
                   <div className="bg-surface rounded-2xl sm:rounded-[3rem] border border-border shadow-xl shadow-brand/5">
                     <Staff tenantId={tenantId} />
                   </div>
-                </div>
-              )}
-
-              {activeTab === 'permissions' && (
-                <div className="bg-surface rounded-2xl sm:rounded-[3rem] border border-border shadow-xl shadow-brand/5 p-0 sm:p-2 md:p-6">
-                  <Staff tenantId={tenantId} initialViewMode="permissions" />
                 </div>
               )}
 

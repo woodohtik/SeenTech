@@ -396,6 +396,15 @@ export const updateRolePermissions = async (
   tenantId: string | null,
   isSuperAdmin: boolean = false
 ) => {
+  const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+  
+  if (!isUuid(roleId)) {
+    if (!isSuperAdmin) {
+      throw new Error('المهن الافتراضية محمية بالنظام ولا يمكن للتاجر تعديلها. يرجى إنشاء مهنة مخصصة بدلاً من ذلك.');
+    }
+    return;
+  }
+
   const { data: roleData, error: roleFetchError } = await supabase
     .from('roles')
     .select('*')
