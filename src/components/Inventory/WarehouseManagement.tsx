@@ -122,67 +122,71 @@ const WarehouseManagement: React.FC<WarehouseManagementProps> = ({ tenantId }) =
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="space-y-4">
         {branches.map((branch) => (
           <motion.div
             key={branch.id}
             layout
-            className="bg-surface rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm hover:shadow-xl transition-all group overflow-hidden"
+            className="bg-surface rounded-2xl sm:rounded-3xl border border-border shadow-xs hover:shadow-md transition-all p-4 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 text-right"
           >
-            <div className="p-5 sm:p-8 space-y-5 sm:space-y-6">
-              <div className="flex items-start justify-between">
-                <div className={cn(
-                  "p-4 rounded-2xl shadow-lg",
-                  branch.type === 'warehouse' ? "bg-brand text-white shadow-brand/20" : "bg-warning text-white shadow-warning/20"
-                )}>
-                  {branch.type === 'warehouse' ? <Warehouse size={24} /> : <Store size={24} />}
-                </div>
-                <div className="flex items-center gap-2">
+            {/* Right side: Branch identity & details */}
+            <div className="flex items-center gap-4 min-w-0 flex-1">
+              <div className={cn(
+                "p-3.5 sm:p-4 rounded-2xl shrink-0 text-white shadow-xs",
+                branch.type === 'warehouse' ? "bg-brand" : "bg-warning"
+              )}>
+                {branch.type === 'warehouse' ? <Warehouse size={22} /> : <Store size={22} />}
+              </div>
+              <div className="min-w-0 space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-base sm:text-lg font-black text-content truncate">{branch.name}</h3>
                   {branch.isMain && (
-                    <span className="flex items-center gap-1 bg-success/5 text-success px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-success/10">
-                      <ShieldCheck size={12} />
+                    <span className="flex items-center gap-1 bg-success/5 text-success px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border border-success/10 shrink-0">
+                      <ShieldCheck size={10} />
                       {t('branches.master')}
                     </span>
                   )}
-                  <button 
-                    onClick={() => {
-                      setEditingBranch(branch);
-                      setShowAddModal(true);
-                    }}
-                    className="p-2 hover:bg-surface-muted rounded-full transition-colors"
-                  >
-                    <MoreVertical size={20} className="text-content-muted" />
-                  </button>
+                  <span className={cn(
+                    "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shrink-0",
+                    branch.type === 'warehouse' ? "bg-brand/5 text-brand border-brand/10" : "bg-warning/5 text-warning border-warning/10"
+                  )}>
+                    {t(`inventory.type_${branch.type}`)}
+                  </span>
                 </div>
-              </div>
-
-              <div>
-                <h3 className="text-xl font-black text-content">{branch.name}</h3>
-                <p className="text-xs font-bold text-content-muted uppercase tracking-widest mt-1">
-                  {t(`inventory.type_${branch.type}`)}
-                </p>
-              </div>
-
-              <div className="space-y-3 pt-4 border-t border-border">
-                <div className="flex items-center gap-3 text-content-muted">
-                  <MapPin size={18} className="text-brand" />
-                  <span className="text-sm font-medium">{branch.location}</span>
-                </div>
-                <div className="flex items-center gap-3 text-content-muted">
-                  <Phone size={18} className="text-brand" />
-                  <span className="text-sm font-medium">{branch.phone}</span>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-content-muted text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <MapPin size={14} className="text-brand shrink-0" />
+                    <span className="truncate">{branch.location}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Phone size={14} className="text-brand shrink-0" />
+                    <span className="ltr shrink-0">{branch.phone}</span>
+                  </div>
                 </div>
               </div>
             </div>
-            
-            <div className="px-8 py-4 bg-surface-muted/50 flex items-center justify-between">
+
+            {/* Left side: Status and actions */}
+            <div className="flex items-center justify-between md:justify-end gap-3 pt-3 md:pt-0 border-t border-border/50 md:border-none">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
-                <span className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('common.active')}</span>
+                <span className="text-[10px] font-black text-content-muted uppercase tracking-wider">{t('common.active')}</span>
               </div>
-              <button className="text-xs font-black text-brand hover:text-brand/80 uppercase tracking-widest">
-                {t('branches.view_stock')}
-              </button>
+              
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => {
+                    setEditingBranch(branch);
+                    setShowAddModal(true);
+                  }}
+                  className="px-4 py-2 bg-surface-muted hover:bg-brand/10 hover:text-brand text-content font-bold text-xs rounded-xl transition-all cursor-pointer border border-border/40"
+                >
+                  تعديل الفرع
+                </button>
+                <button className="px-4 py-2 bg-brand/5 hover:bg-brand text-brand hover:text-white font-bold text-xs rounded-xl transition-all cursor-pointer">
+                  {t('branches.view_stock')}
+                </button>
+              </div>
             </div>
           </motion.div>
         ))}

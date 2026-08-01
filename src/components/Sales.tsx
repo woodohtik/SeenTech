@@ -331,15 +331,15 @@ export default function Sales({ tenantId }: { tenantId: string }) {
     <div className="flex flex-col h-full font-sans bg-background" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Header & Top Tabs */}
       <div className="bg-surface border-b border-border shrink-0">
-        <div className="px-4 md:px-6 py-4 flex flex-col gap-4">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 flex flex-col gap-3 sm:gap-4">
           <div className="flex justify-between items-center w-full">
-            <h1 className="text-xl md:text-2xl font-bold text-content">{t('sales.title', 'المبيعات')}</h1>
+            <h1 className="text-lg sm:text-2xl font-black text-content tracking-tight">{t('sales.title', 'المبيعات')}</h1>
             
             {/* Quick cash drawer badge for mobile, compact */}
             {activeShift && (
               <button
                 onClick={() => setIsCashDrawerDetailsOpen(true)}
-                className="flex md:hidden items-center gap-1.5 bg-emerald-500/10 text-emerald-600 px-3 py-1.5 rounded-xl border border-emerald-500/20 text-[11px] font-black cursor-pointer shadow-sm active:scale-95"
+                className="flex md:hidden items-center gap-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-3 py-1.5 rounded-xl border border-emerald-500/20 text-xs font-black cursor-pointer shadow-sm active:scale-95"
               >
                 <Wallet size={14} className="text-emerald-500 shrink-0" />
                 <span>
@@ -350,43 +350,43 @@ export default function Sales({ tenantId }: { tenantId: string }) {
           </div>
 
           {activeShift && (
-            <div id="tour-pos-shift" data-tour="pos-shift" className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface-muted/30 p-3 md:p-4 rounded-2xl border border-border/60">
+            <div id="tour-pos-shift" data-tour="pos-shift" className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface-muted/40 p-3 sm:p-3.5 rounded-2xl border border-border/70 shadow-sm">
               {/* Active Shift Details */}
-              <div className="text-xs md:text-sm text-content-muted flex items-center gap-2">
+              <div className="text-xs sm:text-sm text-content-muted flex items-center gap-2">
                 <Clock className="text-brand shrink-0" size={16} />
                 <span className="leading-relaxed">
-                  {t('sales.active_shift', 'وردية نشطة')}: <span className="font-extrabold text-content">{activeShift.staffName}</span> 
+                  {t('sales.active_shift', 'وردية نشطة')}: <span className="font-black text-content">{activeShift.staffName}</span> 
                   <span className="mx-1.5 text-border">|</span>
-                  {t('sales.shift_start', 'البداية')}: <span className="font-semibold text-content" dir="ltr">{new Date(activeShift.startTime).toLocaleTimeString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                  {t('sales.shift_start', 'البداية')}: <span className="font-bold text-content" dir="ltr">{new Date(activeShift.startTime).toLocaleTimeString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                 </span>
               </div>
 
-              <div className="flex items-center justify-between md:justify-end gap-2.5 mt-1 md:mt-0 pt-2.5 md:pt-0 border-t md:border-t-0 border-border/50">
+              <div className="flex items-center justify-between md:justify-end gap-2 mt-1 md:mt-0 pt-2.5 md:pt-0 border-t md:border-t-0 border-border/50">
                 {/* Desktop Cash Drawer */}
                 <button
                   onClick={() => setIsCashDrawerDetailsOpen(true)}
-                  className="hidden md:flex items-center gap-2 bg-emerald-500/10 text-emerald-600 px-3.5 py-1.5 rounded-xl border border-emerald-500/20 shadow-sm hover:bg-emerald-500/20 transition-all cursor-pointer active:scale-95"
+                  className="hidden md:flex items-center gap-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-3.5 py-1.5 rounded-xl border border-emerald-500/20 shadow-sm hover:bg-emerald-500/20 transition-all cursor-pointer active:scale-95 shrink-0"
                   title={t('sales.cash_drawer_tooltip', 'انقر لعرض تفصيل وتدفق نقدية الصندوق')}
                 >
                   <Wallet size={16} className="text-emerald-500 shrink-0" />
-                  <span className="text-xs font-bold text-emerald-700">{t('sales.cash_drawer', 'صندوق الكاش')}:</span>
-                  <span className="text-sm font-black text-emerald-600">
+                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">{t('sales.cash_drawer', 'صندوق الكاش')}:</span>
+                  <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
                     <PriceDisplay amount={cashDrawerBalance} />
                   </span>
                 </button>
 
                 {canManageShifts && (
-                  <div className="flex items-center gap-2 w-full md:w-auto">
+                  <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
                     <button 
                       onClick={() => setIsCashOperationsModalOpen(true)}
-                      className="flex-1 md:flex-none text-brand bg-brand/5 hover:bg-brand/10 border border-brand/20 px-3 py-2 md:py-1.5 rounded-xl text-xs font-extrabold transition-all duration-250 flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer min-h-[36px]"
+                      className="flex-1 md:flex-none text-brand bg-brand/10 hover:bg-brand/20 border border-brand/20 px-3.5 py-2 md:py-1.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer min-h-[36px] whitespace-nowrap"
                     >
                       <DollarSign size={14} />
-                      <span className="whitespace-nowrap">{t('sales.cash_operations', 'حركة الدرج')}</span>
+                      <span>{t('sales.cash_operations', 'حركة الدرج')}</span>
                     </button>
                     <button 
                       onClick={handleCloseShift}
-                      className="flex-1 md:flex-none bg-brand text-white hover:bg-brand/90 px-3 py-2 md:py-1.5 rounded-xl text-xs font-extrabold transition-all duration-250 active:scale-95 cursor-pointer min-h-[36px] whitespace-nowrap"
+                      className="flex-1 md:flex-none bg-brand text-white hover:bg-brand/90 px-3.5 py-2 md:py-1.5 rounded-xl text-xs font-black shadow-sm transition-all active:scale-95 cursor-pointer min-h-[36px] whitespace-nowrap"
                     >
                       {t('sales.close_shift', 'إغلاق الوردية')}
                     </button>
@@ -398,50 +398,50 @@ export default function Sales({ tenantId }: { tenantId: string }) {
         </div>
         
         {/* Primary Top Tabs */}
-        <div id="tour-pos-tabs" data-tour="pos-tabs" className="flex px-4 md:px-6 gap-4 md:gap-8 border-b border-border/50 overflow-x-auto scrollbar-hide whitespace-nowrap scroll-smooth">
+        <div id="tour-pos-tabs" data-tour="pos-tabs" className="flex px-4 sm:px-6 gap-4 sm:gap-6 border-b border-border/60 overflow-x-auto scrollbar-hide whitespace-nowrap scroll-smooth">
           <button
             onClick={() => handleTopTabChange('pos')}
             className={cn(
-              "pb-4 text-xs md:text-sm font-bold flex items-center gap-2 border-b-2 transition-colors shrink-0",
+              "pb-3.5 text-xs sm:text-sm font-black flex items-center gap-2 border-b-2 transition-all shrink-0 cursor-pointer",
               activeTopTab === 'pos' ? "border-brand text-brand" : "border-transparent text-content-muted hover:text-content"
             )}
           >
             <Monitor size={16} />
-            {t('sales.pos', 'نقطة البيع (POS)')}
+            <span>{t('sales.pos', 'نقطة البيع (POS)')}</span>
           </button>
           <button
             onClick={() => handleTopTabChange('returns')}
             className={cn(
-              "pb-4 text-xs md:text-sm font-bold flex items-center gap-2 border-b-2 transition-colors shrink-0",
+              "pb-3.5 text-xs sm:text-sm font-black flex items-center gap-2 border-b-2 transition-all shrink-0 cursor-pointer",
               activeTopTab === 'returns' ? "border-brand text-brand" : "border-transparent text-content-muted hover:text-content"
             )}
           >
             <RotateCcw size={16} />
-            {t('sales.returns', 'المرتجعات')}
+            <span>{t('sales.returns', 'المرتجعات')}</span>
           </button>
           {canManageShifts && (
             <button
               onClick={() => handleTopTabChange('shifts')}
               className={cn(
-                "pb-4 text-xs md:text-sm font-bold flex items-center gap-2 border-b-2 transition-colors shrink-0",
+                "pb-3.5 text-xs sm:text-sm font-black flex items-center gap-2 border-b-2 transition-all shrink-0 cursor-pointer",
                 activeTopTab === 'shifts' ? "border-brand text-brand" : "border-transparent text-content-muted hover:text-content"
               )}
             >
               <Clock size={16} />
-              {t('sales.shifts', 'الورديات')}
+              <span>{t('sales.shifts', 'الورديات')}</span>
             </button>
           )}
         </div>
 
         {/* Sub Tabs */}
-        <div id="tour-pos-subtabs" data-tour="pos-subtabs" className="flex px-4 md:px-6 gap-3 py-3 bg-surface-muted/50 overflow-x-auto scrollbar-hide scroll-smooth w-full">
+        <div id="tour-pos-subtabs" data-tour="pos-subtabs" className="flex px-4 sm:px-6 gap-2 sm:gap-2.5 py-2.5 bg-surface-muted/40 overflow-x-auto scrollbar-hide scroll-smooth w-full border-b border-border/50">
           {activeTopTab === 'pos' && (
             <>
               <button
                 onClick={() => setActiveSubTab('pos_main')}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-bold transition-colors shrink-0 whitespace-nowrap",
-                  activeSubTab === 'pos_main' ? "bg-brand text-white" : "bg-surface text-content-muted border border-border hover:border-brand hover:text-brand"
+                  "px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer",
+                  activeSubTab === 'pos_main' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
                 )}
               >
                 {t('sales.pos', 'نقطة البيع')}
@@ -449,8 +449,8 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               <button
                 onClick={() => setActiveSubTab('sales_record')}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-bold transition-colors shrink-0 whitespace-nowrap",
-                  activeSubTab === 'sales_record' ? "bg-brand text-white" : "bg-surface text-content-muted border border-border hover:border-brand hover:text-brand"
+                  "px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer",
+                  activeSubTab === 'sales_record' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
                 )}
               >
                 {t('sales.sales_record', 'سجل المبيعات')}
@@ -458,8 +458,8 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               <button
                 onClick={() => setActiveSubTab('tax_invoices')}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-bold transition-colors shrink-0 whitespace-nowrap",
-                  activeSubTab === 'tax_invoices' ? "bg-brand text-white" : "bg-surface text-content-muted border border-border hover:border-brand hover:text-brand"
+                  "px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer",
+                  activeSubTab === 'tax_invoices' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
                 )}
               >
                 {t('sales.tax_invoices', 'الفواتير الضريبية')}
@@ -467,8 +467,8 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               <button
                 onClick={() => setActiveSubTab('credit_notes')}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-bold transition-colors shrink-0 whitespace-nowrap",
-                  activeSubTab === 'credit_notes' ? "bg-brand text-white" : "bg-surface text-content-muted border border-border hover:border-brand hover:text-brand"
+                  "px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer",
+                  activeSubTab === 'credit_notes' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
                 )}
               >
                 {t('sales.credit_notes', 'الإشعارات الدائنة')}
@@ -480,8 +480,8 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               <button
                 onClick={() => setActiveSubTab('returns_main')}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-bold transition-colors shrink-0 whitespace-nowrap",
-                  activeSubTab === 'returns_main' ? "bg-brand text-white" : "bg-surface text-content-muted border border-border hover:border-brand hover:text-brand"
+                  "px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer",
+                  activeSubTab === 'returns_main' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
                 )}
               >
                 {t('sales.returns', 'المرتجعات')}
@@ -489,8 +489,8 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               <button
                 onClick={() => setActiveSubTab('returns_record')}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-bold transition-colors shrink-0 whitespace-nowrap",
-                  activeSubTab === 'returns_record' ? "bg-brand text-white" : "bg-surface text-content-muted border border-border hover:border-brand hover:text-brand"
+                  "px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer",
+                  activeSubTab === 'returns_record' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
                 )}
               >
                 {t('sales.returns_record', 'سجل المرتجعات')}
@@ -502,8 +502,8 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               <button
                 onClick={() => setActiveSubTab('shifts_main')}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-bold transition-colors shrink-0 whitespace-nowrap",
-                  activeSubTab === 'shifts_main' ? "bg-brand text-white" : "bg-surface text-content-muted border border-border hover:border-brand hover:text-brand"
+                  "px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer",
+                  activeSubTab === 'shifts_main' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
                 )}
               >
                 {t('sales.shifts', 'الورديات')}
@@ -511,8 +511,8 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               <button
                 onClick={() => setActiveSubTab('shifts_record')}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-bold transition-colors shrink-0 whitespace-nowrap",
-                  activeSubTab === 'shifts_record' ? "bg-brand text-white" : "bg-surface text-content-muted border border-border hover:border-brand hover:text-brand"
+                  "px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer",
+                  activeSubTab === 'shifts_record' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
                 )}
               >
                 {t('sales.shifts_record', 'سجل الورديات')}

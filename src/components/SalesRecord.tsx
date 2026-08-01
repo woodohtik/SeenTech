@@ -179,7 +179,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
   }
 
   return (
-    <div className="p-4 md:p-6 font-sans">
+    <div className="p-4 sm:p-6 font-sans">
       <div className="bg-surface rounded-2xl md:rounded-[2rem] border border-border shadow-sm overflow-hidden">
         {/* Desktop View Table */}
         <div className="hidden md:block overflow-x-auto whitespace-nowrap scrollbar-hide">

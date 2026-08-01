@@ -143,6 +143,15 @@ export default function SaaSTeamManagement() {
 
         const uid = userCredential.user.uid;
 
+        // Ensure user exists in the global users table first due to foreign key constraints
+        const { error: userError } = await supabase.from('users').upsert({
+          id: uid,
+          email: formData.email.toLowerCase(),
+          display_name: formData.name
+        }, { onConflict: 'id' });
+
+        if (userError) throw userError;
+
         const { error } = await supabase
           .from('saas_users')
           .insert([{
@@ -155,7 +164,36 @@ export default function SaaSTeamManagement() {
           }]);
 
         if (error) throw error;
-        setToast({ message: t('saas.add_success', 'تمت إضافة الموظف بنجاح'), type: 'success' });
+
+        // Store temporary password status in saas_settings
+        try {
+          const { data: tempPassSetting } = await supabase
+            .from('saas_settings')
+            .select('*')
+            .eq('key', 'temp_passwords')
+            .maybeSingle();
+
+          const currentTempPasswords = tempPassSetting?.value && typeof tempPassSetting.value === 'object'
+            ? tempPassSetting.value
+            : {};
+
+          const updatedTempPasswords = {
+            ...currentTempPasswords,
+            [uid]: true
+          };
+
+          await supabase
+            .from('saas_settings')
+            .upsert({
+              key: 'temp_passwords',
+              value: updatedTempPasswords,
+              updated_at: new Date().toISOString()
+            });
+        } catch (tempErr) {
+          console.error('Error updating temp_passwords in saas_settings:', tempErr);
+        }
+
+        setToast({ message: t('saas.add_success', 'تمت إضافة الموظف بنجاح مع تعيين كلمة مرور مؤقتة'), type: 'success' });
       }
 
       setIsModalOpen(false);

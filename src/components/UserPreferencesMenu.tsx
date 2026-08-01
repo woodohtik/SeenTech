@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme, ThemeType } from '../contexts/ThemeContext';
 import { Staff } from '../types';
 import { cn } from '../lib/utils';
+import { useAuth } from '../contexts/AuthContext';
 
 interface UserPreferencesMenuProps {
   currentStaff?: Staff | null;
@@ -42,12 +43,16 @@ export default function UserPreferencesMenu({
   onToggleLayout,
   className,
   isCollapsed = false,
-  dropdownPosition,
+  dropdownPosition = 'bottom',
   align
 }: UserPreferencesMenuProps) {
-  const { t, i18n } = useState({ t: (s: string, def?: string) => def || s, i18n: { language: 'ar', changeLanguage: (l: string) => {} } }) && { t: useTranslation().t, i18n: useTranslation().i18n };
+  const { t, i18n } = useTranslation();
   const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
+  const { dbUser } = useAuth();
+
+  const effectiveRole = currentStaff?.role || role || dbUser?.role;
+  const effectiveName = currentStaff?.name || dbUser?.display_name || dbUser?.email || t('common.system_user', 'مستخدم النظام');
 
   const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
 
@@ -119,14 +124,24 @@ export default function UserPreferencesMenu({
           <>
             <div className={cn("flex flex-col flex-1 truncate", isRtl ? "text-right" : "text-left")}>
               <span className="text-sm font-black text-content truncate">
-                {currentStaff?.name || t('common.system_user', 'مستخدم النظام')}
+                {effectiveName}
               </span>
               <span className="text-[10px] font-bold text-brand uppercase tracking-widest mt-0.5">
-                {currentStaff?.role === 'owner' 
+                {effectiveRole === 'owner' 
                   ? t('common.roles.owner', 'مالك') 
-                  : currentStaff?.role === 'cashier' 
+                  : effectiveRole === 'cashier' 
                     ? t('common.roles.cashier', 'كاشير') 
-                    : t('common.roles.tailor', 'خياط')}
+                    : effectiveRole === 'tailor'
+                      ? t('common.roles.tailor', 'خياط')
+                      : effectiveRole === 'super_admin'
+                        ? 'مشرف عام'
+                        : effectiveRole === 'support_tech'
+                          ? 'فني دعم'
+                          : effectiveRole === 'billing_admin'
+                            ? 'إدارة الفواتير'
+                            : effectiveRole === 'sales'
+                              ? 'المبيعات'
+                              : (effectiveRole || 'مستخدم')}
               </span>
             </div>
             <ChevronDown size={16} className={cn("text-content-muted transition-transform duration-300", isOpen && "rotate-180")} />

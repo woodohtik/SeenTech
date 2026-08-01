@@ -243,9 +243,9 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
   };
 
   return (
-    <div className="bg-surface rounded-2xl lg:rounded-3xl border border-border shadow-xl shadow-brand/5 overflow-hidden flex flex-col xl:flex-row min-h-[750px] w-full" dir="rtl">
-      {/* Mobile/Tablet Switcher (< xl) */}
-      <div className="xl:hidden flex items-center p-1.5 bg-surface-muted rounded-2xl border border-border m-3 sm:m-4 mb-0 sm:mb-0">
+    <div className="bg-surface rounded-2xl lg:rounded-3xl border border-border shadow-xl shadow-brand/5 overflow-hidden flex flex-col 2xl:flex-row min-h-[750px] w-full" dir="rtl">
+      {/* Mobile/Tablet Switcher (< 2xl) */}
+      <div className="2xl:hidden flex items-center p-1.5 bg-surface-muted rounded-2xl border border-border m-3 sm:m-4 mb-0 sm:mb-0">
         <button
           type="button"
           onClick={() => setMobileTab('controls')}
@@ -272,8 +272,8 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
 
       {/* Controls Section */}
       <div className={cn(
-        "w-full xl:w-1/2 p-4 sm:p-6 lg:p-8 border-b xl:border-b-0 xl:border-l border-border overflow-y-auto max-h-[850px] space-y-6 sm:space-y-8 custom-scrollbar",
-        mobileTab === 'controls' ? "block" : "hidden xl:block"
+        "w-full 2xl:w-1/2 p-4 sm:p-6 lg:p-8 border-b 2xl:border-b-0 2xl:border-l border-border overflow-y-auto max-h-[850px] space-y-6 sm:space-y-8 custom-scrollbar",
+        mobileTab === 'controls' ? "block" : "hidden 2xl:block"
       )}>
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-center sm:text-right">
@@ -593,8 +593,8 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
 
       {/* Live Preview Section */}
       <div className={cn(
-        "w-full xl:w-1/2 bg-surface-muted/40 p-4 sm:p-8 flex flex-col items-center justify-start overflow-auto max-h-[850px] border-t xl:border-t-0 border-border custom-scrollbar",
-        mobileTab === 'preview' ? "flex" : "hidden xl:flex"
+        "w-full 2xl:w-1/2 bg-surface-muted/40 p-4 sm:p-8 flex flex-col items-center justify-start overflow-auto max-h-[850px] border-t 2xl:border-t-0 border-border custom-scrollbar",
+        mobileTab === 'preview' ? "flex" : "hidden 2xl:flex"
       )}>
         <div className="bg-white/80 backdrop-blur-md px-6 py-2 rounded-full border border-border/50 flex items-center gap-2 mb-6 sm:mb-10 text-content-muted font-black uppercase tracking-widest text-[10px] sticky top-0 z-10 shadow-sm shadow-brand/5 whitespace-nowrap">
           <Eye size={12} className="text-brand" />
@@ -603,7 +603,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
 
         {/* Invoice Paper Wrapper to handle scaling */}
         <div className={cn(
-          "flex justify-center transition-all duration-500 w-full origin-top mb-10 xl:mb-20 overflow-x-auto",
+          "flex justify-center transition-all duration-500 w-full origin-top mb-10 2xl:mb-20 overflow-x-auto",
           settings.printSize === 'a4' ? "scale-[0.45] xs:scale-[0.5] sm:scale-[0.6] md:scale-[0.7] lg:scale-[0.45] xl:scale-[0.6] 2xl:scale-[0.7]" : 
           settings.printSize === 'a5' ? "scale-[0.55] xs:scale-[0.6] sm:scale-[0.7] lg:scale-[0.55] xl:scale-[0.7]" : "scale-100"
         )}>

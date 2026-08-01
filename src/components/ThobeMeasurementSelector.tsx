@@ -333,6 +333,7 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
               <p className="text-sm text-content-muted font-bold">أدخل المقاسات بدقة للمراجعة الفورية</p>
             </div>
             <button 
+              type="button"
               onClick={() => setIsInstructionMode(!isInstructionMode)}
               title="وضع التعليمات"
               className={cn("p-2.5 rounded-xl transition-colors shrink-0", isInstructionMode ? "bg-amber-100 text-amber-600" : "bg-surface-muted text-content-muted hover:bg-border")}
@@ -358,6 +359,7 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
                   </label>
                   {isInstructionMode && (
                     <button 
+                      type="button"
                       onClick={() => setActiveHint(activeHint === part ? null : part)}
                       className={cn("p-1.5 rounded-full transition-colors", activeHint === part ? "text-amber-600 bg-amber-100" : "text-amber-500 hover:bg-amber-50")}
                     >

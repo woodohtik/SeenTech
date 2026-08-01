@@ -20,11 +20,15 @@ import {
   X,
   ExternalLink,
   Clock,
-  CheckCircle2
+  CheckCircle2,
+  Lock,
+  Eye,
+  EyeOff,
+  Loader2
 } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { auth } from '../lib/firebase';
-import { signOut } from 'firebase/auth';
+import { signOut, updatePassword } from 'firebase/auth';
 import { cn } from '../lib/utils';
 import { logSaaSSecurityEvent } from '../services/saasSecurityService';
 import { useAuth } from '../contexts/AuthContext';
@@ -80,7 +84,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const { impersonationTenantId, setImpersonationTenantId } = useAuth();
+  const { impersonationTenantId, setImpersonationTenantId, dbUser } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [impersonatedTenantName, setImpersonatedTenantName] = useState<string | null>(null);
@@ -102,6 +106,90 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   const notificationsRef = useRef<HTMLDivElement>(null);
 
+  const [mustChangePassword, setMustChangePassword] = useState(false);
+  const [checkingTempPassword, setCheckingTempPassword] = useState(true);
+
+  useEffect(() => {
+    const checkTempPasswordStatus = async () => {
+      if (!auth.currentUser) return;
+      try {
+        const { data } = await supabase
+          .from('saas_settings')
+          .select('*')
+          .eq('key', 'temp_passwords')
+          .maybeSingle();
+
+        if (data && data.value && typeof data.value === 'object') {
+          const tempPasswords = data.value as Record<string, boolean>;
+          if (tempPasswords[auth.currentUser.uid]) {
+            setMustChangePassword(true);
+          }
+        }
+      } catch (err) {
+        console.error('Error checking temp password status:', err);
+      } finally {
+        setCheckingTempPassword(false);
+      }
+    };
+    checkTempPasswordStatus();
+  }, [dbUser]);
+
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passError, setPassError] = useState<string | null>(null);
+  const [passSubmitting, setPassSubmitting] = useState(false);
+  const [showPass1, setShowPass1] = useState(false);
+  const [showPass2, setShowPass2] = useState(false);
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPassError(null);
+
+    if (newPassword.length < 6) {
+      setPassError(t('saas.password_too_short', 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'));
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPassError(t('saas.passwords_do_not_match', 'كلمتا المرور غير متطابقتين'));
+      return;
+    }
+
+    setPassSubmitting(true);
+    try {
+      if (!auth.currentUser) throw new Error("No user logged in");
+      
+      // Get token first before changing password (so it's valid)
+      const token = await auth.currentUser.getIdToken(true);
+
+      // Call server endpoint to remove from saas_settings temp_passwords list
+      const response = await fetch('/api/saas/complete-temp-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || 'Failed to complete password setup');
+      }
+
+      // Update in Firebase Auth
+      await updatePassword(auth.currentUser, newPassword);
+
+      setMustChangePassword(false);
+      // Log security event
+      await logSaaSSecurityEvent('saas_password_changed', 'User successfully replaced temporary password');
+    } catch (err: any) {
+      console.error(err);
+      setPassError(err.message || t('saas.error_updating_password', 'حدث خطأ أثناء تحديث كلمة المرور'));
+    } finally {
+      setPassSubmitting(false);
+    }
+  };
+
   // 1. Session Timeout Logic (Idle Timeout)
   const IDLE_TIMEOUT = 15 * 60 * 1000; // 15 minutes
   const [lastActivity, setLastActivity] = useState(Date.now());
@@ -115,7 +203,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
     } catch (e) {
       console.error(e);
     }
-    window.location.replace('/saas/login');
+    window.location.replace('/login');
   }, [navigate]);
 
   useEffect(() => {
@@ -138,16 +226,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
     };
   }, [lastActivity, handleLogout]);
 
-  // 2. 2FA Verification Check
-  useEffect(() => {
-    const is2FAVerified = sessionStorage.getItem('saas_2fa_verified') === 'true' || 
-                         (auth.currentUser?.email === "nomansa2566512@gmail.com") ||
-                         (sessionStorage.getItem('dev_bypass') === 'true');
-    
-    if (!is2FAVerified && location.pathname !== '/saas/login') {
-      navigate('/saas/login');
-    }
-  }, [navigate, location.pathname]);
+  // 2. 2FA Verification Check (Removed per user request)
 
   // 3. Impersonation Check (Fetch names)
   useEffect(() => {
@@ -423,7 +502,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
             </button>
             <div className="h-8 w-px bg-border mx-2" />
             <div className="flex flex-col">
-              <span className="text-sm font-black text-content">{t('common.welcome_user', 'أهلاً')}، {auth.currentUser?.displayName || t('common.support_engineer', 'مهندس الدعم')}</span>
+              <span className="text-sm font-black text-content">{t('common.welcome_user', 'أهلاً')}، {dbUser?.display_name || auth.currentUser?.displayName || t('common.support_engineer', 'مهندس الدعم')}</span>
               <span className="text-[10px] font-bold text-brand">{getRoleLabel(userRole)}</span>
             </div>
           </div>
@@ -439,7 +518,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
             </div>
 
             {/* Language Preferences */}
-            <UserPreferencesMenu />
+            <UserPreferencesMenu role={userRole} dropdownPosition="bottom" />
 
             <div className="relative" ref={notificationsRef}>
               <button 
@@ -549,6 +628,101 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
           </div>
         </div>
       </main>
+
+      <AnimatePresence>
+        {mustChangePassword && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" dir="rtl">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 text-right"
+            >
+              <div className="p-8 text-center bg-brand/5 border-b border-brand/10">
+                <div className="w-16 h-16 bg-brand/10 text-brand rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Lock size={32} />
+                </div>
+                <h2 className="text-2xl font-black text-gray-900 tracking-tight">تعيين كلمة مرور جديدة</h2>
+                <p className="text-sm text-gray-500 font-medium mt-1 leading-relaxed">
+                  لقد سجلت الدخول باستخدام كلمة مرور مؤقتة. يرجى تعيين كلمة مرور جديدة وخاصة بك للمتابعة.
+                </p>
+              </div>
+
+              <form onSubmit={handleUpdatePassword} className="p-8 space-y-6">
+                {passError && (
+                  <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex gap-3 text-red-600 text-sm font-medium">
+                    <AlertCircle className="shrink-0" size={20} />
+                    <span>{passError}</span>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-700 block">كلمة المرور الجديدة</label>
+                  <div className="relative">
+                    <input
+                      type={showPass1 ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                      className="w-full h-12 px-4 pr-10 rounded-2xl border border-gray-200 focus:border-brand focus:ring-2 focus:ring-brand/10 outline-none transition-all font-bold text-gray-900"
+                      placeholder="••••••••"
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                      <Lock size={18} />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowPass1(!showPass1)}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPass1 ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-700 block">تأكيد كلمة المرور الجديدة</label>
+                  <div className="relative">
+                    <input
+                      type={showPass2 ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      className="w-full h-12 px-4 pr-10 rounded-2xl border border-gray-200 focus:border-brand focus:ring-2 focus:ring-brand/10 outline-none transition-all font-bold text-gray-900"
+                      placeholder="••••••••"
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                      <Lock size={18} />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowPass2(!showPass2)}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPass2 ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={passSubmitting}
+                  className="w-full h-12 bg-brand text-white font-bold rounded-2xl hover:bg-brand/95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand/10 disabled:opacity-50 cursor-pointer"
+                >
+                  {passSubmitting ? (
+                    <>
+                      <Loader2 className="animate-spin" size={20} />
+                      <span>جاري الحفظ...</span>
+                    </>
+                  ) : (
+                    <span>حفظ كلمة المرور والدخول</span>
+                  )}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

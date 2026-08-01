@@ -191,6 +191,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const logout = useCallback(async () => {
         try {
+            if (firebaseAuth?.currentUser) {
+                await supabase
+                    .from('users')
+                    .update({ photo_url: null })
+                    .eq('id', firebaseAuth.currentUser.uid);
+            }
+        } catch (err) {
+            console.warn("Failed to reset session on logout:", err);
+        }
+        try {
             localStorage.clear();
             sessionStorage.clear();
             if (firebaseAuth) await signOut(firebaseAuth);

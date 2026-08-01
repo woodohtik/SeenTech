@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { formatSaudiPhone } from '../utils/phoneUtils';
 import { Store, MapPin, Phone, Globe, Bell, Shield, CreditCard, MessageSquare, CheckCircle2, AlertCircle, ChevronRight, ExternalLink, Zap, Upload, X as CloseIcon, Database, Trash2, ShieldCheck, Palette, FileText, HelpCircle, Layout, Mail, Printer } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
@@ -36,9 +37,18 @@ type TabType = 'profile' | 'appearance' | 'invoice' | 'printer' | 'tax' | 'branc
 
 export default function Settings({ tenantId }: SettingsProps) {
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabType>('profile');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = (searchParams.get('tab') as TabType) || 'profile';
+  const setActiveTab = (tab: TabType) => {
+    setSearchParams({ tab });
+  };
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isDeletingTestData, setIsDeletingTestData] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [showAuditModal, setShowAuditModal] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [userEmail, setUserEmail] = useState<string>('');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const { currentStaff } = useStaff();
@@ -210,6 +220,88 @@ export default function Settings({ tenantId }: SettingsProps) {
     }
   };
 
+  const handleExportData = async () => {
+    if (!tenantId) return;
+    setIsExporting(true);
+    try {
+      const tables = ['tenants', 'customers', 'orders', 'staff', 'branches', 'products', 'inventory'];
+      const exportedData: Record<string, any> = {};
+
+      for (const table of tables) {
+        try {
+          const { data, error } = await supabase
+            .from(table)
+            .select('*')
+            .eq(table === 'tenants' ? 'id' : 'tenant_id', tenantId);
+          
+          if (!error && data) {
+            exportedData[table] = data;
+          } else {
+            exportedData[table] = [];
+          }
+        } catch (tableErr) {
+          console.warn(`Could not export table ${table}:`, tableErr);
+          exportedData[table] = [];
+        }
+      }
+
+      try {
+        const { data: auditLogsData } = await supabase
+          .from('employee_activity_logs')
+          .select('*')
+          .eq('tenant_id', tenantId)
+          .order('occurred_at', { ascending: false })
+          .limit(100);
+        exportedData['employee_activity_logs'] = auditLogsData || [];
+      } catch (auditErr) {
+        exportedData['employee_activity_logs'] = [];
+      }
+
+      const jsonStr = JSON.stringify(exportedData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `backup_data_${tenantId}_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('حدث خطأ أثناء تصدير البيانات');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const fetchAuditLogs = async () => {
+    if (!tenantId) return;
+    setLoadingLogs(true);
+    try {
+      const { data, error } = await supabase
+        .from('employee_activity_logs')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .order('occurred_at', { ascending: false })
+        .limit(100);
+      
+      if (!error && data) {
+        setAuditLogs(data);
+      }
+    } catch (err) {
+      console.error('Error fetching logs:', err);
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showAuditModal) {
+      fetchAuditLogs();
+    }
+  }, [showAuditModal]);
+
   if (loading) {
     return (
       <div className="h-64 flex items-center justify-center">
@@ -257,85 +349,9 @@ export default function Settings({ tenantId }: SettingsProps) {
         subtitle="تخصيص تجربة متجرك وإدارة اشتراكك"
       />
 
-      {/* Responsive Mobile/Tablet Navigation Header (< lg) */}
-      <div className="lg:hidden w-full space-y-3 mb-4">
-        {/* Quick Dropdown Select for Small Screens */}
-        <div className="relative w-full">
-          <select
-            value={activeTab}
-            onChange={(e) => setActiveTab(e.target.value as TabType)}
-            className="w-full bg-surface text-content font-black text-sm p-3.5 pl-10 rounded-2xl border-2 border-brand/30 shadow-md shadow-brand/5 focus:outline-none focus:border-brand appearance-none cursor-pointer"
-          >
-            {Object.entries(groupedTabs).map(([key, group]) => group.tabs.length > 0 && (
-              <optgroup key={key} label={group.label}>
-                {group.tabs.map((tab) => (
-                  <option key={tab.id} value={tab.id}>
-                    {tab.label}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-brand">
-            <ChevronRight size={20} className="rotate-90" />
-          </div>
-        </div>
-
-        {/* Scrollable Pills Bar for Quick Switching */}
-        <div id="tour-settings-nav-mobile" data-tour="settings-nav-mobile" className="w-full overflow-x-auto scrollbar-hide py-1 px-0.5 flex gap-2 select-none border-b border-border pb-3">
-          {TABS.filter(t => t.visible).map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer",
-                activeTab === tab.id
-                  ? "bg-brand text-white shadow-md shadow-brand/10"
-                  : "bg-surface text-content-muted border border-border hover:border-brand/30 hover:text-brand"
-              )}
-            >
-              <tab.icon size={15} />
-              <span>{tab.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start w-full">
-        {/* Navigation Sidebar (Desktop lg+) */}
-        <aside id="tour-settings-panel" data-tour="settings-panel" className="hidden lg:block lg:w-64 xl:w-72 shrink-0 space-y-6 sticky top-8">
-          {Object.entries(groupedTabs).map(([key, group], gIdx) => group.tabs.length > 0 && (
-            <div key={key} className="space-y-2">
-              <h4 className="px-4 text-[10px] font-black text-content-muted uppercase tracking-widest">{group.label}</h4>
-              <div className="space-y-1">
-                {group.tabs.map((tab, tIdx) => (
-                  <motion.button 
-                    key={tab.id}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: (gIdx * 0.1) + (tIdx * 0.05) }}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs xl:text-sm font-bold transition-all group relative cursor-pointer",
-                      activeTab === tab.id 
-                        ? "bg-brand text-white shadow-lg shadow-brand/10" 
-                        : "text-content-muted hover:bg-surface-muted hover:text-brand"
-                    )}
-                  >
-                    <tab.icon size={18} className={cn("transition-transform group-hover:scale-110 shrink-0", activeTab === tab.id ? "text-white" : "text-content-muted")} />
-                    <span className="truncate">{tab.label}</span>
-                    {activeTab === tab.id && (
-                      <motion.div layoutId="activeTabIndicator" className="absolute -left-1 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-white rounded-full" />
-                    )}
-                  </motion.button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </aside>
-
+      <div className="w-full">
         {/* Main Content Area */}
-        <main className="flex-1 min-w-0 w-full">
+        <main className="w-full">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -843,19 +859,33 @@ export default function Settings({ tenantId }: SettingsProps) {
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-1">
-                        <button className="flex flex-col items-center justify-center p-6 sm:p-10 bg-surface rounded-2xl sm:rounded-[2.5rem] border-2 border-border border-dashed hover:border-brand/40 hover:bg-brand/5 transition-all group text-center">
+                        <button 
+                          onClick={handleExportData}
+                          disabled={isExporting}
+                          className="flex flex-col items-center justify-center p-6 sm:p-10 bg-surface rounded-2xl sm:rounded-[2.5rem] border-2 border-border border-dashed hover:border-brand/40 hover:bg-brand/5 transition-all group text-center cursor-pointer disabled:opacity-50"
+                        >
                           <div className="p-4 bg-surface-muted rounded-2xl mb-4 group-hover:scale-110 transition-transform">
-                             <Database size={32} className="text-content-muted" />
+                             {isExporting ? (
+                               <div className="w-8 h-8 border-4 border-brand/30 border-t-brand rounded-full animate-spin" />
+                             ) : (
+                               <Database size={32} className="text-brand" />
+                             )}
                           </div>
                           <p className="font-black text-content">تصدير قاعدة البيانات (JSON)</p>
-                          <p className="text-[10px] text-content-muted font-bold mt-2 uppercase">آخر نسخة تم تصديرها: لم تُجرى بعد</p>
+                          <p className="text-[10px] text-content-muted font-bold mt-2 uppercase">
+                            {isExporting ? 'جاري تصدير الملف...' : 'اضغط للتصدير والتحميل فوراً'}
+                          </p>
                         </button>
-                        <button className="flex flex-col items-center justify-center p-6 sm:p-10 bg-surface rounded-2xl sm:rounded-[2.5rem] border-2 border-border border-dashed hover:border-success/40 hover:bg-success/5 transition-all group text-center">
+                        
+                        <button 
+                          onClick={() => setShowAuditModal(true)}
+                          className="flex flex-col items-center justify-center p-6 sm:p-10 bg-surface rounded-2xl sm:rounded-[2.5rem] border-2 border-border border-dashed hover:border-success/40 hover:bg-success/5 transition-all group text-center cursor-pointer"
+                        >
                           <div className="p-4 bg-surface-muted rounded-2xl mb-4 group-hover:scale-110 transition-transform">
-                             <FileText size={32} className="text-content-muted" />
+                             <FileText size={32} className="text-success" />
                           </div>
                           <p className="font-black text-content">سجلات تدقيق العمليات (Audit)</p>
-                          <p className="text-[10px] text-content-muted font-bold mt-2 uppercase">مفعل لجميع مديري النظام والملاك</p>
+                          <p className="text-[10px] text-content-muted font-bold mt-2 uppercase">اضغط لفتح وعرض سجلات الموظفين والعمليات الحساسة</p>
                         </button>
                       </div>
                     </div>
@@ -879,6 +909,119 @@ export default function Settings({ tenantId }: SettingsProps) {
           >
             <CheckCircle2 size={22} className="text-white" />
             <span>تم حفظ الإعدادات بنجاح</span>
+          </motion.div>
+        )}
+
+        {showAuditModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
+            dir="rtl"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-surface w-full max-w-4xl h-[80vh] flex flex-col rounded-3xl border border-border shadow-2xl overflow-hidden text-right"
+            >
+              {/* Modal Header */}
+              <div className="p-5 sm:p-6 border-b border-border flex items-center justify-between bg-surface-muted/50">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-success/10 text-success rounded-2xl shrink-0">
+                    <FileText size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-content">سجلات تدقيق العمليات (Audit Logs)</h3>
+                    <p className="text-xs text-content-muted font-bold mt-0.5">تتبع عمليات الموظفين والتغييرات في النظام في الوقت الفعلي</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowAuditModal(false)}
+                  className="p-2 hover:bg-surface-muted rounded-full transition-colors cursor-pointer"
+                >
+                  <CloseIcon size={24} className="text-content-muted hover:text-content" />
+                </button>
+              </div>
+
+              {/* Search Bar */}
+              <div className="p-4 sm:p-6 border-b border-border bg-surface flex flex-col sm:flex-row gap-3">
+                <input
+                  type="text"
+                  placeholder="ابحث باسم الموظف، العملية، أو التفاصيل..."
+                  value={searchTerm}
+                  className="flex-1 bg-surface-muted border border-border px-4 py-3 rounded-2xl text-sm font-bold text-content focus:outline-none focus:border-brand"
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <button
+                  onClick={fetchAuditLogs}
+                  disabled={loadingLogs}
+                  className="px-5 py-3 bg-brand/5 hover:bg-brand text-brand hover:text-white rounded-2xl text-xs font-black transition-all cursor-pointer border border-brand/10 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {loadingLogs ? (
+                    <div className="w-4 h-4 border-2 border-brand/30 border-t-brand rounded-full animate-spin" />
+                  ) : (
+                    <Database size={14} />
+                  )}
+                  تحديث السجل
+                </button>
+              </div>
+
+              {/* Logs Content */}
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 custom-scrollbar">
+                {loadingLogs ? (
+                  <div className="h-full flex flex-col items-center justify-center space-y-3">
+                    <div className="w-12 h-12 border-4 border-brand/30 border-t-brand rounded-full animate-spin" />
+                    <p className="text-sm font-bold text-content-muted">جاري تحميل سجلات العمليات...</p>
+                  </div>
+                ) : auditLogs.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center p-8">
+                    <FileText size={48} className="text-content-muted mb-3 opacity-40" />
+                    <p className="font-black text-content text-lg">لا توجد سجلات تدقيق حتى الآن</p>
+                    <p className="text-sm text-content-muted font-bold mt-1">تظهر السجلات هنا فور قيام الموظفين بعمليات الحفظ أو التعديل.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {auditLogs
+                      .filter(log => {
+                        const term = (searchTerm || '').toLowerCase();
+                        return (
+                          (log.staff_name || '').toLowerCase().includes(term) ||
+                          (log.action || '').toLowerCase().includes(term) ||
+                          (log.details || '').toLowerCase().includes(term) ||
+                          (log.branch_name || '').toLowerCase().includes(term)
+                        );
+                      })
+                      .map((log) => (
+                        <div key={log.id} className="p-4 bg-surface-muted/30 border border-border/60 rounded-2xl flex flex-col sm:flex-row sm:items-start justify-between gap-3 text-right">
+                          <div className="space-y-1.5 flex-1 min-w-0">
+                            <div className="flex items-center gap-2.5 flex-wrap">
+                              <span className="font-black text-sm text-content flex items-center gap-1">
+                                {log.staff_name}
+                              </span>
+                              <span className="text-[10px] bg-brand/5 text-brand px-2 py-0.5 rounded-full font-black border border-brand/10">
+                                {log.action}
+                              </span>
+                              {log.branch_name && (
+                                <span className="text-[10px] bg-warning/5 text-warning px-2 py-0.5 rounded-full font-black border border-warning/10">
+                                  {log.branch_name}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-content font-semibold leading-relaxed break-words">
+                              {log.details}
+                            </p>
+                          </div>
+                          <div className="text-left shrink-0 text-[10px] font-bold text-content-muted flex items-center gap-1.5 justify-end">
+                            <span>{new Date(log.occurred_at).toLocaleString('ar-SA')}</span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

@@ -24,7 +24,16 @@ import {
   List,
   Monitor,
   Menu,
-  X as XIcon
+  X as XIcon,
+  Store,
+  FileText,
+  MapPin,
+  Palette,
+  Printer,
+  Bell,
+  MessageSquare,
+  CreditCard,
+  Database
 } from 'lucide-react';
 import { auth } from '../lib/firebase';
 import { signOut } from 'firebase/auth';
@@ -64,9 +73,18 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
   const { theme, setTheme } = useTheme();
-  const { impersonationTenantId, setImpersonationTenantId } = useAuth();
+  const { impersonationTenantId, setImpersonationTenantId, dbUser } = useAuth();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const [isSettingsSubMenuOpen, setIsSettingsSubMenuOpen] = React.useState(location.pathname.startsWith('/settings'));
   const [isHovered, setIsHovered] = React.useState(false);
+
+  React.useEffect(() => {
+    if (location.pathname.startsWith('/settings')) {
+      if (!isCollapsed) {
+        setIsSettingsSubMenuOpen(true);
+      }
+    }
+  }, [location.pathname, isCollapsed]);
   const [tenantLogo, setTenantLogo] = React.useState<string | null>(null);
   const [tenantName, setTenantName] = React.useState<string>(t('common.tailor_system'));
   const [isLangOpen, setIsLangOpen] = React.useState(false);
@@ -136,6 +154,16 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
 
   const handleLogout = async () => {
     try {
+      if (auth?.currentUser) {
+        await supabase
+          .from('users')
+          .update({ photo_url: null })
+          .eq('id', auth.currentUser.uid);
+      }
+    } catch (err) {
+      console.warn("Failed to reset session on logout:", err);
+    }
+    try {
       localStorage.clear();
       sessionStorage.clear();
       await signOut(auth);
@@ -173,6 +201,25 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
     if (item.permission) return hasPermission(item.permission as PermissionKey);
     return true;
   });
+
+  const canEdit = hasPermission('settings.edit');
+  const canViewWhatsApp = hasPermission('settings.whatsapp');
+  const canViewBilling = hasPermission('settings.billing');
+  const canViewNotifications = hasPermission('settings.notifications');
+
+  const settingsSubTabs = [
+    { id: 'profile', label: 'الملف الشخصي', icon: Store, visible: true },
+    { id: 'tax', label: 'الإعدادات الضريبية', icon: FileText, visible: canEdit },
+    { id: 'branches', label: 'الفروع والمواقع', icon: MapPin, visible: hasPermission('branches.manage') },
+    { id: 'appearance', label: 'المظهر والسمات', icon: Palette, visible: true },
+    { id: 'invoice', label: 'تخطيط الفاتورة', icon: FileText, visible: true },
+    { id: 'printer', label: 'إعدادات الطابعة', icon: Printer, visible: true },
+    { id: 'notifications', label: 'التنبيهات', icon: Bell, visible: canViewNotifications },
+    { id: 'whatsapp', label: 'تكامل واتساب', icon: MessageSquare, visible: canViewWhatsApp },
+    { id: 'staff', label: 'طاقم الموظفين', icon: Shield, visible: hasPermission('staff.manage') },
+    { id: 'billing', label: 'الاشتراك والمدفوعات', icon: CreditCard, visible: canViewBilling },
+    { id: 'data', label: 'إدارة البيانات', icon: Database, visible: currentStaff?.role === 'owner' || currentStaff?.role === 'super_admin' },
+  ].filter(t => t.visible);
 
   // Stable identities for the guided tour, so its internal memoization holds
   // instead of rebuilding the step list on every Layout render.
@@ -357,35 +404,86 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
             else if (item.to === '/reports') tourId = 'tour-reports-nav';
             else if (item.to === '/settings') tourId = 'tour-settings-nav';
 
+            const isSettings = item.to === '/settings';
+            const isSettingsActive = location.pathname.startsWith('/settings');
+
             return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                id={tourId}
-                data-tour={tourId ? tourId.replace('tour-', '') : undefined}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={({ isActive }) => cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative",
-                  (isActive || (item.to === '/dashboard' && location.pathname === '/'))
-                    ? "bg-brand/10 text-brand font-medium" 
-                    : "text-content-muted hover:bg-surface-muted hover:text-content",
-                  isCollapsed && "lg:justify-center lg:px-0"
+              <React.Fragment key={item.to}>
+                <NavLink
+                  to={item.to}
+                  id={tourId}
+                  data-tour={tourId ? tourId.replace('tour-', '') : undefined}
+                  onClick={(e) => {
+                    setIsMobileMenuOpen(false);
+                    if (isSettings) {
+                      if (isCollapsed) {
+                        setIsCollapsed(false);
+                        setIsSettingsSubMenuOpen(true);
+                      } else {
+                        if (isSettingsActive) {
+                          e.preventDefault();
+                          setIsSettingsSubMenuOpen(!isSettingsSubMenuOpen);
+                        } else {
+                          setIsSettingsSubMenuOpen(true);
+                        }
+                      }
+                    }
+                  }}
+                  className={({ isActive }) => cn(
+                    "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative",
+                    (isActive || (item.to === '/dashboard' && location.pathname === '/'))
+                      ? "bg-brand/10 text-brand font-medium" 
+                      : "text-content-muted hover:bg-surface-muted hover:text-content",
+                    isCollapsed && "lg:justify-center lg:px-0"
+                  )}
+                >
+                  {({ isActive }) => (
+                    <>
+                      <item.icon size={20} className={cn("shrink-0", !isActive && "group-hover:scale-110 transition-transform")} />
+                      {(!isCollapsed || isMobileMenuOpen) && <span className="truncate flex-grow text-right">{item.label}</span>}
+                      {isSettings && (!isCollapsed || isMobileMenuOpen) && (
+                        <ChevronLeft size={16} className={cn("transition-transform duration-200 shrink-0 mr-auto", (isSettingsActive && isSettingsSubMenuOpen) ? "-rotate-90" : "")} />
+                      )}
+                      
+                      {/* Tooltip for collapsed state */}
+                      {isCollapsed && (
+                        <div className="hidden lg:block absolute right-full mr-2 px-2 py-1 bg-brand text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-lg">
+                          {item.label}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </NavLink>
+
+                {isSettings && isSettingsActive && isSettingsSubMenuOpen && (!isCollapsed || isMobileMenuOpen) && (
+                  <div 
+                    className="mr-4 pr-3 border-r border-border/60 space-y-1 mt-1 mb-2 flex flex-col text-right"
+                  >
+                    {settingsSubTabs.map((subTab) => {
+                      const searchParams = new URLSearchParams(location.search);
+                      const currentTabId = searchParams.get('tab') || 'profile';
+                      const isSubTabActive = currentTabId === subTab.id;
+                      
+                      return (
+                        <NavLink
+                          key={subTab.id}
+                          to={`/settings?tab=${subTab.id}`}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className={cn(
+                            "flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-150 text-right w-full",
+                            isSubTabActive 
+                              ? "bg-brand/5 text-brand font-black" 
+                              : "text-content-muted hover:bg-surface-muted hover:text-content"
+                          )}
+                        >
+                          <subTab.icon size={15} className="shrink-0" />
+                          <span className="truncate">{subTab.label}</span>
+                        </NavLink>
+                      );
+                    })}
+                  </div>
                 )}
-              >
-                {({ isActive }) => (
-                  <>
-                    <item.icon size={20} className={cn("shrink-0", !isActive && "group-hover:scale-110 transition-transform")} />
-                    {(!isCollapsed || isMobileMenuOpen) && <span className="truncate">{item.label}</span>}
-                    
-                    {/* Tooltip for collapsed state */}
-                    {isCollapsed && (
-                      <div className="hidden lg:block absolute right-full mr-2 px-2 py-1 bg-brand text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-lg">
-                        {item.label}
-                      </div>
-                    )}
-                  </>
-                )}
-              </NavLink>
+              </React.Fragment>
             );
           })}
         </nav>
@@ -432,13 +530,19 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
             
             <div className="flex items-center gap-3">
               <div className={cn("hidden sm:flex flex-col", isRtl ? "items-start ml-2" : "items-end mr-2")}>
-                <span className="text-xs font-black text-content leading-none">{currentStaff?.name || 'User'}</span>
+                <span className="text-xs font-black text-content leading-none">{currentStaff?.name || dbUser?.display_name || dbUser?.email || 'User'}</span>
                 <span className="text-[10px] font-bold text-content-muted uppercase tracking-tighter mt-1">
-                  {currentStaff?.role === 'owner' 
+                  {effectiveRole === 'owner' 
                     ? t('common.roles.owner', 'مالك') 
-                    : currentStaff?.role === 'cashier' 
+                    : effectiveRole === 'cashier' 
                       ? t('common.roles.cashier', 'كاشير') 
-                      : t('common.roles.tailor', 'خياط')}
+                      : effectiveRole === 'tailor'
+                        ? t('common.roles.tailor', 'خياط')
+                        : effectiveRole === 'super_admin'
+                          ? 'مشرف عام'
+                          : effectiveRole === 'support_tech'
+                            ? 'فني دعم'
+                            : (effectiveRole || 'مستخدم')}
                 </span>
               </div>
               

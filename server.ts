@@ -90,6 +90,46 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
+app.post("/api/saas/complete-temp-password", authenticate, async (req: any, res) => {
+  try {
+    const uid = req.user?.uid;
+    if (!uid) {
+      return res.status(401).json({ error: 'Unauthorized: User UID not found' });
+    }
+
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+    
+    // Fetch current temp passwords list
+    const { data: tempPassSetting } = await supabaseAdmin
+      .from('saas_settings')
+      .select('*')
+      .eq('key', 'temp_passwords')
+      .maybeSingle();
+
+    const currentTempPasswords = tempPassSetting?.value && typeof tempPassSetting.value === 'object'
+      ? (tempPassSetting.value as Record<string, boolean>)
+      : {};
+
+    if (uid in currentTempPasswords) {
+      const updatedTempPasswords = { ...currentTempPasswords };
+      delete updatedTempPasswords[uid];
+
+      await supabaseAdmin
+        .from('saas_settings')
+        .upsert({
+          key: 'temp_passwords',
+          value: updatedTempPasswords,
+          updated_at: new Date().toISOString()
+        });
+    }
+
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error("Error updating temp password status:", err);
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
+});
+
 // Example Protected Route: Only accessible by Super Admin
 app.get("/api/admin/stats", authenticate, authorize(['super_admin']), (req, res) => {
   res.json({
