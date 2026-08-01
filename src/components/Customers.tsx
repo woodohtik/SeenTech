@@ -38,7 +38,9 @@ import {
   SlidersHorizontal,
   Building2,
   DollarSign,
-  Download
+  Download,
+  ArrowDownLeft,
+  ArrowUpRight
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -88,6 +90,9 @@ export default function Customers({ tenantId }: CustomersProps) {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [customerOrders, setCustomerOrders] = useState<Order[]>([]);
   const [customerBalances, setCustomerBalances] = useState<Record<string, number>>({});
+  const [customerOrderCounts, setCustomerOrderCounts] = useState<Record<string, number>>({});
+  const [customerTotalPurchases, setCustomerTotalPurchases] = useState<Record<string, number>>({});
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [isStatementOpen, setIsStatementOpen] = useState(false);
   const [statementCustomer, setStatementCustomer] = useState<Customer | null>(null);
   const [statementOrders, setStatementOrders] = useState<Order[]>([]);
@@ -161,25 +166,32 @@ export default function Customers({ tenantId }: CustomersProps) {
         }) as unknown as Customer);
         setCustomers(mapped);
 
-        // Fetch balances (all non-cancelled orders for the tenant)
+        // Fetch balances, counts, and purchases (all non-cancelled orders for the tenant)
         try {
           const { data: ordersData, error: ordersError } = await supabase
             .from('orders')
-            .select('customer_id, remaining_amount')
+            .select('customer_id, remaining_amount, total_amount')
             .eq('tenant_id', tenantId)
             .neq('status', 'cancelled');
           
           if (!ordersError && ordersData) {
             const balances: Record<string, number> = {};
+            const counts: Record<string, number> = {};
+            const purchases: Record<string, number> = {};
+            
             ordersData.forEach(o => {
               if (o.customer_id) {
                 balances[o.customer_id] = (balances[o.customer_id] || 0) + (Number(o.remaining_amount) || 0);
+                counts[o.customer_id] = (counts[o.customer_id] || 0) + 1;
+                purchases[o.customer_id] = (purchases[o.customer_id] || 0) + (Number(o.total_amount) || 0);
               }
             });
             setCustomerBalances(balances);
+            setCustomerOrderCounts(counts);
+            setCustomerTotalPurchases(purchases);
           }
         } catch (err) {
-          console.error('Error fetching customer balances:', err);
+          console.error('Error fetching customer balances and order counts:', err);
         }
       }
       if (showLoading) setIsLoading(false);
@@ -670,28 +682,6 @@ export default function Customers({ tenantId }: CustomersProps) {
 
           {/* Action & Filter Controls */}
           <div className="flex flex-wrap items-center gap-2 shrink-0">
-            {/* Select All Toggle Button */}
-            <button
-              onClick={toggleSelectAll}
-              className={cn(
-                "px-4 py-3 rounded-2xl border font-bold flex items-center gap-2 transition-all cursor-pointer text-xs sm:text-sm shadow-sm",
-                selectedCustomerIds.length > 0 && selectedCustomerIds.length === filteredCustomers.length
-                  ? "bg-brand text-white border-brand shadow-md shadow-brand/10"
-                  : "bg-surface text-content border-border hover:bg-surface-muted"
-              )}
-            >
-              {selectedCustomerIds.length > 0 && selectedCustomerIds.length === filteredCustomers.length ? (
-                <CheckSquare size={18} />
-              ) : (
-                <Square size={18} />
-              )}
-              <span>
-                {selectedCustomerIds.length > 0 && selectedCustomerIds.length === filteredCustomers.length
-                  ? t('customers.deselect_all', 'إلغاء الكل')
-                  : t('customers.select_all', 'تحديد الكل')}
-              </span>
-            </button>
-
             {/* Advanced Filters Drawer Toggle Button */}
             <button
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
@@ -863,176 +853,593 @@ export default function Customers({ tenantId }: CustomersProps) {
         </div>
       </div>
 
-      {/* Customer Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredCustomers.length > 0 ? filteredCustomers.map((customer) => {
-          const isSelected = selectedCustomerIds.includes(customer.id);
-          return (
-            <motion.div
-              layout
-              key={customer.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className={cn(
-                "bg-surface p-6 rounded-3xl border transition-all group relative overflow-hidden",
-                isSelected
-                  ? "border-brand ring-2 ring-brand/30 bg-brand/5 shadow-md"
-                  : "border-border shadow-sm hover:shadow-xl"
-              )}
-            >
-              {customer.isTest && (
-                <div className={cn("absolute top-0 bg-warning/10 text-warning px-4 py-1.5 text-[10px] font-black uppercase flex items-center gap-1 z-10", isRtl ? "left-0 rounded-br-2xl" : "right-0 rounded-bl-2xl")}>
-                  <Zap size={10} />
-                  {t('common.test_data', 'تجريبي')}
-                </div>
-              )}
-
-            <div className="flex justify-between items-start mb-6 pt-1">
-              <div className="flex items-center gap-3">
-                {/* Checkbox Button */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleSelectCustomer(customer.id);
-                  }}
-                  className={cn(
-                    "p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0",
-                    isSelected
-                      ? "bg-brand text-white shadow-md shadow-brand/20 scale-105"
-                      : "bg-surface-muted/90 text-content-muted hover:text-brand hover:bg-brand/10 border border-border"
-                  )}
-                  title={isSelected ? "إلغاء تحديد العميل" : "تحديد العميل"}
-                >
-                  {isSelected ? <CheckSquare size={18} /> : <Square size={18} />}
-                </button>
-
-                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-brand/10 text-brand rounded-2xl flex items-center justify-center text-lg sm:text-xl font-black shadow-inner shrink-0">
-                  {getInitials(customer.name)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className={cn("text-xl font-black text-content truncate flex items-center gap-2 group-hover:text-brand transition-colors", isRtl ? "text-right" : "text-left")}>
-                    {customer.name}
-                    {customer.isB2B && (
-                       <span className="bg-brand/10 text-brand px-2 py-0.5 rounded-lg text-[10px] font-black uppercase">B2B</span>
-                    )}
-                  </h3>
-                  <a 
-                    href={`tel:${customer.phone}`} 
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-xs text-content-muted font-bold flex items-center gap-1 hover:text-brand transition-colors mt-1"
-                  >
-                    <Phone size={12} />
-                    <span>{customer.phone}</span>
-                  </a>
-                </div>
-              </div>
-              <div className="flex flex-col items-end gap-2 shrink-0">
-                {/* Balance Display (Dain or Madeen) */}
-                {(() => {
-                  const balance = customerBalances[customer.id] || 0;
-                  if (balance > 0) {
-                    return (
-                      <span className="bg-red-500/10 text-red-600 border border-red-500/20 px-2.5 py-1 rounded-full text-xs font-black whitespace-nowrap flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-                        {t('customers.debtor', 'مدين')}: <PriceDisplay amount={balance} />
-                      </span>
-                    );
-                  } else if (balance < 0) {
-                    return (
-                      <span className="bg-green-500/10 text-green-600 border border-green-500/20 px-2.5 py-1 rounded-full text-xs font-black whitespace-nowrap flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-                        {t('customers.creditor', 'دائن')}: <PriceDisplay amount={Math.abs(balance)} />
-                      </span>
-                    );
-                  } else {
-                    return (
-                      <span className="bg-surface-muted text-content-muted border border-border px-2.5 py-1 rounded-full text-[10px] font-black whitespace-nowrap">
-                        {t('customers.balanced', 'متزن')}
-                      </span>
-                    );
-                  }
-                })()}
-
-                {/* Actions */}
-                <div className="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all md:translate-x-2 md:group-hover:translate-x-0">
-                  {canEdit && (
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); openEditModal(customer); }} 
-                      className="p-1.5 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-colors"
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                  )}
-                  {canDelete && (
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); handleDelete(customer.id); }} 
-                      className="p-1.5 text-content-muted hover:text-danger hover:bg-danger/10 rounded-xl transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  )}
-                </div>
-              </div>
+      {/* Customer Stats Summary Block */}
+      {customers.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="flex items-center gap-3 p-4 bg-surface rounded-2xl border border-border/80 shadow-sm transition-all hover:border-brand/20">
+            <div className="w-9 h-9 rounded-xl bg-brand/10 text-brand flex items-center justify-center shrink-0">
+              <Users size={16} />
             </div>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-surface-muted/50 p-4 rounded-2xl border border-border group-hover:bg-surface group-hover:border-brand/20 transition-all">
-                  <div className="flex items-center gap-1.5 text-[10px] text-content-muted font-black uppercase mb-1">
-                    <Ruler size={12} />
-                    <span>{t('customers.length', 'الطول')}</span>
-                  </div>
-                  <p className="text-lg font-black text-content">
-                    {customer.measurements?.length || '-'} 
-                    <span className="text-[10px] text-content-muted mr-1">{t('customers.cm', 'سم')}</span>
-                  </p>
-                </div>
-                <div className="bg-surface-muted/50 p-4 rounded-2xl border border-border group-hover:bg-surface group-hover:border-brand/20 transition-all">
-                  <div className="flex items-center gap-1.5 text-[10px] text-content-muted font-black uppercase mb-1">
-                    <Ruler size={12} />
-                    <span>{t('customers.shoulder', 'الكتف')}</span>
-                  </div>
-                  <p className="text-lg font-black text-content">
-                    {customer.measurements?.shoulder || '-'} 
-                    <span className="text-[10px] text-content-muted mr-1">{t('customers.cm', 'سم')}</span>
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => openDetails(customer)}
-                  className="flex-1 bg-brand text-white py-3 rounded-2xl text-xs font-bold hover:bg-brand/90 transition-all flex items-center justify-center gap-1 shadow-lg shadow-brand/10"
-                  title={t('customers.view_full_profile', 'عرض الملف الكامل')}
-                >
-                  <Info size={14} />
-                  <span>{t('customers.view_profile_short', 'عرض الملف')}</span>
-                </button>
-                <button 
-                  onClick={() => openStatement(customer)}
-                  className="flex-1 bg-brand/10 text-brand py-3 rounded-2xl text-xs font-bold hover:bg-brand hover:text-white transition-all border border-brand/20 flex items-center justify-center gap-1"
-                  title={t('customers.account_statement', 'كشف حساب العميل')}
-                >
-                  <FileText size={14} />
-                  <span>{t('customers.account_statement_short', 'كشف حساب')}</span>
-                </button>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/orders?customerId=${customer.id}`);
-                  }}
-                  className="p-3 bg-brand/5 text-brand rounded-2xl hover:bg-brand hover:text-white transition-all border border-brand/10 shrink-0 animate-pulse"
-                  title={t('orders.create_new_order', 'طلب جديد')}
-                >
-                  <Plus size={16} />
-                </button>
-              </div>
+            <div className="min-w-0">
+              <span className="block text-[10px] font-black text-content-muted uppercase tracking-wider leading-none">إجمالي العملاء</span>
+              <span className="text-sm sm:text-base font-black text-content mt-1 block">{customers.length}</span>
             </div>
-          </motion.div>
-          );
-        }) : (
-          <div className="col-span-full py-20 flex flex-col items-center justify-center bg-surface rounded-[3rem] border-2 border-dashed border-border text-content-muted">
+          </div>
+          
+          <div className="flex items-center gap-3 p-4 bg-surface rounded-2xl border border-border/80 shadow-sm transition-all hover:border-brand/20">
+            <div className="w-9 h-9 rounded-xl bg-brand/10 text-brand flex items-center justify-center shrink-0">
+              <SlidersHorizontal size={16} />
+            </div>
+            <div className="min-w-0">
+              <span className="block text-[10px] font-black text-content-muted uppercase tracking-wider leading-none">نتائج التصفية</span>
+              <span className="text-sm sm:text-base font-black text-brand mt-1 block">{filteredCustomers.length}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 p-4 bg-surface rounded-2xl border border-border/80 shadow-sm transition-all hover:border-red-500/20">
+            <div className="w-9 h-9 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center shrink-0">
+              <ArrowDownLeft size={16} />
+            </div>
+            <div className="min-w-0">
+              <span className="block text-[10px] font-black text-content-muted uppercase tracking-wider leading-none">عليهم مديونيات</span>
+              <span className="text-sm sm:text-base font-black text-red-500 mt-1 block">
+                {customers.filter(c => (customerBalances[c.id] || 0) > 0).length}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 p-4 bg-surface rounded-2xl border border-border/80 shadow-sm transition-all hover:border-emerald-500/20">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+              <ArrowUpRight size={16} />
+            </div>
+            <div className="min-w-0">
+              <span className="block text-[10px] font-black text-content-muted uppercase tracking-wider leading-none">أرصدة دائنة</span>
+              <span className="text-sm sm:text-base font-black text-emerald-500 mt-1 block">
+                {customers.filter(c => (customerBalances[c.id] || 0) < 0).length}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Customer Rows List */}
+      <div className="space-y-3">
+        {/* Row Header - Desktop only */}
+        {filteredCustomers.length > 0 && (
+          <div className="hidden lg:grid grid-cols-12 gap-4 px-6 py-4 bg-surface rounded-2xl text-xs font-black text-content-muted border border-border/80 shadow-sm items-center">
+            <div className="col-span-1 flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleSelectAll();
+                }}
+                className={cn(
+                  "p-1.5 rounded-lg transition-all cursor-pointer flex items-center justify-center shrink-0 border",
+                  selectedCustomerIds.length > 0 && selectedCustomerIds.length === filteredCustomers.length
+                    ? "bg-brand border-brand text-white shadow-sm"
+                    : "bg-surface-muted/80 text-content-muted border-border hover:text-brand hover:border-brand/40 hover:bg-brand/5"
+                )}
+                title={selectedCustomerIds.length > 0 && selectedCustomerIds.length === filteredCustomers.length ? t('customers.deselect_all', 'إلغاء الكل') : t('customers.select_all', 'تحديد الكل')}
+              >
+                {selectedCustomerIds.length > 0 && selectedCustomerIds.length === filteredCustomers.length ? (
+                  <CheckSquare size={13} />
+                ) : (
+                  <Square size={13} />
+                )}
+              </button>
+            </div>
+            <div className="col-span-3">{t('customers.customer_name', 'العميل')}</div>
+            <div className="col-span-2">{t('customers.phone', 'رقم الهاتف')}</div>
+            <div className="col-span-1">{t('customers.orders_count', 'عدد الطلبات')}</div>
+            <div className="col-span-2">{t('customers.total_purchases', 'إجمالي مبلغ الشراء')}</div>
+            <div className="col-span-2">{t('customers.balance', 'الرصيد المالي')}</div>
+            <div className="col-span-1 text-left"></div>
+          </div>
+        )}
+
+        {filteredCustomers.length > 0 ? (
+          filteredCustomers.map((customer, index) => {
+            const isSelected = selectedCustomerIds.includes(customer.id);
+            const balance = customerBalances[customer.id] || 0;
+            return (
+              <motion.div
+                layout
+                key={customer.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                onClick={() => openDetails(customer)}
+                className={cn(
+                  "bg-surface rounded-2xl border transition-all group relative p-3 sm:p-4 lg:p-6 cursor-pointer select-none",
+                  activeMenuId === customer.id ? "z-40" : "z-10",
+                  isSelected
+                    ? "border-brand ring-2 ring-brand/30 bg-brand/5 shadow-md"
+                    : "border-border shadow-sm hover:shadow-lg hover:border-brand/40 hover:-translate-y-0.5 active:scale-[0.99]"
+                )}
+              >
+                {/* Desktop 12-col grid row vs Mobile/Tablet Card Layout */}
+                <div className="flex flex-col gap-3 lg:grid lg:grid-cols-12 lg:gap-4 lg:items-center">
+                  
+                  {/* MOBILE & TABLET HEADER (< lg) */}
+                  <div className="flex lg:hidden items-center justify-between gap-3 border-b border-border/50 pb-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleSelectCustomer(customer.id);
+                        }}
+                        className={cn(
+                          "p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0",
+                          isSelected
+                            ? "bg-brand text-white shadow-md shadow-brand/20 scale-105"
+                            : "bg-surface-muted/90 text-content-muted hover:text-brand hover:bg-brand/10 border border-border"
+                        )}
+                        title={isSelected ? "إلغاء تحديد العميل" : "تحديد العميل"}
+                      >
+                        {isSelected ? <CheckSquare size={16} /> : <Square size={16} />}
+                      </button>
+
+                      <div className="w-9 h-9 bg-brand/10 text-brand rounded-xl flex items-center justify-center text-xs font-black shadow-inner shrink-0">
+                        {getInitials(customer.name)}
+                      </div>
+
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-black text-content flex items-center gap-1.5 hover:text-brand transition-colors">
+                          <span className="truncate">{customer.name}</span>
+                          {customer.isB2B && (
+                            <span className="bg-brand/10 text-brand px-1.5 py-0.5 rounded-md text-[9px] font-black shrink-0">B2B</span>
+                          )}
+                        </h3>
+                        <span className="text-[10px] font-bold text-content-muted/80">
+                          #{String(index + 1).padStart(2, '0')}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {customer.isTest && (
+                        <span className="bg-warning/10 text-warning px-2 py-0.5 rounded-md text-[9px] font-black flex items-center gap-0.5">
+                          <Zap size={8} />
+                          {t('common.test_data', 'تجريبي')}
+                        </span>
+                      )}
+
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenuId(activeMenuId === customer.id ? null : customer.id);
+                          }}
+                          className={cn(
+                            "p-2 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0 border border-border/60 bg-surface-muted/30 hover:scale-105",
+                            activeMenuId === customer.id ? "bg-brand/10 text-brand border-brand/30" : ""
+                          )}
+                          title={t('common.actions', 'الإجراءات')}
+                        >
+                          <MoreVertical size={16} />
+                        </button>
+
+                        <AnimatePresence>
+                          {activeMenuId === customer.id && (
+                            <>
+                              <div 
+                                className="fixed inset-0 z-30 cursor-default" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveMenuId(null);
+                                }}
+                              />
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                className={cn(
+                                  "absolute z-50 bg-surface/95 backdrop-blur-md border border-border shadow-2xl rounded-2xl p-2 min-w-[180px] sm:min-w-[200px] flex flex-col gap-0.5 mt-1.5 top-full",
+                                  isRtl ? "left-0 origin-top-left" : "right-0 origin-top-right"
+                                )}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div className="px-2.5 py-1 text-[10px] font-black text-content-muted/80 uppercase tracking-wider text-right border-b border-border/40 mb-1">
+                                  {t('customers.customer_options', 'إجراءات العميل')}
+                                </div>
+
+                                <button 
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveMenuId(null);
+                                    openDetails(customer);
+                                  }}
+                                  className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                >
+                                  <span className="truncate">{t('customers.view_full_profile', 'عرض الملف الكامل')}</span>
+                                  <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
+                                    <Info size={12} />
+                                  </div>
+                                </button>
+
+                                <button 
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveMenuId(null);
+                                    openStatement(customer);
+                                  }}
+                                  className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                >
+                                  <span className="truncate">{t('customers.account_statement', 'كشف الحساب')}</span>
+                                  <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
+                                    <FileText size={12} />
+                                  </div>
+                                </button>
+
+                                <button 
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveMenuId(null);
+                                    navigate(`/orders?customerId=${customer.id}`);
+                                  }}
+                                  className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                >
+                                  <span className="truncate">{t('orders.create_new_order', 'طلب جديد')}</span>
+                                  <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
+                                    <Plus size={12} />
+                                  </div>
+                                </button>
+
+                                {canEdit && (
+                                  <>
+                                    <div className="h-px bg-border/60 my-1" />
+                                    <button 
+                                      type="button"
+                                      onClick={() => {
+                                        setActiveMenuId(null);
+                                        openEditModal(customer);
+                                      }}
+                                      className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                    >
+                                      <span className="truncate">{t('common.edit', 'تعديل البيانات')}</span>
+                                      <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand/80 transition-all">
+                                        <Edit2 size={12} />
+                                      </div>
+                                    </button>
+                                  </>
+                                )}
+
+                                {canDelete && (
+                                  <button 
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveMenuId(null);
+                                      handleDelete(customer.id);
+                                    }}
+                                    className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-red-500 hover:text-red-600 hover:bg-red-500/5 transition-all cursor-pointer group"
+                                  >
+                                    <span className="truncate">{t('common.delete', 'حذف العميل')}</span>
+                                    <div className="w-6 h-6 rounded-lg bg-red-500/5 flex items-center justify-center shrink-0 group-hover:bg-red-500/15 text-red-500 transition-all">
+                                      <Trash2 size={12} />
+                                    </div>
+                                  </button>
+                                )}
+                              </motion.div>
+                            </>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* MOBILE & TABLET INFO GRID (< lg) */}
+                  <div className="grid lg:hidden grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    {/* Phone */}
+                    <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
+                      <span className="text-[10px] font-bold text-content-muted flex items-center gap-1">
+                        <Phone size={10} className="text-brand shrink-0" />
+                        {t('customers.phone', 'رقم الهاتف')}
+                      </span>
+                      <a 
+                        href={`tel:${customer.phone}`} 
+                        onClick={(e) => e.stopPropagation()}
+                        className="font-bold text-content hover:text-brand transition-colors dir-ltr text-right truncate text-xs"
+                      >
+                        {customer.phone}
+                      </a>
+                    </div>
+
+                    {/* Orders count */}
+                    <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
+                      <span className="text-[10px] font-bold text-content-muted flex items-center gap-1">
+                        <ShoppingBag size={10} className="text-brand shrink-0" />
+                        {t('customers.orders_count', 'عدد الطلبات')}
+                      </span>
+                      <span className="font-black text-brand text-xs">
+                        {customerOrderCounts[customer.id] || 0}
+                      </span>
+                    </div>
+
+                    {/* Total purchases */}
+                    <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
+                      <span className="text-[10px] font-bold text-content-muted flex items-center gap-1">
+                        <DollarSign size={10} className="text-brand shrink-0" />
+                        {t('customers.total_purchases', 'إجمالي الشراء')}
+                      </span>
+                      <span className="font-black text-content text-xs">
+                        <PriceDisplay amount={customerTotalPurchases[customer.id] || 0} />
+                      </span>
+                    </div>
+
+                    {/* Balance */}
+                    <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
+                      <span className="text-[10px] font-bold text-content-muted">
+                        {t('customers.balance', 'الرصيد المالي')}
+                      </span>
+                      <div className="flex items-center">
+                        {(() => {
+                          if (balance > 0) {
+                            return (
+                              <span className="bg-red-500/10 text-red-600 border border-red-500/20 px-2 py-0.5 rounded-md text-[10px] font-black flex items-center gap-1 truncate">
+                                <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shrink-0" />
+                                <span>{t('customers.debtor', 'مدين')}:</span>
+                                <PriceDisplay amount={balance} />
+                              </span>
+                            );
+                          } else if (balance < 0) {
+                            return (
+                              <span className="bg-green-500/10 text-green-600 border border-green-500/20 px-2 py-0.5 rounded-md text-[10px] font-black flex items-center gap-1 truncate">
+                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full shrink-0" />
+                                <span>{t('customers.creditor', 'دائن')}:</span>
+                                <PriceDisplay amount={Math.abs(balance)} />
+                              </span>
+                            );
+                          } else {
+                            return (
+                              <span className="text-content-muted font-bold text-[10px] bg-surface-muted border border-border/50 px-2 py-0.5 rounded-md">
+                                0
+                              </span>
+                            );
+                          }
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* DESKTOP COLUMNS (lg:grid lg:grid-cols-12) */}
+                  
+                  {/* Col 1: Checkbox + Number (lg:col-span-1) */}
+                  <div className="hidden lg:flex col-span-1 items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleSelectCustomer(customer.id);
+                      }}
+                      className={cn(
+                        "p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0",
+                        isSelected
+                          ? "bg-brand text-white shadow-md shadow-brand/20 scale-105"
+                          : "bg-surface-muted/90 text-content-muted hover:text-brand hover:bg-brand/10 border border-border"
+                      )}
+                      title={isSelected ? "إلغاء تحديد العميل" : "تحديد العميل"}
+                    >
+                      {isSelected ? <CheckSquare size={16} /> : <Square size={16} />}
+                    </button>
+                    <span className="inline-flex items-center justify-center bg-surface-muted border border-border/60 text-[10px] font-black text-content-muted w-6.5 h-6.5 rounded-full shrink-0 shadow-inner">
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+                  </div>
+
+                  {/* Col 2: Name & Type & Initials (lg:col-span-3) */}
+                  <div className="hidden lg:flex col-span-3 items-center gap-3">
+                    <div className="w-10 h-10 bg-brand/10 text-brand rounded-xl flex items-center justify-center text-sm font-black shadow-inner shrink-0">
+                      {getInitials(customer.name)}
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-base font-black text-content flex items-center gap-1.5 hover:text-brand transition-colors">
+                        <span className="truncate">{customer.name}</span>
+                        {customer.isB2B && (
+                          <span className="bg-brand/10 text-brand px-1.5 py-0.5 rounded-md text-[9px] font-black shrink-0">B2B</span>
+                        )}
+                      </h3>
+                      {customer.isTest && (
+                        <span className="inline-flex bg-warning/10 text-warning px-1.5 py-0.5 rounded-md text-[9px] font-black mt-0.5 items-center gap-0.5">
+                          <Zap size={8} />
+                          {t('common.test_data', 'تجريبي')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Col 3: Phone Number (lg:col-span-2) */}
+                  <div className="hidden lg:flex col-span-2 items-center justify-start gap-2 text-sm text-content-muted">
+                    <a 
+                      href={`tel:${customer.phone}`} 
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-xs text-content-muted font-bold flex items-center gap-1 hover:text-brand transition-colors"
+                    >
+                      <Phone size={12} className="text-brand shrink-0" />
+                      <span>{customer.phone}</span>
+                    </a>
+                  </div>
+
+                  {/* Col 4: Number of Orders (lg:col-span-1) */}
+                  <div className="hidden lg:flex col-span-1 items-center justify-start gap-2 text-sm text-content">
+                    <span className="bg-brand/10 text-brand px-2.5 py-0.5 rounded-lg text-xs font-black">
+                      {customerOrderCounts[customer.id] || 0}
+                    </span>
+                  </div>
+
+                  {/* Col 5: Total Purchase Amount (lg:col-span-2) */}
+                  <div className="hidden lg:flex col-span-2 items-center justify-start gap-2 text-sm text-content">
+                    <span className="font-bold text-content">
+                      <PriceDisplay amount={customerTotalPurchases[customer.id] || 0} />
+                    </span>
+                  </div>
+
+                  {/* Col 6: Financial Balance (lg:col-span-2) */}
+                  <div className="hidden lg:flex col-span-2 items-center justify-start gap-2">
+                    {(() => {
+                      if (balance > 0) {
+                        return (
+                          <span className="bg-red-500/10 text-red-600 border border-red-500/20 px-2.5 py-1 rounded-full text-xs font-black whitespace-nowrap flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shrink-0" />
+                            <span>{t('customers.debtor', 'مدين')}:</span>
+                            <PriceDisplay amount={balance} />
+                          </span>
+                        );
+                      } else if (balance < 0) {
+                        return (
+                          <span className="bg-green-500/10 text-green-600 border border-green-500/20 px-2.5 py-1 rounded-full text-xs font-black whitespace-nowrap flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full shrink-0" />
+                            <span>{t('customers.creditor', 'دائن')}:</span>
+                            <PriceDisplay amount={Math.abs(balance)} />
+                          </span>
+                        );
+                      } else {
+                        return (
+                          <span className="text-content-muted font-bold text-xs bg-surface-muted/60 border border-border/50 px-2.5 py-1 rounded-full">
+                            0
+                          </span>
+                        );
+                      }
+                    })()}
+                  </div>
+
+                  {/* Col 7: Actions (Desktop only) */}
+                  <div className="hidden lg:flex col-span-1 items-center justify-end">
+                    <div className="relative flex items-center justify-end">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveMenuId(activeMenuId === customer.id ? null : customer.id);
+                        }}
+                        className={cn(
+                          "p-2 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0 border border-border/60 bg-surface-muted/30 hover:scale-105",
+                          activeMenuId === customer.id ? "bg-brand/10 text-brand border-brand/30" : ""
+                        )}
+                        title={t('common.actions', 'الإجراءات')}
+                      >
+                        <MoreVertical size={16} />
+                      </button>
+
+                      <AnimatePresence>
+                        {activeMenuId === customer.id && (
+                          <>
+                            {/* Overlay specifically to catch close clicks */}
+                            <div 
+                              className="fixed inset-0 z-30 cursor-default" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveMenuId(null);
+                              }}
+                            />
+                            
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                              className={cn(
+                                "absolute z-50 bg-surface/95 backdrop-blur-md border border-border shadow-2xl rounded-2xl p-2 min-w-[180px] sm:min-w-[200px] flex flex-col gap-0.5 mt-1.5 top-full",
+                                isRtl ? "left-0 origin-top-left" : "right-0 origin-top-right"
+                              )}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div className="px-2.5 py-1 text-[10px] font-black text-content-muted/80 uppercase tracking-wider text-right border-b border-border/40 mb-1">
+                                {t('customers.customer_options', 'إجراءات العميل')}
+                              </div>
+
+                              {/* View Profile */}
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  setActiveMenuId(null);
+                                  openDetails(customer);
+                                }}
+                                className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                              >
+                                <span className="truncate">{t('customers.view_full_profile', 'عرض الملف الكامل')}</span>
+                                <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
+                                  <Info size={12} />
+                                </div>
+                              </button>
+
+                              {/* Account Statement */}
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  setActiveMenuId(null);
+                                  openStatement(customer);
+                                }}
+                                className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                              >
+                                <span className="truncate">{t('customers.account_statement', 'كشف الحساب')}</span>
+                                <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
+                                  <FileText size={12} />
+                                </div>
+                              </button>
+
+                              {/* Create New Order */}
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  setActiveMenuId(null);
+                                  navigate(`/orders?customerId=${customer.id}`);
+                                }}
+                                className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                              >
+                                <span className="truncate">{t('orders.create_new_order', 'طلب جديد')}</span>
+                                <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
+                                  <Plus size={12} />
+                                </div>
+                              </button>
+
+                              {canEdit && (
+                                <>
+                                  <div className="h-px bg-border/60 my-1" />
+                                  <button 
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveMenuId(null);
+                                      openEditModal(customer);
+                                    }}
+                                    className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                  >
+                                    <span className="truncate">{t('common.edit', 'تعديل البيانات')}</span>
+                                    <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand/80 transition-all">
+                                      <Edit2 size={12} />
+                                    </div>
+                                  </button>
+                                </>
+                              )}
+
+                              {canDelete && (
+                                <button 
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveMenuId(null);
+                                    handleDelete(customer.id);
+                                  }}
+                                  className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-red-500 hover:text-red-600 hover:bg-red-500/5 transition-all cursor-pointer group"
+                                >
+                                  <span className="truncate">{t('common.delete', 'حذف العميل')}</span>
+                                  <div className="w-6 h-6 rounded-lg bg-red-500/5 flex items-center justify-center shrink-0 group-hover:bg-red-500/15 text-red-500 transition-all">
+                                    <Trash2 size={12} />
+                                  </div>
+                                </button>
+                              )}
+                            </motion.div>
+                          </>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+
+                </div>
+              </motion.div>
+            );
+          })
+        ) : (
+          <div className="py-20 flex flex-col items-center justify-center bg-surface rounded-[3rem] border-2 border-dashed border-border text-content-muted">
             <div className="p-6 bg-surface-muted rounded-full mb-4">
               <Search size={48} className="opacity-20" />
             </div>
@@ -1055,44 +1462,44 @@ export default function Customers({ tenantId }: CustomersProps) {
             initial={{ y: 80, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 80, opacity: 0 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] bg-content text-surface px-6 py-3.5 rounded-2xl shadow-2xl border border-white/10 flex items-center gap-4 max-w-2xl w-[92vw] sm:w-auto justify-between"
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] bg-slate-900/95 backdrop-blur-md text-white px-5 py-3.5 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10 flex items-center gap-4 max-w-2xl w-[92vw] sm:w-auto justify-between"
           >
             <div className="flex items-center gap-3 shrink-0">
-              <span className="bg-brand text-white font-black px-3 py-1 rounded-xl text-xs sm:text-sm">
+              <span className="bg-brand text-white font-black px-2.5 py-1 rounded-xl text-xs sm:text-sm animate-pulse">
                 {selectedCustomerIds.length}
               </span>
-              <span className="text-xs sm:text-sm font-bold truncate">
-                عميل محدد من أصل {filteredCustomers.length}
+              <span className="text-xs sm:text-sm font-black text-slate-200 truncate">
+                تم تحديدهم للإجراءات
               </span>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={() => handleExportExcel()}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+                className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all hover:scale-102 cursor-pointer border border-emerald-500/10 shadow-lg shadow-emerald-600/10"
                 title="تصدير المحددين إلى إكسل"
               >
-                <FileSpreadsheet size={16} />
+                <FileSpreadsheet size={14} />
                 <span className="hidden sm:inline">تصدير إكسل</span>
               </button>
 
               {canDelete && (
                 <button
                   onClick={() => setIsBulkDeleteModalOpen(true)}
-                  className="bg-danger/80 hover:bg-danger text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+                  className="bg-red-600 hover:bg-red-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all hover:scale-102 cursor-pointer border border-red-500/10 shadow-lg shadow-red-600/10"
                   title="حذف العملاء المحددين"
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={14} />
                   <span className="hidden sm:inline">حذف المحدد</span>
                 </button>
               )}
 
               <button
                 onClick={() => setSelectedCustomerIds([])}
-                className="p-2 hover:bg-white/10 rounded-xl text-content-muted hover:text-white transition-colors cursor-pointer"
+                className="p-2 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-colors cursor-pointer"
                 title="إلغاء التحديد"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
           </motion.div>

@@ -152,7 +152,7 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
   }
 
   return (
-    <div className="p-4 md:p-6 font-sans bg-surface" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="p-4 sm:p-6 font-sans bg-surface" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="mb-4 md:mb-6 flex justify-between items-center bg-surface p-4 md:p-6 rounded-2xl md:rounded-[2rem] shadow-sm border border-border">
         <div>
           <h2 className="text-xl font-black text-content flex items-center gap-2">

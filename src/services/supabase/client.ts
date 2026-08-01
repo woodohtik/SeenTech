@@ -105,7 +105,34 @@ export const supabase: SupabaseClient<any> =
                         }
                     }
                     
-                    const responsePromise = fetch(url, { ...modifiedOptions, headers });
+                    const executeFetch = async (): Promise<Response> => {
+                        let res = await fetch(url, { ...modifiedOptions, headers });
+                        if (res.status === 401) {
+                            try {
+                                const clonedRes = res.clone();
+                                const text = await clonedRes.text();
+                                if (text.includes('JWT expired') || text.includes('PGRST303')) {
+                                    console.warn('[Supabase Fetch Interceptor] JWT expired. Attempting to refresh token...');
+                                    const { auth } = await import('../../lib/firebase');
+                                    if (auth && auth.currentUser) {
+                                        const newToken = await auth.currentUser.getIdToken(true);
+                                        currentAuthToken = newToken;
+                                        
+                                        const newHeaders = new Headers(modifiedOptions?.headers);
+                                        newHeaders.set('Authorization', `Bearer ${newToken}`);
+                                        
+                                        console.log('[Supabase Fetch Interceptor] Token refreshed successfully. Retrying request...');
+                                        res = await fetch(url, { ...modifiedOptions, headers: newHeaders });
+                                    }
+                                }
+                            } catch (refreshErr) {
+                                console.error('[Supabase Fetch Interceptor] Failed to auto-refresh token:', refreshErr);
+                            }
+                        }
+                        return res;
+                    };
+
+                    const responsePromise = executeFetch();
                     
                     // Intercept fetched requests to decode 'history' back from 'notes'
                     if (isOrdersRequest) {

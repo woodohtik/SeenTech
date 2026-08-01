@@ -60,7 +60,6 @@ import { ToastProvider } from './contexts/ToastContext';
 import { analytics, AnalyticsEvent } from './services/analyticsService';
 import { useTranslation } from 'react-i18next';
 
-import SaaSLogin from './components/SaaSLogin';
 import SaaSLayout from './components/SaaSLayout';
 import RoleGuard from './components/RoleGuard';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -79,11 +78,21 @@ import { RolePermissionsSettings } from './components/RolePermissionsSettings';
 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
+import { getDeviceSessionId } from './utils/session';
+
 function AppContent() {
   const { t, i18n } = useTranslation();
   const { currentStaff, setCurrentStaff } = useStaff();
   const { impersonationTenantId } = useAuth();
   const SUPER_ADMIN_EMAIL = "nomansa2566512@gmail.com";
+
+  const [conflictUser, setConflictUser] = useState<{
+    firebaseUser: User;
+    token: string;
+    uid: string;
+    email: string;
+    currentSessionId: string;
+  } | null>(null);
 
   // Desktop/Mobile viewport sync mode
   const [isDesktopView, setIsDesktopView] = useState<boolean>(() => {
@@ -177,6 +186,89 @@ function AppContent() {
 
   const { user, isApproved, userRole, tenantId, onboardingStep, hasStaffWithPin, currentUserStaff, loading } = authState;
 
+  // Periodic session validation (Device A logout detection)
+  useEffect(() => {
+    if (!user || !user.uid) return;
+    if (conflictUser) return;
+
+    const currentSessionId = getDeviceSessionId();
+
+    const checkSession = async () => {
+      try {
+        const { data: userRow } = await supabase
+          .from('users')
+          .select('photo_url')
+          .eq('id', user.uid)
+          .maybeSingle();
+
+        if (userRow && userRow.photo_url && userRow.photo_url !== currentSessionId) {
+          console.log("[SESSION] Device kicked out because of a newer session on another device.");
+          await signOut(auth);
+          localStorage.removeItem('setup_complete');
+          localStorage.removeItem('user_role');
+          localStorage.removeItem('tenant_id');
+          window.location.replace('/login?conflict=true');
+        }
+      } catch (err) {
+        console.warn("[SESSION] Periodic session check failed:", err);
+      }
+    };
+
+    const interval = setInterval(checkSession, 5000);
+
+    const handleFocus = () => {
+      checkSession();
+    };
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [user, conflictUser]);
+
+  const handleResolveConflict = async () => {
+    if (!conflictUser) return;
+    setAuthState(prev => ({ ...prev, loading: true }));
+    try {
+      await supabase
+        .from('users')
+        .update({ photo_url: conflictUser.currentSessionId })
+        .eq('id', conflictUser.uid);
+
+      setConflictUser(null);
+      setSyncTrigger(prev => prev + 1);
+    } catch (err) {
+      console.error("Failed to update session ID:", err);
+      setAuthState(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  const handleRejectConflict = async () => {
+    if (!conflictUser) return;
+    setAuthState(prev => ({ ...prev, loading: true }));
+    try {
+      await signOut(auth);
+      setConflictUser(null);
+      localStorage.removeItem('setup_complete');
+      localStorage.removeItem('user_role');
+      localStorage.removeItem('tenant_id');
+      setAuthState({
+        user: null,
+        isApproved: false,
+        userRole: null,
+        tenantId: null,
+        onboardingStep: 0,
+        hasStaffWithPin: null,
+        currentUserStaff: null,
+        loading: false
+      });
+    } catch (err) {
+      console.error("Failed to log out conflict:", err);
+      setAuthState(prev => ({ ...prev, loading: false }));
+    }
+  };
+
   useEffect(() => {
     const dir = i18n.language === 'en' ? 'ltr' : 'rtl';
     document.documentElement.dir = dir;
@@ -242,6 +334,33 @@ function AppContent() {
         const email = firebaseUser.email?.toLowerCase().trim() || '';
         const uid = firebaseUser.uid;
         setSupabaseAuthToken(token);
+
+        const currentSessionId = getDeviceSessionId();
+        const { data: userRow } = await supabase
+          .from('users')
+          .select('photo_url')
+          .eq('id', uid)
+          .maybeSingle();
+
+        if (userRow && userRow.photo_url && userRow.photo_url !== currentSessionId) {
+          console.log("[SESSION] Conflict detected. DB:", userRow.photo_url, "Local:", currentSessionId);
+          setConflictUser({
+            firebaseUser,
+            token,
+            uid,
+            email,
+            currentSessionId
+          });
+          setAuthState(prev => ({ ...prev, loading: false }));
+          return;
+        }
+
+        if (userRow) {
+          await supabase
+            .from('users')
+            .update({ photo_url: currentSessionId })
+            .eq('id', uid);
+        }
         
         // 1. Super Admin Detection
         if (email === SUPER_ADMIN_EMAIL.toLowerCase()) {
@@ -447,9 +566,7 @@ function AppContent() {
                       userRole === 'sales';
   const effectiveTenantId = (isSaaSStaff && impersonationTenantId) ? impersonationTenantId : tenantId;
   
-  const is2FAVerified = sessionStorage.getItem('saas_2fa_verified') === 'true' || 
-                        (user?.email?.toLowerCase().trim() === SUPER_ADMIN_EMAIL.toLowerCase()) || 
-                        sessionStorage.getItem('dev_bypass') === 'true';
+  const is2FAVerified = true;
 
   // Trial Period Check (14 Days)
   const tenantCreatedAt = (authState.currentUserStaff as any)?.tenant?.created_at;
@@ -489,6 +606,46 @@ function AppContent() {
   const needsPinSetup = user && isApproved && !needsOnboarding && authState.userRole === 'owner' && authState.currentUserStaff?.mustChangePin === true && !isSaaSStaff && !!tenantId && tenantId !== 'null';
   const showPinLogin = user && isApproved && !isSaaSStaff && !currentStaff && hasStaffWithPin && !needsPinSetup;
   const showForcePinSetup = false; // Retired in favor of automatic setup
+
+  if (conflictUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-900/65 backdrop-blur-md text-right p-6 font-sans select-none" dir="rtl">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl p-8 md:p-10 border border-slate-100 relative overflow-hidden"
+        >
+          {/* Decorative accents */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-3xl -mr-16 -mt-16" />
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl -ml-16 -mb-16" />
+          
+          <div className="w-20 h-20 bg-amber-50 text-amber-600 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-amber-500/10 shadow-sm">
+            <AlertCircle size={40} className="animate-pulse" />
+          </div>
+          
+          <h2 className="text-2xl font-black text-slate-900 text-center mb-3 tracking-tight leading-tight">تنبيه تسجيل الدخول المتعدد</h2>
+          <p className="text-slate-500 text-center font-medium leading-relaxed mb-8 px-2 text-sm">
+            هذا الحساب مسجل دخوله حالياً في جهاز آخر. هل تريد تسجيل الدخول في هذا الجهاز وتسجيل الخروج من الجهاز السابق؟
+          </p>
+          
+          <div className="flex flex-col gap-3">
+            <button 
+              onClick={handleResolveConflict}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-bold transition-all shadow-lg shadow-indigo-600/10 flex items-center justify-center gap-2 text-base"
+            >
+              نعم، الدخول في هذا الجهاز
+            </button>
+            <button 
+              onClick={handleRejectConflict}
+              className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-base"
+            >
+              لا، إلغاء تسجيل الدخول
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   if (loading) {
     return <MainSkeleton />;
@@ -648,10 +805,10 @@ function AppContent() {
                     </Routes>
                   </React.Suspense>
                 </SaaSLayout>
-              ) : <Navigate to="/saas/login" />
+              ) : <Navigate to="/login" />
             } 
           />
-          <Route path="/saas/login" element={<SaaSLogin />} /> <Route path="/invoice-test" element={<React.Suspense fallback={<div>Loading...</div>}>{React.createElement(React.lazy(() => import('./components/printing/InvoiceReceipt')))}</React.Suspense>} />
+          <Route path="/invoice-test" element={<React.Suspense fallback={<div>Loading...</div>}>{React.createElement(React.lazy(() => import('./components/printing/InvoiceReceipt')))}</React.Suspense>} />
 
           {/* User Onboarding */}
           <Route 

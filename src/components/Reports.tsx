@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
-import { Order, Customer, InventoryItem, Staff, Shift } from '../types';
+import { Order, Customer, InventoryItem, Staff, Shift, Role } from '../types';
 import { 
   BarChart, 
   Bar, 
@@ -76,6 +76,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Filters
@@ -97,17 +98,22 @@ export default function Reports({ tenantId }: { tenantId: string }) {
       if (!tenantId) return;
       setLoading(true);
       try {
-        const [ordersRes, customersRes, inventoryRes, staffRes] = await Promise.all([
+        const [ordersRes, customersRes, inventoryRes, staffRes, rolesRes] = await Promise.all([
           supabase.from('orders').select('*').eq('tenant_id', tenantId).order('order_date', { ascending: false }),
           supabase.from('customers').select('*').eq('tenant_id', tenantId),
           supabase.from('inventory_items').select('*').eq('tenant_id', tenantId),
-          supabase.from('staff').select('*').eq('tenant_id', tenantId)
+          supabase.from('staff').select('*').eq('tenant_id', tenantId),
+          supabase.from('roles').select('*').or(`tenant_id.is.null,tenant_id.eq.${tenantId}`)
         ]);
         
         if (ordersRes.error) throw ordersRes.error;
         if (customersRes.error) throw customersRes.error;
         if (inventoryRes.error) throw inventoryRes.error;
         if (staffRes.error) throw staffRes.error;
+
+        if (rolesRes.data) {
+          setRoles(rolesRes.data);
+        }
 
         // Map snake_case to camelCase for the UI
         setOrders((ordersRes.data || []).map(o => ({
@@ -285,6 +291,31 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
     return { performance };
   }, [staff, filteredOrders]);
+
+  // Detailed Employee Performance
+  const staffWithPerformance = useMemo(() => {
+    return staff.map(s => {
+      const staffOrders = filteredOrders.filter(o => o.assignedTo === s.id || o.createdBy === s.id);
+      const assignedOrders = filteredOrders.filter(o => o.assignedTo === s.id);
+      const ordersToCount = assignedOrders.length > 0 ? assignedOrders : staffOrders;
+
+      const totalHandled = ordersToCount.length;
+      const completed = ordersToCount.filter(o => o.status === 'delivered' || o.status === 'ready').length;
+      const active = ordersToCount.filter(o => o.status !== 'delivered' && o.status !== 'ready' && o.status !== 'cancelled').length;
+      const rate = totalHandled > 0 ? Math.round((completed / totalHandled) * 100) : 0;
+      const roleName = roles.find(r => r.roleKey === s.role || r.id === s.role)?.name || s.role;
+
+      return {
+        ...s,
+        roleName,
+        totalHandled,
+        completed,
+        active,
+        rate,
+        ordersToCount
+      };
+    }).sort((a, b) => b.completed - a.completed);
+  }, [staff, filteredOrders, roles]);
 
   // Customer Behavior
   const customerStats = useMemo(() => {
@@ -823,6 +854,99 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
           {activeTab === 'staff' && (
             <div className="space-y-4 sm:space-y-8">
+              {/* Detailed Employee Performance Table */}
+              <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-base sm:text-xl font-black text-content flex items-center gap-2">
+                      <TrendingUp className="text-brand shrink-0" size={22} />
+                      تقرير أداء الموظفين التفصيلي
+                    </h3>
+                    <p className="text-xs font-medium text-content-muted mt-1">
+                      متابعة وإنجاز المهام والطلبات المسندة لكل موظف في فريق العمل
+                    </p>
+                  </div>
+                  <span className="px-3.5 py-1.5 bg-brand/10 text-brand rounded-full text-xs font-black self-start sm:self-auto">
+                    {staffWithPerformance.length} موظف
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto whitespace-nowrap -mx-4 sm:-mx-8 px-4 sm:px-8">
+                  <div className="rounded-2xl border border-border overflow-hidden min-w-max">
+                    <table className="w-full text-right min-w-max">
+                      <thead>
+                        <tr className="bg-surface-muted border-b border-border">
+                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">الموظف</th>
+                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">الدور</th>
+                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">إجمالي المهام</th>
+                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">قيد العمل</th>
+                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">المنجزة</th>
+                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">معدل الإنجاز</th>
+                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">التفاصيل</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {staffWithPerformance.map((member) => (
+                          <tr key={member.id} className="hover:bg-surface-muted/50 transition-colors">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center text-brand font-black">
+                                  {member.name.charAt(0)}
+                                </div>
+                                <span className="font-bold text-content">{member.name}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="text-xs font-bold text-content-muted bg-surface-muted px-2.5 py-1 rounded-full">
+                                {member.roleName}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 font-black text-content">{member.totalHandled}</td>
+                            <td className="px-6 py-4 font-black text-brand">{member.active}</td>
+                            <td className="px-6 py-4 font-black text-emerald-600">{member.completed}</td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3 min-w-[140px]">
+                                <div className="flex-1 h-2 bg-surface-muted rounded-full overflow-hidden">
+                                  <div className="h-full bg-brand transition-all" style={{ width: `${member.rate}%` }} />
+                                </div>
+                                <span className="text-xs font-black text-brand">{member.rate}%</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <button 
+                                onClick={() => setDrillDown({
+                                  title: `طلبات الموظف: ${member.name}`,
+                                  data: member.ordersToCount,
+                                  columns: [
+                                    { key: 'orderNumber', label: 'رقم الطلب' },
+                                    { key: 'customerName', label: 'العميل' },
+                                    { key: 'totalAmount', label: 'المبلغ', type: 'currency' },
+                                    { key: 'orderDate', label: 'التاريخ', type: 'date' },
+                                    { key: 'status', label: 'الحالة', type: 'status' }
+                                  ]
+                                })}
+                                className="px-3 py-1.5 bg-brand/10 text-brand hover:bg-brand/20 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer"
+                                title="عرض طلبات الموظف"
+                              >
+                                <TrendingUp size={14} />
+                                <span>عرض الطلبات</span>
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        {staffWithPerformance.length === 0 && (
+                          <tr>
+                            <td colSpan={7} className="text-center py-8 text-content-muted font-bold text-xs sm:text-sm">
+                              لا يوجد موظفين مسجلين حالياً
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
               {/* Staff Section */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
                 {/* Staff Productivity */}

@@ -23,6 +23,7 @@ import {
   ChevronDown,
   Info,
   Lock,
+  Key,
   Settings
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
@@ -53,7 +54,7 @@ interface StaffMember extends StaffMemberType {
 
 interface StaffProps {
   tenantId: string;
-  initialViewMode?: 'list' | 'performance' | 'permissions' | 'employee_activity' | 'tailor_commissions';
+  initialViewMode?: 'list' | 'permissions' | 'employee_activity' | 'tailor_commissions';
 }
 
 export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps) {
@@ -66,7 +67,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [selectedStaffForDetails, setSelectedStaffForDetails] = useState<StaffMember | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'performance' | 'permissions' | 'employee_activity' | 'tailor_commissions'>(initialViewMode);
+  const [viewMode, setViewMode] = useState<'list' | 'permissions' | 'employee_activity' | 'tailor_commissions'>(initialViewMode === ('performance' as any) ? 'list' : initialViewMode);
   const [permissionTabMode, setPermissionTabMode] = useState<'roles' | 'staff'>('roles');
   const [sidebarSearchTerm, setSidebarSearchTerm] = useState('');
   const [selectedRoleForPermissions, setSelectedRoleForPermissions] = useState<Role | null>(null);
@@ -75,7 +76,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
 
   useEffect(() => {
     if (initialViewMode) {
-      setViewMode(initialViewMode);
+      setViewMode(initialViewMode === ('performance' as any) ? 'list' : initialViewMode);
     }
   }, [initialViewMode]);
   const { currentStaff } = useStaff();
@@ -195,6 +196,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
   const canEdit = hasPermission('staff.edit');
   const canDelete = hasPermission('staff.delete');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   useEffect(() => {
     // Expand all categories by default
@@ -621,6 +623,77 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
     }
   };
 
+  const togglePin = async (member: StaffMember) => {
+    try {
+      if (member.pin) {
+        // Disable PIN
+        const { error } = await supabase.from('staff').update({
+          pin_hash: null,
+          must_change_pin: false,
+          updated_at: new Date().toISOString()
+        }).eq('id', member.id);
+        
+        if (error) throw error;
+        
+        // Audit log for security
+        await supabase.from('audit_logs').insert({
+          action: 'إلغاء رمز الدخول',
+          performed_by: auth.currentUser?.uid || null,
+          performed_by_email: auth.currentUser?.email || 'unknown',
+          target_tenant_id: tenantId,
+          details: `تم إلغاء رمز الدخول للموظف ${member.name}`,
+          occurred_at: new Date().toISOString(),
+          type: 'security'
+        });
+
+        setToast({ message: 'تم إلغاء رمز الدخول للموظف بنجاح', type: 'success' });
+      } else {
+        // Enable PIN - Auto generate
+        let uniquePin = '';
+        let attempts = 0;
+        while (attempts < 10) {
+          const candidate = generateSecurePin(4);
+          if (await isPinUnique(tenantId!, candidate)) {
+            uniquePin = candidate;
+            break;
+          }
+          attempts++;
+        }
+        
+        if (!uniquePin) throw new Error('تعذر إنشاء رمز دخول فريد، يرجى المحاولة مرة أخرى');
+        
+        const pinHash = await hashPin(uniquePin);
+        
+        const { error } = await supabase.from('staff').update({
+          pin_hash: pinHash,
+          must_change_pin: true,
+          updated_at: new Date().toISOString()
+        }).eq('id', member.id);
+        
+        if (error) throw error;
+
+        // Audit log for security
+        await supabase.from('audit_logs').insert({
+          action: 'تفعيل رمز الدخول التلقائي',
+          performed_by: auth.currentUser?.uid || null,
+          performed_by_email: auth.currentUser?.email || 'unknown',
+          target_tenant_id: tenantId,
+          details: `تم تفعيل وتوليد رمز دخول للموظف ${member.name}`,
+          occurred_at: new Date().toISOString(),
+          type: 'security'
+        });
+
+        setToast({ 
+          message: `تم تفعيل الرمز بنجاح. رمز الدخول الجديد للموظف ${member.name} هو: ${uniquePin}`, 
+          type: 'success' 
+        });
+      }
+    } catch (error: any) {
+      console.error('Error toggling staff pin:', error);
+      setToast({ message: `فشل تعديل الرمز للموظف: ${error?.message || 'حدث خطأ غير معروف'}`, type: 'error' });
+    }
+  };
+
   const handleTogglePermission = async (roleId: string, key: PermissionKey) => {
     try {
       const role = roles.find(r => r.id === roleId);
@@ -832,12 +905,6 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
               القائمة
             </button>
             <button 
-              onClick={() => setViewMode('performance')}
-              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all shrink-0 whitespace-nowrap ${viewMode === 'performance' ? 'bg-surface text-brand shadow-sm' : 'text-content-muted'}`}
-            >
-              الأداء
-            </button>
-            <button 
               onClick={() => setViewMode('permissions')}
               className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all shrink-0 whitespace-nowrap ${viewMode === 'permissions' ? 'bg-surface text-brand shadow-sm' : 'text-content-muted'}`}
             >
@@ -975,315 +1042,268 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       )}
 
       {viewMode === 'list' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredStaff.map((member) => (
-            <motion.div 
-              key={member.id}
-              layout
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-surface p-6 rounded-3xl border border-border shadow-sm hover:shadow-xl transition-all group relative overflow-hidden space-y-6"
-            >
-              <div className={`absolute top-0 right-0 w-2 h-full ${
-                member.status === 'active' ? 'bg-success' : 'bg-surface-muted'
-              }`} />
-              
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-4">
-                  <div className={`p-4 rounded-2xl transition-transform group-hover:scale-110 ${
+        <div className="space-y-4">
+          {filteredStaff.map((member) => {
+            const isDropdownOpen = activeDropdown === member.id;
+            return (
+              <motion.div 
+                key={member.id}
+                layout
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-border shadow-xs hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 relative overflow-visible text-right"
+              >
+                {/* Active/Inactive side accent */}
+                <div className={cn(
+                  "absolute top-0 right-0 w-2 h-full rounded-r-2xl sm:rounded-r-3xl",
+                  member.status === 'active' ? 'bg-success' : 'bg-slate-300'
+                )} />
+
+                {/* Right side: Employee Avatar + Info */}
+                <div className="flex items-center gap-4 min-w-0 flex-1 pr-2">
+                  <div className={cn(
+                    "w-12 h-12 sm:w-14 sm:h-14 rounded-2xl shrink-0 flex items-center justify-center font-black text-lg shadow-inner",
                     member.role === 'manager' || member.role === 'owner' ? 'bg-brand/10 text-brand' :
                     member.role === 'cashier' ? 'bg-info/10 text-info' : 'bg-warning/10 text-warning'
-                  }`}>
-                    {member.role === 'manager' || member.role === 'owner' ? <Shield size={28} /> : <User size={28} />}
+                  )}>
+                    {member.name.charAt(0)}
                   </div>
-                  <div>
-                    <h3 className="font-black text-lg text-content flex items-center gap-2">
-                      {member.name}
+                  
+                  <div className="min-w-0 space-y-2 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-black text-base sm:text-lg text-content truncate">
+                        {member.name}
+                      </h3>
                       {member.isTest && (
-                        <span className="text-[10px] bg-danger/10 text-danger px-2 py-0.5 rounded-full font-black uppercase tracking-widest flex items-center gap-1">
-                          <Zap size={10} />
+                        <span className="text-[9px] bg-danger/10 text-danger px-2 py-0.5 rounded-full font-black uppercase tracking-wider flex items-center gap-1 shrink-0">
+                          <Zap size={9} />
                           تجريبي
                         </span>
                       )}
-                    </h3>
-                    <span className="text-[10px] font-black text-content-muted uppercase tracking-widest bg-surface-muted px-2 py-0.5 rounded-full flex items-center gap-2">
-                      {roles.find(r => r.roleKey === member.role)?.name || member.role}
-                      <button 
-                        onClick={() => setShowPermissionsModal(roles.find(r => r.roleKey === member.role) || null)}
-                        className="p-1 hover:bg-brand/10 rounded text-brand transition-colors"
-                        title="عرض الصلاحيات"
-                      >
-                        <Shield size={10} />
-                      </button>
-                    </span>
-                  </div>
-                </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {canEdit && (
-                    <div className="flex gap-1">
-                      <button 
-                        onClick={() => {
-                          setEditingStaff(member);
-                          setIsModalOpen(true);
-                        }}
-                        className="p-2 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-colors"
-                        title="تعديل البيانات"
-                      >
-                        <Edit2 size={18} />
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setSelectedStaffForPermissions(member);
-                          setViewMode('permissions');
-                          setPermissionTabMode('staff');
-                        }}
-                        className="p-2 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-colors"
-                        title="إدارة الصلاحيات الخاصة"
-                      >
-                        <Settings size={18} />
-                      </button>
-                    </div>
-                  )}
-                  {canDelete && (
-                    <button 
-                      onClick={() => handleDelete(member.id)}
-                      className="p-2 text-content-muted hover:text-danger hover:bg-danger/10 rounded-xl transition-colors"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-3 text-sm text-content-muted font-medium">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-surface-muted rounded-lg"><Mail size={14} className="text-content-muted" /></div>
-                  <span>{member.email}</span>
-                </div>
-                {member.phone && (
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-surface-muted rounded-lg"><Smartphone size={14} className="text-content-muted" /></div>
-                    <span>{member.phone}</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-surface-muted rounded-lg"><Building2 size={14} className="text-content-muted" /></div>
-                  <span className="font-bold text-brand">
-                    {branches.find(b => b.id === member.branchId)?.name || 'غير محدد'}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-surface-muted rounded-lg"><Shield size={14} className="text-content-muted" /></div>
-                  <span className="font-mono tracking-widest text-brand font-black">****</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2 pt-4 border-t border-border">
-                <div className="text-center p-2 bg-surface-muted rounded-2xl">
-                  <p className="text-[10px] text-content-muted font-bold uppercase">الطلبات</p>
-                  <p className="text-lg font-black text-content">{member.performance?.totalHandled || 0}</p>
-                </div>
-                <div className="text-center p-2 bg-brand/5 rounded-2xl">
-                  <p className="text-[10px] text-brand font-bold uppercase">نشط</p>
-                  <p className="text-lg font-black text-brand">{member.performance?.active || 0}</p>
-                </div>
-                <div className="text-center p-2 bg-success/5 rounded-2xl">
-                  <p className="text-[10px] text-success font-bold uppercase">منجز</p>
-                  <p className="text-lg font-black text-success">{member.performance?.completed || 0}</p>
-                </div>
-              </div>
-
-              {member.performance?.totalHandled ? (
-                <div className="space-y-1">
-                  <div className="flex justify-between text-[10px] font-black">
-                    <span className="text-content-muted uppercase">معدل الإنجاز</span>
-                    <span className="text-brand">
-                      {Math.round((member.performance.completed / member.performance.totalHandled) * 100)}%
-                    </span>
-                  </div>
-                  <div className="h-1.5 bg-surface-muted rounded-full overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(member.performance.completed / member.performance.totalHandled) * 100}%` }}
-                      className="h-full bg-brand"
-                    />
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="flex flex-wrap justify-between items-center gap-2 pt-4">
-                <div className="flex items-center gap-2">
-                  {member.status === 'active' ? (
-                    <CheckCircle size={16} className="text-success" />
-                  ) : (
-                    <XCircle size={16} className="text-content-muted" />
-                  )}
-                  <span className={`text-xs font-black ${
-                    member.status === 'active' ? 'text-success' : 'text-content-muted'
-                  }`}>
-                    {member.status === 'active' ? 'نشط' : 'غير نشط'}
-                  </span>
-                </div>
-                <button 
-                  onClick={() => toggleStatus(member)}
-                  className={`text-[10px] font-black px-4 py-2 rounded-xl transition-all ${
-                    member.status === 'active' 
-                    ? 'text-danger bg-danger/10 hover:bg-danger/20' 
-                    : 'text-success bg-success/10 hover:bg-success/20'
-                  }`}
-                >
-                  {member.status === 'active' ? 'تعطيل' : 'تفعيل'}
-                </button>
-                <div className="flex items-center gap-1.5">
-                  <button 
-                    onClick={() => {
-                      setViewMode('permissions');
-                      setPermissionTabMode('staff');
-                      setSelectedStaffForPermissions(member);
-                    }}
-                    className="text-[10px] font-black px-3 py-2 rounded-xl bg-brand/10 text-brand hover:bg-brand hover:text-white transition-all flex items-center gap-1"
-                    title="إدارة صلاحيات الموظف"
-                  >
-                    <Shield size={12} />
-                    <span>الصلاحيات</span>
-                  </button>
-                  <button 
-                    onClick={() => setSelectedStaffForDetails(member)}
-                    className="text-[10px] font-black px-3 py-2 rounded-xl bg-surface-muted text-content hover:bg-surface-muted/80 transition-all"
-                  >
-                    التفاصيل
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      )}
-
-      {viewMode === 'performance' && (
-        <div className="bg-surface rounded-2xl sm:rounded-[2.5rem] border border-border overflow-x-auto whitespace-nowrap shadow-sm">
-          <table className="w-full text-right min-w-max">
-            <thead>
-              <tr className="bg-surface-muted border-b border-border">
-                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">الموظف</th>
-                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">الدور</th>
-                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">إجمالي المهام</th>
-                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">قيد العمل</th>
-                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">المنجزة</th>
-                <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">معدل الإنجاز</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {staffWithPerformance.map((member) => {
-                const rate = member.performance?.totalHandled 
-                  ? Math.round((member.performance.completed / member.performance.totalHandled) * 100) 
-                  : 0;
-                return (
-                  <tr key={member.id} className="hover:bg-surface-muted/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center text-brand font-black">
-                          {member.name.charAt(0)}
-                        </div>
-                        <span className="font-bold text-content">{member.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-xs font-bold text-content-muted">
+                      <span className="text-[10px] font-black text-content-muted uppercase tracking-wider bg-surface-muted px-2.5 py-0.5 rounded-full flex items-center gap-1 shrink-0">
                         {roles.find(r => r.roleKey === member.role)?.name || member.role}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 font-black text-content">{member.performance?.totalHandled}</td>
-                    <td className="px-6 py-4 font-black text-brand">{member.performance?.active}</td>
-                    <td className="px-6 py-4 font-black text-success">{member.performance?.completed}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-surface-muted rounded-full overflow-hidden">
-                          <div className="h-full bg-brand" style={{ width: `${rate}%` }} />
+                    </div>
+
+                    {/* Basic details in a single clean row */}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-content-muted">
+                      {member.email && (
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Mail size={13} className="text-content-muted shrink-0" />
+                          <span className="truncate">{member.email}</span>
                         </div>
-                        <span className="text-xs font-black text-brand">{rate}%</span>
+                      )}
+                      {member.phone && (
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <Smartphone size={13} className="text-content-muted shrink-0" />
+                          <span className="ltr">{member.phone}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Building2 size={13} className="text-brand shrink-0" />
+                        <span className="font-bold text-brand">
+                          {branches.find(b => b.id === member.branchId)?.name || 'غير محدد'}
+                        </span>
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => setSelectedStaffForDetails(member)}
-                          className="p-2 text-brand hover:bg-brand/10 rounded-xl transition-all"
-                          title="الأداء"
+                    </div>
+                  </div>
+                </div>
+
+                {/* Left side: Status indicator + Settings Dropdown Trigger */}
+                <div className="flex items-center justify-between sm:justify-end gap-3 pt-3 sm:pt-0 border-t sm:border-none border-border/40 shrink-0 relative">
+                  <div className="flex items-center gap-1.5">
+                    <span className={cn(
+                      "w-2 h-2 rounded-full",
+                      member.status === 'active' ? 'bg-success' : 'bg-slate-400'
+                    )} />
+                    <span className={cn(
+                      "text-xs font-black",
+                      member.status === 'active' ? 'text-success' : 'text-content-muted'
+                    )}>
+                      {member.status === 'active' ? 'نشط' : 'معطل'}
+                    </span>
+                  </div>
+
+                  {/* Settings gear dropdown wrapper */}
+                  <div className="relative">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveDropdown(isDropdownOpen ? null : member.id);
+                      }}
+                      className={cn(
+                        "p-2 rounded-xl transition-all border border-border/60 hover:bg-surface-muted text-content hover:text-brand cursor-pointer flex items-center justify-center",
+                        isDropdownOpen ? "bg-surface-muted text-brand border-brand/20" : "bg-surface"
+                      )}
+                      title="الإجراءات"
+                    >
+                      <Settings size={18} className={cn("transition-transform duration-300", isDropdownOpen && "rotate-45")} />
+                    </button>
+
+                    {/* Transparent overlay to close dropdown when clicking outside */}
+                    {isDropdownOpen && (
+                      <div 
+                        className="fixed inset-0 z-30 cursor-default"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveDropdown(null);
+                        }}
+                      />
+                    )}
+
+                    {/* Dropdown menu */}
+                    <AnimatePresence>
+                      {isDropdownOpen && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute left-0 mt-2 w-48 bg-surface border border-border/80 rounded-2xl shadow-xl p-1.5 z-40 text-right space-y-0.5 origin-top-left"
                         >
-                          <TrendingUp size={18} />
-                        </button>
-                        <button 
-                          onClick={() => {
-                            setSelectedStaffForPermissions(member);
-                            setViewMode('permissions');
-                            setPermissionTabMode('staff');
-                          }}
-                          className="p-2 text-brand hover:bg-brand/10 rounded-xl transition-all"
-                          title="الصلاحيات"
-                        >
-                          <Settings size={18} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                          <button 
+                            onClick={() => {
+                              setSelectedStaffForDetails(member);
+                              setActiveDropdown(null);
+                            }}
+                            className="w-full text-right px-3 py-2 text-xs font-black text-content hover:bg-surface-muted/80 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+                          >
+                            <User size={14} className="text-content-muted" />
+                            <span>عرض التفاصيل</span>
+                          </button>
+
+                          {canEdit && (
+                            <>
+                              <button 
+                                onClick={() => {
+                                  setEditingStaff(member);
+                                  setIsModalOpen(true);
+                                  setActiveDropdown(null);
+                                }}
+                                className="w-full text-right px-3 py-2 text-xs font-black text-content hover:bg-surface-muted/80 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+                              >
+                                <Edit2 size={14} className="text-content-muted" />
+                                <span>تعديل البيانات</span>
+                              </button>
+
+                              <button 
+                                onClick={() => {
+                                  setSelectedStaffForPermissions(member);
+                                  setViewMode('permissions');
+                                  setPermissionTabMode('staff');
+                                  setActiveDropdown(null);
+                                }}
+                                className="w-full text-right px-3 py-2 text-xs font-black text-content hover:bg-surface-muted/80 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+                              >
+                                <Shield size={14} className="text-content-muted" />
+                                <span>إدارة الصلاحيات</span>
+                              </button>
+
+                              <button 
+                                onClick={() => {
+                                  togglePin(member);
+                                  setActiveDropdown(null);
+                                }}
+                                className="w-full text-right px-3 py-2 text-xs font-black text-content hover:bg-surface-muted/80 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+                              >
+                                <Key size={14} className="text-content-muted" />
+                                <span>{member.pin ? 'إلغاء رمز الموظف' : 'تفعيل رمز الموظف'}</span>
+                              </button>
+                            </>
+                          )}
+
+                          <button 
+                            onClick={() => {
+                              toggleStatus(member);
+                              setActiveDropdown(null);
+                            }}
+                            className={cn(
+                              "w-full text-right px-3 py-2 text-xs font-black rounded-xl transition-colors flex items-center gap-2 cursor-pointer",
+                              member.status === 'active' 
+                                ? "text-danger hover:bg-danger/5" 
+                                : "text-success hover:bg-success/5"
+                            )}
+                          >
+                            <CheckCircle size={14} className={member.status === 'active' ? "text-danger" : "text-success"} />
+                            <span>{member.status === 'active' ? 'تعطيل الحساب' : 'تفعيل الحساب'}</span>
+                          </button>
+
+                          {canDelete && (
+                            <div className="border-t border-border/40 my-1 pt-1">
+                              <button 
+                                onClick={() => {
+                                  handleDelete(member.id);
+                                  setActiveDropdown(null);
+                                }}
+                                className="w-full text-right px-3 py-2 text-xs font-black text-danger hover:bg-danger/10 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+                              >
+                                <Trash2 size={14} className="text-danger" />
+                                <span>حذف الموظف</span>
+                              </button>
+                            </div>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       )}
 
       {viewMode === 'permissions' && (
-        <div className="space-y-8">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div className="bg-surface-muted p-1 rounded-2xl flex">
+        <div className="space-y-6 sm:space-y-8">
+          {/* Permissions Mode Selector Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 bg-surface p-2 sm:p-2.5 rounded-2xl border border-border shadow-sm">
+            <div className="bg-surface-muted p-1 rounded-xl flex w-full sm:w-auto">
               <button 
                 onClick={() => {
                   setPermissionTabMode('roles');
                   setSelectedStaffForPermissions(null);
                 }}
-                className={`px-6 py-2 rounded-xl text-xs font-black transition-all ${permissionTabMode === 'roles' ? 'bg-surface text-brand shadow-sm' : 'text-content-muted'}`}
+                className={`flex-1 sm:flex-initial px-4 sm:px-6 py-2 rounded-lg sm:rounded-xl text-xs font-black transition-all ${permissionTabMode === 'roles' ? 'bg-surface text-brand shadow-sm' : 'text-content-muted hover:text-content'}`}
               >
                 حسب الدور الوظيفي
               </button>
               <button 
                 onClick={() => setPermissionTabMode('staff')}
-                className={`px-6 py-2 rounded-xl text-xs font-black transition-all ${permissionTabMode === 'staff' ? 'bg-surface text-brand shadow-sm' : 'text-content-muted'}`}
+                className={`flex-1 sm:flex-initial px-4 sm:px-6 py-2 rounded-lg sm:rounded-xl text-xs font-black transition-all ${permissionTabMode === 'staff' ? 'bg-surface text-brand shadow-sm' : 'text-content-muted hover:text-content'}`}
               >
-                حسب الموظف
+                حسب الموظف (استثناءات)
               </button>
             </div>
 
             {permissionTabMode === 'roles' && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 justify-end">
                 <button 
                   onClick={toggleAllCategories}
-                  className="px-4 py-2 rounded-xl text-[10px] font-black bg-surface border border-border text-content-muted hover:bg-surface-muted transition-all"
+                  className="px-3.5 py-2 rounded-xl text-xs font-black bg-surface-muted border border-border text-content-muted hover:text-content hover:bg-border transition-all whitespace-nowrap"
                 >
                   {expandedCategories.length === categories.length ? 'طي الكل' : 'توسيع الكل'}
                 </button>
                 <button 
                   onClick={() => setShowCreateRole(true)}
-                  className="px-4 py-2 rounded-xl text-[10px] font-black bg-brand text-white hover:bg-brand/90 shadow-lg shadow-brand/10 transition-all flex items-center gap-2"
+                  className="px-4 py-2 rounded-xl text-xs font-black bg-brand text-white hover:bg-brand/90 shadow-md shadow-brand/10 transition-all flex items-center gap-1.5 whitespace-nowrap"
                 >
-                  <Plus size={14} />
-                  إضافة مهنة مخصصة
+                  <Plus size={15} />
+                  <span>إضافة مهنة مخصصة</span>
                 </button>
               </div>
             )}
           </div>
 
           {permissionTabMode === 'roles' ? (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
               {/* Roles Sidebar */}
-              <div className="lg:col-span-3 space-y-4">
-                <div className="bg-surface rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm overflow-hidden">
-                  <div className="p-6 bg-surface-muted/50 border-b border-border flex justify-between items-center">
+              <div className="lg:col-span-4 xl:col-span-3 space-y-4">
+                <div className="bg-surface rounded-2xl sm:rounded-[2rem] border border-border shadow-sm overflow-hidden">
+                  <div className="p-4 sm:p-5 bg-surface-muted/50 border-b border-border flex justify-between items-center">
                     <h4 className="text-xs font-black text-content-muted uppercase tracking-widest">الأدوار الوظيفية</h4>
                     <button 
                       onClick={() => setShowCreateRole(true)}
-                      className="p-2 bg-brand text-white rounded-xl hover:bg-brand/90 transition-all shadow-lg shadow-brand/10"
+                      className="p-1.5 bg-brand text-white rounded-lg hover:bg-brand/90 transition-all shadow-sm"
                       title="إضافة مهنة مخصصة"
                     >
                       <Plus size={16} />
@@ -1301,34 +1321,34 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                       />
                     </div>
                   </div>
-                  <div className="max-h-[600px] overflow-y-auto">
+                  <div className="max-h-[500px] lg:max-h-[600px] overflow-y-auto divide-y divide-border/60">
                     {activeRoles.filter(r => r.name.toLowerCase().includes(sidebarSearchTerm.toLowerCase())).map(role => (
                       <div
                         key={role.id}
                         onClick={() => setSelectedRoleForPermissions(role)}
                         className={cn(
-                          "w-full p-5 flex items-center justify-between hover:bg-surface-muted transition-all text-right border-b border-border last:border-0 relative group cursor-pointer",
+                          "w-full p-3.5 sm:p-4 flex items-center justify-between hover:bg-surface-muted/60 transition-all text-right relative group cursor-pointer min-w-0",
                           selectedRoleForPermissions?.id === role.id ? "bg-brand/5 border-r-4 border-r-brand" : ""
                         )}
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
                           <div className={cn(
-                            "w-10 h-10 rounded-xl flex items-center justify-center",
+                            "w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0",
                             role.roleKey === 'owner' ? "bg-warning/10 text-warning" : 
                             role.roleKey === 'manager' ? "bg-success/10 text-success" :
-                            "bg-info/10 text-info"
+                            "bg-brand/10 text-brand"
                           )}>
                             <Shield size={18} />
                           </div>
-                          <div>
-                            <p className="text-sm font-black text-content">{role.name}</p>
-                            {(!role.tenantId || role.tenantId === 'system') && (
-                              <span className="text-[8px] font-black text-content-muted uppercase tracking-tighter">قالب نظام</span>
-                            )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs sm:text-sm font-black text-content truncate">{role.name}</p>
+                            <span className="text-[9px] font-bold text-content-muted block">
+                              {(!role.tenantId || role.tenantId === 'system') ? 'قالب نظام' : 'مهنة مخصصة'}
+                            </span>
                           </div>
                         </div>
                         
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-1 shrink-0 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                           {role.roleKey !== 'owner' && (
                             <>
                               <button 
@@ -1338,9 +1358,10 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                   setNewRoleName(role.name);
                                   setNewRoleDesc(role.description || '');
                                 }}
-                                className="p-1.5 text-content-muted hover:text-brand"
+                                className="p-1.5 text-content-muted hover:text-brand rounded-lg hover:bg-surface"
+                                title="تعديل اسم المهنة"
                               >
-                                <Edit2 size={14} />
+                                <Edit2 size={13} />
                               </button>
                               {role.roleKey !== 'manager' && role.tenantId && role.tenantId !== 'system' && (
                                 <button 
@@ -1348,9 +1369,10 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                     e.stopPropagation();
                                     confirmDeleteRole(role);
                                   }}
-                                  className="p-1.5 text-content-muted hover:text-danger"
+                                  className="p-1.5 text-content-muted hover:text-danger rounded-lg hover:bg-surface"
+                                  title="حذف المهنة"
                                 >
-                                  <Trash2 size={14} />
+                                  <Trash2 size={13} />
                                 </button>
                               )}
                             </>
@@ -1363,80 +1385,77 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
               </div>
 
               {/* Permissions Matrix Cards */}
-              <div className="lg:col-span-9 space-y-8">
+              <div className="lg:col-span-8 xl:col-span-9 space-y-6">
                 {selectedRoleForPermissions && (
                   <>
-                    <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6">
-                      <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0">
-                        <div className={cn(
-                          "p-3 sm:p-4 rounded-2xl shadow-lg shrink-0",
-                          selectedRoleForPermissions.roleKey === 'owner' ? "bg-warning text-white shadow-warning/20" :
-                          selectedRoleForPermissions.roleKey === 'manager' ? "bg-success text-white shadow-success/20" :
-                          "bg-brand text-white shadow-brand/20"
-                        )}>
-                          <Shield size={24} />
+                    {/* Role Header Card */}
+                    <div className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-border shadow-sm space-y-4">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div className={cn(
+                            "p-3 rounded-2xl shadow-md shrink-0 text-white",
+                            selectedRoleForPermissions.roleKey === 'owner' ? "bg-warning shadow-warning/20" :
+                            selectedRoleForPermissions.roleKey === 'manager' ? "bg-success shadow-success/20" :
+                            "bg-brand shadow-brand/20"
+                          )}>
+                            <Shield size={22} />
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="text-base sm:text-xl font-black text-content truncate">صلاحيات {selectedRoleForPermissions.name}</h3>
+                            <p className="text-xs text-content-muted font-bold mt-0.5 line-clamp-1">{selectedRoleForPermissions.description}</p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <h3 className="text-lg sm:text-2xl font-black text-content">صلاحيات {selectedRoleForPermissions.name}</h3>
-                          <p className="text-xs sm:text-sm text-content-muted font-bold mt-1">{selectedRoleForPermissions.description}</p>
-                          {(() => {
-                            const roleStaffMembers = staff.filter(s => s.role === selectedRoleForPermissions.roleKey);
-                            return roleStaffMembers.length > 0 ? (
-                              <div className="flex items-center gap-2 flex-wrap pt-2.5 mt-2 border-t border-border/50">
-                                <span className="text-xs font-black text-content-muted">الموظفون في هذا الدور ({roleStaffMembers.length}):</span>
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  {roleStaffMembers.map(s => (
-                                    <button
-                                      key={s.id}
-                                      onClick={() => {
-                                        setPermissionTabMode('staff');
-                                        setSelectedStaffForPermissions(s);
-                                        setSelectedRoleForPermissions(null);
-                                      }}
-                                      className="px-2.5 py-1 bg-brand/10 hover:bg-brand text-brand hover:text-white rounded-xl text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer border border-brand/20"
-                                      title="عرض وتعديل استثناءات صلاحيات هذا الموظف"
-                                    >
-                                      <User size={12} />
-                                      <span>{s.name}</span>
-                                      {Object.keys(overrides[s.id] || {}).length > 0 && (
-                                        <span className="bg-amber-500 text-white text-[9px] px-1.5 rounded-full font-bold">
-                                          {Object.keys(overrides[s.id] || {}).length}
-                                        </span>
-                                      )}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            ) : null;
-                          })()}
-                        </div>
-                      </div>
-                      
-                      <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-                        <button
-                          onClick={toggleAllCategories}
-                          className="w-full md:w-auto px-6 py-3 bg-surface-muted hover:bg-border rounded-2xl text-xs font-black text-content-muted transition-all border border-border"
-                        >
-                          {expandedCategories.length === categories.length ? 'طي الكل' : 'توسيع الكل'}
-                        </button>
-                        <div className="relative w-full md:w-64">
-                          <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-content-muted" size={18} />
+
+                        <div className="relative w-full sm:w-64 shrink-0">
+                          <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 text-content-muted" size={16} />
                           <input 
                             type="text"
                             placeholder="بحث في الصلاحيات..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-surface-muted border border-border rounded-2xl py-3 pr-12 pl-4 text-sm font-bold focus:border-brand outline-none transition-all text-content"
+                            className="w-full bg-surface-muted border border-border rounded-xl py-2 pr-10 pl-3 text-xs font-bold focus:border-brand outline-none transition-all text-content"
                           />
                         </div>
                       </div>
+
+                      {/* Staff Members Tagged under this role */}
+                      {(() => {
+                        const roleStaffMembers = staff.filter(s => s.role === selectedRoleForPermissions.roleKey);
+                        return roleStaffMembers.length > 0 ? (
+                          <div className="pt-3 border-t border-border/50 flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-black text-content-muted shrink-0">الموظفون في هذا الدور ({roleStaffMembers.length}):</span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {roleStaffMembers.map(s => (
+                                <button
+                                  key={s.id}
+                                  onClick={() => {
+                                    setPermissionTabMode('staff');
+                                    setSelectedStaffForPermissions(s);
+                                    setSelectedRoleForPermissions(null);
+                                  }}
+                                  className="px-2.5 py-1 bg-brand/10 hover:bg-brand text-brand hover:text-white rounded-xl text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer border border-brand/20"
+                                  title="عرض وتعديل استثناءات صلاحيات هذا الموظف"
+                                >
+                                  <User size={12} />
+                                  <span>{s.name}</span>
+                                  {Object.keys(overrides[s.id] || {}).length > 0 && (
+                                    <span className="bg-amber-500 text-white text-[9px] px-1.5 rounded-full font-bold">
+                                      {Object.keys(overrides[s.id] || {}).length}
+                                    </span>
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null;
+                      })()}
                     </div>
 
                     {!isSuperAdmin && (!selectedRoleForPermissions.tenantId || selectedRoleForPermissions.tenantId === 'system' || DEFAULT_ROLES[selectedRoleForPermissions.roleKey] || selectedRoleForPermissions.isDefault) && (
-                      <div className="p-5 bg-amber-500/10 rounded-2xl border border-amber-500/30 text-right flex items-center justify-between flex-wrap gap-3 shadow-sm">
-                        <div className="flex items-center gap-2.5 text-amber-700 dark:text-amber-400 font-black text-xs">
-                          <Lock size={18} />
-                          <span>مهنة افتراضية محمية. تعديل المهن الافتراضية متاح فقط من السوبر أدمن.</span>
+                      <div className="p-4 bg-amber-500/10 rounded-2xl border border-amber-500/30 text-right flex items-center justify-between flex-wrap gap-3 shadow-sm">
+                        <div className="flex items-center gap-2 text-amber-800 dark:text-amber-400 font-bold text-xs">
+                          <Lock size={16} className="shrink-0" />
+                          <span>مهنة افتراضية محمية. تعديل المهن الافتراضية متاح فقط للسوبر أدمن.</span>
                         </div>
                         <button
                           onClick={() => {
@@ -1444,7 +1463,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                             setNewRoleDesc(`نسخة مخصصة من ${selectedRoleForPermissions.name}`);
                             setShowCreateRole(true);
                           }}
-                          className="px-4 py-2 bg-brand text-white font-black text-xs rounded-xl shadow-sm hover:bg-brand/90 transition-all flex items-center gap-1.5 cursor-pointer"
+                          className="px-3.5 py-1.5 bg-brand text-white font-black text-xs rounded-xl shadow-sm hover:bg-brand/90 transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
                         >
                           <Plus size={14} />
                           <span>إنشاء مهنة مخصصة</span>
@@ -1452,7 +1471,8 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                       </div>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Permissions Grid Categories */}
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 items-start">
                       {categories.map(category => {
                         const categoryPerms = SYSTEM_PERMISSIONS.filter(p => 
                           p.category === category && 
@@ -1461,25 +1481,26 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                         
                         if (categoryPerms.length === 0) return null;
                         const isExpanded = expandedCategories.includes(category);
+                        const enabledCount = categoryPerms.filter(p => selectedRoleForPermissions.permissions[p.id as PermissionKey]).length;
 
                         return (
-                          <div key={category} className="bg-surface rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm overflow-hidden flex flex-col h-fit">
+                          <div key={category} className="bg-surface rounded-2xl sm:rounded-[2rem] border border-border shadow-sm overflow-hidden flex flex-col">
                             <button 
                               onClick={() => toggleCategory(category)}
-                              className="w-full p-6 bg-surface-muted/30 border-b border-border flex items-center justify-between group transition-colors hover:bg-surface-muted/50"
+                              className="w-full p-4 sm:p-5 bg-surface-muted/30 border-b border-border flex items-center justify-between group transition-colors hover:bg-surface-muted/60"
                             >
-                              <div className="flex items-center gap-3">
-                                <div className="w-2 h-6 bg-brand rounded-full" />
-                                <h4 className="text-sm font-black text-brand uppercase tracking-widest">{category}</h4>
-                                <span className="bg-brand/10 text-brand text-[10px] px-2 py-0.5 rounded-full font-black">
-                                  {categoryPerms.length}
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="w-2 h-5 bg-brand rounded-full shrink-0" />
+                                <h4 className="text-xs sm:text-sm font-black text-brand uppercase tracking-wider truncate">{category}</h4>
+                                <span className="bg-brand/10 text-brand text-[10px] px-2 py-0.5 rounded-full font-black shrink-0">
+                                  {enabledCount} / {categoryPerms.length} مفعلة
                                 </span>
                               </div>
                               <div className={cn(
-                                "p-2 rounded-xl bg-surface border border-border text-content-muted transition-all",
-                                isExpanded ? "rotate-180 text-brand border-brand/20" : ""
+                                "p-1.5 rounded-lg bg-surface border border-border text-content-muted transition-all shrink-0",
+                                isExpanded ? "rotate-180 text-brand border-brand/30" : ""
                               )}>
-                                <ChevronDown size={16} />
+                                <ChevronDown size={15} />
                               </div>
                             </button>
                             
@@ -1489,35 +1510,45 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                   initial={{ height: 0, opacity: 0 }}
                                   animate={{ height: 'auto', opacity: 1 }}
                                   exit={{ height: 0, opacity: 0 }}
-                                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                                  transition={{ duration: 0.25, ease: "easeInOut" }}
                                   className="overflow-hidden"
                                 >
-                                  <div className="p-6 space-y-4">
+                                  <div className="p-3.5 sm:p-4 space-y-3">
                                     {categoryPerms.map(perm => {
                                       const isEnabled = selectedRoleForPermissions.permissions[perm.id as PermissionKey];
                                       const isDefaultRole = Boolean(!selectedRoleForPermissions.tenantId || selectedRoleForPermissions.tenantId === 'system' || DEFAULT_ROLES[selectedRoleForPermissions.roleKey] || selectedRoleForPermissions.isDefault);
                                       const isReadOnlyRole = selectedRoleForPermissions.roleKey === 'owner' || (!isSuperAdmin && isDefaultRole);
                                       
                                       return (
-                                        <div key={perm.id} className={cn("flex items-center justify-between p-4 bg-surface-muted/50 rounded-2xl border border-border/50 transition-all group", isReadOnlyRole ? "opacity-70 cursor-not-allowed" : "hover:border-brand/30")}>
-                                          <div className="flex flex-col gap-1">
-                                            <span className="text-sm font-bold text-content group-hover:text-brand transition-colors">{perm.name}</span>
-                                            <span className="text-[10px] text-content-muted font-medium leading-relaxed">{perm.description}</span>
+                                        <div key={perm.id} className={cn("flex items-start justify-between gap-3 p-3.5 sm:p-4 bg-surface-muted/30 hover:bg-surface-muted/70 rounded-2xl border border-border/60 transition-all group", isReadOnlyRole ? "opacity-75 cursor-not-allowed" : "hover:border-brand/30")}>
+                                          <div className="min-w-0 flex-1 space-y-0.5">
+                                            <span className="text-xs sm:text-sm font-bold text-content group-hover:text-brand transition-colors block leading-tight">{perm.name}</span>
+                                            <span className="text-[11px] text-content-muted font-medium leading-relaxed block">{perm.description}</span>
                                           </div>
-                                          <button
-                                            onClick={() => !isReadOnlyRole && handleTogglePermission(selectedRoleForPermissions.id, perm.id as PermissionKey)}
-                                            disabled={isReadOnlyRole}
-                                            className={cn(
-                                              "w-12 h-6 rounded-full relative transition-all duration-300",
-                                              isEnabled ? (isReadOnlyRole ? "bg-brand/50" : "bg-brand") : "bg-border",
-                                              isReadOnlyRole && "opacity-50 cursor-not-allowed"
-                                            )}
-                                          >
-                                            <div className={cn(
-                                              "absolute top-1 w-4 h-4 bg-surface rounded-full shadow-sm transition-all duration-300",
-                                              isEnabled ? "right-1" : "right-7"
-                                            )} />
-                                          </button>
+                                          
+                                          <div className="shrink-0 flex items-center gap-2 pt-0.5">
+                                            <span className={cn(
+                                              "text-[9px] font-black px-2 py-0.5 rounded-full hidden sm:inline-block",
+                                              isEnabled ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-surface-muted text-content-muted"
+                                            )}>
+                                              {isEnabled ? 'مفعل' : 'معطل'}
+                                            </span>
+                                            
+                                            <button
+                                              onClick={() => !isReadOnlyRole && handleTogglePermission(selectedRoleForPermissions.id, perm.id as PermissionKey)}
+                                              disabled={isReadOnlyRole}
+                                              className={cn(
+                                                "w-11 h-6 rounded-full relative transition-all duration-300 shrink-0 cursor-pointer",
+                                                isEnabled ? (isReadOnlyRole ? "bg-brand/50" : "bg-brand") : "bg-border/80 dark:bg-zinc-700",
+                                                isReadOnlyRole && "opacity-50 cursor-not-allowed"
+                                              )}
+                                            >
+                                              <div className={cn(
+                                                "absolute top-1 w-4 h-4 bg-surface rounded-full shadow-sm transition-all duration-300",
+                                                isEnabled ? "right-1" : "right-6"
+                                              )} />
+                                            </button>
+                                          </div>
                                         </div>
                                       );
                                     })}
@@ -1534,11 +1565,11 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
               {/* Staff List Sidebar */}
-              <div className="lg:col-span-1 space-y-4">
+              <div className="lg:col-span-4 xl:col-span-3 space-y-4">
                 <div className="bg-surface rounded-2xl sm:rounded-[2rem] border border-border shadow-sm overflow-hidden">
-                  <div className="p-4 bg-surface-muted border-b border-border">
+                  <div className="p-4 sm:p-5 bg-surface-muted border-b border-border">
                     <h4 className="text-xs font-black text-content-muted uppercase tracking-widest">اختر الموظف</h4>
                   </div>
                   <div className="p-3 border-b border-border bg-surface-muted/20">
@@ -1553,28 +1584,33 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                       />
                     </div>
                   </div>
-                  <div className="max-h-[600px] overflow-y-auto">
+                  <div className="max-h-[500px] lg:max-h-[600px] overflow-y-auto divide-y divide-border/60">
                     {staff.filter(m => m.name.toLowerCase().includes(sidebarSearchTerm.toLowerCase()) || m.role.toLowerCase().includes(sidebarSearchTerm.toLowerCase())).map(member => (
                       <button
                         key={member.id}
                         onClick={() => setSelectedStaffForPermissions(member)}
                         className={cn(
-                          "w-full p-4 flex items-center gap-3 hover:bg-surface-muted transition-all text-right border-b border-border last:border-0",
+                          "w-full p-3.5 sm:p-4 flex items-center gap-3 hover:bg-surface-muted/60 transition-all text-right relative cursor-pointer min-w-0",
                           selectedStaffForPermissions?.id === member.id ? "bg-brand/5 border-r-4 border-r-brand" : ""
                         )}
                       >
                         <div className={cn(
-                          "w-10 h-10 rounded-xl flex items-center justify-center font-black",
+                          "w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center font-black shrink-0",
                           member.role === 'manager' || member.role === 'owner' ? "bg-brand/10 text-brand" : "bg-surface-muted text-content-muted"
                         )}>
                           {member.name.charAt(0)}
                         </div>
-                        <div>
-                          <p className="text-sm font-bold text-content">{member.name}</p>
-                          <p className="text-[10px] text-content-muted font-bold uppercase">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs sm:text-sm font-bold text-content truncate">{member.name}</p>
+                          <p className="text-[10px] text-content-muted font-bold uppercase truncate">
                             {roles.find(r => r.roleKey === member.role)?.name || member.role}
                           </p>
                         </div>
+                        {Object.keys(overrides[member.id] || {}).length > 0 && (
+                          <span className="bg-amber-500/10 text-amber-600 border border-amber-500/20 text-[9px] px-1.5 py-0.5 rounded-full font-black shrink-0">
+                            {Object.keys(overrides[member.id] || {}).length} استثناء
+                          </span>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -1582,186 +1618,186 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
               </div>
 
               {/* Permission Matrix for Selected Staff */}
-              <div className="lg:col-span-3">
+              <div className="lg:col-span-8 xl:col-span-9 space-y-6">
                 {selectedStaffForPermissions ? (
-                  <div className="bg-surface rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm overflow-hidden">
-                    <div className="p-4 sm:p-8 border-b border-border flex flex-col md:flex-row justify-between items-start md:items-center bg-surface-muted/50 gap-4 sm:gap-6">
-                      <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0">
-                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-surface shadow-sm flex items-center justify-center text-brand font-black text-xl sm:text-2xl border border-border shrink-0">
-                          {selectedStaffForPermissions.name.charAt(0)}
+                  <div className="space-y-6">
+                    {/* Header Card for Selected Staff */}
+                    <div className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-border shadow-sm space-y-4">
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div className="w-12 h-12 rounded-2xl bg-brand/10 text-brand font-black text-xl flex items-center justify-center border border-brand/20 shrink-0">
+                            {selectedStaffForPermissions.name.charAt(0)}
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="text-base sm:text-xl font-black text-content truncate">صلاحيات {selectedStaffForPermissions.name}</h3>
+                            <p className="text-xs text-content-muted font-bold mt-0.5">تعديل الاستثناءات الخاصة بهذا الموظف</p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <h3 className="text-base sm:text-xl font-black text-content">صلاحيات {selectedStaffForPermissions.name}</h3>
-                          <p className="text-xs text-content-muted font-bold mt-1">
-                            تعديل استثناءات الصلاحيات لهذا الموظف بشكل خاص
-                          </p>
-                          {(() => {
-                            const staffRoleObj = roles.find(r => r.roleKey === selectedStaffForPermissions.role);
-                            const staffOverrideCount = Object.keys(overrides[selectedStaffForPermissions.id] || {}).length;
-                            return (
-                              <div className="flex items-center gap-2 flex-wrap mt-2">
-                                <button
-                                  onClick={() => {
-                                    setPermissionTabMode('roles');
-                                    if (staffRoleObj) setSelectedRoleForPermissions(staffRoleObj);
-                                    setSelectedStaffForPermissions(null);
-                                  }}
-                                  className="px-3 py-1 bg-brand/10 hover:bg-brand text-brand hover:text-white rounded-xl text-xs font-black flex items-center gap-1.5 transition-all border border-brand/20 cursor-pointer"
-                                  title="الانتقال لتعديل صلاحيات هذا الدور الوظيفي"
-                                >
-                                  <Shield size={14} />
-                                  <span>الدور الأساسي: {staffRoleObj?.name || selectedStaffForPermissions.role}</span>
-                                  <span className="text-[10px] underline">(تعديل صلاحيات الدور)</span>
-                                </button>
-                                {staffOverrideCount > 0 ? (
-                                  <span className="bg-amber-500/10 text-amber-600 border border-amber-500/20 px-3 py-1 rounded-xl text-xs font-black flex items-center gap-1">
-                                    <Zap size={12} />
-                                    <span>يوجد {staffOverrideCount} استثناء مخصص</span>
-                                  </span>
-                                ) : (
-                                  <span className="bg-surface-muted text-content-muted px-3 py-1 rounded-xl text-xs font-bold border border-border">
-                                    يتبع صلاحيات الدور تماماً
-                                  </span>
-                                )}
-                              </div>
-                            );
-                          })()}
+
+                        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full md:w-auto">
+                          <button
+                            onClick={() => handleResetOverrides(selectedStaffForPermissions.id)}
+                            disabled={isSavingPermissions || !overrides[selectedStaffForPermissions.id] || Object.keys(overrides[selectedStaffForPermissions.id]).length === 0}
+                            className="flex-1 sm:flex-initial px-4 py-2 bg-danger/10 hover:bg-danger/20 text-danger rounded-xl text-xs font-black transition-all border border-danger/20 flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                          >
+                            <TrendingUp className="rotate-180 shrink-0" size={14} />
+                            <span>استعادة الافتراضي</span>
+                          </button>
+                          
+                          <div className="relative w-full sm:w-56 shrink-0">
+                            <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 text-content-muted" size={15} />
+                            <input 
+                              type="text"
+                              placeholder="بحث..."
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                              className="w-full bg-surface-muted border border-border rounded-xl py-2 pr-9 pl-3 text-xs font-bold outline-none text-content focus:border-brand"
+                            />
+                          </div>
                         </div>
                       </div>
-                      
-                      <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-                        <button
-                          onClick={() => handleResetOverrides(selectedStaffForPermissions.id)}
-                          disabled={isSavingPermissions || !overrides[selectedStaffForPermissions.id] || Object.keys(overrides[selectedStaffForPermissions.id]).length === 0}
-                          className="w-full md:w-auto px-6 py-3 bg-danger/10 hover:bg-danger/20 text-danger rounded-2xl text-xs font-black transition-all border border-danger/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <TrendingUp className="rotate-180 shrink-0" size={16} />
-                          استعادة الافتراضي
-                        </button>
-                        <button
-                          onClick={toggleAllCategories}
-                          className="w-full md:w-auto px-6 py-3 bg-surface hover:bg-border rounded-2xl text-xs font-black text-content-muted transition-all border border-border"
-                        >
-                          {expandedCategories.length === categories.length ? 'طي الكل' : 'توسيع الكل'}
-                        </button>
-                        <div className="relative w-full md:w-64">
-                          <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-content-muted" size={18} />
-                          <input 
-                            type="text"
-                            placeholder="بحث..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-surface border border-border rounded-2xl py-2.5 pr-10 pl-4 text-xs font-bold outline-none text-content focus:border-brand"
-                          />
-                        </div>
-                      </div>
+
+                      {/* Info & Primary Role pill */}
+                      {(() => {
+                        const staffRoleObj = roles.find(r => r.roleKey === selectedStaffForPermissions.role);
+                        const staffOverrideCount = Object.keys(overrides[selectedStaffForPermissions.id] || {}).length;
+                        return (
+                          <div className="pt-3 border-t border-border/50 flex flex-wrap items-center gap-2 text-xs">
+                            <button
+                              onClick={() => {
+                                setPermissionTabMode('roles');
+                                if (staffRoleObj) setSelectedRoleForPermissions(staffRoleObj);
+                                setSelectedStaffForPermissions(null);
+                              }}
+                              className="px-3 py-1 bg-brand/10 hover:bg-brand text-brand hover:text-white rounded-xl text-xs font-black flex items-center gap-1.5 transition-all border border-brand/20 cursor-pointer"
+                              title="الانتقال لتعديل صلاحيات هذا الدور الوظيفي"
+                            >
+                              <Shield size={14} />
+                              <span>الدور الأساسي: {staffRoleObj?.name || selectedStaffForPermissions.role}</span>
+                              <span className="text-[10px] underline">(تعديل صلاحيات الدور)</span>
+                            </button>
+                            {staffOverrideCount > 0 ? (
+                              <span className="bg-amber-500/10 text-amber-600 border border-amber-500/20 px-3 py-1 rounded-xl text-xs font-black flex items-center gap-1">
+                                <Zap size={12} />
+                                <span>يوجد {staffOverrideCount} استثناء مخصص</span>
+                              </span>
+                            ) : (
+                              <span className="bg-surface-muted text-content-muted px-3 py-1 rounded-xl text-xs font-bold border border-border">
+                                يتبع صلاحيات الدور تماماً
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
 
-                    {/*
-                      No `whitespace-nowrap` here: it was inherited by every cell,
-                      and the permission descriptions are full Arabic sentences —
-                      so the table stretched past 900px and one row took several
-                      screens of horizontal scrolling to read. A fixed min-width
-                      keeps the columns readable and lets long text wrap.
-                    */}
-                    <div className="overflow-x-auto">
-                      <table className="w-full border-collapse min-w-[560px]">
-                        <thead>
-                          <tr className="bg-surface-muted/30">
-                            <th className="p-3 sm:p-6 text-right border-b border-border">
-                              <span className="text-xs font-black text-content-muted uppercase tracking-widest">الصلاحية</span>
-                            </th>
-                            <th className="p-3 sm:p-6 text-center border-b border-border w-24 sm:w-32">
-                              <span className="text-xs font-black text-content-muted uppercase tracking-widest">الحالة</span>
-                            </th>
-                            <th className="p-3 sm:p-6 text-center border-b border-border w-32 sm:w-48">
-                              <span className="text-xs font-black text-content-muted uppercase tracking-widest">المصدر</span>
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {categories.map(category => {
-                            const isExpanded = expandedCategories.includes(category);
-                            return (
-                              <React.Fragment key={category}>
-                                <tr 
-                                  className="bg-surface-muted/50 cursor-pointer hover:bg-surface-muted transition-colors"
-                                  onClick={() => toggleCategory(category)}
-                                >
-                                  <td colSpan={3} className="p-3 pr-4 sm:p-4 sm:pr-8 border-y border-border">
-                                    <div className="flex items-center gap-2">
-                                      {isExpanded ? <ChevronUp size={14} className="text-brand" /> : <ChevronDown size={14} className="text-brand" />}
-                                      <span className="text-xs font-black text-brand uppercase tracking-widest">{category}</span>
-                                    </div>
-                                  </td>
-                                </tr>
-                                {isExpanded && filteredPermissions.filter(p => p.category === category).map(perm => {
-                                  const role = roles.find(r => r.roleKey === selectedStaffForPermissions.role);
-                                  const baseValue = role?.permissions[perm.id as PermissionKey] ?? false;
-                                  const overrideValue = overrides[selectedStaffForPermissions.id]?.[perm.id as PermissionKey];
-                                  const effectiveValue = overrideValue !== undefined ? overrideValue : baseValue;
-                                  const isOverridden = overrideValue !== undefined;
-                                  const isOwner = selectedStaffForPermissions.role === 'owner';
+                    {/* Staff Permissions Categories */}
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 items-start">
+                      {categories.map(category => {
+                        const isExpanded = expandedCategories.includes(category);
+                        const categoryPerms = SYSTEM_PERMISSIONS.filter(p => 
+                          p.category === category && 
+                          (p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.description.toLowerCase().includes(searchTerm.toLowerCase()))
+                        );
 
-                                  return (
-                                    <tr key={perm.id} className="hover:bg-surface-muted/50 transition-all border-b border-border">
-                                      <td className="p-3 pr-4 sm:p-6 sm:pr-12">
-                                        <div className="flex flex-col">
-                                          <span className="text-xs sm:text-sm font-bold text-content">{perm.name}</span>
-                                          <span className="text-[10px] text-content-muted font-medium mt-0.5 leading-relaxed">{perm.description}</span>
-                                        </div>
-                                      </td>
-                                      <td className="p-3 sm:p-6 text-center">
-                                        <button
-                                          onClick={() => !isOwner && handleToggleStaffOverride(selectedStaffForPermissions.id, perm.id as PermissionKey)}
-                                          disabled={isOwner}
-                                          className={cn(
-                                            "w-12 h-6 rounded-full relative transition-all duration-300 mx-auto",
-                                            effectiveValue ? "bg-success" : "bg-surface-muted",
-                                            isOwner && "opacity-50 cursor-not-allowed"
-                                          )}
-                                        >
-                                          <div className={cn(
-                                            "absolute top-1 w-4 h-4 bg-surface rounded-full shadow-sm transition-all duration-300",
-                                            effectiveValue ? "right-1" : "right-7"
-                                          )} />
-                                        </button>
-                                      </td>
-                                      <td className="p-3 sm:p-6 text-center">
-                                        <div className="flex flex-col items-center gap-1">
-                                          <span className={cn(
-                                            "text-[9px] font-black px-2 py-0.5 rounded-full uppercase",
-                                            isOverridden ? "bg-info/10 text-info" : "bg-surface-muted text-content-muted"
-                                          )}>
-                                            {isOverridden ? 'استثناء خاص' : 'من الدور الوظيفي'}
-                                          </span>
-                                          {isOverridden && (
-                                            <button 
-                                              onClick={() => handleToggleStaffOverride(selectedStaffForPermissions.id, perm.id as PermissionKey)}
-                                              className="text-[8px] text-content-muted hover:text-rose-500 font-bold underline"
+                        if (categoryPerms.length === 0) return null;
+
+                        return (
+                          <div key={category} className="bg-surface rounded-2xl sm:rounded-[2rem] border border-border shadow-sm overflow-hidden flex flex-col">
+                            <button 
+                              onClick={() => toggleCategory(category)}
+                              className="w-full p-4 sm:p-5 bg-surface-muted/30 border-b border-border flex items-center justify-between group transition-colors hover:bg-surface-muted/60"
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="w-2 h-5 bg-brand rounded-full shrink-0" />
+                                <h4 className="text-xs sm:text-sm font-black text-brand uppercase tracking-wider truncate">{category}</h4>
+                              </div>
+                              <div className={cn(
+                                "p-1.5 rounded-lg bg-surface border border-border text-content-muted transition-all shrink-0",
+                                isExpanded ? "rotate-180 text-brand border-brand/30" : ""
+                              )}>
+                                <ChevronDown size={15} />
+                              </div>
+                            </button>
+
+                            <AnimatePresence>
+                              {isExpanded && (
+                                <motion.div 
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: 'auto', opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={{ duration: 0.25, ease: "easeInOut" }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="p-3.5 sm:p-4 space-y-3">
+                                    {categoryPerms.map(perm => {
+                                      const role = roles.find(r => r.roleKey === selectedStaffForPermissions.role);
+                                      const baseValue = role?.permissions[perm.id as PermissionKey] ?? false;
+                                      const overrideValue = overrides[selectedStaffForPermissions.id]?.[perm.id as PermissionKey];
+                                      const effectiveValue = overrideValue !== undefined ? overrideValue : baseValue;
+                                      const isOverridden = overrideValue !== undefined;
+                                      const isOwner = selectedStaffForPermissions.role === 'owner';
+
+                                      return (
+                                        <div key={perm.id} className="flex items-start justify-between gap-3 p-3.5 sm:p-4 bg-surface-muted/30 hover:bg-surface-muted/70 rounded-2xl border border-border/60 transition-all">
+                                          <div className="min-w-0 flex-1 space-y-0.5">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                              <span className="text-xs sm:text-sm font-bold text-content leading-tight">{perm.name}</span>
+                                              <span className={cn(
+                                                "text-[9px] font-black px-2 py-0.5 rounded-full uppercase",
+                                                isOverridden ? "bg-amber-500/10 text-amber-600 border border-amber-500/20" : "bg-surface-muted text-content-muted border border-border/40"
+                                              )}>
+                                                {isOverridden ? 'استثناء خاص' : 'من الدور'}
+                                              </span>
+                                            </div>
+                                            <span className="text-[11px] text-content-muted font-medium leading-relaxed block">{perm.description}</span>
+                                          </div>
+
+                                          <div className="shrink-0 flex items-center gap-2 pt-0.5">
+                                            {isOverridden && (
+                                              <button 
+                                                onClick={() => handleToggleStaffOverride(selectedStaffForPermissions.id, perm.id as PermissionKey)}
+                                                className="text-[10px] text-danger hover:underline font-bold px-1 hidden sm:inline-block"
+                                                title="إلغاء الاستثناء والتراجع للدور"
+                                              >
+                                                إلغاء
+                                              </button>
+                                            )}
+
+                                            <button
+                                              onClick={() => !isOwner && handleToggleStaffOverride(selectedStaffForPermissions.id, perm.id as PermissionKey)}
+                                              disabled={isOwner}
+                                              className={cn(
+                                                "w-11 h-6 rounded-full relative transition-all duration-300 shrink-0 cursor-pointer",
+                                                effectiveValue ? "bg-emerald-500" : "bg-border/80 dark:bg-zinc-700",
+                                                isOwner && "opacity-50 cursor-not-allowed"
+                                              )}
                                             >
-                                              استعادة الافتراضي
+                                              <div className={cn(
+                                                "absolute top-1 w-4 h-4 bg-surface rounded-full shadow-sm transition-all duration-300",
+                                                effectiveValue ? "right-1" : "right-6"
+                                              )} />
                                             </button>
-                                          )}
+                                          </div>
                                         </div>
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                              </React.Fragment>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                                      );
+                                    })}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 ) : (
-                  <div className="h-full min-h-[400px] bg-surface rounded-[2.5rem] border border-dashed border-border flex flex-col items-center justify-center text-center p-12">
-                    <div className="w-20 h-20 bg-surface-muted rounded-full flex items-center justify-center text-content-muted mb-6">
-                      <User size={40} />
+                  <div className="h-full min-h-[350px] bg-surface rounded-2xl sm:rounded-[2rem] border border-dashed border-border flex flex-col items-center justify-center text-center p-8">
+                    <div className="w-16 h-16 bg-surface-muted rounded-full flex items-center justify-center text-content-muted mb-4">
+                      <User size={32} />
                     </div>
-                    <h3 className="text-lg font-black text-content-muted">يرجى اختيار موظف للبدء</h3>
-                    <p className="text-sm text-content-muted font-bold mt-2 max-w-xs">
+                    <h3 className="text-base font-black text-content">يرجى اختيار موظف للبدء</h3>
+                    <p className="text-xs text-content-muted font-bold mt-1 max-w-xs">
                       اختر موظفاً من القائمة الجانبية لتعديل صلاحياته الفردية بشكل مستقل عن دوره الوظيفي
                     </p>
                   </div>

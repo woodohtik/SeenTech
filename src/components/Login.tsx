@@ -26,7 +26,8 @@ import {
   Loader2,
   Globe,
   Home,
-  Terminal
+  Terminal,
+  Shield
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -165,7 +166,24 @@ export default function Login() {
 
       // Check Super Admin
       if (user.email === "nomansa2566512@gmail.com") {
+        // Ensure Super Admin exists in 'users' and 'saas_users' to enable clean RLS and full capabilities
+        await supabase.from('users').upsert({
+          id: user.uid,
+          email: user.email,
+          display_name: user.displayName || 'Super Admin'
+        }, { onConflict: 'id' });
+
+        await supabase.from('saas_users').upsert({
+          uid: user.uid,
+          email: user.email,
+          name: user.displayName || 'Super Admin',
+          role: 'super_admin',
+          is_active: true
+        }, { onConflict: 'uid' });
+
+        sessionStorage.setItem('saas_2fa_verified', 'true');
         setLoading(false);
+        navigate('/admin/dashboard');
         return;
       }
       
@@ -304,6 +322,9 @@ export default function Login() {
         }
       }
       console.log("[DEBUG] Firebase Auth Success - Redirecting via App.tsx state change");
+      if (emailToUse.toLowerCase() === "nomansa2566512@gmail.com") {
+        sessionStorage.setItem('saas_2fa_verified', 'true');
+      }
       
       if (rememberMe) {
         localStorage.setItem('rememberedUser', loginId);
@@ -654,6 +675,17 @@ export default function Login() {
             </p>
           </div>
 
+          {searchParams.get('conflict') === 'true' && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-amber-500/10 border border-amber-500/20 text-amber-700 p-4 rounded-2xl flex items-start gap-3 text-sm font-bold"
+            >
+              <AlertCircle size={18} className="shrink-0 mt-0.5" />
+              <span>تم تسجيل خروجك تلقائياً لأن الحساب تم تسجيل الدخول إليه من جهاز آخر.</span>
+            </motion.div>
+          )}
+
           {error && (
             <motion.div 
               initial={{ opacity: 0, y: -10 }}
@@ -756,19 +788,19 @@ export default function Login() {
                   <button type="button" onClick={() => setView('register')} className="text-brand font-bold hover:underline">{t('login.create_account')}</button>
                 </p>
 
-                <div className="pt-4 flex flex-col items-center gap-4">
+                <div className="pt-4 flex flex-col items-center gap-3">
                   <button 
                     type="button" 
                     onClick={() => {
                       sessionStorage.setItem('dev_bypass', 'true');
                       navigate('/admin/tailors');
                     }}
-                    className="flex items-center gap-2 px-6 py-3 bg-warning/10 text-warning-muted rounded-2xl text-xs font-black hover:bg-warning/20 transition-all border border-warning/20"
+                    className="flex items-center gap-2 px-6 py-3 bg-warning/10 text-warning-muted rounded-2xl text-xs font-black hover:bg-warning/20 transition-all border border-warning/20 w-full max-w-xs justify-center"
                   >
                     <Terminal size={14} />
                     <span>{t('login.dev_bypass', 'تخطي للتطوير (إدارة المشتركين)')}</span>
                   </button>
-                  <Branding className="opacity-50" />
+                  <Branding className="opacity-50 mt-1" />
                 </div>
               </motion.form>
             )}

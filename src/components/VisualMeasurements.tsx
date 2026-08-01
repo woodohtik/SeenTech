@@ -56,6 +56,7 @@ export default function VisualMeasurements({ values, onChange, readOnly }: Visua
           const isSelected = values[field as keyof typeof values] === opt.id;
           return (
             <button
+              type="button"
               key={opt.id}
               disabled={readOnly}
               onClick={() => onChange(field, opt.id)}
@@ -105,6 +106,7 @@ export default function VisualMeasurements({ values, onChange, readOnly }: Visua
               { id: 'zipper', label: 'سحاب' }
             ].map((opt) => (
               <button
+                type="button"
                 key={opt.id}
                 disabled={readOnly}
                 onClick={() => onChange('closureType', opt.id)}
@@ -133,6 +135,7 @@ export default function VisualMeasurements({ values, onChange, readOnly }: Visua
               { id: 'hidden', label: 'مخفي' }
             ].map((opt) => (
               <button
+                type="button"
                 key={opt.id}
                 disabled={readOnly}
                 onClick={() => onChange('closureVisibility', opt.id)}

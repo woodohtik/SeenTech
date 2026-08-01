@@ -1079,29 +1079,29 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
 
   const renderCartPanel = (isMobilePanel: boolean = false) => {
     return (
-      <div className="flex flex-col h-full bg-[#FFFFFF] dark:bg-[#1D1D1D]">
+      <div className="flex flex-col h-full bg-surface">
         {/* Cart Header */}
-        <div className="p-4 lg:p-6 border-b border-border flex items-center justify-between shrink-0 relative">
+        <div className="p-4 sm:px-6 sm:py-5 border-b border-border flex items-center justify-between shrink-0 relative">
           <div className="flex items-center gap-2">
             {isMobilePanel && <div className="lg:hidden w-10 h-1 bg-border rounded-full absolute top-2 left-1/2 -translate-x-1/2" />}
-            <ShoppingCart size={24} className="text-[#1C8FFF]" />
-            <h2 className="text-lg lg:text-xl font-bold text-content">
+            <ShoppingCart size={22} className="text-brand" />
+            <h2 className="text-base lg:text-lg font-black text-content">
               {t('pos.cart_title', 'سلة المشتريات')}
             </h2>
-            <span className="bg-[#1C8FFF]/10 text-[#1C8FFF] text-xs px-2.5 py-0.5 rounded-full font-black">{cart.length}</span>
+            <span className="bg-brand/10 text-brand text-xs px-2.5 py-0.5 rounded-full font-black">{cart.length}</span>
           </div>
           {isMobilePanel && (
             <button 
               onClick={() => setShowCartOnMobile(false)}
-              className="p-2 text-[#6B7280] hover:bg-surface-muted rounded-full transition-all cursor-pointer"
+              className="p-2 text-content-muted hover:bg-surface-muted rounded-full transition-all cursor-pointer"
             >
-              <X size={24} />
+              <X size={20} />
             </button>
           )}
         </div>
 
         {/* Customer Selector */}
-        <div className="p-4 border-b border-border space-y-3 z-30 shrink-0">
+        <div className="p-4 sm:px-6 sm:py-5 border-b border-border space-y-3 z-30 shrink-0">
           <div className="flex gap-2 relative">
             <Combobox value={selectedCustomer} onChange={(customer: Customer | null) => {
               setSelectedCustomer(customer);
@@ -1118,13 +1118,13 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
             }}>
               <div className="relative flex-1">
                 <Combobox.Input
-                  className="w-full p-3 bg-[#FFFFFF] dark:bg-[#1D1D1D] text-content border border-border rounded-xl focus:ring-2 focus:ring-[#1C8FFF] focus:border-[#1C8FFF] shadow-sm font-medium rtl:pr-10 ltr:pl-10"
+                  className="w-full p-2.5 bg-surface text-content border border-border rounded-xl focus:ring-2 focus:ring-brand focus:border-brand shadow-sm font-bold text-sm rtl:pr-9 ltr:pl-9"
                   placeholder={t('pos.search_customer', 'ابحث عن عميل...')}
                   displayValue={(person: Customer) => person?.name || ''}
                   onChange={(event) => setCustomerQuery(event.target.value)}
                 />
                 <Combobox.Button className="absolute inset-y-0 ltr:right-0 rtl:left-0 flex items-center px-3">
-                  <User className="w-5 h-5 text-[#6B7280]" aria-hidden="true" />
+                  <User className="w-4 h-4 text-content-muted" aria-hidden="true" />
                 </Combobox.Button>
                 <Transition
                   as={React.Fragment}
@@ -1133,16 +1133,16 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                   leaveTo="opacity-0"
                   afterLeave={() => setCustomerQuery('')}
                 >
-                  <Combobox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-xl bg-[#FFFFFF] dark:bg-[#1D1D1D] border border-border text-content py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                  <Combobox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-xl bg-surface border border-border text-content py-1 shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
                     <Combobox.Option
                       className={({ active }) =>
                         `relative cursor-pointer select-none py-2 px-4 ${
-                          active ? 'bg-[#1C8FFF] text-white' : 'text-content'
+                          active ? 'bg-brand text-white' : 'text-content'
                         }`
                       }
                       value={null}
                     >
-                      <span className="block truncate">{t('pos.walk_in_customer', 'عميل نقدي (بدون اسم)')}</span>
+                      <span className="block truncate font-bold text-xs">{t('pos.walk_in_customer', 'عميل نقدي (بدون اسم)')}</span>
                     </Combobox.Option>
                     {customers
                       .filter((person) =>
@@ -1154,13 +1154,13 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                         key={person.id}
                         className={({ active }) =>
                           `relative cursor-pointer select-none py-2 px-4 ${
-                            active ? 'bg-[#1C8FFF] text-white' : 'text-content'
+                            active ? 'bg-brand text-white' : 'text-content'
                           }`
                         }
                         value={person}
                       >
-                        <span className="block truncate font-medium">{person.name}</span>
-                        <span className="block text-xs opacity-75">{person.phone}</span>
+                        <span className="block truncate font-bold text-xs">{person.name}</span>
+                        <span className="block text-[11px] opacity-80">{person.phone}</span>
                       </Combobox.Option>
                     ))}
                   </Combobox.Options>
@@ -1169,31 +1169,31 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
             </Combobox>
             <button 
               onClick={() => setIsAddCustomerModalOpen(true)}
-              className="px-3 bg-surface-muted border border-border rounded-xl text-[#6B7280] hover:text-[#1C8FFF] hover:border-[#1C8FFF] transition-all flex items-center justify-center shrink-0 cursor-pointer"
+              className="p-2.5 bg-surface-muted border border-border rounded-xl text-content-muted hover:text-brand hover:border-brand/50 transition-all flex items-center justify-center shrink-0 cursor-pointer"
               title={t('pos.add_new_customer', 'إضافة عميل جديد')}
             >
-              <UserPlus size={20} />
+              <UserPlus size={18} />
             </button>
           </div>
           {selectedCustomer && (
             <div className="p-3 bg-surface-muted border border-border rounded-xl space-y-1.5 text-xs">
               <div className="flex justify-between items-center text-content-muted">
                 <span className="font-medium">{t('pos.customer_name', 'اسم العميل:')}</span>
-                <span className="font-bold text-content">{selectedCustomer.name}</span>
+                <span className="font-black text-content">{selectedCustomer.name}</span>
               </div>
               <div className="flex justify-between items-center text-content-muted">
                 <span className="font-medium">{t('pos.customer_phone', 'رقم الجوال:')}</span>
-                <span className="font-mono text-content">{selectedCustomer.phone}</span>
+                <span className="font-mono font-bold text-content">{selectedCustomer.phone}</span>
               </div>
               {customerUnpaidBalance > 0 ? (
-                <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 text-red-600 rounded-lg flex justify-between items-center font-bold">
+                <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-lg flex justify-between items-center font-bold">
                   <span>{t('pos.previous_due_balance', 'مستحقات سابقة على العميل:')}</span>
-                  <span className="font-mono font-black text-sm text-red-700">
+                  <span className="font-mono font-black text-sm text-red-700 dark:text-red-300">
                     <PriceDisplay amount={customerUnpaidBalance} />
                   </span>
                 </div>
               ) : (
-                <div className="mt-2 p-1.5 px-2 bg-green-500/5 border border-green-500/10 text-green-600 rounded-lg text-center font-bold">
+                <div className="mt-2 p-1.5 px-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg text-center font-bold text-[11px]">
                   {t('pos.no_previous_due', 'الحساب سليم (لا توجد مبالغ متبقية)')}
                 </div>
               )}
@@ -1202,7 +1202,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         </div>
 
         {/* Cart Items List */}
-        <div className="flex-1 overflow-auto p-4 space-y-3">
+        <div className="flex-1 overflow-auto p-4 sm:px-6 sm:py-5 space-y-3">
           {focusedItemId && (
             <div 
               className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity"
@@ -1312,35 +1312,35 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         </div>
 
         {/* Order Summary Block */}
-        <div className="p-4 md:p-6 border-t border-border bg-[#FFFFFF] dark:bg-[#1D1D1D] shadow-lg shrink-0">
+        <div className="p-4 sm:px-6 sm:py-5 border-t border-border bg-surface shadow-lg shrink-0">
           <div className="space-y-2 mb-4">
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-[#6B7280] font-medium">{t('pos.subtotal', 'المجموع الفرعي')}</span>
-              <span className="text-content font-bold"><PriceDisplay amount={subTotalAmount} /></span>
+            <div className="flex justify-between items-center text-xs sm:text-sm">
+              <span className="text-content-muted font-bold">{t('pos.subtotal', 'المجموع الفرعي')}</span>
+              <span className="text-content font-black"><PriceDisplay amount={subTotalAmount} /></span>
             </div>
             
             {calculatedDiscountAmount > 0 && (
-              <div className="flex justify-between items-center text-sm text-[#1C8FFF] font-medium">
+              <div className="flex justify-between items-center text-xs sm:text-sm text-brand font-bold">
                 <span>{t('pos.discount_applied', 'الخصم المستقطع')}</span>
-                <span className="font-bold relative flex items-center">
+                <span className="font-black relative flex items-center">
                   -<PriceDisplay amount={calculatedDiscountAmount} className="inline-flex mr-1" />
                 </span>
               </div>
             )}
 
             {isTaxEnabled && (
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-[#6B7280] font-medium">{t('pos.vat', 'الضريبة')} ({vatRate}%)</span>
-                <span className="text-content font-bold"><PriceDisplay amount={taxAmount} /></span>
+              <div className="flex justify-between items-center text-xs sm:text-sm">
+                <span className="text-content-muted font-bold">{t('pos.vat', 'الضريبة')} ({vatRate}%)</span>
+                <span className="text-content font-black"><PriceDisplay amount={taxAmount} /></span>
               </div>
             )}
           </div>
           
           <div className="flex justify-between items-center mb-4 pt-3 border-t border-border">
-            <span className="text-[#6B7280] font-black uppercase tracking-widest text-xs md:text-sm">
+            <span className="text-content-muted font-black uppercase tracking-wider text-xs sm:text-sm">
               {t('pos.grand_total', 'الإجمالي')} {isTaxEnabled && t('pos.inclusive_vat', '(شامل الضريبة)')}
             </span>
-            <span className="text-xl md:text-2xl font-black text-[#1C8FFF]"><PriceDisplay amount={totalAmount} /></span>
+            <span className="text-xl sm:text-2xl font-black text-brand"><PriceDisplay amount={totalAmount} /></span>
           </div>
 
           <button
@@ -1349,9 +1349,9 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                setPaidAmount(totalAmount);
             }}
             disabled={cart.length === 0}
-            className="w-full py-4 bg-[#22C55E] hover:bg-[#22C55E]/90 text-white rounded-2xl font-black text-lg transition-all shadow-lg shadow-[#22C55E]/10 active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:scale-100 flex items-center justify-center gap-3 cursor-pointer"
+            className="w-full py-3.5 sm:py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-base sm:text-lg transition-all shadow-md shadow-emerald-600/10 active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:scale-100 flex items-center justify-center gap-2.5 cursor-pointer"
           >
-            <CreditCard size={24} />
+            <CreditCard size={22} />
             <span>{t('pos.checkout_and_pay', 'الدفع وإتمام الطلب')}</span>
           </button>
         </div>
@@ -1385,13 +1385,13 @@ const invoiceData: InvoiceData | null = completedOrder ? {
   invoiceType: completedOrder.invoiceType
 } : null;
   return (
-    <div className="h-full flex flex-col lg:flex-row font-sans bg-[#F5F7FA] dark:bg-[#121212] overflow-hidden w-full" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="h-full flex flex-col lg:flex-row font-sans bg-background text-content overflow-hidden w-full" dir={isRtl ? 'rtl' : 'ltr'}>
       <ScannerModal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} onScan={handleScan} />
       {/* Main Pane (70% width on Desktop) */}
-      <div className="w-full lg:w-[70%] flex flex-col gap-4 lg:gap-6 overflow-x-hidden transition-all duration-300 p-4 lg:p-6 overflow-y-auto h-auto lg:h-full flex-1">
+      <div className="w-full lg:w-[70%] flex flex-col gap-4 lg:gap-5 overflow-x-hidden transition-all duration-300 p-4 sm:p-6 overflow-y-auto h-auto lg:h-full flex-1">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="group flex-1 flex items-center bg-[#FFFFFF] dark:bg-[#1D1D1D] border border-border rounded-xl focus-within:ring-2 focus-within:ring-[#1C8FFF] focus-within:border-[#1C8FFF] transition-all shadow-sm overflow-hidden h-11">
-            <div className="flex items-center justify-center px-3.5 border-e border-border/60 text-[#6B7280] group-focus-within:text-[#1C8FFF] h-full shrink-0">
+          <div className="group flex-1 flex items-center bg-surface border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand focus-within:border-brand transition-all shadow-sm overflow-hidden h-11">
+            <div className="flex items-center justify-center px-3.5 border-e border-border/60 text-content-muted group-focus-within:text-brand h-full shrink-0">
               <Search size={18} />
             </div>
             <input
@@ -1400,13 +1400,13 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               placeholder={t('pos.search_placeholder', 'ابحث عن منتج أو باركود...')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 min-w-0 bg-transparent border-none py-2 px-3 text-sm text-content outline-none ring-0 placeholder:text-gray-400 font-semibold"
+              className="flex-1 min-w-0 bg-transparent border-none py-2 px-3 text-sm text-content outline-none ring-0 placeholder:text-content-muted/60 font-bold"
             />
             <div className="flex items-center justify-center px-3 border-s border-border/60 h-full shrink-0">
               <button 
                 type="button"
                 onClick={() => setIsScannerOpen(true)}
-                className="text-[#6B7280] hover:text-[#1C8FFF] transition-colors flex items-center justify-center focus:outline-none cursor-pointer"
+                className="text-content-muted hover:text-brand transition-colors flex items-center justify-center focus:outline-none cursor-pointer"
               >
                 <Barcode size={18} />
               </button>
@@ -1415,7 +1415,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
 
           <button
             onClick={() => setIsShortcutsModalOpen(true)}
-            className="hidden sm:flex items-center justify-center gap-2 px-4 py-3 bg-[#FFFFFF] dark:bg-[#1D1D1D] border border-border text-content hover:bg-surface-muted rounded-xl transition-all font-bold shadow-sm active:scale-95 cursor-pointer text-xs sm:text-sm"
+            className="hidden sm:flex items-center justify-center gap-2 px-4 h-11 bg-surface border border-border text-content hover:bg-surface-muted rounded-xl transition-all font-black shadow-sm active:scale-95 cursor-pointer text-xs sm:text-sm shrink-0"
             title="جدول اختصارات لوحة المفاتيح"
           >
             <span>⌨️</span>
@@ -1424,9 +1424,9 @@ const invoiceData: InvoiceData | null = completedOrder ? {
 
           <button
             onClick={() => setIsCustomOrderModalOpen(true)}
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-[#1C8FFF] text-white rounded-xl hover:bg-[#1C8FFF]/90 transition-colors font-bold shadow-md active:scale-95 cursor-pointer"
+            className="flex items-center justify-center gap-2 px-5 h-11 bg-brand text-white rounded-xl hover:bg-brand/90 transition-all font-black shadow-sm active:scale-95 cursor-pointer text-xs sm:text-sm shrink-0"
           >
-            <Scissors size={20} />
+            <Scissors size={18} />
             <span className="whitespace-nowrap">{t('pos.custom_tailor', 'تفصيل جديد')}</span>
           </button>
         </div>
@@ -1441,10 +1441,10 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
                   className={cn(
-                    "px-5 py-2.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer border shrink-0 active:scale-95",
+                    "px-4 py-2 rounded-xl text-xs font-black transition-all duration-200 cursor-pointer border shrink-0 active:scale-95",
                     isActive
-                      ? "bg-[#1C8FFF] text-white border-[#1C8FFF] shadow-md shadow-[#1C8FFF]/20"
-                      : "bg-[#FFFFFF] dark:bg-[#1D1D1D] text-[#6B7280] border-border hover:bg-surface-muted/50"
+                      ? "bg-brand text-white border-brand shadow-sm"
+                      : "bg-surface text-content-muted border-border hover:bg-surface-muted/80"
                   )}
                 >
                   {getCategoryLabel(cat)}
@@ -1453,14 +1453,14 @@ const invoiceData: InvoiceData | null = completedOrder ? {
             })}
           </div>
 
-          <div className="flex items-center self-end sm:self-center bg-[#FFFFFF] dark:bg-[#1D1D1D] border border-border rounded-xl p-1 shadow-sm shrink-0">
+          <div className="flex items-center self-end sm:self-center bg-surface border border-border rounded-xl p-1 shadow-sm shrink-0">
             <button
               onClick={() => setViewMode('grid')}
               className={cn(
                 "p-2 rounded-lg transition-all duration-200 cursor-pointer flex items-center justify-center",
                 viewMode === 'grid'
-                  ? "bg-[#1C8FFF] text-white shadow"
-                  : "text-[#6B7280] hover:bg-slate-100 dark:hover:bg-slate-800"
+                  ? "bg-brand text-white shadow-sm"
+                  : "text-content-muted hover:bg-surface-muted"
               )}
               title={t('pos.grid_view', 'عرض شبكي')}
             >
@@ -1471,8 +1471,8 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               className={cn(
                 "p-2 rounded-lg transition-all duration-200 cursor-pointer flex items-center justify-center",
                 viewMode === 'list'
-                  ? "bg-[#1C8FFF] text-white shadow"
-                  : "text-[#6B7280] hover:bg-slate-100 dark:hover:bg-slate-800"
+                  ? "bg-brand text-white shadow-sm"
+                  : "text-content-muted hover:bg-surface-muted"
               )}
               title={t('pos.list_view', 'عرض قائمة')}
             >
@@ -1482,47 +1482,17 @@ const invoiceData: InvoiceData | null = completedOrder ? {
         </div>
 
         {/* Products Grid / List View */}
-        <div className="flex-1 bg-[#FFFFFF] dark:bg-[#1D1D1D] border border-border rounded-2xl p-4 md:p-6 overflow-auto shadow-sm">
+        <div className="flex-1 bg-surface border border-border rounded-2xl p-4 sm:p-5 overflow-auto shadow-sm">
           {filteredInventory.length > 0 ? (
             viewMode === 'grid' ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4 w-full">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 w-full">
                 {filteredInventory.map(item => (
                   <button
                     key={item.id}
                     onClick={() => addToCart(item)}
-                    className="flex flex-col items-center p-3 md:p-4 bg-[#FFFFFF] dark:bg-[#1D1D1D] border border-gray-200/50 dark:border-gray-700/50 rounded-2xl shadow-sm hover:shadow-md hover:border-[#1C8FFF]/50 hover:-translate-y-1 transition-all duration-300 ease-in-out group active:scale-95 cursor-pointer text-center w-full"
+                    className="flex flex-col items-center p-3.5 bg-surface border border-border/70 hover:border-brand/50 rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group active:scale-95 cursor-pointer text-center w-full"
                   >
-                    <div className="w-full aspect-square bg-[#F5F7FA] dark:bg-[#121212] rounded-t-xl rounded-b-lg flex items-center justify-center mb-2 md:mb-3 group-hover:scale-105 transition-transform overflow-hidden border border-border/50">
-                      {item.mainImage ? (
-                        <img 
-                          src={item.mainImage} 
-                          alt={item.name} 
-                          className="w-full h-full object-cover rounded-t-xl"
-                          referrerPolicy="no-referrer"
-                        />
-                      ) : (
-                        <div className="p-4 bg-[#F5F7FA] dark:bg-[#121212] rounded-full">
-                          <Package size={28} className="text-[#6B7280] group-hover:text-[#1C8FFF]" />
-                        </div>
-                      )}
-                    </div>
-                    <span className="text-sm md:text-base font-bold text-content text-center line-clamp-2 min-h-[2.5rem] mb-1 w-full">
-                      {i18n.language === 'en' && item.nameEn ? item.nameEn : item.name}
-                    </span>
-                    <span className="text-[#1C8FFF] font-black text-sm md:text-base"><PriceDisplay amount={item.pricePerUnit} /></span>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3 w-full">
-                {filteredInventory.map(item => (
-                  <button
-                    key={item.id}
-                    onClick={() => addToCart(item)}
-                    className="flex items-center p-3 md:p-4 bg-[#FFFFFF] dark:bg-[#1D1D1D] border border-gray-200/50 dark:border-gray-700/50 rounded-2xl shadow-sm hover:shadow-md hover:border-[#1C8FFF]/50 hover:-translate-y-1 transition-all duration-300 ease-in-out group active:scale-[0.99] cursor-pointer w-full text-right"
-                  >
-                    {/* Item Image */}
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#F5F7FA] dark:bg-[#121212] rounded-xl flex items-center justify-center shrink-0 overflow-hidden border border-border/50 ms-0 me-4">
+                    <div className="w-full aspect-square bg-surface-muted/60 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform overflow-hidden border border-border/40">
                       {item.mainImage ? (
                         <img 
                           src={item.mainImage} 
@@ -1531,28 +1501,58 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                           referrerPolicy="no-referrer"
                         />
                       ) : (
-                        <Package size={24} className="text-[#6B7280] group-hover:text-[#1C8FFF]" />
+                        <div className="p-3 bg-surface rounded-full shadow-inner">
+                          <Package size={26} className="text-content-muted group-hover:text-brand transition-colors" />
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-xs sm:text-sm font-bold text-content text-center line-clamp-2 min-h-[2.25rem] mb-1 w-full">
+                      {i18n.language === 'en' && item.nameEn ? item.nameEn : item.name}
+                    </span>
+                    <span className="text-brand font-black text-sm sm:text-base"><PriceDisplay amount={item.pricePerUnit} /></span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2.5 w-full">
+                {filteredInventory.map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => addToCart(item)}
+                    className="flex items-center p-3 sm:p-3.5 bg-surface border border-border/70 hover:border-brand/50 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 group active:scale-[0.99] cursor-pointer w-full text-right"
+                  >
+                    {/* Item Image */}
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 bg-surface-muted/60 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border border-border/40 ms-0 me-3.5">
+                      {item.mainImage ? (
+                        <img 
+                          src={item.mainImage} 
+                          alt={item.name} 
+                          className="w-full h-full object-cover rounded-xl"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <Package size={22} className="text-content-muted group-hover:text-brand transition-colors" />
                       )}
                     </div>
 
                     {/* Details in the Middle */}
                     <div className="flex-1 min-w-0 flex flex-col items-start text-start justify-center gap-1">
-                      <span className="text-sm sm:text-base font-bold text-content line-clamp-1 w-full text-start">
+                      <span className="text-xs sm:text-sm font-bold text-content line-clamp-1 w-full text-start">
                         {i18n.language === 'en' && item.nameEn ? item.nameEn : item.name}
                       </span>
                       {item.category && (
-                        <span className="text-[10px] sm:text-xs text-[#6B7280] bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full font-bold">
+                        <span className="text-[10px] sm:text-xs text-content-muted bg-surface-muted px-2.5 py-0.5 rounded-full font-bold">
                           {getCategoryLabel(item.category)}
                         </span>
                       )}
                     </div>
 
                     {/* Price and Action button on the End/Right */}
-                    <div className="flex flex-col items-end justify-center shrink-0 gap-1.5 ms-4 me-0">
-                      <span className="text-[#1C8FFF] font-black text-sm sm:text-lg">
+                    <div className="flex flex-col items-end justify-center shrink-0 gap-1 ms-3 me-0">
+                      <span className="text-brand font-black text-sm sm:text-base">
                         <PriceDisplay amount={item.pricePerUnit} />
                       </span>
-                      <div className="px-2.5 py-1 bg-[#1C8FFF]/10 text-[#1C8FFF] group-hover:bg-[#1C8FFF] group-hover:text-white rounded-lg transition-colors text-xs font-bold flex items-center gap-1">
+                      <div className="px-2.5 py-1 bg-brand/10 text-brand group-hover:bg-brand group-hover:text-white rounded-lg transition-colors text-xs font-black flex items-center gap-1">
                         <Plus size={12} />
                         <span>{t('pos.add_to_cart', 'إضافة')}</span>
                       </div>
@@ -1562,8 +1562,8 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               </div>
             )
           ) : (
-            <div className="h-full flex flex-col items-center justify-center text-[#6B7280] space-y-2 py-12">
-              <Package size={48} className="opacity-20" />
+            <div className="h-full flex flex-col items-center justify-center text-content-muted space-y-2 py-12">
+              <Package size={44} className="opacity-20" />
               <p className="text-sm font-bold">{t('pos.no_products_found', 'لم يتم العثور على منتجات')}</p>
             </div>
           )}

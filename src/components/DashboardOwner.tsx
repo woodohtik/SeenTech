@@ -281,6 +281,12 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
   useEffect(() => {
     if (!tenantId) return;
 
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId);
+    if (!isUuid) {
+      setIsLoading(false);
+      return;
+    }
+
     const fetchTenantData = async () => {
       try {
         const { data: tenantData } = await supabase

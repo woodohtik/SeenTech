@@ -104,7 +104,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="bg-white dark:bg-[#1D1D1D] p-4 sm:p-6 rounded-2xl md:rounded-[2rem] border border-gray-200 dark:border-gray-800 shadow-sm space-y-6">
         <div>
           <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">{t('sales_returns.title', 'إرجاع فاتورة مبيعات')}</h2>
