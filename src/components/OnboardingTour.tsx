@@ -137,6 +137,7 @@ export default function OnboardingTour({
   const [phase, setPhase] = useState<'idle' | 'welcome' | 'running' | 'finish'>('idle');
 
   const driverRef = useRef<Driver | null>(null);
+  const createDriverRef = useRef<(() => Driver) | null>(null);
   const stepsRef = useRef<TourStepDef[]>([]);
   const indexRef = useRef(0);
   const movingRef = useRef(false);
@@ -383,16 +384,25 @@ export default function OnboardingTour({
         indexRef.current = cursor;
 
         // 3) Rebuild the step list against the DOM as it is right now
-        const d = driverRef.current;
+        let d = driverRef.current;
+        if (d) {
+          try {
+            d.destroy();
+          } catch (e) {
+            console.error('Error destroying driver:', e);
+          }
+        }
+
+        // Recreate the driver instance from scratch to avoid duplicate/stuck popovers from driver.js
+        if (createDriverRef.current) {
+          d = createDriverRef.current();
+          driverRef.current = d;
+        }
+
         if (!d) return;
 
         d.setSteps(steps.map(toDriveStep));
-
-        if (d.isActive()) {
-          d.moveTo(cursor);
-        } else {
-          d.drive(cursor);
-        }
+        d.drive(cursor);
 
         writeProgress(cursor);
       } finally {
@@ -461,6 +471,8 @@ export default function OnboardingTour({
     },
     [goToStep, teardown, isRtl, t]
   );
+
+  createDriverRef.current = createDriver;
 
   /* ---------------- lifecycle ---------------- */
 

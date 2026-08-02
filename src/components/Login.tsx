@@ -789,17 +789,6 @@ export default function Login() {
                 </p>
 
                 <div className="pt-4 flex flex-col items-center gap-3">
-                  <button 
-                    type="button" 
-                    onClick={() => {
-                      sessionStorage.setItem('dev_bypass', 'true');
-                      navigate('/admin/tailors');
-                    }}
-                    className="flex items-center gap-2 px-6 py-3 bg-warning/10 text-warning-muted rounded-2xl text-xs font-black hover:bg-warning/20 transition-all border border-warning/20 w-full max-w-xs justify-center"
-                  >
-                    <Terminal size={14} />
-                    <span>{t('login.dev_bypass', 'تخطي للتطوير (إدارة المشتركين)')}</span>
-                  </button>
                   <Branding className="opacity-50 mt-1" />
                 </div>
               </motion.form>

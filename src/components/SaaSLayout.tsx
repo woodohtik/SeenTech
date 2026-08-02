@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { auth } from '../lib/firebase';
-import { signOut, updatePassword } from 'firebase/auth';
+import { signOut, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { cn } from '../lib/utils';
 import { logSaaSSecurityEvent } from '../services/saasSecurityService';
 import { useAuth } from '../contexts/AuthContext';
@@ -134,16 +134,23 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
     checkTempPasswordStatus();
   }, [dbUser]);
 
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passError, setPassError] = useState<string | null>(null);
   const [passSubmitting, setPassSubmitting] = useState(false);
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
   const [showPass1, setShowPass1] = useState(false);
   const [showPass2, setShowPass2] = useState(false);
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setPassError(null);
+
+    if (!currentPassword) {
+      setPassError(t('saas.current_password_required', 'يرجى إدخال كلمة المرور المؤقتة الحالية'));
+      return;
+    }
 
     if (newPassword.length < 6) {
       setPassError(t('saas.password_too_short', 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'));
@@ -158,7 +165,12 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
     setPassSubmitting(true);
     try {
       if (!auth.currentUser) throw new Error("No user logged in");
-      
+      if (!auth.currentUser.email) throw new Error("User email is not available");
+
+      // Re-authenticate user first using EmailAuthProvider to prevent auth/requires-recent-login
+      const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
+      await reauthenticateWithCredential(auth.currentUser, credential);
+
       // Get token first before changing password (so it's valid)
       const token = await auth.currentUser.getIdToken(true);
 
@@ -184,7 +196,11 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
       await logSaaSSecurityEvent('saas_password_changed', 'User successfully replaced temporary password');
     } catch (err: any) {
       console.error(err);
-      setPassError(err.message || t('saas.error_updating_password', 'حدث خطأ أثناء تحديث كلمة المرور'));
+      let errorMsg = err.message || t('saas.error_updating_password', 'حدث خطأ أثناء تحديث كلمة المرور');
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        errorMsg = t('saas.wrong_current_password', 'كلمة المرور المؤقتة الحالية غير صحيحة');
+      }
+      setPassError(errorMsg);
     } finally {
       setPassSubmitting(false);
     }
@@ -655,6 +671,30 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                     <span>{passError}</span>
                   </div>
                 )}
+
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-700 block">كلمة المرور المؤقتة الحالية</label>
+                  <div className="relative">
+                    <input
+                      type={showCurrentPass ? "text" : "password"}
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      required
+                      className="w-full h-12 px-4 pr-10 rounded-2xl border border-gray-200 focus:border-brand focus:ring-2 focus:ring-brand/10 outline-none transition-all font-bold text-gray-900"
+                      placeholder="••••••••"
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                      <Lock size={18} />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPass(!showCurrentPass)}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showCurrentPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
 
                 <div className="space-y-2">
                   <label className="text-xs font-black text-gray-700 block">كلمة المرور الجديدة</label>
