@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { formatSaudiPhone } from '../utils/phoneUtils';
 import { Store, MapPin, Phone, Globe, Bell, Shield, CreditCard, MessageSquare, CheckCircle2, AlertCircle, ChevronRight, ExternalLink, Zap, Upload, X as CloseIcon, Database, Trash2, ShieldCheck, Palette, FileText, HelpCircle, Layout, Mail, Printer } from 'lucide-react';
@@ -52,6 +52,37 @@ export default function Settings({ tenantId }: SettingsProps) {
   const [userEmail, setUserEmail] = useState<string>('');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const { currentStaff } = useStaff();
+
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+  const [highlightActiveTab, setHighlightActiveTab] = useState(false);
+
+  useEffect(() => {
+    const handleSidebarSettingsClicked = () => {
+      setHighlightActiveTab(true);
+      
+      setTimeout(() => {
+        tabsContainerRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }, 100);
+
+      const timer = setTimeout(() => {
+        setHighlightActiveTab(false);
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    };
+
+    window.addEventListener('sidebar_settings_clicked', handleSidebarSettingsClicked);
+    
+    // Smoothly scroll to the tabs when Settings component mounts
+    handleSidebarSettingsClicked();
+
+    return () => {
+      window.removeEventListener('sidebar_settings_clicked', handleSidebarSettingsClicked);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchUserEmail = async () => {
@@ -348,6 +379,33 @@ export default function Settings({ tenantId }: SettingsProps) {
         title="الإعدادات" 
         subtitle="تخصيص تجربة متجرك وإدارة اشتراكك"
       />
+
+      {/* Horizontal Scrollable Tabs Selector */}
+      <div ref={tabsContainerRef} className="flex gap-2 overflow-x-auto pb-3 pt-1 scrollbar-none -mx-3 px-3 sm:mx-0 sm:px-0">
+        {TABS.filter(tab => tab.visible).map(tab => {
+          const TabIcon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-black whitespace-nowrap transition-all duration-300 border shrink-0 cursor-pointer",
+                isActive
+                  ? cn(
+                      "bg-brand text-white border-brand shadow-md shadow-brand/15",
+                      highlightActiveTab && "ring-4 ring-brand/40 scale-105 shadow-xl bg-brand/90"
+                    )
+                  : "bg-surface text-content-muted border-border hover:bg-surface-muted hover:text-content"
+              )}
+            >
+              <TabIcon size={16} />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
 
       <div className="w-full">
         {/* Main Content Area */}

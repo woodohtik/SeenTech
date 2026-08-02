@@ -30,11 +30,21 @@ import Layout from './components/Layout';
 import LockScreen from './components/LockScreen';
 import Login from './components/Login';
 import { PermissionGuard } from './components/PermissionGuard';
-import Dashboard from './components/Dashboard';
 
-// Lazy loaded core tenant components
-const Customers = React.lazy(() => import('./components/Customers'));
-const Orders = React.lazy(() => import('./components/Orders'));
+// Helper for implementing React.lazy pre-fetching capability
+const lazyWithPreload = <T extends React.ComponentType<any>>(
+  factory: () => Promise<{ default: T }>
+) => {
+  const Component = React.lazy(factory);
+  (Component as any).preload = factory;
+  return Component as React.LazyExoticComponent<T> & { preload: () => Promise<{ default: T }> };
+};
+
+// Lazy loaded core tenant components with pre-fetching capability
+const Dashboard = lazyWithPreload(() => import('./components/Dashboard'));
+const Customers = lazyWithPreload(() => import('./components/Customers'));
+const Orders = lazyWithPreload(() => import('./components/Orders'));
+
 const Settings = React.lazy(() => import('./components/Settings'));
 const Sales = React.lazy(() => import('./components/Sales'));
 const Suppliers = React.lazy(() => import('./components/Suppliers'));
@@ -185,6 +195,20 @@ function AppContent() {
   }, [authState.currentUserStaff, currentStaff, setCurrentStaff]);
 
   const { user, isApproved, userRole, tenantId, onboardingStep, hasStaffWithPin, currentUserStaff, loading } = authState;
+
+  // Prefetch core modules to reduce page transition latency when the user has completed login/auth setup
+  useEffect(() => {
+    if (user && isApproved) {
+      // Run prefetching in the background 1500ms after user is verified & approved
+      const timer = setTimeout(() => {
+        console.log('[Prefetch] Pre-fetching core modules (Dashboard, Orders, Customers) in background...');
+        Dashboard.preload().catch((err: any) => console.warn('[Prefetch] Dashboard prefetch failed:', err));
+        Orders.preload().catch((err: any) => console.warn('[Prefetch] Orders prefetch failed:', err));
+        Customers.preload().catch((err: any) => console.warn('[Prefetch] Customers prefetch failed:', err));
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [user, isApproved]);
 
   // Periodic session validation (Device A logout detection)
   useEffect(() => {

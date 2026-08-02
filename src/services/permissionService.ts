@@ -331,7 +331,7 @@ export const getEffectivePermissions = async (staff: Staff): Promise<Permissions
   const { data: overrideData } = await supabase
     .from('user_permission_overrides')
     .select('overrides')
-    .eq('user_id', staff.id)
+    .eq('staff_id', staff.id)
     .single();
   
   if (overrideData) {
@@ -554,7 +554,7 @@ export const updateRolePermissions = async (
 
 export const updateUserOverrides = async (staffId: string, tenantId: string, overrides: Partial<PermissionsMap>, performedBy: string | null, performedByEmail: string) => {
   await supabase.from('user_permission_overrides').upsert({
-    user_id: staffId,
+    staff_id: staffId,
     tenant_id: tenantId,
     overrides,
     updated_at: new Date().toISOString()
@@ -619,7 +619,7 @@ export const getStaffPermissionDetails = async (staff: Staff): Promise<Permissio
   const { data: overrideData } = await supabase
     .from('user_permission_overrides')
     .select('overrides')
-    .eq('user_id', staff.id)
+    .eq('staff_id', staff.id)
     .single();
   
   let overrides: Partial<PermissionsMap> = {};

@@ -319,7 +319,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
     if (data) {
       const overridesData: Record<string, Partial<PermissionsMap>> = {};
       data.forEach(item => {
-        overridesData[item.user_id] = item.overrides;
+        overridesData[item.staff_id] = item.overrides;
       });
       setOverrides(overridesData);
     }
@@ -770,7 +770,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
 
     setIsSavingPermissions(true);
     try {
-      await supabase.from('user_permission_overrides').delete().eq('user_id', staffId);
+      await supabase.from('user_permission_overrides').delete().eq('staff_id', staffId);
       setOverrides(prev => ({ ...prev, [staffId]: {} }));
       setToast({ message: 'تم استعادة الصلاحيات الافتراضية بنجاح', type: 'success' });
     } catch (err) {
