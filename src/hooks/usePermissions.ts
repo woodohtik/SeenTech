@@ -7,8 +7,16 @@ import { useAuth } from '../contexts/AuthContext';
 export function usePermissions(staff: Staff | null) {
   const [permissions, setPermissions] = useState<PermissionsMap | null>(null);
   const [loading, setLoading] = useState(true);
+  const [prevStaffId, setPrevStaffId] = useState<string | null>(null);
   const { warning } = useToast();
   const { dbUser } = useAuth();
+
+  // Sync state during render when staff changes to prevent flashes
+  if (staff?.id !== prevStaffId) {
+    setPrevStaffId(staff?.id || null);
+    setPermissions(null);
+    setLoading(staff ? true : false);
+  }
 
   const isGlobalSuperAdmin = dbUser?.role === 'super_admin';
 

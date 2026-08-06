@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase/client';
 import { Staff } from '../types';
 import { Percent, DollarSign, Save, Loader2, Scissors } from 'lucide-react';
@@ -11,6 +12,7 @@ interface AdminTailorCommissionsProps {
 }
 
 export default function AdminTailorCommissions({ tenantId }: AdminTailorCommissionsProps) {
+  const { t } = useTranslation();
   const [tailors, setTailors] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -47,7 +49,7 @@ export default function AdminTailorCommissions({ tenantId }: AdminTailorCommissi
       
       setTailors(parsedTailors);
     } catch (err: any) {
-      handleError(err, 'فشل جلب بيانات الخياطين');
+      handleError(err, t('settings_page.staff.commissions.fetch_error', 'فشل جلب بيانات الخياطين'));
     } finally {
       setLoading(false);
     }
@@ -71,9 +73,9 @@ export default function AdminTailorCommissions({ tenantId }: AdminTailorCommissi
         t.id === id ? { ...t, commission_type: type, commission_value: value } : t
       ));
       
-      success('تم حفظ إعدادات العمولة بنجاح');
+      success(t('settings_page.staff.commissions.save_success', 'تم حفظ إعدادات العمولة بنجاح'));
     } catch (err: any) {
-      handleError(err, 'فشل حفظ إعدادات العمولة');
+      handleError(err, t('settings_page.staff.commissions.save_error', 'فشل حفظ إعدادات العمولة'));
     } finally {
       setSavingId(null);
     }
@@ -88,22 +90,22 @@ export default function AdminTailorCommissions({ tenantId }: AdminTailorCommissi
   }
 
   return (
-    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden" dir="rtl">
+    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="p-6 border-b border-gray-100 flex items-center gap-4">
         <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shrink-0">
           <Scissors size={24} />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-gray-900">عمولات الخياطين</h2>
+          <h2 className="text-xl font-bold text-gray-900">{t('settings_page.staff.commissions.title', 'عمولات الخياطين')}</h2>
           <p className="text-sm text-gray-500 mt-1">
-            إدارة نسبة أو مبلغ العمولة المستحقة لكل خياط عند إنجاز القطع.
+            {t('settings_page.staff.commissions.subtitle', 'إدارة نسبة أو مبلغ العمولة المستحقة لكل خياط عند إنجاز القطع.')}
           </p>
         </div>
       </div>
       
       {tailors.length === 0 ? (
         <div className="p-12 text-center text-gray-500">
-          لا يوجد موظفين بدور "خياط" حالياً.
+          {t('settings_page.staff.commissions.no_tailors', 'لا يوجد موظفين بدور "خياط" حالياً.')}
         </div>
       ) : (
         <div className="divide-y divide-gray-100">
@@ -130,6 +132,7 @@ function TailorCommissionRow({
   onSave: (type: 'percentage' | 'fixed_amount', value: number) => void;
   isSaving: boolean;
 }) {
+  const { t } = useTranslation();
   const [type, setType] = useState<'percentage' | 'fixed_amount'>(tailor.commission_type || 'percentage');
   const [value, setValue] = useState<string>(tailor.commission_value?.toString() || '0');
 
@@ -152,7 +155,7 @@ function TailorCommissionRow({
                 : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
             )}
           >
-            نسبة (%)
+            {t('settings_page.staff.commissions.percentage', 'نسبة (%)')}
           </button>
           <button
             onClick={() => setType('fixed_amount')}
@@ -163,7 +166,7 @@ function TailorCommissionRow({
                 : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
             )}
           >
-            مبلغ ثابت
+            {t('settings_page.staff.commissions.fixed_amount', 'مبلغ ثابت')}
           </button>
         </div>
 
@@ -194,7 +197,7 @@ function TailorCommissionRow({
           ) : (
             <>
               <Save size={18} />
-              حفظ
+              {t('settings_page.staff.commissions.save', 'حفظ')}
             </>
           )}
         </button>

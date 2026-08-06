@@ -117,6 +117,21 @@ export default function CartSidebar({
       if (orderError) throw orderError;
       if (!order) throw new Error('فشل في إنشاء الطلب');
 
+      // Insert system notification for the new order
+      try {
+        await supabase.from('notifications').insert({
+          tenant_id: tenantId,
+          title: 'طلب مبيعات جديد',
+          message: `تم إنشاء الفاتورة رقم ${orderNumber} للعميل ${selectedCustomer?.name || 'عميل نقدي'} بقيمة ${grandTotal.toFixed(2)} ر.س`,
+          type: 'order',
+          status: 'unread',
+          created_at: new Date().toISOString(),
+          metadata: { order_id: order.id }
+        });
+      } catch (notifErr) {
+        console.warn('Failed to insert order notification:', notifErr);
+      }
+
       // 3. Insert Order Items (order_items table with proper columns)
       const orderItemsToInsert = cartItems.map(cartItem => ({
         tenant_id: tenantId,

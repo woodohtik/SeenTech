@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Printer,
   Plus,
@@ -95,6 +96,8 @@ const SYSTEM_PRINTER: PrinterDevice = {
 };
 
 export default function PrinterSettings() {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar' || i18n.language === 'ur' || !i18n.language;
   const [printers, setPrinters] = useState<PrinterDevice[]>([SYSTEM_PRINTER]);
   const [support, setSupport] = useState<SupportInfo | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -812,11 +815,6 @@ export default function PrinterSettings() {
   const realCount = printers.filter((p) => p.isRealDevice && p.status === 'online').length;
   const isInIframe = typeof window !== 'undefined' && window.self !== window.top;
 
-  /*
-   * نوع السجل هنا مقصود: Record<PrinterTransport, string> يجعل المُصرِّف
-   * يرفض الكود إن أُضيف نوع نقل جديد بدون تسمية عربية له — بدل أن تظهر
-   * خانة فارغة للمستخدم كما حدث سابقاً.
-   */
   const TRANSPORT_LABELS: Record<PrinterTransport, string> = {
     system: 'طابعة النظام (مربع حوار)',
     usb: 'USB مباشر',
@@ -834,28 +832,28 @@ export default function PrinterSettings() {
   // No padding on phones below: Settings already pads the panel, and a third
   // layer of padding was leaving only ~220px of usable width.
   return (
-    <div className="max-w-6xl mx-auto p-0 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 text-right" dir="rtl">
+    <div className={cn("max-w-6xl mx-auto p-0 sm:p-6 lg:p-8 space-y-6 sm:space-y-8", isRtl ? "text-right" : "text-left")} dir={isRtl ? "rtl" : "ltr"}>
       {/* منطقة الاختبار المخفية القابلة للطباعة */}
       <div
         id="print-area"
         data-paper={currentTestPrinter?.size || '80mm'}
-        className="hidden print:block printable-area text-black bg-white p-4 font-mono text-xs text-right"
-        dir="rtl"
+        className={cn("hidden print:block printable-area text-black bg-white p-4 font-mono text-xs", isRtl ? "text-right" : "text-left")}
+        dir={isRtl ? "rtl" : "ltr"}
       >
         <div className="text-center pb-2 border-b border-black mb-3">
-          <h2 className="text-base font-bold">تجربة طباعة الفاتورة الحرارية</h2>
-          <p className="text-[10px]">نظام سين (Seen POS) لنقاط البيع</p>
-          <p className="text-[10px] mt-1">{new Date().toLocaleString('ar-SA-u-nu-latn')}</p>
+          <h2 className="text-base font-bold">{t('settings_page.printer.test_print_title', 'تجربة طباعة الفاتورة الحرارية')}</h2>
+          <p className="text-[10px]">{t('settings_page.printer.system_name', 'نظام سين (Seen POS) لنقاط البيع')}</p>
+          <p className="text-[10px] mt-1">{new Date().toLocaleString(isRtl ? 'ar-SA-u-nu-latn' : 'en-US')}</p>
         </div>
         <div className="space-y-1 mb-3">
-          <p><strong>اسم الطابعة:</strong> {currentTestPrinter?.name || 'طابعة النظام'}</p>
-          <p><strong>حجم الورق:</strong> {currentTestPrinter?.size || '80mm'}</p>
-          <p><strong>نوع الاتصال:</strong> {currentTestPrinter ? transportLabel(currentTestPrinter.type) : '-'}</p>
+          <p><strong>{t('settings_page.printer.printer_name_label', 'اسم الطابعة:')}</strong> {currentTestPrinter?.name || t('settings_page.printer.system_default_name', 'طابعة النظام')}</p>
+          <p><strong>{t('settings_page.printer.paper_size_label', 'حجم الورق:')}</strong> {currentTestPrinter?.size || '80mm'}</p>
+          <p><strong>{t('settings_page.printer.connection_type_label', 'نوع الاتصال:')}</strong> {currentTestPrinter ? transportLabel(currentTestPrinter.type) : '-'}</p>
         </div>
         <div className="border-t border-b border-black py-2 my-2 text-center font-bold">
-          اختبار طباعة إيصال كاشير ناجح
+          {t('settings_page.printer.test_success', 'اختبار طباعة إيصال كاشير ناجح')}
         </div>
-        <div className="text-center pt-2 text-[10px]">شكراً لاستخدامك نظام سين POS</div>
+        <div className="text-center pt-2 text-[10px]">{t('settings_page.printer.thank_you', 'شكراً لاستخدامك نظام سين POS')}</div>
       </div>
 
       {/* الترويسة */}
@@ -865,9 +863,9 @@ export default function PrinterSettings() {
             <Printer size={24} />
           </div>
           <div className="min-w-0">
-            <h1 className="text-lg sm:text-2xl font-black text-content">إعدادات طابعة الفواتير</h1>
+            <h1 className="text-lg sm:text-2xl font-black text-content">{t('settings_page.printer.title', 'إعدادات طابعة الفواتير')}</h1>
             <p className="text-xs text-content-muted mt-1 font-medium">
-              ربط الطابعات الحرارية (80mm / 58mm) عبر USB أو المنفذ التسلسلي أو البلوتوث
+              {t('settings_page.printer.subtitle', 'ربط الطابعات الحرارية (80mm / 58mm) عبر USB أو المنفذ التسلسلي أو البلوتوث')}
             </p>
           </div>
         </div>
@@ -882,24 +880,22 @@ export default function PrinterSettings() {
             className="bg-surface-hover hover:bg-brand/10 text-content hover:text-brand border border-border px-4 py-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2"
           >
             <RefreshCw size={16} />
-            <span>تحديث</span>
+            <span>{t('settings_page.printer.refresh', 'تحديث')}</span>
           </button>
         </div>
       </div>
 
-
-
       {/* تنبيه المعاينة المضمنة (Iframe) */}
       {isInIframe && (
-        <div className="p-5 bg-brand/10 border border-brand/30 rounded-2xl flex items-start gap-3 text-right">
+        <div className={cn("p-5 bg-brand/10 border border-brand/30 rounded-2xl flex items-start gap-3", isRtl ? "text-right" : "text-left")}>
           <Info size={20} className="text-brand shrink-0 mt-0.5" />
           <div className="space-y-1">
-            <p className="text-sm font-black text-brand">ملاحظة المعاينة المضمنة (Iframe)</p>
+            <p className="text-sm font-black text-brand">{t('settings_page.printer.iframe_notice_title', 'ملاحظة المعاينة المضمنة (Iframe)')}</p>
             <p className="text-xs text-content-muted font-medium leading-relaxed">
-              لربط طابعة حرارية حقيقية عبر USB أو البلوتوث المباشر من المتصفح، يُفضّل فتح التطبيق في <strong>نافذة جديدة مستقلة</strong> (عبر زر "فتح في نافذة جديدة" بأعلى الشاشة)، لأن متصفحات الويب تفرض سياسات أمان أحياناً تمنع الوصول لأجهزة الهاردوير داخل الإطارات المضمنة.
+              {t('settings_page.printer.iframe_notice_body1', 'لربط طابعة حرارية حقيقية عبر USB أو البلوتوث المباشر من المتصفح، يُفضّل فتح التطبيق في نافذة جديدة مستقلة (عبر زر "فتح في نافذة جديدة" بأعلى الشاشة)، لأن متصفحات الويب تفرض سياسات أمان أحياناً تمنع الوصول لأجهزة الهاردوير داخل الإطارات المضمنة.')}
             </p>
             <p className="text-xs text-content-muted font-medium leading-relaxed">
-              تستطيع أيضاً استخدام <strong>طابعة النظام الافتراضية</strong> للطباعة المباشرة من أي مكان وفي أي متصفح.
+              {t('settings_page.printer.iframe_notice_body2', 'تستطيع أيضاً استخدام طابعة النظام الافتراضية للطباعة المباشرة من أي مكان وفي أي متصفح.')}
             </p>
           </div>
         </div>
@@ -910,10 +906,10 @@ export default function PrinterSettings() {
         <div className="p-5 bg-amber-500/10 border border-amber-500/40 rounded-2xl flex items-start gap-3">
           <AlertTriangle size={20} className="text-amber-600 shrink-0 mt-0.5" />
           <div className="space-y-1">
-            <p className="text-sm font-black text-content">الربط المباشر بالأجهزة غير متاح هنا</p>
+            <p className="text-sm font-black text-content">{t('settings_page.printer.no_direct_hardware_title', 'الربط المباشر بالأجهزة غير متاح هنا')}</p>
             <p className="text-xs text-content-muted font-medium leading-relaxed">{support.reason}</p>
             <p className="text-xs text-content-muted font-medium leading-relaxed">
-              يمكنك مواصلة الطباعة عبر "طابعة النظام" — سيفتح مربع حوار الطباعة وتختار طابعتك منه.
+              {t('settings_page.printer.no_direct_hardware_fallback', 'يمكنك مواصلة الطباعة عبر "طابعة النظام" — سيفتح مربع حوار الطباعة وتختار طابعتك منه.')}
             </p>
           </div>
         </div>

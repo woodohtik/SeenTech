@@ -26,17 +26,26 @@ export default function Header({ tenantId, title, subtitle, children }: HeaderPr
   const isRtl = currentLanguageCode !== 'en';
 
   useEffect(() => {
-    if (tenant && tenant.createdAt) {
-      const createdDate = new Date(tenant.createdAt);
+    if (tenant) {
       const now = new Date();
-      const diffTime = now.getTime() - createdDate.getTime();
-      const diffDays = diffTime / (1000 * 60 * 60 * 24);
-      
       const isTrial = tenant.planId === 'free' || (!tenant.planId && tenant.planId !== 'basic') || (typeof tenant.planId === 'string' && tenant.planId.includes('trial'));
-      const durationDays = isTrial ? 14 : 365;
-      
       setIsTrialPlan(isTrial);
-      setTrialDays(Math.max(0, durationDays - Math.floor(diffDays)));
+
+      if (tenant.subscription_end_date) {
+        const subEndDate = new Date(tenant.subscription_end_date);
+        const msLeft = subEndDate.getTime() - now.getTime();
+        setTrialDays(Math.max(0, Math.ceil(msLeft / (1000 * 60 * 60 * 24))));
+      } else if (tenant.trial_ends_at) {
+        const trialEndDate = new Date(tenant.trial_ends_at);
+        const msLeft = trialEndDate.getTime() - now.getTime();
+        setTrialDays(Math.max(0, Math.ceil(msLeft / (1000 * 60 * 60 * 24))));
+      } else if (tenant.createdAt) {
+        const createdDate = new Date(tenant.createdAt);
+        const diffTime = now.getTime() - createdDate.getTime();
+        const diffDays = diffTime / (1000 * 60 * 60 * 24);
+        const durationDays = isTrial ? 14 : 365;
+        setTrialDays(Math.max(0, durationDays - Math.floor(diffDays)));
+      }
     }
   }, [tenant]);
 

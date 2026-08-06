@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import AccessDenied from './AccessDenied';
+import PageSkeleton from './PageSkeleton';
 import { normalizeRole } from '../config/navigation';
 import { Staff, PermissionKey } from '../types';
 import { usePermissions } from '../hooks/usePermissions';
@@ -31,7 +32,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   redirectTo
 }) => {
   const location = useLocation();
-  const { hasPermission } = usePermissions(staff);
+  const { hasPermission, loading } = usePermissions(staff);
+
+  // While permissions are loading, return the page skeleton to prevent premature Access Denied flashes
+  if (loading) {
+    return <PageSkeleton />;
+  }
 
   // Super Admin or Impersonating Super Admin has unrestricted access
   if (userRole === 'super_admin' || isImpersonating) {

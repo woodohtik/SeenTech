@@ -177,5 +177,11 @@ export const settingsSchema = z.object({
     vatRate: z.coerce.number().min(0).max(100),
     tailoringTaxType: z.enum(['inclusive', 'exclusive', 'exempt']).optional().default('exclusive')
   }).optional(),
+  notificationSettings: z.object({
+    lowStock: z.boolean().optional().default(true),
+    newOrder: z.boolean().optional().default(true),
+    dailyClose: z.boolean().optional().default(true),
+    tomorrowDelivery: z.boolean().optional().default(true)
+  }).optional(),
 });
 

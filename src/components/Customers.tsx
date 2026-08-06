@@ -141,61 +141,62 @@ export default function Customers({ tenantId }: CustomersProps) {
 
   const watchMeasurements = watch('measurements');
 
+  const fetchCustomers = React.useCallback(async (showLoading = true) => {
+    if (!tenantId) return;
+    if (showLoading) setIsLoading(true);
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      handleFirestoreError(error, OperationType.LIST, 'customers');
+    } else {
+      const mapped = (data || []).map(c => ({
+        ...c,
+        isTest: c.is_test,
+        isB2B: !!c.company_name,
+        companyName: c.company_name,
+        trn: c.vat_number,
+        createdAt: c.created_at,
+        tenantId: c.tenant_id
+      }) as unknown as Customer);
+      setCustomers(mapped);
+
+      // Fetch balances, counts, and purchases (all non-cancelled orders for the tenant)
+      try {
+        const { data: ordersData, error: ordersError } = await supabase
+          .from('orders')
+          .select('customer_id, remaining_amount, total_amount')
+          .eq('tenant_id', tenantId)
+          .neq('status', 'cancelled');
+        
+        if (!ordersError && ordersData) {
+          const balances: Record<string, number> = {};
+          const counts: Record<string, number> = {};
+          const purchases: Record<string, number> = {};
+          
+          ordersData.forEach(o => {
+            if (o.customer_id) {
+              balances[o.customer_id] = (balances[o.customer_id] || 0) + (Number(o.remaining_amount) || 0);
+              counts[o.customer_id] = (counts[o.customer_id] || 0) + 1;
+              purchases[o.customer_id] = (purchases[o.customer_id] || 0) + (Number(o.total_amount) || 0);
+            }
+          });
+          setCustomerBalances(balances);
+          setCustomerOrderCounts(counts);
+          setCustomerTotalPurchases(purchases);
+        }
+      } catch (err) {
+        console.error('Error fetching customer balances and order counts:', err);
+      }
+    }
+    if (showLoading) setIsLoading(false);
+  }, [tenantId]);
+
   useEffect(() => {
     if (!tenantId) return;
-
-    const fetchCustomers = async (showLoading = true) => {
-      if (showLoading) setIsLoading(true);
-      const { data, error } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        handleFirestoreError(error, OperationType.LIST, 'customers');
-      } else {
-        const mapped = (data || []).map(c => ({
-          ...c,
-          isTest: c.is_test,
-          isB2B: !!c.company_name,
-          companyName: c.company_name,
-          trn: c.vat_number,
-          createdAt: c.created_at,
-          tenantId: c.tenant_id
-        }) as unknown as Customer);
-        setCustomers(mapped);
-
-        // Fetch balances, counts, and purchases (all non-cancelled orders for the tenant)
-        try {
-          const { data: ordersData, error: ordersError } = await supabase
-            .from('orders')
-            .select('customer_id, remaining_amount, total_amount')
-            .eq('tenant_id', tenantId)
-            .neq('status', 'cancelled');
-          
-          if (!ordersError && ordersData) {
-            const balances: Record<string, number> = {};
-            const counts: Record<string, number> = {};
-            const purchases: Record<string, number> = {};
-            
-            ordersData.forEach(o => {
-              if (o.customer_id) {
-                balances[o.customer_id] = (balances[o.customer_id] || 0) + (Number(o.remaining_amount) || 0);
-                counts[o.customer_id] = (counts[o.customer_id] || 0) + 1;
-                purchases[o.customer_id] = (purchases[o.customer_id] || 0) + (Number(o.total_amount) || 0);
-              }
-            });
-            setCustomerBalances(balances);
-            setCustomerOrderCounts(counts);
-            setCustomerTotalPurchases(purchases);
-          }
-        } catch (err) {
-          console.error('Error fetching customer balances and order counts:', err);
-        }
-      }
-      if (showLoading) setIsLoading(false);
-    };
 
     fetchCustomers(true);
 
@@ -219,7 +220,7 @@ export default function Customers({ tenantId }: CustomersProps) {
       supabase.removeChannel(channel);
       supabase.removeChannel(ordersChannel);
     };
-  }, [tenantId]);
+  }, [tenantId, fetchCustomers]);
 
   const fetchCustomerOrders = async (customerId: string) => {
     try {
@@ -322,6 +323,7 @@ export default function Customers({ tenantId }: CustomersProps) {
       setIsModalOpen(false);
       setEditingCustomer(null);
       reset();
+      fetchCustomers(false);
     } catch (error) {
       handleError(error as any, editingCustomer ? t('customers.update_fail', 'فشل تحديث بيانات العميل') : t('customers.add_fail', 'فشل إضافة العميل'));
     }
@@ -356,6 +358,7 @@ export default function Customers({ tenantId }: CustomersProps) {
         const { error } = await supabase.from('customers').delete().eq('id', id);
         if (error) throw error;
         toastSuccess(t('customers.delete_success', 'تم حذف العميل بنجاح'));
+        fetchCustomers(false);
       } catch (error) {
         handleError(error as any, t('customers.delete_fail', 'فشل حذف العميل'));
       }
@@ -564,6 +567,7 @@ export default function Customers({ tenantId }: CustomersProps) {
       toastSuccess(t('customers.bulk_delete_success', 'تم حذف {{count}} عميل بنجاح', { count: selectedCustomerIds.length }));
       setSelectedCustomerIds([]);
       setIsBulkDeleteModalOpen(false);
+      fetchCustomers(false);
     } catch (error) {
       handleError(error as any, t('customers.bulk_delete_fail', 'فشل حذف العملاء المحددين'));
     }
@@ -1438,6 +1442,23 @@ export default function Customers({ tenantId }: CustomersProps) {
               </motion.div>
             );
           })
+        ) : customers.length === 0 ? (
+          <div className="py-20 flex flex-col items-center justify-center bg-surface rounded-[3rem] border-2 border-dashed border-border text-content-muted">
+            <div className="p-6 bg-brand/10 text-brand rounded-full mb-4">
+              <UserPlus size={48} />
+            </div>
+            <h3 className="text-xl font-black text-content mb-2">{t('customers.no_customers_yet', 'لا يوجد عملاء بعد قم بإضافة أول عميل')}</h3>
+            <p className="text-sm font-bold">{t('customers.add_first_customer_desc', 'ابدأ بإضافة عملائك لإدارة بياناتهم وقياساتهم وتفاصيل طلباتهم بسهولة.')}</p>
+            {canCreate && (
+              <button 
+                onClick={() => { setEditingCustomer(null); reset({}); setIsModalOpen(true); }}
+                className="mt-6 bg-brand text-white px-6 py-3 rounded-2xl font-black hover:bg-brand/90 transition-all flex items-center gap-2 cursor-pointer shadow-lg shadow-brand/10"
+              >
+                <UserPlus size={18} />
+                <span>{t('customers.add_first_btn', 'إضافة أول عميل')}</span>
+              </button>
+            )}
+          </div>
         ) : (
           <div className="py-20 flex flex-col items-center justify-center bg-surface rounded-[3rem] border-2 border-dashed border-border text-content-muted">
             <div className="p-6 bg-surface-muted rounded-full mb-4">
@@ -2345,8 +2366,8 @@ const CustomerStatementModal = ({
                                                 type="number" 
                                                 step="0.01"
                                                 max={order.remainingAmount}
-                                                value={payAmount}
-                                                onChange={(e) => setPayAmount(Math.min(order.remainingAmount, Math.max(0, Number(e.target.value))))}
+                                                value={payAmount === 0 ? '' : payAmount}
+                                                onChange={(e) => setPayAmount(e.target.value === '' ? 0 : Math.min(order.remainingAmount, Math.max(0, Number(e.target.value))))}
                                                 className="w-full bg-surface-muted border-none rounded-xl p-2.5 text-xs font-bold focus:ring-2 focus:ring-brand text-content"
                                               />
                                             </div>

@@ -19,6 +19,7 @@ import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { seedGlobalRoles, DEFAULT_ROLES, isSaaSRole, isMerchantRole } from '../services/permissionService';
 import { SYSTEM_PERMISSIONS } from '../constants/permissions';
+import { useTranslation } from 'react-i18next';
 
 const ALL_PERMISSIONS: { key: PermissionKey; label: string; category: string }[] = SYSTEM_PERMISSIONS.map(p => ({
   key: p.id as PermissionKey,
@@ -29,6 +30,32 @@ const ALL_PERMISSIONS: { key: PermissionKey; label: string; category: string }[]
 const CATEGORIES = Array.from(new Set(ALL_PERMISSIONS.map(p => p.category)));
 
 export default function GlobalRoleManager() {
+  const { t } = useTranslation();
+
+  // Translation helpers for permissions and categories
+  const getCategoryKey = (cat: string): string => {
+    const catKeys: Record<string, string> = {
+      'التبويبات والشاشات': 'tabs_screens',
+      'الطلبات': 'orders',
+      'المالية': 'financial',
+      'المخزون': 'inventory',
+      'العملاء': 'customers',
+      'لوحة التحكم': 'dashboard',
+      'التقارير': 'reports',
+      'الإعدادات': 'settings'
+    };
+    return catKeys[cat] || cat;
+  };
+
+  const getTransCat = (cat: string): string => {
+    const key = getCategoryKey(cat);
+    return t(`settings.staff.permissions.categories.${key}`, { defaultValue: cat });
+  };
+
+  const getTransPermName = (permId: string, cat: string, defaultName: string): string => {
+    const catKey = getCategoryKey(cat);
+    return t(`settings.staff.permissions.items.${permId}.${catKey}.name`, { defaultValue: defaultName });
+  };
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
@@ -343,7 +370,7 @@ export default function GlobalRoleManager() {
                   if (count === 0) return null;
                   return (
                     <span key={cat} className="px-2.5 py-1 bg-gray-50 text-gray-600 text-[10px] font-black rounded-lg">
-                      {cat}: {count}
+                      {getTransCat(cat)}: {count}
                     </span>
                   );
                 })}
@@ -460,7 +487,7 @@ export default function GlobalRoleManager() {
                       <div key={category} className="space-y-4">
                         <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
                           <div className="w-1.5 h-6 bg-indigo-600 rounded-full" />
-                          <h5 className="font-black text-gray-900">{category}</h5>
+                          <h5 className="font-black text-gray-900">{getTransCat(category)}</h5>
                         </div>
                         <div className="grid grid-cols-1 gap-3">
                           {ALL_PERMISSIONS.filter(p => p.category === category).map(permission => {
@@ -489,7 +516,7 @@ export default function GlobalRoleManager() {
                                     "text-sm font-bold",
                                     isChecked ? "text-indigo-900" : "text-gray-600"
                                   )}>
-                                    {permission.label}
+                                    {getTransPermName(permission.key, category, permission.label)}
                                   </span>
                                 </div>
                                 <input

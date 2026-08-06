@@ -9,6 +9,7 @@ import {
   Shield,
   Scissors,
   ChevronLeft,
+  ChevronRight,
   Home,
   UserCircle,
   Package,
@@ -208,17 +209,17 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
   const canViewNotifications = hasPermission('settings.notifications');
 
   const settingsSubTabs = [
-    { id: 'profile', label: 'الملف الشخصي', icon: Store, visible: true },
-    { id: 'tax', label: 'الإعدادات الضريبية', icon: FileText, visible: canEdit },
-    { id: 'branches', label: 'الفروع والمواقع', icon: MapPin, visible: hasPermission('branches.manage') },
-    { id: 'appearance', label: 'المظهر والسمات', icon: Palette, visible: true },
-    { id: 'invoice', label: 'تخطيط الفاتورة', icon: FileText, visible: true },
-    { id: 'printer', label: 'إعدادات الطابعة', icon: Printer, visible: true },
-    { id: 'notifications', label: 'التنبيهات', icon: Bell, visible: canViewNotifications },
-    { id: 'whatsapp', label: 'تكامل واتساب', icon: MessageSquare, visible: canViewWhatsApp },
-    { id: 'staff', label: 'طاقم الموظفين', icon: Shield, visible: hasPermission('staff.manage') },
-    { id: 'billing', label: 'الاشتراك والمدفوعات', icon: CreditCard, visible: canViewBilling },
-    { id: 'data', label: 'إدارة البيانات', icon: Database, visible: currentStaff?.role === 'owner' || currentStaff?.role === 'super_admin' },
+    { id: 'profile', label: t('settings_page.tabs.profile', 'الملف الشخصي'), icon: Store, visible: true },
+    { id: 'tax', label: t('settings_page.tabs.tax', 'الإعدادات الضريبية'), icon: FileText, visible: canEdit },
+    { id: 'branches', label: t('settings_page.tabs.branches', 'الفروع والمواقع'), icon: MapPin, visible: hasPermission('branches.manage') },
+    { id: 'appearance', label: t('settings_page.tabs.appearance', 'المظهر والسمات'), icon: Palette, visible: true },
+    { id: 'invoice', label: t('settings_page.tabs.invoice', 'تخطيط الفاتورة'), icon: FileText, visible: true },
+    { id: 'printer', label: t('settings_page.tabs.printer', 'إعدادات الطابعة'), icon: Printer, visible: true },
+    { id: 'notifications', label: t('settings_page.tabs.notifications', 'التنبيهات'), icon: Bell, visible: canViewNotifications },
+    { id: 'whatsapp', label: t('settings_page.tabs.whatsapp', 'تكامل واتساب'), icon: MessageSquare, visible: canViewWhatsApp },
+    { id: 'staff', label: t('settings_page.tabs.staff', 'طاقم الموظفين'), icon: Shield, visible: hasPermission('staff.manage') },
+    { id: 'billing', label: t('settings_page.tabs.billing', 'الاشتراك والمدفوعات'), icon: CreditCard, visible: canViewBilling },
+    { id: 'data', label: t('settings_page.tabs.data', 'إدارة البيانات'), icon: Database, visible: currentStaff?.role === 'owner' || currentStaff?.role === 'super_admin' },
   ].filter(t => t.visible);
 
   // Stable identities for the guided tour, so its internal memoization holds
@@ -299,6 +300,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
         <aside 
           id="tour-sidebar"
           data-tour="sidebar"
+          dir={isRtl ? 'rtl' : 'ltr'}
           className={cn(
             "bg-surface flex flex-col transition-all duration-300 z-40",
             isRtl ? "border-l border-border" : "border-r border-border",
@@ -393,99 +395,120 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
         )}
 
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto overflow-x-hidden">
-          {navItems.map((item) => {
-            let tourId: string | undefined = undefined;
-            if (item.to === '/dashboard') tourId = 'tour-dashboard-nav';
-            else if (item.to === '/sales') tourId = 'tour-pos-nav';
-            else if (item.to === '/orders') tourId = 'tour-orders-nav';
-            else if (item.to === '/customers') tourId = 'tour-customers-nav';
-            else if (item.to === '/inventory') tourId = 'tour-inventory-nav';
-            else if (item.to === '/suppliers') tourId = 'tour-suppliers-nav';
-            else if (item.to === '/reports') tourId = 'tour-reports-nav';
-            else if (item.to === '/settings') tourId = 'tour-settings-nav';
+          {permissionsLoading ? (
+            <div className="space-y-3 px-2">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="flex items-center gap-3 py-3 px-3 rounded-2xl bg-surface-muted/30 animate-pulse">
+                  <div className="w-5 h-5 rounded-md bg-content-muted/10 shrink-0" />
+                  {!isCollapsed && <div className="h-4 bg-content-muted/15 rounded-md w-24 shrink-0" />}
+                </div>
+              ))}
+            </div>
+          ) : (
+            navItems.map((item) => {
+              let tourId: string | undefined = undefined;
+              if (item.to === '/dashboard') tourId = 'tour-dashboard-nav';
+              else if (item.to === '/sales') tourId = 'tour-pos-nav';
+              else if (item.to === '/orders') tourId = 'tour-orders-nav';
+              else if (item.to === '/customers') tourId = 'tour-customers-nav';
+              else if (item.to === '/inventory') tourId = 'tour-inventory-nav';
+              else if (item.to === '/suppliers') tourId = 'tour-suppliers-nav';
+              else if (item.to === '/reports') tourId = 'tour-reports-nav';
+              else if (item.to === '/settings') tourId = 'tour-settings-nav';
 
-            const isSettings = item.to === '/settings';
-            const isSettingsActive = location.pathname.startsWith('/settings');
+              const isSettings = item.to === '/settings';
+              const isSettingsActive = location.pathname.startsWith('/settings');
 
-            return (
-              <React.Fragment key={item.to}>
-                <NavLink
-                  to={item.to}
-                  id={tourId}
-                  data-tour={tourId ? tourId.replace('tour-', '') : undefined}
-                  onClick={(e) => {
-                    setIsMobileMenuOpen(false);
-                    if (isSettings) {
-                      if (isCollapsed) {
-                        setIsCollapsed(false);
-                        setIsSettingsSubMenuOpen(true);
-                      } else {
-                        if (isSettingsActive) {
-                          e.preventDefault();
-                          setIsSettingsSubMenuOpen(!isSettingsSubMenuOpen);
-                        } else {
+              return (
+                <React.Fragment key={item.to}>
+                  <NavLink
+                    to={item.to}
+                    id={tourId}
+                    data-tour={tourId ? tourId.replace('tour-', '') : undefined}
+                    onClick={(e) => {
+                      setIsMobileMenuOpen(false);
+                      if (isSettings) {
+                        if (isCollapsed) {
+                          setIsCollapsed(false);
                           setIsSettingsSubMenuOpen(true);
+                        } else {
+                          if (isSettingsActive) {
+                            e.preventDefault();
+                            setIsSettingsSubMenuOpen(!isSettingsSubMenuOpen);
+                          } else {
+                            setIsSettingsSubMenuOpen(true);
+                          }
                         }
                       }
-                    }
-                  }}
-                  className={({ isActive }) => cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative",
-                    (isActive || (item.to === '/dashboard' && location.pathname === '/'))
-                      ? "bg-brand/10 text-brand font-medium" 
-                      : "text-content-muted hover:bg-surface-muted hover:text-content",
-                    isCollapsed && "lg:justify-center lg:px-0"
-                  )}
-                >
-                  {({ isActive }) => (
-                    <>
-                      <item.icon size={20} className={cn("shrink-0", !isActive && "group-hover:scale-110 transition-transform")} />
-                      {(!isCollapsed || isMobileMenuOpen) && <span className="truncate flex-grow text-right">{item.label}</span>}
-                      {isSettings && (!isCollapsed || isMobileMenuOpen) && (
-                        <ChevronLeft size={16} className={cn("transition-transform duration-200 shrink-0 mr-auto", (isSettingsActive && isSettingsSubMenuOpen) ? "-rotate-90" : "")} />
-                      )}
-                      
-                      {/* Tooltip for collapsed state */}
-                      {isCollapsed && (
-                        <div className="hidden lg:block absolute right-full mr-2 px-2 py-1 bg-brand text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-lg">
-                          {item.label}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </NavLink>
-
-                {isSettings && isSettingsActive && isSettingsSubMenuOpen && (!isCollapsed || isMobileMenuOpen) && (
-                  <div 
-                    className="mr-4 pr-3 border-r border-border/60 space-y-1 mt-1 mb-2 flex flex-col text-right"
+                    }}
+                    className={({ isActive }) => cn(
+                      "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative",
+                      (isActive || (item.to === '/dashboard' && location.pathname === '/'))
+                        ? "bg-brand/10 text-brand font-medium" 
+                        : "text-content-muted hover:bg-surface-muted hover:text-content",
+                      isCollapsed && "lg:justify-center lg:px-0"
+                    )}
                   >
-                    {settingsSubTabs.map((subTab) => {
-                      const searchParams = new URLSearchParams(location.search);
-                      const currentTabId = searchParams.get('tab') || 'profile';
-                      const isSubTabActive = currentTabId === subTab.id;
-                      
-                      return (
-                        <NavLink
-                          key={subTab.id}
-                          to={`/settings?tab=${subTab.id}`}
-                          onClick={() => setIsMobileMenuOpen(false)}
-                          className={cn(
-                            "flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-150 text-right w-full",
-                            isSubTabActive 
-                              ? "bg-brand/5 text-brand font-black" 
-                              : "text-content-muted hover:bg-surface-muted hover:text-content"
-                          )}
-                        >
-                          <subTab.icon size={15} className="shrink-0" />
-                          <span className="truncate">{subTab.label}</span>
-                        </NavLink>
-                      );
-                    })}
-                  </div>
-                )}
-              </React.Fragment>
-            );
-          })}
+                    {({ isActive }) => (
+                      <>
+                        <item.icon size={20} className={cn("shrink-0", !isActive && "group-hover:scale-110 transition-transform")} />
+                        {(!isCollapsed || isMobileMenuOpen) && <span className={cn("truncate flex-grow", isRtl ? "text-right" : "text-left")}>{item.label}</span>}
+                        {isSettings && (!isCollapsed || isMobileMenuOpen) && (
+                          isRtl ? (
+                            <ChevronLeft size={16} className={cn("transition-transform duration-200 shrink-0 mr-auto", (isSettingsActive && isSettingsSubMenuOpen) ? "-rotate-90" : "")} />
+                          ) : (
+                            <ChevronRight size={16} className={cn("transition-transform duration-200 shrink-0 ml-auto", (isSettingsActive && isSettingsSubMenuOpen) ? "rotate-90" : "")} />
+                          )
+                        )}
+                        
+                        {/* Tooltip for collapsed state */}
+                        {isCollapsed && (
+                          <div className="hidden lg:block absolute right-full mr-2 px-2 py-1 bg-brand text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-lg">
+                            {item.label}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </NavLink>
+
+                  {isSettings && isSettingsActive && isSettingsSubMenuOpen && (!isCollapsed || isMobileMenuOpen) && (
+                    <div 
+                      className={cn(
+                        "space-y-1 mt-1 mb-2 flex flex-col",
+                        isRtl 
+                          ? "mr-4 pr-3 border-r border-border/60 text-right" 
+                          : "ml-4 pl-3 border-l border-border/60 text-left"
+                      )}
+                    >
+                      {settingsSubTabs.map((subTab) => {
+                        const searchParams = new URLSearchParams(location.search);
+                        const currentTabId = searchParams.get('tab') || 'profile';
+                        const isSubTabActive = currentTabId === subTab.id;
+                        
+                        return (
+                          <NavLink
+                            key={subTab.id}
+                            to={`/settings?tab=${subTab.id}`}
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className={cn(
+                              "flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-150 w-full",
+                              isRtl ? "text-right" : "text-left",
+                              isSubTabActive 
+                                ? "bg-brand/5 text-brand font-black" 
+                                : "text-content-muted hover:bg-surface-muted hover:text-content"
+                            )}
+                          >
+                            <subTab.icon size={15} className="shrink-0" />
+                            <span className="truncate">{subTab.label}</span>
+                          </NavLink>
+                        );
+                      })}
+                    </div>
+                  )}
+                </React.Fragment>
+              );
+            })
+          )}
         </nav>
 
         <div className="p-4 border-t border-border mt-auto hidden lg:block">
@@ -627,18 +650,30 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
               </div>
               
               <div id="tour-grid-launcher" data-tour="grid-launcher" className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
-                {navItems.filter(i => i.to !== '/').map(item => (
-                  <button
-                    key={item.to}
-                    onClick={() => navigate(item.to)}
-                    className="bg-surface p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-2xl hover:shadow-brand/10 hover:-translate-y-1 active:scale-95 active:translate-y-0 active:shadow-sm transition-all duration-300 flex flex-col items-center justify-center gap-3 sm:gap-4 lg:gap-5 group border border-border"
-                  >
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-xl sm:rounded-2xl bg-brand/5 flex items-center justify-center text-brand transition-transform duration-300 group-hover:scale-110">
-                      <item.icon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10" strokeWidth={1.5} />
+                {permissionsLoading ? (
+                  [1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      className="bg-surface p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-border animate-pulse flex flex-col items-center justify-center gap-3 sm:gap-4 lg:gap-5"
+                    >
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-xl sm:rounded-2xl bg-content-muted/10 shrink-0" />
+                      <div className="h-4 bg-content-muted/15 rounded-md w-20 sm:w-24 shrink-0" />
                     </div>
-                    <span className="text-sm sm:text-base lg:text-xl font-bold text-content text-center">{item.label}</span>
-                  </button>
-                ))}
+                  ))
+                ) : (
+                  navItems.filter(i => i.to !== '/').map(item => (
+                    <button
+                      key={item.to}
+                      onClick={() => navigate(item.to)}
+                      className="bg-surface p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-2xl hover:shadow-brand/10 hover:-translate-y-1 active:scale-95 active:translate-y-0 active:shadow-sm transition-all duration-300 flex flex-col items-center justify-center gap-3 sm:gap-4 lg:gap-5 group border border-border"
+                    >
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-xl sm:rounded-2xl bg-brand/5 flex items-center justify-center text-brand transition-transform duration-300 group-hover:scale-110">
+                        <item.icon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10" strokeWidth={1.5} />
+                      </div>
+                      <span className="text-sm sm:text-base lg:text-xl font-bold text-content text-center">{item.label}</span>
+                    </button>
+                  ))
+                )}
               </div>
             </div>
           ) : (
@@ -663,6 +698,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
         hasPermission={tourHasPermission}
         navRoutes={tourNavRoutes}
         ready={!permissionsLoading && !isActingAsSaaS}
+        hasSeenOnboardingDb={currentStaff?.has_seen_onboarding}
       />
 
       {tenantId && <SupportConsentModal tenantId={tenantId} />}

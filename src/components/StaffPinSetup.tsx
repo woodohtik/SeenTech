@@ -19,18 +19,12 @@ export default function StaffPinSetup({ staff, onSuccess }: StaffPinSetupProps) 
   const [loading, setLoading] = useState(false);
 
   const validatePin = () => {
-    const weakPins = ['1234', '0000', '1111', '2222', '3333', '4444', '5555', '6666', '7777', '8888', '9999', '1212', '2580'];
-    
     if (pin.length !== 4) {
       setError('يجب أن يتكون الرمز من 4 أرقام');
       return false;
     }
     if (pin !== confirmPin) {
       setError('الرمزان غير متطابقين');
-      return false;
-    }
-    if (weakPins.includes(pin)) {
-      setError('هذا الرمز ضعيف جداً، يرجى اختيار رمز أكثر تعقيداً');
       return false;
     }
     return true;

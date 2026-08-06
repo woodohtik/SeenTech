@@ -67,6 +67,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [customerUnpaidBalance, setCustomerUnpaidBalance] = useState<number>(0);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [branchStock, setBranchStock] = useState<Record<string, number>>({});
   const [isCustomOrderModalOpen, setIsCustomOrderModalOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -337,6 +338,25 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     }
   });
 
+  useRealtimeSync('branch_inventory', tenantId, (payload) => {
+    if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+      const item = payload.new;
+      if (!currentStaff?.branchId || item.branch_id === currentStaff.branchId) {
+        setBranchStock(prev => ({
+          ...prev,
+          [item.item_id]: Number(item.quantity || 0)
+        }));
+      }
+    } else if (payload.eventType === 'DELETE') {
+      const item = payload.old;
+      setBranchStock(prev => {
+        const copy = { ...prev };
+        delete copy[item.item_id];
+        return copy;
+      });
+    }
+  });
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -351,6 +371,21 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
           .select('*')
           .eq('tenant_id', tenantId);
         setInventory((invData || []).map(mapInventoryItem));
+
+        const { data: stockData } = await supabase
+          .from('branch_inventory')
+          .select('*')
+          .eq('tenant_id', tenantId);
+
+        const stockMap: Record<string, number> = {};
+        if (stockData) {
+          stockData.forEach((item: any) => {
+            if (!currentStaff?.branchId || item.branch_id === currentStaff.branchId) {
+              stockMap[item.item_id] = Number(item.quantity || 0);
+            }
+          });
+        }
+        setBranchStock(stockMap);
 
         const { data: tenantData } = await supabase
           .from('tenants')
@@ -382,7 +417,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       }
     };
     fetchData();
-  }, [tenantId, mapCustomer, mapInventoryItem, refreshCounter]);
+  }, [tenantId, mapCustomer, mapInventoryItem, refreshCounter, currentStaff?.branchId]);
 
   useEffect(() => {
     if (!selectedCustomer) {
@@ -585,6 +620,23 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   };
 
   const addToCart = (item: InventoryItem) => {
+    // Check stock
+    const availableStock = branchStock[item.id] || 0;
+    
+    // Find current quantity in cart
+    const existingInCart = cart.find(i => i.type === 'ready_made' && i.itemId === item.id);
+    const currentQtyInCart = existingInCart ? existingInCart.quantity : 0;
+    
+    if (availableStock <= 0) {
+      toastError(t('pos.out_of_stock', 'المنتج غير متوفر في مخزون الفرع الحالي'), `${item.name} (${t('pos.available', 'المتوفر')}: 0)`);
+      return;
+    }
+    
+    if (currentQtyInCart + 1 > availableStock) {
+      toastError(t('pos.insufficient_stock', 'الكمية المطلوبة تتجاوز المخزون المتوفر'), `${item.name} (${t('pos.available', 'المتوفر')}: ${availableStock})`);
+      return;
+    }
+
     setCart(prev => {
       const existing = prev.find(i => i.type === 'ready_made' && i.itemId === item.id);
       if (existing) {
@@ -753,13 +805,24 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   };
 
   const updateQuantity = (id: string, delta: number) => {
+    let stockExceeded = false;
     setCart(prev => prev.map(i => {
       if (i.id === id) {
         const newQuantity = Math.max(1, i.quantity + delta);
+        if (i.type === 'ready_made' && i.itemId) {
+          const availableStock = branchStock[i.itemId] || 0;
+          if (newQuantity > availableStock) {
+            stockExceeded = true;
+            return i;
+          }
+        }
         return { ...i, quantity: newQuantity };
       }
       return i;
     }));
+    if (stockExceeded) {
+      toastError(t('pos.insufficient_stock', 'الكمية المطلوبة تتجاوز المخزون المتوفر'));
+    }
   };
 
   const isTaxEnabled = taxSettings?.enabled ?? Boolean(taxSettings?.trn);
@@ -798,6 +861,17 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     if (cart.length === 0) {
       toastError('السلة فارغة', 'يرجى إضافة منتجات لإتمام الطلب');
       return;
+    }
+
+    // Verify stock before checkout for ready_made items
+    for (const item of cart) {
+      if (item.type === 'ready_made' && item.itemId) {
+        const availableStock = branchStock[item.itemId] || 0;
+        if (item.quantity > availableStock) {
+          toastError(t('pos.insufficient_stock_checkout', 'فشل إتمام العملية: الكمية المطلوبة غير متوفرة في المخزون'), `${item.name} (${t('pos.available', 'المتوفر')}: ${availableStock})`);
+          return;
+        }
+      }
     }
 
     setLoading(true);
@@ -1509,7 +1583,17 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     <span className="text-xs sm:text-sm font-bold text-content text-center line-clamp-2 min-h-[2.25rem] mb-1 w-full">
                       {i18n.language === 'en' && item.nameEn ? item.nameEn : item.name}
                     </span>
-                    <span className="text-brand font-black text-sm sm:text-base"><PriceDisplay amount={item.pricePerUnit} /></span>
+                    <div className="flex flex-col items-center justify-center gap-0.5 mb-1 w-full">
+                      <span className="text-brand font-black text-sm sm:text-base"><PriceDisplay amount={item.pricePerUnit} /></span>
+                      <span className={cn(
+                        "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                        (branchStock[item.id] || 0) <= 0
+                          ? "bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400"
+                          : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400"
+                      )}>
+                        {t('pos.available', 'المتوفر')}: {branchStock[item.id] || 0}
+                      </span>
+                    </div>
                   </button>
                 ))}
               </div>
@@ -1540,11 +1624,21 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       <span className="text-xs sm:text-sm font-bold text-content line-clamp-1 w-full text-start">
                         {i18n.language === 'en' && item.nameEn ? item.nameEn : item.name}
                       </span>
-                      {item.category && (
-                        <span className="text-[10px] sm:text-xs text-content-muted bg-surface-muted px-2.5 py-0.5 rounded-full font-bold">
-                          {getCategoryLabel(item.category)}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {item.category && (
+                          <span className="text-[10px] sm:text-xs text-content-muted bg-surface-muted px-2.5 py-0.5 rounded-full font-bold">
+                            {getCategoryLabel(item.category)}
+                          </span>
+                        )}
+                        <span className={cn(
+                          "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                          (branchStock[item.id] || 0) <= 0
+                            ? "bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400"
+                            : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400"
+                        )}>
+                          {t('pos.available', 'المتوفر')}: {branchStock[item.id] || 0}
                         </span>
-                      )}
+                      </div>
                     </div>
 
                     {/* Price and Action button on the End/Right */}
@@ -1871,8 +1965,8 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       <label className="block text-sm font-bold text-content mb-3">{t('pos.paid_amount_now', 'المبلغ المدفوع الآن')}</label>
                       <input
                         type="number"
-                        value={paidAmount}
-                        onChange={(e) => setPaidAmount(Number(e.target.value))}
+                        value={paidAmount === 0 ? '' : paidAmount}
+                        onChange={(e) => setPaidAmount(e.target.value === '' ? 0 : Number(e.target.value))}
                         className="w-full p-4 bg-surface-muted border-none rounded-xl focus:ring-2 focus:ring-brand font-black text-2xl text-center tabular-nums"
                         dir="ltr"
                         min="0"
@@ -2233,8 +2327,8 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">{t('pos.price_label', 'السعر')}</label>
                     <input 
                       type="number" 
-                      value={customItemForm.price}
-                      onChange={(e) => setCustomItemForm({...customItemForm, price: Number(e.target.value)})}
+                      value={customItemForm.price || ''}
+                      onChange={(e) => setCustomItemForm({...customItemForm, price: e.target.value === '' ? 0 : Number(e.target.value)})}
                       className="w-full p-2.5 sm:p-3 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand focus:border-brand text-sm sm:text-base text-content" 
                     />
                   </div>
@@ -2262,8 +2356,8 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">{t('pos.quantity_label', 'الكمية')}</label>
                     <input 
                       type="number" 
-                      value={customItemForm.quantity}
-                      onChange={(e) => setCustomItemForm({...customItemForm, quantity: Number(e.target.value)})}
+                      value={customItemForm.quantity || ''}
+                      onChange={(e) => setCustomItemForm({...customItemForm, quantity: e.target.value === '' ? 0 : Number(e.target.value)})}
                       className="w-full p-2.5 sm:p-3 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand focus:border-brand text-sm sm:text-base text-content" 
                       min="1"
                     />

@@ -56,6 +56,7 @@ interface OnboardingTourProps {
    * never built from an incomplete picture of what the user can access.
    */
   ready?: boolean;
+  hasSeenOnboardingDb?: boolean;
 }
 
 /* ------------------------------------------------------------------ */
@@ -127,6 +128,7 @@ export default function OnboardingTour({
   hasPermission,
   navRoutes,
   ready = true,
+  hasSeenOnboardingDb,
 }: OnboardingTourProps) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -241,6 +243,18 @@ export default function OnboardingTour({
   );
 
   const isAlreadyDone = useCallback((): boolean => {
+    if (hasSeenOnboardingDb === true) {
+      try {
+        const state = readState();
+        if (!state || !state.seen) {
+          writeState('completed', 0, true);
+        }
+      } catch {
+        /* noop */
+      }
+      return true;
+    }
+
     const state = readState();
     if (state) return state.seen === true;
 
@@ -254,7 +268,7 @@ export default function OnboardingTour({
     } catch {
       return false;
     }
-  }, [readState, legacyKey]);
+  }, [hasSeenOnboardingDb, readState, writeState, legacyKey]);
 
   /* ---------------- step building ---------------- */
 
@@ -631,6 +645,7 @@ export default function OnboardingTour({
     return (
       <TourFinishModal
         checklist={checklist}
+        tenantId={tenantId}
         onGo={(route) => {
           markCompleted(stepsRef.current.length);
           setPhase('idle');

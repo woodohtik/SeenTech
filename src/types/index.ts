@@ -66,6 +66,9 @@ export interface Tenant {
   isTest?: boolean; // For deleting test data
   taxSettings?: TaxSettings;
   currencySymbol?: string;
+  subscription_status?: string | null;
+  subscription_end_date?: string | null;
+  trial_ends_at?: string | null;
 }
 
 export interface SaaSMetrics {
@@ -220,6 +223,7 @@ export interface Staff {
   isTest?: boolean;
   commission_type?: 'percentage' | 'fixed_amount';
   commission_value?: number;
+  has_seen_onboarding?: boolean;
   createdAt: string;
 }
 
@@ -572,6 +576,7 @@ export interface AppNotification {
   tenantId: string;
   isTest?: boolean;
   createdAt: string;
+  metadata?: any;
 }
 
 export interface EmployeeActivityLog {

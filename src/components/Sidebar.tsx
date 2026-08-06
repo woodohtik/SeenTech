@@ -37,7 +37,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isImpersonatingSaaS = false,
   onCloseMobile
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
   const { hasPermission } = usePermissions(currentStaff);
   const location = useLocation();
   const navigate = useNavigate();
@@ -77,17 +78,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Define settings sub-tabs with their permissions & icons
   const settingsTabs: { id: TabType; label: string; icon: any; visible: boolean }[] = [
-    { id: 'profile', label: 'الملف الشخصي', icon: Store, visible: true },
-    { id: 'tax', label: 'الإعدادات الضريبية', icon: FileText, visible: canEdit },
-    { id: 'branches', label: 'الفروع والمواقع', icon: MapPin, visible: hasPermission('branches.manage') },
-    { id: 'appearance', label: 'المظهر والسمات', icon: Palette, visible: true },
-    { id: 'invoice', label: 'تخطيط الفاتورة', icon: FileText, visible: true },
-    { id: 'printer', label: 'إعدادات الطابعة', icon: Printer, visible: true },
-    { id: 'notifications', label: 'التنبيهات', icon: Bell, visible: canViewNotifications },
-    { id: 'whatsapp', label: 'تكامل واتساب', icon: MessageSquare, visible: canViewWhatsApp },
-    { id: 'staff', label: 'طاقم الموظفين', icon: Shield, visible: hasPermission('staff.manage') },
-    { id: 'billing', label: 'الاشتراك والمدفوعات', icon: CreditCard, visible: canViewBilling },
-    { id: 'data', label: 'إدارة البيانات', icon: Database, visible: currentStaff?.role === 'owner' || currentStaff?.role === 'super_admin' },
+    { id: 'profile', label: t('settings_page.tabs.profile', 'الملف الشخصي'), icon: Store, visible: true },
+    { id: 'tax', label: t('settings_page.tabs.tax', 'الإعدادات الضريبية'), icon: FileText, visible: canEdit },
+    { id: 'branches', label: t('settings_page.tabs.branches', 'الفروع والمواقع'), icon: MapPin, visible: hasPermission('branches.manage') },
+    { id: 'appearance', label: t('settings_page.tabs.appearance', 'المظهر والسمات'), icon: Palette, visible: true },
+    { id: 'invoice', label: t('settings_page.tabs.invoice', 'تخطيط الفاتورة'), icon: FileText, visible: true },
+    { id: 'printer', label: t('settings_page.tabs.printer', 'إعدادات الطابعة'), icon: Printer, visible: true },
+    { id: 'notifications', label: t('settings_page.tabs.notifications', 'التنبيهات'), icon: Bell, visible: canViewNotifications },
+    { id: 'whatsapp', label: t('settings_page.tabs.whatsapp', 'تكامل واتساب'), icon: MessageSquare, visible: canViewWhatsApp },
+    { id: 'staff', label: t('settings_page.tabs.staff', 'طاقم الموظفين'), icon: Shield, visible: hasPermission('staff.manage') },
+    { id: 'billing', label: t('settings_page.tabs.billing', 'الاشتراك والمدفوعات'), icon: CreditCard, visible: canViewBilling },
+    { id: 'data', label: t('settings_page.tabs.data', 'إدارة البيانات'), icon: Database, visible: currentStaff?.role === 'owner' || currentStaff?.role === 'super_admin' },
   ];
 
   const visibleSettingsTabs = settingsTabs.filter(tab => tab.visible);
@@ -105,16 +106,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   });
 
   return (
-    <aside dir="rtl" className="w-64 bg-surface border-l border-border h-full flex flex-col justify-between p-4 select-none overflow-y-auto custom-scrollbar">
+    <aside dir={isRtl ? 'rtl' : 'ltr'} className={`w-64 bg-surface ${isRtl ? 'border-l' : 'border-r'} border-border h-full flex flex-col justify-between p-4 select-none overflow-y-auto custom-scrollbar`}>
       <div className="space-y-6">
         {/* Header Logo */}
         <div className="flex items-center gap-3 px-3 py-2">
-          <div className="w-10 h-10 rounded-2xl bg-brand text-white font-black flex items-center justify-center text-xl shadow-md shadow-brand/20">
+          <div className="w-10 h-10 rounded-2xl bg-brand text-white font-black flex items-center justify-center text-xl shadow-md shadow-brand/20 animate-pulse">
             س
           </div>
-          <div>
-            <h2 className="text-lg font-black text-content leading-none">نظام سين</h2>
-            <p className="text-[11px] font-bold text-content-muted mt-1">نظام نقاط البيع والخياطة</p>
+          <div className={isRtl ? 'text-right' : 'text-left'}>
+            <h2 className="text-lg font-black text-content leading-none">{t('common.tailor_system_name', 'نظام سين')}</h2>
+            <p className="text-[11px] font-bold text-content-muted mt-1">{t('common.tailor_system_desc', 'نظام نقاط البيع والخياطة')}</p>
           </div>
         </div>
 
@@ -161,7 +162,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                          animate={{ height: 'auto', opacity: 1 }}
                          exit={{ height: 0, opacity: 0 }}
                          transition={{ duration: 0.25, ease: 'easeInOut' }}
-                         className="overflow-hidden pr-4 mr-2 border-r-2 border-border/60 space-y-1 flex flex-col mt-1"
+                         className={`overflow-hidden ${isRtl ? 'pr-4 mr-2 border-r-2' : 'pl-4 ml-2 border-l-2'} border-border/60 space-y-1 flex flex-col mt-1`}
                        >
                          {visibleSettingsTabs.map(tab => {
                            const TabIcon = tab.icon;
@@ -179,7 +180,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                className={`
                                  flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200
                                  ${isTabActive
-                                   ? 'bg-brand text-white shadow-md shadow-brand/15 font-black translate-x-1'
+                                   ? `bg-brand text-white shadow-md shadow-brand/15 font-black ${isRtl ? '-translate-x-1' : 'translate-x-1'}`
                                    : 'text-content-muted hover:bg-surface-muted hover:text-content'
                                  }
                                `}
@@ -222,7 +223,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className={({ isActive }) => `
                   flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-sm transition-all duration-200
                   ${isActive 
-                    ? 'bg-brand text-white shadow-lg shadow-brand/20 font-black translate-x-1' 
+                    ? `bg-brand text-white shadow-lg shadow-brand/20 font-black ${isRtl ? '-translate-x-1' : 'translate-x-1'}` 
                     : 'text-content-muted hover:bg-surface-muted hover:text-content'
                   }
                 `}
@@ -240,7 +241,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse shrink-0"></div>
         <div className="overflow-hidden">
           <div className="text-xs font-black text-content truncate">
-            {currentStaff?.name || 'المستخدم الحالي'}
+            {currentStaff?.name || t('common.current_user', 'المستخدم الحالي')}
           </div>
           <div className="text-[10px] font-bold text-content-muted capitalize truncate">
             {currentRole}

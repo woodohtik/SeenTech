@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
 import { EmployeeActivityLog } from '../types';
-import { Shield, Search, Calendar, User, Clock, CheckCircle2, Box, Store } from 'lucide-react';
+import { Search, Calendar } from 'lucide-react';
 import DateTimeDisplay from './DateTimeDisplay';
 
 export default function EmployeeActivityLogTab({ tenantId }: { tenantId: string }) {
+  const { t } = useTranslation();
   const [logs, setLogs] = useState<EmployeeActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -61,17 +63,17 @@ export default function EmployeeActivityLogTab({ tenantId }: { tenantId: string 
   
   const getActionLabel = (action: string) => {
     const map: Record<string, string> = {
-      login: 'تسجيل دخول',
-      open_shift: 'فتح وردية',
-      close_shift: 'إغلاق وردية',
-      create_invoice: 'إنشاء فاتورة',
-      delete_invoice: 'حذف فاتورة',
-      edit_measurements: 'تعديل مقاسات',
-      delete_order: 'حذف طلب',
-      add_supplier: 'إضافة مورد',
-      adjust_inventory: 'تسوية مخزون',
-      print_invoice: 'طباعة فاتورة',
-      manual_price_edit: 'إضافة خصم'
+      login: t('settings_page.staff.activity.login', 'تسجيل دخول'),
+      open_shift: t('settings_page.staff.activity.open_shift', 'فتح وردية'),
+      close_shift: t('settings_page.staff.activity.close_shift', 'إغلاق وردية'),
+      create_invoice: t('settings_page.staff.activity.create_invoice', 'إنشاء فاتورة'),
+      delete_invoice: t('settings_page.staff.activity.delete_invoice', 'حذف فاتورة'),
+      edit_measurements: t('settings_page.staff.activity.edit_measurements', 'تعديل مقاسات'),
+      delete_order: t('settings_page.staff.activity.delete_order', 'حذف طلب'),
+      add_supplier: t('settings_page.staff.activity.add_supplier', 'إضافة مورد'),
+      adjust_inventory: t('settings_page.staff.activity.adjust_inventory', 'تسوية مخزون'),
+      print_invoice: t('settings_page.staff.activity.print_invoice', 'طباعة فاتورة'),
+      manual_price_edit: t('settings_page.staff.activity.manual_price_edit', 'إضافة خصم')
     };
     return map[action] || action;
   };
@@ -93,7 +95,7 @@ export default function EmployeeActivityLogTab({ tenantId }: { tenantId: string 
           <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
           <input 
             type="text"
-            placeholder="بحث بالإسم أو العملية..."
+            placeholder={t('settings_page.staff.activity.search_placeholder', 'بحث بالإسم أو العملية...')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-surface border border-border rounded-xl py-3 pr-12 pl-4 text-content outline-none focus:border-brand transition-colors"
@@ -115,11 +117,11 @@ export default function EmployeeActivityLogTab({ tenantId }: { tenantId: string 
         <table className="w-full text-right text-sm min-w-max">
           <thead className="bg-surface-muted border-b border-border text-content-muted uppercase tracking-widest text-[10px] font-black">
             <tr>
-              <th className="p-4">الوقت</th>
-              <th className="p-4">الموظف</th>
-              <th className="p-4">الفرع</th>
-              <th className="p-4">العملية</th>
-              <th className="p-4">التفاصيل</th>
+              <th className="p-4">{t('settings_page.staff.activity.time', 'الوقت')}</th>
+              <th className="p-4">{t('settings_page.staff.activity.employee', 'الموظف')}</th>
+              <th className="p-4">{t('settings_page.staff.activity.branch', 'الفرع')}</th>
+              <th className="p-4">{t('settings_page.staff.activity.action', 'العملية')}</th>
+              <th className="p-4">{t('settings_page.staff.activity.details', 'التفاصيل')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border text-content-muted">
@@ -145,7 +147,9 @@ export default function EmployeeActivityLogTab({ tenantId }: { tenantId: string 
             })}
             {filteredLogs.length === 0 && (
               <tr>
-                <td colSpan={5} className="p-8 text-center text-content-muted font-bold">لا توجد سجلات نشاط للبحث المحدد</td>
+                <td colSpan={5} className="p-8 text-center text-content-muted font-bold">
+                  {t('settings_page.staff.activity.no_logs', 'لا توجد سجلات نشاط للبحث المحدد')}
+                </td>
               </tr>
             )}
           </tbody>
