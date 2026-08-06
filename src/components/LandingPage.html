@@ -19,6 +19,15 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{font-family:'IBM Plex Sans Arabic','Tajawal',system-ui,sans-serif;color:var(--ink);background:var(--surface);line-height:1.75;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+html[lang="en"] body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+html[lang="en"] h1, html[lang="en"] h2, html[lang="en"] h3, html[lang="en"] h4, html[lang="en"] h5, html[lang="en"] h6, html[lang="en"] .btn, html[lang="en"] .kicker {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  letter-spacing: normal !important;
+}
+html[lang="en"] .lang-ar { display: none !important; }
+html[lang="ar"] .lang-en { display: none !important; }
 h1,h2,h3{font-family:'Tajawal','IBM Plex Sans Arabic',sans-serif;font-weight:800;line-height:1.2;letter-spacing:-.01em}
 a{color:inherit;text-decoration:none} img{max-width:100%;display:block}
 .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
@@ -195,12 +204,17 @@ footer{background:#08202f;color:#9fc2da;padding:46px 0 30px}
 
 <header>
   <div class="wrap"><nav class="nav" id="nav">
-    <a class="logo" href="#top"><span class="lmark"><img src="assets/logo-swoosh.png" alt="سين"></span><span class="lname"><svg viewBox="-74 599 2933 1066" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="سين"><path d="M591 1303V1232H699V1303ZM321 1551Q242 1551 178.0 1522.0Q114 1493 77.0 1441.0Q40 1389 40 1322Q40 1301 43.5 1266.5Q47 1232 52.5 1189.5Q58 1147 65.0 1103.5Q72 1060 78 1021L155 1033Q144 1102 135.5 1160.5Q127 1219 122.5 1260.5Q118 1302 118 1322Q118 1368 143.5 1403.5Q169 1439 215.0 1459.5Q261 1480 321 1480Q381 1480 424.0 1461.0Q467 1442 490.0 1408.0Q513 1374 513 1328V803H591V1328Q591 1398 554.5 1448.0Q518 1498 457.0 1524.5Q396 1551 321 1551ZM699 1303V1232Q705 1232 709.0 1234.5Q713 1237 715.0 1241.5Q717 1246 718.0 1252.5Q719 1259 719 1267Q719 1275 718.0 1282.0Q717 1289 715.0 1293.5Q713 1298 709.0 1300.5Q705 1303 699 1303ZM699 1303V1232H949V1303ZM949 1303V1232Q955 1232 959.0 1234.5Q963 1237 965.0 1241.5Q967 1246 968.0 1252.5Q969 1259 969 1267Q969 1275 968.0 1282.0Q967 1289 965.0 1293.5Q963 1298 959.0 1300.5Q955 1303 949 1303ZM699 1303Q693 1303 689.0 1300.5Q685 1298 683.0 1293.5Q681 1289 680.0 1282.0Q679 1275 679 1267Q679 1256 680.5 1248.5Q682 1241 686.5 1236.5Q691 1232 699 1232ZM949 1303V1232H1199V1303ZM1199 1303V1232Q1205 1232 1209.0 1234.5Q1213 1237 1215.0 1241.5Q1217 1246 1218.0 1252.5Q1219 1259 1219 1267Q1219 1275 1218.0 1282.0Q1217 1289 1215.0 1293.5Q1213 1298 1209.0 1300.5Q1205 1303 1199 1303ZM949 1303Q943 1303 939.0 1300.5Q935 1298 933.0 1293.5Q931 1289 930.0 1282.0Q929 1275 929 1267Q929 1256 930.5 1248.5Q932 1241 936.5 1236.5Q941 1232 949 1232ZM1385 1303V1232H1493V1303ZM1493 1303V1232Q1499 1232 1503.0 1234.5Q1507 1237 1509.0 1241.5Q1511 1246 1512.0 1252.5Q1513 1259 1513 1267Q1513 1275 1512.0 1282.0Q1511 1289 1509.0 1293.5Q1507 1298 1503.0 1300.5Q1499 1303 1493 1303ZM1199 1303Q1193 1303 1189.0 1300.5Q1185 1298 1183.0 1293.5Q1181 1289 1180.0 1282.0Q1179 1275 1179 1267Q1179 1256 1180.5 1248.5Q1182 1241 1186.5 1236.5Q1191 1232 1199 1232ZM1199 1303V1232H1343L1307 1261V803H1385V1303ZM1493 1303V1232H1743V1303ZM1743 1303V1232Q1749 1232 1753.0 1234.5Q1757 1237 1759.0 1241.5Q1761 1246 1762.0 1252.5Q1763 1259 1763 1267Q1763 1275 1762.0 1282.0Q1761 1289 1759.0 1293.5Q1757 1298 1753.0 1300.5Q1749 1303 1743 1303ZM1493 1303Q1487 1303 1483.0 1300.5Q1479 1298 1477.0 1293.5Q1475 1289 1474.0 1282.0Q1473 1275 1473 1267Q1473 1256 1474.5 1248.5Q1476 1241 1480.5 1236.5Q1485 1232 1493 1232ZM1743 1303V1232H1993V1303ZM1993 1303V1232Q1999 1232 2003.0 1234.5Q2007 1237 2009.0 1241.5Q2011 1246 2012.0 1252.5Q2013 1259 2013 1267Q2013 1275 2012.0 1282.0Q2011 1289 2009.0 1293.5Q2007 1298 2003.0 1300.5Q1999 1303 1993 1303ZM1743 1303Q1737 1303 1733.0 1300.5Q1729 1298 1727.0 1293.5Q1725 1289 1724.0 1282.0Q1723 1275 1723 1267Q1723 1256 1724.5 1248.5Q1726 1241 1730.5 1236.5Q1735 1232 1743 1232ZM2519 1303Q2485 1303 2452.5 1290.0Q2420 1277 2390 1249L2441 1196Q2464 1215 2482.0 1223.5Q2500 1232 2519 1232H2697L2667 1264V1025Q2667 1007 2663.5 974.0Q2660 941 2653.5 899.5Q2647 858 2638 816L2714 803Q2721 838 2728.0 881.0Q2735 924 2740.0 962.5Q2745 1001 2745 1025V1303ZM1993 1303V1232H2139L2119 1252V903H2196V1303ZM2196 1303V1232H2309Q2343 1232 2360.5 1222.0Q2378 1212 2385.0 1182.0Q2392 1152 2392 1094V853H2470V1094Q2470 1172 2453.5 1218.0Q2437 1264 2402.0 1283.5Q2367 1303 2309 1303ZM1993 1303Q1987 1303 1983.0 1300.5Q1979 1298 1977.0 1293.5Q1975 1289 1974.0 1282.0Q1973 1275 1973 1267Q1973 1256 1974.5 1248.5Q1976 1241 1980.5 1236.5Q1985 1232 1993 1232Z" fill="currentColor" stroke="currentColor" stroke-width="44" stroke-linejoin="round" stroke-linecap="round"/><circle cx="552" cy="803" r="61" fill="currentColor"/><circle cx="1346" cy="803" r="61" fill="currentColor"/><circle cx="2676" cy="803" r="60" fill="currentColor"/><circle cx="2158" cy="903" r="60" fill="currentColor"/><circle cx="2431" cy="853" r="61" fill="currentColor"/><circle cx="317" cy="758" r="52" fill="currentColor"/><circle cx="1278" cy="1438" r="52" fill="currentColor"/><circle cx="1415" cy="1438" r="52" fill="currentColor"/></svg></span></a>
+    <a class="logo" href="#top"><span class="lmark"><img src="assets/logo-swoosh.png" alt="سين"></span><span class="lname" style="display: inline-flex; align-items: center;"><svg viewBox="-74 599 2933 1066" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="سين" class="lang-ar"><path d="M591 1303V1232H699V1303ZM321 1551Q242 1551 178.0 1522.0Q114 1493 77.0 1441.0Q40 1389 40 1322Q40 1301 43.5 1266.5Q47 1232 52.5 1189.5Q58 1147 65.0 1103.5Q72 1060 78 1021L155 1033Q144 1102 135.5 1160.5Q127 1219 122.5 1260.5Q118 1302 118 1322Q118 1368 143.5 1403.5Q169 1439 215.0 1459.5Q261 1480 321 1480Q381 1480 424.0 1461.0Q467 1442 490.0 1408.0Q513 1374 513 1328V803H591V1328Q591 1398 554.5 1448.0Q518 1498 457.0 1524.5Q396 1551 321 1551ZM699 1303V1232Q705 1232 709.0 1234.5Q713 1237 715.0 1241.5Q717 1246 718.0 1252.5Q719 1259 719 1267Q719 1275 718.0 1282.0Q717 1289 715.0 1293.5Q713 1298 709.0 1300.5Q705 1303 699 1303ZM699 1303V1232H949V1303ZM949 1303V1232Q955 1232 959.0 1234.5Q963 1237 965.0 1241.5Q967 1246 968.0 1252.5Q969 1259 969 1267Q969 1275 968.0 1282.0Q967 1289 965.0 1293.5Q963 1298 959.0 1300.5Q955 1303 949 1303ZM699 1303Q693 1303 689.0 1300.5Q685 1298 683.0 1293.5Q681 1289 680.0 1282.0Q679 1275 679 1267Q679 1256 680.5 1248.5Q682 1241 686.5 1236.5Q691 1232 699 1232ZM949 1303V1232H1199V1303ZM1199 1303V1232Q1205 1232 1209.0 1234.5Q1213 1237 1215.0 1241.5Q1217 1246 1218.0 1252.5Q1219 1259 1219 1267Q1219 1275 1218.0 1282.0Q1217 1289 1215.0 1293.5Q1213 1298 1209.0 1300.5Q1205 1303 1199 1303ZM949 1303Q943 1303 939.0 1300.5Q935 1298 933.0 1293.5Q931 1289 930.0 1282.0Q929 1275 929 1267Q929 1256 930.5 1248.5Q932 1241 936.5 1236.5Q941 1232 949 1232ZM1385 1303V1232H1493V1303ZM1493 1303V1232Q1499 1232 1503.0 1234.5Q1507 1237 1509.0 1241.5Q1511 1246 1512.0 1252.5Q1513 1259 1513 1267Q1513 1275 1512.0 1282.0Q1511 1289 1509.0 1293.5Q1507 1298 1503.0 1300.5Q1499 1303 1493 1303ZM1199 1303Q1193 1303 1189.0 1300.5Q1185 1298 1183.0 1293.5Q1181 1289 1180.0 1282.0Q1179 1275 1179 1267Q1179 1256 1180.5 1248.5Q1182 1241 1186.5 1236.5Q1191 1232 1199 1232ZM1199 1303V1232H1343L1307 1261V803H1385V1303ZM1493 1303V1232H1743V1303ZM1743 1303V1232Q1749 1232 1753.0 1234.5Q1757 1237 1759.0 1241.5Q1761 1246 1762.0 1252.5Q1763 1259 1763 1267Q1763 1275 1762.0 1282.0Q1761 1289 1759.0 1293.5Q1757 1298 1753.0 1300.5Q1749 1303 1743 1303ZM1493 1303Q1487 1303 1483.0 1300.5Q1479 1298 1477.0 1293.5Q1475 1289 1474.0 1282.0Q1473 1275 1473 1267Q1473 1256 1474.5 1248.5Q1476 1241 1480.5 1236.5Q1485 1232 1493 1232ZM1743 1303V1232H1993V1303ZM1993 1303V1232Q1999 1232 2003.0 1234.5Q2007 1237 2009.0 1241.5Q2011 1246 2012.0 1252.5Q2013 1259 2013 1267Q2013 1275 2012.0 1282.0Q2011 1289 2009.0 1293.5Q2007 1298 2003.0 1300.5Q1999 1303 1993 1303ZM1743 1303Q1737 1303 1733.0 1300.5Q1729 1298 1727.0 1293.5Q1725 1289 1724.0 1282.0Q1723 1275 1723 1267Q1723 1256 1724.5 1248.5Q1726 1241 1730.5 1236.5Q1735 1232 1743 1232ZM2519 1303Q2485 1303 2452.5 1290.0Q2420 1277 2390 1249L2441 1196Q2464 1215 2482.0 1223.5Q2500 1232 2519 1232H2697L2667 1264V1025Q2667 1007 2663.5 974.0Q2660 941 2653.5 899.5Q2647 858 2638 816L2714 803Q2721 838 2728.0 881.0Q2735 924 2740.0 962.5Q2745 1001 2745 1025V1303ZM1993 1303V1232H2139L2119 1252V903H2196V1303ZM2196 1303V1232H2309Q2343 1232 2360.5 1222.0Q2378 1212 2385.0 1182.0Q2392 1152 2392 1094V853H2470V1094Q2470 1172 2453.5 1218.0Q2437 1264 2402.0 1283.5Q2367 1303 2309 1303ZM1993 1303Q1987 1303 1983.0 1300.5Q1979 1298 1977.0 1293.5Q1975 1289 1974.0 1282.0Q1973 1275 1973 1267Q1973 1256 1974.5 1248.5Q1976 1241 1980.5 1236.5Q1985 1232 1993 1232Z" fill="currentColor" stroke="currentColor" stroke-width="44" stroke-linejoin="round" stroke-linecap="round"/><circle cx="552" cy="803" r="61" fill="currentColor"/><circle cx="1346" cy="803" r="61" fill="currentColor"/><circle cx="2676" cy="803" r="60" fill="currentColor"/><circle cx="2158" cy="903" r="60" fill="currentColor"/><circle cx="2431" cy="853" r="61" fill="currentColor"/><circle cx="317" cy="758" r="52" fill="currentColor"/><circle cx="1278" cy="1438" r="52" fill="currentColor"/><circle cx="1415" cy="1438" r="52" fill="currentColor"/></svg>
+    <span class="lang-en" style="font-family: system-ui, sans-serif; font-size: 26px; font-weight: 800; color: var(--brand); margin-left: 5px;">Seen</span></span></a>
     <div class="nav-links">
-      <a href="#problem">المشكلة</a><a href="#solution">الحل</a><a href="#industries">لمن سين</a><a href="#how">كيف يعمل</a><a href="#faq">أسئلة</a>
+      <a href="#problem" class="lang-ar">المشكلة</a><a href="#solution" class="lang-ar">الحل</a><a href="#industries" class="lang-ar">لمن سين</a><a href="#how" class="lang-ar">كيف يعمل</a><a href="#faq" class="lang-ar">أسئلة</a>
+      <a href="#problem" class="lang-en">Problem</a><a href="#solution" class="lang-en">Solution</a><a href="#industries" class="lang-en">For Whom</a><a href="#how" class="lang-en">How It Works</a><a href="#faq" class="lang-en">FAQ</a>
     </div>
     <div class="nav-cta">
-      <a href="/login" target="_parent" class="btn-login"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"></circle><path d="M5.5 20c0-3.7 3-5.7 6.5-5.7s6.5 2 6.5 5.7"></path></svg> تسجيل الدخول</a>
+      <button class="btn-lang" id="langToggle" style="background:transparent; border:1.5px solid var(--line); color:var(--ink); padding:8px 16px; font-size:.9rem; border-radius:999px; font-family:'Tajawal', sans-serif; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
+        <span class="lang-ar">English</span><span class="lang-en">العربية</span>
+      </button>
+      <a href="/login" target="_parent" class="btn-login"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"></circle><path d="M5.5 20c0-3.7 3-5.7 6.5-5.7s6.5 2 6.5 5.7"></path></svg> <span class="lang-ar">تسجيل الدخول</span><span class="lang-en">Login</span></a>
       <button class="burger" id="burger" aria-label="القائمة" aria-expanded="false"><span></span><span></span><span></span></button>
     </div>
   </nav></div>
@@ -211,15 +225,32 @@ footer{background:#08202f;color:#9fc2da;padding:46px 0 30px}
   <video autoplay muted loop playsinline poster="assets/act-fabric.jpg"><source src="assets/hero-tailor.mp4" type="video/mp4"></video>
   <div class="ov1"></div><div class="ov2"></div>
   <div class="hero-inner">
-    <span class="eyebrow">نظام التشغيل لقطاع التفصيل والأقمشة</span>
-    <h1>من الفوضى <span class="grad">إلى الوضوح</span></h1>
-    <p class="sub">سين يجمع نقطة البيع، القياسات وأوامر التفصيل، فوترة زاتكا، وإدارة المخزون في نظام واحد — مبني خصيصاً لمحلات التفصيل والأقمشة والمفروشات في السعودية والخليج.</p>
-    <p class="tagline">نظام واحد يدير محلك من القياس حتى الفاتورة.</p>
+    <span class="eyebrow">
+      <span class="lang-ar">نظام التشغيل لقطاع التفصيل والأقمشة</span>
+      <span class="lang-en">The OS for Tailoring & Fabrics Sector</span>
+    </span>
+    <h1>
+      <span class="lang-ar">من الفوضى <span class="grad">إلى الوضوح</span></span>
+      <span class="lang-en">From Chaos <span class="grad">to Clarity</span></span>
+    </h1>
+    <p class="sub">
+      <span class="lang-ar">سين يجمع نقطة البيع، القياسات وأوامر التفصيل، فوترة زاتكا، وإدارة المخزون في نظام واحد — مبني خصيصاً لمحلات التفصيل والأقمشة والمفروشات في السعودية والخليج.</span>
+      <span class="lang-en">Seen combines point of sale, measurements, tailoring orders, ZATKA invoicing, and inventory management in one platform — custom-built for tailoring, fabric, and upholstery shops in Saudi Arabia and the Gulf.</span>
+    </p>
     <div class="hero-actions">
-      <a href="/login?view=register" target="_parent" class="btn btn-cta">ابدأ الآن مجاناً</a>
-      <a href="#dashboard" class="btn btn-ghost on-dark">▶ شوف كيف يشتغل</a>
+      <a href="/login?view=register" target="_parent" class="btn btn-cta">
+        <span class="lang-ar">ابدأ الآن مجاناً</span>
+        <span class="lang-en">Get Started Free</span>
+      </a>
+      <a href="#dashboard" class="btn btn-ghost on-dark">
+        <span class="lang-ar">▶ شوف كيف يشتغل</span>
+        <span class="lang-en">▶ See How It Works</span>
+      </a>
     </div>
-    <p class="reassure">14 يوم تجربة · بدون بطاقة ائتمانية · <b>إذا ما حسّيت الفرق، لا تكمل</b></p>
+    <p class="reassure">
+      <span class="lang-ar">14 يوم تجربة · بدون بطاقة ائتمانية · <b>إذا ما حسّيت الفرق، لا تكمل</b></span>
+      <span class="lang-en">14-Day Trial · No Credit Card · <b>If you don't feel the difference, don't continue</b></span>
+    </p>
   </div>
   <a href="#problem" class="scrollcue" aria-label="مرر للأسفل"><span></span></a>
 </section>
@@ -227,24 +258,95 @@ footer{background:#08202f;color:#9fc2da;padding:46px 0 30px}
 <!-- STAT BAR -->
 <div class="statbar">
   <div class="wrap"><div class="row reveal">
-    <div class="statcell"><div class="n"><b>+10 ساعات</b></div><div class="l">موفّرة أسبوعياً من الإدارة الورقية</div></div>
-    <div class="statcell"><div class="n"><b>+60%</b></div><div class="l">دقة أعلى في المقاسات والطلبات</div></div>
-    <div class="statcell"><div class="n"><b>+30%</b></div><div class="l">توفير في القماش والخامات</div></div>
-    <div class="statcell"><div class="n"><b>+20%</b></div><div class="l">نمو في المبيعات المتكررة</div></div>
+    <div class="statcell">
+      <div class="n">
+        <span class="lang-ar"><b>+10 ساعات</b></span>
+        <span class="lang-en"><b>+10 Hours</b></span>
+      </div>
+      <div class="l">
+        <span class="lang-ar">موفّرة أسبوعياً من الإدارة الورقية</span>
+        <span class="lang-en">Saved weekly from paperwork</span>
+      </div>
+    </div>
+    <div class="statcell">
+      <div class="n">
+        <span class="lang-ar"><b>+60%</b></span>
+        <span class="lang-en"><b>+60%</b></span>
+      </div>
+      <div class="l">
+        <span class="lang-ar">دقة أعلى في المقاسات والطلبات</span>
+        <span class="lang-en">Higher accuracy in measurements</span>
+      </div>
+    </div>
+    <div class="statcell">
+      <div class="n">
+        <span class="lang-ar"><b>+30%</b></span>
+        <span class="lang-en"><b>+30%</b></span>
+      </div>
+      <div class="l">
+        <span class="lang-ar">توفير في القماش والخامات</span>
+        <span class="lang-en">Savings in fabric & materials</span>
+      </div>
+    </div>
+    <div class="statcell">
+      <div class="n">
+        <span class="lang-ar"><b>+20%</b></span>
+        <span class="lang-en"><b>+20%</b></span>
+      </div>
+      <div class="l">
+        <span class="lang-ar">نمو في المبيعات المتكررة</span>
+        <span class="lang-en">Growth in repeat sales</span>
+      </div>
+    </div>
   </div></div>
 </div>
 
 <!-- PROBLEM -->
 <section class="sec" id="problem">
   <div class="wrap">
-    <div class="sec-head center reveal"><span class="kicker"><span class="tick"></span> المشكلة</span>
-      <h2>الإدارة بالدفاتر والواتساب تكلّفك أكثر مما تتخيّل</h2>
-      <p>كل طلب ضائع أو مقاس خاطئ هو زبون قد لا يرجع — والوقت المهدور لا يُعوَّض.</p></div>
+    <div class="sec-head center reveal">
+      <span class="kicker">
+        <span class="lang-ar"><span class="tick"></span> المشكلة</span>
+        <span class="lang-en"><span class="tick"></span> The Problem</span>
+      </span>
+      <h2>
+        <span class="lang-ar">الإدارة بالدفاتر والواتساب تكلّفك أكثر مما تتخيّل</span>
+        <span class="lang-en">Paper logs & WhatsApp cost you more than you think</span>
+      </h2>
+      <p>
+        <span class="lang-ar">كل طلب ضائع أو مقاس خاطئ هو زبون قد لا يرجع — والوقت المهدور لا يُعوَّض.</span>
+        <span class="lang-en">Every lost order or incorrect measurement is a customer who might not return — and wasted time cannot be recovered.</span>
+      </p>
+    </div>
     <div class="grid-4">
-      <div class="card reveal"><div class="ic warn">📋</div><h3>ضياع الطلبات</h3><p>طلبات على ورق ومحادثات واتساب — يسهل أن تُنسى أو تتأخر.</p></div>
-      <div class="card reveal"><div class="ic warn">📏</div><h3>أخطاء المقاسات</h3><p>مقاس واحد غلط = إعادة تفصيل وخسارة قماش وزبون غاضب.</p></div>
-      <div class="card reveal"><div class="ic warn">🧾</div><h3>ضغط فوترة زاتكا</h3><p>فواتير يدوية ومتطلبات متغيّرة تستهلك وقتك وتعرّضك للمخالفات.</p></div>
-      <div class="card reveal"><div class="ic warn">📦</div><h3>فوضى المخزون</h3><p>لا تعرف كم متر باقٍ من كل لفّة إلا بعد أن ينفد أمام الزبون.</p></div>
+      <div class="card reveal">
+        <div class="ic warn">📋</div>
+        <h3 class="lang-ar">ضياع الطلبات</h3>
+        <h3 class="lang-en">Lost Orders</h3>
+        <p class="lang-ar">طلبات على ورق ومحادثات واتساب — يسهل أن تُنسى أو تتأخر.</p>
+        <p class="lang-en">Orders on paper and WhatsApp chats — easy to forget or delay.</p>
+      </div>
+      <div class="card reveal">
+        <div class="ic warn">📏</div>
+        <h3 class="lang-ar">أخطاء المقاسات</h3>
+        <h3 class="lang-en">Measurement Errors</h3>
+        <p class="lang-ar">مقاس واحد غلط = إعادة تفصيل وخسارة قماش وزبون غاضب.</p>
+        <p class="lang-en">One wrong measurement = re-tailoring, wasted fabric, and an angry customer.</p>
+      </div>
+      <div class="card reveal">
+        <div class="ic warn">🧾</div>
+        <h3 class="lang-ar">ضغط فوترة زاتكا</h3>
+        <h3 class="lang-en">ZATKA Stress</h3>
+        <p class="lang-ar">فواتير يدوية ومتطلبات متغيّرة تستهلك وقتك وتعرّضك للمخالفات.</p>
+        <p class="lang-en">Manual invoices and changing compliance requirements waste time and expose you to penalties.</p>
+      </div>
+      <div class="card reveal">
+        <div class="ic warn">📦</div>
+        <h3 class="lang-ar">فوضى المخزون</h3>
+        <h3 class="lang-en">Inventory Chaos</h3>
+        <p class="lang-ar">لا تعرف كم متر باقٍ من كل لفّة إلا بعد أن ينفد أمام الزبون.</p>
+        <p class="lang-en">You don't know how many meters are left in each roll until it runs out in front of the customer.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -252,9 +354,20 @@ footer{background:#08202f;color:#9fc2da;padding:46px 0 30px}
 <!-- SOLUTION -->
 <section class="sec surface-2" id="solution">
   <div class="wrap">
-    <div class="sec-head center reveal"><span class="kicker"><span class="tick"></span> الحل</span>
-      <h2>سين يحوّل كل هذا لنظام واحد</h2>
-      <p>من القياس حتى الفاتورة — كل عملياتك في شاشة واحدة منظّمة.</p></div>
+    <div class="sec-head center reveal">
+      <span class="kicker">
+        <span class="lang-ar"><span class="tick"></span> الحل</span>
+        <span class="lang-en"><span class="tick"></span> The Solution</span>
+      </span>
+      <h2>
+        <span class="lang-ar">سين يحوّل كل هذا لنظام واحد</span>
+        <span class="lang-en">Seen turns all this into a single system</span>
+      </h2>
+      <p>
+        <span class="lang-ar">من القياس حتى الفاتورة — كل عملياتك في شاشة واحدة منظّمة.</span>
+        <span class="lang-en">From measurement to invoice — all your operations in one organized screen.</span>
+      </p>
+    </div>
     <div class="dash-shell reveal" id="dashboard" style="margin-bottom:40px">
     <div style="position:relative;background:#fff;border:1px solid #E7EFF5;border-radius:24px;padding:14px;box-shadow:0 40px 90px -45px rgba(16,52,82,0.4)">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px 14px">
@@ -267,12 +380,39 @@ footer{background:#08202f;color:#9fc2da;padding:46px 0 30px}
         <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:16px;position:relative">
           <div>
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
-              <div style="background:#EAF6FC;border:1px solid #D2E8F4;border-radius:13px;padding:14px"><div style="font-size:11.5px;color:#5C86A0">مبيعات اليوم</div><div style="font-family:'Tajawal';font-size:21px;font-weight:700;color:#13202F;margin-top:4px">﷼ 8,420</div></div>
-              <div style="background:#fff;border:1px solid #E6EEF4;border-radius:13px;padding:14px"><div style="font-size:11.5px;color:#7A8AA0">طلبات تفصيل</div><div style="font-family:'Tajawal';font-size:21px;font-weight:700;color:#13202F;margin-top:4px">37</div></div>
-              <div style="background:#fff;border:1px solid #E6EEF4;border-radius:13px;padding:14px"><div style="font-size:11.5px;color:#7A8AA0">أمتار مباعة</div><div style="font-family:'Tajawal';font-size:21px;font-weight:700;color:#13202F;margin-top:4px">512م</div></div>
+              <div style="background:#EAF6FC;border:1px solid #D2E8F4;border-radius:13px;padding:14px">
+                <div style="font-size:11.5px;color:#5C86A0">
+                  <span class="lang-ar">مبيعات اليوم</span>
+                  <span class="lang-en" style="font-family:system-ui, sans-serif;">Today's Sales</span>
+                </div>
+                <div style="font-family:'Tajawal';font-size:21px;font-weight:700;color:#13202F;margin-top:4px">
+                  <span class="lang-ar">﷼ 8,420</span>
+                  <span class="lang-en" style="font-family:system-ui, sans-serif;">SAR 8,420</span>
+                </div>
+              </div>
+              <div style="background:#fff;border:1px solid #E6EEF4;border-radius:13px;padding:14px">
+                <div style="font-size:11.5px;color:#7A8AA0">
+                  <span class="lang-ar">طلبات تفصيل</span>
+                  <span class="lang-en" style="font-family:system-ui, sans-serif;">Tailor Orders</span>
+                </div>
+                <div style="font-family:'Tajawal';font-size:21px;font-weight:700;color:#13202F;margin-top:4px">37</div>
+              </div>
+              <div style="background:#fff;border:1px solid #E6EEF4;border-radius:13px;padding:14px">
+                <div style="font-size:11.5px;color:#7A8AA0">
+                  <span class="lang-ar">أمتار مباعة</span>
+                  <span class="lang-en" style="font-family:system-ui, sans-serif;">Meters Sold</span>
+                </div>
+                <div style="font-family:'Tajawal';font-size:21px;font-weight:700;color:#13202F;margin-top:4px">
+                  <span class="lang-ar">512م</span>
+                  <span class="lang-en" style="font-family:system-ui, sans-serif;">512m</span>
+                </div>
+              </div>
             </div>
             <div style="background:#fff;border:1px solid #E9F0F6;border-radius:14px;padding:16px">
-              <div style="font-size:12px;color:#54627A;margin-bottom:14px">المبيعات الأسبوعية</div>
+              <div style="font-size:12px;color:#54627A;margin-bottom:14px">
+                <span class="lang-ar">المبيعات الأسبوعية</span>
+                <span class="lang-en" style="font-family:system-ui, sans-serif;">Weekly Sales</span>
+              </div>
               <div style="height:120px;display:flex;align-items:flex-end;gap:9px">
                 <div style="flex:1;height:58px;transform-origin:bottom;background:linear-gradient(180deg,#7FD0EE,#3FA8DC);border-radius:6px 6px 0 0;animation:seenBar 3.2s ease-in-out infinite"></div>
                 <div style="flex:1;height:82px;transform-origin:bottom;background:linear-gradient(180deg,#7FD0EE,#3FA8DC);border-radius:6px 6px 0 0;animation:seenBar 3.6s ease-in-out infinite;animation-delay:.2s"></div>
@@ -285,23 +425,93 @@ footer{background:#08202f;color:#9fc2da;padding:46px 0 30px}
             </div>
           </div>
           <div style="background:#fff;border:1px solid #E9F0F6;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:11px;position:relative">
-            <div style="font-size:12.5px;font-weight:800;color:#13202F">أحدث الفواتير</div>
-            <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px"><span style="color:#54627A">#10428 عباية مفصّلة</span><span style="font-family:'Tajawal';color:#1E9E5A;font-weight:700">مدفوعة</span></div>
-            <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px"><span style="color:#54627A">#10427 قماش 6م</span><span style="font-family:'Tajawal';color:#1E9E5A;font-weight:700">مدفوعة</span></div>
-            <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px"><span style="color:#54627A">#10426 ستائر صالة</span><span style="font-family:'Tajawal';color:#E0992B;font-weight:700">قيد التفصيل</span></div>
-            <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px"><span style="color:#54627A">#10425 تنجيد كنب</span><span style="font-family:'Tajawal';color:#1E9E5A;font-weight:700">مدفوعة</span></div>
-            <div style="margin-top:auto;background:#EAF6FC;border-radius:11px;padding:11px;text-align:center;font-size:11.5px;color:#1E8FC5;font-weight:700">عرض كل الطلبات</div>
-            <div style="position:absolute;top:-6px;left:-6px;display:flex;align-items:center;gap:8px;background:#1E9FD6;color:#fff;border-radius:11px;padding:9px 13px;font-size:12px;font-weight:700;box-shadow:0 12px 26px -8px rgba(30,159,214,0.7);animation:seenToast 7s ease-in-out infinite"><span style="width:7px;height:7px;border-radius:50%;background:#fff"></span> طلب جديد وصل الآن</div>
+            <div style="font-size:12.5px;font-weight:800;color:#13202F">
+              <span class="lang-ar">أحدث الفواتير</span>
+              <span class="lang-en" style="font-family:system-ui, sans-serif;">Latest Invoices</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px">
+              <span style="color:#54627A">
+                <span class="lang-ar">#10428 عباية مفصّلة</span>
+                <span class="lang-en" style="font-family:system-ui, sans-serif;">#10428 Tailored Abaya</span>
+              </span>
+              <span style="font-family:'Tajawal';color:#1E9E5A;font-weight:700">
+                <span class="lang-ar">مدفوعة</span>
+                <span class="lang-en" style="font-family:system-ui, sans-serif;">Paid</span>
+              </span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px">
+              <span style="color:#54627A">
+                <span class="lang-ar">#10427 قماش 6م</span>
+                <span class="lang-en" style="font-family:system-ui, sans-serif;">#10427 Fabric 6m</span>
+              </span>
+              <span style="font-family:'Tajawal';color:#1E9E5A;font-weight:700">
+                <span class="lang-ar">مدفوعة</span>
+                <span class="lang-en" style="font-family:system-ui, sans-serif;">Paid</span>
+              </span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px">
+              <span style="color:#54627A">
+                <span class="lang-ar">#10426 ستائر صالة</span>
+                <span class="lang-en" style="font-family:system-ui, sans-serif;">#10426 Hall Curtains</span>
+              </span>
+              <span style="font-family:'Tajawal';color:#E0992B;font-weight:700">
+                <span class="lang-ar">قيد التفصيل</span>
+                <span class="lang-en" style="font-family:system-ui, sans-serif;">Tailoring</span>
+              </span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px">
+              <span style="color:#54627A">
+                <span class="lang-ar">#10425 تنجيد كنب</span>
+                <span class="lang-en" style="font-family:system-ui, sans-serif;">#10425 Sofa Upholstery</span>
+              </span>
+              <span style="font-family:'Tajawal';color:#1E9E5A;font-weight:700">
+                <span class="lang-ar">مدفوعة</span>
+                <span class="lang-en" style="font-family:system-ui, sans-serif;">Paid</span>
+              </span>
+            </div>
+            <div style="margin-top:auto;background:#EAF6FC;border-radius:11px;padding:11px;text-align:center;font-size:11.5px;color:#1E8FC5;font-weight:700;cursor:pointer">
+              <span class="lang-ar">عرض كل الطلبات</span>
+              <span class="lang-en" style="font-family:system-ui, sans-serif;">View All Orders</span>
+            </div>
+            <div style="position:absolute;top:-6px;left:-6px;display:flex;align-items:center;gap:8px;background:#1E9FD6;color:#fff;border-radius:11px;padding:9px 13px;font-size:12px;font-weight:700;box-shadow:0 12px 26px -8px rgba(30,159,214,0.7);animation:seenToast 7s ease-in-out infinite">
+              <span style="width:7px;height:7px;border-radius:50%;background:#fff"></span> 
+              <span class="lang-ar">طلب جديد وصل الآن</span>
+              <span class="lang-en" style="font-family:system-ui, sans-serif;">New order arrived</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
     </div>
     <div class="grid-4">
-      <div class="card reveal"><div class="ic sky">🛒</div><h3>نقطة بيع متخصصة</h3><p>كاشير سريع يدعم بيع القماش بالمتر والقطعة، وفاتورة فورية.</p></div>
-      <div class="card reveal"><div class="ic sky">✂️</div><h3>قياسات وأوامر تفصيل</h3><p>تتبّع كل طلب من القياس حتى التسليم، مع تنبيهات المواعيد.</p></div>
-      <div class="card reveal"><div class="ic sky">🧾</div><h3>فوترة متوافقة مع زاتكا</h3><p>فواتير ضريبية معتمدة من اليوم الأول، بدون خطوات إضافية.</p></div>
-      <div class="card reveal"><div class="ic sky">📦</div><h3>إدارة مخزون</h3><p>لفّات الأقمشة بالأمتار والألوان، مع تنبيه عند قرب النفاد.</p></div>
+      <div class="card reveal">
+        <div class="ic sky">🛒</div>
+        <h3 class="lang-ar">نقطة بيع متخصصة</h3>
+        <h3 class="lang-en">Specialized POS</h3>
+        <p class="lang-ar">كاشير سريع يدعم بيع القماش بالمتر والقطعة، وفاتورة فورية.</p>
+        <p class="lang-en">Fast cashier supporting fabric sales by meter or piece, with instant invoicing.</p>
+      </div>
+      <div class="card reveal">
+        <div class="ic sky">✂️</div>
+        <h3 class="lang-ar">قياسات وأوامر تفصيل</h3>
+        <h3 class="lang-en">Measurements & Orders</h3>
+        <p class="lang-ar">تتبّع كل طلب من القياس حتى التسليم، مع تنبيهات المواعيد.</p>
+        <p class="lang-en">Track every order from measurement to delivery, with appointment notifications.</p>
+      </div>
+      <div class="card reveal">
+        <div class="ic sky">🧾</div>
+        <h3 class="lang-ar">فوترة متوافقة مع زاتكا</h3>
+        <h3 class="lang-en">ZATKA E-Invoicing</h3>
+        <p class="lang-ar">فواتير ضريبية معتمدة من اليوم الأول، بدون خطوات إضافية.</p>
+        <p class="lang-en">Certified tax-compliant invoices from day one, with no extra steps.</p>
+      </div>
+      <div class="card reveal">
+        <div class="ic sky">📦</div>
+        <h3 class="lang-ar">إدارة مخزون</h3>
+        <h3 class="lang-en">Inventory Management</h3>
+        <p class="lang-ar">لفّات الأقمشة بالأمتار والألوان، مع تنبيه عند قرب النفاد.</p>
+        <p class="lang-en">Fabric rolls tracked by meters and colors, with alerts when running low.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -309,22 +519,100 @@ footer{background:#08202f;color:#9fc2da;padding:46px 0 30px}
 <!-- MID CTA -->
 <section class="midcta">
   <div class="wrap"><div class="inner reveal">
-    <h2>جاهز تشوف محلك بوضوح؟</h2>
-    <a href="/login?view=register" target="_parent" class="btn btn-cta">ابدأ الآن مجاناً</a>
+    <h2>
+      <span class="lang-ar">جاهز تشوف محلك بوضوح؟</span>
+      <span class="lang-en">Ready to see your shop clearly?</span>
+    </h2>
+    <a href="/login?view=register" target="_parent" class="btn btn-cta">
+      <span class="lang-ar">ابدأ الآن مجاناً</span>
+      <span class="lang-en">Get Started Free</span>
+    </a>
   </div></div>
 </section>
 
 <!-- INDUSTRIES (تخطيط ثابت + صور محلية تظهر دائماً) -->
 <section class="sec" id="industries">
   <div class="wrap">
-    <div class="sec-head center reveal"><span class="kicker"><span class="tick"></span> لمن سين</span>
-      <h2>الأنشطة التجارية التي نخدمها</h2><p>لكل نشاط فيه قماش وقياس.</p></div>
+    <div class="sec-head center reveal">
+      <span class="kicker">
+        <span class="lang-ar"><span class="tick"></span> لمن سين</span>
+        <span class="lang-en"><span class="tick"></span> Who is Seen for?</span>
+      </span>
+      <h2>
+        <span class="lang-ar">الأنشطة التجارية التي نخدمها</span>
+        <span class="lang-en">Businesses We Serve</span>
+      </h2>
+      <p>
+        <span class="lang-ar">لكل نشاط فيه قماش وقياس.</span>
+        <span class="lang-en">For every business with fabric and measurements.</span>
+      </p>
+    </div>
     <div class="ind reveal">
-      <div class="icard"><div class="iph"><img src="assets/men-tailor.jpg" alt="خياطة رجالية" loading="lazy"><span class="ititle">خياطة رجالية</span></div><div class="icap">تفصيل ثياب وبدل رجالية</div></div>
-      <div class="icard"><div class="iph"><img src="assets/act-women.jpg" alt="خياطة نسائية" loading="lazy"><span class="ititle">خياطة نسائية</span></div><div class="icap">تفصيل عبايات وفساتين</div></div>
-      <div class="icard"><div class="iph"><img src="assets/act-sofa.jpg" alt="كنب وستائر" loading="lazy"><span class="ititle">كنب وستائر</span></div><div class="icap">تنجيد الكنب وتفصيل الستائر</div></div>
-      <div class="icard"><div class="iph"><img src="assets/fabric-store.jpg" alt="محلات الأقمشة" loading="lazy"><span class="ititle">محلات الأقمشة</span></div><div class="icap">بيع الأقمشة بالأمتار واللفّات</div></div>
-      <div class="icard"><div class="iph"><img src="assets/act-clothing.jpg" alt="ملابس متخصصة" loading="lazy"><span class="ititle">ملابس متخصصة</span></div><div class="icap">ملابس جاهزة ومستلزماتها</div></div>
+      <div class="icard">
+        <div class="iph">
+          <img src="assets/men-tailor.jpg" alt="Men's Tailoring" loading="lazy">
+          <span class="ititle">
+            <span class="lang-ar">خياطة رجالية</span>
+            <span class="lang-en">Men's Tailoring</span>
+          </span>
+        </div>
+        <div class="icap">
+          <span class="lang-ar">تفصيل ثياب وبدل رجالية</span>
+          <span class="lang-en">Tailoring thobes & men's suits</span>
+        </div>
+      </div>
+      <div class="icard">
+        <div class="iph">
+          <img src="assets/act-women.jpg" alt="Women's Tailoring" loading="lazy">
+          <span class="ititle">
+            <span class="lang-ar">خياطة نسائية</span>
+            <span class="lang-en">Women's Tailoring</span>
+          </span>
+        </div>
+        <div class="icap">
+          <span class="lang-ar">تفصيل عبايات وفساتين</span>
+          <span class="lang-en">Tailoring abayas & dresses</span>
+        </div>
+      </div>
+      <div class="icard">
+        <div class="iph">
+          <img src="assets/act-sofa.jpg" alt="Sofas & Curtains" loading="lazy">
+          <span class="ititle">
+            <span class="lang-ar">كنب وستائر</span>
+            <span class="lang-en">Sofa & Curtains</span>
+          </span>
+        </div>
+        <div class="icap">
+          <span class="lang-ar">تنجيد الكنب وتفصيل الستائر</span>
+          <span class="lang-en">Sofa upholstery & curtain design</span>
+        </div>
+      </div>
+      <div class="icard">
+        <div class="iph">
+          <img src="assets/fabric-store.jpg" alt="Fabric Stores" loading="lazy">
+          <span class="ititle">
+            <span class="lang-ar">محلات الأقمشة</span>
+            <span class="lang-en">Fabric Stores</span>
+          </span>
+        </div>
+        <div class="icap">
+          <span class="lang-ar">بيع الأقمشة بالأمتار واللفّات</span>
+          <span class="lang-en">Selling fabrics by meters & rolls</span>
+        </div>
+      </div>
+      <div class="icard">
+        <div class="iph">
+          <img src="assets/act-clothing.jpg" alt="Specialty Clothing" loading="lazy">
+          <span class="ititle">
+            <span class="lang-ar">ملابس متخصصة</span>
+            <span class="lang-en">Specialty Clothing</span>
+          </span>
+        </div>
+        <div class="icap">
+          <span class="lang-ar">ملابس جاهزة ومستلزماتها</span>
+          <span class="lang-en">Ready-to-wear clothing & accessories</span>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -332,16 +620,63 @@ footer{background:#08202f;color:#9fc2da;padding:46px 0 30px}
 <!-- WHY -->
 <section class="sec surface-2" id="why">
   <div class="wrap">
-    <div class="sec-head center reveal"><span class="kicker"><span class="tick"></span> لماذا سين</span>
-      <h2>مش مجرد نظام — مبني لمحلك</h2>
-      <p>لا نظام عام تم تكييفه، بل حلّ صُمّم من الصفر لقطاع التفصيل والأقمشة.</p></div>
+    <div class="sec-head center reveal">
+      <span class="kicker">
+        <span class="lang-ar"><span class="tick"></span> لماذا سين</span>
+        <span class="lang-en"><span class="tick"></span> Why Seen?</span>
+      </span>
+      <h2>
+        <span class="lang-ar">مش مجرد نظام — مبني لمحلك</span>
+        <span class="lang-en">Not just a system — built for your shop</span>
+      </h2>
+      <p>
+        <span class="lang-ar">لا نظام عام تم تكييفه، بل حلّ صُمّم من الصفر لقطاع التفصيل والأقمشة.</span>
+        <span class="lang-en">Not a general system that was adapted, but a solution designed from scratch for the tailoring and fabrics sector.</span>
+      </p>
+    </div>
     <div class="why reveal">
-      <div class="f"><div class="ic">🎯</div><h3>متخصص للتفصيل</h3><p>بيع القماش بالمتر، أوامر التفصيل، وتتبّع كل لفّة — مزايا لا تجدها في أي كاشير عادي.</p></div>
-      <div class="f"><div class="ic">📱</div><h3>تابع من جوالك</h3><p>المبيعات والطلبات والمخزون في جيبك — لحظياً على أي جهاز وعبر كل فروعك.</p></div>
-      <div class="f"><div class="ic">💬</div><h3>عربي وبسيط — ودعم 24/7</h3><p>إذا تعرف تستخدم واتساب تعرف تستخدم سين، ومعك دعم عربي على مدار الساعة طوال أيام الأسبوع.</p></div>
-      <div class="f"><div class="ic">🧾</div><h3>جاهز لزاتكا</h3><p>متوافق مع متطلبات هيئة الزكاة والضريبة من اليوم الأول، بدون قلق.</p></div>
-      <div class="f"><div class="ic">🤖</div><h3>ذكاء يخدمك</h3><p>تنبيهات وتوصيات ذكية تساعدك على القرار — لا أرقام تتركك وحدك.</p></div>
-      <div class="f"><div class="ic">🤝</div><h3>مبني بالشراكة معك</h3><p>سين يُبنى بالتعاون مع أصحاب محلات حقيقيين — ونطوّر الميزات حسب اقتراحاتكم وااحتياج السوق الفعلي.</p></div>
+      <div class="f">
+        <div class="ic">🎯</div>
+        <h3 class="lang-ar">متخصص للتفصيل</h3>
+        <h3 class="lang-en">Tailoring Specialist</h3>
+        <p class="lang-ar">بيع القماش بالمتر، أوامر التفصيل، وتتبّع كل لفّة — مزايا لا تجدها في أي كاشير عادي.</p>
+        <p class="lang-en">Fabric sales by meter, tailoring orders, and tracking every roll — features you won't find in any ordinary cashier.</p>
+      </div>
+      <div class="f">
+        <div class="ic">📱</div>
+        <h3 class="lang-ar">تابع من جوالك</h3>
+        <h3 class="lang-en">Track From Your Phone</h3>
+        <p class="lang-ar">المبيعات والطلبات والمخزون في جيبك — لحظياً على أي جهاز وعبر كل فروعك.</p>
+        <p class="lang-en">Sales, orders, and inventory in your pocket — in real-time on any device across all branches.</p>
+      </div>
+      <div class="f">
+        <div class="ic">💬</div>
+        <h3 class="lang-ar">عربي وبسيط — ودعم 24/7</h3>
+        <h3 class="lang-en">Arabic & Simple — 24/7 Support</h3>
+        <p class="lang-ar">إذا تعرف تستخدم واتساب تعرف تستخدم سين، ومعك دعم عربي على مدار الساعة طوال أيام الأسبوع.</p>
+        <p class="lang-en">If you know how to use WhatsApp, you know how to use Seen, with Arabic-speaking support available 24/7.</p>
+      </div>
+      <div class="f">
+        <div class="ic">🧾</div>
+        <h3 class="lang-ar">جاهز لزاتكا</h3>
+        <h3 class="lang-en">ZATKA Ready</h3>
+        <p class="lang-ar">متوافق مع متطلبات هيئة الزكاة والضريبة من اليوم الأول، بدون قلق.</p>
+        <p class="lang-en">Fully compliant with the Zakat, Tax and Customs Authority requirements from day one, worry-free.</p>
+      </div>
+      <div class="f">
+        <div class="ic">🤖</div>
+        <h3 class="lang-ar">ذكاء يخدمك</h3>
+        <h3 class="lang-en">Intelligence Serving You</h3>
+        <p class="lang-ar">تنبيهات وتوصيات ذكية تساعدك على القرار — لا أرقام تتركك وحدك.</p>
+        <p class="lang-en">Smart alerts and recommendations that help you make decisions — not just numbers that leave you on your own.</p>
+      </div>
+      <div class="f">
+        <div class="ic">🤝</div>
+        <h3 class="lang-ar">مبني بالشراكة معك</h3>
+        <h3 class="lang-en">Built in Partnership</h3>
+        <p class="lang-ar">سين يُبنى بالتعاون مع أصحاب محلات حقيقيين — ونطوّر الميزات حسب اقتراحاتكم وااحتياج السوق الفعلي.</p>
+        <p class="lang-en">Seen is built in cooperation with real shop owners — developing features based on your feedback and actual market needs.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -349,12 +684,48 @@ footer{background:#08202f;color:#9fc2da;padding:46px 0 30px}
 <!-- HOW (خطوات تحت بعض) -->
 <section class="sec" id="how">
   <div class="wrap">
-    <div class="sec-head center reveal"><span class="kicker"><span class="tick"></span> كيف يعمل</span>
-      <h2>ابدأ في 3 خطوات</h2><p>من التسجيل لأول فاتورة زاتكا — بدون تعقيد.</p></div>
+    <div class="sec-head center reveal">
+      <span class="kicker">
+        <span class="lang-ar"><span class="tick"></span> كيف يعمل</span>
+        <span class="lang-en"><span class="tick"></span> How It Works</span>
+      </span>
+      <h2>
+        <span class="lang-ar">ابدأ في 3 خطوات</span>
+        <span class="lang-en">Start in 3 Steps</span>
+      </h2>
+      <p>
+        <span class="lang-ar">من التسجيل لأول فاتورة زاتكا — بدون تعقيد.</span>
+        <span class="lang-en">From registration to your first ZATKA-compliant invoice — simple and straightforward.</span>
+      </p>
+    </div>
     <div class="steps">
-      <div class="step reveal"><div class="sn">1</div><div><h3>سجّل محلك</h3><p>نجهّز لك حسابك ونرفع بياناتك بسرعة — وفريق سين معك خطوة بخطوة.</p></div></div>
-      <div class="step reveal"><div class="sn">2</div><div><h3>أنشئ طلباً بالقياسات</h3><p>أضف العميل، احفظ مقاساته، وافتح الطلب — كله بشاشة واحدة.</p></div></div>
-      <div class="step reveal"><div class="sn">3</div><div><h3>تابع وافوتر تلقائياً</h3><p>تابع حالة كل طلب، وأصدر فاتورة متوافقة مع زاتكا بضغطة.</p></div></div>
+      <div class="step reveal">
+        <div class="sn">1</div>
+        <div>
+          <h3 class="lang-ar">سجّل محلك</h3>
+          <h3 class="lang-en">Register Your Shop</h3>
+          <p class="lang-ar">نجهّز لك حسابك ونرفع بياناتك بسرعة — وفريق سين معك خطوة بخطوة.</p>
+          <p class="lang-en">We set up your account and upload your data quickly — our team is with you every step.</p>
+        </div>
+      </div>
+      <div class="step reveal">
+        <div class="sn">2</div>
+        <div>
+          <h3 class="lang-ar">أنشئ طلباً بالقياسات</h3>
+          <h3 class="lang-en">Create Order with Measurements</h3>
+          <p class="lang-ar">أضف العميل، احفظ مقاساته، وافتح الطلب — كله بشاشة واحدة.</p>
+          <p class="lang-en">Add a customer, save their measurements, and open the order — all on one screen.</p>
+        </div>
+      </div>
+      <div class="step reveal">
+        <div class="sn">3</div>
+        <div>
+          <h3 class="lang-ar">تابع وافوتر تلقائياً</h3>
+          <h3 class="lang-en">Track & Invoice Automatically</h3>
+          <p class="lang-ar">تابع حالة كل طلب، وأصدر فاتورة متوافقة مع زاتكا بضغطة.</p>
+          <p class="lang-en">Monitor the status of every order and generate a ZATKA-compliant invoice with one click.</p>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -362,14 +733,49 @@ footer{background:#08202f;color:#9fc2da;padding:46px 0 30px}
 <!-- SECURITY -->
 <section class="sec surface-2">
   <div class="wrap">
-    <div class="sec-head center reveal"><span class="kicker"><span class="tick"></span> الأمان</span>
-      <h2>بياناتك خط أحمر</h2>
-      <p>بيانات محلك وعملائك مشفّرة ومحفوظة وفق نظام حماية البيانات السعودي (PDPL) — ملكك وحدك، لا تُباع ولا تُشارك.</p></div>
+    <div class="sec-head center reveal">
+      <span class="kicker">
+        <span class="lang-ar"><span class="tick"></span> الأمان</span>
+        <span class="lang-en"><span class="tick"></span> Security</span>
+      </span>
+      <h2>
+        <span class="lang-ar">بياناتك خط أحمر</span>
+        <span class="lang-en">Your Data is a Red Line</span>
+      </h2>
+      <p>
+        <span class="lang-ar">بيانات محلك وعملائك مشفّرة ومحفوظة وفق نظام حماية البيانات السعودي (PDPL) — ملكك وحدك، لا تُباع ولا تُشارك.</span>
+        <span class="lang-en">Your shop and customer data is encrypted and stored in compliance with the Saudi Personal Data Protection Law (PDPL) — yours alone, never sold or shared.</span>
+      </p>
+    </div>
     <div class="trust reveal">
-      <div class="badge"><div class="ic">🔐</div><div><b>تشفير كامل</b><span>حماية بياناتك نقلاً وتخزيناً</span></div></div>
-      <div class="badge"><div class="ic">🛡️</div><div><b>متوافق مع PDPL</b><span>التزام بنظام حماية البيانات</span></div></div>
-      <div class="badge"><div class="ic">🧾</div><div><b>معتمد لزاتكا</b><span>فوترة إلكترونية وفق المتطلبات</span></div></div>
-      <div class="badge"><div class="ic">☁️</div><div><b>نسخ احتياطي</b><span>بياناتك محفوظة تلقائياً</span></div></div>
+      <div class="badge">
+        <div class="ic">🔐</div>
+        <div>
+          <span class="lang-ar"><b>تشفير كامل</b><span>حماية بياناتك نقلاً وتخزيناً</span></span>
+          <span class="lang-en"><b>Full Encryption</b><span>Data protected in transit & at rest</span></span>
+        </div>
+      </div>
+      <div class="badge">
+        <div class="ic">🛡️</div>
+        <div>
+          <span class="lang-ar"><b>متوافق مع PDPL</b><span>التزام بنظام حماية البيانات</span></span>
+          <span class="lang-en"><b>PDPL Compliant</b><span>Adherence to Saudi Data Protection Law</span></span>
+        </div>
+      </div>
+      <div class="badge">
+        <div class="ic">🧾</div>
+        <div>
+          <span class="lang-ar"><b>معتمد لزاتكا</b><span>فوترة إلكترونية وفق المتطلبات</span></span>
+          <span class="lang-en"><b>ZATKA Certified</b><span>E-invoicing per official requirements</span></span>
+        </div>
+      </div>
+      <div class="badge">
+        <div class="ic">☁️</div>
+        <div>
+          <span class="lang-ar"><b>نسخ احتياطي</b><span>بياناتك محفوظة تلقائياً</span></span>
+          <span class="lang-en"><b>Auto Backup</b><span>Your data is automatically backed up</span></span>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -378,21 +784,80 @@ footer{background:#08202f;color:#9fc2da;padding:46px 0 30px}
 <section class="sec surface-2" id="demo">
   <div class="wrap"><div class="cta-band reveal"><div class="cta-grid">
     <div>
-      <h2>جرّب سين — وإذا ما حسّيت الفرق، لا تكمل</h2>
-      <p>احجز عرضاً سريعاً، ونرتّب لك بداية لمحلك بضمان. بدون بطاقة ائتمانية.</p>
+      <h2>
+        <span class="lang-ar">جرّب سين — وإذا ما حسّيت الفرق، لا تكمل</span>
+        <span class="lang-en">Try Seen — If you don't feel the difference, don't continue</span>
+      </h2>
+      <p>
+        <span class="lang-ar">احجز عرضاً سريعاً، ونرتّب لك بداية لمحلك بضمان. بدون بطاقة ائتمانية.</span>
+        <span class="lang-en">Book a quick demo, and we will set up a guaranteed start for your shop. No credit card required.</span>
+      </p>
     </div>
     <div>
       <form class="form" id="leadForm" novalidate data-endpoint="REPLACE_WITH_API_ENDPOINT">
         <div id="formFields">
-          <div class="field"><label for="name">الاسم</label><input id="name" name="name" type="text" autocomplete="name" required placeholder="اسمك الكريم"><span class="err">رجاءً اكتب اسمك</span></div>
-          <div class="field"><label for="phone">رقم الجوال</label><input id="phone" name="phone" type="tel" inputmode="numeric" required placeholder="05XXXXXXXX"><span class="err">رقم جوال صحيح يبدأ بـ 05 و10 أرقام</span></div>
-          <div class="field"><label for="activity">نوع النشاط</label>
-            <select id="activity" name="activity" required><option value="">اختر نشاطك…</option><option>خياطة رجالية</option><option>خياطة نسائية</option><option>كنب وستائر</option><option>محل أقمشة</option><option>ملابس متخصصة</option></select>
-            <span class="err">رجاءً اختر نوع النشاط</span></div>
-          <a href="/login?view=register" target="_parent" style="display: block; text-align: center; text-decoration: none;" class="btn btn-cta">ابدأ الآن مجاناً</a>
-          <p class="form-note">نتواصل معك خلال يوم عمل · بياناتك لا تُشارك</p>
+          <div class="field">
+            <label for="name">
+              <span class="lang-ar">الاسم</span>
+              <span class="lang-en">Name</span>
+            </label>
+            <input id="name" name="name" type="text" autocomplete="name" required placeholder="اسمك الكريم / Your Name">
+            <span class="err">
+              <span class="lang-ar">رجاءً اكتب اسمك</span>
+              <span class="lang-en">Please write your name</span>
+            </span>
+          </div>
+          <div class="field">
+            <label for="phone">
+              <span class="lang-ar">رقم الجوال</span>
+              <span class="lang-en">Mobile Number</span>
+            </label>
+            <input id="phone" name="phone" type="tel" inputmode="numeric" required placeholder="05XXXXXXXX">
+            <span class="err">
+              <span class="lang-ar">رقم جوال صحيح يبدأ بـ 05 و10 أرقام</span>
+              <span class="lang-en">Valid 10-digit mobile starting with 05</span>
+            </span>
+          </div>
+          <div class="field">
+            <label for="activity">
+              <span class="lang-ar">نوع النشاط</span>
+              <span class="lang-en">Activity Type</span>
+            </label>
+            <select id="activity" name="activity" required>
+              <option value="" class="lang-ar">اختر نشاطك…</option>
+              <option value="" class="lang-en">Choose your activity…</option>
+              <option class="lang-ar">خياطة رجالية</option>
+              <option class="lang-en">Men's Tailoring</option>
+              <option class="lang-ar">خياطة نسائية</option>
+              <option class="lang-en">Women's Tailoring</option>
+              <option class="lang-ar">كنب وستائر</option>
+              <option class="lang-en">Sofa & Curtains</option>
+              <option class="lang-ar">محل أقمشة</option>
+              <option class="lang-en">Fabric Store</option>
+              <option class="lang-ar">ملابس متخصصة</option>
+              <option class="lang-en">Specialty Clothing</option>
+            </select>
+            <span class="err">
+              <span class="lang-ar">رجاءً اختر نوع النشاط</span>
+              <span class="lang-en">Please choose activity type</span>
+            </span>
+          </div>
+          <a href="/login?view=register" target="_parent" style="display: block; text-align: center; text-decoration: none;" class="btn btn-cta">
+            <span class="lang-ar">ابدأ الآن مجاناً</span>
+            <span class="lang-en">Get Started Free</span>
+          </a>
+          <p class="form-note">
+            <span class="lang-ar">نتواصل معك خلال يوم عمل · بياناتك لا تُشارك</span>
+            <span class="lang-en">We will contact you within 1 business day · Your data is safe</span>
+          </p>
         </div>
-        <div class="success" id="success"><div class="ok">✓</div><h3>تم استلام طلبك ✦</h3><p style="color:var(--gray);margin-top:8px">بنتواصل معك قريباً لترتيب العرض والتجربة.</p></div>
+        <div class="success" id="success">
+          <div class="ok">✓</div>
+          <h3 class="lang-ar">تم استلام طلبك ✦</h3>
+          <h3 class="lang-en">Request Received ✦</h3>
+          <p style="color:var(--gray);margin-top:8px" class="lang-ar">بنتواصل معك قريباً لترتيب العرض والتجربة.</p>
+          <p style="color:var(--gray);margin-top:8px" class="lang-en">We will contact you soon to arrange the demo and trial.</p>
+        </div>
       </form>
     </div>
   </div></div></div>
@@ -401,14 +866,53 @@ footer{background:#08202f;color:#9fc2da;padding:46px 0 30px}
 <!-- FAQ (آخر شي قبل الفوتر) -->
 <section class="sec" id="faq">
   <div class="wrap">
-    <div class="sec-head center reveal" style="margin-bottom:36px"><span class="kicker"><span class="tick"></span> أسئلة شائعة</span><h2>قبل ما تقرر — خلّنا نطمنك</h2></div>
+    <div class="sec-head center reveal" style="margin-bottom:36px">
+      <span class="kicker">
+        <span class="lang-ar"><span class="tick"></span> أسئلة شائعة</span>
+        <span class="lang-en"><span class="tick"></span> FAQ</span>
+      </span>
+      <h2>
+        <span class="lang-ar">قبل ما تقرر — خلّنا نطمنك</span>
+        <span class="lang-en">Before you decide — let us reassure you</span>
+      </h2>
+    </div>
     <div class="faq reveal">
-      <details class="q"><summary>أنا ما أفهم بالأنظمة — صعب عليّ؟</summary><div class="a">لا. سين مصمّم لصاحب المحل لا للمحاسب — واجهة عربية بسيطة تتعلّمها في دقائق، ونساعدك في التهيئة خطوة بخطوة.</div></details>
-      <details class="q"><summary>بياناتي وبيانات عملائي بتكون آمنة؟</summary><div class="a">نعم. بياناتك مشفّرة ومحفوظة وفق نظام حماية البيانات السعودي (PDPL)، ولها نسخ احتياطي تلقائي — ملكك وحدك ولا تُشارك.</div></details>
-      <details class="q"><summary>يشتغل مع فوترة زاتكا؟</summary><div class="a">نعم، الفوترة الإلكترونية المتوافقة مع زاتكا مدمجة من اليوم الأول، بدون أدوات إضافية.</div></details>
-      <details class="q"><summary>كم ياخذ وقت التجهيز والبدء؟</summary><div class="a">التسجيل والبدء يأخذ دقائق، ونرافقك في إدخال بياناتك حتى تشتغل بثقة.</div></details>
-      <details class="q"><summary>وش يصير لو ما عجبني سين؟</summary><div class="a">جرّب سين بضمان — وإذا ما حسّيت الفرق خلال فترة التجربة، لا تكمل وبدون أي التزام.</div></details>
-      <details class="q"><summary>يخدم نوع نشاطي؟</summary><div class="a">سين يخدم التفصيل الرجالي والنسائي، الكنب والستائر، محلات الأقمشة، والملابس المتخصصة — كل نشاط فيه قماش وقياس.</div></details>
+      <details class="q">
+        <summary class="lang-ar">أنا ما أفهم بالأنظمة — صعب عليّ؟</summary>
+        <summary class="lang-en">I don't understand software — is it too hard for me?</summary>
+        <div class="a lang-ar">لا. سين مصمّم لصاحب المحل لا للمحاسب — واجهة عربية بسيطة تتعلّمها في دقائق، ونساعدك في التهيئة خطوة بخطوة.</div>
+        <div class="a lang-en">No. Seen is designed for the shop owner, not the accountant — a simple interface you can learn in minutes, and we help you configure everything step-by-step.</div>
+      </details>
+      <details class="q">
+        <summary class="lang-ar">بياناتي وبيانات عملائي بتكون آمنة؟</summary>
+        <summary class="lang-en">Will my data and customer data be secure?</summary>
+        <div class="a lang-ar">نعم. بياناتك مشفّرة ومحفوظة وفق نظام حماية البيانات السعودي (PDPL)، ولها نسخ احتياطي تلقائي — ملكك وحدك ولا تُشارك.</div>
+        <div class="a lang-en">Yes. Your data is encrypted and saved under the Saudi Data Protection Law (PDPL), with automatic daily backups — yours alone and never shared.</div>
+      </details>
+      <details class="q">
+        <summary class="lang-ar">يشتغل مع فوترة زاتكا؟</summary>
+        <summary class="lang-en">Does it work with ZATKA e-invoicing?</summary>
+        <div class="a lang-ar">نعم، الفوترة الإلكترونية المتوافقة مع زاتكا مدمجة من اليوم الأول، بدون أدوات إضافية.</div>
+        <div class="a lang-en">Yes, ZATKA-compliant e-invoicing is built-in from day one, without any additional tools.</div>
+      </details>
+      <details class="q">
+        <summary class="lang-ar">كم ياخذ وقت التجهيز والبدء؟</summary>
+        <summary class="lang-en">How long does setup and onboarding take?</summary>
+        <div class="a lang-ar">التسجيل والبدء يأخذ دقائق، ونرافقك في إدخال بياناتك حتى تشتغل بثقة.</div>
+        <div class="a lang-en">Registration and getting started takes minutes, and we support you in importing your data so you can run with confidence.</div>
+      </details>
+      <details class="q">
+        <summary class="lang-ar">وش يصير لو ما عجبني سين؟</summary>
+        <summary class="lang-en">What happens if I don't like Seen?</summary>
+        <div class="a lang-ar">جرّب سين بضمان — وإذا ما حسّيت الفرق خلال فترة التجربة، لا تكمل وبدون أي التزام.</div>
+        <div class="a lang-en">Try Seen with a guarantee — if you don't feel the difference during the trial period, don't continue, with no obligations.</div>
+      </details>
+      <details class="q">
+        <summary class="lang-ar">يخدم نوع نشاطي؟</summary>
+        <summary class="lang-en">Does it support my business type?</summary>
+        <div class="a lang-ar">سين يخدم التفصيل الرجالي والنسائي، الكنب والستائر، محلات الأقمشة، والملابس المتخصصة — كل نشاط فيه قماش وقياس.</div>
+        <div class="a lang-en">Seen serves men's and women's tailoring, sofas & curtains, fabric stores, and specialty uniforms — any business involving fabric and measurements.</div>
+      </details>
     </div>
   </div>
 </section>
@@ -416,16 +920,59 @@ footer{background:#08202f;color:#9fc2da;padding:46px 0 30px}
 <footer>
   <div class="wrap">
     <div class="foot">
-      <a class="logo" href="#top"><span class="lmark"><img src="assets/logo-swoosh.png" alt="سين" style="filter:brightness(0) invert(1)"></span><span class="lname" style="color:#fff"><svg viewBox="-74 599 2933 1066" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="سين"><path d="M591 1303V1232H699V1303ZM321 1551Q242 1551 178.0 1522.0Q114 1493 77.0 1441.0Q40 1389 40 1322Q40 1301 43.5 1266.5Q47 1232 52.5 1189.5Q58 1147 65.0 1103.5Q72 1060 78 1021L155 1033Q144 1102 135.5 1160.5Q127 1219 122.5 1260.5Q118 1302 118 1322Q118 1368 143.5 1403.5Q169 1439 215.0 1459.5Q261 1480 321 1480Q381 1480 424.0 1461.0Q467 1442 490.0 1408.0Q513 1374 513 1328V803H591V1328Q591 1398 554.5 1448.0Q518 1498 457.0 1524.5Q396 1551 321 1551ZM699 1303V1232Q705 1232 709.0 1234.5Q713 1237 715.0 1241.5Q717 1246 718.0 1252.5Q719 1259 719 1267Q719 1275 718.0 1282.0Q717 1289 715.0 1293.5Q713 1298 709.0 1300.5Q705 1303 699 1303ZM699 1303V1232H949V1303ZM949 1303V1232Q955 1232 959.0 1234.5Q963 1237 965.0 1241.5Q967 1246 968.0 1252.5Q969 1259 969 1267Q969 1275 968.0 1282.0Q967 1289 965.0 1293.5Q963 1298 959.0 1300.5Q955 1303 949 1303ZM699 1303Q693 1303 689.0 1300.5Q685 1298 683.0 1293.5Q681 1289 680.0 1282.0Q679 1275 679 1267Q679 1256 680.5 1248.5Q682 1241 686.5 1236.5Q691 1232 699 1232ZM949 1303V1232H1199V1303ZM1199 1303V1232Q1205 1232 1209.0 1234.5Q1213 1237 1215.0 1241.5Q1217 1246 1218.0 1252.5Q1219 1259 1219 1267Q1219 1275 1218.0 1282.0Q1217 1289 1215.0 1293.5Q1213 1298 1209.0 1300.5Q1205 1303 1199 1303ZM949 1303Q943 1303 939.0 1300.5Q935 1298 933.0 1293.5Q931 1289 930.0 1282.0Q929 1275 929 1267Q929 1256 930.5 1248.5Q932 1241 936.5 1236.5Q941 1232 949 1232ZM1385 1303V1232H1493V1303ZM1493 1303V1232Q1499 1232 1503.0 1234.5Q1507 1237 1509.0 1241.5Q1511 1246 1512.0 1252.5Q1513 1259 1513 1267Q1513 1275 1512.0 1282.0Q1511 1289 1509.0 1293.5Q1507 1298 1503.0 1300.5Q1499 1303 1493 1303ZM1199 1303Q1193 1303 1189.0 1300.5Q1185 1298 1183.0 1293.5Q1181 1289 1180.0 1282.0Q1179 1275 1179 1267Q1179 1256 1180.5 1248.5Q1182 1241 1186.5 1236.5Q1191 1232 1199 1232ZM1199 1303V1232H1343L1307 1261V803H1385V1303ZM1493 1303V1232H1743V1303ZM1743 1303V1232Q1749 1232 1753.0 1234.5Q1757 1237 1759.0 1241.5Q1761 1246 1762.0 1252.5Q1763 1259 1763 1267Q1763 1275 1762.0 1282.0Q1761 1289 1759.0 1293.5Q1757 1298 1753.0 1300.5Q1749 1303 1743 1303ZM1493 1303Q1487 1303 1483.0 1300.5Q1479 1298 1477.0 1293.5Q1475 1289 1474.0 1282.0Q1473 1275 1473 1267Q1473 1256 1474.5 1248.5Q1476 1241 1480.5 1236.5Q1485 1232 1493 1232ZM1743 1303V1232H1993V1303ZM1993 1303V1232Q1999 1232 2003.0 1234.5Q2007 1237 2009.0 1241.5Q2011 1246 2012.0 1252.5Q2013 1259 2013 1267Q2013 1275 2012.0 1282.0Q2011 1289 2009.0 1293.5Q2007 1298 2003.0 1300.5Q1999 1303 1993 1303ZM1743 1303Q1737 1303 1733.0 1300.5Q1729 1298 1727.0 1293.5Q1725 1289 1724.0 1282.0Q1723 1275 1723 1267Q1723 1256 1724.5 1248.5Q1726 1241 1730.5 1236.5Q1735 1232 1743 1232ZM2519 1303Q2485 1303 2452.5 1290.0Q2420 1277 2390 1249L2441 1196Q2464 1215 2482.0 1223.5Q2500 1232 2519 1232H2697L2667 1264V1025Q2667 1007 2663.5 974.0Q2660 941 2653.5 899.5Q2647 858 2638 816L2714 803Q2721 838 2728.0 881.0Q2735 924 2740.0 962.5Q2745 1001 2745 1025V1303ZM1993 1303V1232H2139L2119 1252V903H2196V1303ZM2196 1303V1232H2309Q2343 1232 2360.5 1222.0Q2378 1212 2385.0 1182.0Q2392 1152 2392 1094V853H2470V1094Q2470 1172 2453.5 1218.0Q2437 1264 2402.0 1283.5Q2367 1303 2309 1303ZM1993 1303Q1987 1303 1983.0 1300.5Q1979 1298 1977.0 1293.5Q1975 1289 1974.0 1282.0Q1973 1275 1973 1267Q1973 1256 1974.5 1248.5Q1976 1241 1980.5 1236.5Q1985 1232 1993 1232Z" fill="currentColor" stroke="currentColor" stroke-width="44" stroke-linejoin="round" stroke-linecap="round"/><circle cx="552" cy="803" r="61" fill="currentColor"/><circle cx="1346" cy="803" r="61" fill="currentColor"/><circle cx="2676" cy="803" r="60" fill="currentColor"/><circle cx="2158" cy="903" r="60" fill="currentColor"/><circle cx="2431" cy="853" r="61" fill="currentColor"/><circle cx="317" cy="758" r="52" fill="currentColor"/><circle cx="1278" cy="1438" r="52" fill="currentColor"/><circle cx="1415" cy="1438" r="52" fill="currentColor"/></svg></span></a>
-      <div class="foot-links"><a href="#solution">الحل</a><a href="#industries">لمن سين</a><a href="#faq">أسئلة</a><a href="mailto:info@seentech.io">info@seentech.io</a><a href="#demo">تواصل عبر واتساب</a></div>
+      <a class="logo" href="#top"><span class="lmark"><img src="assets/logo-swoosh.png" alt="Seen" style="filter:brightness(0) invert(1)"></span><span class="lname" style="color:#fff"><svg viewBox="-74 599 2933 1066" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Seen"><path d="M591 1303V1232H699V1303ZM321 1551Q242 1551 178.0 1522.0Q114 1493 77.0 1441.0Q40 1389 40 1322Q40 1301 43.5 1266.5Q47 1232 52.5 1189.5Q58 1147 65.0 1103.5Q72 1060 78 1021L155 1033Q144 1102 135.5 1160.5Q127 1219 122.5 1260.5Q118 1302 118 1322Q118 1368 143.5 1403.5Q169 1439 215.0 1459.5Q261 1480 321 1480Q381 1480 424.0 1461.0Q467 1442 490.0 1408.0Q513 1374 513 1328V803H591V1328Q591 1398 554.5 1448.0Q518 1498 457.0 1524.5Q396 1551 321 1551ZM699 1303V1232Q705 1232 709.0 1234.5Q713 1237 715.0 1241.5Q717 1246 718.0 1252.5Q719 1259 719 1267Q719 1275 718.0 1282.0Q717 1289 715.0 1293.5Q713 1298 709.0 1300.5Q705 1303 699 1303ZM699 1303V1232H949V1303ZM949 1303V1232Q955 1232 959.0 1234.5Q963 1237 965.0 1241.5Q967 1246 968.0 1252.5Q969 1259 969 1267Q969 1275 968.0 1282.0Q967 1289 965.0 1293.5Q963 1298 959.0 1300.5Q955 1303 949 1303ZM699 1303Q693 1303 689.0 1300.5Q685 1298 683.0 1293.5Q681 1289 680.0 1282.0Q679 1275 679 1267Q679 1256 680.5 1248.5Q682 1241 686.5 1236.5Q691 1232 699 1232ZM949 1303V1232H1199V1303ZM1199 1303V1232Q1205 1232 1209.0 1234.5Q1213 1237 1215.0 1241.5Q1217 1246 1218.0 1252.5Q1219 1259 1219 1267Q1219 1275 1218.0 1282.0Q1217 1289 1215.0 1293.5Q1213 1298 1209.0 1300.5Q1205 1303 1199 1303ZM949 1303Q943 1303 939.0 1300.5Q935 1298 933.0 1293.5Q931 1289 930.0 1282.0Q929 1275 929 1267Q929 1256 930.5 1248.5Q932 1241 936.5 1236.5Q941 1232 949 1232ZM1385 1303V1232H1493V1303ZM1493 1303V1232Q1499 1232 1503.0 1234.5Q1507 1237 1509.0 1241.5Q1511 1246 1512.0 1252.5Q1513 1259 1513 1267Q1513 1275 1512.0 1282.0Q1511 1289 1509.0 1293.5Q1507 1298 1503.0 1300.5Q1499 1303 1493 1303ZM1199 1303Q1193 1303 1189.0 1300.5Q1185 1298 1183.0 1293.5Q1181 1289 1180.0 1282.0Q1179 1275 1179 1267Q1179 1256 1180.5 1248.5Q1182 1241 1186.5 1236.5Q1191 1232 1199 1232ZM1199 1303V1232H1343L1307 1261V803H1385V1303ZM1493 1303V1232H1743V1303ZM1743 1303V1232Q1749 1232 1753.0 1234.5Q1757 1237 1759.0 1241.5Q1761 1246 1762.0 1252.5Q1763 1259 1763 1267Q1763 1275 1762.0 1282.0Q1761 1289 1759.0 1293.5Q1757 1298 1753.0 1300.5Q1749 1303 1743 1303ZM1493 1303Q1487 1303 1483.0 1300.5Q1479 1298 1477.0 1293.5Q1475 1289 1474.0 1282.0Q1473 1275 1473 1267Q1473 1256 1474.5 1248.5Q1476 1241 1480.5 1236.5Q1485 1232 1493 1232ZM1743 1303V1232H1993V1303ZM1993 1303V1232Q1999 1232 2003.0 1234.5Q2007 1237 2009.0 1241.5Q2011 1246 2012.0 1252.5Q2013 1259 2013 1267Q2013 1275 2012.0 1282.0Q2011 1289 2009.0 1293.5Q2007 1298 2003.0 1300.5Q1999 1303 1993 1303ZM1743 1303Q1737 1303 1733.0 1300.5Q1729 1298 1727.0 1293.5Q1725 1289 1724.0 1282.0Q1723 1275 1723 1267Q1723 1256 1724.5 1248.5Q1726 1241 1730.5 1236.5Q1735 1232 1743 1232ZM2519 1303Q2485 1303 2452.5 1290.0Q2420 1277 2390 1249L2441 1196Q2464 1215 2482.0 1223.5Q2500 1232 2519 1232H2697L2667 1264V1025Q2667 1007 2663.5 974.0Q2660 941 2653.5 899.5Q2647 858 2638 816L2714 803Q2721 838 2728.0 881.0Q2735 924 2740.0 962.5Q2745 1001 2745 1025V1303ZM1993 1303V1232H2139L2119 1252V903H2196V1303ZM2196 1303V1232H2309Q2343 1232 2360.5 1222.0Q2378 1212 2385.0 1182.0Q2392 1152 2392 1094V853H2470V1094Q2470 1172 2453.5 1218.0Q2437 1264 2402.0 1283.5Q2367 1303 2309 1303ZM1993 1303Q1987 1303 1983.0 1300.5Q1979 1298 1977.0 1293.5Q1975 1289 1974.0 1282.0Q1973 1275 1973 1267Q1973 1256 1974.5 1248.5Q1976 1241 1980.5 1236.5Q1985 1232 1993 1232Z" fill="currentColor" stroke="currentColor" stroke-width="44" stroke-linejoin="round" stroke-linecap="round"/><circle cx="552" cy="803" r="61" fill="currentColor"/><circle cx="1346" cy="803" r="61" fill="currentColor"/><circle cx="2676" cy="803" r="60" fill="currentColor"/><circle cx="2158" cy="903" r="60" fill="currentColor"/><circle cx="2431" cy="853" r="61" fill="currentColor"/><circle cx="317" cy="758" r="52" fill="currentColor"/><circle cx="1278" cy="1438" r="52" fill="currentColor"/><circle cx="1415" cy="1438" r="52" fill="currentColor"/></svg></span></a>
+      <div class="foot-links">
+        <a href="#solution">
+          <span class="lang-ar">الحل</span>
+          <span class="lang-en">Solution</span>
+        </a>
+        <a href="#industries">
+          <span class="lang-ar">لمن سين</span>
+          <span class="lang-en">Who Is It For</span>
+        </a>
+        <a href="#faq">
+          <span class="lang-ar">أسئلة</span>
+          <span class="lang-en">FAQ</span>
+        </a>
+        <a href="mailto:info@seentech.io">info@seentech.io</a>
+        <a href="#demo">
+          <span class="lang-ar">تواصل عبر واتساب</span>
+          <span class="lang-en">Contact Us</span>
+        </a>
+      </div>
     </div>
-    <div class="copy">© 2026 سين لتقنية المعلومات — Seen · الرياض، المملكة العربية السعودية</div>
+    <div class="copy">
+      <span class="lang-ar">© 2026 سين لتقنية المعلومات — Seen · الرياض، المملكة العربية السعودية</span>
+      <span class="lang-en">© 2026 Seen Information Technology · Riyadh, Saudi Arabia</span>
+    </div>
   </div>
 </footer>
 
-<div class="mobile-cta"><a href="/login?view=register" target="_parent" class="btn btn-cta">ابدأ الآن مجاناً</a></div>
+<div class="mobile-cta">
+  <a href="/login?view=register" target="_parent" class="btn btn-cta">
+    <span class="lang-ar">ابدأ الآن مجاناً</span>
+    <span class="lang-en">Get Started Free</span>
+  </a>
+</div>
 
 <script>
+const langToggle=document.getElementById('langToggle');
+if (langToggle) {
+  langToggle.addEventListener('click', () => {
+    const currentLang = document.documentElement.getAttribute('lang') || 'ar';
+    const nextLang = currentLang === 'ar' ? 'en' : 'ar';
+    const nextDir = nextLang === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.setAttribute('lang', nextLang);
+    document.documentElement.setAttribute('dir', nextDir);
+    localStorage.setItem('landing-lang', nextLang);
+  });
+}
+const savedLang = localStorage.getItem('landing-lang');
+if (savedLang) {
+  document.documentElement.setAttribute('lang', savedLang);
+  document.documentElement.setAttribute('dir', savedLang === 'ar' ? 'rtl' : 'ltr');
+}
+
 const burger=document.getElementById('burger'),nav=document.getElementById('nav');
 burger&&burger.addEventListener('click',()=>{const o=nav.classList.toggle('open');burger.setAttribute('aria-expanded',o)});
 nav&&nav.querySelectorAll('.nav-links a').forEach(a=>a.addEventListener('click',()=>{nav.classList.remove('open');burger.setAttribute('aria-expanded',false)}));

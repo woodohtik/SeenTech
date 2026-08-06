@@ -605,8 +605,6 @@ html, body {
    Driver.js Interactive Tour Popover - RTL & Tailwind Custom Styling
    ========================================================================== */
 .driver-popover.seen-tour-popover {
-  direction: rtl;
-  text-align: right;
   font-family: var(--font-sans), 'Tajawal', sans-serif;
   background-color: var(--surface, #ffffff);
   color: var(--content, #0f172a);
@@ -616,6 +614,16 @@ html, body {
   box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.22), 0 10px 15px -3px rgba(15, 23, 42, 0.1);
   max-width: 380px;
   z-index: 1000000 !important;
+}
+
+.driver-popover.seen-tour-popover[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+
+.driver-popover.seen-tour-popover[dir="ltr"] {
+  direction: ltr;
+  text-align: left;
 }
 
 .driver-popover.seen-tour-popover .driver-popover-title {
@@ -662,7 +670,14 @@ html, body {
   display: flex !important;
   align-items: center !important;
   gap: 0.5rem !important;
+}
+
+.driver-popover.seen-tour-popover[dir="rtl"] .driver-popover-navigation-btns {
   direction: rtl;
+}
+
+.driver-popover.seen-tour-popover[dir="ltr"] .driver-popover-navigation-btns {
+  direction: ltr;
 }
 
 .driver-popover.seen-tour-popover button {
@@ -704,6 +719,16 @@ html, body {
   color: var(--content-muted, #94a3b8) !important;
   font-size: 1.25rem !important;
   padding: 0.25rem !important;
+}
+
+.driver-popover.seen-tour-popover[dir="rtl"] .driver-popover-close-btn {
+  right: auto !important;
+  left: 15px !important;
+}
+
+.driver-popover.seen-tour-popover[dir="ltr"] .driver-popover-close-btn {
+  left: auto !important;
+  right: 15px !important;
 }
 
 .driver-popover.seen-tour-popover .driver-popover-close-btn:hover {

@@ -37,6 +37,36 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
   const [selectedTransfer, setSelectedTransfer] = useState<StockTransfer | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
+  const mapDbTransferToStockTransfer = (item: any): StockTransfer => {
+    const dbItems = item.stock_transfer_items || [];
+    const items = dbItems.map((dbItem: any) => ({
+      itemId: dbItem.item_id,
+      itemName: dbItem.item_name,
+      requestedQuantity: Number(dbItem.requested_quantity),
+      shippedQuantity: dbItem.shipped_quantity !== null ? Number(dbItem.shipped_quantity) : undefined,
+      receivedQuantity: dbItem.received_quantity !== null ? Number(dbItem.received_quantity) : undefined,
+    }));
+
+    return {
+      id: item.id,
+      fromBranchId: item.from_branch_id,
+      toBranchId: item.to_branch_id,
+      items,
+      status: item.status,
+      requestedBy: item.requested_by,
+      requestedByName: item.requested_by_name,
+      shippedBy: item.shipped_by,
+      receivedBy: item.received_by,
+      notes: item.notes,
+      remarks: item.remarks,
+      tenantId: item.tenant_id,
+      createdAt: item.created_at,
+      shippedAt: item.shipped_at,
+      receivedAt: item.received_at,
+      updatedAt: item.updated_at,
+    };
+  };
+
   useEffect(() => {
     if (!tenantId) return;
 
@@ -44,14 +74,14 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
       setLoading(true);
       const { data, error } = await supabase
         .from('stock_transfers')
-        .select('*')
+        .select('*, stock_transfer_items(*)')
         .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false });
       
       if (error) {
         handleError(error, OperationType.LIST, 'stock_transfers');
       } else {
-        setTransfers(data as StockTransfer[]);
+        setTransfers((data || []).map(mapDbTransferToStockTransfer));
       }
       setLoading(false);
     };
@@ -130,17 +160,25 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
             created_at: new Date().toISOString()
           });
         }
+
+        // 3. Update stock_transfer_items shipped quantity
+        await supabase
+          .from('stock_transfer_items')
+          .update({
+            shipped_quantity: item.requestedQuantity
+          })
+          .eq('transfer_id', transfer.id)
+          .eq('item_id', item.itemId);
       }
 
-      // 3. Update transfer status to in_transit
+      // 4. Update transfer status to in_transit
       await supabase
         .from('stock_transfers')
         .update({
           status: 'in_transit',
           shipped_by: auth.currentUser?.uid,
           shipped_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          items: transfer.items.map(i => ({ ...i, shippedQuantity: i.requestedQuantity }))
+          updated_at: new Date().toISOString()
         })
         .eq('id', transfer.id);
 
@@ -219,9 +257,18 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
             created_at: new Date().toISOString()
           });
         }
+
+        // 4. Update stock_transfer_items received quantity
+        await supabase
+          .from('stock_transfer_items')
+          .update({
+            received_quantity: receivedQty
+          })
+          .eq('transfer_id', transfer.id)
+          .eq('item_id', item.itemId);
       }
 
-      // 4. Update transfer status to completed
+      // 5. Update transfer status to completed
       await supabase
         .from('stock_transfers')
         .update({
@@ -229,8 +276,7 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
           received_by: auth.currentUser?.uid,
           received_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          remarks: remarks || null,
-          items: transfer.items.map(i => ({ ...i, receivedQuantity: receivedQuantities[i.itemId] }))
+          remarks: remarks || null
         })
         .eq('id', transfer.id);
 

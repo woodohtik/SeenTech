@@ -592,16 +592,53 @@ function AppContent() {
   
   const is2FAVerified = true;
 
-  // Trial Period Check (14 Days)
-  const tenantCreatedAt = (authState.currentUserStaff as any)?.tenant?.created_at;
+  // Trial & Subscription Expiry Checks
+  const tenant = (authState.currentUserStaff as any)?.tenant;
+  const tenantCreatedAt = tenant?.created_at;
   let isTrialExpired = false;
-  if (user && !isSaaSStaff && tenantCreatedAt) {
-    const createdDate = new Date(tenantCreatedAt);
+  let isSubscriptionExpired = false;
+
+  if (user && !isSaaSStaff && tenant) {
     const now = new Date();
-    const diffTime = now.getTime() - createdDate.getTime();
-    const diffDays = diffTime / (1000 * 60 * 60 * 24);
-    if (diffDays > 14) {
-      isTrialExpired = true;
+    
+    // 1. Check if they have an active paid subscription (subscription_end_date is in the future)
+    const subscriptionEndDate = tenant.subscription_end_date ? new Date(tenant.subscription_end_date) : null;
+    const hasActiveSubscription = subscriptionEndDate ? (subscriptionEndDate > now) : false;
+
+    // 2. Check if they are currently on an active trial (trial_ends_at is in the future)
+    const trialEndsAt = tenant.trial_ends_at ? new Date(tenant.trial_ends_at) : null;
+    const hasActiveTrial = trialEndsAt ? (trialEndsAt > now) : false;
+
+    // 3. Determine if the plan is free or trial
+    const planId = tenant.plan_id || '';
+    const isFreePlan = !planId || planId === 'free' || planId.includes('trial');
+
+    if (!hasActiveSubscription && !hasActiveTrial) {
+      if (isFreePlan) {
+        // Free plan: expired if trial_ends_at is past or 14-day limit from creation
+        if (trialEndsAt) {
+          if (trialEndsAt <= now) {
+            isTrialExpired = true;
+          }
+        } else if (tenantCreatedAt) {
+          const createdDate = new Date(tenantCreatedAt);
+          const diffTime = now.getTime() - createdDate.getTime();
+          const diffDays = diffTime / (1000 * 60 * 60 * 24);
+          if (diffDays > 14) {
+            isTrialExpired = true;
+          }
+        }
+      } else {
+        // Paid plan (like 'basic' or others): expired if subscription_end_date is past
+        if (subscriptionEndDate && subscriptionEndDate <= now) {
+          isSubscriptionExpired = true;
+        } else if (!subscriptionEndDate) {
+          // If they have a paid plan but no subscription_end_date is set, assume active unless status is inactive or suspended
+          if (tenant.status === 'inactive' || tenant.status === 'suspended' || tenant.status === 'locked') {
+            isSubscriptionExpired = true;
+          }
+        }
+      }
     }
   }
 
@@ -675,8 +712,8 @@ function AppContent() {
     return <MainSkeleton />;
   }
 
-  // Trial expiration lock interception
-  if (isTrialExpired && user && !isSaaSStaff) {
+  // Trial or Subscription expiration lock interception
+  if ((isTrialExpired || isSubscriptionExpired) && user && !isSaaSStaff) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-950 text-right p-6 font-sans select-none" dir="rtl">
         <motion.div 
@@ -692,10 +729,13 @@ function AppContent() {
             <AlertCircle size={48} className="animate-pulse" />
           </div>
           
-          <h2 className="text-3xl font-black text-white text-center mb-4 tracking-tight leading-tight">انتهت الفترة التجريبية للحساب</h2>
+          <h2 className="text-3xl font-black text-white text-center mb-4 tracking-tight leading-tight">
+            {isSubscriptionExpired ? 'انتهت فترة الاشتراك للحساب' : 'انتهت الفترة التجريبية للحساب'}
+          </h2>
           <p className="text-slate-400 text-center font-medium leading-relaxed mb-10 px-4 text-sm md:text-base">
-            لقد انتهت فترة الـ 14 يوماً التجريبية المجانية المخصصة لمساحة العمل الخاصة بك. 
-            يرجى التواصل مع إدارة النظام لتفعيل الاشتراك ومتابعة أعمالك بسلاسة.
+            {isSubscriptionExpired 
+              ? 'لقد انتهت فترة اشتراك مساحة العمل الخاصة بك. يرجى التواصل مع إدارة النظام أو تجديد الاشتراك لمتابعة أعمالك بسلاسة.'
+              : 'لقد انتهت فترة الـ 14 يوماً التجريبية المجانية المخصصة لمساحة العمل الخاصة بك. يرجى التواصل مع إدارة النظام لتفعيل الاشتراك ومتابعة أعمالك بسلاسة.'}
           </p>
           
           <div className="bg-slate-950/50 rounded-2xl p-5 border border-slate-800/65 mb-10 text-sm space-y-2.5">

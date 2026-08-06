@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { cn } from '../lib/utils';
 import { 
   CreditCard, 
   Zap, 
@@ -33,6 +35,9 @@ interface BillingSettingsProps {
 }
 
 export default function BillingSettings({ tenantId }: BillingSettingsProps) {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar' || i18n.language === 'ur' || !i18n.language;
+
   const [loading, setLoading] = useState(true);
   const [tenant, setTenant] = useState<any>(null);
   const [currentPlan, setCurrentPlan] = useState<any>(null);
@@ -57,51 +62,51 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
   const PLANS = [
     {
       id: 'basic' as const,
-      name: 'الباقة الأساسية',
-      tagline: 'الحل الشامل والاحترافي لمحلات الخياطة والتفصيل',
+      name: t('billing.plans.basic.name', 'الباقة الأساسية'),
+      tagline: t('billing.plans.basic.tagline', 'الحل الشامل والاحترافي لمحلات الخياطة والتفصيل'),
       price: 599,
-      period: 'سنوياً',
-      badge: 'الأكثر طلباً',
+      period: t('billing.plans.basic.period', 'سنوياً'),
+      badge: t('billing.plans.basic.badge', 'الأكثر طلباً'),
       isPopular: true,
-      desc: 'باقة متكاملة تمنحك وصولاً بلا حدود لجميع الخصائص، الفواتير الضريبية المعتمدة من زاتكا، وإدارة التفصيل والمخزون.',
+      desc: t('billing.plans.basic.desc', 'باقة متكاملة تمنحك وصولاً بلا حدود لجميع الخصائص، الفواتير الضريبية المعتمدة من زاتكا، وإدارة التفصيل والمخزون.'),
       features: [
-        'فواتير إلكترونية متوافقة مع هيئة الزكاة والضريبة والجمارك (زاتكا)',
-        'إدارة التفصيل والتفصيل المخصص وأوامر الشغل للعمال',
-        'نظام المقاسات المرن مع حفظ سجل المقاسات لكل عميل',
-        'إدارة المخزون، الأقمشة، المستلزمات والموردين',
-        'تقارير مالية، مبيعات، وأداء العمال والمحاسبة',
-        'دعم الفروع المتعددة والموظفين مع صلاحيات مخصصة',
-        'حفظ سحابي آمن وتحديثات مجانية مستمرة 24/7',
-        'دعم فني مباشر وتدريب للموظفين'
+        t('billing.plans.basic.f1', 'فواتير إلكترونية متوافقة مع هيئة الزكاة والضريبة والجمارك (زاتكا)'),
+        t('billing.plans.basic.f2', 'إدارة التفصيل والتفصيل المخصص وأوامر الشغل للعمال'),
+        t('billing.plans.basic.f3', 'نظام المقاسات المرن مع حفظ سجل المقاسات لكل عميل'),
+        t('billing.plans.basic.f4', 'إدارة المخزون، الأقمشة، المستلزمات والموردين'),
+        t('billing.plans.basic.f5', 'تقارير مالية، مبيعات، وأداء العمال والمحاسبة'),
+        t('billing.plans.basic.f6', 'دعم الفروع المتعددة والموظفين مع صلاحيات مخصصة'),
+        t('billing.plans.basic.f7', 'حفظ سحابي آمن وتحديثات مجانية مستمرة 24/7'),
+        t('billing.plans.basic.f8', 'دعم فني مباشر وتدريب للموظفين')
       ]
     },
     {
       id: 'free' as const,
-      name: 'الباقة المجانية التجريبية',
-      tagline: 'لتجربة كافة خصائص النظام قبل الاشتراك',
+      name: t('billing.plans.free.name', 'الباقة المجانية التجريبية'),
+      tagline: t('billing.plans.free.tagline', 'لتجربة كافة خصائص النظام قبل الاشتراك'),
       price: 0,
-      period: '14 يوم',
-      badge: 'تجربة مجانية',
+      period: t('billing.plans.free.period', '14 يوم'),
+      badge: t('billing.plans.free.badge', 'تجربة مجانية'),
       isPopular: false,
-      desc: 'فرصة لاستكشاف جميع أدوات منصة سين للتفصيل لمدة 14 يوماً بدون الحاجة لبطاقة ائتمانية.',
+      desc: t('billing.plans.free.desc', 'فرصة لاستكشاف جميع أدوات منصة سين للتفصيل لمدة 14 يوماً بدون الحاجة لبطاقة ائتمانية.'),
       features: [
-        'تجربة جميع خصائص وأدوات النظام مجاناً',
-        'إصدار الفواتير وإضافة العملاء والمقاسات',
-        'تجربة لوحات التحكم والتقارير العامة',
-        'بدون شروط أو التزامات مالية'
+        t('billing.plans.free.f1', 'تجربة جميع خصائص وأدوات النظام مجاناً'),
+        t('billing.plans.free.f2', 'إصدار الفواتير وإضافة العملاء والمقاسات'),
+        t('billing.plans.free.f3', 'تجربة لوحات التحكم والتقارير العامة'),
+        t('billing.plans.free.f4', 'بدون شروط أو التزامات مالية')
       ]
     }
   ];
 
   const COMPARISON_FEATURES = [
-    { name: 'الربط المباشر مع زاتكا (الفواتير الضريبية)', free: true, basic: true },
-    { name: 'إدارة التفصيل وأوامر الشغل والمقاسات', free: true, basic: true },
-    { name: 'إدارة المخزون والأقمشة والموردين', free: true, basic: true },
-    { name: 'سجل حركات الخزينة والمدفوعات', free: true, basic: true },
-    { name: 'دعم الفروع المتعددة والموظفين', free: 'محدود', basic: 'غير محدود' },
-    { name: 'الدعم الفني المباشر والتدريب', free: 'عبر البريد', basic: 'مباشر 24/7' },
-    { name: 'النسخ الاحتياطي واسترجاع البيانات السحابي', free: true, basic: true },
-    { name: 'التقارير المالية المتقدمة والإحصائيات', free: 'أساسي', basic: 'متقدمة كلياً' },
+    { name: t('billing.compare.f1', 'الربط المباشر مع زاتكا (الفواتير الضريبية)'), free: true, basic: true },
+    { name: t('billing.compare.f2', 'إدارة التفصيل وأوامر الشغل والمقاسات'), free: true, basic: true },
+    { name: t('billing.compare.f3', 'إدارة المخزون والأقمشة والموردين'), free: true, basic: true },
+    { name: t('billing.compare.f4', 'سجل حركات الخزينة والمدفوعات'), free: true, basic: true },
+    { name: t('billing.compare.f5', 'دعم الفروع المتعددة والموظفين'), free: t('billing.compare.limited', 'محدود'), basic: t('billing.compare.unlimited', 'غير محدود') },
+    { name: t('billing.compare.f6', 'الدعم الفني المباشر والتدريب'), free: t('billing.compare.by_email', 'عبر البريد'), basic: t('billing.compare.live_support', 'مباشر 24/7') },
+    { name: t('billing.compare.f7', 'النسخ الاحتياطي واسترجاع البيانات السحابي'), free: true, basic: true },
+    { name: t('billing.compare.f8', 'التقارير المالية المتقدمة والإحصائيات'), free: t('billing.compare.basic', 'أساسي'), basic: t('billing.compare.advanced', 'متقدمة كلياً') },
   ];
 
   const fetchRealBillingData = async () => {
@@ -230,40 +235,41 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
   };
 
   const getPlanDisplayName = () => {
-    if (tenant?.plan_id === 'basic') return 'الباقة الأساسية';
-    if (tenant?.plan_id === 'free') return 'الباقة المجانية';
-    return currentPlan?.name || 'الباقة المجانية (تجريبية)';
+    if (tenant?.plan_id === 'basic') return t('billing.plans.basic.name', 'الباقة الأساسية');
+    if (tenant?.plan_id === 'free') return t('billing.plans.free.name', 'الباقة المجانية');
+    return currentPlan?.name || t('billing.plans.free.name_trial', 'الباقة المجانية (تجريبية)');
   };
 
   const getPlanStatusLabel = () => {
     const status = tenant?.status || 'active';
     switch (status) {
       case 'active':
-        return { label: 'اشتراك نشط', bg: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' };
+        return { label: t('billing.status.active', 'اشتراك نشط'), bg: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' };
       case 'trial':
       case 'onboarding':
-        return { label: 'فترة تجريبية', bg: 'bg-amber-500/10 text-amber-600 border-amber-500/20' };
+        return { label: t('billing.status.trial', 'فترة تجريبية'), bg: 'bg-amber-500/10 text-amber-600 border-amber-500/20' };
       case 'suspended':
       case 'locked':
-        return { label: 'موقوف', bg: 'bg-rose-500/10 text-rose-600 border-rose-500/20' };
+        return { label: t('billing.status.suspended', 'موقوف'), bg: 'bg-rose-500/10 text-rose-600 border-rose-500/20' };
       default:
-        return { label: 'نشط', bg: 'bg-brand/10 text-brand border-brand/20' };
+        return { label: t('billing.status.active', 'اشتراك نشط'), bg: 'bg-brand/10 text-brand border-brand/20' };
     }
   };
 
   const getNextBillingDate = () => {
+    const locale = isRtl ? 'ar-SA-u-nu-latn' : 'en-US';
     if (tenant?.subscription_end_date) {
-      return new Date(tenant.subscription_end_date).toLocaleDateString('ar-SA-u-nu-latn', { year: 'numeric', month: 'long', day: 'numeric' });
+      return new Date(tenant.subscription_end_date).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
     }
     if (tenant?.trial_ends_at) {
-      return new Date(tenant.trial_ends_at).toLocaleDateString('ar-SA-u-nu-latn', { year: 'numeric', month: 'long', day: 'numeric' });
+      return new Date(tenant.trial_ends_at).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
     }
     if (tenant?.created_at) {
       const created = new Date(tenant.created_at);
       created.setFullYear(created.getFullYear() + 1);
-      return created.toLocaleDateString('ar-SA-u-nu-latn', { year: 'numeric', month: 'long', day: 'numeric' });
+      return created.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
     }
-    return new Date(Date.now() + 365 * 86400000).toLocaleDateString('ar-SA-u-nu-latn', { year: 'numeric', month: 'long', day: 'numeric' });
+    return new Date(Date.now() + 365 * 86400000).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
   const statusBadge = getPlanStatusLabel();
@@ -279,7 +285,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
   }
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto w-full relative">
+    <div className={cn("space-y-8 max-w-6xl mx-auto w-full relative", isRtl ? "text-right" : "text-left")} dir={isRtl ? "rtl" : "ltr"}>
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-[92vw] bg-slate-900 text-white px-5 sm:px-6 py-3.5 rounded-2xl shadow-2xl text-xs sm:text-sm font-black flex items-center gap-3 border border-brand/30 animate-bounce">
@@ -296,14 +302,17 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
               <Clock size={24} className="animate-spin" />
             </div>
             <div>
-              <h4 className="font-black text-sm sm:text-base">طلب تجديد / ترقية قيد المراجعة</h4>
+              <h4 className="font-black text-sm sm:text-base">{t('billing.pending_request_title', 'طلب تجديد / ترقية قيد المراجعة')}</h4>
               <p className="text-xs text-content-muted font-bold mt-0.5">
-                تم استلام إثبات الدفع لباقة ({pendingRequests[0].plan_name}) بتاريخ {new Date(pendingRequests[0].created_at).toLocaleDateString('ar-SA-u-nu-latn')}. سيتم تفعيل حسابك فوراً بمجرد الاعتماد.
+                {t('billing.pending_request_desc', 'تم استلام إثبات الدفع لباقة ({{planName}}) بتاريخ {{date}}. سيتم تفعيل حسابك فوراً بمجرد الاعتماد.', {
+                  planName: pendingRequests[0].plan_name,
+                  date: new Date(pendingRequests[0].created_at).toLocaleDateString(isRtl ? 'ar-SA-u-nu-latn' : 'en-US')
+                })}
               </p>
             </div>
           </div>
           <span className="px-4 py-1.5 bg-amber-500/20 border border-amber-500/40 rounded-full text-xs font-black text-amber-700 dark:text-amber-300 shrink-0">
-            قيد المراجعة لدى السوبر أدمن
+            {t('billing.pending_request_status', 'قيد المراجعة لدى السوبر أدمن')}
           </span>
         </div>
       )}
@@ -314,11 +323,11 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-brand/5 rounded-full blur-2xl pointer-events-none -ml-20 -mb-20" />
 
         <div className="relative z-10 flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-8">
-          <div className="space-y-4 text-right flex-1">
+          <div className="space-y-4 flex-1">
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="inline-flex items-center gap-1.5 bg-brand/10 border border-brand/20 px-3.5 py-1 rounded-full text-xs font-black text-brand">
                 <Zap size={14} className="fill-brand" />
-                <span>اشتراكك الحالي</span>
+                <span>{t('billing.current_plan_badge', 'اشتراكك الحالي')}</span>
               </span>
               <span className={`px-3 py-1 rounded-full text-xs font-black border ${statusBadge.bg}`}>
                 {statusBadge.label}
@@ -330,32 +339,32 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                 {getPlanDisplayName()}
               </h2>
               <span className="text-brand text-2xl sm:text-3xl font-black font-mono dir-ltr">
-                {tenant?.plan_id === 'basic' ? '599 SAR / سنوياً' : 'مجاناً'}
+                {tenant?.plan_id === 'basic' ? '599 SAR / ' + t('billing.plans.basic.period', 'سنوياً') : t('billing.plans.free.badge', 'مجاناً')}
               </span>
             </div>
 
             <p className="text-content-muted font-bold text-xs sm:text-sm leading-relaxed max-w-2xl">
               {tenant?.plan_id === 'basic'
-                ? 'الباقة الأساسية الشاملة مع ربط زاتكا المباشر، إدارة تفصيل الأثواب والمقاسات، الفواتير، المخزون، والدعم الفني.'
-                : 'أنت الآن على الفترة التجريبية. يمكنك الترقية للباقة الأساسية للاستمتاع بخصائص الاستخدام غير المحدود وربط زاتكا المعتمد.'}
+                ? t('billing.current_plan_basic_desc', 'الباقة الأساسية الشاملة مع ربط زاتكا المباشر، إدارة تفصيل الأثواب والمقاسات، الفواتير، المخزون، والدعم الفني.')
+                : t('billing.current_plan_free_desc', 'أنت الآن على الفترة التجريبية. يمكنك الترقية للباقة الأساسية للاستمتاع بخصائص الاستخدام غير المحدود وربط زاتكا المعتمد.')}
             </p>
 
             <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-content-muted pt-3 border-t border-border/60">
               <span className="flex items-center gap-1.5 text-content font-bold">
                 <ShieldCheck size={16} className="text-emerald-500" />
-                معرّف المتجر: <span className="font-mono text-brand font-black">{tenantId.slice(0, 8).toUpperCase()}</span>
+                {t('billing.store_id', 'معرّف المتجر:')} <span className="font-mono text-brand font-black">{tenantId.slice(0, 8).toUpperCase()}</span>
               </span>
               <span>•</span>
-              <span>تاريخ التجديد القادم: <span className="text-content font-black">{getNextBillingDate()}</span></span>
+              <span>{t('billing.next_billing_date', 'تاريخ التجديد القادم:')} <span className="text-content font-black">{getNextBillingDate()}</span></span>
             </div>
           </div>
 
           {/* min-width only from sm: at 320-360px a hard 280px floor overflowed. */}
           <div className="bg-surface-muted/90 backdrop-blur-md p-5 sm:p-8 rounded-2xl sm:rounded-[2rem] border border-border text-center sm:min-w-[280px] w-full lg:w-auto shrink-0 flex flex-col justify-between shadow-sm space-y-4">
             <div>
-              <p className="text-content-muted font-black uppercase tracking-wider text-[11px] mb-1">حالة الفوترة والتجديد</p>
+              <p className="text-content-muted font-black uppercase tracking-wider text-[11px] mb-1">{t('billing.billing_status_title', 'حالة الفوترة والتجديد')}</p>
               <p className="text-2xl sm:text-3xl font-black text-content">{getNextBillingDate()}</p>
-              <p className="text-[11px] text-emerald-600 font-bold mt-1">✓ الرسوم شاملة ضريبة القيمة المضافة 15%</p>
+              <p className="text-[11px] text-emerald-600 font-bold mt-1">✓ {t('billing.vat_included_hint', 'الرسوم شاملة ضريبة القيمة المضافة 15%')}</p>
             </div>
 
             <button
@@ -367,7 +376,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
               className="w-full bg-brand hover:bg-brand-dark text-white px-6 py-4 rounded-2xl font-black transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-brand/20 flex items-center justify-center gap-2 cursor-pointer text-sm"
             >
               <Sparkles size={18} />
-              <span>تجديد أو ترقية الباقة الآن</span>
+              <span>{t('billing.upgrade_btn_action', 'تجديد أو ترقية الباقة الآن')}</span>
             </button>
           </div>
         </div>
@@ -377,11 +386,11 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
       <div className="space-y-6">
         <div className="text-center space-y-2 max-w-xl mx-auto">
           <span className="text-xs font-black text-brand bg-brand/10 px-4 py-1.5 rounded-full border border-brand/20 uppercase tracking-wider inline-block">
-            باقات الاشتراكات الشفافة
+            {t('billing.pricing_eyebrow', 'باقات الاشتراكات الشفافة')}
           </span>
-          <h3 className="text-2xl sm:text-3xl font-black text-content">اختر الباقة المناسبة لطموح متجرك</h3>
+          <h3 className="text-2xl sm:text-3xl font-black text-content">{t('billing.pricing_title', 'اختر الباقة المناسبة لطموح متجرك')}</h3>
           <p className="text-xs sm:text-sm text-content-muted font-bold">
-            أسعار واضحة ومحددة بدون أي رسوم خفية. نظام سين متكامل لخدمة الخياطين ومحلات التفصيل.
+            {t('billing.pricing_desc', 'أسعار واضحة ومحددة بدون أي رسوم خفية. نظام سين متكامل لخدمة الخياطين ومحلات التفصيل.')}
           </p>
         </div>
 
@@ -399,7 +408,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
               >
                 {/* Popular / Best Choice Badge */}
                 {plan.badge && (
-                  <div className="absolute -top-3.5 right-8">
+                  <div className={cn("absolute -top-3.5", isRtl ? "right-8" : "left-8")}>
                     <span className={`px-4 py-1 rounded-full text-xs font-black shadow-md flex items-center gap-1.5 ${
                       plan.isPopular ? 'bg-brand text-white' : 'bg-surface-muted text-content border border-border'
                     }`}>

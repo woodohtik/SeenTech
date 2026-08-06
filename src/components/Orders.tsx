@@ -685,14 +685,47 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         toastError('خطأ: لم يتم العثور على المتجر');
         return;
       }
+
+      const { 
+        address, 
+        city, 
+        latitude, 
+        longitude, 
+        companyName, 
+        trn, 
+        isB2B, 
+        isTest, 
+        ...restData 
+      } = data;
+
+      // Nest the geographical data inside styles so we don't need a DB migration
+      const updatedStyles = {
+          ...(data.styles || {}),
+          address,
+          city,
+          latitude,
+          longitude
+      };
+
+      const customerData: any = {
+        name: data.name,
+        phone: formatSaudiPhone(data.phone),
+        email: data.email || null,
+        notes: data.notes || null,
+        measurements: data.measurements || {},
+        styles: updatedStyles,
+        company_name: companyName ? companyName : null,
+        vat_number: trn ? trn : null,
+        tenant_id: tenantId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        is_test: !!isTest
+      };
+
       try {
         const { data: newCust, error } = await supabase
           .from('customers')
-          .insert({
-            ...data,
-            tenant_id: tenantId,
-            created_at: new Date().toISOString()
-          })
+          .insert(customerData)
           .select()
           .single();
         
@@ -700,8 +733,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
         const mappedCust = {
           ...newCust,
+          companyName: newCust.company_name,
+          trn: newCust.vat_number,
           isTest: newCust.is_test,
-          isB2B: newCust.is_b2b,
+          isB2B: !!newCust.company_name,
           createdAt: newCust.created_at,
           tenantId: newCust.tenant_id
         } as unknown as Customer;
@@ -765,31 +800,32 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               </div>
             </div>
 
-            <div className="space-y-4">
-              <h4 className="text-sm font-black text-content-muted uppercase tracking-widest flex items-center gap-2">
-                <Ruler size={16} />
-                القياسات الأساسية
-              </h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                  { id: 'length', label: 'الطول' },
-                  { id: 'shoulder', label: 'الكتف' },
-                  { id: 'chest', label: 'الصدر' },
-                  { id: 'waist', label: 'الخصر' },
-                  { id: 'hips', label: 'الأرداف' },
-                  { id: 'sleeve', label: 'الكم' },
-                  { id: 'neck', label: 'الرقبة' },
-                ].map((field) => (
-                  <div key={field.id} className="space-y-1">
-                    <label className="text-[10px] font-bold text-content-muted">{field.label}</label>
-                    <input 
-                      type="number" 
-                      step="0.1"
-                      {...regCust(`measurements.${field.id}` as any)} 
-                      className="w-full bg-surface-muted border-none rounded-lg p-2 text-sm focus:ring-2 focus:ring-brand text-content" 
-                    />
-                  </div>
-                ))}
+            <h4 className="text-lg font-bold text-content mb-4 pt-4 border-t border-border flex items-center gap-2">
+              <ShoppingBag size={20} className="text-brand" />
+              بيانات الشركات (B2B)
+            </h4>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-4 border-b border-border">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-content-muted">اسم الشركة / المؤسسة <span className="opacity-70 text-xs">(اختياري)</span></label>
+                <input 
+                  type="text"
+                  {...regCust('companyName')} 
+                  className="w-full bg-surface-muted border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand text-content"
+                  placeholder="لإصدار فواتير ضريبية B2B"
+                />
+                {custErrors.companyName && <p className="text-xs text-danger font-bold">{custErrors.companyName.message}</p>}
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-content-muted">الرقم الضريبي للشركة (TRN) <span className="opacity-70 text-xs">(اختياري)</span></label>
+                <input 
+                  type="text"
+                  {...regCust('trn')} 
+                  className="w-full bg-surface-muted border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand text-content"
+                  dir="ltr"
+                  placeholder="300000000000003"
+                />
+                {custErrors.trn && <p className="text-xs text-danger font-bold">{custErrors.trn.message}</p>}
               </div>
             </div>
 
@@ -817,6 +853,25 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   }}
                 />
               </div>
+            </div>
+
+            <div className="space-y-2 pt-8 border-t border-border">
+              <label className="text-sm font-bold text-content-muted">ملاحظات إضافية</label>
+              <textarea {...regCust('notes')} className="w-full bg-surface-muted border-none rounded-xl p-3 focus:ring-2 focus:ring-brand h-24 text-content" />
+            </div>
+
+            {/* isTest Flag */}
+            <div className="flex items-center gap-3 p-4 bg-warning/5 rounded-2xl border border-warning/10">
+              <input
+                type="checkbox"
+                id="isTest"
+                {...regCust('isTest')}
+                className="w-5 h-5 text-brand border-border rounded focus:ring-brand"
+              />
+              <label htmlFor="isTest" className="text-sm font-bold text-warning flex items-center gap-2">
+                <Zap size={16} />
+                بيانات تجريبية (Test Data)
+              </label>
             </div>
 
             {/* Footer (Fixed) */}
@@ -918,6 +973,21 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         .single();
       
       if (error) throw error;
+
+      // Insert order notification
+      try {
+        await supabase.from('notifications').insert({
+          tenant_id: tenantId,
+          title: 'طلب مبيعات جديد',
+          message: `تم إنشاء الفاتورة رقم ${newOrder.order_number || ''} للعميل ${newOrder.customer_name || 'عميل نقدي'} بقيمة ${newOrder.total_amount || 0} ر.س`,
+          type: 'order',
+          status: 'unread',
+          created_at: new Date().toISOString(),
+          metadata: { order_id: newOrder.id }
+        });
+      } catch (notifErr) {
+        console.warn('Failed to insert order notification:', notifErr);
+      }
 
       const mappedNewOrder = mapOrderData(newOrder);
       if (mappedNewOrder.items.some((item: any) => item.type === 'custom' || !item.type)) {
@@ -2902,22 +2972,24 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                   (errors.items as any)?.[index]?.quantity && "ring-2 ring-danger"
                                 )} 
                               />
-                              <Controller
-                                name={`items.${index}.selectedUnit` as any}
-                                control={control}
-                                render={({ field }) => (
-                                  <SmartSelect
-                                    {...field}
-                                    className="w-1/3 bg-surface rounded-xl text-[10px] font-bold shadow-sm"
-                                    options={[
-                                      { value: 'meter', label: t('orders.meter', 'متر') },
-                                      { value: 'yard', label: t('orders.yard', 'ياردة') },
-                                      { value: 'roll', label: t('orders.roll', 'رول') },
-                                      { value: 'bolt', label: t('orders.bolt', 'طاقة') }
-                                    ]}
-                                  />
-                                )}
-                              />
+                              <div className="w-1/3">
+                                <Controller
+                                  name={`items.${index}.selectedUnit` as any}
+                                  control={control}
+                                  render={({ field }) => (
+                                    <SmartSelect
+                                      {...field}
+                                      className="w-full bg-surface rounded-xl text-xs font-bold shadow-sm"
+                                      options={[
+                                        { value: 'meter', label: t('orders.meter', 'متر') },
+                                        { value: 'yard', label: t('orders.yard', 'ياردة') },
+                                        { value: 'roll', label: t('orders.roll', 'رول') },
+                                        { value: 'bolt', label: t('orders.bolt', 'طاقة') }
+                                      ]}
+                                    />
+                                  )}
+                                />
+                              </div>
                             </div>
                             {watch(`items.${index}.consumedMeters` as any) > 0 && (
                               <p className="text-[10px] text-brand font-bold mt-1">

@@ -24,8 +24,6 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const weakPins = ['1234', '0000', '1111', '2222', '3333', '4444', '5555', '6666', '7777', '8888', '9999', '1212', '2580'];
-
   const validatePin = () => {
     if (!enablePin) return true;
     if (pin.length !== 4) {
@@ -34,10 +32,6 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
     }
     if (pin !== confirmPin) {
       setError('الرمزان غير متطابقين');
-      return false;
-    }
-    if (weakPins.includes(pin)) {
-      setError('هذا الرمز ضعيف جداً، يرجى اختيار رمز أكثر تعقيداً');
       return false;
     }
     return true;

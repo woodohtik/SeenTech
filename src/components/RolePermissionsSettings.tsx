@@ -32,6 +32,7 @@ import { SYSTEM_PERMISSIONS } from '../constants/permissions';
 import { DEFAULT_ROLES, updateRolePermissions, createCustomRole, isMerchantRole, isSaaSRole } from '../services/permissionService';
 import { cn } from '../lib/utils';
 import { useToast } from '../contexts/ToastContext';
+import { useTranslation } from 'react-i18next';
 
 interface RolePermissionsSettingsProps {
   tenantId?: string | null;
@@ -58,6 +59,37 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
   const [newRoleDesc, setNewRoleDesc] = useState('');
 
   const { success, error, info } = useToast();
+  const { t } = useTranslation();
+
+  // Translation helpers for permissions and categories
+  const getCategoryKey = (cat: string): string => {
+    const catKeys: Record<string, string> = {
+      'التبويبات والشاشات': 'tabs_screens',
+      'الطلبات': 'orders',
+      'المالية': 'financial',
+      'المخزون': 'inventory',
+      'العملاء': 'customers',
+      'لوحة التحكم': 'dashboard',
+      'التقارير': 'reports',
+      'الإعدادات': 'settings'
+    };
+    return catKeys[cat] || cat;
+  };
+
+  const getTransCat = (cat: string): string => {
+    const key = getCategoryKey(cat);
+    return t(`settings.staff.permissions.categories.${key}`, { defaultValue: cat });
+  };
+
+  const getTransPermName = (permId: string, cat: string, defaultName: string): string => {
+    const catKey = getCategoryKey(cat);
+    return t(`settings.staff.permissions.items.${permId}.${catKey}.name`, { defaultValue: defaultName });
+  };
+
+  const getTransPermDesc = (permId: string, cat: string, defaultDesc: string): string => {
+    const catKey = getCategoryKey(cat);
+    return t(`settings.staff.permissions.items.${permId}.${catKey}.description`, { defaultValue: defaultDesc });
+  };
 
   const fetchRoles = async () => {
     setLoading(true);
@@ -374,8 +406,10 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
   const categories = Array.from(new Set(SYSTEM_PERMISSIONS.map(p => p.category)));
 
   const filteredPermissions = SYSTEM_PERMISSIONS.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          p.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const transName = getTransPermName(p.id, p.category, p.name);
+    const transDesc = getTransPermDesc(p.id, p.category, p.description);
+    const matchesSearch = transName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          transDesc.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           p.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || p.category === selectedCategory;
     return matchesSearch && matchesCategory;
@@ -726,7 +760,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                         : "bg-surface-muted text-content-muted hover:text-content"
                     )}
                   >
-                    الكل ({SYSTEM_PERMISSIONS.length})
+                    {t('settings.staff.permissions.all_roles', { defaultValue: 'الكل' })} ({SYSTEM_PERMISSIONS.length})
                   </button>
                   {categories.map(cat => {
                     const count = SYSTEM_PERMISSIONS.filter(p => p.category === cat).length;
@@ -741,7 +775,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                             : "bg-surface-muted text-content-muted hover:text-content"
                         )}
                       >
-                        {cat} ({count})
+                        {getTransCat(cat)} ({count})
                       </button>
                     );
                   })}
@@ -761,10 +795,10 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                         <div className="flex items-center justify-between pb-2 border-b border-border/50">
                           <h4 className="text-xs font-black text-brand flex items-center gap-2 uppercase tracking-wider">
                             <span className="w-2.5 h-2.5 rounded-full bg-brand"></span>
-                            {category}
+                            {getTransCat(category)}
                           </h4>
                           <span className="text-[10px] text-content-muted font-bold">
-                            {categoryPerms.filter(p => permissionsState[p.id as PermissionKey]).length} / {categoryPerms.length} مفعل
+                            {categoryPerms.filter(p => permissionsState[p.id as PermissionKey]).length} / {categoryPerms.length} {t('settings.staff.permissions.enabled', { defaultValue: 'مفعل' })}
                           </span>
                         </div>
 
@@ -786,15 +820,15 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                               >
                                 <div className="space-y-1">
                                   <div className="text-xs font-black text-content group-hover:text-brand transition-colors flex items-center gap-2">
-                                    <span>{perm.name}</span>
+                                    <span>{getTransPermName(perm.id, perm.category, perm.name)}</span>
                                     {perm.id.endsWith('.view') && (
                                       <span className="text-[9px] bg-blue-500/10 text-blue-600 px-2 py-0.2 rounded font-bold">
-                                        شاشة/تبويب
+                                        {t('settings.staff.permissions.view_badge', { defaultValue: 'شاشة/تبويب' })}
                                       </span>
                                     )}
                                   </div>
                                   <p className="text-[10px] text-content-muted font-bold leading-relaxed">
-                                    {perm.description}
+                                    {getTransPermDesc(perm.id, perm.category, perm.description)}
                                   </p>
                                 </div>
 

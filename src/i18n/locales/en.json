@@ -48,6 +48,7 @@
     "suppliers": "Suppliers & Purchases",
     "layout_mode": "Layout Mode",
     "verified": "Verified",
+    "select": "Select...",
     "roles": {
       "owner": "Manager",
       "cashier": "Cashier",
@@ -293,6 +294,7 @@
     "category_other": "Other",
     "total_stock": "Stock Level",
     "item_name": "Item Name",
+    "item_name_placeholder": "e.g., White Japanese Cotton Fabric",
     "category": "Category",
     "status": "Status",
     "status_low": "Low",
@@ -321,6 +323,13 @@
     "item": "Item",
     "qty": "Quantity",
     "create_transfer_request": "Create Transfer Request",
+    "transfer_at_least_one_item": "You must transfer at least one item with a quantity greater than zero",
+    "select_from_branch_error": "Please select the source branch",
+    "select_to_branch_error": "Please select the destination branch",
+    "same_branch_error": "Cannot transfer to the same branch",
+    "available_qty": "Available Quantity",
+    "insufficient_stock_for": "Insufficient stock for",
+    "available": "Available",
     "adjustment_success": "Stock adjusted successfully",
     "adjustment_failed": "Failed to adjust stock",
     "adjust_stock": "Adjust Stock",
@@ -1166,5 +1175,762 @@
       "progress": "{{current}} of {{total}}",
       "skip": "Skip tour"
     }
+  },
+  "settings_page": {
+    "title": "Settings",
+    "subtitle": "Customize your store experience and manage your subscription",
+    "tabs": {
+      "profile": "Profile",
+      "tax": "Tax Settings",
+      "branches": "Branches & Locations",
+      "appearance": "Appearance & Themes",
+      "invoice": "Invoice Layout",
+      "printer": "Printer Settings",
+      "notifications": "Notifications",
+      "whatsapp": "WhatsApp Integration",
+      "staff": "Staff Members",
+      "billing": "Subscription & Payments",
+      "data": "Data Management"
+    },
+    "profile": {
+      "store_identity": "Store Identity",
+      "store_identity_desc": "Upload your store logo and modify basic information displayed to your customers in the system and on tax invoices.",
+      "store_name": "Commercial Entity Name",
+      "phone": "Unified Contact Number",
+      "email_protected": "Email Address (Read-only)",
+      "official_protected": "Official & Secured",
+      "no_email": "No registered email",
+      "address": "Headquarters Physical Address",
+      "inventory_strategy": "Inventory Management Architecture",
+      "centralized": "Centralized Inventory",
+      "centralized_desc": "Stock is drawn from a single unified warehouse for all branches.",
+      "decentralized": "Branch Inventory",
+      "decentralized_desc": "Each branch controls its own inventory independently.",
+      "save_success": "Store settings saved successfully",
+      "save_notice": "These settings are saved automatically and reflect on all branches",
+      "saving": "Saving...",
+      "save_store": "Save Store Settings"
+    },
+    "tax": {
+      "title": "Tax Compliance",
+      "subtitle": "Manage Zakat, Tax and Customs Authority (ZATCA) standards",
+      "enabled": "Advanced Electronic Invoicing Mode",
+      "enabled_desc": "Enabling tax compliance ensures your store matches ZATCA phase 2 requirements, including digital signatures and secured QR codes.",
+      "trn": "Tax Registration Number (TRN - 15 digits)",
+      "legal_name": "Legal Taxpayer Name",
+      "legal_name_placeholder": "Name registered in the tax certificate",
+      "vat_rate": "Standard VAT Rate",
+      "saudi_vat_note": "Kingdom of Saudi Arabia: 15%",
+      "calculation_method": "Tailoring and Cutting Tax Calculation Method",
+      "inclusive": "Tax Inclusive",
+      "inclusive_desc": "Tailoring price includes value added tax",
+      "exclusive": "Tax Exclusive",
+      "exclusive_desc": "Tax is calculated additionally on top of tailoring price",
+      "exempt": "Tax Exempt",
+      "exempt_desc": "No tax is calculated on tailoring and cutting",
+      "form_errors": "There are validation errors. Please check all required fields (including Name and Address in the Profile tab).",
+      "saudi_trn_warning": "Make sure your TRN is correct; any mistake might result in ZATCA invoice rejection.",
+      "save_success": "Tax settings saved successfully",
+      "syncing": "Syncing...",
+      "save_tax": "Save Tax Settings"
+    },
+    "appearance": {
+      "title": "Visual Identity",
+      "subtitle": "Customize interface colors and fonts to match your store's brand",
+      "theme_title": "Interface Theme",
+      "theme_desc": "Choose the theme your employees feel comfortable with during long working hours.",
+      "tour_title": "Interactive Onboarding Tour",
+      "tour_desc": "If you need to re-explore the system features or train new staff, you can restart the tour anytime.",
+      "restart_tour": "Restart Guided Tour"
+    },
+    "staff": {
+      "title": "Staff Management",
+      "subtitle": "Add employees and assign branches and job roles in the system.",
+      "tab_list": "List",
+      "tab_permissions": "Permissions",
+      "tab_activity": "Staff Activity",
+      "tab_commissions": "Tailor Commissions",
+      "tab_by_role": "By Job Role",
+      "tab_by_employee": "By Employee (Exceptions)",
+      "add_employee": "Add Employee",
+      "seeding_roles": "Adding...",
+      "seed_default_roles": "Seed Default Roles",
+      "add_custom_role": "Add Custom Role",
+      "search_placeholder": "Search staff members...",
+      "all_roles": "All Roles",
+      "all_branches": "All Branches",
+      "all_statuses": "All Statuses",
+      "status_active": "Active",
+      "status_inactive": "Inactive",
+      "test_badge": "Demo",
+      "permissions": {
+        "collapse_all": "Collapse All",
+        "expand_all": "Expand All",
+        "add_custom_role": "Add Custom Role",
+        "roles_title": "Job Roles",
+        "search_roles": "Search roles...",
+        "system_template": "System Template",
+        "custom_role": "Custom Role",
+        "edit_role_title": "Edit Role Name",
+        "delete_role_title": "Delete Role",
+        "role_permissions": "Permissions for {{name}}",
+        "search_permissions": "Search permissions...",
+        "employees_in_role": "Employees in this role ({{count}}):",
+        "view_employee_exceptions": "View and edit exceptions for this employee",
+        "protected_role_msg": "Protected default role. Editing default roles is only available to Super Admin.",
+        "create_custom_role": "Create Custom Role",
+        "enabled_count": "{{enabled}} / {{total}} enabled",
+        "enabled": "Enabled",
+        "disabled": "Disabled",
+        "choose_employee": "Choose Employee",
+        "search_employees": "Search employees...",
+        "exceptions_count": "{{count}} Exception",
+        "exceptions_count_plural": "{{count}} Exceptions",
+        "employee_permissions": "Permissions for {{name}}",
+        "edit_exceptions_subtitle": "Edit exceptions for this employee",
+        "restore_defaults": "Restore Default",
+        "search": "Search...",
+        "transition_to_role": "Go to edit job role permissions",
+        "primary_role": "Primary Role: {{role}}",
+        "edit_role_link": "(Edit Role Permissions)",
+        "exceptions_present": "There are {{count}} custom exceptions",
+        "follows_role": "Follows role permissions completely",
+        "custom_exception": "Custom Exception",
+        "inherited": "Inherited",
+        "cancel_exception_title": "Cancel exception and revert to role",
+        "cancel": "Cancel",
+        "select_employee_start": "Please select an employee to start",
+        "select_employee_desc": "Select an employee from the sidebar to edit their individual permissions independently of their job role.",
+        "how_matrix_works": "How does the permissions matrix work?",
+        "matrix_desc": "This matrix gives you full control over what each job role can do. Changes here apply immediately to all employees associated with this role.",
+        "owner_note": "Note: The \"Owner\" role always has all permissions and cannot be modified to ensure uninterrupted access to the system.",
+        "edit_role": "Edit Role",
+        "role_name": "Role Name",
+        "role_name_example": "Example: Sales Supervisor",
+        "role_desc": "Role Description",
+        "role_desc_placeholder": "Brief description of responsibilities...",
+        "save_changes": "Save Changes",
+        "create_role": "Create Role",
+        "confirm_delete_title": "Delete Role",
+        "confirm_delete_desc": "Are you sure you want to delete the role \"{{name}}\"? All associated permissions will be permanently lost.",
+        "confirm_delete": "Confirm Delete",
+        "view_badge": "Screen/Tab",
+        "categories": {
+          "tabs_screens": "Tabs & Screens",
+          "orders": "Orders",
+          "financial": "Financial",
+          "inventory": "Inventory",
+          "customers": "Customers",
+          "dashboard": "Dashboard",
+          "reports": "Reports",
+          "settings": "Settings"
+        },
+        "items": {
+          "dashboard.view": {
+            "tabs_screens": {
+              "name": "Dashboard Tab",
+              "description": "Show/hide dashboard and control panel in the sidebar"
+            },
+            "dashboard": {
+              "name": "View Dashboard",
+              "description": "Allow accessing the main dashboard"
+            }
+          },
+          "sales.view": {
+            "tabs_screens": {
+              "name": "POS Tab",
+              "description": "Show/hide sales and cashier screen in the sidebar"
+            }
+          },
+          "orders.view": {
+            "tabs_screens": {
+              "name": "Order History Tab",
+              "description": "Show/hide order tracking and production status in the sidebar"
+            },
+            "orders": {
+              "name": "View Orders",
+              "description": "Allow viewing the list of orders"
+            }
+          },
+          "customers.view": {
+            "tabs_screens": {
+              "name": "Customer Management Tab",
+              "description": "Show/hide customer logs and measurements in the sidebar"
+            },
+            "customers": {
+              "name": "View Customers",
+              "description": "Allow viewing customer data and measurements"
+            }
+          },
+          "inventory.view": {
+            "tabs_screens": {
+              "name": "Inventory & Fabrics Tab",
+              "description": "Show/hide fabric and inventory screen in the sidebar"
+            },
+            "inventory": {
+              "name": "View Inventory",
+              "description": "Allow viewing inventory list"
+            }
+          },
+          "suppliers.manage": {
+            "tabs_screens": {
+              "name": "Suppliers & Purchases Tab",
+              "description": "Show/hide suppliers and purchases screen in the sidebar"
+            },
+            "inventory": {
+              "name": "Manage Suppliers",
+              "description": "Allow viewing and managing suppliers and purchases"
+            }
+          },
+          "reports.view": {
+            "tabs_screens": {
+              "name": "Financial Reports Tab",
+              "description": "Show/hide reports and analytics screen in the sidebar"
+            },
+            "reports": {
+              "name": "Reports Center",
+              "description": "Allow accessing the reports and analytics screen"
+            }
+          },
+          "settings.view": {
+            "tabs_screens": {
+              "name": "Store Settings Tab",
+              "description": "Show/hide store settings screen in the sidebar"
+            },
+            "settings": {
+              "name": "View Settings",
+              "description": "Allow viewing system settings"
+            }
+          },
+          "orders.create": {
+            "orders": {
+              "name": "Create Order",
+              "description": "Allow creating new customer orders"
+            }
+          },
+          "orders.view_details": {
+            "orders": {
+              "name": "View Order Details",
+              "description": "Allow viewing measurements and technical details"
+            }
+          },
+          "orders.update_status": {
+            "orders": {
+              "name": "Update Order Status",
+              "description": "Allow changing order status (cutting, sewing, etc.)"
+            }
+          },
+          "orders.edit": {
+            "orders": {
+              "name": "Edit Order",
+              "description": "Allow editing invoices and orders"
+            }
+          },
+          "orders.delete": {
+            "orders": {
+              "name": "Delete Invoices",
+              "description": "Allow deleting invoices and orders from the system"
+            }
+          },
+          "invoices.view": {
+            "orders": {
+              "name": "View Invoices",
+              "description": "Allow viewing sales invoices"
+            }
+          },
+          "payments.collect": {
+            "financial": {
+              "name": "Collect Payment",
+              "description": "Allow recording paid amounts"
+            }
+          },
+          "payments.view_prices": {
+            "financial": {
+              "name": "View Prices",
+              "description": "Allow viewing service prices and financial amounts"
+            }
+          },
+          "action.refund": {
+            "financial": {
+              "name": "Issue Refund",
+              "description": "Allow refund operations"
+            }
+          },
+          "action.discount": {
+            "financial": {
+              "name": "Apply Discount",
+              "description": "Allow adding discounts to orders"
+            }
+          },
+          "shifts.manage": {
+            "financial": {
+              "name": "Manage Shifts",
+              "description": "Allow opening and closing register shifts"
+            }
+          },
+          "inventory.manage": {
+            "inventory": {
+              "name": "Manage Inventory",
+              "description": "General permission to manage inventory"
+            }
+          },
+          "inventory.create": {
+            "inventory": {
+              "name": "Add Inventory",
+              "description": "Allow adding new items"
+            }
+          },
+          "inventory.edit": {
+            "inventory": {
+              "name": "Edit Inventory",
+              "description": "Allow editing item details"
+            }
+          },
+          "inventory.delete": {
+            "inventory": {
+              "name": "Delete Inventory",
+              "description": "Allow deleting items from inventory"
+            }
+          },
+          "inventory.reconcile": {
+            "inventory": {
+              "name": "Reconcile Inventory",
+              "description": "Allow performing stock adjustments"
+            }
+          },
+          "inventory.transfer": {
+            "inventory": {
+              "name": "Transfer Inventory",
+              "description": "Allow transferring inventory between branches"
+            }
+          },
+          "customers.create": {
+            "customers": {
+              "name": "Add Customer",
+              "description": "Allow adding new customers to the system"
+            }
+          },
+          "customers.edit": {
+            "customers": {
+              "name": "Edit Customer",
+              "description": "Allow editing customer details and measurements"
+            }
+          },
+          "customers.delete": {
+            "customers": {
+              "name": "Delete Customer",
+              "description": "Allow deleting customer records"
+            }
+          },
+          "dashboard.revenue": {
+            "dashboard": {
+              "name": "View Revenue",
+              "description": "Allow viewing total revenue and financial charts"
+            }
+          },
+          "dashboard.orders": {
+            "dashboard": {
+              "name": "Order Statistics",
+              "description": "Allow viewing order counts and statuses"
+            }
+          },
+          "dashboard.inventory": {
+            "dashboard": {
+              "name": "Inventory Status",
+              "description": "Allow viewing low inventory alerts"
+            }
+          },
+          "dashboard.customers": {
+            "dashboard": {
+              "name": "Customer Statistics",
+              "description": "Allow viewing customer counts and growth"
+            }
+          },
+          "reports.financial": {
+            "reports": {
+              "name": "Financial Reports",
+              "description": "Allow viewing financial reports and revenues"
+            }
+          },
+          "reports.tax": {
+            "reports": {
+              "name": "Tax Reports",
+              "description": "Allow exporting VAT and tax reports"
+            }
+          },
+          "reports.export": {
+            "reports": {
+              "name": "Export Reports",
+              "description": "Allow exporting reports to files (Excel, PDF)"
+            }
+          },
+          "settings.edit": {
+            "settings": {
+              "name": "Edit Settings",
+              "description": "Allow editing core system settings"
+            }
+          },
+          "settings.manage": {
+            "settings": {
+              "name": "System Management",
+              "description": "Allow editing store and branch configurations"
+            }
+          },
+          "settings.billing": {
+            "settings": {
+              "name": "Manage Subscription",
+              "description": "Allow upgrading or canceling subscription and Seen billing"
+            }
+          },
+          "settings.tax": {
+            "settings": {
+              "name": "Tax Settings",
+              "description": "Allow editing tax rates and configurations"
+            }
+          },
+          "settings.whatsapp": {
+            "settings": {
+              "name": "WhatsApp Settings",
+              "description": "Allow editing WhatsApp messages and settings"
+            }
+          },
+          "settings.notifications": {
+            "settings": {
+              "name": "Notifications",
+              "description": "Allow editing notification configurations"
+            }
+          },
+          "staff.view": {
+            "settings": {
+              "name": "View Staff",
+              "description": "Allow viewing employee data"
+            }
+          },
+          "staff.create": {
+            "settings": {
+              "name": "Add Staff Member",
+              "description": "Allow adding new employees to the system"
+            }
+          },
+          "staff.edit": {
+            "settings": {
+              "name": "Edit Staff Member",
+              "description": "Allow editing employee data"
+            }
+          },
+          "staff.delete": {
+            "settings": {
+              "name": "Delete Staff Member",
+              "description": "Allow deleting employees from the system"
+            }
+          },
+          "staff.manage": {
+            "settings": {
+              "name": "Manage Roles",
+              "description": "Allow managing job roles and general permissions"
+            }
+          },
+          "staff.permissions": {
+            "settings": {
+              "name": "Manage Manager Permissions",
+              "description": "Exclusive owner permission to edit manager permissions"
+            }
+          },
+          "branches.view": {
+            "settings": {
+              "name": "View Branches",
+              "description": "Allow viewing branch list"
+            }
+          },
+          "branches.manage": {
+            "settings": {
+              "name": "Manage Branches",
+              "description": "Allow adding, editing, and deleting branches"
+            }
+          },
+          "system.delete": {
+            "settings": {
+              "name": "Delete Workspace",
+              "description": "Exclusive permission to delete all system and workspace data"
+            }
+          }
+        }
+      },
+      "activity": {
+        "title": "Staff Activity",
+        "search_placeholder": "Search by name or operation...",
+        "time": "Time",
+        "employee": "Employee",
+        "branch": "Branch",
+        "action": "Operation",
+        "details": "Details",
+        "no_logs": "No activity logs found for the selected search.",
+        "login": "Login",
+        "open_shift": "Open Shift",
+        "close_shift": "Close Shift",
+        "create_invoice": "Create Invoice",
+        "delete_invoice": "Delete Invoice",
+        "edit_measurements": "Edit Measurements",
+        "delete_order": "Delete Order",
+        "add_supplier": "Add Supplier",
+        "adjust_inventory": "Adjust Inventory",
+        "print_invoice": "Print Invoice",
+        "manual_price_edit": "Manual Price Discount"
+      },
+      "commissions": {
+        "title": "Tailor Commissions",
+        "subtitle": "Manage commission rates or fixed amounts earned by tailors upon order completion.",
+        "no_tailors": "There are currently no staff members with the \"Tailor\" role.",
+        "percentage": "Percentage (%)",
+        "fixed_amount": "Fixed Amount",
+        "save": "Save",
+        "fetch_error": "Failed to fetch tailors data",
+        "save_success": "Commission settings saved successfully",
+        "save_error": "Failed to save commission settings"
+      }
+    },
+    "notifications": {
+      "title": "System & Email Notifications",
+      "subtitle": "Control browser alerts and mobile notifications",
+      "low_stock_title": "Low Stock Alerts",
+      "low_stock_desc": "You will be alerted when the fabric or accessory quantity reaches the minimum threshold.",
+      "new_order_title": "New Order Notifications",
+      "new_order_desc": "Instant notification when any staff member creates a new sales invoice.",
+      "daily_close_title": "Daily Closing Reports",
+      "daily_close_desc": "Summary of profits, losses, and sales immediately upon shift closure.",
+      "tomorrow_delivery_title": "Tomorrow's Deliveries",
+      "tomorrow_delivery_desc": "Alert for the list of customers whose orders must be delivered the next day."
+    },
+    "invoice": {
+      "logo_too_large_error": "Logo image is too large, please select an image under 1MB",
+      "layout_options": "Layout Options",
+      "live_preview": "Live Preview",
+      "title": "Professional Invoice Layout",
+      "subtitle": "Design your invoices to match your store's brand identity",
+      "saving": "Saving...",
+      "save_success": "Saved successfully",
+      "apply_design": "Apply Design",
+      "section1_title": "1. Output & Printing",
+      "paper_size": "Preferred Paper Size",
+      "thermal80": "Thermal 80mm",
+      "thermal58": "Thermal 58mm",
+      "layout_template": "Layout Template",
+      "classic": "Classic",
+      "detailed": "Detailed",
+      "tax": "Tax Invoice",
+      "fast_thermal": "Fast Thermal Printing (80mm)",
+      "paper_saving": "Paper Saving",
+      "fast_thermal_desc": "Automatically compresses invoices and reduces spacing to fit 80mm receipt printers at high speed",
+      "section2_title": "2. Invoice Header & Content",
+      "store_logo": "Store Logo",
+      "whatsapp_number": "Sales WhatsApp Number",
+      "alignment_dir": "Alignment Direction",
+      "facility_name": "Printed Store / Facility Name",
+      "facility_name_placeholder": "Enter store or facility name to print on the invoice",
+      "custom_address": "Printed Address (Custom)",
+      "custom_address_placeholder": "Enter a short custom address to avoid long headers",
+      "custom_address_help": "You can enter a short address here to print on the invoice instead of the long headquarters address.",
+      "tax_id": "Facility VAT Number",
+      "columns_title": "Invoice Columns & Line Items",
+      "col_unit_price": "Show Unit Price",
+      "col_discount": "Include Discount Column",
+      "col_measurements": "Custom Tailoring Details",
+      "col_barcode": "Order Barcode (Tracking)",
+      "footer_title": "Invoice Footer & Return Policy",
+      "return_policy": "Exchange & Warranty Policy",
+      "return_policy_placeholder": "Enter legal invoice policy terms...",
+      "thank_you_message": "Closing Message",
+      "zatca_qr": "ZATCA QR Code",
+      "zatca_compatibility": "Fully compliant with Phase 2 e-Invoicing",
+      "live_simulation": "Live simulation of printed invoice"
+    },
+    "printer": {
+      "title": "Invoice Printer Settings",
+      "subtitle": "Connect thermal printers (80mm / 58mm) via USB, Serial, or Bluetooth",
+      "refresh": "Refresh",
+      "test_print_title": "Thermal Invoice Print Test",
+      "system_name": "Seen POS System for Point of Sale",
+      "printer_name_label": "Printer Name:",
+      "system_default_name": "System Printer",
+      "paper_size_label": "Paper Size:",
+      "connection_type_label": "Connection Type:",
+      "test_success": "Cashier receipt print test successful",
+      "thank_you": "Thank you for using Seen POS",
+      "iframe_notice_title": "Iframe Preview Notice",
+      "iframe_notice_body1": "To connect a real thermal printer via USB or Bluetooth from the browser, we recommend opening the application in a separate independent tab (via the 'Open in New Tab' button), as web browsers sometimes restrict hardware access within iframes.",
+      "iframe_notice_body2": "You can also continue using the default System Printer to print directly from any browser.",
+      "no_direct_hardware_title": "Direct hardware connection is not available here",
+      "no_direct_hardware_fallback": "You can continue printing via 'System Printer' — the browser print dialog will open for you to select your printer."
+    },
+    "whatsapp": {
+      "title": "WhatsApp Engine",
+      "subtitle": "Customize automated invoice templates and alerts sent to customers via WhatsApp",
+      "status_tag": "Instant & Interactive",
+      "description": "Customize your automated invoice message templates sent to clients on WhatsApp, using smart dynamic placeholders.",
+      "enabled_toast": "Automatic WhatsApp dispatch enabled",
+      "disabled_toast": "WhatsApp dispatch disabled",
+      "saved_toast": "Message template saved successfully ✓",
+      "reset_confirm": "Are you sure you want to restore the default template?",
+      "reset_toast": "Default template restored",
+      "variable_added_toast": "Variable added",
+      "variable_inserted_toast": "Variable inserted",
+      "sample_customer_name": "Abdullah Ali",
+      "sample_store_name": "Elegance Tailoring",
+      "enter_phone_test": "Please enter a test WhatsApp number",
+      "toggle_title": "Smart Invoices & Notifications",
+      "toggle_desc": "Once an order is placed or the share WhatsApp button is clicked, a tailored message is prepared ready to send directly to the customer.",
+      "status_enabled": "Enabled",
+      "status_disabled": "Disabled",
+      "vars_selector_label": "Click any variable below to insert it at the cursor position:",
+      "template_label": "Custom Message Template",
+      "chars_count": "Characters count:",
+      "textarea_placeholder": "Write your WhatsApp template text here...",
+      "preview_label": "Live preview of the message as it will appear to the customer:",
+      "preview_badge": "Live Example",
+      "reset_btn": "Reset Template",
+      "test_send_btn": "Test Send",
+      "saved_btn_success": "Template Saved ✓",
+      "save_btn": "Save Changes",
+      "test_modal_title": "Test WhatsApp Message Dispatch"
+    },
+    "data": {
+      "title": "Data Management & Privacy",
+      "subtitle": "Control system logs and archived data",
+      "critical_zone": "Critical Zone",
+      "critical_desc": "Deleting test data will clear all records marked as 'test data'. This is very useful before Go-Live to reset order counters and clear fake customers.",
+      "reset_system": "Reset System & Delete Test Data",
+      "export_db": "Export Database (JSON)",
+      "exporting": "Exporting file...",
+      "click_export": "Click to export and download immediately",
+      "audit_title": "Audit Logs",
+      "audit_desc": "Click to open and view staff logs and sensitive operations",
+      "save_success": "Settings saved successfully",
+      "audit_logs_modal_title": "Audit Logs",
+      "audit_logs_modal_desc": "Track staff operations and system changes in real-time",
+      "search_placeholder": "Search by staff name, operation, or details...",
+      "refresh_logs": "Refresh Log",
+      "loading_logs": "Loading operation logs...",
+      "no_logs": "No audit logs yet",
+      "no_logs_desc": "Logs appear here as soon as staff perform save or edit operations."
+    }
+  },
+  "billing": {
+    "plans": {
+      "basic": {
+        "name": "Basic Plan",
+        "tagline": "The comprehensive and professional solution for tailoring shops",
+        "period": "Annually",
+        "badge": "Most Popular",
+        "desc": "A complete plan that gives you unlimited access to all features, ZATCA-compliant electronic invoicing, custom tailoring and inventory management.",
+        "f1": "ZATCA compliant phase-2 electronic invoicing",
+        "f2": "Manage custom tailoring, sewing orders and staff assignments",
+        "f3": "Flexible measurement system with customer history tracking",
+        "f4": "Manage fabric stock, supplies, inventory and suppliers",
+        "f5": "Financial metrics, detailed sales and staff performance reports",
+        "f6": "Multi-branch support and custom roles and permissions",
+        "f7": "Secured cloud backups and continuous free updates 24/7",
+        "f8": "Direct technical support and staff onboarding"
+      },
+      "free": {
+        "name": "Free Trial Plan",
+        "tagline": "Experience all system features before subscribing",
+        "period": "14 Days",
+        "badge": "Free Trial",
+        "desc": "An opportunity to explore all tools of Seen platform for 14 days with no credit card required.",
+        "f1": "Try all features and tools of the system for free",
+        "f2": "Issue invoices and add customers and measurements",
+        "f3": "Experience dashboards and general reporting",
+        "f4": "No obligations or financial commitments"
+      }
+    },
+    "compare": {
+      "f1": "Direct connection with ZATCA (Tax Invoices)",
+      "f2": "Manage tailoring, job orders, and measurements",
+      "f3": "Manage inventory, fabrics, and suppliers",
+      "f4": "Cash ledger and payments history",
+      "f5": "Multi-branch and staff support",
+      "f6": "Direct tech support and training",
+      "f7": "Cloud backup and data recovery",
+      "f8": "Advanced financial reporting and analytics",
+      "limited": "Limited",
+      "unlimited": "Unlimited",
+      "by_email": "By Email",
+      "live_support": "Live Support 24/7",
+      "basic": "Basic",
+      "advanced": "Fully Advanced"
+    },
+    "pending_request_title": "Renewal / Upgrade Request Under Review",
+    "pending_request_desc": "Payment proof for ({{planName}}) received on {{date}}. Your account will be activated once approved.",
+    "pending_request_status": "Under Review by Super Admin",
+    "current_plan_badge": "Your Current Plan",
+    "current_plan_basic_desc": "The comprehensive basic plan with direct ZATCA connection, custom tailoring, measurements, invoices, inventory, and tech support.",
+    "current_plan_free_desc": "You are currently on the trial period. Upgrade to the basic plan for unlimited usage and approved ZATCA connection.",
+    "store_id": "Store ID:",
+    "next_billing_date": "Next Renewal Date:",
+    "billing_status_title": "Billing & Renewal Status",
+    "vat_included_hint": "Fees include 15% VAT",
+    "upgrade_btn_action": "Renew or Upgrade Plan Now",
+    "pricing_eyebrow": "Transparent Subscription Plans",
+    "pricing_title": "Choose the Right Plan for Your Store",
+    "pricing_desc": "Clear and specific pricing with no hidden fees. A complete Seen system to serve tailors and sewing shops.",
+    "status": {
+      "active": "Active",
+      "trial": "Trial Period",
+      "suspended": "Suspended"
+    },
+    "card_current_plan": "Your Current Plan ✓",
+    "card_included_features": "Included Plan Features:",
+    "card_renew_or_confirm": "Renew or Confirm Plan",
+    "card_switch_to": "Switch to {{planName}}",
+    "compare_table_title": "System Features Comparison",
+    "compare_table_subtitle": "Comparison between the free trial and the comprehensive basic plan",
+    "compare_col_feature": "Feature / Benefit",
+    "compare_col_free": "Free Plan (14 Days)",
+    "compare_col_basic": "Basic Plan (599 SAR)",
+    "history_title": "Invoices & Payments History",
+    "history_subtitle": "All recorded payments in your billing history",
+    "history_refresh_tip": "Refresh data",
+    "history_send_proof": "Send New Payment Proof",
+    "history_notes_fallback": "Seen POS subscription payment",
+    "payment_method_card": "Credit Card",
+    "payment_method_bank": "Bank Transfer",
+    "payment_method_cash": "Cash",
+    "payment_method_pos": "POS Network",
+    "status_completed": "Completed ✓",
+    "history_empty_title": "No past payments recorded",
+    "history_empty_desc": "Once you submit a renewal request and attach the proof of payment, the super admin will approve and document it in your financial history.",
+    "history_empty_btn": "Send Payment Proof or Upgrade",
+    "modal_title": "Renew or Upgrade Subscription",
+    "modal_choose_plan": "Choose the plan to upgrade to:",
+    "modal_payment_method": "Payment Method:",
+    "modal_method_bank": "Bank Transfer",
+    "modal_method_card": "Card / Mada",
+    "modal_method_pos": "POS Network",
+    "modal_method_cash": "Cash",
+    "modal_bank_approved": "Approved Bank Account for Transfer:",
+    "modal_iban_copied": "Copied ✓",
+    "modal_copy_iban": "Copy IBAN",
+    "modal_bank_name_label": "Bank:",
+    "modal_bank_name_val": "Al Rajhi Bank",
+    "modal_bank_holder_label": "Account Name:",
+    "modal_bank_holder_val": "Seen for Information Systems and Cost Co.",
+    "modal_iban_label": "IBAN:",
+    "modal_proof_label": "Attach Payment Proof (Receipt / Transfer screenshot)",
+    "modal_proof_req": "*",
+    "modal_proof_hint": "(Image or PDF up to 5MB)",
+    "modal_proof_btn": "Click here to attach transfer screenshot or receipt",
+    "modal_proof_formats": "PNG, JPG, JPEG, PDF",
+    "modal_proof_fallback_filename": "payment_proof.png",
+    "modal_proof_success": "File attached successfully ✓",
+    "modal_proof_delete": "Delete File",
+    "modal_ref_label": "Reference / Transfer Number (Optional):",
+    "modal_ref_placeholder": "e.g. REF-984210",
+    "modal_notes_label": "Additional Notes (Optional):",
+    "modal_notes_placeholder": "Any information you want to log for the management...",
+    "modal_submit_tip": "When submitting the request, notifications will go directly to the super admin for verification, approval, and account activation.",
+    "modal_cancel": "Cancel",
+    "modal_submit": "Submit Subscription Request & Payment Proof",
+    "loading_text": "Loading subscription plan and financial transactions...",
+    "free_trial_period": "14 Days"
   }
 }

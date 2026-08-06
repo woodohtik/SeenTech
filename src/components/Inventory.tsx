@@ -56,8 +56,19 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
   const [staff, setStaff] = useState<Staff[]>([]);
   const [reconciliations, setReconciliations] = useState<InventoryReconciliation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [filterCategory, setFilterCategory] = useState<string>(searchParams.get('filter') === 'low_stock' ? 'low_stock' : 'all');
+
+  useEffect(() => {
+    const searchVal = searchParams.get('search');
+    if (searchVal !== null) {
+      setSearchTerm(searchVal);
+    }
+    const filterVal = searchParams.get('filter');
+    if (filterVal === 'low_stock') {
+      setFilterCategory('low_stock');
+    }
+  }, [searchParams]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isReconcileModalOpen, setIsReconcileModalOpen] = useState(false);
   const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
@@ -68,6 +79,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
   const [productImage, setProductImage] = useState<string | null>(null);
   const { currentStaff } = useStaff();
   const { hasPermission } = usePermissions(currentStaff);
+  const [defaultTaxType, setDefaultTaxType] = useState<'inclusive' | 'exclusive' | 'exempt'>('exclusive');
 
   const canCreate = hasPermission('inventory.create');
   const canEdit = hasPermission('inventory.edit');
@@ -75,7 +87,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
   const canReconcile = hasPermission('inventory.reconcile');
   const canManageSuppliers = hasPermission('suppliers.manage');
 
-  const { register, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(inventorySchema),
     defaultValues: {
       name: '',
@@ -239,10 +251,56 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
       }
     };
 
+    const fetchTenantTaxSettings = async () => {
+      if (!tenantId) return;
+      try {
+        let { data, error } = await supabase
+          .from("tenants")
+          .select("vat_number, tax_settings")
+          .eq("id", tenantId)
+          .maybeSingle();
+
+        if (error || !data) {
+          const retry = await supabase
+            .from("tenants")
+            .select("vat_number")
+            .eq("id", tenantId)
+            .maybeSingle();
+          if (retry.data && !retry.error) {
+            data = retry.data as any;
+            error = null;
+          }
+        }
+
+        if (data && !error) {
+          const hasVat = Boolean(data.vat_number && data.vat_number.trim().length > 0);
+          let rawTax = (data as any).tax_settings as any;
+          if (!rawTax) {
+            try {
+              const fallback = localStorage.getItem(`tenant_tax_settings_${tenantId}`);
+              if (fallback) {
+                rawTax = JSON.parse(fallback);
+              }
+            } catch (e) {
+              console.error('Failed to parse fallback tax settings:', e);
+            }
+          }
+          const tailoringTaxType = rawTax?.tailoringTaxType || (hasVat ? 'inclusive' : 'exclusive');
+          if (tailoringTaxType === 'inclusive' || tailoringTaxType === 'exclusive' || tailoringTaxType === 'exempt') {
+            setDefaultTaxType(tailoringTaxType);
+            setValue('taxType', tailoringTaxType);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching tenant tax settings in Inventory:", err);
+      }
+    };
+
     fetchItems();
     fetchSuppliers();
     fetchStaff();
     fetchReconciliations();
+    fetchTenantTaxSettings();
 
     const itemsSub = supabase.channel('inventory_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_items', filter: `tenant_id=eq.${tenantId}` }, fetchItems)
@@ -551,6 +609,24 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                     setIsSupplierModalOpen(true);
                   } else {
                     setEditingItem(null);
+                    reset({
+                      name: '',
+                      nameEn: '',
+                      type: 'fabric' as const,
+                      quantity: 0,
+                      unit: 'meter' as const,
+                      baseUnit: 'meter' as const,
+                      conversionRate: 1,
+                      minThreshold: 5,
+                      pricePerUnit: 0,
+                      taxType: defaultTaxType,
+                      supplierId: '',
+                      sku: '',
+                      barcode: '',
+                      isTest: false,
+                      mainImage: '',
+                      showInPos: true
+                    });
                     setIsModalOpen(true);
                   }
                 }}
@@ -959,7 +1035,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                         <input 
                           {...register('name')}
                           className={cn(
-                            "w-full px-4 py-2 bg-surface-muted border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-content placeholder-content-muted",
+                            "w-full px-4 py-2 bg-surface-muted border border-border hover:border-brand/50 transition-colors rounded-xl focus:ring-2 focus:ring-brand outline-none text-content placeholder-content-muted",
                             errors.name && "border-danger"
                           )}
                           placeholder="مثلاً: قماش قطن ياباني أبيض"
@@ -970,7 +1046,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                         <label className="block text-sm font-bold text-content mb-1">Product Name (EN)</label>
                         <input 
                           {...register('nameEn')}
-                          className="w-full px-4 py-2 bg-surface-muted border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-content placeholder-content-muted text-left"
+                          className="w-full px-4 py-2 bg-surface-muted border border-border hover:border-brand/50 transition-colors rounded-xl focus:ring-2 focus:ring-brand outline-none text-content placeholder-content-muted text-left"
                           dir="ltr"
                           placeholder="e.g., White Japanese Cotton Fabric"
                         />

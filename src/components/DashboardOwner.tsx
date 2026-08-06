@@ -21,7 +21,8 @@ import {
   Calendar,
   Layers,
   BarChart3,
-  ChevronRight
+  ChevronRight,
+  ChevronDown
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { deleteTestDataForTenant } from '../services/trialService';
@@ -205,9 +206,17 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
     customers: 0,
+    customersGrowthRate: 0,
+    prevCustomers: 0,
     orders: 0,
+    ordersGrowthRate: 0,
+    prevOrders: 0,
     pending: 0,
+    pendingGrowthRate: 0,
+    prevPending: 0,
     revenue: 0,
+    revenueGrowthRate: 0,
+    prevRevenue: 0,
     lowStock: 0,
     receivables: 0,
     avgCompletionTime: 0,
@@ -228,6 +237,9 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
   const [drillSort, setDrillSort] = useState<{ key: string, dir: 'asc' | 'desc' }>({ key: 'date', dir: 'desc' });
   const [revenueRange, setRevenueRange] = useState(7);
   const [growthRate, setGrowthRate] = useState(0);
+  const [selectedTimeframe, setSelectedTimeframe] = useState<'all' | 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'custom'>('all');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [selectedBranchId, setSelectedBranchId] = useState<string>('all');
   const [branches, setBranches] = useState<any[]>([]);
@@ -235,18 +247,83 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
   const [trialDays, setTrialDays] = useState<number | null>(null);
   const [isTrialPlan, setIsTrialPlan] = useState<boolean>(true);
 
+  const markAsRead = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ status: 'read' })
+        .eq('id', id);
+      if (error) throw error;
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, status: 'read' } : n));
+    } catch (err) {
+      console.error('Error marking notification as read:', err);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    if (!tenantId) return;
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ status: 'read' })
+        .eq('tenant_id', tenantId)
+        .eq('status', 'unread');
+      if (error) throw error;
+      setNotifications(prev => prev.map(n => ({ ...n, status: 'read' })));
+    } catch (err) {
+      console.error('Error marking all notifications as read:', err);
+    }
+  };
+
+  const handleNotificationClick = async (notif: AppNotification) => {
+    if (notif.status !== 'read') {
+      await markAsRead(notif.id);
+    }
+
+    if (notif.type === 'inventory') {
+      const itemName = notif.metadata?.item_name || '';
+      if (itemName) {
+        navigate(`/inventory?filter=low_stock&search=${encodeURIComponent(itemName)}`);
+      } else {
+        navigate('/inventory?filter=low_stock');
+      }
+    } else if (notif.type === 'order') {
+      const orderId = notif.metadata?.order_id || notif.metadata?.orderId;
+      if (orderId) {
+        navigate(`/orders?id=${orderId}`);
+      } else {
+        navigate('/orders');
+      }
+    } else if (notif.type === 'alert') {
+      navigate('/settings?tab=staff');
+    } else {
+      navigate('/dashboard');
+    }
+
+    setIsNotificationsOpen(false);
+  };
+
   useEffect(() => {
-    if (tenant && tenant.createdAt) {
-      const createdDate = new Date(tenant.createdAt);
+    if (tenant) {
       const now = new Date();
-      const diffTime = now.getTime() - createdDate.getTime();
-      const diffDays = diffTime / (1000 * 60 * 60 * 24);
-      
       const isTrial = tenant.planId === 'free' || tenant.planId?.includes('trial') || (!tenant.planId && tenant.planId !== 'basic');
-      const durationDays = isTrial ? 14 : 365;
-      
       setIsTrialPlan(isTrial);
-      setTrialDays(Math.max(0, durationDays - Math.floor(diffDays)));
+
+      if (tenant.subscription_end_date) {
+        const subEndDate = new Date(tenant.subscription_end_date);
+        const msLeft = subEndDate.getTime() - now.getTime();
+        setTrialDays(Math.max(0, Math.ceil(msLeft / (1000 * 60 * 60 * 24))));
+      } else if (tenant.trial_ends_at) {
+        const trialEndDate = new Date(tenant.trial_ends_at);
+        const msLeft = trialEndDate.getTime() - now.getTime();
+        setTrialDays(Math.max(0, Math.ceil(msLeft / (1000 * 60 * 60 * 24))));
+      } else if (tenant.createdAt) {
+        const createdDate = new Date(tenant.createdAt);
+        const diffTime = now.getTime() - createdDate.getTime();
+        const diffDays = diffTime / (1000 * 60 * 60 * 24);
+        const durationDays = isTrial ? 14 : 365;
+        setTrialDays(Math.max(0, durationDays - Math.floor(diffDays)));
+      }
     }
   }, [tenant]);
 
@@ -254,9 +331,9 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
   const { hasPermission } = usePermissions(currentStaff);
 
   const hasRevenuePermission = hasPermission('dashboard.revenue');
-  const hasOrdersPermission = hasPermission('dashboard.orders');
-  const hasInventoryPermission = hasPermission('dashboard.inventory');
-  const hasCustomersPermission = hasPermission('dashboard.customers');
+  const hasOrdersPermission = hasPermission('dashboard.orders') || hasPermission('dashboard.view');
+  const hasInventoryPermission = hasPermission('dashboard.inventory') || hasPermission('dashboard.view');
+  const hasCustomersPermission = hasPermission('dashboard.customers') || hasPermission('dashboard.view');
 
   const navigate = useNavigate();
   const isRtl = i18n.language !== 'en';
@@ -307,7 +384,9 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             ownerEmail: tenantData.owner_email,
             status: tenantData.status,
             planId: tenantData.plan_id,
-            createdAt: tenantData.created_at
+            createdAt: tenantData.created_at,
+            subscription_end_date: tenantData.subscription_end_date,
+            trial_ends_at: tenantData.trial_ends_at
           } as any);
         }
 
@@ -392,133 +471,6 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         setAllInventory(inventory);
         setAllCustomers(customers);
         setBranchInventory(bInv);
-        
-        const revenue = orders.reduce((acc, order) => acc + (order.paidAmount || 0), 0);
-        const receivables = orders.reduce((acc, order) => acc + (order.remainingAmount || 0), 0);
-        const pending = orders.filter(order => !['delivered', 'ready'].includes(order.status)).length;
-        
-        const completedOrders = orders.filter(o => ['delivered', 'ready'].includes(o.status));
-        let totalTimeMs = 0;
-        let completionCount = 0;
-        completedOrders.forEach(o => {
-          const finalHistory = Array.isArray(o.history) 
-            ? [...o.history].reverse().find((h: any) => h && ['delivered', 'ready'].includes(h.status))
-            : null;
-          if (finalHistory) {
-            const startTime = new Date(o.orderDate || '').getTime();
-            const endTime = new Date(finalHistory.updatedAt || '').getTime();
-            if (endTime > startTime) {
-              totalTimeMs += (endTime - startTime);
-              completionCount++;
-            }
-          }
-        });
-        const avgCompletionTime = completionCount > 0 ? (totalTimeMs / (1000 * 60 * 60 * completionCount)) : 0;
-
-        const sixtyDaysAgo = new Date();
-        sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-        const activeCustomerIds = new Set(
-          orders
-            .filter(o => o.orderDate && new Date(o.orderDate) >= sixtyDaysAgo)
-            .map(o => o.customerId)
-        );
-        const activeCustomers = activeCustomerIds.size;
-
-        const customerOrderCounts: Record<string, number> = {};
-        orders.forEach(o => {
-          if (o.customerId) {
-            customerOrderCounts[o.customerId] = (customerOrderCounts[o.customerId] || 0) + 1;
-          }
-        });
-        const totalCustomersWithOrders = Object.keys(customerOrderCounts).length;
-        const repeatCustomersCount = Object.values(customerOrderCounts).filter(count => count > 1).length;
-        const retentionRate = totalCustomersWithOrders > 0 ? (repeatCustomersCount / totalCustomersWithOrders) * 100 : 0;
-
-        const lowStock = inventory.filter(item => {
-          const itemBranchInv = bInv.filter(bi => bi.itemId === item.id);
-          const totalQty = itemBranchInv.reduce((sum, bi) => sum + bi.quantity, 0);
-          return totalQty <= item.minThreshold;
-        }).length;
-
-        setStats({
-          customers: customers.length,
-          orders: orders.length,
-          pending,
-          revenue,
-          lowStock,
-          receivables,
-          avgCompletionTime,
-          activeCustomers,
-          retentionRate
-        });
-
-        // Growth Rate and Chart logic remains same but using 'orders' local variable
-        const now = new Date();
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
-        const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-        const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-
-        const currentMonthRevenue = orders
-          .filter(o => {
-            const orderDateStr = typeof o.orderDate === 'string' ? o.orderDate : '';
-            const d = new Date(orderDateStr);
-            return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-          })
-          .reduce((acc, o) => acc + (o.paidAmount || 0), 0);
-
-        const lastMonthRevenue = orders
-          .filter(o => {
-            const orderDateStr = typeof o.orderDate === 'string' ? o.orderDate : '';
-            const d = new Date(orderDateStr);
-            return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
-          })
-          .reduce((acc, o) => acc + (o.paidAmount || 0), 0);
-
-        if (lastMonthRevenue > 0) {
-          const rate = ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
-          setGrowthRate(Number(rate.toFixed(1)));
-        } else {
-          setGrowthRate(currentMonthRevenue > 0 ? 100 : 0);
-        }
-
-        const days = Array.from({ length: revenueRange }, (_, i) => {
-          const d = new Date();
-          d.setDate(d.getDate() - i);
-          return d.toISOString().split('T')[0];
-        }).reverse();
-
-        const dailyRevenue = days.map(date => {
-          const dayOrders = orders.filter(o => {
-            const orderDateStr = typeof o.orderDate === 'string' ? o.orderDate : '';
-            return orderDateStr.startsWith(date);
-          });
-          const dayRev = dayOrders.reduce((acc, o) => acc + (o.paidAmount || 0), 0);
-          return {
-            date: revenueRange > 7 
-              ? new Date(date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'), { day: 'numeric', month: 'short' })
-              : new Date(date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'), { weekday: 'short' }),
-            revenue: dayRev,
-            ordersCount: dayOrders.length
-          };
-        });
-        setChartData(dailyRevenue);
-
-        const statusCounts = orders.reduce((acc: any, order) => {
-          acc[order.status] = (acc[order.status] || 0) + 1;
-          return acc;
-        }, {});
-
-        const dist = [
-          { id: 'pending', name: t('common.status_pending', 'معلق'), value: statusCounts['pending'] || 0, color: 'var(--content-muted)' },
-          { id: 'measurements_taken', name: t('common.status_measurements_taken', 'أخذ المقاسات'), value: statusCounts['measurements_taken'] || 0, color: 'var(--color-info)' },
-          { id: 'cutting', name: t('common.status_cutting', 'قص القماش'), value: statusCounts['cutting'] || 0, color: 'var(--color-warning)' },
-          { id: 'sewing', name: t('common.status_sewing', 'خياطة'), value: statusCounts['sewing'] || 0, color: 'var(--color-brand)' },
-          { id: 'embroidery', name: t('common.status_embroidery', 'تطريز'), value: statusCounts['embroidery'] || 0, color: 'var(--color-brand)' },
-          { id: 'ironing_packaging', name: t('common.status_ironing_packaging', 'كوي وتغليف'), value: statusCounts['ironing_packaging'] || 0, color: 'var(--color-info)' },
-          { id: 'ready', name: t('common.status_ready', 'جاهز للاستلام'), value: statusCounts['ready'] || 0, color: 'var(--color-success)' },
-        ];
-        setStatusDistribution(dist);
         setIsLoading(false);
       } catch (error) {
         console.error('Dashboard Stats Error:', error);
@@ -551,22 +503,81 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
     };
 
     const fetchNotifications = async () => {
-      const { data } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .eq('status', 'unread')
-        .order('created_at', { ascending: false })
-        .limit(3);
-      if (data) {
-        setNotifications(data.map(d => ({
-          id: d.id,
-          title: d.title,
-          message: d.message,
-          type: d.type || 'info',
-          createdAt: d.created_at,
-          read: d.status === 'read'
-        } as unknown as AppNotification)));
+      try {
+        // 1. Scan for any real low stock items to create real low stock notifications
+        const [invItemsRes, branchInvRes] = await Promise.all([
+          supabase.from('inventory_items').select('*').eq('tenant_id', tenantId),
+          supabase.from('branch_inventory').select('*').eq('tenant_id', tenantId)
+        ]);
+
+        if (invItemsRes.data) {
+          const invItems = invItemsRes.data;
+          const branchInv = branchInvRes.data || [];
+          
+          const lowStockItems = invItems.filter(item => {
+            const itemBranchInv = branchInv.filter(bi => bi.item_id === item.id);
+            const totalQty = itemBranchInv.reduce((sum, bi) => sum + bi.quantity, 0);
+            return totalQty <= item.min_threshold;
+          });
+
+          // Fetch existing inventory notifications to avoid duplicates
+          const { data: existingNotifs } = await supabase
+            .from('notifications')
+            .select('id, metadata')
+            .eq('tenant_id', tenantId)
+            .eq('type', 'inventory');
+
+          for (const item of lowStockItems) {
+            const itemBranchInv = branchInv.filter(bi => bi.item_id === item.id);
+            const totalQty = itemBranchInv.reduce((sum, bi) => sum + bi.quantity, 0);
+            
+            const title = `تنبيه المخزون: ${item.name}`;
+            const message = `الكمية المتبقية من ${item.name} هي ${totalQty} ${item.unit || 'أمتار'} فقط، وهي أقل من حد الأمان المحدد (${item.min_threshold}).`;
+            
+            const alreadyAlerted = (existingNotifs || []).some(n => {
+              const meta = n.metadata || {};
+              return meta.item_id === item.id;
+            });
+
+            if (!alreadyAlerted) {
+              await supabase
+                .from('notifications')
+                .insert({
+                  tenant_id: tenantId,
+                  title: title,
+                  message: message,
+                  type: 'inventory',
+                  status: 'unread',
+                  created_at: new Date().toISOString(),
+                  metadata: { item_id: item.id, item_name: item.name }
+                });
+            }
+          }
+        }
+
+        // 2. Fetch the final list of notifications from the DB
+        const { data: notifData } = await supabase
+          .from('notifications')
+          .select('*')
+          .eq('tenant_id', tenantId)
+          .order('created_at', { ascending: false })
+          .limit(15);
+
+        if (notifData && notifData.length > 0) {
+          setNotifications(notifData.map(d => ({
+            id: d.id,
+            title: d.title,
+            message: d.message,
+            type: d.type || 'info',
+            createdAt: d.created_at,
+            status: d.status,
+            metadata: d.metadata || {}
+          } as unknown as AppNotification)));
+        } else {
+          setNotifications([]);
+        }
+      } catch (err) {
+        console.error('Error fetching notifications:', err);
       }
     };
 
@@ -600,6 +611,476 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       window.removeEventListener('data_cleared', handleDataCleared);
     };
   }, [tenantId, revenueRange, currentStaff?.branchId, selectedBranchId]);
+
+  useEffect(() => {
+    const now = new Date();
+    let currentPeriodStart: Date | null = null;
+    let currentPeriodEnd: Date | null = null;
+    let previousPeriodStart: Date | null = null;
+    let previousPeriodEnd: Date | null = null;
+
+    if (selectedTimeframe === 'daily') {
+      currentPeriodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+      currentPeriodEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+      previousPeriodStart = new Date(currentPeriodStart);
+      previousPeriodStart.setDate(previousPeriodStart.getDate() - 1);
+      previousPeriodEnd = new Date(currentPeriodEnd);
+      previousPeriodEnd.setDate(previousPeriodEnd.getDate() - 1);
+    } else if (selectedTimeframe === 'weekly') {
+      currentPeriodStart = new Date();
+      currentPeriodStart.setDate(currentPeriodStart.getDate() - 7);
+      currentPeriodStart.setHours(0, 0, 0, 0);
+      currentPeriodEnd = now;
+
+      previousPeriodStart = new Date(currentPeriodStart);
+      previousPeriodStart.setDate(previousPeriodStart.getDate() - 7);
+      previousPeriodEnd = new Date(currentPeriodStart);
+      previousPeriodEnd.setMilliseconds(previousPeriodEnd.getMilliseconds() - 1);
+    } else if (selectedTimeframe === 'monthly') {
+      currentPeriodStart = new Date();
+      currentPeriodStart.setDate(currentPeriodStart.getDate() - 30);
+      currentPeriodStart.setHours(0, 0, 0, 0);
+      currentPeriodEnd = now;
+
+      previousPeriodStart = new Date(currentPeriodStart);
+      previousPeriodStart.setDate(previousPeriodStart.getDate() - 30);
+      previousPeriodEnd = new Date(currentPeriodStart);
+      previousPeriodEnd.setMilliseconds(previousPeriodEnd.getMilliseconds() - 1);
+    } else if (selectedTimeframe === 'quarterly') {
+      currentPeriodStart = new Date();
+      currentPeriodStart.setDate(currentPeriodStart.getDate() - 90);
+      currentPeriodStart.setHours(0, 0, 0, 0);
+      currentPeriodEnd = now;
+
+      previousPeriodStart = new Date(currentPeriodStart);
+      previousPeriodStart.setDate(previousPeriodStart.getDate() - 90);
+      previousPeriodEnd = new Date(currentPeriodStart);
+      previousPeriodEnd.setMilliseconds(previousPeriodEnd.getMilliseconds() - 1);
+    } else if (selectedTimeframe === 'yearly') {
+      currentPeriodStart = new Date();
+      currentPeriodStart.setDate(currentPeriodStart.getDate() - 365);
+      currentPeriodStart.setHours(0, 0, 0, 0);
+      currentPeriodEnd = now;
+
+      previousPeriodStart = new Date(currentPeriodStart);
+      previousPeriodStart.setDate(previousPeriodStart.getDate() - 365);
+      previousPeriodEnd = new Date(currentPeriodStart);
+      previousPeriodEnd.setMilliseconds(previousPeriodEnd.getMilliseconds() - 1);
+    } else if (selectedTimeframe === 'custom') {
+      if (customStartDate && customEndDate) {
+        currentPeriodStart = new Date(customStartDate);
+        currentPeriodStart.setHours(0, 0, 0, 0);
+        currentPeriodEnd = new Date(customEndDate);
+        currentPeriodEnd.setHours(23, 59, 59, 999);
+
+        const diffMs = currentPeriodEnd.getTime() - currentPeriodStart.getTime();
+        previousPeriodStart = new Date(currentPeriodStart.getTime() - diffMs);
+        previousPeriodEnd = new Date(currentPeriodStart.getTime() - 1);
+      } else {
+        currentPeriodStart = new Date();
+        currentPeriodStart.setDate(currentPeriodStart.getDate() - 30);
+        currentPeriodStart.setHours(0, 0, 0, 0);
+        currentPeriodEnd = now;
+
+        previousPeriodStart = new Date(currentPeriodStart);
+        previousPeriodStart.setDate(previousPeriodStart.getDate() - 30);
+        previousPeriodEnd = new Date(currentPeriodStart);
+        previousPeriodEnd.setMilliseconds(previousPeriodEnd.getMilliseconds() - 1);
+      }
+    }
+
+    const dispRevenue = selectedTimeframe === 'all'
+      ? allOrders.reduce((acc, o) => acc + (o.paidAmount || 0), 0)
+      : allOrders.filter(o => {
+          const d = new Date(o.orderDate || '');
+          return d >= currentPeriodStart! && d <= currentPeriodEnd!;
+        }).reduce((acc, o) => acc + (o.paidAmount || 0), 0);
+
+    const dispCustomers = selectedTimeframe === 'all'
+      ? allCustomers.length
+      : allCustomers.filter(c => {
+          const d = new Date(c.createdAt || '');
+          return d >= currentPeriodStart! && d <= currentPeriodEnd!;
+        }).length;
+
+    const dispOrders = selectedTimeframe === 'all'
+      ? allOrders.length
+      : allOrders.filter(o => {
+          const d = new Date(o.orderDate || '');
+          return d >= currentPeriodStart! && d <= currentPeriodEnd!;
+        }).length;
+
+    const dispPending = selectedTimeframe === 'all'
+      ? allOrders.filter(o => !['delivered', 'ready'].includes(o.status)).length
+      : allOrders
+          .filter(o => !['delivered', 'ready'].includes(o.status))
+          .filter(o => {
+            const d = new Date(o.orderDate || '');
+            return d >= currentPeriodStart! && d <= currentPeriodEnd!;
+          }).length;
+
+    let curStart = currentPeriodStart;
+    let curEnd = currentPeriodEnd;
+    let prevStart = previousPeriodStart;
+    let prevEnd = previousPeriodEnd;
+
+    if (selectedTimeframe === 'all') {
+      curStart = new Date();
+      curStart.setDate(curStart.getDate() - 30);
+      curStart.setHours(0, 0, 0, 0);
+      curEnd = now;
+
+      prevStart = new Date(curStart);
+      prevStart.setDate(prevStart.getDate() - 30);
+      prevEnd = new Date(curStart);
+      prevEnd.setMilliseconds(prevEnd.getMilliseconds() - 1);
+    }
+
+    const curRevenue = allOrders
+      .filter(o => {
+        const d = new Date(o.orderDate || '');
+        return d >= curStart! && d <= curEnd!;
+      })
+      .reduce((acc, o) => acc + (o.paidAmount || 0), 0);
+
+    const prevRevenue = allOrders
+      .filter(o => {
+        const d = new Date(o.orderDate || '');
+        return d >= prevStart! && d <= prevEnd!;
+      })
+      .reduce((acc, o) => acc + (o.paidAmount || 0), 0);
+
+    const curCustomersCount = allCustomers.filter(c => {
+      const d = new Date(c.createdAt || '');
+      return d >= curStart! && d <= curEnd!;
+    }).length;
+
+    const prevCustomersCount = allCustomers.filter(c => {
+      const d = new Date(c.createdAt || '');
+      return d >= prevStart! && d <= prevEnd!;
+    }).length;
+
+    const curOrdersCount = allOrders.filter(o => {
+      const d = new Date(o.orderDate || '');
+      return d >= curStart! && d <= curEnd!;
+    }).length;
+
+    const prevOrdersCount = allOrders.filter(o => {
+      const d = new Date(o.orderDate || '');
+      return d >= prevStart! && d <= prevEnd!;
+    }).length;
+
+    const curPendingCount = allOrders
+      .filter(o => !['delivered', 'ready'].includes(o.status))
+      .filter(o => {
+        const d = new Date(o.orderDate || '');
+        return d >= curStart! && d <= curEnd!;
+      }).length;
+
+    const prevPendingCount = allOrders
+      .filter(o => !['delivered', 'ready'].includes(o.status))
+      .filter(o => {
+        const d = new Date(o.orderDate || '');
+        return d >= prevStart! && d <= prevEnd!;
+      }).length;
+
+    const calcGrowth = (curr: number, prev: number) => {
+      if (prev > 0) {
+        return Number((((curr - prev) / prev) * 100).toFixed(1));
+      }
+      return curr > 0 ? 100 : 0;
+    };
+
+    const customersGrowthRate = calcGrowth(curCustomersCount, prevCustomersCount);
+    const ordersGrowthRate = calcGrowth(curOrdersCount, prevOrdersCount);
+    const pendingGrowthRate = calcGrowth(curPendingCount, prevPendingCount);
+    const revenueGrowthRate = calcGrowth(curRevenue, prevRevenue);
+
+    const filteredOrders = selectedTimeframe === 'all'
+      ? allOrders
+      : allOrders.filter(o => {
+          const d = new Date(o.orderDate || '');
+          return d >= currentPeriodStart! && d <= currentPeriodEnd!;
+        });
+
+    const lowStock = allInventory.filter(item => {
+      const itemBranchInv = branchInventory.filter(bi => bi.itemId === item.id);
+      const totalQty = itemBranchInv.reduce((sum, bi) => sum + bi.quantity, 0);
+      return totalQty <= item.minThreshold;
+    }).length;
+
+    const receivables = filteredOrders.reduce((acc, order) => acc + (order.remainingAmount || 0), 0);
+
+    const completedOrders = filteredOrders.filter(o => ['delivered', 'ready'].includes(o.status));
+    let totalTimeMs = 0;
+    let completionCount = 0;
+    completedOrders.forEach(o => {
+      const finalHistory = Array.isArray(o.history) 
+        ? [...o.history].reverse().find((h: any) => h && ['delivered', 'ready'].includes(h.status))
+        : null;
+      if (finalHistory) {
+        const startTime = new Date(o.orderDate || '').getTime();
+        const endTime = new Date(finalHistory.updatedAt || '').getTime();
+        if (endTime > startTime) {
+          totalTimeMs += (endTime - startTime);
+          completionCount++;
+        }
+      }
+    });
+    const avgCompletionTime = completionCount > 0 ? (totalTimeMs / (1000 * 60 * 60 * completionCount)) : 0;
+
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+    const activeCustomerIds = new Set(
+      filteredOrders
+        .filter(o => o.orderDate && new Date(o.orderDate) >= sixtyDaysAgo)
+        .map(o => o.customerId)
+    );
+    const activeCustomers = activeCustomerIds.size;
+
+    const customerOrderCounts: Record<string, number> = {};
+    filteredOrders.forEach(o => {
+      if (o.customerId) {
+        customerOrderCounts[o.customerId] = (customerOrderCounts[o.customerId] || 0) + 1;
+      }
+    });
+    const totalCustomersWithOrders = Object.keys(customerOrderCounts).length;
+    const repeatCustomersCount = Object.values(customerOrderCounts).filter(count => count > 1).length;
+    const retentionRate = totalCustomersWithOrders > 0 ? (repeatCustomersCount / totalCustomersWithOrders) * 100 : 0;
+
+    setStats({
+      customers: dispCustomers,
+      customersGrowthRate,
+      prevCustomers: prevCustomersCount,
+      orders: dispOrders,
+      ordersGrowthRate,
+      prevOrders: prevOrdersCount,
+      pending: dispPending,
+      pendingGrowthRate,
+      prevPending: prevPendingCount,
+      revenue: dispRevenue,
+      revenueGrowthRate,
+      prevRevenue,
+      lowStock,
+      receivables,
+      avgCompletionTime,
+      activeCustomers,
+      retentionRate
+    });
+
+    setGrowthRate(revenueGrowthRate);
+
+    // --- Chart generation ---
+    let chartDataPoints: any[] = [];
+    if (selectedTimeframe === 'daily') {
+      const intervals = [
+        { label: '12 AM - 4 AM', startHour: 0, endHour: 4 },
+        { label: '4 AM - 8 AM', startHour: 4, endHour: 8 },
+        { label: '8 AM - 12 PM', startHour: 8, endHour: 12 },
+        { label: '12 PM - 4 PM', startHour: 12, endHour: 16 },
+        { label: '4 PM - 8 PM', startHour: 16, endHour: 20 },
+        { label: '8 PM - 12 AM', startHour: 20, endHour: 24 }
+      ];
+      const arIntervalLabels: Record<string, string> = {
+        '12 AM - 4 AM': '12 ص - 4 ص',
+        '4 AM - 8 AM': '4 ص - 8 ص',
+        '8 AM - 12 PM': '8 ص - 12 م',
+        '12 PM - 4 PM': '12 م - 4 م',
+        '4 PM - 8 PM': '4 م - 8 م',
+        '8 PM - 12 AM': '8 م - 12 ص'
+      };
+      chartDataPoints = intervals.map(interval => {
+        const label = i18n.language === 'ar' ? arIntervalLabels[interval.label] : interval.label;
+        const periodOrders = allOrders.filter(o => {
+          const d = new Date(o.orderDate || '');
+          const isToday = d.toDateString() === now.toDateString();
+          if (!isToday) return false;
+          const h = d.getHours();
+          return h >= interval.startHour && h < interval.endHour;
+        });
+        return {
+          date: label,
+          revenue: periodOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
+          ordersCount: periodOrders.length
+        };
+      });
+    } else if (selectedTimeframe === 'weekly') {
+      const daysOfWeek = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        return d.toISOString().split('T')[0];
+      }).reverse();
+      chartDataPoints = daysOfWeek.map(date => {
+        const dayOrders = allOrders.filter(o => {
+          const dStr = typeof o.orderDate === 'string' ? o.orderDate : '';
+          return dStr.startsWith(date);
+        });
+        return {
+          date: new Date(date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', { weekday: 'short' }),
+          revenue: dayOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
+          ordersCount: dayOrders.length
+        };
+      });
+    } else if (selectedTimeframe === 'monthly' || selectedTimeframe === 'all') {
+      const rangeDays = selectedTimeframe === 'all' ? revenueRange : 30;
+      const days = Array.from({ length: rangeDays }, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        return d.toISOString().split('T')[0];
+      }).reverse();
+      chartDataPoints = days.map(date => {
+        const dayOrders = allOrders.filter(o => {
+          const dStr = typeof o.orderDate === 'string' ? o.orderDate : '';
+          return dStr.startsWith(date);
+        });
+        return {
+          date: rangeDays > 7 
+            ? new Date(date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', { day: 'numeric', month: 'short' })
+            : new Date(date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', { weekday: 'short' }),
+          revenue: dayOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
+          ordersCount: dayOrders.length
+        };
+      });
+    } else if (selectedTimeframe === 'quarterly') {
+      chartDataPoints = Array.from({ length: 12 }, (_, i) => {
+        const startW = new Date();
+        startW.setDate(startW.getDate() - (12 - i) * 7);
+        const endW = new Date(startW);
+        endW.setDate(endW.getDate() + 7);
+        const periodOrders = allOrders.filter(o => {
+          const d = new Date(o.orderDate || '');
+          return d >= startW && d < endW;
+        });
+        return {
+          date: i18n.language === 'ar' ? `أسبوع ${i + 1}` : `W${i + 1}`,
+          revenue: periodOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
+          ordersCount: periodOrders.length
+        };
+      });
+    } else if (selectedTimeframe === 'yearly') {
+      chartDataPoints = Array.from({ length: 12 }, (_, i) => {
+        const d = new Date();
+        d.setMonth(d.getMonth() - (11 - i));
+        const year = d.getFullYear();
+        const month = d.getMonth();
+        const periodOrders = allOrders.filter(o => {
+          const od = new Date(o.orderDate || '');
+          return od.getMonth() === month && od.getFullYear() === year;
+        });
+        return {
+          date: d.toLocaleDateString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', { month: 'short' }),
+          revenue: periodOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
+          ordersCount: periodOrders.length
+        };
+      });
+    } else if (selectedTimeframe === 'custom') {
+      if (currentPeriodStart && currentPeriodEnd) {
+        const diffDays = Math.ceil((currentPeriodEnd.getTime() - currentPeriodStart.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays <= 1) {
+          const intervals = [
+            { label: '12 AM - 4 AM', startHour: 0, endHour: 4 },
+            { label: '4 AM - 8 AM', startHour: 4, endHour: 8 },
+            { label: '8 AM - 12 PM', startHour: 8, endHour: 12 },
+            { label: '12 PM - 4 PM', startHour: 12, endHour: 16 },
+            { label: '4 PM - 8 PM', startHour: 16, endHour: 20 },
+            { label: '8 PM - 12 AM', startHour: 20, endHour: 24 }
+          ];
+          const arIntervalLabels: Record<string, string> = {
+            '12 AM - 4 AM': '12 ص - 4 ص',
+            '4 AM - 8 AM': '4 ص - 8 ص',
+            '8 AM - 12 PM': '8 ص - 12 م',
+            '12 PM - 4 PM': '12 م - 4 م',
+            '4 PM - 8 PM': '4 م - 8 م',
+            '8 PM - 12 AM': '8 م - 12 ص'
+          };
+          chartDataPoints = intervals.map(interval => {
+            const label = i18n.language === 'ar' ? arIntervalLabels[interval.label] : interval.label;
+            const periodOrders = allOrders.filter(o => {
+              const d = new Date(o.orderDate || '');
+              if (d < currentPeriodStart! || d > currentPeriodEnd!) return false;
+              const h = d.getHours();
+              return h >= interval.startHour && h < interval.endHour;
+            });
+            return {
+              date: label,
+              revenue: periodOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
+              ordersCount: periodOrders.length
+            };
+          });
+        } else if (diffDays <= 14) {
+          const days = [];
+          const curr = new Date(currentPeriodStart);
+          while (curr <= currentPeriodEnd) {
+            days.push(curr.toISOString().split('T')[0]);
+            curr.setDate(curr.getDate() + 1);
+          }
+          chartDataPoints = days.map(date => {
+            const dayOrders = allOrders.filter(o => {
+              const dStr = typeof o.orderDate === 'string' ? o.orderDate : '';
+              return dStr.startsWith(date);
+            });
+            return {
+              date: new Date(date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', { day: 'numeric', month: 'short' }),
+              revenue: dayOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
+              ordersCount: dayOrders.length
+            };
+          });
+        } else if (diffDays <= 60) {
+          const weeksCount = Math.ceil(diffDays / 7);
+          chartDataPoints = Array.from({ length: weeksCount }, (_, i) => {
+            const startW = new Date(currentPeriodStart!.getTime());
+            startW.setDate(startW.getDate() + i * 7);
+            const endW = new Date(startW.getTime());
+            endW.setDate(endW.getDate() + 7);
+            const periodOrders = allOrders.filter(o => {
+              const d = new Date(o.orderDate || '');
+              return d >= startW && d < endW && d <= currentPeriodEnd!;
+            });
+            return {
+              date: i18n.language === 'ar' ? `أسبوع ${i + 1}` : `W${i + 1}`,
+              revenue: periodOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
+              ordersCount: periodOrders.length
+            };
+          });
+        } else {
+          const monthsCount = Math.ceil(diffDays / 30);
+          chartDataPoints = Array.from({ length: monthsCount }, (_, i) => {
+            const startM = new Date(currentPeriodStart!.getTime());
+            startM.setDate(startM.getDate() + i * 30);
+            const endM = new Date(startM.getTime());
+            endM.setDate(endM.getDate() + 30);
+            const periodOrders = allOrders.filter(o => {
+              const d = new Date(o.orderDate || '');
+              return d >= startM && d < endM && d <= currentPeriodEnd!;
+            });
+            return {
+              date: startM.toLocaleDateString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', { month: 'short', year: '2-digit' }),
+              revenue: periodOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
+              ordersCount: periodOrders.length
+            };
+          });
+        }
+      }
+    }
+    setChartData(chartDataPoints);
+
+    // --- Status Distribution ---
+    const statusCounts = filteredOrders.reduce((acc: any, order) => {
+      acc[order.status] = (acc[order.status] || 0) + 1;
+      return acc;
+    }, {});
+    const dist = [
+      { id: 'pending', name: t('common.status_pending', 'معلق'), value: statusCounts['pending'] || 0, color: 'var(--content-muted)' },
+      { id: 'measurements_taken', name: t('common.status_measurements_taken', 'أخذ المقاسات'), value: statusCounts['measurements_taken'] || 0, color: 'var(--color-info)' },
+      { id: 'cutting', name: t('common.status_cutting', 'قص القماش'), value: statusCounts['cutting'] || 0, color: 'var(--color-warning)' },
+      { id: 'sewing', name: t('common.status_sewing', 'خياطة'), value: statusCounts['sewing'] || 0, color: 'var(--color-brand)' },
+      { id: 'embroidery', name: t('common.status_embroidery', 'تطريز'), value: statusCounts['embroidery'] || 0, color: 'var(--color-brand)' },
+      { id: 'ironing_packaging', name: t('common.status_ironing_packaging', 'كوي وتغليف'), value: statusCounts['ironing_packaging'] || 0, color: 'var(--color-info)' },
+      { id: 'ready', name: t('common.status_ready', 'جاهز للاستلام'), value: statusCounts['ready'] || 0, color: 'var(--color-success)' },
+    ];
+    setStatusDistribution(dist);
+
+  }, [selectedTimeframe, customStartDate, customEndDate, allOrders, allCustomers, allInventory, branchInventory, revenueRange, i18n.language]);
 
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState('all');
@@ -703,13 +1184,55 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
     }
   };
 
+  const getComparisonLabel = () => {
+    switch (selectedTimeframe) {
+      case 'daily':
+        return i18n.language === 'ar' ? 'مقارنة بالأمس' : 'vs Yesterday';
+      case 'weekly':
+        return i18n.language === 'ar' ? 'مقارنة بالأسبوع الماضي' : 'vs Last Week';
+      case 'monthly':
+        return i18n.language === 'ar' ? 'مقارنة بالشهر الماضي' : 'vs Last Month';
+      case 'quarterly':
+        return i18n.language === 'ar' ? 'مقارنة بالربع الماضي' : 'vs Last Quarter';
+      case 'yearly':
+        return i18n.language === 'ar' ? 'مقارنة بالسنة الماضية' : 'vs Last Year';
+      case 'custom':
+        return i18n.language === 'ar' ? 'مقارنة بالفترة السابقة' : 'vs Previous Period';
+      case 'all':
+      default:
+        return i18n.language === 'ar' ? 'مقارنة بالشهر الماضي' : 'vs Last Month';
+    }
+  };
+
+  const getComparisonLabelShort = () => {
+    switch (selectedTimeframe) {
+      case 'daily':
+        return i18n.language === 'ar' ? '(الأمس)' : '(Yesterday)';
+      case 'weekly':
+        return i18n.language === 'ar' ? '(الأسبوع الماضي)' : '(Last Week)';
+      case 'monthly':
+        return i18n.language === 'ar' ? '(الشهر الماضي)' : '(Last Month)';
+      case 'quarterly':
+        return i18n.language === 'ar' ? '(الربع الماضي)' : '(Last Quarter)';
+      case 'yearly':
+        return i18n.language === 'ar' ? '(السنة الماضية)' : '(Last Year)';
+      case 'custom':
+        return i18n.language === 'ar' ? '(الفترة السابقة)' : '(Prev. Period)';
+      case 'all':
+      default:
+        return i18n.language === 'ar' ? '(الشهر الماضي)' : '(Last Month)';
+    }
+  };
+
   const statCards = [
     { 
       label: t('dashboard.total_customers'), 
       value: stats.customers, 
       icon: Users, 
       color: 'bg-brand', 
-      trend: '+5%',
+      trend: stats.customersGrowthRate >= 0 ? `+${stats.customersGrowthRate}%` : `${stats.customersGrowthRate}%`,
+      comparisonLabel: getComparisonLabel(),
+      prevValue: stats.prevCustomers !== undefined ? `${stats.prevCustomers} ${i18n.language === 'ar' ? 'عميل' : 'customers'}` : undefined,
       visible: hasCustomersPermission,
       onClick: () => setDrillDown({ 
         type: 'customers', 
@@ -722,7 +1245,9 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       value: <PriceDisplay amount={stats.revenue} />, 
       icon: DollarSign, 
       color: 'bg-success', 
-      trend: '+12%',
+      trend: stats.revenueGrowthRate >= 0 ? `+${stats.revenueGrowthRate}%` : `${stats.revenueGrowthRate}%`,
+      comparisonLabel: getComparisonLabel(),
+      prevValue: stats.prevRevenue !== undefined ? <PriceDisplay amount={stats.prevRevenue} /> : undefined,
       visible: hasRevenuePermission,
       onClick: () => setDrillDown({ 
         type: 'revenue', 
@@ -748,7 +1273,9 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       value: stats.pending, 
       icon: Clock, 
       color: 'bg-warning', 
-      trend: '-2',
+      trend: stats.pendingGrowthRate >= 0 ? `+${stats.pendingGrowthRate}%` : `${stats.pendingGrowthRate}%`,
+      comparisonLabel: getComparisonLabel(),
+      prevValue: stats.prevPending !== undefined ? `${stats.prevPending} ${i18n.language === 'ar' ? 'طلب' : 'orders'}` : undefined,
       visible: hasOrdersPermission,
       onClick: () => setDrillDown({ 
         type: 'pending_orders', 
@@ -864,7 +1391,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         title={t('dashboard.title')} 
         subtitle={t('dashboard.subtitle', { name: tenant?.name || t('common.tailor_system') })}
       >
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full sm:w-auto justify-end">
           {/* Branch Filter */}
           <div className="w-full sm:w-56 shrink-0">
             <SmartSelect
@@ -873,6 +1400,23 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
               options={[
                 { value: 'all', label: t('common.all_branches', 'جميع الفروع'), icon: <Store size={16} className="text-brand shrink-0" /> },
                 ...branches.map(b => ({ value: b.id, label: b.name, icon: <Store size={16} className="text-brand shrink-0" /> }))
+              ]}
+            />
+          </div>
+
+          {/* Timeframe Filter */}
+          <div className="w-full sm:w-48 shrink-0">
+            <SmartSelect
+              value={selectedTimeframe}
+              onChange={(val) => setSelectedTimeframe(val as any)}
+              options={[
+                { value: 'all', label: i18n.language === 'ar' ? 'كامل القراءات' : 'All Time', icon: <Calendar size={16} className="text-brand shrink-0" /> },
+                { value: 'daily', label: i18n.language === 'ar' ? 'يومي' : 'Daily', icon: <Calendar size={16} className="text-brand shrink-0" /> },
+                { value: 'weekly', label: i18n.language === 'ar' ? 'أسبوعي' : 'Weekly', icon: <Calendar size={16} className="text-brand shrink-0" /> },
+                { value: 'monthly', label: i18n.language === 'ar' ? 'شهري' : 'Monthly', icon: <Calendar size={16} className="text-brand shrink-0" /> },
+                { value: 'quarterly', label: i18n.language === 'ar' ? 'ربع سنوي' : 'Quarterly', icon: <Calendar size={16} className="text-brand shrink-0" /> },
+                { value: 'yearly', label: i18n.language === 'ar' ? 'سنوي' : 'Yearly', icon: <Calendar size={16} className="text-brand shrink-0" /> },
+                { value: 'custom', label: i18n.language === 'ar' ? 'فترة مخصصة' : 'Custom Period', icon: <Calendar size={16} className="text-brand shrink-0" /> },
               ]}
             />
           </div>
@@ -890,13 +1434,20 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                 <TrendingUp size={16} />
               </div>
               <div>
-                <p className="text-[8px] sm:text-[10px] font-bold text-content-muted uppercase leading-none">{t('dashboard.growth_rate')}</p>
-                <p className={cn(
-                  "text-xs sm:text-sm font-black mt-0.5 sm:mt-1 leading-none",
-                  growthRate >= 0 ? "text-success" : "text-danger"
-                )}>
-                  {growthRate >= 0 ? '+' : ''}{growthRate}%
+                <p className="text-[8px] sm:text-[10px] font-bold text-content-muted uppercase leading-none">
+                  {t('dashboard.growth_rate')} {getComparisonLabelShort()}
                 </p>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 mt-0.5 sm:mt-1">
+                  <p className={cn(
+                    "text-xs sm:text-sm font-black leading-none",
+                    growthRate >= 0 ? "text-success" : "text-danger"
+                  )}>
+                    {growthRate >= 0 ? '+' : ''}{growthRate}%
+                  </p>
+                  <span className="text-[8px] sm:text-[10px] text-content-muted font-bold whitespace-nowrap">
+                    ({i18n.language === 'ar' ? 'السابق:' : 'Prev:'} <PriceDisplay amount={stats.prevRevenue} />)
+                  </span>
+                </div>
               </div>
             </div>
             <div className="relative shrink-0">
@@ -905,7 +1456,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                 className="relative p-2 sm:p-3 bg-surface rounded-xl sm:rounded-2xl border border-border shadow-sm hover:bg-surface-muted transition-colors"
               >
                 <Bell size={18} className="text-content-muted sm:size-6" />
-                {notifications.length > 0 && (
+                {notifications.some(n => n.status === 'unread') && (
                   <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-2 h-2 sm:w-3 sm:h-3 bg-danger border-2 border-surface rounded-full" />
                 )}
               </button>
@@ -922,15 +1473,32 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                     >
                       <div className="p-4 border-b border-border flex justify-between items-center bg-surface-muted/50">
                         <h4 className="text-sm font-black text-content">{t('dashboard.notifications')}</h4>
-                        <span className="text-[10px] font-bold text-brand bg-brand/10 px-2 py-0.5 rounded-full">
-                          {notifications.length} {t('dashboard.new_notifications')}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {notifications.some(n => n.status === 'unread') && (
+                            <button 
+                              onClick={markAllAsRead} 
+                              className="text-[10px] font-black text-brand hover:underline cursor-pointer"
+                            >
+                              {i18n.language === 'ar' ? 'تحديد الكل كمقروء' : 'Mark all as read'}
+                            </button>
+                          )}
+                          <span className="text-[10px] font-bold text-brand bg-brand/10 px-2 py-0.5 rounded-full">
+                            {notifications.filter(n => n.status === 'unread').length} {t('dashboard.new_notifications')}
+                          </span>
+                        </div>
                       </div>
                       <div className="max-h-96 overflow-y-auto p-2 space-y-1">
                         {notifications.length > 0 ? (
                           notifications.map(notif => (
-                            <div key={notif.id} className="p-3 hover:bg-surface-muted rounded-2xl transition-colors cursor-pointer group">
-                              <div className="flex gap-3">
+                            <div 
+                              key={notif.id} 
+                              onClick={() => handleNotificationClick(notif)}
+                              className={cn(
+                                "p-3 rounded-2xl transition-colors cursor-pointer group flex items-start justify-between",
+                                notif.status === 'read' ? "hover:bg-surface-muted/50 opacity-75" : "bg-brand/5 hover:bg-brand/10"
+                              )}
+                            >
+                              <div className="flex gap-3 flex-1">
                                 <div className={cn(
                                   "p-2 rounded-xl h-fit",
                                   notif.type === 'inventory' ? "bg-danger/10 text-danger" : "bg-brand/10 text-brand"
@@ -945,6 +1513,9 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                                   </p>
                                 </div>
                               </div>
+                              {notif.status === 'unread' && (
+                                <div className="w-2 h-2 rounded-full bg-brand shrink-0 mt-2 self-start animate-pulse" title="unread" />
+                              )}
                             </div>
                           ))
                         ) : (
@@ -1096,6 +1667,48 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         )}
       </AnimatePresence>
 
+      {/* Custom Timeframe inputs */}
+      {selectedTimeframe === 'custom' && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-surface rounded-2xl border border-border shadow-sm mb-6"
+        >
+          <div className="flex items-center gap-2">
+            <Calendar size={18} className="text-brand animate-pulse" />
+            <span className="text-xs sm:text-sm font-black text-content">
+              {i18n.language === 'ar' ? 'تحديد فترة مخصصة لاستعراض البيانات' : 'Select custom date range for data review'}
+            </span>
+          </div>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="flex items-center gap-2 flex-1 sm:flex-none">
+              <span className="text-xs font-bold text-content-muted">
+                {i18n.language === 'ar' ? 'من:' : 'From:'}
+              </span>
+              <input
+                type="date"
+                id="custom-start-date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="w-full bg-surface-muted border border-border rounded-xl px-3.5 py-2 text-xs font-bold text-content focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
+              />
+            </div>
+            <div className="flex items-center gap-2 flex-1 sm:flex-none">
+              <span className="text-xs font-bold text-content-muted">
+                {i18n.language === 'ar' ? 'إلى:' : 'To:'}
+              </span>
+              <input
+                type="date"
+                id="custom-end-date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="w-full bg-surface-muted border border-border rounded-xl px-3.5 py-2 text-xs font-bold text-content focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
+              />
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {visibleStatCards.map((stat, i) => (
           <motion.div
@@ -1113,6 +1726,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
               <span className={cn(
                 "text-[10px] sm:text-xs font-black px-2 py-1 rounded-lg",
                 stat.trend.startsWith('+') ? "bg-success/10 text-success" : 
+                stat.trend.startsWith('-') ? "bg-danger/10 text-danger" :
                 (stat.isAlert || stat.trend === t('dashboard.trend.critical', 'هام')) ? "bg-danger/10 text-danger" : "bg-surface-muted text-content-muted"
               )}>
                 {stat.trend}
@@ -1122,6 +1736,18 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             <h3 className="text-2xl sm:text-3xl font-black text-content mt-1">
               {typeof stat.value === 'number' ? stat.value.toLocaleString('en-US') : stat.value}
             </h3>
+            {stat.comparisonLabel && (
+              <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/40 text-[10px] sm:text-xs">
+                <span className="text-content-muted font-bold">
+                  {stat.comparisonLabel}
+                </span>
+                {(stat as any).prevValue !== undefined && (
+                  <span className="text-content font-black">
+                    {(stat as any).prevValue}
+                  </span>
+                )}
+              </div>
+            )}
           </motion.div>
         ))}
       </div>
@@ -1681,16 +2307,35 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             <div className="space-y-4">
               {notifications.length > 0 ? (
                 notifications.map((notif) => (
-                  <div key={notif.id} className="flex gap-4 p-4 bg-surface-muted rounded-2xl border border-border">
+                  <div 
+                    key={notif.id} 
+                    onClick={() => handleNotificationClick(notif)}
+                    className={cn(
+                      "flex gap-4 p-4 rounded-2xl border transition-all cursor-pointer",
+                      notif.status === 'read' 
+                        ? "bg-surface-muted/50 border-border opacity-75 hover:bg-surface-muted" 
+                        : "bg-brand/5 border-brand/20 hover:bg-brand/10 hover:shadow-sm"
+                    )}
+                  >
                     <div className={cn(
                       "p-2 rounded-xl h-fit",
                       notif.type === 'inventory' ? "bg-danger/10 text-danger" : "bg-brand/10 text-brand"
                     )}>
                       {notif.type === 'inventory' ? <AlertTriangle size={18} /> : <Bell size={18} />}
                     </div>
-                    <div>
-                      <p className="text-sm font-black text-content">{notif.title}</p>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start gap-2">
+                        <p className="text-sm font-black text-content">{notif.title}</p>
+                        {notif.status === 'unread' && (
+                          <span className="bg-brand text-white text-[9px] font-black px-1.5 py-0.5 rounded-full animate-pulse whitespace-nowrap">
+                            {i18n.language === 'ar' ? 'جديد' : 'New'}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-content-muted mt-1 leading-relaxed">{notif.message}</p>
+                      <p className="text-[9px] text-content-muted/60 mt-2 font-bold">
+                        {new Date(notif.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </p>
                     </div>
                   </div>
                 ))

@@ -291,7 +291,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [tenantId]);
+  }, [tenantId, refreshCounter]);
 
   function getStockForBranch(itemId: string, branchId: string) {
     return (
@@ -1587,6 +1587,56 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
     fetchSuppliers();
   }, [tenantId]);
 
+  useEffect(() => {
+    const fetchTenantTaxSettings = async () => {
+      if (!tenantId) return;
+      try {
+        let { data, error } = await supabase
+          .from("tenants")
+          .select("vat_number, tax_settings")
+          .eq("id", tenantId)
+          .maybeSingle();
+
+        if (error || !data) {
+          const retry = await supabase
+            .from("tenants")
+            .select("vat_number")
+            .eq("id", tenantId)
+            .maybeSingle();
+          if (retry.data && !retry.error) {
+            data = retry.data as any;
+            error = null;
+          }
+        }
+
+        if (data && !error) {
+          const hasVat = Boolean(data.vat_number && data.vat_number.trim().length > 0);
+          let rawTax = (data as any).tax_settings as any;
+          if (!rawTax) {
+            try {
+              const fallback = localStorage.getItem(`tenant_tax_settings_${tenantId}`);
+              if (fallback) {
+                rawTax = JSON.parse(fallback);
+              }
+            } catch (e) {
+              console.error('Failed to parse fallback tax settings:', e);
+            }
+          }
+          const tailoringTaxType = rawTax?.tailoringTaxType || (hasVat ? 'inclusive' : 'exclusive');
+          if (tailoringTaxType === 'inclusive' || tailoringTaxType === 'exclusive' || tailoringTaxType === 'exempt') {
+            setFormData((prev) => ({
+              ...prev,
+              taxType: tailoringTaxType
+            }));
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching tenant tax settings in AddItemModal:", err);
+      }
+    };
+    fetchTenantTaxSettings();
+  }, [tenantId]);
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (submitting) return;
@@ -1732,7 +1782,8 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
+                  placeholder={t("inventory.item_name_placeholder")}
+                  className="w-full px-5 py-3 bg-surface border border-transparent hover:border-brand/40 rounded-2xl focus:ring-2 focus:ring-brand focus:border-brand outline-none font-bold text-content text-right transition-all hover:bg-surface-muted/20"
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-6 text-right">
@@ -1939,11 +1990,11 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                   type="number"
                   step="0.01"
                   required
-                  value={formData.costPrice}
+                  value={formData.costPrice || ""}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      costPrice: Number(e.target.value),
+                      costPrice: e.target.value === "" ? 0 : Number(e.target.value),
                     })
                   }
                   placeholder="0.00"
@@ -1959,11 +2010,11 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                   type="number"
                   step="0.01"
                   required
-                  value={formData.pricePerUnit}
+                  value={formData.pricePerUnit || ""}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      pricePerUnit: Number(e.target.value),
+                      pricePerUnit: e.target.value === "" ? 0 : Number(e.target.value),
                     })
                   }
                   placeholder="0.00"
@@ -2036,7 +2087,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                   placeholder="0.00"
                   value={formData.openingBalance || ""}
                   onChange={(e) => {
-                    const val = Number(e.target.value);
+                    const val = e.target.value === "" ? 0 : Number(e.target.value);
                     setFormData({ ...formData, openingBalance: val, initialStock: val });
                   }}
                   className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
@@ -2145,26 +2196,78 @@ const StockTransferModal = ({
     e.preventDefault();
     setSubmitting(true);
     try {
-      const transferData: any = {
+      if (!formData.fromBranchId) {
+        toastError(t("inventory.select_from_branch_error"));
+        setSubmitting(false);
+        return;
+      }
+      if (!formData.toBranchId) {
+        toastError(t("inventory.select_to_branch_error"));
+        setSubmitting(false);
+        return;
+      }
+      if (formData.fromBranchId === formData.toBranchId) {
+        toastError(t("inventory.same_branch_error"));
+        setSubmitting(false);
+        return;
+      }
+
+      const validItems = formData.items.filter((i) => i.itemId && i.quantity > 0);
+      if (validItems.length === 0) {
+        toastError(t("inventory.transfer_at_least_one_item"));
+        setSubmitting(false);
+        return;
+      }
+
+      // Check available quantity in source branch for each item
+      for (const i of validItems) {
+        const itemObj = items.find((it: any) => it.id === i.itemId);
+        const available = branchStock[i.itemId]?.find((s: any) => s.branchId === formData.fromBranchId)?.quantity || 0;
+        if (i.quantity > available) {
+          toastError(`${t("inventory.insufficient_stock_for")} ${itemObj?.name || ""}. ${t("inventory.available")}: ${available}`);
+          setSubmitting(false);
+          return;
+        }
+      }
+
+      const transferPayload = {
         from_branch_id: formData.fromBranchId,
         to_branch_id: formData.toBranchId,
-        items: formData.items.map((i) => {
-          const item = items.find((it: any) => it.id === i.itemId);
-          return {
-            itemId: i.itemId,
-            itemName: item?.name || "",
-            requestedQuantity: i.quantity,
-          };
-        }),
         status: "pending",
-        requested_by: auth.currentUser?.uid || "",
+        requested_by: auth.currentUser?.uid || null,
         requested_by_name: auth.currentUser?.displayName || "Staff",
         tenant_id: tenantId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
 
-      await supabase.from("stock_transfers").insert(transferData);
+      const { data: insertRes, error: insertErr } = await supabase
+        .from("stock_transfers")
+        .insert(transferPayload)
+        .select()
+        .single();
+
+      if (insertErr) throw insertErr;
+
+      const newTransferId = insertRes.id;
+
+      const itemPayloads = validItems.map((i) => {
+        const item = items.find((it: any) => it.id === i.itemId);
+        return {
+          tenant_id: tenantId,
+          transfer_id: newTransferId,
+          item_id: i.itemId,
+          item_name: item?.name || "",
+          requested_quantity: i.quantity,
+        };
+      });
+
+      const { error: itemsErr } = await supabase
+        .from("stock_transfer_items")
+        .insert(itemPayloads);
+
+      if (itemsErr) throw itemsErr;
+
       toastSuccess(t("inventory.transfer_created_success"));
       onClose();
       router.refresh();
@@ -2192,8 +2295,8 @@ const StockTransferModal = ({
       >
         <div className="p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
           <div className="flex items-center gap-4">
-            <div className="p-4 bg-brand text-brand-content rounded-2xl shadow-lg shadow-brand/10">
-              <ArrowRightLeft size={24} />
+            <div className="p-4 bg-brand text-white rounded-2xl shadow-lg shadow-brand/10">
+              <ArrowRightLeft size={24} className="text-white" />
             </div>
             <div>
               <h2 className="text-2xl font-black text-content">
@@ -2231,7 +2334,7 @@ const StockTransferModal = ({
                     label: `${b.name} (${t(`inventory.type_${b.type}`)})`,
                   })),
                 ]}
-                className="bg-surface-muted border-none"
+                className="bg-surface-muted border-none text-content"
               />
             </div>
             <div className="space-y-2">
@@ -2251,7 +2354,7 @@ const StockTransferModal = ({
                     label: `${b.name} (${t(`inventory.type_${b.type}`)})`,
                   })),
                 ]}
-                className="bg-surface-muted border-none"
+                className="bg-surface-muted border-none text-content"
               />
             </div>
           </div>
@@ -2275,7 +2378,7 @@ const StockTransferModal = ({
               </button>
             </div>
 
-            {formData.items.map((item, idx) => (
+             {formData.items.map((item, idx) => (
               <div
                 key={idx}
                 className="p-4 bg-surface-muted rounded-2xl grid grid-cols-12 gap-4 items-end"
@@ -2294,12 +2397,20 @@ const StockTransferModal = ({
                     }}
                     options={[
                       { value: "", label: t("common.select") },
-                      ...items.map((it: InventoryItem) => ({
-                        value: it.id,
-                        label: it.name,
-                      })),
+                      ...items.map((it: InventoryItem) => {
+                        const available = formData.fromBranchId
+                          ? (branchStock[it.id]?.find((s: any) => s.branchId === formData.fromBranchId)?.quantity || 0)
+                          : null;
+                        const labelText = available !== null
+                          ? `${it.name} (${t("inventory.available_qty") || "الكمية المتوفرة"}: ${available})`
+                          : it.name;
+                        return {
+                          value: it.id,
+                          label: labelText,
+                        };
+                      }),
                     ]}
-                    className="bg-surface border-none"
+                    className="bg-surface border-none text-content"
                   />
                 </div>
                 <div className="col-span-2 space-y-1">
@@ -2309,10 +2420,11 @@ const StockTransferModal = ({
                   <input
                     type="number"
                     required
-                    value={item.quantity}
+                    value={item.quantity === 0 ? "" : item.quantity}
+                    placeholder="0"
                     onChange={(e) => {
                       const newItems = [...formData.items];
-                      newItems[idx].quantity = Number(e.target.value);
+                      newItems[idx].quantity = e.target.value === "" ? 0 : Number(e.target.value);
                       setFormData({ ...formData, items: newItems });
                     }}
                     disabled={submitting}
@@ -2322,14 +2434,14 @@ const StockTransferModal = ({
                 <div className="col-span-1 flex justify-center pb-2">
                   <button
                     type="button"
-                    disabled={submitting}
+                    disabled={submitting || formData.items.length <= 1}
                     onClick={() =>
                       setFormData({
                         ...formData,
                         items: formData.items.filter((_, i) => i !== idx),
                       })
                     }
-                    className="text-danger hover:text-danger/80 disabled:opacity-50"
+                    className="text-danger hover:text-danger/80 disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     <X size={18} />
                   </button>
@@ -2341,7 +2453,7 @@ const StockTransferModal = ({
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-brand text-brand-content py-4 rounded-2xl font-black text-lg shadow-xl shadow-brand/10 hover:bg-brand/90 transition-all mt-4 disabled:opacity-50"
+            className="w-full bg-brand text-white py-4 rounded-2xl font-black text-lg shadow-xl shadow-brand/10 hover:bg-brand/90 transition-all mt-4 disabled:opacity-50"
           >
             {submitting
               ? t("common.saving") || "Saving..."
@@ -3184,7 +3296,8 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
+                  placeholder={t("inventory.item_name_placeholder")}
+                  className="w-full px-5 py-3 bg-surface border border-transparent hover:border-brand/40 rounded-2xl focus:ring-2 focus:ring-brand focus:border-brand outline-none font-bold text-content text-right transition-all hover:bg-surface-muted/20"
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-6 text-right">
@@ -3391,11 +3504,11 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                   type="number"
                   step="0.01"
                   required
-                  value={formData.costPrice}
+                  value={formData.costPrice || ""}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      costPrice: Number(e.target.value),
+                      costPrice: e.target.value === "" ? 0 : Number(e.target.value),
                     })
                   }
                   placeholder="0.00"
@@ -3411,11 +3524,11 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                   type="number"
                   step="0.01"
                   required
-                  value={formData.pricePerUnit}
+                  value={formData.pricePerUnit || ""}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      pricePerUnit: Number(e.target.value),
+                      pricePerUnit: e.target.value === "" ? 0 : Number(e.target.value),
                     })
                   }
                   placeholder="0.00"
@@ -3487,7 +3600,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                   type="number"
                   placeholder="0.00"
                   value={formData.openingBalance || ""}
-                  onChange={(e) => setFormData({ ...formData, openingBalance: Number(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, openingBalance: e.target.value === "" ? 0 : Number(e.target.value) })}
                   className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
                 />
               </div>

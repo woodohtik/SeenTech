@@ -62,11 +62,12 @@ function LocationMarker({
   longitude: number | undefined,
   onLocationSelect: (lat: number, lng: number, address: string, city: string) => void
 }) {
+  const { i18n } = useTranslation();
   const map = useMapEvents({
     async click(e) {
       try {
         const response = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${e.latlng.lat}&lon=${e.latlng.lng}&accept-language=ar`
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${e.latlng.lat}&lon=${e.latlng.lng}&accept-language=${i18n.language || 'ar'}`
         );
         const data = await response.json();
         let address = '';
@@ -120,7 +121,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       country: 'KSA',
       currency: 'SAR',
       language: 'ar' as const,
-      inventoryStrategy: 'centralized' as const,
+      inventoryStrategy: 'decentralized' as const,
       invoiceDefaults: 'نتطلع لخدمتكم مرة أخرى',
       defaultLayout: 'sidebar' as const,
       logoUrl: '',
@@ -131,6 +132,28 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   });
 
   const formData = watch();
+
+  // Handle immediate language switcher update
+  useEffect(() => {
+    if (formData.language && formData.language !== i18n.language) {
+      i18n.changeLanguage(formData.language);
+    }
+  }, [formData.language, i18n]);
+
+  // Handle automatic translation of invoiceDefaults if they are default values
+  useEffect(() => {
+    const currentLang = formData.language || 'ar';
+    const defaults: Record<string, string> = {
+      ar: 'نتطلع لخدمتكم مرة أخرى',
+      en: 'Looking forward to serving you again',
+      ur: 'دوبارہ آپ کی خدمت کے منتظر ہیں'
+    };
+    
+    const val = formData.invoiceDefaults;
+    if (!val || val === 'نتطلع لخدمتكم مرة أخرى' || val === 'Looking forward to serving you again' || val === 'دوبارہ آپ کی خدمت کے منتظر ہیں') {
+      setValue('invoiceDefaults', defaults[currentLang] || defaults.ar);
+    }
+  }, [formData.language, setValue]);
 
   // Trigger map resize when stepping into map step
   useEffect(() => {
@@ -468,7 +491,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
                       <div className="space-y-2">
                         <label className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center gap-2">
-                          رقم التواصل الموحد
+                          {t('onboarding.fields.phone', 'رقم التواصل الموحد')}
                         </label>
                         <div className={cn(
                           "group flex items-center bg-white border rounded-xl overflow-hidden focus-within:border-brand transition-all shadow-sm focus-within:ring-1 focus-within:ring-brand/30",
@@ -751,38 +774,6 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                          />
                       </div>
 
-                      <div className="md:col-span-2 space-y-3 pt-3 border-t border-slate-200">
-                        <label className={cn("text-xs font-bold text-slate-700 uppercase tracking-widest block", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.inventory_strategy')}</label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                          <label className={cn(
-                            "relative p-4 sm:p-5 rounded-xl border cursor-pointer transition-all duration-300",
-                            formData.inventoryStrategy === 'centralized' ? "border-brand bg-brand/5 shadow-md" : "border-slate-200 bg-white hover:border-slate-300"
-                          )}>
-                            <input type="radio" value="centralized" {...register('inventoryStrategy')} className="sr-only" />
-                            <div className="flex items-center gap-3 mb-2">
-                              <div className={cn("w-5 h-5 rounded-full border flex items-center justify-center transition-colors", formData.inventoryStrategy === 'centralized' ? "border-brand" : "border-slate-300")}>
-                                {formData.inventoryStrategy === 'centralized' && <div className="w-2.5 h-2.5 bg-brand rounded-full shadow-sm" />}
-                              </div>
-                              <span className="text-sm sm:text-base font-black text-slate-900">{t('onboarding.fields.centralized')}</span>
-                            </div>
-                            <p className={cn("text-xs text-slate-500 font-medium leading-relaxed", i18n.language === 'en' ? "ps-8" : "pe-8")}>{t('onboarding.fields.centralized_desc')}</p>
-                          </label>
-
-                          <label className={cn(
-                            "relative p-4 sm:p-5 rounded-xl border cursor-pointer transition-all duration-300",
-                            formData.inventoryStrategy === 'decentralized' ? "border-brand bg-brand/5 shadow-md" : "border-slate-200 bg-white hover:border-slate-300"
-                          )}>
-                            <input type="radio" value="decentralized" {...register('inventoryStrategy')} className="sr-only" />
-                            <div className="flex items-center gap-3 mb-2">
-                              <div className={cn("w-5 h-5 rounded-full border flex items-center justify-center transition-colors", formData.inventoryStrategy === 'decentralized' ? "border-brand" : "border-slate-300")}>
-                                {formData.inventoryStrategy === 'decentralized' && <div className="w-2.5 h-2.5 bg-brand rounded-full shadow-sm" />}
-                              </div>
-                              <span className="text-sm sm:text-base font-black text-slate-900">{t('onboarding.fields.decentralized')}</span>
-                            </div>
-                            <p className={cn("text-xs text-slate-500 font-medium leading-relaxed", i18n.language === 'en' ? "ps-8" : "pe-8")}>{t('onboarding.fields.decentralized_desc')}</p>
-                          </label>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 )}
