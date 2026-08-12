@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { SaasUserRole } from '../types/supabase';
 import { ShieldAlert } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 
 interface RoleGuardProps {
   children: React.ReactNode;
@@ -10,6 +11,7 @@ interface RoleGuardProps {
 }
 
 export default function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
+  const { t } = useTranslation();
   const { dbUser, loading } = useAuth();
 
   if (loading) {
@@ -36,9 +38,9 @@ export default function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
         >
           <ShieldAlert size={64} />
         </motion.div>
-        <h2 className="text-4xl font-black text-content mb-4">عفواً، لا تملك الصلاحية</h2>
+        <h2 className="text-4xl font-black text-content mb-4">{t('permissions.role_guard_title')}</h2>
         <p className="text-xl text-content-muted max-w-md mx-auto leading-relaxed">
-          حسابك الحالي لا يمتلك الصلاحيات الإدارية الكافية لعرض أو تعديل هذه الصفحة.
+          {t('permissions.role_guard_desc')}
         </p>
       </div>
     );

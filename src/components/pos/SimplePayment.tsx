@@ -10,6 +10,7 @@
 
 import { useState } from 'react';
 import { CurrencySymbol } from '../CurrencySymbol';
+import { useDirection } from '../../lib/direction';
 
 const INK = '#0E2A42', GRAY = '#6B7280', LINE = '#E5EAF1', CTA = '#0BA06B', CTA_TINT = '#F2FBF7';
 type Method = 'cash' | 'network';
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export default function SimplePayment({ total, onConfirm, onBack, allowPartial = false, busy = false }: Props) {
+  const { t, dir, pick } = useDirection();
   const [method, setMethod] = useState<Method>('cash');
   const [partial, setPartial] = useState(false);
   const [paid, setPaid] = useState<number>(total);
@@ -30,41 +32,41 @@ export default function SimplePayment({ total, onConfirm, onBack, allowPartial =
   const paidAmount = partial ? Math.max(0, Math.min(paid, total)) : total;
 
   return (
-    <div dir="rtl" style={s.wrap}>
+    <div dir={dir} style={s.wrap}>
       <div style={s.bar}>
-        <button onClick={onBack} style={s.back} aria-label="رجوع">→ رجوع</button>
-        <span style={s.title}>الدفع</span>
+        <button onClick={onBack} style={s.back} aria-label={t('common.back')}>{pick('→', '←')} {t('common.back')}</button>
+        <span style={s.title}>{t('pos.payment_title')}</span>
       </div>
 
       <div style={s.center}>
         <div style={s.card}>
-          <div style={s.lbl}>المطلوب</div>
+          <div style={s.lbl}>{t('pos.amount_due')}</div>
           <div style={s.amt}>{total.toLocaleString('en-US')} <span style={s.cur}><CurrencySymbol className="h-[0.9em] w-auto inline-block" /></span></div>
 
-          <div style={s.q}>اختر طريقة الدفع</div>
+          <div style={s.q}>{t('pos.choose_payment_method')}</div>
           <div style={s.methods}>
             <button onClick={() => setMethod('cash')}
               style={{ ...s.m, ...(method === 'cash' ? s.mOn : {}) }}>
-              <span style={s.mt}>نقدي {method === 'cash' ? '✓' : ''}</span>
-              <span style={s.ms}>المبلغ مستلم كامل</span>
+              <span style={s.mt}>{t('common.payment_methods.cash')} {method === 'cash' ? '✓' : ''}</span>
+              <span style={s.ms}>{t('pos.full_amount_received')}</span>
             </button>
             <button onClick={() => setMethod('network')}
               style={{ ...s.m, ...(method === 'network' ? s.mOn : {}) }}>
-              <span style={s.mt}>شبكة (مدى) {method === 'network' ? '✓' : ''}</span>
-              <span style={s.ms}>بطاقة / Apple Pay</span>
+              <span style={s.mt}>{t('pos.network_mada')} {method === 'network' ? '✓' : ''}</span>
+              <span style={s.ms}>{t('pos.card_or_apple_pay')}</span>
             </button>
           </div>
 
           {allowPartial && (
             <div style={s.partialWrap}>
               {!partial ? (
-                <button onClick={() => setPartial(true)} style={s.partialToggle}>دفع جزئي؟</button>
+                <button onClick={() => setPartial(true)} style={s.partialToggle}>{t('pos.partial_payment_question')}</button>
               ) : (
                 <div style={s.partialRow}>
-                  <span style={s.partialLbl}>المبلغ المدفوع</span>
+                  <span style={s.partialLbl}>{t('pos.paid_amount')}</span>
                   <input type="number" inputMode="numeric" value={paid}
                     onChange={(e) => setPaid(Number(e.target.value) || 0)} style={s.partialInput} />
-                  <span style={s.partialRem}>الباقي: {(total - paidAmount).toLocaleString('en-US')} <CurrencySymbol className="h-[1em] w-auto inline-block" /></span>
+                  <span style={s.partialRem}>{t('pos.remaining_balance')} {(total - paidAmount).toLocaleString('en-US')} <CurrencySymbol className="h-[1em] w-auto inline-block" /></span>
                 </div>
               )}
             </div>
@@ -72,9 +74,9 @@ export default function SimplePayment({ total, onConfirm, onBack, allowPartial =
 
           <button onClick={() => onConfirm(method, paidAmount)} disabled={busy}
             style={{ ...s.confirm, ...(busy ? { opacity: 0.7 } : {}) }}>
-            {busy ? 'جارٍ الحفظ…' : 'تأكيد الدفع وطباعة الفاتورة'}
+            {busy ? t('common.saving') : t('pos.confirm_pay_and_print')}
           </button>
-          <div style={s.hint}>فاتورة زاتكا تطلع تلقائياً</div>
+          <div style={s.hint}>{t('pos.zatca_invoice_auto_note')}</div>
         </div>
       </div>
     </div>

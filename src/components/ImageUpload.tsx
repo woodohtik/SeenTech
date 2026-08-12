@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { UploadCloud, X, Loader2 } from 'lucide-react';
 import { compressImage } from '../lib/imageOptimization';
 import { uploadImageToSupabase } from '../lib/supabase/storage';
@@ -11,6 +12,7 @@ interface ImageUploadProps {
 }
 
 export default function ImageUpload({ tenantId, onImageUploaded, onImageRemoved, currentImage }: ImageUploadProps) {
+  const { t } = useTranslation();
   const [isUploading, setIsUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(currentImage || null);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,7 @@ export default function ImageUpload({ tenantId, onImageUploaded, onImageRemoved,
 
   const processAndUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) {
-      setError('يرجى رفع ملف صورة صالح');
+      setError(t('inventory.invalid_image_file'));
       return;
     }
 
@@ -76,7 +78,7 @@ export default function ImageUpload({ tenantId, onImageUploaded, onImageRemoved,
       onImageUploaded(publicUrl);
     } catch (err: any) {
       console.error('Error uploading image:', err);
-      setError('فشل في رفع الصورة.');
+      setError(t('inventory.upload_failed'));
       setPreview(null);
     } finally {
       setIsUploading(false);
@@ -93,7 +95,7 @@ export default function ImageUpload({ tenantId, onImageUploaded, onImageRemoved,
 
   return (
     <div className="w-full">
-      <label className="block text-sm font-medium text-gray-500 mb-2">صورة المنتج</label>
+      <label className="block text-sm font-medium text-gray-500 mb-2">{t('inventory.product_image')}</label>
       
       {preview ? (
         <div className="relative w-32 h-32 rounded-xl border border-gray-200 overflow-hidden shadow-sm group">
@@ -121,8 +123,8 @@ export default function ImageUpload({ tenantId, onImageUploaded, onImageRemoved,
           className="w-full border-2 border-dashed border-gray-200 rounded-2xl p-6 flex flex-col items-center justify-center text-gray-400 hover:border-brand hover:bg-brand/5 hover:text-brand transition-colors cursor-pointer"
         >
           <UploadCloud size={32} className="mb-2" />
-          <span className="text-sm font-bold">اسحب الصورة هنا أو اضغط للاختيار</span>
-          <span className="text-xs text-gray-400 mt-1">يتم ضغط الصورة تلقائياً</span>
+          <span className="text-sm font-bold">{t('inventory.drop_image_hint')}</span>
+          <span className="text-xs text-gray-400 mt-1">{t('inventory.image_auto_compressed')}</span>
           <input 
             type="file" 
             ref={fileInputRef} 

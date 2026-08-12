@@ -13,9 +13,11 @@ import {
 } from 'recharts';
 import { useTranslation } from 'react-i18next';
 
+import { isRtlLang } from '../lib/direction';
+
 export default function SaaSReports() {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
 
   const [data, setData] = useState<{
     mrr: number;
@@ -94,29 +96,29 @@ export default function SaaSReports() {
   }
 
   const stats = [
-    { label: t('saas.total_revenue_platform_sales', 'إجمالي الإيرادات (مبيعات المنصة)'), value: <PriceDisplay amount={data.totalRevenue} />, trend: '+12.5%', icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { label: t('saas.average_revenue_per_user', 'متوسط قيمة العميل (ARPU)'), value: <PriceDisplay amount={data.arpu} />, trend: '+5.2%', icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-    { label: t('saas.recurring_revenue_mrr', 'الإيرادات المتكررة شهرياً (MRR)'), value: <PriceDisplay amount={data.mrr} />, trend: '+2.1%', icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: t('saas.renewal_rate_typical', 'معدل التجديد (نموذجي)'), value: '94.2%', trend: '-0.5%', icon: BarChart3, color: 'text-rose-600', bg: 'bg-rose-50' },
+    { label: t('saas.total_revenue_platform_sales'), value: <PriceDisplay amount={data.totalRevenue} />, trend: '+12.5%', icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: t('saas.average_revenue_per_user'), value: <PriceDisplay amount={data.arpu} />, trend: '+5.2%', icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+    { label: t('saas.recurring_revenue_mrr'), value: <PriceDisplay amount={data.mrr} />, trend: '+2.1%', icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: t('saas.renewal_rate_typical'), value: '94.2%', trend: '-0.5%', icon: BarChart3, color: 'text-rose-600', bg: 'bg-rose-50' },
   ];
 
   return (
     <div className="space-y-8 font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-black text-gray-900">{t('saas.financial_reports_title', 'التقارير المالية والتحليلات')}</h1>
-          <p className="text-gray-500 font-bold mt-1">{t('saas.financial_reports_subtitle', 'تحليل الأداء المالي للمنصة')}</p>
+          <h1 className="text-3xl font-black text-gray-900">{t('saas.financial_reports_title')}</h1>
+          <p className="text-gray-500 font-bold mt-1">{t('saas.financial_reports_subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <button className="px-6 py-2 bg-white border border-gray-100 rounded-xl font-bold text-sm shadow-sm hover:bg-gray-50 transition-colors cursor-pointer">
-            {t('saas.export_pdf', 'تصدير PDF')}
+            {t('saas.export_pdf')}
           </button>
           <button 
             onClick={fetchData}
             className="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-100 flex items-center gap-2 hover:bg-indigo-700 transition-all cursor-pointer"
           >
             <RefreshCw size={16} className={data.loading ? "animate-spin" : ""} />
-            {t('saas.refresh_data', 'تحديث البيانات')}
+            {t('saas.refresh_data')}
           </button>
         </div>
       </div>
@@ -139,11 +141,11 @@ export default function SaaSReports() {
       </div>
 
       <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
-        <h3 className="text-xl font-black text-gray-900 mb-8">{t('saas.monthly_revenue_growth_platform', 'نمو الإيرادات الشهرية للمنصة')}</h3>
+        <h3 className="text-xl font-black text-gray-900 mb-8">{t('saas.monthly_revenue_growth_platform')}</h3>
         <div className="h-96">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data.chartData.length > 0 ? data.chartData : [
-              { month: t('common.no_data', 'لا توجد بيانات'), revenue: 0 }
+              { month: t('common.no_data'), revenue: 0 }
             ]}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
               <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12, fontWeight: 600}} />

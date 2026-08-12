@@ -14,9 +14,11 @@ import DateTimeDisplay from './DateTimeDisplay';
 import { generateZatcaQR } from '../services/zatcaService';
 import { useToast } from '../contexts/ToastContext';
 
+import { isRtlLang } from '../lib/direction';
+
 export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenantId: string, shiftId?: string, filterStatus?: string }) {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
   const { error: toastError } = useToast();
 
   const [orders, setOrders] = useState<Order[]>([]);
@@ -49,12 +51,12 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
       const { printElementDetailed, getConfiguredPaperSize } = await import('../utils/printManager');
       const res = await printElementDetailed('sales-record-print-area', {
         paperSize: getConfiguredPaperSize('80mm'),
-        title: `فاتورة-${selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase()}`,
+        title: t('printing.invoice_document_title', { number: selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase() }),
       });
       if (!res.ok) {
         // مع الطباعة الصامتة قد لا تُفتح نافذة طباعة، فلا بد من إشعار مرئي
         console.error('[SalesRecord] فشل الطباعة:', res.message);
-        toastError('تعذّرت الطباعة', res.message);
+        toastError(t('printing.print_failed'), res.message);
       }
     } catch (e) {
       console.error('[SalesRecord] خطأ الطباعة:', e);
@@ -70,9 +72,13 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                           selectedOrder.paymentMethod === 'bank_transfer' ? t('pos.bank_transfer') : t('pos.other');
     const statusText = selectedOrder.status === 'delivered' ? t('pos.delivered') : t('pos.pending');
     
-    const text = isRtl
-      ? `السلام عليكم ورحمة الله وبركاته،\nتفاصيل الفاتورة من المتجر:\nرقم الفاتورة: #${selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase()}\nالإجمالي: ${selectedOrder.totalAmount} ${getCurrencySymbol()}\nطريقة الدفع: ${paymentMethodText}\nحالة الطلب: ${statusText}\nشكراً لتواصلك معنا!`
-      : `Hello,\nInvoice details from store:\nInvoice No: #${selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase()}\nTotal: ${selectedOrder.totalAmount} ${getCurrencySymbol()}\nPayment Method: ${paymentMethodText}\nOrder Status: ${statusText}\nThank you for choosing us!`;
+    const text = t('sales_record.whatsapp_invoice_message', {
+      invoiceNumber: selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase(),
+      total: selectedOrder.totalAmount,
+      currency: getCurrencySymbol(),
+      method: paymentMethodText,
+      status: statusText
+    });
     
     try {
       await shareInvoiceAsPDFFile('sales-record-print-area', `Invoice-${selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase()}.pdf`, text);
@@ -111,7 +117,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
           (d as any).staff_name ||
           (d as any).cashier_name ||
           (d.created_by && staffMap[d.created_by] ? staffMap[d.created_by] : d.created_by) ||
-          'النظام';
+          t('common.system');
 
         return {
           ...d,
@@ -373,7 +379,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                       totals={totals}
                       qrCodeBase64={qrCodeBase64}
                       hidePrintButton={true}
-                      sellerName={selectedOrder.createdBy || 'النظام'}
+                      sellerName={selectedOrder.createdBy || t('common.system')}
                     />
                   )}
                 </div>

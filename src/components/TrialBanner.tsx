@@ -13,6 +13,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useDirection } from '../lib/direction';
 
 interface Props {
   subscriptionStatus?: string | null;
@@ -29,6 +30,7 @@ function remaining(endIso: string) {
 }
 
 export default function TrialBanner({ subscriptionStatus, trialEndsAt, onSubscribe }: Props) {
+  const { t, dir } = useDirection();
   const [, force] = useState(0);
   useEffect(() => {
     const t = setInterval(() => force((n) => n + 1), 60000); // تحديث كل دقيقة
@@ -42,11 +44,14 @@ export default function TrialBanner({ subscriptionStatus, trialEndsAt, onSubscri
   const urgent = r.days <= 2;
   const bg = urgent ? '#C0392B' : '#1F3A5F';
   const label =
-    r.days >= 1 ? `باقي ${r.days} ${r.days === 1 ? 'يوم' : 'أيام'}${r.hours ? ` و${r.hours} ساعة` : ''} على انتهاء تجربتك`
-                : `باقي ${r.hours} ساعة على انتهاء تجربتك`;
+    r.days >= 1
+      ? (r.hours
+          ? t('subscription.trial_left_days_hours', { count: r.days, hours: r.hours })
+          : t('subscription.trial_left_days', { count: r.days }))
+      : t('subscription.trial_left_hours', { hours: r.hours });
 
   return (
-    <div dir="rtl" role="status" style={{
+    <div dir={dir} role="status" style={{
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14,
       flexWrap: 'wrap', background: bg, color: '#fff', padding: '9px 16px',
       fontFamily: 'inherit', fontSize: 14, fontWeight: 600,
@@ -57,7 +62,7 @@ export default function TrialBanner({ subscriptionStatus, trialEndsAt, onSubscri
         background: '#fff', color: bg, border: 'none', borderRadius: 999,
         padding: '6px 18px', fontWeight: 800, fontSize: 13, cursor: 'pointer',
         fontFamily: 'inherit',
-      }}>اشترك الآن</button>
+      }}>{t('subscription.subscribe_now')}</button>
     </div>
   );
 }

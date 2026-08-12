@@ -36,6 +36,8 @@
  * ------------------------------------------------------------------
  */
 
+import i18n from 'i18next';
+
 export type PrintPaperSize = '80mm' | '58mm' | 'A4' | 'A5';
 
 export interface PrintOptions {
@@ -69,7 +71,7 @@ export type PrintMethod =
 export interface PrintResult {
   ok: boolean;
   method: PrintMethod;
-  /** رسالة عربية جاهزة للعرض للمستخدم */
+  /** رسالة مترجمة جاهزة للعرض للمستخدم */
   message: string;
   /** تفاصيل الخطأ الفني إن وُجد */
   error?: string;
@@ -297,7 +299,7 @@ const buildPrintDocument = (bodyHtml: string, options: PrintOptions): string => 
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>${(options.title || 'فاتورة').replace(/[<>&"]/g, '')}</title>
+<title>${(options.title || i18n.t('printing.document_title_invoice')).replace(/[<>&"]/g, '')}</title>
 ${links.map((h) => `<link rel="stylesheet" href="${h}">`).join('\n')}
 <style>
 /* ===== تنسيقات التطبيق المنسوخة ===== */
@@ -673,7 +675,7 @@ export const isSilentPrintCircuitOpen = (): boolean =>
 /** تنفيذ وعد بمهلة قصوى — يمنع تعليق شاشة الكاشير على مسار بطيء. */
 const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> =>
   new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(`${label}: تجاوز المهلة (${ms}ms)`)), ms);
+    const timer = setTimeout(() => reject(new Error(i18n.t('printing.errors.timeout_exceeded', { label, ms }))), ms);
     promise.then(
       (v) => {
         clearTimeout(timer);
@@ -772,7 +774,7 @@ export const rasterizeElement = async (
     await waitForDocumentReady(document, window);
 
     const height = Math.max(holder.scrollHeight, clone.scrollHeight);
-    if (height < 4) throw new Error('محتوى الفاتورة فارغ — لا يوجد ما يُطبع.');
+    if (height < 4) throw new Error(i18n.t('printing.errors.empty_invoice_content'));
 
     return await toCanvas(clone, {
       backgroundColor: '#ffffff',
@@ -899,7 +901,7 @@ export const printElementViaRawDevice = async (
     return {
       ok: false,
       method: 'none',
-      message: e?.message || 'تعذر تجهيز الفاتورة للطباعة المباشرة.',
+      message: e?.message || i18n.t('printing.errors.prepare_direct_failed'),
       error: String(e?.message || e),
     };
   }
@@ -913,7 +915,7 @@ export const printElementViaRawDevice = async (
       return {
         ok: false,
         method: 'none',
-        message: 'تم إلغاء الطباعة الصامتة بعد تجاوز المهلة.',
+        message: i18n.t('printing.errors.silent_cancelled_timeout'),
         error: failures.join(' | ') || 'aborted',
       };
     }
@@ -980,8 +982,8 @@ export const printElementViaRawDevice = async (
         method: `raw-${transport}` as PrintMethod,
         message:
           transport === 'relay'
-            ? 'تم إرسال الفاتورة للطابعة عبر وسيط سين.'
-            : 'تم إرسال الفاتورة مباشرة إلى الطابعة.',
+            ? i18n.t('printing.sent_via_relay')
+            : i18n.t('printing.sent_direct'),
       };
     } catch (e: any) {
       const msg = e?.message || String(e);
@@ -996,7 +998,7 @@ export const printElementViaRawDevice = async (
     method: `raw-${cfg.transport}` as PrintMethod,
     message:
       failures[0]?.replace(/^[a-z]+:\s*/, '') ||
-      'تعذر الإرسال المباشر للطابعة. سيتم فتح مربع حوار الطباعة.',
+      i18n.t('printing.errors.direct_failed_opening_dialog'),
     error: failures.join(' | '),
   };
 };
@@ -1012,7 +1014,7 @@ const printViaIframe = async (html: string, layoutPx: number): Promise<PrintResu
   const iframe = document.createElement('iframe');
   iframe.setAttribute('data-seen-print', '1');
   iframe.setAttribute('aria-hidden', 'true');
-  iframe.setAttribute('title', 'مستند الطباعة');
+  iframe.setAttribute('title', i18n.t('printing.print_document'));
   /*
    * مهم: أبعاد حقيقية وبدون visibility:hidden — وإلا يطبع المتصفح صفحة فارغة.
    *
@@ -1075,7 +1077,7 @@ const printViaIframe = async (html: string, layoutPx: number): Promise<PrintResu
     }
 
     const win = iframe.contentWindow;
-    if (!doc || !win) throw new Error('تعذر إنشاء مستند الطباعة داخل الإطار.');
+    if (!doc || !win) throw new Error(i18n.t('printing.errors.iframe_document_failed'));
 
     await waitForDocumentReady(doc, win);
 
@@ -1085,20 +1087,20 @@ const printViaIframe = async (html: string, layoutPx: number): Promise<PrintResu
       (root.scrollHeight > 4 || (root.textContent || '').trim().length > 0 || doc.images.length > 0);
 
     if (!hasContent) {
-      throw new Error('مستند الطباعة فارغ — تأكد من ظهور الفاتورة على الشاشة قبل الطباعة.');
+      throw new Error(i18n.t('printing.errors.empty_print_document'));
     }
 
     await triggerPrintAndWait(win);
     cleanup();
 
-    return { ok: true, method: 'dialog-iframe', message: 'تم إرسال المستند إلى مربع حوار الطباعة.' };
+    return { ok: true, method: 'dialog-iframe', message: i18n.t('printing.sent_to_dialog') };
   } catch (e: any) {
     cleanup();
     console.warn('[printManager] فشل مسار الإطار المضمن:', e);
     return {
       ok: false,
       method: 'dialog-iframe',
-      message: e?.message || 'فشل مسار الطباعة عبر الإطار.',
+      message: e?.message || i18n.t('printing.errors.iframe_path_failed'),
       error: String(e?.message || e),
     };
   }
@@ -1117,7 +1119,7 @@ const printViaPopup = async (html: string, layoutPx: number): Promise<PrintResul
     return {
       ok: false,
       method: 'dialog-popup',
-      message: 'المتصفح حجب النافذة المنبثقة. اسمح بالنوافذ المنبثقة لهذا الموقع ثم أعد المحاولة.',
+      message: i18n.t('printing.errors.popup_blocked'),
     };
   }
 
@@ -1150,13 +1152,13 @@ const printViaPopup = async (html: string, layoutPx: number): Promise<PrintResul
     autoClose();
     setTimeout(autoClose, 100);
 
-    return { ok: true, method: 'dialog-popup', message: 'تم إرسال المستند إلى مربع حوار الطباعة وإغلاق النافذة تلقائياً.' };
+    return { ok: true, method: 'dialog-popup', message: i18n.t('printing.sent_to_dialog_window_closed') };
   } catch (e: any) {
     autoClose();
     return {
       ok: false,
       method: 'dialog-popup',
-      message: e?.message || 'فشل مسار النافذة المنبثقة.',
+      message: e?.message || i18n.t('printing.errors.popup_path_failed'),
       error: String(e?.message || e),
     };
   }
@@ -1188,12 +1190,12 @@ export const printHtmlContentDetailed = async (
   // الملاذ الأخير: طباعة النافذة الحالية (تعتمد على قواعد @media print في index.css)
   try {
     window.print();
-    return { ok: true, method: 'dialog-window', message: 'تم استخدام طباعة النافذة الحالية كحل بديل.' };
+    return { ok: true, method: 'dialog-window', message: i18n.t('printing.used_window_print_fallback') };
   } catch (e: any) {
     return {
       ok: false,
       method: 'none',
-      message: `فشلت جميع مسارات الطباعة. ${viaIframe.message}`,
+      message: i18n.t('printing.errors.all_paths_failed', { details: viaIframe.message }),
       error: String(e?.message || e),
     };
   }
@@ -1238,7 +1240,7 @@ const attemptSilentPrint = async (
     const res = await withTimeout(
       printElementViaRawDevice(elementId, { ...options, paperSize }, token),
       SILENT_TIMEOUT_MS,
-      'الطباعة الصامتة'
+      i18n.t('printing.silent_printing')
     );
 
     if (res?.ok) {
@@ -1268,8 +1270,7 @@ const attemptSilentPrint = async (
       return {
         ok: false,
         method: res.method || 'none',
-        message:
-          'أُرسلت الفاتورة للطابعة لكن لم يصل تأكيد الطباعة. تحقق من الطابعة قبل إعادة الطباعة لتجنب إيصال مكرر.',
+        message: i18n.t('printing.errors.sent_without_confirmation'),
         error: res.error,
       };
     }
@@ -1290,8 +1291,7 @@ const attemptSilentPrint = async (
       return {
         ok: false,
         method: 'none',
-        message:
-          'استغرقت الطباعة وقتاً أطول من المتوقع ولم يصل تأكيد. تحقق من الطابعة قبل إعادة الطباعة لتجنب إيصال مكرر.',
+        message: i18n.t('printing.errors.timed_out_without_confirmation'),
         error: String(e?.message || e),
       };
     }
@@ -1324,12 +1324,12 @@ export const printElementDetailed = async (
     console.warn(`[printManager] العنصر #${elementId} غير موجود. سيتم استخدام طباعة النافذة.`);
     try {
       window.print();
-      return { ok: true, method: 'dialog-window', message: 'تمت طباعة النافذة الحالية.' };
+      return { ok: true, method: 'dialog-window', message: i18n.t('printing.window_printed') };
     } catch (e: any) {
       return {
         ok: false,
         method: 'none',
-        message: `لم يتم العثور على محتوى الفاتورة (#${elementId}).`,
+        message: i18n.t('printing.errors.invoice_content_not_found', { elementId }),
         error: String(e?.message || e),
       };
     }

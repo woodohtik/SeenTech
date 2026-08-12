@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
+import { useDirection } from '../lib/direction';
 import { PriceDisplay } from './PriceDisplay';
 
 interface AnalyticsData {
@@ -47,6 +48,7 @@ interface AnalyticsData {
 export default function TenantAnalyticsDashboard() {
   const { tenantId } = useParams();
   const { t } = useTranslation();
+  const { locale } = useDirection();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<AnalyticsData | null>(null);
 
@@ -222,7 +224,7 @@ export default function TenantAnalyticsDashboard() {
               {data.health.churnRisk === 'high' && (
                 <span className="flex items-center gap-1.5 px-2.5 py-1 bg-danger/10 text-danger text-xs rounded-lg font-bold">
                   <AlertTriangle size={14} />
-                  خطر الانسحاب
+                  {t('saas.churn_risk')}
                 </span>
               )}
             </h1>
@@ -245,11 +247,11 @@ export default function TenantAnalyticsDashboard() {
           <div>
             <h2 className="text-lg font-black text-content mb-4 flex items-center gap-2">
               <DollarSign className="text-brand" size={20} />
-              التحليلات المالية (آخر 30 يوم)
+              {t('saas.financial_analytics_30d')}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <StatCard 
-                title="إجمالي الإيرادات" 
+                title={t('dashboard.total_revenue')}
                 value={<PriceDisplay amount={data.finance.totalRevenue} />}
                 trend={data.finance.trend}
                 trendValue={data.finance.trendValue}
@@ -258,14 +260,14 @@ export default function TenantAnalyticsDashboard() {
                 bg="bg-success/10"
               />
               <StatCard 
-                title="متوسط الدخل اليومي" 
+                title={t('saas.avg_daily_income')}
                 value={<PriceDisplay amount={data.finance.dailyAvg} />}
                 icon={Calendar}
                 color="text-brand"
                 bg="bg-brand/10"
               />
               <StatCard 
-                title="متوسط قيمة الفاتورة" 
+                title={t('saas.avg_invoice_value')}
                 value={<PriceDisplay amount={data.finance.avgOrderValue} />}
                 icon={Briefcase}
                 color="text-indigo-500"
@@ -278,19 +280,19 @@ export default function TenantAnalyticsDashboard() {
           <div>
             <h2 className="text-lg font-black text-content mb-4 flex items-center gap-2 mt-8">
               <Users className="text-brand" size={20} />
-              فريق العمل ونشاط النظام
+              {t('saas.team_and_system_activity')}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <StatCard 
-                title="إجمالي الموظفين" 
+                title={t('saas.total_staff')}
                 value={data.staff.total.toString()}
                 icon={Users}
                 color="text-blue-500"
                 bg="bg-blue-500/10"
               />
               <StatCard 
-                title="متوسط ساعات العمل للوردية" 
-                value={`${data.staff.avgWorkHours.toFixed(1)} ساعة`}
+                title={t('saas.avg_shift_work_hours')}
+                value={`${data.staff.avgWorkHours.toFixed(1)} ${t('common.hours')}`}
                 icon={Clock}
                 color="text-amber-500"
                 bg="bg-amber-500/10"
@@ -309,7 +311,7 @@ export default function TenantAnalyticsDashboard() {
              
              <h3 className="font-black text-content flex items-center gap-2 mb-6 relative z-10">
                <HeartPulse className="text-danger" size={20} />
-               صحة الحساب (Health Score)
+               {t('saas.account_health_score')}
              </h3>
 
              <div className="flex flex-col items-center justify-center mb-6 relative z-10">
@@ -328,17 +330,17 @@ export default function TenantAnalyticsDashboard() {
                  <span className="text-3xl font-black text-content">{data.health.score}</span>
                </div>
                <span className="text-sm font-bold text-content-muted mt-3">
-                 {data.health.score >= 80 ? 'صحة ممتازة' : data.health.score >= 50 ? 'صحة متوسطة' : 'يحتاج للتدخل'}
+                 {data.health.score >= 80 ? t('saas.health_excellent') : data.health.score >= 50 ? t('saas.health_average') : t('saas.health_needs_action')}
                </span>
              </div>
 
              <div className="space-y-4 relative z-10">
                 <div className="flex justify-between items-center p-3 bg-surface-muted rounded-xl">
-                  <span className="text-sm text-content-muted font-bold">حجم الطلبات</span>
-                  <span className="font-black text-content">{data.health.ordersCount} طلب</span>
+                  <span className="text-sm text-content-muted font-bold">{t('saas.orders_volume')}</span>
+                  <span className="font-black text-content">{data.health.ordersCount} {t('common.order')}</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-surface-muted rounded-xl">
-                  <span className="text-sm text-content-muted font-bold">موعد التجديد</span>
+                  <span className="text-sm text-content-muted font-bold">{t('saas.renewal_date')}</span>
                   <span className="font-black text-content font-mono">{new Date(data.health.expiresAt).toLocaleDateString('en-GB')}</span>
                 </div>
              </div>
@@ -349,17 +351,17 @@ export default function TenantAnalyticsDashboard() {
             <h3 className="font-black text-content flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Activity className="text-success" size={20} />
-                المتصلون الآن
+                {t('saas.online_now')}
               </div>
               <span className="bg-success/10 text-success text-xs font-black px-2.5 py-1 rounded-lg">
-                {data.staff.activeNow.length} نشط
+                {data.staff.activeNow.length} {t('saas.status_active')}
               </span>
             </h3>
 
             {data.staff.activeNow.length === 0 ? (
               <div className="text-center py-8 text-content-muted">
                 <Users className="mx-auto mb-2 opacity-50" size={32} />
-                <p className="text-sm font-bold">لا يوجد موظفين متصلين حالياً</p>
+                <p className="text-sm font-bold">{t('saas.no_staff_online')}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -375,7 +377,7 @@ export default function TenantAnalyticsDashboard() {
                       <h4 className="font-bold text-sm text-content">{staff.name}</h4>
                       <p className="text-xs text-content-muted flex items-center gap-1">
                         <Clock size={10} />
-                        آخر نشاط: {new Date(staff.lastSeen).toLocaleTimeString('ar-SA-u-nu-latn', { hour: '2-digit', minute: '2-digit' })}
+                        {t('saas.last_activity_at', { time: new Date(staff.lastSeen).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) })}
                       </p>
                     </div>
                   </div>

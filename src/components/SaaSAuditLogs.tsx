@@ -16,6 +16,8 @@ import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
 
+import { isRtlLang } from '../lib/direction';
+
 interface AuditLog {
   id: string;
   action: string;
@@ -29,7 +31,7 @@ interface AuditLog {
 
 export default function SaaSAuditLogs() {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
 
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -119,12 +121,12 @@ export default function SaaSAuditLogs() {
     <div className="space-y-8 font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h2 className="text-3xl font-black text-gray-900">{t('saas.audit_logs_title', 'سجل التدقيق والأمان')}</h2>
-          <p className="text-gray-500 font-bold mt-1">{t('saas.audit_logs_subtitle', 'سجل الأمان والعمليات في النظام في الوقت الفعلي')}</p>
+          <h2 className="text-3xl font-black text-gray-900">{t('saas.audit_logs_title')}</h2>
+          <p className="text-gray-500 font-bold mt-1">{t('saas.audit_logs_subtitle')}</p>
         </div>
         <button className="flex items-center gap-2 px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-2xl font-bold hover:bg-gray-50 transition-all shadow-sm cursor-pointer">
           <Download size={18} />
-          <span>{t('saas.export_logs', 'تصدير السجلات')}</span>
+          <span>{t('saas.export_logs')}</span>
         </button>
       </div>
 
@@ -133,7 +135,7 @@ export default function SaaSAuditLogs() {
         <div className="flex-1">
           <AdminIconInput 
             type="text"
-            placeholder={t('saas.search_logs_placeholder', 'البحث في السجلات حسب العملية، البريد، التفاصيل...')}
+            placeholder={t('saas.search_logs_placeholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             startIcon={Search}
@@ -146,11 +148,11 @@ export default function SaaSAuditLogs() {
             startIcon={Filter}
             className="w-full"
           >
-            <option value="all">{t('saas.filter_type_all', 'كل العمليات')}</option>
-            <option value="login">{t('saas.filter_type_login', 'تسجيلات الدخول')}</option>
-            <option value="deletion">{t('saas.filter_type_deletion', 'عمليات الحذف')}</option>
-            <option value="update">{t('saas.filter_type_update', 'التحديثات')}</option>
-            <option value="security_alert">{t('saas.filter_type_security_alert', 'تنبيهات الأمان')}</option>
+            <option value="all">{t('saas.filter_type_all')}</option>
+            <option value="login">{t('saas.filter_type_login')}</option>
+            <option value="deletion">{t('saas.filter_type_deletion')}</option>
+            <option value="update">{t('saas.filter_type_update')}</option>
+            <option value="security_alert">{t('saas.filter_type_security_alert')}</option>
           </AdminIconSelect>
         </div>
       </div>
@@ -160,10 +162,10 @@ export default function SaaSAuditLogs() {
         <table className="w-full text-right rtl:text-right ltr:text-left min-w-max">
           <thead>
             <tr className="bg-gray-50 text-gray-500 text-xs font-black uppercase tracking-wider">
-              <th className="px-8 py-5 text-right rtl:text-right ltr:text-left">{t('saas.action_performed', 'العملية المنفذة')}</th>
-              <th className="px-8 py-5 text-right rtl:text-right ltr:text-left">{t('saas.performed_by', 'بواسطة')}</th>
-              <th className="px-8 py-5 text-right rtl:text-right ltr:text-left">{t('saas.details', 'التفاصيل')}</th>
-              <th className="px-8 py-5 text-right rtl:text-right ltr:text-left">{t('saas.timestamp', 'طابع الوقت')}</th>
+              <th className="px-8 py-5 text-right rtl:text-right ltr:text-left">{t('saas.action_performed')}</th>
+              <th className="px-8 py-5 text-right rtl:text-right ltr:text-left">{t('saas.performed_by')}</th>
+              <th className="px-8 py-5 text-right rtl:text-right ltr:text-left">{t('saas.details')}</th>
+              <th className="px-8 py-5 text-right rtl:text-right ltr:text-left">{t('saas.timestamp')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -176,7 +178,7 @@ export default function SaaSAuditLogs() {
             ) : filteredLogs.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-8 py-20 text-center">
-                  <p className="text-gray-400 font-bold">{t('saas.no_logs_found', 'لا توجد سجلات مطابقة للبحث')}</p>
+                  <p className="text-gray-400 font-bold">{t('saas.no_logs_found')}</p>
                 </td>
               </tr>
             ) : (

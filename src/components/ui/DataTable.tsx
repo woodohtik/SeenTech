@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Search, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface Column<T> {
@@ -18,10 +19,11 @@ interface DataTableProps<T> {
 export function DataTable<T extends Record<string, any>>({ 
   data, 
   columns, 
-  searchPlaceholder = 'بحث...', 
+  searchPlaceholder, 
   onRowClick,
   isLoading 
 }: DataTableProps<T>) {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
 
@@ -69,7 +71,7 @@ export function DataTable<T extends Record<string, any>>({
           <input
             type="text"
             className="block w-full sm:text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 pr-10"
-            placeholder={searchPlaceholder}
+            placeholder={searchPlaceholder ?? t('common.search')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -80,9 +82,9 @@ export function DataTable<T extends Record<string, any>>({
         {/* Mobile View: Vertical Stacked Card List */}
         <div className="md:hidden flex flex-col divide-y divide-gray-100">
           {isLoading ? (
-            <div className="p-6 text-center text-sm text-gray-500">جاري التحميل...</div>
+            <div className="p-6 text-center text-sm text-gray-500">{t('common.loading')}</div>
           ) : filteredAndSortedData.length === 0 ? (
-            <div className="p-6 text-center text-sm text-gray-500">لا توجد سجلات مطابقة</div>
+            <div className="p-6 text-center text-sm text-gray-500">{t('common.no_matching_records')}</div>
           ) : (
             filteredAndSortedData.map((row, rowIndex) => (
               <div 
@@ -131,13 +133,13 @@ export function DataTable<T extends Record<string, any>>({
             {isLoading ? (
               <tr>
                 <td colSpan={columns.length} className="px-6 py-4 text-center text-sm text-gray-500">
-                  جاري التحميل...
+                  {t('common.loading')}
                 </td>
               </tr>
             ) : filteredAndSortedData.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="px-6 py-4 text-center text-sm text-gray-500">
-                  لا توجد سجلات مطابقة
+                  {t('common.no_matching_records')}
                 </td>
               </tr>
             ) : (

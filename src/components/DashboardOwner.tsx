@@ -42,6 +42,7 @@ import Branding from './Branding';
 import { useTranslation } from 'react-i18next';
 import DashboardGridCard from './DashboardGridCard';
 import * as XLSX from 'xlsx';
+
 import { 
   ComposedChart,
   Area, 
@@ -54,10 +55,22 @@ import {
   Cell,
   Legend
 } from 'recharts';
+import { localeOf } from '../lib/direction';
+import i18n from '../i18n/config';
 
 interface DashboardProps {
   tenantId: string;
 }
+
+/** Maps the internal 4-hour bucket code to its translation key. */
+const INTERVAL_LABEL_KEYS: Record<string, string> = {
+  '12 AM - 4 AM': 'dashboard.chart.interval_12am_4am',
+  '4 AM - 8 AM': 'dashboard.chart.interval_4am_8am',
+  '8 AM - 12 PM': 'dashboard.chart.interval_8am_12pm',
+  '12 PM - 4 PM': 'dashboard.chart.interval_12pm_4pm',
+  '4 PM - 8 PM': 'dashboard.chart.interval_4pm_8pm',
+  '8 PM - 12 AM': 'dashboard.chart.interval_8pm_12am'
+};
 
 const DrillDownModal = ({ 
   drillDown, 
@@ -345,13 +358,13 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr;
     try {
-      return d.toLocaleDateString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'), {
+      return d.toLocaleDateString(localeOf(i18n.language), {
         year: 'numeric',
         month: 'short',
         day: 'numeric'
       });
     } catch (e) {
-      return d.toLocaleDateString('en-US');
+      return d.toLocaleDateString(localeOf(i18n.language));
     }
   };
 
@@ -531,8 +544,13 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             const itemBranchInv = branchInv.filter(bi => bi.item_id === item.id);
             const totalQty = itemBranchInv.reduce((sum, bi) => sum + bi.quantity, 0);
             
-            const title = `تنبيه المخزون: ${item.name}`;
-            const message = `الكمية المتبقية من ${item.name} هي ${totalQty} ${item.unit || 'أمتار'} فقط، وهي أقل من حد الأمان المحدد (${item.min_threshold}).`;
+            const title = t('dashboard.inventory_alert_title', { item: item.name });
+            const message = t('dashboard.inventory_alert_message', {
+              item: item.name,
+              qty: totalQty,
+              unit: item.unit || t('inventory.unit_meters'),
+              threshold: item.min_threshold
+            });
             
             const alreadyAlerted = (existingNotifs || []).some(n => {
               const meta = n.metadata || {};
@@ -881,16 +899,8 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         { label: '4 PM - 8 PM', startHour: 16, endHour: 20 },
         { label: '8 PM - 12 AM', startHour: 20, endHour: 24 }
       ];
-      const arIntervalLabels: Record<string, string> = {
-        '12 AM - 4 AM': '12 ص - 4 ص',
-        '4 AM - 8 AM': '4 ص - 8 ص',
-        '8 AM - 12 PM': '8 ص - 12 م',
-        '12 PM - 4 PM': '12 م - 4 م',
-        '4 PM - 8 PM': '4 م - 8 م',
-        '8 PM - 12 AM': '8 م - 12 ص'
-      };
       chartDataPoints = intervals.map(interval => {
-        const label = i18n.language === 'ar' ? arIntervalLabels[interval.label] : interval.label;
+        const label = t(INTERVAL_LABEL_KEYS[interval.label]);
         const periodOrders = allOrders.filter(o => {
           const d = new Date(o.orderDate || '');
           const isToday = d.toDateString() === now.toDateString();
@@ -916,7 +926,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
           return dStr.startsWith(date);
         });
         return {
-          date: new Date(date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', { weekday: 'short' }),
+          date: new Date(date).toLocaleDateString(localeOf(i18n.language), { weekday: 'short' }),
           revenue: dayOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
           ordersCount: dayOrders.length
         };
@@ -935,8 +945,8 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         });
         return {
           date: rangeDays > 7 
-            ? new Date(date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', { day: 'numeric', month: 'short' })
-            : new Date(date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', { weekday: 'short' }),
+            ? new Date(date).toLocaleDateString(localeOf(i18n.language), { day: 'numeric', month: 'short' })
+            : new Date(date).toLocaleDateString(localeOf(i18n.language), { weekday: 'short' }),
           revenue: dayOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
           ordersCount: dayOrders.length
         };
@@ -952,7 +962,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
           return d >= startW && d < endW;
         });
         return {
-          date: i18n.language === 'ar' ? `أسبوع ${i + 1}` : `W${i + 1}`,
+          date: t('dashboard.chart.week_n', { n: i + 1 }),
           revenue: periodOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
           ordersCount: periodOrders.length
         };
@@ -968,7 +978,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
           return od.getMonth() === month && od.getFullYear() === year;
         });
         return {
-          date: d.toLocaleDateString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', { month: 'short' }),
+          date: d.toLocaleDateString(localeOf(i18n.language), { month: 'short' }),
           revenue: periodOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
           ordersCount: periodOrders.length
         };
@@ -985,16 +995,8 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             { label: '4 PM - 8 PM', startHour: 16, endHour: 20 },
             { label: '8 PM - 12 AM', startHour: 20, endHour: 24 }
           ];
-          const arIntervalLabels: Record<string, string> = {
-            '12 AM - 4 AM': '12 ص - 4 ص',
-            '4 AM - 8 AM': '4 ص - 8 ص',
-            '8 AM - 12 PM': '8 ص - 12 م',
-            '12 PM - 4 PM': '12 م - 4 م',
-            '4 PM - 8 PM': '4 م - 8 م',
-            '8 PM - 12 AM': '8 م - 12 ص'
-          };
           chartDataPoints = intervals.map(interval => {
-            const label = i18n.language === 'ar' ? arIntervalLabels[interval.label] : interval.label;
+            const label = t(INTERVAL_LABEL_KEYS[interval.label]);
             const periodOrders = allOrders.filter(o => {
               const d = new Date(o.orderDate || '');
               if (d < currentPeriodStart! || d > currentPeriodEnd!) return false;
@@ -1020,7 +1022,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
               return dStr.startsWith(date);
             });
             return {
-              date: new Date(date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', { day: 'numeric', month: 'short' }),
+              date: new Date(date).toLocaleDateString(localeOf(i18n.language), { day: 'numeric', month: 'short' }),
               revenue: dayOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
               ordersCount: dayOrders.length
             };
@@ -1037,7 +1039,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
               return d >= startW && d < endW && d <= currentPeriodEnd!;
             });
             return {
-              date: i18n.language === 'ar' ? `أسبوع ${i + 1}` : `W${i + 1}`,
+              date: t('dashboard.chart.week_n', { n: i + 1 }),
               revenue: periodOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
               ordersCount: periodOrders.length
             };
@@ -1054,7 +1056,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
               return d >= startM && d < endM && d <= currentPeriodEnd!;
             });
             return {
-              date: startM.toLocaleDateString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', { month: 'short', year: '2-digit' }),
+              date: startM.toLocaleDateString(localeOf(i18n.language), { month: 'short', year: '2-digit' }),
               revenue: periodOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
               ordersCount: periodOrders.length
             };
@@ -1161,7 +1163,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       const result = await deleteTestDataForTenant(tenantId);
       if (result.success) {
         setToast({ 
-          message: t('dashboard.delete_test_data_success', `تم حذف البيانات التجريبية بنجاح (${result.deletedCount} سجل)`), 
+          message: t('dashboard.delete_test_data_success', { count: result.deletedCount }), 
           type: 'success' 
         });
 
@@ -1174,12 +1176,12 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         window.dispatchEvent(new CustomEvent('data_cleared'));
       } else {
         setToast({ 
-          message: t('dashboard.delete_test_data_error', `حدث خطأ أثناء حذف البيانات: ${result.error || ''}`), 
+          message: t('dashboard.delete_test_data_error', { error: result.error || '' }), 
           type: 'error' 
         });
       }
     } catch (error) {
-      setToast({ message: t('dashboard.delete_test_data_error', 'حدث خطأ أثناء حذف البيانات'), type: 'error' });
+      setToast({ message: t('dashboard.delete_test_data_error', { error: '' }), type: 'error' });
       handleFirestoreError(error as any, OperationType.DELETE, 'test_data');
     }
   };
@@ -1187,40 +1189,40 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
   const getComparisonLabel = () => {
     switch (selectedTimeframe) {
       case 'daily':
-        return i18n.language === 'ar' ? 'مقارنة بالأمس' : 'vs Yesterday';
+        return t('dashboard.comparison.vs_yesterday');
       case 'weekly':
-        return i18n.language === 'ar' ? 'مقارنة بالأسبوع الماضي' : 'vs Last Week';
+        return t('dashboard.comparison.vs_last_week');
       case 'monthly':
-        return i18n.language === 'ar' ? 'مقارنة بالشهر الماضي' : 'vs Last Month';
+        return t('dashboard.comparison.vs_last_month');
       case 'quarterly':
-        return i18n.language === 'ar' ? 'مقارنة بالربع الماضي' : 'vs Last Quarter';
+        return t('dashboard.comparison.vs_last_quarter');
       case 'yearly':
-        return i18n.language === 'ar' ? 'مقارنة بالسنة الماضية' : 'vs Last Year';
+        return t('dashboard.comparison.vs_last_year');
       case 'custom':
-        return i18n.language === 'ar' ? 'مقارنة بالفترة السابقة' : 'vs Previous Period';
+        return t('dashboard.comparison.vs_previous_period');
       case 'all':
       default:
-        return i18n.language === 'ar' ? 'مقارنة بالشهر الماضي' : 'vs Last Month';
+        return t('dashboard.comparison.vs_last_month');
     }
   };
 
   const getComparisonLabelShort = () => {
     switch (selectedTimeframe) {
       case 'daily':
-        return i18n.language === 'ar' ? '(الأمس)' : '(Yesterday)';
+        return t('dashboard.comparison.short_yesterday');
       case 'weekly':
-        return i18n.language === 'ar' ? '(الأسبوع الماضي)' : '(Last Week)';
+        return t('dashboard.comparison.short_last_week');
       case 'monthly':
-        return i18n.language === 'ar' ? '(الشهر الماضي)' : '(Last Month)';
+        return t('dashboard.comparison.short_last_month');
       case 'quarterly':
-        return i18n.language === 'ar' ? '(الربع الماضي)' : '(Last Quarter)';
+        return t('dashboard.comparison.short_last_quarter');
       case 'yearly':
-        return i18n.language === 'ar' ? '(السنة الماضية)' : '(Last Year)';
+        return t('dashboard.comparison.short_last_year');
       case 'custom':
-        return i18n.language === 'ar' ? '(الفترة السابقة)' : '(Prev. Period)';
+        return t('dashboard.comparison.short_previous_period');
       case 'all':
       default:
-        return i18n.language === 'ar' ? '(الشهر الماضي)' : '(Last Month)';
+        return t('dashboard.comparison.short_last_month');
     }
   };
 
@@ -1232,7 +1234,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       color: 'bg-brand', 
       trend: stats.customersGrowthRate >= 0 ? `+${stats.customersGrowthRate}%` : `${stats.customersGrowthRate}%`,
       comparisonLabel: getComparisonLabel(),
-      prevValue: stats.prevCustomers !== undefined ? `${stats.prevCustomers} ${i18n.language === 'ar' ? 'عميل' : 'customers'}` : undefined,
+      prevValue: stats.prevCustomers !== undefined ? t('dashboard.prev_customers_value', { n: stats.prevCustomers }) : undefined,
       visible: hasCustomersPermission,
       onClick: () => setDrillDown({ 
         type: 'customers', 
@@ -1275,7 +1277,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       color: 'bg-warning', 
       trend: stats.pendingGrowthRate >= 0 ? `+${stats.pendingGrowthRate}%` : `${stats.pendingGrowthRate}%`,
       comparisonLabel: getComparisonLabel(),
-      prevValue: stats.prevPending !== undefined ? `${stats.prevPending} ${i18n.language === 'ar' ? 'طلب' : 'orders'}` : undefined,
+      prevValue: stats.prevPending !== undefined ? t('dashboard.prev_orders_value', { n: stats.prevPending }) : undefined,
       visible: hasOrdersPermission,
       onClick: () => setDrillDown({ 
         type: 'pending_orders', 
@@ -1410,13 +1412,13 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
               value={selectedTimeframe}
               onChange={(val) => setSelectedTimeframe(val as any)}
               options={[
-                { value: 'all', label: i18n.language === 'ar' ? 'كامل القراءات' : 'All Time', icon: <Calendar size={16} className="text-brand shrink-0" /> },
-                { value: 'daily', label: i18n.language === 'ar' ? 'يومي' : 'Daily', icon: <Calendar size={16} className="text-brand shrink-0" /> },
-                { value: 'weekly', label: i18n.language === 'ar' ? 'أسبوعي' : 'Weekly', icon: <Calendar size={16} className="text-brand shrink-0" /> },
-                { value: 'monthly', label: i18n.language === 'ar' ? 'شهري' : 'Monthly', icon: <Calendar size={16} className="text-brand shrink-0" /> },
-                { value: 'quarterly', label: i18n.language === 'ar' ? 'ربع سنوي' : 'Quarterly', icon: <Calendar size={16} className="text-brand shrink-0" /> },
-                { value: 'yearly', label: i18n.language === 'ar' ? 'سنوي' : 'Yearly', icon: <Calendar size={16} className="text-brand shrink-0" /> },
-                { value: 'custom', label: i18n.language === 'ar' ? 'فترة مخصصة' : 'Custom Period', icon: <Calendar size={16} className="text-brand shrink-0" /> },
+                { value: 'all', label: t('dashboard.timeframe.all_time'), icon: <Calendar size={16} className="text-brand shrink-0" /> },
+                { value: 'daily', label: t('dashboard.timeframe.daily'), icon: <Calendar size={16} className="text-brand shrink-0" /> },
+                { value: 'weekly', label: t('saas.weekly'), icon: <Calendar size={16} className="text-brand shrink-0" /> },
+                { value: 'monthly', label: t('saas.monthly'), icon: <Calendar size={16} className="text-brand shrink-0" /> },
+                { value: 'quarterly', label: t('dashboard.timeframe.quarterly'), icon: <Calendar size={16} className="text-brand shrink-0" /> },
+                { value: 'yearly', label: t('dashboard.timeframe.yearly'), icon: <Calendar size={16} className="text-brand shrink-0" /> },
+                { value: 'custom', label: t('dashboard.timeframe.custom'), icon: <Calendar size={16} className="text-brand shrink-0" /> },
               ]}
             />
           </div>
@@ -1445,7 +1447,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                     {growthRate >= 0 ? '+' : ''}{growthRate}%
                   </p>
                   <span className="text-[8px] sm:text-[10px] text-content-muted font-bold whitespace-nowrap">
-                    ({i18n.language === 'ar' ? 'السابق:' : 'Prev:'} <PriceDisplay amount={stats.prevRevenue} />)
+                    ({t('dashboard.prev_label')} <PriceDisplay amount={stats.prevRevenue} />)
                   </span>
                 </div>
               </div>
@@ -1479,7 +1481,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                               onClick={markAllAsRead} 
                               className="text-[10px] font-black text-brand hover:underline cursor-pointer"
                             >
-                              {i18n.language === 'ar' ? 'تحديد الكل كمقروء' : 'Mark all as read'}
+                              {t('saas.mark_all_read')}
                             </button>
                           )}
                           <span className="text-[10px] font-bold text-brand bg-brand/10 px-2 py-0.5 rounded-full">
@@ -1509,7 +1511,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                                   <p className="text-xs font-black text-content group-hover:text-brand transition-colors">{notif.title}</p>
                                   <p className="text-[10px] text-content-muted mt-0.5 leading-relaxed">{notif.message}</p>
                                   <p className="text-[9px] text-content-muted mt-1 font-bold">
-                                    {new Date(notif.createdAt).toLocaleTimeString(i18n.language === 'ar' ? 'ar-EG-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'), { hour: '2-digit', minute: '2-digit' })}
+                                    {new Date(notif.createdAt).toLocaleTimeString(localeOf(i18n.language), { hour: '2-digit', minute: '2-digit' })}
                                   </p>
                                 </div>
                               </div>
@@ -1540,33 +1542,29 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
           animate={{ opacity: 1, y: 0 }}
           className="bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/20 rounded-[2rem] p-6 lg:p-8 flex flex-col md:flex-row items-center justify-between gap-6"
         >
-          <div className="flex items-center gap-4 text-right" dir="rtl">
+          <div className={cn("flex items-center gap-4", textAlignmentClass)} dir={dir}>
             <div className="w-12 h-12 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-2xl flex items-center justify-center shrink-0 animate-pulse">
               <AlertTriangle size={24} />
             </div>
             <div>
               <h3 className="text-base sm:text-lg font-black text-amber-950 dark:text-amber-200">
-                {i18n.language === 'en' ? (isTrialPlan ? 'Trial Period Ending Soon!' : 'Subscription Expiring Soon!') : (isTrialPlan ? 'اقتراب انتهاء الفترة التجريبية!' : 'اقتراب انتهاء الاشتراك!')}
+                {isTrialPlan ? t('subscription.trial_ending_soon') : t('subscription.subscription_expiring_soon')}
               </h3>
               <p className="text-xs sm:text-sm font-medium text-amber-700/85 dark:text-amber-400/85 mt-1 leading-relaxed">
-                {i18n.language === 'en' ? (
-                  trialDays === 0 
-                  ? (isTrialPlan ? "Your free trial has ended today. Contact support to keep access." : "Your subscription has ended today. Contact support to renew.")
-                  : `Only ${trialDays} day${trialDays === 1 ? '' : 's'} remaining. Contact support to upgrade.`
-                ) : (
-                  trialDays === 0 
-                  ? (isTrialPlan ? "لقد انتهت الفترة التجريبية اليوم. يرجى التواصل مع الدعم لتفعيل الحساب ومتابعة أعمالك بسلاسة." : "لقد انتهى الاشتراك اليوم. يرجى التواصل مع الدعم لتجديد الاشتراك.")
-                  : `متبقي ${trialDays === 1 ? 'يوم واحد فقط' : (trialDays === 2 ? 'يومان فقط' : `${trialDays} أيام`)} على انتهاء ${isTrialPlan ? 'الفترة التجريبية' : 'الاشتراك'}. يرجى التواصل مع الدعم.`
-                )}
+                {trialDays === 0
+                  ? (isTrialPlan ? t('subscription.trial_ended_today') : t('subscription.subscription_ended_today'))
+                  : (isTrialPlan
+                      ? t('subscription.trial_days_remaining', { count: trialDays })
+                      : t('subscription.subscription_days_remaining', { count: trialDays }))}
               </p>
             </div>
           </div>
           <a 
-            href="mailto:nomansa2566512@gmail.com?subject=تفعيل حساب سين"
+            href={`mailto:nomansa2566512@gmail.com?subject=${encodeURIComponent(t('subscription.activation_email_subject'))}`}
             className="w-full md:w-auto bg-amber-600 hover:bg-amber-700 text-white px-6 py-3.5 rounded-2xl font-bold text-xs sm:text-sm shadow-lg shadow-amber-900/10 transition-all shrink-0 flex items-center justify-center gap-2 border border-amber-700/20"
           >
             <ExternalLink size={15} />
-            {i18n.language === 'en' ? 'Contact Support' : 'تواصل مع الدعم وتفعيل الاشتراك'}
+            {t('subscription.contact_support_activate')}
           </a>
         </motion.div>
       )}
@@ -1677,13 +1675,13 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
           <div className="flex items-center gap-2">
             <Calendar size={18} className="text-brand animate-pulse" />
             <span className="text-xs sm:text-sm font-black text-content">
-              {i18n.language === 'ar' ? 'تحديد فترة مخصصة لاستعراض البيانات' : 'Select custom date range for data review'}
+              {t('dashboard.custom_range_hint')}
             </span>
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <div className="flex items-center gap-2 flex-1 sm:flex-none">
               <span className="text-xs font-bold text-content-muted">
-                {i18n.language === 'ar' ? 'من:' : 'From:'}
+                {t('common.from_label')}
               </span>
               <input
                 type="date"
@@ -1695,7 +1693,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             </div>
             <div className="flex items-center gap-2 flex-1 sm:flex-none">
               <span className="text-xs font-bold text-content-muted">
-                {i18n.language === 'ar' ? 'إلى:' : 'To:'}
+                {t('common.to_label')}
               </span>
               <input
                 type="date"
@@ -1734,7 +1732,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             </div>
             <p className="text-content-muted text-[10px] sm:text-xs font-black uppercase tracking-widest">{stat.label}</p>
             <h3 className="text-2xl sm:text-3xl font-black text-content mt-1">
-              {typeof stat.value === 'number' ? stat.value.toLocaleString('en-US') : stat.value}
+              {typeof stat.value === 'number' ? stat.value.toLocaleString(localeOf(i18n.language)) : stat.value}
             </h3>
             {stat.comparisonLabel && (
               <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/40 text-[10px] sm:text-xs">
@@ -1875,7 +1873,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                 <div className="bg-surface-muted/60 border border-border/80 rounded-2xl p-3 flex flex-col justify-between">
                   <span className="text-[10px] font-bold text-content-muted uppercase tracking-wider">{t('dashboard.period_orders', 'الطلبات الإجمالية')}</span>
                   <span className="text-sm sm:text-base md:text-lg font-black text-info mt-1 truncate">
-                    {totalPeriodOrders.toLocaleString('en-US')} <span className="text-xs font-bold text-content-muted">{t('common.order', 'طلب')}</span>
+                    {totalPeriodOrders.toLocaleString(localeOf(i18n.language))} <span className="text-xs font-bold text-content-muted">{t('common.order', 'طلب')}</span>
                   </span>
                 </div>
               </div>
@@ -2096,7 +2094,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                             <span className="text-sm font-black text-content/80 group-hover:text-brand transition-colors">{status.name}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-lg font-black text-content">{status.value.toLocaleString('en-US')}</span>
+                            <span className="text-lg font-black text-content">{status.value.toLocaleString(localeOf(i18n.language))}</span>
                             <span className="text-[10px] font-bold text-content-muted uppercase tracking-widest">{t('common.order')}</span>
                           </div>
                         </div>
@@ -2120,11 +2118,11 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             <div className="mt-8 pt-8 border-t border-border grid grid-cols-2 gap-4">
               <div className="bg-brand/5 p-4 rounded-2xl">
                 <p className="text-[10px] font-black text-brand uppercase tracking-widest">{t('dashboard.in_progress', 'قيد التنفيذ')}</p>
-                <p className="text-xl font-black text-brand">{stats.pending.toLocaleString('en-US')}</p>
+                <p className="text-xl font-black text-brand">{stats.pending.toLocaleString(localeOf(i18n.language))}</p>
               </div>
               <div className="bg-success/10 p-4 rounded-2xl">
                 <p className="text-[10px] font-black text-success uppercase tracking-widest">{t('dashboard.ready', 'جاهز')}</p>
-                <p className="text-xl font-black text-success">{allOrders.filter(o => o.status === 'ready').length.toLocaleString('en-US')}</p>
+                <p className="text-xl font-black text-success">{allOrders.filter(o => o.status === 'ready').length.toLocaleString(localeOf(i18n.language))}</p>
               </div>
             </div>
           </div>
@@ -2328,13 +2326,13 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                         <p className="text-sm font-black text-content">{notif.title}</p>
                         {notif.status === 'unread' && (
                           <span className="bg-brand text-white text-[9px] font-black px-1.5 py-0.5 rounded-full animate-pulse whitespace-nowrap">
-                            {i18n.language === 'ar' ? 'جديد' : 'New'}
+                            {t('common.new')}
                           </span>
                         )}
                       </div>
                       <p className="text-xs text-content-muted mt-1 leading-relaxed">{notif.message}</p>
                       <p className="text-[9px] text-content-muted/60 mt-2 font-bold">
-                        {new Date(notif.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        {new Date(notif.createdAt).toLocaleDateString(localeOf(i18n.language), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
                   </div>

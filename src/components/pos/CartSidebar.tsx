@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Customer, InventoryItem, TaxInvoice } from '../../types/supabase';
 import { ShoppingCart, Trash2, CreditCard, Loader2, Minus, Plus } from 'lucide-react';
 import { supabase } from '../../lib/supabase/client';
@@ -32,6 +33,7 @@ export default function CartSidebar({
   onRemove,
   onCheckoutSuccess
 }: CartSidebarProps) {
+  const { t } = useTranslation();
   const [isProcessing, setIsProcessing] = useState(false);
   const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('fixed');
   const [discountValue, setDiscountValue] = useState<number>(0);
@@ -74,7 +76,7 @@ export default function CartSidebar({
 
   const handleCheckout = async () => {
     if (cartItems.length === 0) {
-      alert('السلة فارغة!');
+      alert(t('pos.cart_empty_alert'));
       return;
     }
     
@@ -82,7 +84,7 @@ export default function CartSidebar({
     try {
       // 1. Fetch Tenant Settings for ZATCA
       const { data: tenant } = await supabase.from('tenants').select('*').eq('id', tenantId).single();
-      if (!tenant) throw new Error('تعذر العثور على بيانات المتجر');
+      if (!tenant) throw new Error(t('pos.store_data_not_found'));
       
       const orderNumber = generateOrderNumber();
       const qrCode = generateZatcaQR(
@@ -100,7 +102,7 @@ export default function CartSidebar({
       const { data: order, error: orderError } = await supabase.from('orders').insert([{
         tenant_id: tenantId,
         customer_id: (selectedCustomer?.id && isUuid(selectedCustomer.id)) ? selectedCustomer.id : null,
-        customer_name: selectedCustomer?.name || 'عميل نقدي',
+        customer_name: selectedCustomer?.name || t('pos.walk_in_customer'),
         order_number: orderNumber,
         payment_method: 'cash',
         discount_amount: Number(discountAmount) >= 0 ? Number(discountAmount) : 0, // Include discount
@@ -115,14 +117,14 @@ export default function CartSidebar({
       }]).select().single();
 
       if (orderError) throw orderError;
-      if (!order) throw new Error('فشل في إنشاء الطلب');
+      if (!order) throw new Error(t('pos.order_creation_failed'));
 
       // Insert system notification for the new order
       try {
         await supabase.from('notifications').insert({
           tenant_id: tenantId,
-          title: 'طلب مبيعات جديد',
-          message: `تم إنشاء الفاتورة رقم ${orderNumber} للعميل ${selectedCustomer?.name || 'عميل نقدي'} بقيمة ${grandTotal.toFixed(2)} ر.س`,
+          title: t('orders.notification_new_order_title'),
+          message: t('orders.notification_new_order_message', { number: orderNumber, customer: selectedCustomer?.name || t('pos.walk_in_customer'), amount: grandTotal.toFixed(2) }),
           type: 'order',
           status: 'unread',
           created_at: new Date().toISOString(),
@@ -194,7 +196,7 @@ export default function CartSidebar({
       if (invoiceError) throw invoiceError;
 
       // 5. Update state and open modal
-      setTenantInfo({ name: tenant.name || 'مؤسسة محلية', vat: tenant.vat_number || '300000000000003' });
+      setTenantInfo({ name: tenant.name || t('pos.local_business_default'), vat: tenant.vat_number || '300000000000003' });
       
       const printItems = cartItems.map(cartItem => ({
         name: cartItem.item.name,
@@ -216,7 +218,7 @@ export default function CartSidebar({
       
     } catch (error: any) {
       console.error('Checkout error:', error);
-      alert('فشل في إتمام الطلب: ' + error.message);
+      alert(t('pos.checkout_failed_msg', { error: error.message }));
     } finally {
       setIsProcessing(false);
     }
@@ -229,9 +231,9 @@ export default function CartSidebar({
           <div className="w-10 h-10 rounded-xl bg-brand/10 flex items-center justify-center">
             <ShoppingCart size={22} className="text-brand" />
           </div>
-          السلة والفاتورة
+          {t('pos.cart_and_invoice')}
           <span className="mr-auto px-2.5 py-0.5 rounded-full bg-surface-muted text-content-muted text-xs font-bold">
-            {cartItems.length} منتجات
+            {t('pos.products_count', { n: cartItems.length })}
           </span>
         </h2>
       </div>
@@ -242,7 +244,7 @@ export default function CartSidebar({
             <div className="w-20 h-20 rounded-full bg-surface-muted flex items-center justify-center">
               <ShoppingCart size={32} className="opacity-20" />
             </div>
-            <p className="font-medium">ابدأ بإضافة المنتجات إلى السلة</p>
+            <p className="font-medium">{t('pos.start_adding_products')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -266,7 +268,7 @@ export default function CartSidebar({
                     <button 
                       onClick={() => onRemove(item.id)}
                       className="text-danger/60 hover:text-danger hover:bg-danger/10 p-1.5 rounded-lg transition-all"
-                      title="حذف"
+                      title={t('common.delete')}
                     >
                       <Trash2 size={18} />
                     </button>
@@ -302,7 +304,7 @@ export default function CartSidebar({
         {/* Discount Engine */}
         <div className="mb-5 bg-surface-muted rounded-xl p-4 border border-border">
           <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-bold text-content">الخصم</span>
+            <span className="text-sm font-bold text-content">{t('pos.discount')}</span>
             <div className="flex bg-surface rounded-lg border border-border p-0.5 shadow-sm">
               <button
                 type="button"
@@ -312,7 +314,7 @@ export default function CartSidebar({
                 )}
                 onClick={() => setDiscountType('percent')}
               >
-                نسبة (%)
+                {t('settings_page.staff.commissions.percentage')}
               </button>
               <button
                 type="button"
@@ -322,7 +324,7 @@ export default function CartSidebar({
                 )}
                 onClick={() => setDiscountType('fixed')}
               >
-                مبلغ ثابت
+                {t('settings_page.staff.commissions.fixed_amount')}
               </button>
             </div>
           </div>
@@ -341,29 +343,29 @@ export default function CartSidebar({
 
         <div className="space-y-3 mb-6">
           <div className="flex justify-between text-content-muted font-medium">
-            <span>المجموع الفرعي</span>
+            <span>{t('pos.subtotal')}</span>
             <span className="text-content font-bold"><PriceDisplay amount={subTotal} /></span>
           </div>
           {discountAmount > 0 && (
             <div className="flex justify-between text-brand font-medium">
-              <span>الخصم المستقطع</span>
-              <span className="font-bold cursor-default" title={`الخصم: ${discountType === 'percent' ? `${discountValue}%` : 'مبلغ ثابت'}`}>
+              <span>{t('pos.discount_applied')}</span>
+              <span className="font-bold cursor-default" title={t('pos.discount_tooltip', { value: discountType === 'percent' ? `${discountValue}%` : t('settings_page.staff.commissions.fixed_amount') })}>
                 -<PriceDisplay amount={discountAmount} />
               </span>
             </div>
           )}
           <div className="flex justify-between text-content-muted font-medium">
-            <span>الضريبة (15%)</span>
+            <span>{t('pos.vat_15')}</span>
             <span className="text-content font-bold"><PriceDisplay amount={vatAmount} /></span>
           </div>
           <div className="flex justify-between items-end pt-3 border-t border-dashed border-border mt-3">
             <div>
-              <p className="text-xs font-bold text-content-muted uppercase tracking-wider mb-1">الإجمالي النهائي</p>
+              <p className="text-xs font-bold text-content-muted uppercase tracking-wider mb-1">{t('pos.final_total')}</p>
               <PriceDisplay amount={grandTotal} className="text-3xl font-black text-brand" />
             </div>
             {selectedCustomer && (
               <div className="text-left">
-                <p className="text-[10px] font-bold text-content-muted uppercase mb-0.5">العميل المُختار</p>
+                <p className="text-[10px] font-bold text-content-muted uppercase mb-0.5">{t('pos.selected_customer')}</p>
                 <p className="text-xs font-bold text-content">{selectedCustomer.name}</p>
               </div>
             )}
@@ -381,7 +383,7 @@ export default function CartSidebar({
           ) : (
             <>
               <CreditCard size={22} />
-              إصدار الفاتورة وتأكيد الطلب
+              {t('pos.issue_invoice_confirm_order')}
             </>
           )}
         </button>

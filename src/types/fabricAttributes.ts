@@ -11,6 +11,8 @@
  *   3) في نموذج صنف المخزون (عند category === 'fabric') اعرض الحقول أدناه.
  */
 
+import i18n from 'i18next';
+
 export interface FabricAttributes {
   composition?: FabricComposition;  // التركيب
   color?: string;                   // اللون (نص حر أو من palette)
@@ -33,31 +35,44 @@ export type FabricPattern =
 export type FabricSeason = 'summer' | 'winter' | 'all_season';
 
 /** خيارات جاهزة للقوائم المنسدلة في النموذج (عربي/قيمة). */
-export const FABRIC_COMPOSITION_OPTIONS: { value: FabricComposition; label: string }[] = [
-  { value: 'cotton', label: 'قطن' },
-  { value: 'polyester', label: 'بوليستر' },
-  { value: 'cotton_poly_blend', label: 'مخلوط قطن/بوليستر' },
-  { value: 'wool', label: 'صوف' },
-  { value: 'linen', label: 'كتّان' },
-  { value: 'silk', label: 'حرير' },
-  { value: 'viscose', label: 'فيسكوز' },
-  { value: 'nylon', label: 'نايلون' },
-  { value: 'other', label: 'أخرى' },
-];
+const FABRIC_COMPOSITION_LABEL_KEYS: Record<FabricComposition, string> = {
+  cotton: 'inventory.fabric_composition.cotton',
+  polyester: 'inventory.fabric_composition.polyester',
+  cotton_poly_blend: 'inventory.fabric_composition.cotton_poly_blend',
+  wool: 'inventory.fabric_composition.wool',
+  linen: 'inventory.fabric_composition.linen',
+  silk: 'inventory.fabric_composition.silk',
+  viscose: 'inventory.fabric_composition.viscose',
+  nylon: 'inventory.fabric_composition.nylon',
+  other: 'common.other',
+};
 
-export const FABRIC_PATTERN_OPTIONS: { value: FabricPattern; label: string }[] = [
-  { value: 'solid', label: 'سادة' },
-  { value: 'striped', label: 'مخطّط' },
-  { value: 'checked', label: 'كاروهات' },
-  { value: 'patterned', label: 'منقوش' },
-  { value: 'jacquard', label: 'جاكارد' },
-];
+const FABRIC_PATTERN_LABEL_KEYS: Record<FabricPattern, string> = {
+  solid: 'inventory.chest_plain',
+  striped: 'inventory.fabric_pattern.striped',
+  checked: 'inventory.fabric_pattern.checked',
+  patterned: 'inventory.fabric_pattern.patterned',
+  jacquard: 'inventory.fabric_pattern.jacquard',
+};
 
-export const FABRIC_SEASON_OPTIONS: { value: FabricSeason; label: string }[] = [
-  { value: 'summer', label: 'صيفي' },
-  { value: 'winter', label: 'شتوي' },
-  { value: 'all_season', label: 'لكل المواسم' },
-];
+const FABRIC_SEASON_LABEL_KEYS: Record<FabricSeason, string> = {
+  summer: 'inventory.fabric_season.summer',
+  winter: 'inventory.fabric_season.winter',
+  all_season: 'inventory.fabric_season.all_season',
+};
+
+export const FABRIC_COMPOSITION_VALUES = Object.keys(FABRIC_COMPOSITION_LABEL_KEYS) as FabricComposition[];
+export const FABRIC_PATTERN_VALUES = Object.keys(FABRIC_PATTERN_LABEL_KEYS) as FabricPattern[];
+export const FABRIC_SEASON_VALUES = Object.keys(FABRIC_SEASON_LABEL_KEYS) as FabricSeason[];
+
+export const getFabricCompositionOptions = (): { value: FabricComposition; label: string }[] =>
+  FABRIC_COMPOSITION_VALUES.map(value => ({ value, label: i18n.t(FABRIC_COMPOSITION_LABEL_KEYS[value]) }));
+
+export const getFabricPatternOptions = (): { value: FabricPattern; label: string }[] =>
+  FABRIC_PATTERN_VALUES.map(value => ({ value, label: i18n.t(FABRIC_PATTERN_LABEL_KEYS[value]) }));
+
+export const getFabricSeasonOptions = (): { value: FabricSeason; label: string }[] =>
+  FABRIC_SEASON_VALUES.map(value => ({ value, label: i18n.t(FABRIC_SEASON_LABEL_KEYS[value]) }));
 
 /** تطبيع للبحث/المطابقة في السوق المستقبلي. */
 export function fabricSearchKey(f: FabricAttributes): string {

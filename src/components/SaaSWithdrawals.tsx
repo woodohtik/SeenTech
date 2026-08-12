@@ -9,11 +9,13 @@ import { useEffect, useState } from 'react';
 import { listPendingWithdrawals, processWithdrawal, type Withdrawal } from '../services/referralService';
 import { useTranslation } from 'react-i18next';
 
+import { isRtlLang } from '../lib/direction';
+
 const INK = '#0E2A42', CTA = '#0BA06B', GRAY = '#6B7280', LINE = '#E5EAF1', SURF = '#F5F7FA';
 
 export default function SaaSWithdrawals() {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
 
   const [rows, setRows] = useState<Withdrawal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,14 +35,14 @@ export default function SaaSWithdrawals() {
 
   async function act(id: string, approve: boolean) {
     const note = approve 
-      ? t('saas.success', 'تم التحويل بنجاح') 
-      : (window.prompt(t('saas.rejection_reason_prompt', 'سبب الرفض؟')) || t('saas.rejection_reason_default', 'مرفوض'));
+      ? t('saas.success') 
+      : (window.prompt(t('saas.rejection_reason_prompt')) || t('saas.rejection_reason_default'));
     setBusyId(id);
     try { 
       await processWithdrawal(id, approve, note); 
       await load(); 
     } catch (e: any) { 
-      alert(e?.message || t('saas.failed', 'فشل')); 
+      alert(e?.message || t('saas.failed')); 
     } finally { 
       setBusyId(''); 
     }
@@ -48,19 +50,19 @@ export default function SaaSWithdrawals() {
 
   return (
     <div dir={isRtl ? "rtl" : "ltr"} style={st.wrap}>
-      <h1 style={st.title}>{t('saas.withdrawals_title', 'طلبات سحب الإحالة')}</h1>
-      <p style={st.sub}>{t('saas.withdrawals_subtitle', 'راجع، حوّل المبلغ بنكياً للآيبان، ثم اضغط «تم التحويل». الرفض يُرجع المبلغ لمحفظة العميل.')}</p>
+      <h1 style={st.title}>{t('saas.withdrawals_title')}</h1>
+      <p style={st.sub}>{t('saas.withdrawals_subtitle')}</p>
 
-      {loading ? <div style={st.empty}>{t('saas.loading', 'جارٍ التحميل…')}</div> :
-        rows.length === 0 ? <div style={st.empty}>{t('saas.no_withdrawals', 'لا طلبات قيد المراجعة.')}</div> :
+      {loading ? <div style={st.empty}>{t('saas.loading')}</div> :
+        rows.length === 0 ? <div style={st.empty}>{t('saas.no_withdrawals')}</div> :
         <div className="seen-table-scroll"><table style={st.table}>
           <thead><tr>
             {[
-              t('saas.date', 'التاريخ'),
-              t('saas.amount', 'المبلغ'),
-              t('saas.beneficiary', 'المستفيد'),
-              t('saas.iban', 'الآيبان (IBAN)'),
-              t('saas.action', 'إجراء')
+              t('saas.date'),
+              t('saas.amount'),
+              t('saas.beneficiary'),
+              t('saas.iban'),
+              t('saas.action')
             ].map(h =>
               <th key={h} style={{ ...st.th, textAlign: isRtl ? 'right' : 'left' }}>{h}</th>)}
           </tr></thead>
@@ -72,8 +74,8 @@ export default function SaaSWithdrawals() {
                 <td style={{ ...st.td, textAlign: isRtl ? 'right' : 'left' }}>{w.beneficiary || '—'}</td>
                 <td style={{ ...st.td, direction: 'ltr', fontSize: 13, textAlign: isRtl ? 'right' : 'left' }}>{w.iban || '—'}</td>
                 <td style={{ ...st.td, textAlign: isRtl ? 'right' : 'left' }}>
-                  <button disabled={busyId === w.id} onClick={() => act(w.id, true)} style={{ ...st.approve, marginLeft: isRtl ? 8 : 0, marginRight: isRtl ? 0 : 8 }}>{t('saas.transferred', 'تم التحويل')}</button>
-                  <button disabled={busyId === w.id} onClick={() => act(w.id, false)} style={st.reject}>{t('saas.reject', 'رفض')}</button>
+                  <button disabled={busyId === w.id} onClick={() => act(w.id, true)} style={{ ...st.approve, marginLeft: isRtl ? 8 : 0, marginRight: isRtl ? 0 : 8 }}>{t('saas.transferred')}</button>
+                  <button disabled={busyId === w.id} onClick={() => act(w.id, false)} style={st.reject}>{t('saas.reject')}</button>
                 </td>
               </tr>
             ))}

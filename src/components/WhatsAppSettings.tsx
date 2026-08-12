@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../lib/utils';
 import { MessageSquare, Zap, CheckCircle2, RotateCcw, Send, Sparkles, Copy, Info } from 'lucide-react';
+import { isRtlLang } from '../lib/direction';
+
 import { 
   DEFAULT_WHATSAPP_TEMPLATE, 
   WHATSAPP_VARIABLES, 
@@ -15,7 +17,7 @@ import {
 
 export default function WhatsAppSettings() {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur' || !i18n.language;
+  const isRtl = isRtlLang(i18n.language);
   const [enabled, setEnabled] = useState<boolean>(true);
   const [template, setTemplate] = useState<string>(DEFAULT_WHATSAPP_TEMPLATE);
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
@@ -39,21 +41,21 @@ export default function WhatsAppSettings() {
     const val = e.target.checked;
     setEnabled(val);
     setWhatsAppEnabled(val);
-    showToast(val ? t('settings_page.whatsapp.enabled_toast', 'تم تفعيل إرسال الواتساب التلقائي') : t('settings_page.whatsapp.disabled_toast', 'تم تعطيل إرسال الواتساب'));
+    showToast(val ? t('settings_page.whatsapp.enabled_toast') : t('settings_page.whatsapp.disabled_toast'));
   };
 
   const handleSave = () => {
     saveWhatsAppTemplate(template);
     setSavedSuccess(true);
-    showToast(t('settings_page.whatsapp.saved_toast', 'تم حفظ قالب الرسالة بنجاح ✓'));
+    showToast(t('settings_page.whatsapp.saved_toast'));
     setTimeout(() => setSavedSuccess(false), 3000);
   };
 
   const handleReset = () => {
-    if (window.confirm(t('settings_page.whatsapp.reset_confirm', 'هل أنت متأكد من إعادة تعيين القالب إلى النص الافتراضي؟'))) {
+    if (window.confirm(t('settings_page.whatsapp.reset_confirm'))) {
       setTemplate(DEFAULT_WHATSAPP_TEMPLATE);
       saveWhatsAppTemplate(DEFAULT_WHATSAPP_TEMPLATE);
-      showToast(t('settings_page.whatsapp.reset_toast', 'تمت إعادة تعيين النص الافتراضي'));
+      showToast(t('settings_page.whatsapp.reset_toast'));
     }
   };
 
@@ -64,7 +66,7 @@ export default function WhatsAppSettings() {
     const textarea = textareaRef.current;
     if (!textarea) {
       setTemplate(prev => prev + ' ' + tag);
-      showToast(t('settings_page.whatsapp.variable_added_toast', 'تمت إضافة المتغير') + ' ' + tag);
+      showToast(t('settings_page.whatsapp.variable_added_toast') + ' ' + tag);
       return;
     }
 
@@ -88,22 +90,22 @@ export default function WhatsAppSettings() {
       textarea.setSelectionRange(newCursorPos, newCursorPos);
     }, 50);
 
-    showToast(t('settings_page.whatsapp.variable_inserted_toast', 'تم إدراج المتغير') + ' ' + tag);
+    showToast(t('settings_page.whatsapp.variable_inserted_toast') + ' ' + tag);
   };
 
   // معاينة الرسالة الحية
   const sampleMessage = buildWhatsAppMessage(template, {
-    customerName: t('settings_page.whatsapp.sample_customer_name', 'عبدالله علي'),
+    customerName: t('settings_page.whatsapp.sample_customer_name'),
     orderId: '10482',
     totalAmount: '250',
     customerPhone: '0501234567',
     invoiceUrl: 'https://seen-pos.app/order/10482',
-    storeName: t('settings_page.whatsapp.sample_store_name', 'خياطة الأناقة'),
+    storeName: t('settings_page.whatsapp.sample_store_name'),
   });
 
   const handleSendTest = () => {
     if (!testPhone.trim()) {
-      alert(t('settings_page.whatsapp.enter_phone_test', 'يرجى إدخال رقم الواتساب للاختبار'));
+      alert(t('settings_page.whatsapp.enter_phone_test'));
       return;
     }
     sendWhatsAppMessage(testPhone, sampleMessage);
@@ -127,13 +129,13 @@ export default function WhatsAppSettings() {
         </div>
         <div className="flex-1">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <h3 className="text-2xl font-black text-content">{t('settings_page.whatsapp.title', 'محرك واتساب (WhatsApp Engine)')}</h3>
+            <h3 className="text-2xl font-black text-content">{t('settings_page.whatsapp.title')}</h3>
             <span className="text-xs font-black text-emerald-600 bg-emerald-500/10 px-3 py-1 rounded-full self-center sm:self-auto">
-              {t('settings_page.whatsapp.status_tag', 'إرسال فوري وتفاعلي')}
+              {t('settings_page.whatsapp.status_tag')}
             </span>
           </div>
           <p className="text-sm text-content-muted font-medium mt-1">
-            {t('settings_page.whatsapp.description', 'خصص قالب رسائل الفواتير والتنبيهات الموجهة للعملاء عبر الواتساب واستخدم المتغيرات الذكية')}
+            {t('settings_page.whatsapp.description')}
           </p>
         </div>
       </div>
@@ -146,15 +148,15 @@ export default function WhatsAppSettings() {
               <Zap size={28} className="text-emerald-600 animate-pulse" />
             </div>
             <div className="space-y-1">
-              <p className="text-lg font-black text-content">{t('settings_page.whatsapp.toggle_title', 'الفواتير والإشعارات الذكية')}</p>
+              <p className="text-lg font-black text-content">{t('settings_page.whatsapp.toggle_title')}</p>
               <p className="text-sm text-content-muted font-medium leading-relaxed">
-                {t('settings_page.whatsapp.toggle_desc', 'بمجرد إتمام الطلب أو الضغط على زر مشاركة الواتساب، يتم إنشاء رسالة مخصصة جاهزة للإرسال مباشرة للعميل.')}
+                {t('settings_page.whatsapp.toggle_desc')}
               </p>
             </div>
           </div>
           <div className="flex justify-center sm:justify-start items-center gap-3">
             <span className="text-xs font-bold text-content-muted">
-              {enabled ? t('settings_page.whatsapp.status_enabled', 'مُفعّل') : t('settings_page.whatsapp.status_disabled', 'معطّل')}
+              {enabled ? t('settings_page.whatsapp.status_enabled') : t('settings_page.whatsapp.status_disabled')}
             </span>
             <label className="relative inline-flex items-center cursor-pointer shrink-0">
               <input 
@@ -173,11 +175,11 @@ export default function WhatsAppSettings() {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <label className="text-xs font-black text-content flex items-start gap-2 min-w-0">
               <Sparkles size={16} className="text-amber-500 shrink-0 mt-0.5" />
-              <span>{t('settings_page.whatsapp.vars_selector_label', 'انقر على أي متغير بالأسفل لإضافته لموقع المؤشر في النص:')}</span>
+              <span>{t('settings_page.whatsapp.vars_selector_label')}</span>
             </label>
             {/* Redundant hint — hidden on phones where the row has no room. */}
             <span className="hidden sm:inline text-[11px] font-bold text-content-muted">
-              {isRtl ? 'انقر لإدراج المتغير ↙' : 'Click to insert variable ↙'}
+              {t('settings_page.whatsapp.click_to_insert_hint')}
             </span>
           </div>
 
@@ -188,7 +190,7 @@ export default function WhatsAppSettings() {
                 type="button"
                 onClick={() => insertVariable(item.tag)}
                 className={cn("flex flex-col items-start p-2.5 bg-surface hover:bg-brand/10 border border-border hover:border-brand/40 rounded-xl transition-all group active:scale-95 shadow-xs", isRtl ? "text-right" : "text-left")}
-                title={isRtl ? `انقر لإضافة ${item.label}` : `Click to add ${item.label}`}
+                title={t('settings_page.whatsapp.click_to_add_var', { label: item.label })}
               >
                 <span className="text-[11px] font-black text-brand group-hover:text-brand-dark transition-colors dir-ltr font-mono break-all">
                   {item.tag}
@@ -205,10 +207,10 @@ export default function WhatsAppSettings() {
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
             <label className="text-xs font-black text-content-muted uppercase tracking-wider">
-              {t('settings_page.whatsapp.template_label', 'قالب الرسالة المخصص')}
+              {t('settings_page.whatsapp.template_label')}
             </label>
             <div className="flex items-center gap-2 text-xs font-bold text-content-muted">
-              <span>{t('settings_page.whatsapp.chars_count', 'عدد الحروف:')} {template.length}</span>
+              <span>{t('settings_page.whatsapp.chars_count')} {template.length}</span>
             </div>
           </div>
 
@@ -217,7 +219,7 @@ export default function WhatsAppSettings() {
               ref={textareaRef}
               value={template}
               onChange={(e) => setTemplate(e.target.value)}
-              placeholder={t('settings_page.whatsapp.textarea_placeholder', 'اكتب نص قالب الواتساب هنا...')}
+              placeholder={t('settings_page.whatsapp.textarea_placeholder')}
               rows={5}
               className="w-full bg-surface-muted border-2 border-border focus:border-emerald-500 focus:bg-surface rounded-2xl p-5 font-medium transition-all outline-none resize-none text-sm sm:text-base leading-relaxed text-content shadow-inner"
             />
@@ -229,10 +231,10 @@ export default function WhatsAppSettings() {
           <div className="flex items-center justify-between px-1">
             <span className="text-xs font-black text-content-muted uppercase tracking-wider flex items-center gap-1.5">
               <Info size={14} className="text-emerald-600" />
-              {t('settings_page.whatsapp.preview_label', 'معاينة حية للرسالة كما ستظهر للعميل:')}
+              {t('settings_page.whatsapp.preview_label')}
             </span>
             <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-700 px-2 py-0.5 rounded-full">
-              {t('settings_page.whatsapp.preview_badge', 'مثال حي')}
+              {t('settings_page.whatsapp.preview_badge')}
             </span>
           </div>
 
@@ -260,7 +262,7 @@ export default function WhatsAppSettings() {
               className="flex items-center justify-center gap-2 px-4 py-3 bg-surface-muted hover:bg-slate-200 dark:hover:bg-slate-800 text-content-muted hover:text-content rounded-xl text-xs font-black transition-all w-full sm:w-auto"
             >
               <RotateCcw size={16} />
-              <span>{t('settings_page.whatsapp.reset_btn', 'إعادة تعيين القالب')}</span>
+              <span>{t('settings_page.whatsapp.reset_btn')}</span>
             </button>
 
             <button
@@ -269,7 +271,7 @@ export default function WhatsAppSettings() {
               className="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-xl text-xs font-black transition-all w-full sm:w-auto"
             >
               <Send size={16} />
-              <span>{t('settings_page.whatsapp.test_send_btn', 'تجربة الإرسال')}</span>
+              <span>{t('settings_page.whatsapp.test_send_btn')}</span>
             </button>
           </div>
 
@@ -279,7 +281,7 @@ export default function WhatsAppSettings() {
             className="flex items-center justify-center gap-2 px-8 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-black transition-all shadow-lg shadow-emerald-600/20 active:scale-95 w-full sm:w-auto"
           >
             <CheckCircle2 size={18} />
-            <span>{savedSuccess ? t('settings_page.whatsapp.saved_btn_success', 'تم حفظ القالب ✓') : t('settings_page.whatsapp.save_btn', 'حفظ التغيرات')}</span>
+            <span>{savedSuccess ? t('settings_page.whatsapp.saved_btn_success') : t('settings_page.whatsapp.save_btn')}</span>
           </button>
         </div>
       </div>
@@ -291,7 +293,7 @@ export default function WhatsAppSettings() {
             <div className="flex items-center justify-between border-b border-border pb-4">
               <h4 className="text-lg font-black text-content flex items-center gap-2">
                 <Send size={20} className="text-emerald-600" />
-                <span>{t('settings_page.whatsapp.test_modal_title', 'تجربة إرسال رسالة الواتساب')}</span>
+                <span>{t('settings_page.whatsapp.test_modal_title')}</span>
               </h4>
               <button
                 type="button"
@@ -303,14 +305,14 @@ export default function WhatsAppSettings() {
             </div>
 
             <p className="text-xs text-content-muted leading-relaxed font-medium">
-              {t('settings_page.whatsapp.test_modal_desc', 'أدخل رقم الهاتف لتجربة إرسال الرسالة المعاينَة عبر الواتساب مباشرة:')}
+              {t('settings_page.whatsapp.test_modal_desc')}
             </p>
 
             <div className="space-y-2">
-              <label className="text-xs font-black text-content">{t('settings_page.whatsapp.phone_input_label', 'رقم الهاتف (مع الرمز الدولي أو المحلي)')}</label>
+              <label className="text-xs font-black text-content">{t('settings_page.whatsapp.phone_input_label')}</label>
               <input
                 type="text"
-                placeholder={t('settings_page.whatsapp.phone_input_placeholder', 'مثال: 0501234567 أو 966501234567')}
+                placeholder={t('settings_page.whatsapp.phone_input_placeholder')}
                 value={testPhone}
                 onChange={(e) => setTestPhone(e.target.value)}
                 className={cn("w-full p-3.5 bg-surface-muted border border-border rounded-xl text-sm font-bold text-content outline-none focus:border-emerald-500 dir-ltr", isRtl ? "text-right" : "text-left")}
@@ -323,7 +325,7 @@ export default function WhatsAppSettings() {
                 onClick={() => setShowTestModal(false)}
                 className="flex-1 py-3 bg-surface-muted text-content font-bold rounded-xl text-xs"
               >
-                {t('settings_page.whatsapp.cancel_btn', 'إلغاء')}
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
@@ -331,7 +333,7 @@ export default function WhatsAppSettings() {
                 className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20"
               >
                 <Send size={14} />
-                <span>{t('settings_page.whatsapp.open_whatsapp_btn', 'فتح واتساب الآن')}</span>
+                <span>{t('procurement.open_whatsapp_now')}</span>
               </button>
             </div>
           </div>

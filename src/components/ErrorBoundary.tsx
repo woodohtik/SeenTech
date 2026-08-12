@@ -1,6 +1,8 @@
 import React, { Component, ErrorInfo } from 'react';
 import { AlertCircle, RefreshCcw, Home, Terminal } from 'lucide-react';
 import { logError } from '../lib/logger';
+import i18n from 'i18next';
+import { dirOf } from '../lib/direction';
 
 interface ErrorBoundaryProps {
   children?: React.ReactNode;
@@ -83,7 +85,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
   render() {
     const { hasError, error, eventId } = this.state;
     if (hasError) {
-      let errorMessage = "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.";
+      let errorMessage = i18n.t('errors.unexpected');
       let isPermissionError = false;
       let pathInfo = "";
 
@@ -97,22 +99,22 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
             parsed.error.includes('Missing or insufficient permissions') ||
             parsed.error.includes('insufficient permissions')
           )) {
-            errorMessage = "عذراً، ليس لديك الصلاحيات الكافية للوصول إلى هذا الجزء من النظام. قد يكون حسابك غير مفعل أو تم تغيير صلاحياتك.";
+            errorMessage = i18n.t('errors.insufficient_permissions');
             isPermissionError = true;
-            if (parsed.path) pathInfo = `المسار: ${parsed.path}`;
+            if (parsed.path) pathInfo = i18n.t('errors.path_info', { path: parsed.path });
           } else if (parsed.error && parsed.error.includes('offline')) {
-            errorMessage = "يبدو أنك غير متصل بالإنترنت حالياً. يرجى التأكد من اتصالك والمحاولة مرة أخرى.";
+            errorMessage = i18n.t('errors.offline');
           }
         }
       } catch (e) {
         // Not JSON or parsing failed
         if (error?.message?.toLowerCase().includes('fetch') || error?.message?.toLowerCase().includes('network')) {
-           errorMessage = "مشكلة في الاتصال بالشبكة. يرجى التحقق من اتصال الإنترنت وحاول مرة أخرى.";
+           errorMessage = i18n.t('errors.network');
         }
       }
 
       return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sansSelection" dir="rtl">
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sansSelection" dir={dirOf()}>
           <div className="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 p-10 text-center relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-red-500 to-rose-500"></div>
             
@@ -121,7 +123,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
             </div>
             
             <h1 className="text-2xl font-black text-gray-900 mb-2">
-              {isPermissionError ? "خطأ في الصلاحيات" : "عذراً، حدث خطأ ما"}
+              {isPermissionError ? i18n.t('errors.permission_error_title') : i18n.t('errors.generic_title')}
             </h1>
             
             <p className="text-slate-500 font-bold mb-8 leading-relaxed">
@@ -135,7 +137,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
                 className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-sm flex items-center justify-center gap-3 hover:bg-black transition-all shadow-xl shadow-slate-200"
               >
                 <RefreshCcw size={20} />
-                تحديث النظام
+                {i18n.t('errors.reload_system')}
               </button>
               
               <button
@@ -143,12 +145,12 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
                 className="w-full bg-slate-50 text-slate-600 py-5 rounded-2xl font-black text-sm flex items-center justify-center gap-3 hover:bg-slate-100 transition-all border-2 border-slate-100"
               >
                 <Home size={20} />
-                العودة للرئيسية
+                {i18n.t('errors.back_home')}
               </button>
             </div>
 
             {eventId && (
-               <p className="text-xs text-gray-400 mt-6 font-mono">معرف الخطأ: {eventId}</p>
+               <p className="text-xs text-gray-400 mt-6 font-mono">{i18n.t('errors.error_id', { id: eventId })}</p>
             )}
 
             {import.meta.env.DEV && error && (

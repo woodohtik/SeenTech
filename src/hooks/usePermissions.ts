@@ -3,17 +3,20 @@ import { Staff, PermissionsMap, PermissionKey } from '../types';
 import { getEffectivePermissions, logUnauthorizedAccess } from '../services/permissionService';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 export function usePermissions(staff: Staff | null) {
   const [permissions, setPermissions] = useState<PermissionsMap | null>(null);
   const [loading, setLoading] = useState(true);
   const [prevStaffId, setPrevStaffId] = useState<string | null>(null);
+  const { t } = useTranslation();
   const { warning } = useToast();
   const { dbUser } = useAuth();
 
   // Sync state during render when staff changes to prevent flashes
-  if (staff?.id !== prevStaffId) {
-    setPrevStaffId(staff?.id || null);
+  const currentStaffId = staff?.id || null;
+  if (currentStaffId !== prevStaffId) {
+    setPrevStaffId(currentStaffId);
     setPermissions(null);
     setLoading(staff ? true : false);
   }
@@ -68,7 +71,7 @@ export function usePermissions(staff: Staff | null) {
     const allowed = hasPermission(key);
     if (!allowed && staff) {
       await logUnauthorizedAccess(staff, key, moduleName);
-      warning('تنبيه الصلاحيات', 'عذراً، لا تملك الصلاحية الكافية لتنفيذ هذا الإجراء، يرجى التواصل مع المدير');
+      warning(t('permissions.alert_title'), t('permissions.insufficient_permission'));
     }
     return allowed;
   };

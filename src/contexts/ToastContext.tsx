@@ -4,6 +4,8 @@ import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react'
 import { cn } from '../lib/utils';
 import { getFriendlyErrorMessage } from '../lib/firebase';
 import { logError } from '../lib/logger';
+import { useTranslation } from 'react-i18next';
+import { useDirection } from '../lib/direction';
 
 type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -26,6 +28,8 @@ interface ToastContextType {
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
+  const { dir } = useDirection();
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const removeToast = useCallback((id: string) => {
@@ -47,7 +51,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const handleError = useCallback((err: any, contextStr?: string) => {
     // Determine friendly message
-    let friendlyMessage = 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.';
+    let friendlyMessage = t('errors.unexpected');
     let description = '';
 
     try {
@@ -62,17 +66,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         friendlyMessage = getFriendlyErrorMessage(err);
       }
       
-      showToast('error', friendlyMessage, description || contextStr || 'خطأ في النظام');
+      showToast('error', friendlyMessage, description || contextStr || t('errors.system_error'));
       logError(err, { source: contextStr || 'handleError' });
     } catch {
-      showToast('error', contextStr || 'خطأ', friendlyMessage);
+      showToast('error', contextStr || t('common.error'), friendlyMessage);
     }
-  }, [showToast]);
+  }, [showToast, t]);
 
   return (
     <ToastContext.Provider value={{ showToast, success, error, info, warning, handleError }}>
       {children}
-      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none" dir="rtl">
+      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none" dir={dir}>
         <AnimatePresence>
           {toasts.map((toast) => (
             <ToastItem 

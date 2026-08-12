@@ -1,3 +1,4 @@
+import i18n from 'i18next';
 import { supabase } from '../lib/supabase/client';
 
 export interface SubscriptionRequest {
@@ -108,10 +109,10 @@ export async function fetchSubscriptionRequests(): Promise<SubscriptionRequest[]
               requestsMap.set(reqId, {
                 id: reqId,
                 tenant_id: pay.tenant_id,
-                tenant_name: parsed.tenant_name || pay.tenants?.name || 'مشترك سين',
+                tenant_name: parsed.tenant_name || pay.tenants?.name || i18n.t('saas.default_subscriber_name'),
                 tenant_email: parsed.tenant_email || pay.tenants?.owner_email || '',
                 plan_id: parsed.plan_id || 'basic',
-                plan_name: parsed.plan_name || 'الباقة الأساسية',
+                plan_name: parsed.plan_name || i18n.t('billing.plans.basic.name'),
                 amount: Number(pay.amount) || 599,
                 payment_method: pay.method || 'bank_transfer',
                 proof_url: parsed.proof_url || null,
@@ -190,7 +191,7 @@ export async function approveSubscriptionRequest(
       id: requestId,
       tenant_id: tenantId,
       plan_id: planId,
-      plan_name: planId === 'basic' ? 'الباقة الأساسية' : 'الباقة المجانية',
+      plan_name: planId === 'basic' ? i18n.t('billing.plans.basic.name') : i18n.t('billing.plans.free.short_name'),
       amount: planId === 'basic' ? 599 : 0,
       payment_method: 'bank_transfer',
       status: 'approved',
@@ -213,7 +214,7 @@ export async function rejectSubscriptionRequest(
 
   if (reqIndex !== -1) {
     local[reqIndex].status = 'rejected';
-    local[reqIndex].rejection_reason = reason || 'تم رفض طلب الاشتراك من قبل الإدارة.';
+    local[reqIndex].rejection_reason = reason || i18n.t('subscription.request_rejected_by_admin');
     local[reqIndex].updated_at = now;
     saveLocalRequests(local);
   }

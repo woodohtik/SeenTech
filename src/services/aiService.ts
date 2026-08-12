@@ -15,6 +15,8 @@
  * بدل كشف المفتاح للواجهة. الفحوصات القاعدية آمنة في الواجهة.
  */
 
+import i18n from 'i18next';
+
 import type { Measurements } from '../types';
 
 export interface MeasurementFlag {
@@ -58,12 +60,21 @@ export function ruleBasedMeasurementChecks(
     const range = SANE_RANGES[field];
     if (typeof val === 'number' && range) {
       if (val <= 0) {
-        flags.push({ field, severity: 'error', message: `قيمة «${labelOf(field)}» غير صالحة (${val}).` });
+        flags.push({
+          field,
+          severity: 'error',
+          message: i18n.t('measurements.flag_invalid_value', { field: labelOf(field), value: val }),
+        });
       } else if (val < range[0] || val > range[1]) {
         flags.push({
           field,
           severity: 'warning',
-          message: `«${labelOf(field)}» = ${val} سم خارج النطاق المعتاد (${range[0]}–${range[1]}). تأكّد من الإدخال.`,
+          message: i18n.t('measurements.flag_out_of_range', {
+            field: labelOf(field),
+            value: val,
+            min: range[0],
+            max: range[1],
+          }),
         });
       }
     }
@@ -71,10 +82,10 @@ export function ruleBasedMeasurementChecks(
 
   // 2) علاقات منطقية (الصدر عادةً أكبر من الرقبة، الطول أكبر من الكم...)
   if (isNum(current.chest) && isNum(current.neck) && current.chest! <= current.neck!) {
-    flags.push({ field: 'chest', severity: 'warning', message: 'الصدر أصغر من أو يساوي الرقبة — غالباً خطأ إدخال.' });
+    flags.push({ field: 'chest', severity: 'warning', message: i18n.t('measurements.flag_chest_le_neck') });
   }
   if (isNum(current.length) && isNum(current.sleeve) && current.sleeve! >= current.length!) {
-    flags.push({ field: 'sleeve', severity: 'warning', message: 'طول الكم ≥ طول الثوب — غالباً خطأ إدخال.' });
+    flags.push({ field: 'sleeve', severity: 'warning', message: i18n.t('measurements.flag_sleeve_ge_length') });
   }
 
   // 3) الانحراف عن سجل العميل السابق
@@ -89,7 +100,12 @@ export function ruleBasedMeasurementChecks(
         flags.push({
           field,
           severity: 'warning',
-          message: `«${labelOf(field)}» = ${cur} يختلف ${Math.round((Math.abs((cur as number) - avg) / avg) * 100)}% عن متوسط هذا العميل (${avg.toFixed(0)}). تأكّد.`,
+          message: i18n.t('measurements.flag_history_deviation', {
+            field: labelOf(field),
+            value: cur,
+            percent: Math.round((Math.abs((cur as number) - avg) / avg) * 100),
+            average: avg.toFixed(0),
+          }),
         });
       }
     });
@@ -123,9 +139,19 @@ export async function checkMeasurementAnomalies(
     // تحميل كسول للمكتبة الموجودة أصلاً في التبعيات (@google/genai).
     const { GoogleGenAI } = await import('@google/genai');
     const ai = new GoogleGenAI({ apiKey });
+    // The model must answer in the user's UI language, otherwise an English or
+    // Urdu user gets an Arabic summary sitting underneath localized flags.
+    const ANSWER_LANGUAGE: Record<string, string> = {
+      ar: 'العربية',
+      en: 'English',
+      ur: 'اردو',
+    };
+    const uiLang = (i18n.language || 'ar').split('-')[0];
+    const answerLanguage = ANSWER_LANGUAGE[uiLang] || ANSWER_LANGUAGE.ar;
     const prompt =
-      'أنت مساعد خياطة. لخّص للخياط بالعربية وبإيجاز (سطرين كحد أقصى) سبب هذه التنبيهات على قياسات ثوب، ' +
-      'واقترح ما يتحقق منه:\n' +
+      `You are a tailoring assistant. Reply ONLY in ${answerLanguage}. ` +
+      'Briefly summarize (two lines maximum) why these thobe-measurement warnings were raised, ' +
+      'and suggest what the tailor should verify:\n' +
       flags.map((f) => `- ${f.message}`).join('\n');
 
     const res: any = await ai.models.generateContent({
@@ -147,8 +173,11 @@ function isNum(v: unknown): v is number {
 }
 function labelOf(field: keyof Measurements | string): string {
   const map: Record<string, string> = {
-    length: 'الطول', shoulder: 'الكتف', chest: 'الصدر', waist: 'الخصر',
-    hips: 'الأرداف', sleeve: 'الكم', neck: 'الرقبة',
+    length: 'measurements.label.length', shoulder: 'measurements.label.shoulder',
+    chest: 'measurements.label.chest', waist: 'measurements.label.waist',
+    hips: 'measurements.label.hips', sleeve: 'measurements.label.sleeve',
+    neck: 'measurements.label.neck',
   };
-  return map[field as string] || (field as string);
+  const key = map[field as string];
+  return key ? i18n.t(key) : (field as string);
 }

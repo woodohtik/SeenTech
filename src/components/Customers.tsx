@@ -64,13 +64,15 @@ import { PermissionKey } from '../types';
 import { SmartSelect } from './ui/SmartSelect';
 import { cn } from '../lib/utils';
 
+import { isRtlLang, localeOf } from '../lib/direction';
+
 interface CustomersProps {
   tenantId: string;
 }
 
 export default function Customers({ tenantId }: CustomersProps) {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
   const { error: toastError, success: toastSuccess, handleError } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -255,7 +257,7 @@ export default function Customers({ tenantId }: CustomersProps) {
     if (!tenantId) return;
 
     const permission = editingCustomer ? 'customers.edit' : 'customers.create';
-    const allowed = await checkPermission(permission, t('customers.manage_customers', 'إدارة العملاء'));
+    const allowed = await checkPermission(permission, t('customers.manage_customers'));
     if (!allowed) return;
     
     // Explicitly destructure out the fields that are NOT in the customers table.
@@ -310,35 +312,35 @@ export default function Customers({ tenantId }: CustomersProps) {
             currentStaff.id,
             currentStaff.name,
             'edit_measurements',
-            t('customers.audit_edit_measurements', 'تعديل بيانات/مقاسات العميل {{name}}', { name: data.name })
+            t('customers.audit_edit_measurements', { name: data.name })
           );
         }
 
-        toastSuccess(t('customers.update_success', 'تم تحديث بيانات العميل بنجاح'));
+        toastSuccess(t('customers.update_success'));
       } else {
         const { error } = await supabase.from('customers').insert(customerData);
         if (error) throw error;
-        toastSuccess(t('customers.add_success', 'تم إضافة العميل بنجاح'));
+        toastSuccess(t('customers.add_success'));
       }
       setIsModalOpen(false);
       setEditingCustomer(null);
       reset();
       fetchCustomers(false);
     } catch (error) {
-      handleError(error as any, editingCustomer ? t('customers.update_fail', 'فشل تحديث بيانات العميل') : t('customers.add_fail', 'فشل إضافة العميل'));
+      handleError(error as any, editingCustomer ? t('customers.update_fail') : t('customers.add_fail'));
     }
   };
 
   const onInvalidSubmit = (formErrors: any) => {
     const missingFields: string[] = [];
-    if (formErrors.name) missingFields.push(t('customers.full_name', 'الاسم الكامل'));
-    if (formErrors.phone) missingFields.push(t('customers.phone_number', 'رقم الهاتف'));
-    if (formErrors.companyName) missingFields.push(t('customers.company_name', 'اسم الشركة'));
-    if (formErrors.trn) missingFields.push(t('customers.trn', 'الرقم الضريبي'));
+    if (formErrors.name) missingFields.push(t('login.full_name'));
+    if (formErrors.phone) missingFields.push(t('onboarding.fields.phone'));
+    if (formErrors.companyName) missingFields.push(t('customers.company_name'));
+    if (formErrors.trn) missingFields.push(t('customers.trn'));
 
     const msg = missingFields.length > 0
-      ? `يرجى إكمال الحقول التالية للعميل: ${missingFields.join('، ')}`
-      : t('customers.fill_required_fields', 'يرجى تعبئة جميع الحقول المطلوبة بشكل صحيح');
+      ? t('customers.missing_fields_prompt', { fields: missingFields.join(t('common.list_separator')) })
+      : t('customers.fill_required_fields');
     toastError(msg);
 
     setTimeout(() => {
@@ -350,17 +352,17 @@ export default function Customers({ tenantId }: CustomersProps) {
   };
 
   const handleDelete = async (id: string) => {
-    const allowed = await checkPermission('customers.delete', t('customers.manage_customers', 'إدارة العملاء'));
+    const allowed = await checkPermission('customers.delete', t('customers.manage_customers'));
     if (!allowed) return;
 
-    if (window.confirm(t('customers.delete_confirm', 'هل أنت متأكد من حذف هذا العميل؟'))) {
+    if (window.confirm(t('customers.delete_confirm'))) {
       try {
         const { error } = await supabase.from('customers').delete().eq('id', id);
         if (error) throw error;
-        toastSuccess(t('customers.delete_success', 'تم حذف العميل بنجاح'));
+        toastSuccess(t('customers.delete_success'));
         fetchCustomers(false);
       } catch (error) {
-        handleError(error as any, t('customers.delete_fail', 'فشل حذف العميل'));
+        handleError(error as any, t('customers.delete_fail'));
       }
     }
   };
@@ -428,16 +430,16 @@ export default function Customers({ tenantId }: CustomersProps) {
   };
 
   const VISUAL_LABELS: Record<string, string> = {
-    'classic': t('customers.visual_classic', 'كلاسيك'),
-    'mandarin': t('customers.visual_mandarin', 'صيني'),
-    'square': t('customers.visual_square', 'مربع'),
-    'round': t('customers.visual_round', 'دائري'),
-    'hidden': t('customers.visual_hidden', 'مخفي'),
-    'visible': t('customers.visual_visible', 'ظاهر'),
-    'plain': t('customers.visual_plain', 'سادة'),
-    'pleated': t('customers.visual_pleated', 'كسرات'),
-    'padded': t('customers.visual_padded', 'حشوة'),
-    'double': t('customers.visual_double', 'دبل')
+    'classic': t('customers.visual_classic'),
+    'mandarin': t('customers.visual_mandarin'),
+    'square': t('customers.visual_square'),
+    'round': t('customers.visual_round'),
+    'hidden': t('inventory.status_hidden'),
+    'visible': t('inventory.status_visible'),
+    'plain': t('inventory.chest_plain'),
+    'pleated': t('customers.visual_pleated'),
+    'padded': t('customers.visual_padded'),
+    'double': t('customers.visual_double')
   };
 
   const VISUAL_ICONS: Record<string, React.ReactNode> = {
@@ -475,37 +477,37 @@ export default function Customers({ tenantId }: CustomersProps) {
       : filteredCustomers);
 
     if (listToExport.length === 0) {
-      toastError(t('customers.no_data_to_export', 'لا توجد بيانات عملاء لتصديرها'));
+      toastError(t('customers.no_data_to_export'));
       return;
     }
 
     try {
       const exportData = listToExport.map((c, index) => {
         const balance = customerBalances[c.id] || 0;
-        let balanceStatus = 'متزن';
-        if (balance > 0) balanceStatus = 'مدين (عليه مديونية)';
-        else if (balance < 0) balanceStatus = 'دائن (له رصيد)';
+        let balanceStatus = t('customers.balanced');
+        if (balance > 0) balanceStatus = t('customers.balance_status_debtor');
+        else if (balance < 0) balanceStatus = t('customers.balance_status_creditor');
 
         return {
           '#': index + 1,
-          'اسم العميل': c.name || '',
-          'رقم الهاتف': c.phone || '',
-          'نوع العميل': c.isB2B ? 'شركة B2B' : 'فرد B2C',
-          'اسم الشركة': c.companyName || '-',
-          'الرقم الضريبي': c.trn || '-',
-          'الرصيد المالي (ر.س)': balance,
-          'حالة الرصيد': balanceStatus,
-          'المدينة': c.styles?.city || c.city || '-',
-          'العنوان': c.styles?.address || c.address || '-',
-          'الطول (سم)': c.measurements?.length || '-',
-          'الكتف (سم)': c.measurements?.shoulder || '-',
-          'الصدر (سم)': c.measurements?.chest || '-',
-          'الخصر (سم)': c.measurements?.waist || '-',
-          'الورك (سم)': c.measurements?.hips || '-',
-          'طول الكم (سم)': c.measurements?.sleeve || '-',
-          'رقبة (سم)': c.measurements?.neck || '-',
-          'ملاحظات': c.notes || '-',
-          'تاريخ التسجيل': c.createdAt ? new Date(c.createdAt).toLocaleDateString('ar-SA') : '-'
+          [t('dashboard.cashier.col_customer_name')]: c.name || '',
+          [t('onboarding.fields.phone')]: c.phone || '',
+          [t('customers.customer_type')]: c.isB2B ? t('customers.type_b2b_company') : t('customers.type_b2c_individual'),
+          [t('customers.company_name')]: c.companyName || '-',
+          [t('customers.trn')]: c.trn || '-',
+          [t('customers.balance_sar')]: balance,
+          [t('customers.balance_status')]: balanceStatus,
+          [t('onboarding.fields.city')]: c.styles?.city || c.city || '-',
+          [t('procurement.address')]: c.styles?.address || c.address || '-',
+          [t('customers.export_col_length')]: c.measurements?.length || '-',
+          [t('customers.export_col_shoulder')]: c.measurements?.shoulder || '-',
+          [t('customers.export_col_chest')]: c.measurements?.chest || '-',
+          [t('customers.export_col_waist')]: c.measurements?.waist || '-',
+          [t('customers.export_col_hips')]: c.measurements?.hips || '-',
+          [t('customers.export_col_sleeve')]: c.measurements?.sleeve || '-',
+          [t('customers.export_col_neck')]: c.measurements?.neck || '-',
+          [t('common.notes')]: c.notes || '-',
+          [t('saas.tenants.registration_date')]: c.createdAt ? new Date(c.createdAt).toLocaleDateString(localeOf(i18n.language)) : '-'
         };
       });
 
@@ -537,21 +539,21 @@ export default function Customers({ tenantId }: CustomersProps) {
       ];
 
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'العملاء');
+      XLSX.utils.book_append_sheet(workbook, worksheet, t('common.customers'));
 
       const dateStr = new Date().toISOString().slice(0, 10);
-      XLSX.writeFile(workbook, `العملاء_${dateStr}.xlsx`);
+      XLSX.writeFile(workbook, `${t('common.customers')}_${dateStr}.xlsx`);
 
-      toastSuccess(t('customers.export_success', 'تم تصدير ملف الإكسل بنجاح ({{count}} عميل)', { count: listToExport.length }));
+      toastSuccess(t('customers.export_success', { count: listToExport.length }));
     } catch (err) {
       console.error('Failed to export excel:', err);
-      toastError(t('customers.export_error', 'حدث خطأ أثناء تصدير ملف الإكسل'));
+      toastError(t('customers.export_error'));
     }
   };
 
   // Bulk Delete Handler
   const handleBulkDelete = async () => {
-    const allowed = await checkPermission('customers.delete', t('customers.manage_customers', 'إدارة العملاء'));
+    const allowed = await checkPermission('customers.delete', t('customers.manage_customers'));
     if (!allowed) return;
 
     if (selectedCustomerIds.length === 0) return;
@@ -564,12 +566,12 @@ export default function Customers({ tenantId }: CustomersProps) {
 
       if (error) throw error;
 
-      toastSuccess(t('customers.bulk_delete_success', 'تم حذف {{count}} عميل بنجاح', { count: selectedCustomerIds.length }));
+      toastSuccess(t('customers.bulk_delete_success', { count: selectedCustomerIds.length }));
       setSelectedCustomerIds([]);
       setIsBulkDeleteModalOpen(false);
       fetchCustomers(false);
     } catch (error) {
-      handleError(error as any, t('customers.bulk_delete_fail', 'فشل حذف العملاء المحددين'));
+      handleError(error as any, t('customers.bulk_delete_fail'));
     }
   };
 
@@ -635,17 +637,17 @@ export default function Customers({ tenantId }: CustomersProps) {
     <div className={cn("space-y-6 pb-20", isRtl ? "text-right" : "text-left")} dir={isRtl ? "rtl" : "ltr"}>
       <Header 
         tenantId={tenantId} 
-        title={t('common.customers', 'العملاء')} 
-        subtitle={t('customers.subtitle', 'إدارة بيانات العملاء وقياساتهم')}
+        title={t('common.customers')} 
+        subtitle={t('customers.subtitle')}
       >
         <div className="flex items-center gap-2">
           <button 
             onClick={() => handleExportExcel()}
             className="bg-surface text-content border border-border px-4 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-surface-muted transition-all text-xs sm:text-sm cursor-pointer shadow-sm hover:border-brand/30"
-            title={t('customers.export_excel', 'تصدير قائمة العملاء إلى ملف إكسل')}
+            title={t('customers.export_excel_title')}
           >
             <FileSpreadsheet size={18} className="text-emerald-600 dark:text-emerald-400" />
-            <span className="hidden sm:inline">{t('customers.export_excel', 'تصدير إكسل')}</span>
+            <span className="hidden sm:inline">{t('customers.export_excel')}</span>
           </button>
 
           {canCreate && (
@@ -656,7 +658,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               className="bg-brand text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-brand/90 transition-all shadow-lg shadow-brand/10 text-sm sm:text-base cursor-pointer"
             >
               <UserPlus size={20} />
-              <span>{t('customers.add_new', 'إضافة عميل جديد')}</span>
+              <span>{t('pos.add_new_customer')}</span>
             </button>
           )}
         </div>
@@ -669,7 +671,7 @@ export default function Customers({ tenantId }: CustomersProps) {
             <Search size={20} className="text-content-muted group-focus-within:text-brand transition-colors shrink-0" />
             <input 
               type="text" 
-              placeholder={t('customers.search_placeholder', 'ابحث باسم العميل، رقم الهاتف، اسم الشركة، المدينة...')} 
+              placeholder={t('customers.search_placeholder')} 
               className={cn("flex-1 bg-transparent border-none focus:ring-0 text-content placeholder-content-muted font-bold text-sm sm:text-base outline-none", isRtl ? "text-right" : "text-left")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -697,7 +699,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               )}
             >
               <SlidersHorizontal size={18} />
-              <span>{t('customers.filters', 'فلاتر متقدمة')}</span>
+              <span>{t('customers.filters')}</span>
               {(balanceFilter !== 'all' || filter === 'b2b' || filter === 'b2c') && (
                 <span className="w-2.5 h-2.5 rounded-full bg-brand animate-pulse" />
               )}
@@ -709,10 +711,10 @@ export default function Customers({ tenantId }: CustomersProps) {
               onChange={(e) => setSortBy(e.target.value as any)}
               className="bg-surface text-content border border-border px-4 py-3 rounded-2xl font-bold text-xs sm:text-sm outline-none cursor-pointer hover:bg-surface-muted shadow-sm"
             >
-              <option value="date">{t('customers.sort_recent', 'الأحدث تسجيلاً')}</option>
-              <option value="date_asc">{t('customers.sort_oldest', 'الأقدم تسجيلاً')}</option>
-              <option value="name">{t('customers.sort_name', 'ترتيب أبجدي (الاسم)')}</option>
-              <option value="balance_desc">{t('customers.sort_highest_debt', 'الأعلى مديونية')}</option>
+              <option value="date">{t('customers.sort_recent')}</option>
+              <option value="date_asc">{t('customers.sort_oldest')}</option>
+              <option value="name">{t('customers.sort_name')}</option>
+              <option value="balance_desc">{t('customers.sort_highest_debt')}</option>
             </select>
           </div>
         </div>
@@ -729,7 +731,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               <div className="flex items-center justify-between border-b border-border pb-3">
                 <h4 className="text-sm font-black text-content flex items-center gap-2">
                   <Filter size={16} className="text-brand" />
-                  <span>تصفية العملاء المتقدمة</span>
+                  <span>{t('customers.advanced_filters')}</span>
                 </h4>
                 <button
                   onClick={() => {
@@ -739,20 +741,20 @@ export default function Customers({ tenantId }: CustomersProps) {
                   }}
                   className="text-xs font-bold text-brand hover:underline cursor-pointer"
                 >
-                  إعادة ضبط جميع الفلاتر
+                  {t('customers.reset_all_filters')}
                 </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* Filter by Type */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-content-muted">نوع العميل / الهوية</label>
+                  <label className="text-xs font-bold text-content-muted">{t('customers.filter_type_label')}</label>
                   <div className="flex flex-wrap gap-1.5">
                     {[
-                      { id: 'all', label: 'الكل' },
-                      { id: 'b2c', label: 'أفراد (B2C)' },
-                      { id: 'b2b', label: 'شركات (B2B)' },
-                      { id: 'test', label: 'بيانات تجريبية' },
+                      { id: 'all', label: t('common.all') },
+                      { id: 'b2c', label: t('customers.filter_b2c') },
+                      { id: 'b2b', label: t('customers.filter_b2b') },
+                      { id: 'test', label: t('orders.test_data_badge') },
                     ].map(typeItem => (
                       <button
                         key={typeItem.id}
@@ -772,13 +774,13 @@ export default function Customers({ tenantId }: CustomersProps) {
 
                 {/* Filter by Balance */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-content-muted">الحساب والمديونية</label>
+                  <label className="text-xs font-bold text-content-muted">{t('customers.filter_balance_label')}</label>
                   <div className="flex flex-wrap gap-1.5">
                     {[
-                      { id: 'all', label: 'الكل' },
-                      { id: 'debtor', label: 'مدين (عليه مديونية)' },
-                      { id: 'creditor', label: 'دائن (له رصيد)' },
-                      { id: 'balanced', label: 'متزن (صفر)' },
+                      { id: 'all', label: t('common.all') },
+                      { id: 'debtor', label: t('customers.balance_status_debtor') },
+                      { id: 'creditor', label: t('customers.balance_status_creditor') },
+                      { id: 'balanced', label: t('customers.filter_balanced_zero') },
                     ].map(balItem => (
                       <button
                         key={balItem.id}
@@ -798,12 +800,12 @@ export default function Customers({ tenantId }: CustomersProps) {
 
                 {/* Filter by Measurements */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-content-muted">القياسات والتفاصيل</label>
+                  <label className="text-xs font-bold text-content-muted">{t('customers.filter_measurements_label')}</label>
                   <div className="flex flex-wrap gap-1.5">
                     {[
-                      { id: 'all', label: 'الكل' },
-                      { id: 'measurements', label: 'يوجد قياسات مسجلة' },
-                      { id: 'recent', label: 'مسجل خلال 7 أيام' },
+                      { id: 'all', label: t('common.all') },
+                      { id: 'measurements', label: t('customers.filter_has_measurements') },
+                      { id: 'recent', label: t('customers.filter_registered_7_days') },
                     ].map(mItem => (
                       <button
                         key={mItem.id}
@@ -828,12 +830,12 @@ export default function Customers({ tenantId }: CustomersProps) {
         {/* Filter Chips Bar */}
         <div className="flex overflow-x-auto pb-1.5 gap-2 scrollbar-hide select-none w-full items-center">
           {[
-            { id: 'all', label: t('common.all', 'الكل'), icon: Users },
-            { id: 'measurements', label: t('customers.filter_measurements', 'بقياسات'), icon: Ruler },
-            { id: 'b2c', label: 'أفراد B2C', icon: User },
-            { id: 'b2b', label: 'شركات B2B', icon: Building2 },
-            { id: 'recent', label: t('customers.filter_recent', 'أضيف حديثاً'), icon: History },
-            { id: 'test', label: t('common.test_data', 'تجريبي'), icon: Zap },
+            { id: 'all', label: t('common.all'), icon: Users },
+            { id: 'measurements', label: t('customers.filter_measurements'), icon: Ruler },
+            { id: 'b2c', label: t('customers.chip_b2c'), icon: User },
+            { id: 'b2b', label: t('customers.chip_b2b'), icon: Building2 },
+            { id: 'recent', label: t('customers.filter_recent'), icon: History },
+            { id: 'test', label: t('common.test_data'), icon: Zap },
           ].map((chip) => (
             <button
               key={chip.id}
@@ -865,7 +867,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               <Users size={16} />
             </div>
             <div className="min-w-0">
-              <span className="block text-[10px] font-black text-content-muted uppercase tracking-wider leading-none">إجمالي العملاء</span>
+              <span className="block text-[10px] font-black text-content-muted uppercase tracking-wider leading-none">{t('dashboard.total_customers')}</span>
               <span className="text-sm sm:text-base font-black text-content mt-1 block">{customers.length}</span>
             </div>
           </div>
@@ -875,7 +877,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               <SlidersHorizontal size={16} />
             </div>
             <div className="min-w-0">
-              <span className="block text-[10px] font-black text-content-muted uppercase tracking-wider leading-none">نتائج التصفية</span>
+              <span className="block text-[10px] font-black text-content-muted uppercase tracking-wider leading-none">{t('customers.filter_results')}</span>
               <span className="text-sm sm:text-base font-black text-brand mt-1 block">{filteredCustomers.length}</span>
             </div>
           </div>
@@ -885,7 +887,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               <ArrowDownLeft size={16} />
             </div>
             <div className="min-w-0">
-              <span className="block text-[10px] font-black text-content-muted uppercase tracking-wider leading-none">عليهم مديونيات</span>
+              <span className="block text-[10px] font-black text-content-muted uppercase tracking-wider leading-none">{t('customers.stat_debtors')}</span>
               <span className="text-sm sm:text-base font-black text-red-500 mt-1 block">
                 {customers.filter(c => (customerBalances[c.id] || 0) > 0).length}
               </span>
@@ -897,7 +899,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               <ArrowUpRight size={16} />
             </div>
             <div className="min-w-0">
-              <span className="block text-[10px] font-black text-content-muted uppercase tracking-wider leading-none">أرصدة دائنة</span>
+              <span className="block text-[10px] font-black text-content-muted uppercase tracking-wider leading-none">{t('customers.stat_creditors')}</span>
               <span className="text-sm sm:text-base font-black text-emerald-500 mt-1 block">
                 {customers.filter(c => (customerBalances[c.id] || 0) < 0).length}
               </span>
@@ -924,7 +926,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                     ? "bg-brand border-brand text-white shadow-sm"
                     : "bg-surface-muted/80 text-content-muted border-border hover:text-brand hover:border-brand/40 hover:bg-brand/5"
                 )}
-                title={selectedCustomerIds.length > 0 && selectedCustomerIds.length === filteredCustomers.length ? t('customers.deselect_all', 'إلغاء الكل') : t('customers.select_all', 'تحديد الكل')}
+                title={selectedCustomerIds.length > 0 && selectedCustomerIds.length === filteredCustomers.length ? t('customers.deselect_all') : t('inventory.select_all')}
               >
                 {selectedCustomerIds.length > 0 && selectedCustomerIds.length === filteredCustomers.length ? (
                   <CheckSquare size={13} />
@@ -933,11 +935,11 @@ export default function Customers({ tenantId }: CustomersProps) {
                 )}
               </button>
             </div>
-            <div className="col-span-3">{t('customers.customer_name', 'العميل')}</div>
-            <div className="col-span-2">{t('customers.phone', 'رقم الهاتف')}</div>
-            <div className="col-span-1">{t('customers.orders_count', 'عدد الطلبات')}</div>
-            <div className="col-span-2">{t('customers.total_purchases', 'إجمالي مبلغ الشراء')}</div>
-            <div className="col-span-2">{t('customers.balance', 'الرصيد المالي')}</div>
+            <div className="col-span-3">{t('common.customer')}</div>
+            <div className="col-span-2">{t('onboarding.fields.phone')}</div>
+            <div className="col-span-1">{t('dashboard.orders_count')}</div>
+            <div className="col-span-2">{t('customers.total_purchases')}</div>
+            <div className="col-span-2">{t('customers.balance')}</div>
             <div className="col-span-1 text-left"></div>
           </div>
         )}
@@ -979,7 +981,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                             ? "bg-brand text-white shadow-md shadow-brand/20 scale-105"
                             : "bg-surface-muted/90 text-content-muted hover:text-brand hover:bg-brand/10 border border-border"
                         )}
-                        title={isSelected ? "إلغاء تحديد العميل" : "تحديد العميل"}
+                        title={isSelected ? t('customers.deselect_customer') : t('customers.select_customer')}
                       >
                         {isSelected ? <CheckSquare size={16} /> : <Square size={16} />}
                       </button>
@@ -1005,7 +1007,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                       {customer.isTest && (
                         <span className="bg-warning/10 text-warning px-2 py-0.5 rounded-md text-[9px] font-black flex items-center gap-0.5">
                           <Zap size={8} />
-                          {t('common.test_data', 'تجريبي')}
+                          {t('common.test_data')}
                         </span>
                       )}
 
@@ -1020,7 +1022,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                             "p-2 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0 border border-border/60 bg-surface-muted/30 hover:scale-105",
                             activeMenuId === customer.id ? "bg-brand/10 text-brand border-brand/30" : ""
                           )}
-                          title={t('common.actions', 'الإجراءات')}
+                          title={t('common.actions')}
                         >
                           <MoreVertical size={16} />
                         </button>
@@ -1046,7 +1048,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <div className="px-2.5 py-1 text-[10px] font-black text-content-muted/80 uppercase tracking-wider text-right border-b border-border/40 mb-1">
-                                  {t('customers.customer_options', 'إجراءات العميل')}
+                                  {t('customers.customer_options')}
                                 </div>
 
                                 <button 
@@ -1057,7 +1059,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                   }}
                                   className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                                 >
-                                  <span className="truncate">{t('customers.view_full_profile', 'عرض الملف الكامل')}</span>
+                                  <span className="truncate">{t('customers.view_full_profile')}</span>
                                   <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
                                     <Info size={12} />
                                   </div>
@@ -1071,7 +1073,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                   }}
                                   className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                                 >
-                                  <span className="truncate">{t('customers.account_statement', 'كشف الحساب')}</span>
+                                  <span className="truncate">{t('customers.account_statement')}</span>
                                   <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
                                     <FileText size={12} />
                                   </div>
@@ -1085,7 +1087,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                   }}
                                   className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                                 >
-                                  <span className="truncate">{t('orders.create_new_order', 'طلب جديد')}</span>
+                                  <span className="truncate">{t('orders.create_new_order')}</span>
                                   <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
                                     <Plus size={12} />
                                   </div>
@@ -1102,7 +1104,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                       }}
                                       className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                                     >
-                                      <span className="truncate">{t('common.edit', 'تعديل البيانات')}</span>
+                                      <span className="truncate">{t('common.edit')}</span>
                                       <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand/80 transition-all">
                                         <Edit2 size={12} />
                                       </div>
@@ -1119,7 +1121,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                     }}
                                     className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-red-500 hover:text-red-600 hover:bg-red-500/5 transition-all cursor-pointer group"
                                   >
-                                    <span className="truncate">{t('common.delete', 'حذف العميل')}</span>
+                                    <span className="truncate">{t('common.delete')}</span>
                                     <div className="w-6 h-6 rounded-lg bg-red-500/5 flex items-center justify-center shrink-0 group-hover:bg-red-500/15 text-red-500 transition-all">
                                       <Trash2 size={12} />
                                     </div>
@@ -1139,7 +1141,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                     <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
                       <span className="text-[10px] font-bold text-content-muted flex items-center gap-1">
                         <Phone size={10} className="text-brand shrink-0" />
-                        {t('customers.phone', 'رقم الهاتف')}
+                        {t('onboarding.fields.phone')}
                       </span>
                       <a 
                         href={`tel:${customer.phone}`} 
@@ -1154,7 +1156,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                     <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
                       <span className="text-[10px] font-bold text-content-muted flex items-center gap-1">
                         <ShoppingBag size={10} className="text-brand shrink-0" />
-                        {t('customers.orders_count', 'عدد الطلبات')}
+                        {t('dashboard.orders_count')}
                       </span>
                       <span className="font-black text-brand text-xs">
                         {customerOrderCounts[customer.id] || 0}
@@ -1165,7 +1167,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                     <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
                       <span className="text-[10px] font-bold text-content-muted flex items-center gap-1">
                         <DollarSign size={10} className="text-brand shrink-0" />
-                        {t('customers.total_purchases', 'إجمالي الشراء')}
+                        {t('customers.total_purchases_short')}
                       </span>
                       <span className="font-black text-content text-xs">
                         <PriceDisplay amount={customerTotalPurchases[customer.id] || 0} />
@@ -1175,7 +1177,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                     {/* Balance */}
                     <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
                       <span className="text-[10px] font-bold text-content-muted">
-                        {t('customers.balance', 'الرصيد المالي')}
+                        {t('customers.balance')}
                       </span>
                       <div className="flex items-center">
                         {(() => {
@@ -1183,7 +1185,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                             return (
                               <span className="bg-red-500/10 text-red-600 border border-red-500/20 px-2 py-0.5 rounded-md text-[10px] font-black flex items-center gap-1 truncate">
                                 <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shrink-0" />
-                                <span>{t('customers.debtor', 'مدين')}:</span>
+                                <span>{t('customers.debtor')}:</span>
                                 <PriceDisplay amount={balance} />
                               </span>
                             );
@@ -1191,7 +1193,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                             return (
                               <span className="bg-green-500/10 text-green-600 border border-green-500/20 px-2 py-0.5 rounded-md text-[10px] font-black flex items-center gap-1 truncate">
                                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full shrink-0" />
-                                <span>{t('customers.creditor', 'دائن')}:</span>
+                                <span>{t('customers.creditor')}:</span>
                                 <PriceDisplay amount={Math.abs(balance)} />
                               </span>
                             );
@@ -1223,7 +1225,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                           ? "bg-brand text-white shadow-md shadow-brand/20 scale-105"
                           : "bg-surface-muted/90 text-content-muted hover:text-brand hover:bg-brand/10 border border-border"
                       )}
-                      title={isSelected ? "إلغاء تحديد العميل" : "تحديد العميل"}
+                      title={isSelected ? t('customers.deselect_customer') : t('customers.select_customer')}
                     >
                       {isSelected ? <CheckSquare size={16} /> : <Square size={16} />}
                     </button>
@@ -1247,7 +1249,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                       {customer.isTest && (
                         <span className="inline-flex bg-warning/10 text-warning px-1.5 py-0.5 rounded-md text-[9px] font-black mt-0.5 items-center gap-0.5">
                           <Zap size={8} />
-                          {t('common.test_data', 'تجريبي')}
+                          {t('common.test_data')}
                         </span>
                       )}
                     </div>
@@ -1286,7 +1288,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                         return (
                           <span className="bg-red-500/10 text-red-600 border border-red-500/20 px-2.5 py-1 rounded-full text-xs font-black whitespace-nowrap flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shrink-0" />
-                            <span>{t('customers.debtor', 'مدين')}:</span>
+                            <span>{t('customers.debtor')}:</span>
                             <PriceDisplay amount={balance} />
                           </span>
                         );
@@ -1294,7 +1296,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                         return (
                           <span className="bg-green-500/10 text-green-600 border border-green-500/20 px-2.5 py-1 rounded-full text-xs font-black whitespace-nowrap flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 bg-green-500 rounded-full shrink-0" />
-                            <span>{t('customers.creditor', 'دائن')}:</span>
+                            <span>{t('customers.creditor')}:</span>
                             <PriceDisplay amount={Math.abs(balance)} />
                           </span>
                         );
@@ -1321,7 +1323,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                           "p-2 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0 border border-border/60 bg-surface-muted/30 hover:scale-105",
                           activeMenuId === customer.id ? "bg-brand/10 text-brand border-brand/30" : ""
                         )}
-                        title={t('common.actions', 'الإجراءات')}
+                        title={t('common.actions')}
                       >
                         <MoreVertical size={16} />
                       </button>
@@ -1349,7 +1351,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                               onClick={(e) => e.stopPropagation()}
                             >
                               <div className="px-2.5 py-1 text-[10px] font-black text-content-muted/80 uppercase tracking-wider text-right border-b border-border/40 mb-1">
-                                {t('customers.customer_options', 'إجراءات العميل')}
+                                {t('customers.customer_options')}
                               </div>
 
                               {/* View Profile */}
@@ -1361,7 +1363,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                 }}
                                 className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                               >
-                                <span className="truncate">{t('customers.view_full_profile', 'عرض الملف الكامل')}</span>
+                                <span className="truncate">{t('customers.view_full_profile')}</span>
                                 <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
                                   <Info size={12} />
                                 </div>
@@ -1376,7 +1378,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                 }}
                                 className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                               >
-                                <span className="truncate">{t('customers.account_statement', 'كشف الحساب')}</span>
+                                <span className="truncate">{t('customers.account_statement')}</span>
                                 <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
                                   <FileText size={12} />
                                 </div>
@@ -1391,7 +1393,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                 }}
                                 className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                               >
-                                <span className="truncate">{t('orders.create_new_order', 'طلب جديد')}</span>
+                                <span className="truncate">{t('orders.create_new_order')}</span>
                                 <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
                                   <Plus size={12} />
                                 </div>
@@ -1408,7 +1410,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                     }}
                                     className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
                                   >
-                                    <span className="truncate">{t('common.edit', 'تعديل البيانات')}</span>
+                                    <span className="truncate">{t('common.edit')}</span>
                                     <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand/80 transition-all">
                                       <Edit2 size={12} />
                                     </div>
@@ -1425,7 +1427,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                                   }}
                                   className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-red-500 hover:text-red-600 hover:bg-red-500/5 transition-all cursor-pointer group"
                                 >
-                                  <span className="truncate">{t('common.delete', 'حذف العميل')}</span>
+                                  <span className="truncate">{t('common.delete')}</span>
                                   <div className="w-6 h-6 rounded-lg bg-red-500/5 flex items-center justify-center shrink-0 group-hover:bg-red-500/15 text-red-500 transition-all">
                                     <Trash2 size={12} />
                                   </div>
@@ -1447,15 +1449,15 @@ export default function Customers({ tenantId }: CustomersProps) {
             <div className="p-6 bg-brand/10 text-brand rounded-full mb-4">
               <UserPlus size={48} />
             </div>
-            <h3 className="text-xl font-black text-content mb-2">{t('customers.no_customers_yet', 'لا يوجد عملاء بعد قم بإضافة أول عميل')}</h3>
-            <p className="text-sm font-bold">{t('customers.add_first_customer_desc', 'ابدأ بإضافة عملائك لإدارة بياناتهم وقياساتهم وتفاصيل طلباتهم بسهولة.')}</p>
+            <h3 className="text-xl font-black text-content mb-2">{t('customers.no_customers_yet')}</h3>
+            <p className="text-sm font-bold">{t('customers.add_first_customer_desc')}</p>
             {canCreate && (
               <button 
                 onClick={() => { setEditingCustomer(null); reset({}); setIsModalOpen(true); }}
                 className="mt-6 bg-brand text-white px-6 py-3 rounded-2xl font-black hover:bg-brand/90 transition-all flex items-center gap-2 cursor-pointer shadow-lg shadow-brand/10"
               >
                 <UserPlus size={18} />
-                <span>{t('customers.add_first_btn', 'إضافة أول عميل')}</span>
+                <span>{t('customers.add_first_btn')}</span>
               </button>
             )}
           </div>
@@ -1464,13 +1466,13 @@ export default function Customers({ tenantId }: CustomersProps) {
             <div className="p-6 bg-surface-muted rounded-full mb-4">
               <Search size={48} className="opacity-20" />
             </div>
-            <h3 className="text-xl font-black text-content mb-2">{t('customers.no_results', 'لم يتم العثور على نتائج')}</h3>
-            <p className="text-sm font-bold">{t('customers.no_results_desc', 'جرب تغيير كلمات البحث أو الفلاتر المختارة')}</p>
+            <h3 className="text-xl font-black text-content mb-2">{t('customers.no_results')}</h3>
+            <p className="text-sm font-bold">{t('customers.no_results_desc')}</p>
             <button 
               onClick={() => { setSearch(''); setFilter('all'); setBalanceFilter('all'); }}
               className="mt-6 text-brand font-black hover:underline cursor-pointer"
             >
-              {t('customers.reset_search', 'إعادة تعيين البحث')}
+              {t('customers.reset_search')}
             </button>
           </div>
         )}
@@ -1490,7 +1492,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                 {selectedCustomerIds.length}
               </span>
               <span className="text-xs sm:text-sm font-black text-slate-200 truncate">
-                تم تحديدهم للإجراءات
+                {t('customers.selected_for_actions')}
               </span>
             </div>
 
@@ -1498,27 +1500,27 @@ export default function Customers({ tenantId }: CustomersProps) {
               <button
                 onClick={() => handleExportExcel()}
                 className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all hover:scale-102 cursor-pointer border border-emerald-500/10 shadow-lg shadow-emerald-600/10"
-                title="تصدير المحددين إلى إكسل"
+                title={t('customers.export_selected_excel')}
               >
                 <FileSpreadsheet size={14} />
-                <span className="hidden sm:inline">تصدير إكسل</span>
+                <span className="hidden sm:inline">{t('customers.export_excel_short')}</span>
               </button>
 
               {canDelete && (
                 <button
                   onClick={() => setIsBulkDeleteModalOpen(true)}
                   className="bg-red-600 hover:bg-red-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all hover:scale-102 cursor-pointer border border-red-500/10 shadow-lg shadow-red-600/10"
-                  title="حذف العملاء المحددين"
+                  title={t('customers.delete_selected_customers')}
                 >
                   <Trash2 size={14} />
-                  <span className="hidden sm:inline">حذف المحدد</span>
+                  <span className="hidden sm:inline">{t('customers.delete_selected_short')}</span>
                 </button>
               )}
 
               <button
                 onClick={() => setSelectedCustomerIds([])}
                 className="p-2 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-colors cursor-pointer"
-                title="إلغاء التحديد"
+                title={t('credit_notes.cancel_selection')}
               >
                 <X size={16} />
               </button>
@@ -1543,13 +1545,13 @@ export default function Customers({ tenantId }: CustomersProps) {
                   <AlertCircle size={32} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-content">تأكيد الحذف الجماعي</h3>
-                  <p className="text-xs text-content-muted mt-1 font-medium">عملية غير قابلة للتراجع</p>
+                  <h3 className="text-xl font-black text-content">{t('customers.bulk_delete_title')}</h3>
+                  <p className="text-xs text-content-muted mt-1 font-medium">{t('customers.irreversible_action')}</p>
                 </div>
               </div>
 
               <p className="text-sm font-bold text-content leading-relaxed">
-                هل أنت متأكد من حذف <span className="text-danger font-black">{selectedCustomerIds.length}</span> عميل من النظام؟ سيتم إزالة جميع بياناتهم المسجلة.
+                {t('customers.bulk_delete_confirm', { count: selectedCustomerIds.length })}
               </p>
 
               <div className="flex gap-3 pt-2">
@@ -1557,13 +1559,13 @@ export default function Customers({ tenantId }: CustomersProps) {
                   onClick={handleBulkDelete}
                   className="flex-1 bg-danger hover:bg-danger/90 text-white py-3 rounded-xl font-bold text-sm transition-all shadow-lg shadow-danger/20 cursor-pointer"
                 >
-                  نعم، حذف المحددين
+                  {t('customers.confirm_bulk_delete')}
                 </button>
                 <button
                   onClick={() => setIsBulkDeleteModalOpen(false)}
                   className="px-6 py-3 bg-surface-muted text-content font-bold text-sm hover:bg-surface border border-border rounded-xl transition-all cursor-pointer"
                 >
-                  إلغاء
+                  {t('common.cancel')}
                 </button>
               </div>
             </motion.div>
@@ -1587,7 +1589,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                 {/* Header (Fixed) */}
                 <div className="sticky top-0 z-10 flex items-center justify-between p-4 sm:p-6 border-b border-[var(--border)] bg-[var(--surface)] shrink-0 bg-brand/5">
                   <h3 className="text-base sm:text-lg lg:text-xl font-black text-content">
-                    {editingCustomer ? t('customers.edit_customer', 'تعديل بيانات العميل') : t('customers.add_new', 'إضافة عميل جديد')}
+                    {editingCustomer ? t('customers.edit_customer') : t('pos.add_new_customer')}
                   </h3>
                   <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-surface-muted rounded-full transition-colors text-content-muted">
                     <X size={20} />
@@ -1599,7 +1601,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-content-muted">{t('customers.full_name', 'الاسم الكامل')}</label>
+                    <label className="text-sm font-bold text-content-muted">{t('login.full_name')}</label>
                     <input 
                       {...register('name')} 
                       className={cn(
@@ -1611,7 +1613,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                     {errors.name && <p className="text-xs text-danger font-bold">{errors.name.message}</p>}
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-content-muted">{t('customers.phone_number', 'رقم الهاتف')}</label>
+                    <label className="text-sm font-bold text-content-muted">{t('onboarding.fields.phone')}</label>
                     <input 
                       {...register('phone')} 
                       onChange={(e) => {
@@ -1634,12 +1636,12 @@ export default function Customers({ tenantId }: CustomersProps) {
 
                 <h4 className="text-lg font-bold text-content mb-4 pt-4 border-t border-border flex items-center gap-2">
                   <ShoppingBag size={20} className="text-brand" />
-                  {t('customers.b2b_data', 'بيانات الشركات (B2B)')}
+                  {t('customers.b2b_data')}
                 </h4>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 pb-8 border-b border-border">
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-content-muted">{t('customers.company_name', 'اسم الشركة / المؤسسة')} <span className="opacity-70 text-xs">({t('common.optional', 'اختياري')})</span></label>
+                    <label className="text-sm font-bold text-content-muted">{t('customers.company_name_full')} <span className="opacity-70 text-xs">({t('common.optional')})</span></label>
                     <input 
                       type="text"
                       {...register('companyName' as any)} 
@@ -1648,12 +1650,12 @@ export default function Customers({ tenantId }: CustomersProps) {
                         errors.companyName && "ring-2 ring-danger",
                         isRtl ? "text-right" : "text-left"
                       )} 
-                      placeholder={t('customers.b2b_invoice_note', 'لإصدار فواتير ضريبية B2B')}
+                      placeholder={t('customers.b2b_invoice_note')}
                     />
                     {errors.companyName && <p className="text-xs text-danger font-bold">{errors.companyName.message as string}</p>}
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-content-muted">{t('customers.trn', 'الرقم الضريبي للشركة (TRN)')} <span className="opacity-70 text-xs">({t('common.optional', 'اختياري')})</span></label>
+                    <label className="text-sm font-bold text-content-muted">{t('customers.trn_company')} <span className="opacity-70 text-xs">({t('common.optional')})</span></label>
                     <input 
                       type="text"
                       {...register('trn' as any)} 
@@ -1670,7 +1672,7 @@ export default function Customers({ tenantId }: CustomersProps) {
 
                 <h4 className="text-lg font-bold text-content mb-4 flex items-center gap-2">
                   <Zap size={20} className="text-brand" />
-                  {t('customers.visual_details_and_interactive_measurements', 'التفاصيل البصرية والمقاسات التفاعلية')}
+                  {t('customers.visual_details_and_interactive_measurements')}
                 </h4>
 
                 <div className="mb-8">
@@ -1683,7 +1685,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                 <div className="mb-8 pt-8 border-t border-border">
                   <h3 className="text-sm font-black text-content flex items-center gap-2 mb-4">
                     <div className="w-1.5 h-4 bg-brand rounded-full" />
-                    {t('customers.interactive_measurement_selector', 'مُحدد المقاسات البصري التفاعلي')}
+                    {t('customers.interactive_measurement_selector')}
                   </h3>
                   <ThobeMeasurementSelector 
                     values={(watchMeasurements as Measurements) || {}}
@@ -1696,7 +1698,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                 </div>
 
                 <div className="space-y-2 mb-8 mt-8 pt-8 border-t border-border">
-                  <label className="text-sm font-bold text-content-muted">{t('customers.additional_notes', 'ملاحظات إضافية')}</label>
+                  <label className="text-sm font-bold text-content-muted">{t('customers.additional_notes')}</label>
                   <textarea {...register('notes')} className={cn("w-full bg-surface-muted border-none rounded-xl p-3 focus:ring-2 focus:ring-brand h-24 text-content", isRtl ? "text-right" : "text-left")} />
                 </div>
 
@@ -1710,7 +1712,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                   />
                   <label htmlFor="isTest" className="text-sm font-bold text-warning flex items-center gap-2">
                     <Zap size={16} />
-                    {t('customers.test_data_flag', 'بيانات تجريبية (Test Data)')}
+                    {t('common.test_data')}
                   </label>
                 </div>
 
@@ -1722,18 +1724,18 @@ export default function Customers({ tenantId }: CustomersProps) {
                     {Object.keys(errors).length > 0 && (
                       <p className="text-xs text-danger font-bold flex items-center gap-1">
                         <AlertCircle size={14} />
-                        <span>{t('customers.fill_required_fields', 'يرجى كتابة الاسم ورقم الهاتف بشكل صحيح')}</span>
+                        <span>{t('customers.name_phone_required')}</span>
                       </p>
                     )}
                   </div>
                   <div className="flex items-center gap-3">
-                    <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2.5 sm:px-8 sm:py-3.5 text-content-muted font-bold hover:text-content transition-colors text-sm sm:text-base">{t('common.cancel', 'إلغاء')}</button>
+                    <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2.5 sm:px-8 sm:py-3.5 text-content-muted font-bold hover:text-content transition-colors text-sm sm:text-base">{t('common.cancel')}</button>
                     <button 
                       type="submit" 
                       disabled={isSubmitting}
                       className="bg-brand text-white px-8 py-2.5 sm:px-12 sm:py-3.5 rounded-xl font-bold hover:bg-brand/90 shadow-lg shadow-brand/20 transition-all hover:scale-102 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                     >
-                      {isSubmitting ? t('common.saving', 'جاري الحفظ...') : t('common.save', 'حفظ البيانات')}
+                      {isSubmitting ? t('common.saving') : t('common.save')}
                     </button>
                   </div>
                 </div>
@@ -1829,7 +1831,7 @@ const CustomerDetailsModal = ({
   visualIcons: Record<string, React.ReactNode>
 }) => {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
 
   return (
     <div className="fixed inset-0 z-[150] flex items-center justify-center p-2 sm:p-6">
@@ -1868,31 +1870,31 @@ const CustomerDetailsModal = ({
 
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6" dir={isRtl ? "rtl" : "ltr"}>
           {customer.isB2B && (
-             <DetailSection title={t('customers.b2b_data', 'بيانات الشركات (B2B)')} icon={ShoppingBag}>
+             <DetailSection title={t('customers.b2b_data')} icon={ShoppingBag}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                    <div className="bg-surface p-4 rounded-xl sm:rounded-2xl border border-border">
-                      <p className="text-[10px] text-content-muted font-black uppercase tracking-wider mb-1">{t('customers.company_name_label', 'الشركة / المؤسسة')}</p>
-                      <p className="text-sm font-black text-content">{customer.companyName || t('common.none', 'لا يوجد')}</p>
+                      <p className="text-[10px] text-content-muted font-black uppercase tracking-wider mb-1">{t('customers.company_name_label')}</p>
+                      <p className="text-sm font-black text-content">{customer.companyName || t('orders.none')}</p>
                    </div>
                    <div className="bg-surface p-4 rounded-xl sm:rounded-2xl border border-border">
-                      <p className="text-[10px] text-content-muted font-black uppercase tracking-wider mb-1">{t('customers.trn_label', 'الرقم الضريبي TRN')}</p>
-                      <p className="text-sm font-mono font-black text-content">{customer.trn || t('common.none', 'لا يوجد')}</p>
+                      <p className="text-[10px] text-content-muted font-black uppercase tracking-wider mb-1">{t('customers.trn_label')}</p>
+                      <p className="text-sm font-mono font-black text-content">{customer.trn || t('orders.none')}</p>
                    </div>
                 </div>
              </DetailSection>
           )}
 
           {/* Measurements Section */}
-          <DetailSection title={t('customers.current_measurements', 'القياسات الحالية')} icon={Ruler}>
+          <DetailSection title={t('customers.current_measurements')} icon={Ruler}>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
               {[
-                { label: t('customers.length', 'الطول'), value: customer.measurements?.length, icon: <ArrowUpDown size={14} />, color: 'bg-info/10 text-info' },
-                { label: t('customers.shoulder', 'الكتف'), value: customer.measurements?.shoulder, icon: <ArrowLeftRight size={14} />, color: 'bg-brand/10 text-brand' },
-                { label: t('customers.chest', 'الصدر'), value: customer.measurements?.chest, icon: <Users size={14} />, color: 'bg-success/10 text-success' },
-                { label: t('customers.waist', 'الخصر'), value: customer.measurements?.waist, icon: <Filter size={14} />, color: 'bg-warning/10 text-warning' },
-                { label: t('customers.hips', 'الأرداف'), value: customer.measurements?.hips, icon: <ChevronDown size={14} />, color: 'bg-danger/10 text-danger' },
-                { label: t('customers.sleeve', 'الكم'), value: customer.measurements?.sleeve, icon: <Scissors size={14} />, color: 'bg-info/10 text-info' },
-                { label: t('customers.neck', 'الرقبة'), value: customer.measurements?.neck, icon: <User size={14} />, color: 'bg-brand/10 text-brand' },
+                { label: t('customers.length'), value: customer.measurements?.length, icon: <ArrowUpDown size={14} />, color: 'bg-info/10 text-info' },
+                { label: t('customers.shoulder'), value: customer.measurements?.shoulder, icon: <ArrowLeftRight size={14} />, color: 'bg-brand/10 text-brand' },
+                { label: t('customers.chest'), value: customer.measurements?.chest, icon: <Users size={14} />, color: 'bg-success/10 text-success' },
+                { label: t('customers.waist'), value: customer.measurements?.waist, icon: <Filter size={14} />, color: 'bg-warning/10 text-warning' },
+                { label: t('customers.hips'), value: customer.measurements?.hips, icon: <ChevronDown size={14} />, color: 'bg-danger/10 text-danger' },
+                { label: t('customers.sleeve'), value: customer.measurements?.sleeve, icon: <Scissors size={14} />, color: 'bg-info/10 text-info' },
+                { label: t('customers.neck'), value: customer.measurements?.neck, icon: <User size={14} />, color: 'bg-brand/10 text-brand' },
               ].map((m) => (
                 <div key={m.label} className="bg-surface p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-border hover:border-brand/20 transition-all group shadow-sm hover:shadow-md">
                   <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
@@ -1903,7 +1905,7 @@ const CustomerDetailsModal = ({
                   </div>
                   <p className="text-base sm:text-xl font-black text-content">
                     {m.value || '-'} 
-                    <span className="text-[10px] text-content-muted mr-1 font-bold">{t('customers.cm', 'سم')}</span>
+                    <span className="text-[10px] text-content-muted mr-1 font-bold">{t('customers.cm')}</span>
                   </p>
                 </div>
               ))}
@@ -1911,14 +1913,14 @@ const CustomerDetailsModal = ({
           </DetailSection>
 
           {/* Visual Details Section */}
-          <DetailSection title={t('customers.visual_details_chart', 'مخطط التفصيل البصري')} icon={Zap}>
+          <DetailSection title={t('customers.visual_details_chart')} icon={Zap}>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
               {[
-                { label: t('customers.collar', 'الياقة'), value: customer.measurements?.collarType, desc: t('customers.collar_desc', 'نوع القبة') },
-                { label: t('customers.cuff', 'الكبك'), value: customer.measurements?.cuffType, desc: t('customers.cuff_desc', 'نهاية الكم') },
-                { label: t('customers.pocket', 'الجيب'), value: customer.measurements?.pocketType, desc: t('customers.pocket_desc', 'نوع الجيب') },
-                { label: t('customers.chest_style', 'الصدر'), value: customer.measurements?.chestStyle, desc: t('customers.chest_style_desc', 'شكل الصدر') },
-                { label: t('customers.shoulder_style', 'الكتف'), value: customer.measurements?.shoulderStyle, desc: t('customers.shoulder_style_desc', 'قصة الكتف') },
+                { label: t('customers.collar'), value: customer.measurements?.collarType, desc: t('customers.collar_desc') },
+                { label: t('customers.cuff'), value: customer.measurements?.cuffType, desc: t('customers.cuff_desc') },
+                { label: t('customers.pocket'), value: customer.measurements?.pocketType, desc: t('inventory.pocket_type') },
+                { label: t('customers.chest_style'), value: customer.measurements?.chestStyle, desc: t('inventory.chest_style') },
+                { label: t('customers.shoulder_style'), value: customer.measurements?.shoulderStyle, desc: t('customers.shoulder_style_desc') },
               ].map((v) => (
                 <div key={v.label} className="bg-surface p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-border flex flex-col items-center text-center group hover:border-brand/40 transition-all shadow-sm hover:shadow-md">
                   <div className="w-12 h-12 sm:w-16 sm:h-16 bg-brand/5 text-brand rounded-xl sm:rounded-2xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform shadow-inner">
@@ -1926,7 +1928,7 @@ const CustomerDetailsModal = ({
                   </div>
                   <p className="text-[10px] text-brand/60 font-black uppercase tracking-widest mb-1">{v.label}</p>
                   <p className="text-xs sm:text-sm font-black text-content truncate w-full">
-                    {v.value ? visualLabels[v.value] : t('common.not_specified', 'غير محدد')}
+                    {v.value ? visualLabels[v.value] : t('orders.not_specified')}
                   </p>
                   <p className="text-[8px] sm:text-[9px] text-content-muted font-bold mt-0.5">{v.desc}</p>
                 </div>
@@ -1935,7 +1937,7 @@ const CustomerDetailsModal = ({
           </DetailSection>
 
           {/* Garment Blueprint Section */}
-          <DetailSection title={t('customers.garment_blueprint', 'المخطط الهندسي للثوب')} icon={Scissors}>
+          <DetailSection title={t('customers.garment_blueprint')} icon={Scissors}>
             <div className="bg-surface-muted/30 rounded-2xl sm:rounded-[2.5rem] p-2 sm:p-4 border border-border pointer-events-none overflow-x-auto scrollbar-hide">
               <ThobeMeasurementSelector 
                 values={(customer.measurements as Measurements) || {}}
@@ -1946,31 +1948,31 @@ const CustomerDetailsModal = ({
           </DetailSection>
 
           {/* Style Preferences Section */}
-          <DetailSection title={t('customers.design_preferences', 'تفضيلات التصميم')} icon={ShoppingBag} defaultOpen={false}>
+          <DetailSection title={t('customers.design_preferences')} icon={ShoppingBag} defaultOpen={false}>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <div className="bg-surface-muted p-4 rounded-xl sm:rounded-2xl border border-border">
-                <span className="text-[10px] text-content-muted font-bold block mb-1">{t('customers.neck_shape', 'شكل الرقبة')}</span>
+                <span className="text-[10px] text-content-muted font-bold block mb-1">{t('customers.neck_shape')}</span>
                 <span className="text-sm font-bold text-content">
-                  {customer.styles?.neckShape === 'round' ? t('customers.neck_shape_round', 'دائري') : customer.styles?.neckShape === 'v-neck' ? t('customers.neck_shape_v', 'سبعة') : customer.styles?.neckShape === 'square' ? t('customers.neck_shape_square', 'مربع') : '-'}
+                  {customer.styles?.neckShape === 'round' ? t('customers.neck_shape_round') : customer.styles?.neckShape === 'v-neck' ? t('customers.neck_shape_v') : customer.styles?.neckShape === 'square' ? t('customers.neck_shape_square') : '-'}
                 </span>
               </div>
               <div className="bg-surface-muted p-4 rounded-xl sm:rounded-2xl border border-border">
-                <span className="text-[10px] text-content-muted font-bold block mb-1">{t('customers.sleeve_type', 'نوع الكم')}</span>
+                <span className="text-[10px] text-content-muted font-bold block mb-1">{t('customers.sleeve_type')}</span>
                 <span className="text-sm font-bold text-content">
-                  {customer.styles?.sleeveStyle === 'normal' ? t('customers.sleeve_style_normal', 'عادي') : customer.styles?.sleeveStyle === 'cuff' ? t('customers.sleeve_style_cuff', 'كبك') : customer.styles?.sleeveStyle === 'wide' ? t('customers.sleeve_style_wide', 'واسع') : '-'}
+                  {customer.styles?.sleeveStyle === 'normal' ? t('inventory.cuff_regular') : customer.styles?.sleeveStyle === 'cuff' ? t('customers.sleeve_style_cuff') : customer.styles?.sleeveStyle === 'wide' ? t('customers.sleeve_style_wide') : '-'}
                 </span>
               </div>
               <div className="bg-surface-muted p-4 rounded-xl sm:rounded-2xl border border-border">
-                <span className="text-[10px] text-content-muted font-bold block mb-1">{t('customers.pocket_style', 'الجيب')}</span>
+                <span className="text-[10px] text-content-muted font-bold block mb-1">{t('customers.pocket_style')}</span>
                 <span className="text-sm font-bold text-content">
-                  {customer.styles?.pocketType === 'none' ? t('customers.pocket_none', 'بدون') : customer.styles?.pocketType === 'single' ? t('customers.pocket_single', 'واحد') : customer.styles?.pocketType === 'double' ? t('customers.pocket_double', 'اثنين') : '-'}
+                  {customer.styles?.pocketType === 'none' ? t('customers.pocket_none') : customer.styles?.pocketType === 'single' ? t('customers.pocket_single') : customer.styles?.pocketType === 'double' ? t('customers.pocket_double') : '-'}
                 </span>
               </div>
             </div>
           </DetailSection>
 
           {/* Order History Section */}
-          <DetailSection title={t('customers.order_history', 'سجل الطلبات')} icon={History} defaultOpen={false}>
+          <DetailSection title={t('customers.order_history')} icon={History} defaultOpen={false}>
             <div className="space-y-3">
               {orders.length > 0 ? (
                 orders.map((order) => (
@@ -1990,21 +1992,21 @@ const CustomerDetailsModal = ({
                         "text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full",
                         order.status === 'delivered' ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
                       )}>
-                        {order.status === 'delivered' ? t('orders.delivered', 'تم التسليم') : t('orders.in_progress', 'قيد التنفيذ')}
+                        {order.status === 'delivered' ? t('common.status_delivered') : t('common.status_in_progress')}
                       </span>
                     </div>
                   </div>
                 ))
               ) : (
                 <div className="text-center py-8 bg-surface-muted rounded-xl sm:rounded-2xl border-2 border-dashed border-border text-content-muted">
-                  <p className="text-sm font-bold">{t('customers.no_previous_orders', 'لا توجد طلبات سابقة')}</p>
+                  <p className="text-sm font-bold">{t('customers.no_previous_orders')}</p>
                 </div>
               )}
             </div>
           </DetailSection>
 
           {customer.notes && (
-            <DetailSection title={t('common.notes', 'ملاحظات')} icon={Info} defaultOpen={false}>
+            <DetailSection title={t('common.notes')} icon={Info} defaultOpen={false}>
               <p className="text-sm text-content-muted leading-relaxed bg-warning/5 p-4 rounded-xl sm:rounded-2xl border border-warning/10">
                 {customer.notes}
               </p>
@@ -2019,14 +2021,14 @@ const CustomerDetailsModal = ({
             className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 bg-surface text-content py-3 rounded-xl font-bold border border-border hover:bg-surface-muted transition-all"
           >
             <Edit2 size={16} className="sm:w-[18px] sm:h-[18px]" />
-            <span>{t('customers.edit_data', 'تعديل البيانات')}</span>
+            <span>{t('customers.edit_data')}</span>
           </button>
           <button 
             onClick={onNewOrder}
             className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 bg-brand text-white py-3 rounded-xl font-bold hover:bg-brand/90 transition-all shadow-lg shadow-brand/10"
           >
             <Plus size={16} className="sm:w-[18px] sm:h-[18px]" />
-            <span>{t('orders.create_new_order', 'طلب جديد')}</span>
+            <span>{t('orders.create_new_order')}</span>
           </button>
         </div>
       </motion.div>
@@ -2048,7 +2050,7 @@ const CustomerStatementModal = ({
   tenantId: string;
 }) => {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
   const { currentStaff } = useStaff();
@@ -2078,11 +2080,11 @@ const CustomerStatementModal = ({
       const historyEntry = {
         status: order.status,
         updatedAt: new Date().toISOString(),
-        updatedBy: currentStaff?.name || t('common.roles.owner', 'المالك'),
+        updatedBy: currentStaff?.name || t('common.roles.owner'),
         updatedByUid: currentStaff?.id || auth.currentUser?.uid,
-        notes: t('orders.payment_note', 'تسديد مبلغ: {{amount}} ﷼ عبر {{method}}', { 
+        notes: t('orders.payment_note', { 
           amount: payAmount, 
-          method: t(`common.payment_methods.${payMethod}`, payMethod === 'cash' ? 'كاش' : payMethod === 'network' ? 'شبكة' : 'الدفع عند الاستلام') 
+          method: t(`common.payment_methods.${payMethod}`) 
         })
       };
 
@@ -2104,21 +2106,21 @@ const CustomerStatementModal = ({
         await logEmployeeAction(
           tenantId,
           currentStaff?.id || '',
-          currentStaff?.name || t('common.roles.owner', 'المالك'),
+          currentStaff?.name || t('common.roles.owner'),
           'update_order_payment',
-          `تسديد مبلغ متبقي بقيمة ${payAmount} ﷼ للفاتورة #${order.orderNumber || order.id.slice(-6).toUpperCase()}`
+          t('customers.audit_pay_remaining', { amount: payAmount, invoice: order.orderNumber || order.id.slice(-6).toUpperCase() })
         );
       } catch (logErr) {
         console.error('Error logging payment action:', logErr);
       }
 
-      toastSuccess(t('orders.payment_success_toast', 'تم تسجيل عملية السداد وتحديث الفاتورة بنجاح'));
+      toastSuccess(t('orders.payment_success_toast'));
       setPayingOrderId(null);
       setPayAmount(0);
       onRefresh();
     } catch (err) {
       console.error('Error updating payment:', err);
-      toastError(t('orders.payment_error_toast', 'حدث خطأ أثناء حفظ عملية السداد'));
+      toastError(t('orders.payment_error_toast'));
     } finally {
       setIsPaying(false);
     }
@@ -2153,10 +2155,10 @@ const CustomerStatementModal = ({
             </div>
             <div>
               <h2 className="text-base sm:text-xl font-black text-content print:text-2xl print:text-black">
-                {t('customers.account_statement', 'كشف حساب العميل')}
+                {t('customers.account_statement_title')}
               </h2>
               <p className="text-[11px] sm:text-xs text-content-muted font-bold print:text-sm print:text-black mt-0.5">
-                {t('customers.customer_name', 'العميل')}: <span className="font-black text-content print:text-black">{customer.name}</span> | {t('customers.phone', 'الهاتف')}: <span className="font-black">{customer.phone}</span>
+                {t('common.customer')}: <span className="font-black text-content print:text-black">{customer.name}</span> | {t('common.phone')}: <span className="font-black">{customer.phone}</span>
               </p>
             </div>
           </div>
@@ -2165,10 +2167,10 @@ const CustomerStatementModal = ({
             <button 
               onClick={handlePrint}
               className="p-2 bg-brand/10 text-brand hover:bg-brand hover:text-white rounded-xl transition-all flex items-center gap-1.5 text-xs font-bold shadow-sm cursor-pointer"
-              title={t('common.print', 'طباعة')}
+              title={t('tax_invoices.print')}
             >
               <Printer size={16} />
-              <span>{t('common.print', 'طباعة')}</span>
+              <span>{t('tax_invoices.print')}</span>
             </button>
             <button onClick={onClose} className="p-1.5 hover:bg-surface rounded-full transition-colors shadow-sm cursor-pointer">
               <X size={20} className="text-content-muted sm:w-6 sm:h-6" />
@@ -2182,9 +2184,9 @@ const CustomerStatementModal = ({
           <div className="hidden print:block space-y-2 pb-4 border-b border-gray-200">
             <div className="flex justify-between items-start">
               <div>
-                <h1 className="text-xl font-bold text-black">{t('customers.store_statement', 'كشف حساب مالي')}</h1>
+                <h1 className="text-xl font-bold text-black">{t('customers.store_statement')}</h1>
                 <div className="text-xs text-black flex items-center gap-2 mt-1">
-                  <span>{t('customers.statement_date', 'تاريخ الإصدار')}:</span>
+                  <span>{t('customers.statement_date')}:</span>
                   <DateTimeDisplay date={new Date()} showTime={true} size="xs" />
                 </div>
               </div>
@@ -2192,7 +2194,7 @@ const CustomerStatementModal = ({
                 <p className="text-sm font-bold text-black">{customer.name}</p>
                 <p className="text-xs text-black">{customer.phone}</p>
                 {customer.isB2B && customer.trn && (
-                  <p className="text-xs text-black">{t('customers.trn_label', 'الرقم الضريبي')}: {customer.trn}</p>
+                  <p className="text-xs text-black">{t('customers.trn')}: {customer.trn}</p>
                 )}
               </div>
             </div>
@@ -2201,14 +2203,14 @@ const CustomerStatementModal = ({
           {/* Financial summary metrics bento block */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-surface-muted/50 p-4 rounded-2xl border border-border flex flex-col justify-between print:border-black print:bg-white">
-              <span className="text-[10px] text-content-muted font-black uppercase tracking-wider mb-1 print:text-black">{t('customers.total_purchases', 'إجمالي المبيعات / المشتريات')}</span>
+              <span className="text-[10px] text-content-muted font-black uppercase tracking-wider mb-1 print:text-black">{t('customers.statement_total_purchases')}</span>
               <p className="text-lg sm:text-2xl font-black text-brand print:text-black">
                 <PriceDisplay amount={totalPurchases} />
               </p>
             </div>
             
             <div className="bg-surface-muted/50 p-4 rounded-2xl border border-border flex flex-col justify-between print:border-black print:bg-white">
-              <span className="text-[10px] text-content-muted font-black uppercase tracking-wider mb-1 print:text-black">{t('customers.total_paid', 'إجمالي المبالغ المدفوعة')}</span>
+              <span className="text-[10px] text-content-muted font-black uppercase tracking-wider mb-1 print:text-black">{t('customers.total_paid')}</span>
               <p className="text-lg sm:text-2xl font-black text-success print:text-black">
                 <PriceDisplay amount={totalPaid} />
               </p>
@@ -2224,7 +2226,7 @@ const CustomerStatementModal = ({
             )}>
               <span className="text-[10px] opacity-80 font-black uppercase tracking-wider mb-1 flex items-center gap-1">
                 {netBalance > 0 && <AlertCircle size={12} className="print:hidden" />}
-                {t('customers.net_balance', 'الرصيد المتبقي المستحق')}
+                {t('customers.net_balance')}
               </span>
               <div className="flex items-baseline justify-between">
                 <p className="text-lg sm:text-2xl font-black">
@@ -2232,10 +2234,10 @@ const CustomerStatementModal = ({
                 </p>
                 <span className="text-xs font-black px-2 py-0.5 rounded-full bg-white/20 print:border print:border-black print:text-black">
                   {netBalance > 0 
-                    ? t('customers.debtor', 'مدين') 
+                    ? t('customers.debtor') 
                     : netBalance < 0 
-                      ? t('customers.creditor', 'دائن') 
-                      : t('customers.balanced', 'متزن')
+                      ? t('customers.creditor') 
+                      : t('customers.balanced')
                   }
                 </span>
               </div>
@@ -2246,20 +2248,20 @@ const CustomerStatementModal = ({
           <div className="space-y-3">
             <h3 className="text-sm font-black text-content-muted flex items-center gap-2 border-b border-border pb-2 print:text-black print:border-black">
               <History size={16} />
-              {t('customers.detailed_ledger', 'تفاصيل الحساب والمعاملات المالية')}
+              {t('customers.detailed_ledger')}
             </h3>
             
             <div className="overflow-x-auto rounded-2xl border border-border print:border-black">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-surface-muted border-b border-border text-content-muted font-black text-xs print:bg-gray-100 print:text-black print:border-b-2 print:border-black">
-                    <th className="p-3 text-right">{t('orders.order_id', 'رقم الطلب')}</th>
-                    <th className="p-3 text-right">{t('orders.date', 'التاريخ')}</th>
-                    <th className="p-3 text-right">{t('orders.total', 'القيمة الكلية')}</th>
-                    <th className="p-3 text-right">{t('orders.paid', 'المدفوع')}</th>
-                    <th className="p-3 text-right">{t('orders.remaining', 'المتبقي')}</th>
-                    <th className="p-3 text-right">{t('orders.status', 'الحالة')}</th>
-                    <th className="p-3 text-center print:hidden">{t('common.details', 'التفاصيل')}</th>
+                    <th className="p-3 text-right">{t('orders.order_id')}</th>
+                    <th className="p-3 text-right">{t('common.date')}</th>
+                    <th className="p-3 text-right">{t('orders.total')}</th>
+                    <th className="p-3 text-right">{t('orders.paid')}</th>
+                    <th className="p-3 text-right">{t('common.remaining')}</th>
+                    <th className="p-3 text-right">{t('common.status')}</th>
+                    <th className="p-3 text-center print:hidden">{t('saas.details')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border print:divide-black">
@@ -2300,10 +2302,10 @@ const CustomerStatementModal = ({
                                     : "bg-warning/10 text-warning print:bg-transparent print:text-black print:border print:border-black"
                               )}>
                                 {order.status === 'delivered' 
-                                  ? t('orders.delivered', 'تم التسليم') 
+                                  ? t('common.status_delivered') 
                                   : order.status === 'cancelled'
-                                    ? t('orders.cancelled', 'ملغي')
-                                    : t('orders.in_progress', 'قيد التنفيذ')
+                                    ? t('common.status_cancelled')
+                                    : t('common.status_in_progress')
                                 }
                               </span>
                             </td>
@@ -2327,21 +2329,21 @@ const CustomerStatementModal = ({
                                   <div className="space-y-2 text-xs">
                                     <h4 className="font-black text-content-muted border-b border-border/40 pb-1 flex items-center gap-1.5">
                                       <ShoppingBag size={14} />
-                                      {t('orders.order_items', 'محتويات هذا الطلب')}
+                                      {t('orders.order_items')}
                                     </h4>
                                     <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
                                       {order.items && order.items.length > 0 ? (
                                         order.items.map((item: any, idx: number) => (
                                           <div key={idx} className="bg-surface p-2.5 rounded-xl border border-border flex justify-between items-center shadow-sm">
                                             <div>
-                                              <p className="font-bold text-content">{item.name || item.thobeType || t('orders.thobe_custom', 'تفصيل ثوب')}</p>
-                                              <p className="text-[10px] text-content-muted">{t('orders.quantity', 'الكمية')}: {item.quantity || 1}</p>
+                                              <p className="font-bold text-content">{item.name || item.thobeType || t('orders.thobe_custom')}</p>
+                                              <p className="text-[10px] text-content-muted">{t('common.quantity')}: {item.quantity || 1}</p>
                                             </div>
                                             <p className="font-bold text-brand"><PriceDisplay amount={item.price || item.totalPrice} /></p>
                                           </div>
                                         ))
                                       ) : (
-                                        <p className="text-content-muted italic">{t('orders.no_items_details', 'تفاصيل مخصصة للطلب')}</p>
+                                        <p className="text-content-muted italic">{t('orders.no_items_details')}</p>
                                       )}
                                     </div>
                                   </div>
@@ -2352,7 +2354,7 @@ const CustomerStatementModal = ({
                                       <div>
                                         <h4 className="font-black text-danger border-b border-border/40 pb-1 flex items-center gap-1.5 text-xs mb-3">
                                           <CreditCard size={14} />
-                                          {t('orders.pay_remaining_title', 'تسديد المبلغ المتبقي للفاتورة')}
+                                          {t('orders.pay_remaining_title')}
                                         </h4>
                                         
                                         {payingOrderId === order.id ? (
@@ -2360,7 +2362,7 @@ const CustomerStatementModal = ({
                                             {/* Payment Amount Input */}
                                             <div className="space-y-1">
                                               <label className="text-[10px] font-black text-content-muted uppercase">
-                                                {t('orders.pay_amount_now', 'المبلغ المراد تسديده الآن')} (﷼)
+                                                {t('orders.pay_amount_now')} (﷼)
                                               </label>
                                               <input 
                                                 type="number" 
@@ -2375,13 +2377,13 @@ const CustomerStatementModal = ({
                                             {/* Payment Method Selection */}
                                             <div className="space-y-1">
                                               <label className="text-[10px] font-black text-content-muted uppercase">
-                                                {t('orders.payment_method', 'طريقة الدفع')}
+                                                {t('orders.payment_method')}
                                               </label>
                                               <div className="grid grid-cols-3 gap-1.5">
                                                 {[
-                                                  { id: 'cash', label: 'كاش' },
-                                                  { id: 'network', label: 'شبكة' },
-                                                  { id: 'cash_on_delivery', label: 'عند الاستلام' }
+                                                  { id: 'cash', label: t('common.payment_methods.cash_short') },
+                                                  { id: 'network', label: t('common.payment_methods.network') },
+                                                  { id: 'cash_on_delivery', label: t('orders.payment_on_delivery_short') }
                                                 ].map(m => (
                                                   <button
                                                     key={m.id}
@@ -2406,21 +2408,21 @@ const CustomerStatementModal = ({
                                                 disabled={isPaying || payAmount <= 0}
                                                 className="flex-1 bg-success hover:bg-success/90 text-white py-2 rounded-xl font-bold text-xs transition-colors disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer shadow-sm"
                                               >
-                                                {isPaying ? 'جاري...' : t('orders.confirm_payment', 'تأكيد السداد')}
+                                                {isPaying ? t('orders.processing') : t('orders.confirm_payment')}
                                               </button>
                                               <button 
                                                 type="button"
                                                 onClick={() => { setPayingOrderId(null); setPayAmount(0); }}
                                                 className="px-3 py-2 text-content-muted font-bold text-xs hover:bg-surface-muted rounded-xl transition-colors cursor-pointer"
                                               >
-                                                {t('common.cancel', 'إلغاء')}
+                                                {t('common.cancel')}
                                               </button>
                                             </div>
                                           </div>
                                         ) : (
                                           <div className="space-y-3">
                                             <p className="text-content-muted font-medium text-xs leading-relaxed">
-                                              {t('orders.remaining_warning', 'متبقي على هذه الفاتورة مبلغ')} <span className="font-black text-danger"><PriceDisplay amount={order.remainingAmount} /></span>. {t('orders.pay_help_text', 'يمكنك تسجيل دفعة مالية جديدة لتعديل الفاتورة مباشرة.')}
+                                              {t('orders.remaining_warning')} <span className="font-black text-danger"><PriceDisplay amount={order.remainingAmount} /></span>. {t('orders.pay_help_text')}
                                             </p>
                                             <button 
                                               type="button"
@@ -2432,7 +2434,7 @@ const CustomerStatementModal = ({
                                               className="w-full bg-brand hover:bg-brand/90 text-white py-2.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
                                             >
                                               <CreditCard size={14} />
-                                              {t('orders.pay_remaining', 'تسديد المتبقي')}
+                                              {t('orders.pay_remaining')}
                                             </button>
                                           </div>
                                         )}
@@ -2450,7 +2452,7 @@ const CustomerStatementModal = ({
                   ) : (
                     <tr>
                       <td colSpan={7} className="p-8 text-center text-content-muted font-bold italic">
-                        {t('customers.no_statement_transactions', 'لا توجد معاملات مالية أو فواتير مسجلة لهذا العميل')}
+                        {t('customers.no_statement_transactions')}
                       </td>
                     </tr>
                   )}
@@ -2466,7 +2468,7 @@ const CustomerStatementModal = ({
             onClick={onClose}
             className="px-6 py-2.5 bg-surface-muted text-content hover:bg-surface border border-border rounded-xl font-bold transition-all text-xs sm:text-sm cursor-pointer"
           >
-            {t('common.close', 'إغلاق')}
+            {t('sales.close')}
           </button>
         </div>
       </motion.div>

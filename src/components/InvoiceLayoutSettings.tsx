@@ -20,13 +20,15 @@ import {
 import Branding from './Branding';
 import { ThermalInvoice, StandardInvoice, InvoiceData, InvoiceLayoutSettingsType } from './printing/InvoiceReceipt';
 
+import { isRtlLang } from '../lib/direction';
+
 interface InvoiceLayoutSettingsProps {
   tenantId: string;
 }
 
 export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSettingsProps) {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur' || !i18n.language;
+  const isRtl = isRtlLang(i18n.language);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -140,7 +142,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 1024 * 1024) {
-        alert(t('settings_page.invoice.logo_too_large_error', 'حجم الصورة كبير جداً، يرجى اختيار صورة أقل من 1 ميجابايت'));
+        alert(t('settings_page.invoice.logo_too_large_error'));
         return;
       }
       const reader = new FileReader();
@@ -216,19 +218,19 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
     invoiceNumber: 'INV-2026-00042',
     issueDate: new Date().toISOString(),
     seller: {
-      name: settings.header.facilityName || 'متجر التجربة الافتراضي',
+      name: settings.header.facilityName || t('settings_page.invoice.preview_store_name'),
       vatNumber: settings.header.taxId || '300012345600003',
-      address: settings.header.address || 'شارع العليا العام، الرياض، المملكة العربية السعودية',
+      address: settings.header.address || t('settings_page.invoice.preview_address'),
       phone: settings.header.contactNumbers || ''
     },
     customer: {
-      name: 'سليمان بن عبد العزيز',
+      name: t('settings_page.invoice.preview_customer_name'),
       vatNumber: '300011122200003'
     },
     items: [
       {
         id: 'item-1',
-        name: 'تفصيل ثوب سعودي ياباني فاخر',
+        name: t('settings_page.invoice.preview_item_name'),
         quantity: 1,
         unitPrice: 350.00
       }
@@ -241,8 +243,8 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
     invoiceType: settings.layoutTemplate === 'tax' ? 'simplified_tax' : 'standard_b2b',
     paidAmount: (settings.columns.showDiscount ? 330.00 : 350.00) * 1.15,
     remainingAmount: 0.00,
-    branchName: 'الفرع الرئيسي',
-    sellerName: 'عبد الله محمد'
+    branchName: t('branches.master'),
+    sellerName: t('settings_page.invoice.preview_seller_name')
   };
 
   return (
@@ -258,7 +260,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
           )}
         >
           <FileText size={16} />
-          <span>{t('settings_page.invoice.layout_options', 'خيارات التخطيط')}</span>
+          <span>{t('settings_page.invoice.layout_options')}</span>
         </button>
         <button
           type="button"
@@ -269,7 +271,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
           )}
         >
           <Eye size={16} />
-          <span>{t('settings_page.invoice.live_preview', 'المعاينة المباشرة')}</span>
+          <span>{t('settings_page.invoice.live_preview')}</span>
         </button>
       </div>
 
@@ -284,9 +286,9 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
               <div className="p-2 bg-brand/10 text-brand rounded-xl shrink-0">
                 <FileText size={22} />
               </div>
-              <span>{t('settings_page.invoice.title', 'تخطيط الفاتورة الاحترافية')}</span>
+              <span>{t('settings_page.invoice.title')}</span>
             </h2>
-            <p className="text-content-muted text-xs sm:text-sm font-medium mt-1">{t('settings_page.invoice.subtitle', 'صمم مظهر فواتيرك بما يتناسب مع هوية متجرك')}</p>
+            <p className="text-content-muted text-xs sm:text-sm font-medium mt-1">{t('settings_page.invoice.subtitle')}</p>
           </div>
           <button 
             onClick={handleSave}
@@ -303,7 +305,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
             ) : (
               <Save size={18} />
             )}
-            <span>{saving ? t('settings_page.invoice.saving', 'جاري الحفظ...') : saveSuccess ? t('settings_page.invoice.save_success', 'تم الحفظ بنجاح') : t('settings_page.invoice.apply_design', 'اعتماد التصميم')}</span>
+            <span>{saving ? t('settings_page.invoice.saving') : saveSuccess ? t('settings_page.invoice.save_success') : t('settings_page.invoice.apply_design')}</span>
           </button>
         </div>
 
@@ -311,16 +313,16 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
         <div className="space-y-6">
           <div className="flex items-center gap-2 group">
              <div className="w-1.5 h-6 bg-brand rounded-full transition-all group-hover:h-8" />
-             <h3 className="text-lg font-black text-content uppercase tracking-tight">{t('settings_page.invoice.section1_title', '1. الإخراج والطباعة')}</h3>
+             <h3 className="text-lg font-black text-content uppercase tracking-tight">{t('settings_page.invoice.section1_title')}</h3>
           </div>
           
           <div className="space-y-4 bg-surface-muted/50 p-4 sm:p-6 rounded-2xl md:rounded-[2rem] border border-border">
             <div className="space-y-3">
-              <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">{t('settings_page.invoice.paper_size', 'قياس الورق المفضل')}</label>
+              <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">{t('settings_page.invoice.paper_size')}</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { id: 'thermal80', label: t('settings_page.invoice.thermal80', 'حراري 80mm') },
-                  { id: 'thermal58', label: t('settings_page.invoice.thermal58', 'حراري 58mm') },
+                  { id: 'thermal80', label: t('settings_page.invoice.thermal80') },
+                  { id: 'thermal58', label: t('settings_page.invoice.thermal58') },
                   { id: 'a4', label: 'A4' },
                   { id: 'a5', label: 'A5' },
                 ].map(size => (
@@ -341,12 +343,12 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
             </div>
 
             <div className="space-y-3">
-              <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">{t('settings_page.invoice.layout_template', 'نمط توزيع العناصر')}</label>
+              <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">{t('settings_page.invoice.layout_template')}</label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
-                  { id: 'classic', label: t('settings_page.invoice.classic', 'كلاسيكي') },
-                  { id: 'detailed', label: t('settings_page.invoice.detailed', 'نموذج مفصل') },
-                  { id: 'tax', label: t('settings_page.invoice.tax', 'فاتورة ضريبية') },
+                  { id: 'classic', label: t('settings_page.invoice.classic') },
+                  { id: 'detailed', label: t('settings_page.invoice.detailed') },
+                  { id: 'tax', label: t('settings_page.invoice.tax') },
                 ].map(template => (
                   <button
                     key={template.id}
@@ -373,13 +375,13 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                   </div>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-black text-content text-xs sm:text-sm">{t('settings_page.invoice.fast_thermal', 'الوضع السريع للطباعة الحرارية (80mm)')}</p>
+                      <p className="font-black text-content text-xs sm:text-sm">{t('settings_page.invoice.fast_thermal')}</p>
                       <span className="text-[9px] bg-amber-500/10 text-amber-700 peer peer-checked:after:translate-x-full peer-checked:after:border-white px-2 py-0.5 rounded-full font-black border border-amber-500/20">
-                        {t('settings_page.invoice.paper_saving', 'توفير الورق')}
+                        {t('settings_page.invoice.paper_saving')}
                       </span>
                     </div>
                     <p className="text-[10px] text-content-muted font-medium mt-0.5">
-                      {t('settings_page.invoice.fast_thermal_desc', 'يقوم آلياً بضغط فواتير المبيعات وتقليل المسافات لتناسب طابعات الكاشير 80mm بسرعة فائقة')}
+                      {t('settings_page.invoice.fast_thermal_desc')}
                     </p>
                   </div>
                 </div>
@@ -406,7 +408,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
         <div className="space-y-6">
           <div className="flex items-center gap-2 group">
              <div className="w-1.5 h-6 bg-brand rounded-full transition-all group-hover:h-8" />
-             <h3 className="text-lg font-black text-content uppercase tracking-tight">{t('settings_page.invoice.section2_title', '2. ترويسة ومحتوى الفاتورة')}</h3>
+             <h3 className="text-lg font-black text-content uppercase tracking-tight">{t('settings_page.invoice.section2_title')}</h3>
           </div>
           
           <div className="space-y-6 bg-surface-muted/50 p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border">
@@ -417,7 +419,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                 ) : (
                   <div className="text-center p-4">
                     <Upload size={20} className="mx-auto text-content-muted mb-2 group-hover:text-brand transition-all" />
-                    <span className="text-[9px] font-black text-content-muted tracking-tighter">{t('settings_page.invoice.store_logo', 'شعار المتجر')}</span>
+                    <span className="text-[9px] font-black text-content-muted tracking-tighter">{t('settings_page.invoice.store_logo')}</span>
                   </div>
                 )}
                 <label className="absolute -bottom-2 -right-2 p-2 bg-brand text-white rounded-xl shadow-lg cursor-pointer hover:bg-brand/90 transition-all hover:scale-110">
@@ -436,7 +438,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
               
               <div className="flex-1 space-y-4 w-full">
                 <div>
-                  <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] mb-2 block">{t('settings_page.invoice.whatsapp_number', 'رقم واتساب المبيعات')}</label>
+                  <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] mb-2 block">{t('settings_page.invoice.whatsapp_number')}</label>
                   <input 
                     type="text" 
                     value={settings.header.contactNumbers}
@@ -446,7 +448,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                   />
                 </div>
                 <div>
-                  <label className={cn("text-[10px] font-black text-content-muted uppercase tracking-[0.2em] mb-2 block text-center", isRtl ? "sm:text-right" : "sm:text-left")}>{t('settings_page.invoice.alignment_dir', 'اتجاه المحاذاة')}</label>
+                  <label className={cn("text-[10px] font-black text-content-muted uppercase tracking-[0.2em] mb-2 block text-center", isRtl ? "sm:text-right" : "sm:text-left")}>{t('settings_page.invoice.alignment_dir')}</label>
                   <div className="flex bg-white rounded-xl border border-border p-1.5 w-fit shadow-inner mx-auto sm:mx-0">
                     {[
                       { id: 'right', icon: AlignRight },
@@ -471,30 +473,30 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
 
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">{t('settings_page.invoice.facility_name', 'اسم المنشأة / المتجر المطبوع')}</label>
+                <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">{t('settings_page.invoice.facility_name')}</label>
                 <input 
                   type="text" 
                   value={settings.header.facilityName}
                   onChange={e => setSettings(s => ({ ...s, header: { ...s.header, facilityName: e.target.value } }))}
-                  placeholder={t('settings_page.invoice.facility_name_placeholder', 'أدخل اسم المتجر أو المنشأة المطبوع بالفاتورة')}
+                  placeholder={t('settings_page.invoice.facility_name_placeholder')}
                   className="w-full bg-white border border-border/50 rounded-xl p-3.5 text-sm font-bold focus:ring-2 focus:ring-brand outline-none shadow-sm"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">{t('settings_page.invoice.custom_address', 'العنوان المطبوع يدويًا (مُخصص)')}</label>
+                  <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">{t('settings_page.invoice.custom_address')}</label>
                   <input 
                     type="text" 
                     value={settings.header.address}
                     onChange={e => setSettings(s => ({ ...s, header: { ...s.header, address: e.target.value } }))}
-                    placeholder={t('settings_page.invoice.custom_address_placeholder', 'أدخل العنوان المطبوع المختصر لتجنب طول الترويسة')}
+                    placeholder={t('settings_page.invoice.custom_address_placeholder')}
                     className="w-full bg-white border border-border/50 rounded-xl p-3.5 text-sm font-bold focus:ring-2 focus:ring-brand outline-none shadow-sm"
                   />
-                  <p className="text-[11px] text-content-muted px-1">{t('settings_page.invoice.custom_address_help', 'يمكنك إدخال عنوان مختصر هنا لطباعته في الفاتورة بدلاً من العنوان الرئيسي الطويل.')}</p>
+                  <p className="text-[11px] text-content-muted px-1">{t('settings_page.invoice.custom_address_help')}</p>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">{t('settings_page.invoice.tax_id', 'الرقم الضريبي للمنشأة')}</label>
+                  <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">{t('settings_page.invoice.tax_id')}</label>
                   <input 
                     type="text" 
                     value={settings.header.taxId}
@@ -513,14 +515,14 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                <div className="p-2 bg-white rounded-lg shadow-sm text-brand">
                   <Layout size={18} />
                </div>
-               <h4 className="font-black text-content uppercase tracking-widest text-xs">{t('settings_page.invoice.columns_title', 'أعمدة وبنود الفاتورة')}</h4>
+               <h4 className="font-black text-content uppercase tracking-widest text-xs">{t('settings_page.invoice.columns_title')}</h4>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[
-                { id: 'showUnitPrice', label: t('settings_page.invoice.col_unit_price', 'عرض سعر الوحدة') },
-                { id: 'showDiscount', label: t('settings_page.invoice.col_discount', 'إدراج عمود الخصم') },
-                { id: 'showMeasurements', label: t('settings_page.invoice.col_measurements', 'تفاصيل الخياطة المخصصة') },
-                { id: 'showBarcode', label: t('settings_page.invoice.col_barcode', 'باركود الطلب (تتبع)') },
+                { id: 'showUnitPrice', label: t('settings_page.invoice.col_unit_price') },
+                { id: 'showDiscount', label: t('settings_page.invoice.col_discount') },
+                { id: 'showMeasurements', label: t('settings_page.invoice.col_measurements') },
+                { id: 'showBarcode', label: t('settings_page.invoice.col_barcode') },
               ].map(col => (
                 <label key={col.id} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-border/50 cursor-pointer hover:border-brand/30 hover:bg-brand/5 shadow-sm transition-all group">
                   <span className="text-sm font-bold text-content group-hover:text-brand">{col.label}</span>
@@ -544,22 +546,22 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                <div className="p-2 bg-white rounded-lg shadow-sm text-brand">
                   <FileText size={18} />
                </div>
-               <h4 className="font-black text-content uppercase tracking-widest text-xs">{t('settings_page.invoice.footer_title', 'تذييل الفاتورة والسياسات')}</h4>
+               <h4 className="font-black text-content uppercase tracking-widest text-xs">{t('settings_page.invoice.footer_title')}</h4>
             </div>
             
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">{t('settings_page.invoice.return_policy', 'سياسة الاستبدال والضمان')}</label>
+              <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">{t('settings_page.invoice.return_policy')}</label>
               <textarea 
                 rows={4}
                 value={settings.footer.returnPolicy}
                 onChange={e => setSettings(s => ({ ...s, footer: { ...s.footer, returnPolicy: e.target.value } }))}
                 className="w-full bg-white border border-border/50 rounded-2xl p-4 sm:p-6 text-xs font-medium focus:ring-2 focus:ring-brand outline-none resize-none leading-relaxed shadow-inner"
-                placeholder={t('settings_page.invoice.return_policy_placeholder', 'أدخل نص السياسة القانونية للفاتورة...')}
+                placeholder={t('settings_page.invoice.return_policy_placeholder')}
               />
             </div>
             
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">{t('settings_page.invoice.thank_you_message', 'رسالة الختام')}</label>
+              <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">{t('settings_page.invoice.thank_you_message')}</label>
               <input 
                 type="text" 
                 value={settings.footer.thankYouMessage}
@@ -574,8 +576,8 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                     <Zap size={24} className="animate-pulse" />
                  </div>
                  <div>
-                    <p className="font-black text-content text-sm">{t('settings_page.invoice.zatca_qr', 'رمز الاستجابة السريع (ZATCA QR)')}</p>
-                    <p className="text-[10px] text-content-muted font-medium">{t('settings_page.invoice.zatca_compatibility', 'توافق تام مع المرحلة الثانية من الفوترة الإلكترونية')}</p>
+                    <p className="font-black text-content text-sm">{t('settings_page.invoice.zatca_qr')}</p>
+                    <p className="text-[10px] text-content-muted font-medium">{t('settings_page.invoice.zatca_compatibility')}</p>
                  </div>
               </div>
               <div className="flex justify-end sm:justify-start">
@@ -601,7 +603,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
       )}>
         <div className="bg-white/80 backdrop-blur-md px-6 py-2 rounded-full border border-border/50 flex items-center gap-2 mb-6 sm:mb-10 text-content-muted font-black uppercase tracking-widest text-[10px] sticky top-0 z-10 shadow-sm shadow-brand/5 whitespace-nowrap">
           <Eye size={12} className="text-brand" />
-          <span>{t('settings_page.invoice.live_simulation', 'محاكاة حية للفاتورة المطبوعة')}</span>
+          <span>{t('settings_page.invoice.live_simulation')}</span>
         </div>
 
         {/* Invoice Paper Wrapper to handle scaling */}

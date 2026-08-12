@@ -132,13 +132,13 @@ export default function PurchaseReturns({
   return (
     <div className="space-y-6 font-sans">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold text-content">{t('procurement.purchase_returns', 'مرتجعات المشتريات')}</h2>
+        <h2 className="text-xl font-bold text-content">{t('procurement.purchase_returns')}</h2>
         <button 
           onClick={() => setIsModalOpen(true)}
           className="bg-brand text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-brand/90 transition-all shadow-lg shadow-brand/10 active:scale-95"
         >
           <Plus size={20} />
-          <span>{t('procurement.return_goods', 'إرجاع بضاعة')}</span>
+          <span>{t('procurement.return_goods')}</span>
         </button>
       </div>
 
@@ -149,14 +149,14 @@ export default function PurchaseReturns({
             <div key={ret.id} className="bg-surface p-6 rounded-2xl border border-border shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-brand/20 transition-all">
               <div>
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="font-bold text-lg text-content">{supplier?.name || t('common.unknown_supplier', 'مورد غير معروف')}</span>
+                  <span className="font-bold text-lg text-content">{supplier?.name || t('common.unknown_supplier')}</span>
                   <span className="px-3 py-1 rounded-full text-xs font-bold bg-danger/10 text-danger border border-danger/10">
-                    {t('procurement.return', 'مرتجع')}
+                    {t('procurement.return')}
                   </span>
                 </div>
-                <p className="text-sm text-content-muted">{t('common.date', 'التاريخ')}: {new Date(ret.returnDate).toLocaleDateString('ar-SA-u-nu-latn')}</p>
-                <p className="text-sm text-content-muted">{t('common.reason', 'السبب')}: {ret.reason}</p>
-                <p className="text-sm text-content-muted mt-2">{t('procurement.return_value', 'قيمة المرتجع')}: <span className="font-bold text-danger"><PriceDisplay amount={ret.totalAmount} /></span></p>
+                <p className="text-sm text-content-muted">{t('common.date')}: {new Date(ret.returnDate).toLocaleDateString('ar-SA-u-nu-latn')}</p>
+                <p className="text-sm text-content-muted">{t('common.reason')}: {ret.reason}</p>
+                <p className="text-sm text-content-muted mt-2">{t('procurement.return_value')}: <span className="font-bold text-danger"><PriceDisplay amount={ret.totalAmount} /></span></p>
               </div>
             </div>
           );
@@ -164,7 +164,7 @@ export default function PurchaseReturns({
         {purchaseReturns.length === 0 && (
           <div className="p-16 text-center text-content-muted bg-surface-muted rounded-3xl border border-dashed border-border">
             <ExternalLink className="mx-auto mb-4 opacity-20" size={56} />
-            <p className="font-bold text-lg">{t('procurement.no_returns', 'لا توجد مرتجعات')}</p>
+            <p className="font-bold text-lg">{t('procurement.no_returns')}</p>
           </div>
         )}
       </div>
@@ -174,7 +174,7 @@ export default function PurchaseReturns({
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-surface rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-border flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
             <div className="p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
-              <h2 className="text-xl font-bold text-content">{t('procurement.return_to_supplier', 'إرجاع بضاعة لمورد')}</h2>
+              <h2 className="text-xl font-bold text-content">{t('procurement.return_to_supplier')}</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-content-muted hover:text-content p-2 hover:bg-surface rounded-full transition-all">
                 <X size={24} />
               </button>
@@ -182,11 +182,11 @@ export default function PurchaseReturns({
             
             <div className="p-8 overflow-y-auto flex-1 space-y-8">
               <div className="space-y-2">
-                <label className="block text-sm font-black text-content-muted uppercase tracking-widest">{t('procurement.supplier', 'المورد')}</label>
+                <label className="block text-sm font-black text-content-muted uppercase tracking-widest">{t('procurement.supplier')}</label>
                 <SmartSelect 
                   value={selectedSupplier}
                   onChange={setSelectedSupplier}
-                  placeholder={t('procurement.select_supplier', 'اختر المورد...')}
+                  placeholder={t('procurement.select_supplier')}
                   options={suppliers.map(s => ({ value: s.id, label: s.name }))}
                 />
               </div>
@@ -194,22 +194,22 @@ export default function PurchaseReturns({
               <div className="bg-surface-muted/40 p-6 rounded-[2rem] border border-border space-y-6">
                 <h3 className="font-bold text-content text-sm flex items-center gap-2">
                   <Plus size={18} className="text-brand" />
-                  {t('procurement.add_items_to_return', 'إضافة أصناف للإرجاع')}
+                  {t('procurement.add_items_to_return')}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
                     <SmartSelect 
                       value={selectedItem}
                       onChange={setSelectedItem}
-                      placeholder={t('procurement.select_item', 'اختر الصنف...')}
+                      placeholder={t('procurement.select_item')}
                       options={inventory.map(i => ({ 
                         value: i.id, 
-                        label: `${i.name} (${i.unit}) - ${t('inventory.available', 'متاح')}: ${i.quantity}` 
+                        label: `${i.name} (${i.unit}) - ${t('inventory.available')}: ${i.quantity}` 
                       }))}
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-content-muted uppercase px-2">{t('common.quantity', 'الكمية')}</label>
+                    <label className="text-[10px] font-black text-content-muted uppercase px-2">{t('common.quantity')}</label>
                     <input 
                       type="number" 
                       placeholder="0"
@@ -219,7 +219,7 @@ export default function PurchaseReturns({
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-content-muted uppercase px-2">{t('common.price_per_unit', 'السعر للوحدة')}</label>
+                    <label className="text-[10px] font-black text-content-muted uppercase px-2">{t('common.price_per_unit')}</label>
                     <input 
                       type="number" 
                       placeholder="0.00"
@@ -234,7 +234,7 @@ export default function PurchaseReturns({
                   disabled={!selectedItem || quantity <= 0 || pricePerUnit <= 0}
                   className="w-full bg-brand/10 text-brand py-4 rounded-2xl font-bold hover:bg-brand hover:text-white transition-all disabled:opacity-50 active:scale-95 border border-brand/20"
                 >
-                  {t('common.add_to_list', 'إضافة للقائمة')}
+                  {t('common.add_to_list')}
                 </button>
               </div>
 
@@ -266,10 +266,10 @@ export default function PurchaseReturns({
                     <table className="w-full text-right min-w-max">
                       <thead className="bg-surface-muted text-content-muted text-xs uppercase tracking-wider">
                         <tr>
-                          <th className="p-4 font-black">{t('inventory.item', 'الصنف')}</th>
-                          <th className="p-4 font-black">{t('common.quantity', 'الكمية')}</th>
-                          <th className="p-4 font-black">{t('common.price', 'السعر')}</th>
-                          <th className="p-4 font-black">{t('common.total', 'الإجمالي')}</th>
+                          <th className="p-4 font-black">{t('inventory.item')}</th>
+                          <th className="p-4 font-black">{t('common.quantity')}</th>
+                          <th className="p-4 font-black">{t('common.price')}</th>
+                          <th className="p-4 font-black">{t('common.total')}</th>
                           <th className="p-4 font-black"></th>
                         </tr>
                       </thead>
@@ -297,26 +297,26 @@ export default function PurchaseReturns({
               )}
 
               <div className="space-y-2">
-                <label className="block text-sm font-black text-content-muted uppercase tracking-widest">{t('common.reason_for_return', 'سبب الإرجاع')}</label>
+                <label className="block text-sm font-black text-content-muted uppercase tracking-widest">{t('common.reason_for_return')}</label>
                 <textarea 
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   className="w-full px-6 py-4 bg-surface-muted border-2 border-border rounded-3xl focus:border-brand focus:ring-0 outline-none h-32 resize-none transition-all font-medium text-content"
-                  placeholder={t('procurement.reason_placeholder', 'مثال: قماش تالف، عيوب مصنعية...')}
+                  placeholder={t('procurement.reason_placeholder')}
                 />
               </div>
             </div>
             
             <div className="p-8 border-t border-border bg-surface-muted/50 flex flex-col sm:flex-row justify-between items-center gap-6">
               <div className="text-lg font-bold text-content">
-                {t('procurement.total_return', 'إجمالي المرتجع')}: <span className="text-2xl font-black text-danger ml-2"><PriceDisplay amount={items.reduce((sum, item) => sum + item.total, 0)} /></span>
+                {t('procurement.total_return')}: <span className="text-2xl font-black text-danger ml-2"><PriceDisplay amount={items.reduce((sum, item) => sum + item.total, 0)} /></span>
               </div>
               <button 
                 onClick={handleCreateReturn}
                 disabled={isSubmitting || items.length === 0 || !selectedSupplier}
                 className="w-full sm:w-auto bg-danger text-white px-12 py-4 rounded-2xl font-black hover:bg-danger/90 transition-all disabled:opacity-50 shadow-xl shadow-danger/10 active:scale-95"
               >
-                {isSubmitting ? t('common.saving', 'جاري الحفظ...') : t('procurement.confirm_return', 'تأكيد الإرجاع')}
+                {isSubmitting ? t('common.saving') : t('procurement.confirm_return')}
               </button>
             </div>
           </div>

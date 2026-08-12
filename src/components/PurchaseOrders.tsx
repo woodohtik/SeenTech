@@ -7,6 +7,7 @@ import { addSupplierTransaction } from '../services/supplierAccountsService';
 import { SmartSelect } from './ui/SmartSelect';
 import { PriceDisplay } from './PriceDisplay';
 import { useTranslation } from 'react-i18next';
+import { useDirection } from '../lib/direction';
 import { useToast } from '../contexts/ToastContext';
 
 export default function PurchaseOrders({ 
@@ -25,6 +26,7 @@ export default function PurchaseOrders({
   onRefresh?: () => void
 }) {
   const { t } = useTranslation();
+  const { dir, isRtl } = useDirection();
   const { error: toastError, success: toastSuccess } = useToast();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -176,7 +178,7 @@ export default function PurchaseOrders({
       const finalOrderObject = {
         ...poData,
         supplierId: poData.supplier_id,
-        supplierName: foundSupplier?.name || 'مورد معروف',
+        supplierName: foundSupplier?.name || t('procurement.supplier_name_fallback'),
         totalAmount: poData.total_amount,
         paidAmount: 0,
         remainingAmount: poData.total_amount,
@@ -211,7 +213,7 @@ export default function PurchaseOrders({
     }
 
     if (!skipConfirmationAlert) {
-      if (!confirm('هل أنت متأكد من تأكيد هذه العملية؟ سيتم تحديث المخزون ورصيد حساب المورد تلقائياً.')) return;
+      if (!confirm(t('procurement.confirm_process_warning'))) return;
     }
     setIsConfirming(true);
     try {
@@ -223,11 +225,11 @@ export default function PurchaseOrders({
         .single();
       
       if (fetchErr) throw fetchErr;
-      if (!orderDetails) throw new Error('لم يتم العثور على تفاصيل أمر الشراء في قاعدة البيانات.');
+      if (!orderDetails) throw new Error(t('procurement.po_details_not_found'));
 
       const orderItems = orderDetails.purchase_order_items || [];
       if (orderItems.length === 0) {
-        throw new Error('لا توجد أصناف في هذا الأمر لتأكيد العملية.');
+        throw new Error(t('procurement.no_items_to_confirm'));
       }
 
       // Determine order type dynamically and robustly (RET- prefix represents return/refund)
@@ -248,7 +250,7 @@ export default function PurchaseOrders({
       }
 
       if (!activeBranchId) {
-        throw new Error('فشل تحديد المستودع/الفرع المسؤول لتحديث مخزونة. يرجى تهيئة الفروع أولاً.');
+        throw new Error(t('procurement.no_branch_for_stock'));
       }
 
       // 3. Loop and perform atomic stock, ledger updates
@@ -268,7 +270,7 @@ export default function PurchaseOrders({
         
         if (invErr) {
           console.error(`Error fetching inventory item for item ID ${item.item_id}:`, invErr);
-          throw new Error(`تعذر العثور على الصنف "${item.name}" في قائمة المخزون الرئيسية.`);
+          throw new Error(t('procurement.item_not_in_inventory', { name: item.name }));
         }
 
         const currentQty = Number(invItem.quantity || 0);
@@ -401,14 +403,14 @@ export default function PurchaseOrders({
 
       if (poUpdErr) throw poUpdErr;
 
-      toastSuccess(finalOrderType === 'return' ? 'تم تأكيد المرتجع وخصم المخزون وموازنة رصيد المورد بنجاح' : 'تم تأكيد أمر الشراء وإدخال الكميات للمخازن وزيادة مستحقات المورد بنجاح');
+      toastSuccess(finalOrderType === 'return' ? t('procurement.return_confirmed_success') : t('procurement.po_confirmed_success'));
       setSelectedOrder(null);
       if (onRefresh) {
         onRefresh();
       }
     } catch (error: any) {
       console.error('Error in handleConfirmOrder:', error);
-      toastError(error.message || 'فشل تأكيد المستند بشكل تام ومزامنته.');
+      toastError(error.message || t('procurement.confirm_doc_failed'));
     } finally {
       setIsConfirming(false);
     }
@@ -619,7 +621,7 @@ export default function PurchaseOrders({
         </div>
 
         {/* Mobile Cards View */}
-        <div className="block md:hidden divide-y divide-border text-right" dir="rtl">
+        <div className={cn("block md:hidden divide-y divide-border", isRtl ? "text-right" : "text-left")} dir={dir}>
           {filteredOrders.map(po => {
             const poType = po.orderType || (po as any).order_type || 'purchase';
             const poStatus = po.status || 'draft';
@@ -842,7 +844,7 @@ export default function PurchaseOrders({
                       value={selectedItem}
                       onChange={(val) => setSelectedItem(val)}
                       placeholder={t('procurement.select_inventory_item', 'اختر صنف المخزن...')}
-                      options={inventory.map(i => ({ value: i.id, label: `${i.name} (${i.unit}) - متوفر: ${i.quantity}` }))}
+                      options={inventory.map(i => ({ value: i.id, label: t('procurement.item_option_label', { name: i.name, unit: i.unit, quantity: i.quantity }) }))}
                     />
                   </div>
                   <div>

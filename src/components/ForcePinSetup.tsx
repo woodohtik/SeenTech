@@ -8,6 +8,7 @@ import { cn } from '../lib/utils';
 import { AuditLog } from '../types';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import { auth as firebaseAuth } from '../lib/firebase';
+import { useDirection } from '../lib/direction';
 
 interface ForcePinSetupProps {
   tenantId: string;
@@ -15,6 +16,7 @@ interface ForcePinSetupProps {
 }
 
 export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProps) {
+  const { t, dir } = useDirection();
   const navigate = useNavigate();
   const [enablePin, setEnablePin] = useState(true);
   const [pin, setPin] = useState('');
@@ -27,11 +29,11 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
   const validatePin = () => {
     if (!enablePin) return true;
     if (pin.length !== 4) {
-      setError('يجب أن يتكون الرمز من 4 أرقام');
+      setError(t('staff.force_pin.pin_must_be_4_digits'));
       return false;
     }
     if (pin !== confirmPin) {
-      setError('الرمزان غير متطابقين');
+      setError(t('staff.force_pin.pins_do_not_match'));
       return false;
     }
     return true;
@@ -43,7 +45,7 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
 
     if (!validatePin()) return;
     if (!tenantId || tenantId === 'null') {
-      setError('معرف المشترك غير صالح');
+      setError(t('staff.force_pin.invalid_tenant_id'));
       return;
     }
 
@@ -157,7 +159,7 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
       }, 1500);
     } catch (err) {
       console.error('Error setting initial PIN:', err);
-      let errMessage = 'حدث خطأ غير معروف';
+      let errMessage = t('staff.force_pin.unknown_error');
       if (err instanceof Error) {
         errMessage = err.message;
       } else if (typeof err === 'string') {
@@ -171,13 +173,13 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
       } else {
         errMessage = String(err);
       }
-      setError('حدث خطأ: ' + errMessage);
+      setError(t('staff.force_pin.error_with_message', { message: errMessage }));
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[200] bg-slate-50/90 backdrop-blur-sm flex items-center justify-center p-4 font-sans" dir="rtl">
+    <div className="fixed inset-0 z-[200] bg-slate-50/90 backdrop-blur-sm flex items-center justify-center p-4 font-sans" dir={dir}>
       <motion.div 
         initial={{ opacity: 0, y: 15, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -191,8 +193,8 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
               <Shield size={28} className="text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight">إعداد أمان النظام</h1>
-              <p className="text-xs text-indigo-100/90 mt-1">تحديد خيارات تسجيل الدخول والرموز السرية للموظفين</p>
+              <h1 className="text-xl font-bold tracking-tight">{t('staff.force_pin.title')}</h1>
+              <p className="text-xs text-indigo-100/90 mt-1">{t('staff.force_pin.subtitle')}</p>
             </div>
           </div>
         </div>
@@ -211,8 +213,8 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
                   <CheckCircle2 size={36} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-800">تم التعيين بنجاح!</h2>
-                  <p className="text-xs text-slate-500 mt-1">تم حفظ الإعدادات بنجاح، جاري تحويلك الآن...</p>
+                  <h2 className="text-lg font-bold text-slate-800">{t('staff.force_pin.success_title')}</h2>
+                  <p className="text-xs text-slate-500 mt-1">{t('staff.force_pin.success_desc')}</p>
                 </div>
               </motion.div>
             ) : (
@@ -224,8 +226,8 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
                 {/* Enable PIN Toggle option - beautiful card layout */}
                 <div className="bg-slate-50/50 rounded-xl p-4 border border-slate-100 flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <label htmlFor="enable_pin_toggle" className="text-sm font-bold text-slate-700 cursor-pointer">تفعيل رمز الموظف</label>
-                    <p className="text-xs text-slate-400">تطلب رمز دخول سري لكل موظف لاستخدام النظام</p>
+                    <label htmlFor="enable_pin_toggle" className="text-sm font-bold text-slate-700 cursor-pointer">{t('staff.force_pin.enable_toggle')}</label>
+                    <p className="text-xs text-slate-400">{t('staff.force_pin.enable_toggle_desc')}</p>
                   </div>
                   <button
                     id="enable_pin_toggle"
@@ -261,7 +263,7 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
                       <div className="flex justify-between items-center px-1">
                         <label className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
                           <Lock size={14} className="text-indigo-500" />
-                          أدخل رمز الدخول الجديد (4 أرقام)
+                          {t('staff.force_pin.new_pin_label')}
                         </label>
                         <button
                           type="button"
@@ -269,7 +271,7 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
                           className="text-xs text-slate-400 hover:text-indigo-600 transition-colors flex items-center gap-1"
                         >
                           {showPin ? <EyeOff size={13} /> : <Eye size={13} />}
-                          <span>{showPin ? "إخفاء" : "إظهار"}</span>
+                          <span>{showPin ? t('common.hide') : t('common.show')}</span>
                         </button>
                       </div>
                       <input 
@@ -293,7 +295,7 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-slate-600 mr-1 flex items-center gap-1.5">
                         <CheckCircle2 size={14} className="text-indigo-500" />
-                        تأكيد الرمز السري
+                        {t('staff.force_pin.confirm_pin_label')}
                       </label>
                       <input 
                         type={showPin ? "text" : "password"}
@@ -333,13 +335,13 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
                   className="w-full bg-indigo-600 text-white py-3 px-4 rounded-xl font-bold text-sm hover:bg-indigo-700 shadow-md hover:shadow-indigo-100 transition-all active:scale-98 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
                 >
                   {loading ? <Loader2 className="animate-spin" size={18} /> : <Shield size={16} />}
-                  <span>{enablePin ? "حفظ وتفعيل رمز الموظف" : "متابعة بدون رمز دخول"}</span>
+                  <span>{enablePin ? t('staff.force_pin.save_and_enable') : t('staff.force_pin.continue_without_pin')}</span>
                 </button>
 
                 <p className="text-center text-[10px] text-slate-400 leading-relaxed px-2">
-                  {enablePin 
-                    ? "ملاحظة: هذا الرمز سيستخدم للدخول السريع لموظفي المنشأة لحماية البيانات."
-                    : "تنبيه: عدم تفعيل الرمز يعني إمكانية دخول أي مستخدم للنظام مباشرة دون إثبات هوية موظف."}
+                  {enablePin
+                    ? t('staff.force_pin.note_enabled')
+                    : t('staff.force_pin.note_disabled')}
                 </p>
               </motion.form>
             )}

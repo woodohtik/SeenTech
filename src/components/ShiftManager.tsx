@@ -9,6 +9,8 @@ import { cn, getCurrencySymbol, formatCurrency } from '../lib/utils';
 import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 
+import { isRtlLang, localeOf } from '../lib/direction';
+
 interface ShiftManagerProps {
   tenantId: string;
   onShiftOpen: (shift: Shift) => void;
@@ -16,7 +18,7 @@ interface ShiftManagerProps {
 
 export default function ShiftManager({ tenantId, onShiftOpen }: ShiftManagerProps) {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
 
   const { currentStaff } = useStaff();
   const [loading, setLoading] = useState(true);
@@ -90,7 +92,7 @@ export default function ShiftManager({ tenantId, onShiftOpen }: ShiftManagerProp
         currentStaff.id,
         currentStaff.name,
         'open_shift',
-        `تم فتح وردية جديدة برصيد افتتاحي ${formatCurrency(balanceValue)} ${getCurrencySymbol()}`
+        t('shift_manager.audit_open_shift', { amount: formatCurrency(balanceValue), currency: getCurrencySymbol() })
       );
 
       onShiftOpen({
@@ -135,8 +137,8 @@ export default function ShiftManager({ tenantId, onShiftOpen }: ShiftManagerProp
           <div className="mx-auto w-12 h-12 bg-brand/10 text-brand rounded-2xl flex items-center justify-center mb-3">
             <Coins size={24} />
           </div>
-          <h2 className="text-xl font-black text-content">{t('shift_manager.title', 'فتح وردية جديدة')}</h2>
-          <p className="text-xs font-bold text-content-muted mt-1">{t('shift_manager.desc', 'يجب تسجيل الرصيد الافتتاحي للبدء في عمليات المبيعات')}</p>
+          <h2 className="text-xl font-black text-content">{t('shift_manager.title')}</h2>
+          <p className="text-xs font-bold text-content-muted mt-1">{t('shift_manager.desc')}</p>
         </div>
         
         {/* Body Content */}
@@ -145,14 +147,14 @@ export default function ShiftManager({ tenantId, onShiftOpen }: ShiftManagerProp
           <div className="bg-surface-muted/30 p-4 rounded-2xl space-y-3.5 border border-border">
             <div className="flex items-center gap-3 text-content-muted">
               <User size={18} className="text-brand shrink-0" />
-              <span className="text-xs font-bold">{t('shift_manager.current_staff', 'الموظف الحالي:')}</span>
+              <span className="text-xs font-bold">{t('shift_manager.current_staff')}</span>
               <span className="text-sm font-extrabold text-content">{currentStaff?.name || '—'}</span>
             </div>
             <div className="flex items-center gap-3 text-content-muted">
               <Clock size={18} className="text-brand shrink-0" />
-              <span className="text-xs font-bold font-sans">{t('shift_manager.start_time', 'وقت البدء:')}</span>
+              <span className="text-xs font-bold font-sans">{t('shift_manager.start_time')}</span>
               <span className="text-sm font-extrabold text-content" dir="ltr">
-                {new Date().toLocaleString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'), { dateStyle: 'short', timeStyle: 'short' })}
+                {new Date().toLocaleString(localeOf(i18n.language), { dateStyle: 'short', timeStyle: 'short' })}
               </span>
             </div>
           </div>
@@ -160,7 +162,7 @@ export default function ShiftManager({ tenantId, onShiftOpen }: ShiftManagerProp
           {/* Opening balance field */}
           <div className="space-y-2">
             <label className="block text-xs font-black text-content-muted uppercase tracking-widest">
-              {t('shift_manager.opening_balance_label', 'رصيد الصندوق الافتتاحي (كاش)')}
+              {t('shift_manager.opening_balance_label')}
             </label>
             <div className="relative">
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-content-muted font-bold self-center">
@@ -174,7 +176,7 @@ export default function ShiftManager({ tenantId, onShiftOpen }: ShiftManagerProp
                   setOpeningBalance(val === '' ? '' : Number(val));
                 }}
                 className="w-full px-20 py-4 bg-surface-muted/50 border border-border rounded-xl focus:ring-2 focus:ring-brand focus:border-brand outline-none text-2xl font-black text-content text-center tracking-tight"
-                placeholder={t('shift_manager.opening_balance_placeholder', '0')}
+                placeholder={t('shift_manager.opening_balance_placeholder')}
                 min="0"
                 step="any"
               />
@@ -183,7 +185,7 @@ export default function ShiftManager({ tenantId, onShiftOpen }: ShiftManagerProp
               </span>
             </div>
             <p className="text-[10px] text-content-muted leading-relaxed">
-              {t('shift_manager.opening_balance_hint', '* يمكنك إبقاء القيمة 0 إذا كان الدرج فارغاً تماماً في بداية الوردية.')}
+              {t('shift_manager.opening_balance_hint')}
             </p>
           </div>
 
@@ -196,10 +198,10 @@ export default function ShiftManager({ tenantId, onShiftOpen }: ShiftManagerProp
             {isSubmitting ? (
               <>
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>{t('shift_manager.opening_shift', 'جاري فتح الوردية...')}</span>
+                <span>{t('shift_manager.opening_shift')}</span>
               </>
             ) : (
-              <span>{t('shift_manager.confirm_open', 'تأكيد وفتح الوردية')}</span>
+              <span>{t('shift_manager.confirm_open')}</span>
             )}
           </button>
         </div>

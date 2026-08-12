@@ -1,85 +1,106 @@
+import i18n from 'i18next';
+
 export interface Permission {
   id: string;
-  name: string;
-  description: string;
-  category: string;
+  /** i18n key for the permission's display name. */
+  nameKey: string;
+  /** i18n key for the permission's description. */
+  descriptionKey: string;
+  /** i18n key for the permission's category label. */
+  categoryKey: string;
+  /** Display name in the active language (resolved lazily on access). */
+  readonly name: string;
+  /** Description in the active language (resolved lazily on access). */
+  readonly description: string;
+  /** Category label in the active language (resolved lazily on access). */
+  readonly category: string;
 }
 
+const definePermission = (id: string, slug: string, categoryKey: string): Permission => {
+  const nameKey = `permissions.items.${slug}.name`;
+  const descriptionKey = `permissions.items.${slug}.description`;
+  return {
+    id,
+    nameKey,
+    descriptionKey,
+    categoryKey,
+    get name() { return i18n.t(nameKey); },
+    get description() { return i18n.t(descriptionKey); },
+    get category() { return i18n.t(categoryKey); },
+  };
+};
+
 export const SYSTEM_PERMISSIONS: Permission[] = [
-  // Navigation Tabs (التبويبات والشاشات الرئيسية)
-  { id: 'dashboard.view', name: 'تبويب الرئيسية (اللوحة)', description: 'إظهار/إخفاء الشاشة الرئيسية ولوحة التحكم في القائمة الجانبية', category: 'التبويبات والشاشات' },
-  { id: 'sales.view', name: 'تبويب نقطة البيع (POS)', description: 'إظهار/إخفاء شاشة المبيعات والكاشير في القائمة الجانبية', category: 'التبويبات والشاشات' },
-  { id: 'orders.view', name: 'تبويب سجل الطلبات', description: 'إظهار/إخفاء شاشة متابعة الطلبات وحالات الإنتاج في القائمة الجانبية', category: 'التبويبات والشاشات' },
-  { id: 'customers.view', name: 'تبويب إدارة العملاء', description: 'إظهار/إخفاء شاشة سجل العملاء والمقاسات في القائمة الجانبية', category: 'التبويبات والشاشات' },
-  { id: 'inventory.view', name: 'تبويب المخزون والأقمشة', description: 'إظهار/إخفاء شاشة الأقمشة والمخزون في القائمة الجانبية', category: 'التبويبات والشاشات' },
-  { id: 'suppliers.manage', name: 'تبويب الموردين والمشتريات', description: 'إظهار/إخفاء شاشة الموردين والمشتريات في القائمة الجانبية', category: 'التبويبات والشاشات' },
-  { id: 'reports.view', name: 'تبويب التقارير المالية', description: 'إظهار/إخفاء شاشة التقارير والتحليلات في القائمة الجانبية', category: 'التبويبات والشاشات' },
-  { id: 'settings.view', name: 'تبويب إعدادات المحل', description: 'إظهار/إخفاء شاشة إعدادات المتجر في القائمة الجانبية', category: 'التبويبات والشاشات' },
+  // Navigation Tabs
+  definePermission('dashboard.view', 'tabs_screens.dashboard_view', 'permissions.categories.tabs_screens'),
+  definePermission('sales.view', 'tabs_screens.sales_view', 'permissions.categories.tabs_screens'),
+  definePermission('orders.view', 'tabs_screens.orders_view', 'permissions.categories.tabs_screens'),
+  definePermission('customers.view', 'tabs_screens.customers_view', 'permissions.categories.tabs_screens'),
+  definePermission('inventory.view', 'tabs_screens.inventory_view', 'permissions.categories.tabs_screens'),
+  definePermission('suppliers.manage', 'tabs_screens.suppliers_manage', 'permissions.categories.tabs_screens'),
+  definePermission('reports.view', 'tabs_screens.reports_view', 'permissions.categories.tabs_screens'),
+  definePermission('settings.view', 'tabs_screens.settings_view', 'permissions.categories.tabs_screens'),
+
   // Orders
-  { id: 'orders.create', name: 'إنشاء طلب', description: 'السماح بإنشاء طلبات جديدة للعملاء', category: 'الطلبات' },
-  { id: 'orders.view', name: 'عرض الطلبات', description: 'السماح باستعراض قائمة الطلبات', category: 'الطلبات' },
-  { id: 'orders.view_details', name: 'رؤية تفاصيل الطلب', description: 'السماح برؤية المقاسات والتفاصيل الفنية', category: 'الطلبات' },
-  { id: 'orders.update_status', name: 'تحديث حالة الطلب', description: 'السماح بتغيير حالة الطلب (قص، خياطة، إلخ)', category: 'الطلبات' },
-  { id: 'orders.edit', name: 'تعديل الطلب', description: 'السماح بتعديل الفواتير والطلبات', category: 'الطلبات' },
-  { id: 'orders.delete', name: 'حذف الفواتير', description: 'السماح بحذف الفواتير والطلبات من النظام', category: 'الطلبات' },
-  { id: 'invoices.view', name: 'عرض الفواتير', description: 'السماح باستعراض فواتير المبيعات', category: 'الطلبات' },
-  
+  definePermission('orders.create', 'orders.orders_create', 'permissions.categories.orders'),
+  definePermission('orders.view', 'orders.orders_view', 'permissions.categories.orders'),
+  definePermission('orders.view_details', 'orders.orders_view_details', 'permissions.categories.orders'),
+  definePermission('orders.update_status', 'orders.orders_update_status', 'permissions.categories.orders'),
+  definePermission('orders.edit', 'orders.orders_edit', 'permissions.categories.orders'),
+  definePermission('orders.delete', 'orders.orders_delete', 'permissions.categories.orders'),
+  definePermission('invoices.view', 'orders.invoices_view', 'permissions.categories.orders'),
+
   // Payments
-  { id: 'payments.collect', name: 'تحصيل الدفعة', description: 'السماح بتسجيل المبالغ المدفوعة', category: 'المالية' },
-  { id: 'payments.view_prices', name: 'رؤية الأسعار', description: 'السماح برؤية أسعار الخدمات والمبالغ المالية', category: 'المالية' },
-  { id: 'action.refund', name: 'إجراء استرجاع', description: 'السماح بعمليات استرجاع المبالغ', category: 'المالية' },
-  { id: 'action.discount', name: 'إضافة خصم', description: 'السماح بإضافة خصومات على الطلبات', category: 'المالية' },
-  { id: 'shifts.manage', name: 'إدارة الورديات', description: 'السماح بفتح وإغلاق وردية الصندوق', category: 'المالية' },
+  definePermission('payments.collect', 'financial.payments_collect', 'permissions.categories.financial'),
+  definePermission('payments.view_prices', 'financial.payments_view_prices', 'permissions.categories.financial'),
+  definePermission('action.refund', 'financial.action_refund', 'permissions.categories.financial'),
+  definePermission('action.discount', 'financial.action_discount', 'permissions.categories.financial'),
+  definePermission('shifts.manage', 'financial.shifts_manage', 'permissions.categories.financial'),
 
   // Inventory
-  { id: 'inventory.view', name: 'عرض المخزون', description: 'السماح باستعراض قائمة المخزون', category: 'المخزون' },
-  { id: 'inventory.manage', name: 'إدارة المخزون', description: 'صلاحية عامة لإدارة المخزون', category: 'المخزون' },
-  { id: 'inventory.create', name: 'إضافة مخزون', description: 'السماح بإضافة أصناف جديدة', category: 'المخزون' },
-  { id: 'inventory.edit', name: 'تعديل المخزون', description: 'السماح بتعديل بيانات الأصناف', category: 'المخزون' },
-  { id: 'inventory.delete', name: 'حذف المخزون', description: 'السماح بحذف أصناف من المخزون', category: 'المخزون' },
-  { id: 'inventory.reconcile', name: 'تسوية المخزون', description: 'السماح بإجراء تسويات جردية', category: 'المخزون' },
-  { id: 'inventory.transfer', name: 'تحويل المخزون', description: 'السماح بتحويل المخزون بين الفروع', category: 'المخزون' },
-
-  // Suppliers
-  { id: 'suppliers.manage', name: 'إدارة الموردين', description: 'السماح بعرض وإدارة الموردين والمشتريات', category: 'المخزون' },
+  definePermission('inventory.view', 'inventory.inventory_view', 'permissions.categories.inventory'),
+  definePermission('inventory.manage', 'inventory.inventory_manage', 'permissions.categories.inventory'),
+  definePermission('inventory.create', 'inventory.inventory_create', 'permissions.categories.inventory'),
+  definePermission('inventory.edit', 'inventory.inventory_edit', 'permissions.categories.inventory'),
+  definePermission('inventory.delete', 'inventory.inventory_delete', 'permissions.categories.inventory'),
+  definePermission('inventory.reconcile', 'inventory.inventory_reconcile', 'permissions.categories.inventory'),
+  definePermission('inventory.transfer', 'inventory.inventory_transfer', 'permissions.categories.inventory'),
+  definePermission('suppliers.manage', 'inventory.suppliers_manage', 'permissions.categories.inventory'),
 
   // Customers
-  { id: 'customers.create', name: 'إضافة عميل', description: 'السماح بإضافة عملاء جدد للنظام', category: 'العملاء' },
-  { id: 'customers.view', name: 'عرض العملاء', description: 'السماح باستعراض بيانات العملاء ومقاساتهم', category: 'العملاء' },
-  { id: 'customers.edit', name: 'تعديل العملاء', description: 'السماح بتعديل بيانات ومقاسات العملاء', category: 'العملاء' },
-  { id: 'customers.delete', name: 'حذف العملاء', description: 'السماح بحذف بيانات العملاء', category: 'العملاء' },
+  definePermission('customers.create', 'customers.customers_create', 'permissions.categories.customers'),
+  definePermission('customers.view', 'customers.customers_view', 'permissions.categories.customers'),
+  definePermission('customers.edit', 'customers.customers_edit', 'permissions.categories.customers'),
+  definePermission('customers.delete', 'customers.customers_delete', 'permissions.categories.customers'),
 
   // Dashboard
-  { id: 'dashboard.view', name: 'عرض لوحة التحكم', description: 'السماح بالوصول للوحة التحكم الرئيسية', category: 'لوحة التحكم' },
-  { id: 'dashboard.revenue', name: 'رؤية الإيرادات', description: 'السماح برؤية إجمالي الإيرادات والرسوم البيانية المالية', category: 'لوحة التحكم' },
-  { id: 'dashboard.orders', name: 'إحصائيات الطلبات', description: 'السماح برؤية عدد الطلبات وحالاتها', category: 'لوحة التحكم' },
-  { id: 'dashboard.inventory', name: 'حالة المخزون', description: 'السماح برؤية تنبيهات المخزون المنخفض', category: 'لوحة التحكم' },
-  { id: 'dashboard.customers', name: 'إحصائيات العملاء', description: 'السماح برؤية عدد العملاء ونموهم', category: 'لوحة التحكم' },
+  definePermission('dashboard.view', 'dashboard.dashboard_view', 'permissions.categories.dashboard'),
+  definePermission('dashboard.revenue', 'dashboard.dashboard_revenue', 'permissions.categories.dashboard'),
+  definePermission('dashboard.orders', 'dashboard.dashboard_orders', 'permissions.categories.dashboard'),
+  definePermission('dashboard.inventory', 'dashboard.dashboard_inventory', 'permissions.categories.dashboard'),
+  definePermission('dashboard.customers', 'dashboard.dashboard_customers', 'permissions.categories.dashboard'),
 
   // Reports
-  { id: 'reports.view', name: 'مركز التقارير', description: 'السماح بالوصول لشاشة التقارير والتحليلات', category: 'التقارير' },
-  { id: 'reports.financial', name: 'التقارير المالية', description: 'السماح برؤية التقارير المالية والإيرادات', category: 'التقارير' },
-  { id: 'reports.tax', name: 'تقارير الضرائب', description: 'السماح باستخراج تقارير القيمة المضافة والضرائب', category: 'التقارير' },
-  { id: 'reports.export', name: 'تصدير التقارير', description: 'السماح بتصدير التقارير إلى ملفات (Excel, PDF)', category: 'التقارير' },
+  definePermission('reports.view', 'reports.reports_view', 'permissions.categories.reports'),
+  definePermission('reports.financial', 'reports.reports_financial', 'permissions.categories.reports'),
+  definePermission('reports.tax', 'reports.reports_tax', 'permissions.categories.reports'),
+  definePermission('reports.export', 'reports.reports_export', 'permissions.categories.reports'),
 
   // Staff & Settings
-  { id: 'settings.view', name: 'عرض الإعدادات', description: 'السماح برؤية إعدادات النظام', category: 'الإعدادات' },
-  { id: 'settings.edit', name: 'تعديل الإعدادات', description: 'السماح بتعديل إعدادات النظام الأساسية', category: 'الإعدادات' },
-  { id: 'settings.manage', name: 'إدارة النظام', description: 'السماح بتعديل إعدادات المتجر والفرع', category: 'الإعدادات' },
-  { id: 'settings.billing', name: 'إدارة الاشتراك', description: 'السماح بترقية أو إلغاء الاشتراك وفواتير Seen', category: 'الإعدادات' },
-  { id: 'settings.tax', name: 'إعدادات الضريبة', description: 'السماح بتعديل نسب الضريبة والإعدادات الضريبية', category: 'الإعدادات' },
-  { id: 'settings.whatsapp', name: 'إعدادات واتساب', description: 'السماح بتعديل رسائل وإعدادات الواتساب', category: 'الإعدادات' },
-  { id: 'settings.notifications', name: 'الإشعارات', description: 'السماح بتعديل إعدادات الإشعارات', category: 'الإعدادات' },
-  
-  { id: 'staff.view', name: 'عرض الموظفين', description: 'السماح باستعراض بيانات الموظفين', category: 'الإعدادات' },
-  { id: 'staff.create', name: 'إضافة موظف', description: 'السماح بإضافة موظفين جدد للنظام', category: 'الإعدادات' },
-  { id: 'staff.edit', name: 'تعديل موظف', description: 'السماح بتعديل بيانات الموظفين', category: 'الإعدادات' },
-  { id: 'staff.delete', name: 'حذف موظف', description: 'السماح بحذف موظفين من النظام', category: 'الإعدادات' },
-  { id: 'staff.manage', name: 'إدارة المكون والمهن', description: 'السماح بإدارة المهن والصلاحيات العامة', category: 'الإعدادات' },
-  { id: 'staff.permissions', name: 'إدارة صلاحيات المدير', description: 'صلاحية حصرية للمالك لتعديل صلاحيات المديرين', category: 'الإعدادات' },
-  
-  { id: 'branches.view', name: 'عرض الفروع', description: 'السماح باستعراض قائمة الفروع', category: 'الإعدادات' },
-  { id: 'branches.manage', name: 'إدارة الفروع', description: 'السماح بإضافة وتعديل وحذف الفروع', category: 'الإعدادات' },
-  
-  { id: 'system.delete', name: 'حذف مساحة العمل', description: 'صلاحية حصرية لحذف كامل بيانات النظام ومساحة العمل', category: 'الإعدادات' },
+  definePermission('settings.view', 'settings.settings_view', 'permissions.categories.settings'),
+  definePermission('settings.edit', 'settings.settings_edit', 'permissions.categories.settings'),
+  definePermission('settings.manage', 'settings.settings_manage', 'permissions.categories.settings'),
+  definePermission('settings.billing', 'settings.settings_billing', 'permissions.categories.settings'),
+  definePermission('settings.tax', 'settings.settings_tax', 'permissions.categories.settings'),
+  definePermission('settings.whatsapp', 'settings.settings_whatsapp', 'permissions.categories.settings'),
+  definePermission('settings.notifications', 'settings.settings_notifications', 'permissions.categories.settings'),
+  definePermission('staff.view', 'settings.staff_view', 'permissions.categories.settings'),
+  definePermission('staff.create', 'settings.staff_create', 'permissions.categories.settings'),
+  definePermission('staff.edit', 'settings.staff_edit', 'permissions.categories.settings'),
+  definePermission('staff.delete', 'settings.staff_delete', 'permissions.categories.settings'),
+  definePermission('staff.manage', 'settings.staff_manage', 'permissions.categories.settings'),
+  definePermission('staff.permissions', 'settings.staff_permissions', 'permissions.categories.settings'),
+  definePermission('branches.view', 'settings.branches_view', 'permissions.categories.settings'),
+  definePermission('branches.manage', 'settings.branches_manage', 'permissions.categories.settings'),
+  definePermission('system.delete', 'settings.system_delete', 'permissions.categories.settings'),
 ];

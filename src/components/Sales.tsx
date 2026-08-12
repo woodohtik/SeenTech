@@ -20,9 +20,11 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import DateTimeDisplay from './DateTimeDisplay';
 
+import { isRtlLang, localeOf } from '../lib/direction';
+
 export default function Sales({ tenantId }: { tenantId: string }) {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
   const { currentStaff } = useStaff();
   const { hasPermission } = usePermissions(currentStaff);
   const canManageShifts = hasPermission('shifts.manage');
@@ -321,7 +323,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
       <div className="flex-1 flex h-full items-center justify-center bg-background font-sans p-12" dir={isRtl ? 'rtl' : 'ltr'}>
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-brand/20 border-t-brand rounded-full animate-spin" />
-          <span className="text-sm font-bold text-content-muted">{t('common.loading', 'جاري التحميل...')}</span>
+          <span className="text-sm font-bold text-content-muted">{t('common.loading')}</span>
         </div>
       </div>
     );
@@ -333,7 +335,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
       <div className="bg-surface border-b border-border shrink-0">
         <div className="px-4 sm:px-6 py-3.5 sm:py-4 flex flex-col gap-3 sm:gap-4">
           <div className="flex justify-between items-center w-full">
-            <h1 className="text-lg sm:text-2xl font-black text-content tracking-tight">{t('sales.title', 'المبيعات')}</h1>
+            <h1 className="text-lg sm:text-2xl font-black text-content tracking-tight">{t('sales.title')}</h1>
             
             {/* Quick cash drawer badge for mobile, compact */}
             {activeShift && (
@@ -355,9 +357,9 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               <div className="text-xs sm:text-sm text-content-muted flex items-center gap-2">
                 <Clock className="text-brand shrink-0" size={16} />
                 <span className="leading-relaxed">
-                  {t('sales.active_shift', 'وردية نشطة')}: <span className="font-black text-content">{activeShift.staffName}</span> 
+                  {t('sales.active_shift')}: <span className="font-black text-content">{activeShift.staffName}</span> 
                   <span className="mx-1.5 text-border">|</span>
-                  {t('sales.shift_start', 'البداية')}: <span className="font-bold text-content" dir="ltr">{new Date(activeShift.startTime).toLocaleTimeString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                  {t('sales.shift_start')}: <span className="font-bold text-content" dir="ltr">{new Date(activeShift.startTime).toLocaleTimeString(localeOf(i18n.language), { hour: '2-digit', minute: '2-digit' })}</span>
                 </span>
               </div>
 
@@ -366,10 +368,10 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                 <button
                   onClick={() => setIsCashDrawerDetailsOpen(true)}
                   className="hidden md:flex items-center gap-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-3.5 py-1.5 rounded-xl border border-emerald-500/20 shadow-sm hover:bg-emerald-500/20 transition-all cursor-pointer active:scale-95 shrink-0"
-                  title={t('sales.cash_drawer_tooltip', 'انقر لعرض تفصيل وتدفق نقدية الصندوق')}
+                  title={t('sales.cash_drawer_tooltip')}
                 >
                   <Wallet size={16} className="text-emerald-500 shrink-0" />
-                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">{t('sales.cash_drawer', 'صندوق الكاش')}:</span>
+                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">{t('sales.cash_drawer')}:</span>
                   <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
                     <PriceDisplay amount={cashDrawerBalance} />
                   </span>
@@ -382,13 +384,13 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                       className="flex-1 md:flex-none text-brand bg-brand/10 hover:bg-brand/20 border border-brand/20 px-3.5 py-2 md:py-1.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer min-h-[36px] whitespace-nowrap"
                     >
                       <DollarSign size={14} />
-                      <span>{t('sales.cash_operations', 'حركة الدرج')}</span>
+                      <span>{t('sales.cash_operations')}</span>
                     </button>
                     <button 
                       onClick={handleCloseShift}
                       className="flex-1 md:flex-none bg-brand text-white hover:bg-brand/90 px-3.5 py-2 md:py-1.5 rounded-xl text-xs font-black shadow-sm transition-all active:scale-95 cursor-pointer min-h-[36px] whitespace-nowrap"
                     >
-                      {t('sales.close_shift', 'إغلاق الوردية')}
+                      {t('sales.close_shift')}
                     </button>
                   </div>
                 )}
@@ -407,7 +409,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
             )}
           >
             <Monitor size={16} />
-            <span>{t('sales.pos', 'نقطة البيع (POS)')}</span>
+            <span>{t('sales.pos')}</span>
           </button>
           <button
             onClick={() => handleTopTabChange('returns')}
@@ -417,7 +419,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
             )}
           >
             <RotateCcw size={16} />
-            <span>{t('sales.returns', 'المرتجعات')}</span>
+            <span>{t('sales.returns')}</span>
           </button>
           {canManageShifts && (
             <button
@@ -428,7 +430,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               )}
             >
               <Clock size={16} />
-              <span>{t('sales.shifts', 'الورديات')}</span>
+              <span>{t('sales.shifts')}</span>
             </button>
           )}
         </div>
@@ -444,7 +446,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                   activeSubTab === 'pos_main' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
                 )}
               >
-                {t('sales.pos', 'نقطة البيع')}
+                {t('sales.pos')}
               </button>
               <button
                 onClick={() => setActiveSubTab('sales_record')}
@@ -453,7 +455,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                   activeSubTab === 'sales_record' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
                 )}
               >
-                {t('sales.sales_record', 'سجل المبيعات')}
+                {t('sales.sales_record')}
               </button>
               <button
                 onClick={() => setActiveSubTab('tax_invoices')}
@@ -462,7 +464,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                   activeSubTab === 'tax_invoices' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
                 )}
               >
-                {t('sales.tax_invoices', 'الفواتير الضريبية')}
+                {t('sales.tax_invoices')}
               </button>
               <button
                 onClick={() => setActiveSubTab('credit_notes')}
@@ -471,7 +473,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                   activeSubTab === 'credit_notes' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
                 )}
               >
-                {t('sales.credit_notes', 'الإشعارات الدائنة')}
+                {t('sales.credit_notes')}
               </button>
             </>
           )}
@@ -484,7 +486,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                   activeSubTab === 'returns_main' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
                 )}
               >
-                {t('sales.returns', 'المرتجعات')}
+                {t('sales.returns')}
               </button>
               <button
                 onClick={() => setActiveSubTab('returns_record')}
@@ -493,7 +495,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                   activeSubTab === 'returns_record' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
                 )}
               >
-                {t('sales.returns_record', 'سجل المرتجعات')}
+                {t('sales.returns_record')}
               </button>
             </>
           )}
@@ -506,7 +508,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                   activeSubTab === 'shifts_main' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
                 )}
               >
-                {t('sales.shifts', 'الورديات')}
+                {t('sales.shifts')}
               </button>
               <button
                 onClick={() => setActiveSubTab('shifts_record')}
@@ -515,7 +517,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                   activeSubTab === 'shifts_record' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
                 )}
               >
-                {t('sales.shifts_record', 'سجل الورديات')}
+                {t('sales.shifts_record')}
               </button>
             </>
           )}
@@ -556,8 +558,8 @@ export default function Sales({ tenantId }: { tenantId: string }) {
             {!activeShift ? (
               <div className="bg-surface p-8 rounded-2xl border border-border text-center max-w-md mx-auto">
                 <Clock size={48} className="mx-auto text-content-muted mb-4" />
-                <h2 className="text-2xl font-bold text-content mb-2">{t('sales.no_active_shift', 'لا توجد وردية نشطة')}</h2>
-                <p className="text-content-muted mb-6">{t('sales.must_open_shift', 'يجب فتح وردية للبدء في عمليات البيع')}</p>
+                <h2 className="text-2xl font-bold text-content mb-2">{t('sales.no_active_shift')}</h2>
+                <p className="text-content-muted mb-6">{t('sales.must_open_shift')}</p>
                 <button 
                   onClick={() => {
                     setActiveTopTab('pos');
@@ -565,23 +567,23 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                   }}
                   className="bg-brand text-white px-6 py-3 rounded-xl font-bold hover:bg-brand/90 transition-colors w-full"
                 >
-                  {t('sales.go_to_open_shift', 'الذهاب لفتح وردية')}
+                  {t('sales.go_to_open_shift')}
                 </button>
               </div>
             ) : (
               <div className="bg-surface p-8 rounded-2xl border border-border max-w-md mx-auto">
-                <h2 className="text-2xl font-bold text-content mb-6">{t('sales.current_shift', 'الوردية الحالية')}</h2>
+                <h2 className="text-2xl font-bold text-content mb-6">{t('sales.current_shift')}</h2>
                 <div className="space-y-4 mb-8">
                   <div className="flex justify-between items-center py-3 border-b border-border/50">
-                    <span className="text-content-muted font-medium">{t('sales.employee', 'الموظف')}</span>
+                    <span className="text-content-muted font-medium">{t('sales.employee')}</span>
                     <span className="font-bold text-content">{activeShift.staffName}</span>
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-border/50">
-                    <span className="text-content-muted font-medium">{t('sales.start_time', 'وقت البداية')}</span>
+                    <span className="text-content-muted font-medium">{t('sales.start_time')}</span>
                     <DateTimeDisplay date={activeShift.startTime} showTime={true} />
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-border/50">
-                    <span className="text-content-muted font-medium">{t('sales.opening_balance', 'الرصيد الافتتاحي')}</span>
+                    <span className="text-content-muted font-medium">{t('sales.opening_balance')}</span>
                     <span className="font-bold text-brand"><PriceDisplay amount={activeShift.openingBalance} /></span>
                   </div>
                 </div>
@@ -591,13 +593,13 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                     className="flex-1 bg-surface-muted text-content py-3 rounded-xl font-bold hover:bg-surface transition-colors flex items-center justify-center gap-2"
                   >
                     <DollarSign size={18} />
-                    {t('sales.cash_operations', 'حركة الدرج النقدية')}
+                    {t('sales.cash_operations')}
                   </button>
                   <button 
                     onClick={handleCloseShift}
                     className="flex-1 bg-brand text-white py-3 rounded-xl font-bold hover:bg-brand/90 transition-colors"
                   >
-                    {t('sales.close_shift', 'إغلاق الوردية')}
+                    {t('sales.close_shift')}
                   </button>
                 </div>
               </div>
@@ -653,8 +655,8 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                     <Wallet size={24} />
                   </div>
                   <div>
-                    <h2 className="text-lg font-black text-content">{t('sales.cash_drawer_details', 'تدفق نقدية الصندوق')}</h2>
-                    <p className="text-xs font-bold text-content-muted mt-0.5">{t('sales.shift_cash_details', 'تفاصيل وحالة نقدية الوردية الحالية')}</p>
+                    <h2 className="text-lg font-black text-content">{t('sales.cash_drawer_details')}</h2>
+                    <p className="text-xs font-bold text-content-muted mt-0.5">{t('sales.shift_cash_details')}</p>
                   </div>
                 </div>
                 <button 
@@ -669,26 +671,26 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               <div className="p-6 space-y-6">
                 {/* Employee / Shift info */}
                 <div className="flex justify-between items-center text-xs font-bold text-content-muted bg-surface-muted/35 px-4 py-2.5 rounded-xl border border-border">
-                  <span>{t('sales.employee', 'الموظف')}: <span className="text-content font-extrabold">{activeShift.staffName || t('sales.unknown', 'غير معروف')}</span></span>
-                  <span>{t('sales.shift_no', 'رقم الوردية')}: <span className="font-sans text-content font-extrabold">#{activeShift.id?.slice(-6).toUpperCase()}</span></span>
+                  <span>{t('sales.employee')}: <span className="text-content font-extrabold">{activeShift.staffName || t('sales.unknown')}</span></span>
+                  <span>{t('sales.shift_no')}: <span className="font-sans text-content font-extrabold">#{activeShift.id?.slice(-6).toUpperCase()}</span></span>
                 </div>
 
                 {/* Main Cash Drawer Indicator */}
                 <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-3xl p-5 text-center space-y-2">
                   <span className="text-xs font-black text-emerald-600 block uppercase tracking-widest">
-                    {t('sales.expected_cash', 'صافي النقدية المتوقعة بالصندوق (كاش)')}
+                    {t('sales.expected_cash')}
                   </span>
                   <div className="text-3xl font-black text-emerald-500 tracking-tight">
                     <PriceDisplay amount={cashDrawerBalance} />
                   </div>
                   <p className="text-[10px] text-content-muted">
-                    {t('sales.expected_cash_desc', '* هذا المبلغ يمثل الرصيد المسجل بالإضافة للمبيعات والإيداعات مخصوماً منه المصروفات والمرتجعات.')}
+                    {t('sales.expected_cash_desc')}
                   </p>
                 </div>
 
                 {/* Operations Breakdown Grid */}
                 <div className="space-y-3.5">
-                  <h3 className="text-xs font-black text-content-muted uppercase tracking-widest">{t('sales.flow_details', 'تفاصيل التدفق المالي')}</h3>
+                  <h3 className="text-xs font-black text-content-muted uppercase tracking-widest">{t('sales.flow_details')}</h3>
                   
                   <div className="grid grid-cols-1 gap-3">
                     {/* Opening Balance */}
@@ -697,7 +699,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                         <div className="p-2 bg-blue-500/10 text-blue-500 rounded-xl">
                           <Coins size={18} />
                         </div>
-                        <span className="text-xs font-bold text-content">{t('sales.opening_balance', 'الرصيد الافتتاحي')}</span>
+                        <span className="text-xs font-bold text-content">{t('sales.opening_balance')}</span>
                       </div>
                       <span className="text-sm font-black text-content">
                         <PriceDisplay amount={cashDrawerBreakdown.opening} />
@@ -710,7 +712,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                         <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-xl">
                           <TrendingUp size={18} />
                         </div>
-                        <span className="text-xs font-bold text-content">{t('sales.cash_sales', 'مبيعات كاش')}</span>
+                        <span className="text-xs font-bold text-content">{t('sales.cash_sales')}</span>
                       </div>
                       <span className="text-sm font-black text-emerald-500">
                         + <PriceDisplay amount={cashDrawerBreakdown.sales} />
@@ -724,7 +726,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                           <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-xl">
                             <Plus size={18} />
                           </div>
-                          <span className="text-xs font-bold text-content">{t('sales.cash_deposits', 'عمليات الإيداع كاش')}</span>
+                          <span className="text-xs font-bold text-content">{t('sales.cash_deposits')}</span>
                         </div>
                         <span className="text-sm font-black text-emerald-500">
                           + <PriceDisplay amount={cashDrawerBreakdown.deposits} />
@@ -739,7 +741,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                           <div className="p-2 bg-red-500/10 text-red-500 rounded-xl">
                             <TrendingDown size={18} />
                           </div>
-                          <span className="text-xs font-bold text-content">{t('sales.cash_returns', 'مرتجعات مبيعات (كاش)')}</span>
+                          <span className="text-xs font-bold text-content">{t('sales.cash_returns')}</span>
                         </div>
                         <span className="text-sm font-black text-red-500">
                           - <PriceDisplay amount={cashDrawerBreakdown.returns} />
@@ -754,7 +756,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                           <div className="p-2 bg-red-500/10 text-red-500 rounded-xl">
                             <X size={18} />
                           </div>
-                          <span className="text-xs font-bold text-content">{t('sales.expenses_withdrawals', 'المصروفات والمسحوبات')}</span>
+                          <span className="text-xs font-bold text-content">{t('sales.expenses_withdrawals')}</span>
                         </div>
                         <span className="text-sm font-black text-red-500">
                           - <PriceDisplay amount={cashDrawerBreakdown.withdrawals} />
@@ -773,13 +775,13 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                     className="flex-1 py-3 bg-surface border border-border text-content hover:bg-surface-muted rounded-xl transition-all font-bold text-xs sm:text-sm text-center flex items-center justify-center gap-2 active:scale-95 cursor-pointer text-right"
                   >
                     <Coins size={16} />
-                    <span>{t('sales.refresh_data', 'تحديث البيانات')}</span>
+                    <span>{t('sales.refresh_data')}</span>
                   </button>
                   <button
                     onClick={() => setIsCashDrawerDetailsOpen(false)}
                     className="flex-1 py-3 bg-brand text-white hover:bg-brand/90 rounded-xl transition-all font-bold text-xs sm:text-sm text-center active:scale-95 cursor-pointer"
                   >
-                    {t('sales.close', 'إغلاق')}
+                    {t('sales.close')}
                   </button>
                 </div>
               </div>

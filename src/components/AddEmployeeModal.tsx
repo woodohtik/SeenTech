@@ -1,6 +1,7 @@
 import React, { useState, forwardRef, Fragment } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, Mail, Smartphone, Shield, X, Lock, Eye, EyeOff, ChevronDown, Briefcase, Store, Hash, Check } from 'lucide-react';
+import { User, Mail, Smartphone, Shield, X, Lock, Eye, EyeOff, ChevronDown, Briefcase, Store, Hash, Check, Key } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -12,15 +13,21 @@ import { initializeApp, deleteApp } from 'firebase/app';
 import { auth, finalConfig } from '../lib/firebase';
 import { generateSecurePin, hashPin } from '../services/staffService';
 import { Listbox, Transition } from '@headlessui/react';
+import { useDirection } from '../lib/direction';
 
 const IconInput = forwardRef<HTMLInputElement, any>(({ icon: Icon, error, type = 'text', rightElement, dir, className, ...props }, ref) => {
   return (
     <div className={cn(
       "flex items-center overflow-hidden border rounded-2xl bg-surface-muted transition-all focus-within:ring-2 focus-within:border-brand",
-      error ? "border-red-500 ring-red-500/20" : "border-border"
+      error 
+        ? "border-red-500 ring-red-500/20 focus-within:ring-red-500/20 focus-within:border-red-500" 
+        : "border-border"
     )}>
       {Icon && (
-        <div className="flex items-center justify-center px-4 py-4 border-e border-border bg-surface/50 text-content-muted">
+        <div className={cn(
+          "flex items-center justify-center px-4 py-4 border-e bg-surface/50 text-content-muted shrink-0 transition-colors",
+          error ? "border-red-500 text-red-500 bg-red-500/5" : "border-border"
+        )}>
           <Icon size={20} />
         </div>
       )}
@@ -35,7 +42,10 @@ const IconInput = forwardRef<HTMLInputElement, any>(({ icon: Icon, error, type =
         {...props}
       />
       {rightElement && (
-        <div className="border-s border-border bg-surface/50 flex">
+        <div className={cn(
+          "border-s bg-surface/50 flex shrink-0 transition-colors",
+          error ? "border-red-500" : "border-border"
+        )}>
           {rightElement}
         </div>
       )}
@@ -55,7 +65,7 @@ const PasswordInput = forwardRef<HTMLInputElement, any>(({ error, ...props }, re
         <button
           type="button"
           onClick={() => setShow(!show)}
-          className="px-4 py-4 flex items-center justify-center text-content-muted hover:text-content hover:bg-surface transition-colors"
+          className="px-4 py-4 flex items-center justify-center text-content-muted hover:text-content hover:bg-surface transition-colors focus:outline-none"
         >
           {show ? <EyeOff size={20} /> : <Eye size={20} />}
         </button>
@@ -66,6 +76,7 @@ const PasswordInput = forwardRef<HTMLInputElement, any>(({ error, ...props }, re
 });
 
 const IconSelect = forwardRef<any, any>(({ icon: Icon, error, options, value, onChange, name, ...props }, ref) => {
+  const { t } = useTranslation();
   const selectedOption = options.find((opt: any) => String(opt.value) === String(value));
   
   return (
@@ -73,17 +84,22 @@ const IconSelect = forwardRef<any, any>(({ icon: Icon, error, options, value, on
       {({ open }) => (
         <div className={cn(
           "flex items-center overflow-visible border rounded-2xl bg-surface-muted transition-all focus-within:ring-2 focus-within:border-brand",
-          open ? "ring-2 border-brand" : (error ? "border-red-500 ring-red-500/20" : "border-border")
+          open 
+            ? "ring-2 border-brand" 
+            : (error ? "border-red-500 ring-red-500/20 focus-within:ring-red-500/20 focus-within:border-red-500" : "border-border")
         )}>
           {Icon && (
-            <div className="flex items-center justify-center px-4 py-4 border-e border-border bg-surface/50 text-content-muted rounded-s-2xl">
+            <div className={cn(
+              "flex items-center justify-center px-4 py-4 border-e bg-surface/50 text-content-muted rounded-s-2xl shrink-0 transition-colors",
+              error ? "border-red-500 text-red-500 bg-red-500/5" : "border-border"
+            )}>
               <Icon size={20} />
             </div>
           )}
           <div className="relative flex-1">
             <Listbox.Button className="w-full text-start bg-transparent py-4 ps-4 pe-10 font-bold outline-none text-content truncate cursor-pointer">
               <span className={cn("block truncate", !selectedOption?.value && "text-content-muted")}>
-                {selectedOption ? selectedOption.label : 'اختر...'}
+                {selectedOption ? selectedOption.label : t('common.select')}
               </span>
               <span className="absolute inset-y-0 end-0 flex items-center justify-center pe-4 pointer-events-none text-content-muted">
                 <ChevronDown size={20} className={cn("transition-transform duration-200", open && "rotate-180")} />
@@ -142,13 +158,14 @@ const IconSelect = forwardRef<any, any>(({ icon: Icon, error, options, value, on
 const phoneRegex = /^(\+?\d{1,3}[- ]?)?\d{10}$/;
 
 const baseStaffSchema = z.object({
-  name: z.string().min(2, "الاسم يجب أن يكون حرفين على الأقل"),
-  email: z.string().email("البريد الإلكتروني غير صحيح"),
-  phone: z.string().regex(phoneRegex, "رقم الهاتف غير صحيح"),
-  role: z.string().min(1, "هذا الحقل مطلوب"),
-  branchId: z.string().min(1, "هذا الحقل مطلوب"),
-  pin: z.string().length(4, "يجب أن يكون 4 أرقام").regex(/^\d+$/, "أرقام فقط").optional().or(z.literal('')),
-  password: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
+  // Messages are i18n keys, translated at the render site so they follow language changes.
+  name: z.string().min(2, "validation.name_min_two_chars"),
+  email: z.string().email("validation.invalid_email"),
+  phone: z.string().regex(phoneRegex, "validation.phone_format"),
+  role: z.string().min(1, "validation.required"),
+  branchId: z.string().min(1, "validation.required"),
+  pin: z.string().length(4, "validation.pin_four_digits").regex(/^\d+$/, "validation.digits_only").optional().or(z.literal('')),
+  password: z.string().min(6, "saas.password_too_short"),
 });
 
 interface AddEmployeeModalProps {
@@ -172,6 +189,7 @@ export default function AddEmployeeModal({
   currentStaffName,
   currentStaffEmail
 }: AddEmployeeModalProps) {
+  const { t, dir } = useDirection();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [enablePin, setEnablePin] = useState(false);
@@ -194,7 +212,7 @@ export default function AddEmployeeModal({
     setErrorMsg('');
     try {
       if (!data.password || data.password.length < 6) {
-        setErrorMsg('يرجى إدخال كلمة مرور صالحة (6 أحرف على الأقل)');
+        setErrorMsg(t('staff.password_invalid'));
         setIsSubmitting(false);
         return;
       }
@@ -212,7 +230,7 @@ export default function AddEmployeeModal({
         // Condition 1: Same tenant
         const sameTenant = existingStaff.find(s => s.tenant_id === tenantId);
         if (sameTenant) {
-          setErrorMsg('هذا البريد الإلكتروني مستخدم مسبقاً لموظف آخر في هذا المحل');
+          setErrorMsg(t('staff.email_already_used_in_shop'));
           setIsSubmitting(false);
           return;
         }
@@ -250,7 +268,7 @@ export default function AddEmployeeModal({
           }
 
           if (!uid) {
-             setErrorMsg('البريد مستخدم في نظام المصادقة ولكن تعذر الحصول على هويته. قد يكون الحساب غير مكتمل التسجيل.');
+             setErrorMsg(t('staff.email_in_auth_missing_uid'));
              setIsSubmitting(false);
              return;
           }
@@ -322,7 +340,7 @@ export default function AddEmployeeModal({
 
     } catch (error: any) {
       console.error('Error adding employee:', JSON.stringify(error));
-      setErrorMsg(error.message || 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.');
+      setErrorMsg(error.message || t('errors.unexpected'));
     } finally {
       setIsSubmitting(false);
     }
@@ -331,7 +349,7 @@ export default function AddEmployeeModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6" dir="rtl">
+    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6" dir={dir}>
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -346,7 +364,7 @@ export default function AddEmployeeModal({
         className="bg-surface rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto relative z-10 border border-border"
       >
         <div className="p-6 border-b border-border flex justify-between items-center bg-surface-muted">
-          <h2 className="text-xl font-black text-content">إضافة موظف جديد</h2>
+          <h2 className="text-xl font-black text-content">{t('saas.add_member_new')}</h2>
           <button onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm">
             <X size={24} className="text-content-muted" />
           </button>
@@ -360,37 +378,37 @@ export default function AddEmployeeModal({
           )}
 
           <div className="space-y-2">
-            <label className="text-xs font-black text-content-muted uppercase tracking-widest">الاسم الكامل</label>
+            <label className="text-xs font-black text-content-muted uppercase tracking-widest">{t('common.full_name')}</label>
             <IconInput 
               {...register('name')}
               icon={User}
               error={errors.name}
             />
-            {errors.name && <p className="text-xs text-red-500 font-bold">{errors.name.message as string}</p>}
+            {errors.name && <p className="text-xs text-red-500 font-bold">{t(errors.name.message as string)}</p>}
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-black text-content-muted uppercase tracking-widest">الدور الوظيفي</label>
+            <label className="text-xs font-black text-content-muted uppercase tracking-widest">{t('staff.job_role')}</label>
             <Controller
               name="role"
               control={control}
               render={({ field }) => (
                 <IconSelect 
                   {...field}
-                  icon={Briefcase}
+                  icon={User}
                   error={errors.role}
                   options={[
-                    { value: '', label: 'اختر الدور...' },
+                    { value: '', label: t('common.select_role') },
                     ...roles.map(role => ({ value: role.roleKey, label: role.name }))
                   ]}
                 />
               )}
             />
-            {errors.role && <p className="text-xs text-red-500 font-bold">{errors.role.message as string}</p>}
+            {errors.role && <p className="text-xs text-red-500 font-bold">{t(errors.role.message as string)}</p>}
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-black text-content-muted uppercase tracking-widest">الفرع</label>
+            <label className="text-xs font-black text-content-muted uppercase tracking-widest">{t('common.branch')}</label>
             <Controller
               name="branchId"
               control={control}
@@ -400,17 +418,17 @@ export default function AddEmployeeModal({
                   icon={Store}
                   error={errors.branchId}
                   options={[
-                    { value: '', label: 'اختر الفرع...' },
+                    { value: '', label: t('common.select_branch') },
                     ...branches.map(branch => ({ value: branch.id, label: branch.name }))
                   ]}
                 />
               )}
             />
-            {errors.branchId && <p className="text-xs text-red-500 font-bold">{errors.branchId.message as string}</p>}
+            {errors.branchId && <p className="text-xs text-red-500 font-bold">{t(errors.branchId.message as string)}</p>}
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-black text-content-muted uppercase tracking-widest">البريد الإلكتروني (إجباري)</label>
+            <label className="text-xs font-black text-content-muted uppercase tracking-widest">{t('staff.email_required_label')}</label>
             <IconInput 
               {...register('email')}
               icon={Mail}
@@ -418,22 +436,22 @@ export default function AddEmployeeModal({
               dir="ltr"
               placeholder="user@example.com"
             />
-            {errors.email && <p className="text-xs text-red-500 font-bold">{errors.email.message as string}</p>}
+            {errors.email && <p className="text-xs text-red-500 font-bold">{t(errors.email.message as string)}</p>}
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-black text-content-muted uppercase tracking-widest">كلمة المرور (إجباري)</label>
+            <label className="text-xs font-black text-content-muted uppercase tracking-widest">{t('staff.password_required_label')}</label>
             <PasswordInput 
               {...register('password')}
               error={errors.password}
               dir="ltr"
               placeholder="••••••••"
             />
-            {errors.password && <p className="text-xs text-red-500 font-bold">{errors.password.message as string}</p>}
+            {errors.password && <p className="text-xs text-red-500 font-bold">{t(errors.password.message as string)}</p>}
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-black text-content-muted uppercase tracking-widest">رقم الهاتف</label>
+            <label className="text-xs font-black text-content-muted uppercase tracking-widest">{t('onboarding.fields.phone')}</label>
             <IconInput 
               {...register('phone')}
               icon={Smartphone}
@@ -441,13 +459,13 @@ export default function AddEmployeeModal({
               dir="ltr"
               placeholder="+966500000000"
             />
-            {errors.phone && <p className="text-xs text-red-500 font-bold">{errors.phone.message as string}</p>}
+            {errors.phone && <p className="text-xs text-red-500 font-bold">{t(errors.phone.message as string)}</p>}
           </div>
 
           <div className="p-4 bg-surface-muted rounded-2xl space-y-4">
             <div className="flex items-center justify-between">
               <label className="text-sm font-bold text-content cursor-pointer select-none" onClick={() => setEnablePin(!enablePin)}>
-                تعيين رمز دخول سريع للموظف
+                {t('staff.enable_quick_pin')}
               </label>
               <button
                 type="button"
@@ -470,17 +488,17 @@ export default function AddEmployeeModal({
 
             {enablePin && (
               <div className="space-y-2 pt-2 border-t border-border">
-                <label className="text-xs font-black text-content-muted uppercase tracking-widest">رمز الدخول (4 أرقام)</label>
+                <label className="text-xs font-black text-content-muted uppercase tracking-widest">{t('staff.pin_code_four_digits')}</label>
                 <IconInput 
                   {...register('pin')}
                   type="password"
-                  icon={Shield}
+                  icon={Key}
                   error={errors.pin}
                   maxLength={4}
                   placeholder="****"
                   className="tracking-[1em]"
                 />
-                {errors.pin && <p className="text-xs text-red-500 font-bold">{errors.pin.message as string}</p>}
+                {errors.pin && <p className="text-xs text-red-500 font-bold">{t(errors.pin.message as string)}</p>}
               </div>
             )}
           </div>
@@ -496,10 +514,10 @@ export default function AddEmployeeModal({
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <span>جاري الحفظ...</span>
+                <span>{t('common.saving')}</span>
               </>
             ) : (
-              'تأكيد الإضافة'
+              t('staff.confirm_add')
             )}
           </button>
         </form>

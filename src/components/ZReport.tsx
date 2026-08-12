@@ -10,6 +10,8 @@ import { jsPDF } from 'jspdf';
 import { toPng } from 'html-to-image';
 import { useTranslation } from 'react-i18next';
 
+import { isRtlLang, localeOf } from '../lib/direction';
+
 interface ZReportProps {
   data: Shift | {
     id: string;
@@ -29,7 +31,7 @@ interface ZReportProps {
 
 export default function ZReport({ data, onClose }: ZReportProps) {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
   const isDaily = 'type' in data && data.type === 'daily';
   
   const [exportingPdf, setExportingPdf] = useState(false);
@@ -86,7 +88,10 @@ export default function ZReport({ data, onClose }: ZReportProps) {
         heightLeft -= pageHeight;
       }
 
-      const fileName = `تقرير_إغلاق_${isDaily ? 'اليومي' : 'الوردية'}_#${data.id.slice(0, 8).toUpperCase()}.pdf`;
+      const fileName = `${t('z_report.pdf_file_name', {
+        type: isDaily ? t('z_report.file_type_daily') : t('z_report.file_type_shift'),
+        ref: data.id.slice(0, 8).toUpperCase()
+      })}.pdf`;
       pdf.save(fileName);
 
       setWhatsappModalOpen(true);
@@ -124,41 +129,41 @@ export default function ZReport({ data, onClose }: ZReportProps) {
 
   const exportToExcel = () => {
     const reportData = [
-      ['تقرير إغلاق ' + (isDaily ? 'اليوم' : 'الوردية')],
-      ['المصدر:', 'نظام وضوح ووضوح تيك'],
-      ['التاريخ:', new Date().toLocaleDateString('ar-SA-u-nu-latn')],
+      [isDaily ? t('z_report.daily_closing_report') : t('z_report.shift_z_report')],
+      [t('z_report.excel_source'), 'نظام وضوح ووضوح تيك'],
+      [t('z_report.excel_date'), new Date().toLocaleDateString(localeOf(i18n.language))],
       [],
-      ['المعلومات الأساسية'],
-      ['الرقم المرجعي', data.id],
-      ['الموظف', data.staffName],
-      ['وقت البداية', new Date(data.startTime).toLocaleString('ar-SA-u-nu-latn')],
-      ['وقت النهاية', new Date(data.endTime || '').toLocaleString('ar-SA-u-nu-latn')],
+      [t('z_report.excel_basic_info')],
+      [t('z_report.reference_number'), data.id],
+      [t('common.employee'), data.staffName],
+      [t('sales.start_time'), new Date(data.startTime).toLocaleString(localeOf(i18n.language))],
+      [t('shift_history.end_time'), new Date(data.endTime || '').toLocaleString(localeOf(i18n.language))],
       [],
-      ['ملخص المبيعات'],
-      ['إجمالي المبيعات (Gross)', totals.grossSales || totals.totalSales],
-      ['الخصومات', totals.discounts || 0],
-      ['صافي المبيعات (Net)', totals.totalSales],
-      ['إجمالي الضريبة (VAT)', totals.taxes],
+      [t('z_report.sales_summary')],
+      [t('z_report.gross_sales'), totals.grossSales || totals.totalSales],
+      [t('z_report.excel_discounts'), totals.discounts || 0],
+      [t('z_report.net_sales'), totals.totalSales],
+      [t('z_report.excel_total_vat'), totals.taxes],
       [],
-      ['توزيع طرق الدفع'],
-      ['نقد (Cash)', totals.cash],
-      ['بطاقة (Card)', totals.card],
-      ['تحويل بنكي', totals.bank_transfer],
-      ['آجل / أخرى', totals.credit],
+      [t('z_report.excel_payment_breakdown')],
+      [t('z_report.excel_cash'), totals.cash],
+      [t('z_report.card_lbl'), totals.card],
+      [t('billing.modal_method_bank'), totals.bank_transfer],
+      [t('z_report.credit_other'), totals.credit],
       [],
-      ['تسوية النقدية'],
-      ['الرصيد الافتتاحي', data.openingBalance],
-      ['المبيعات النقدية', totals.cash],
-      ['إيداعات نقدية', totals.totalDeposits || 0],
-      ['مرتجعات نقدية', totals.cashReturns],
-      ['المصروفات / المسحوبات', totals.expenses || 0],
-      ['النقد المتوقع', data.expectedCash],
-      ['النقد الفعلي', data.actualCash],
-      ['العجز / الزيادة', data.discrepancy],
+      [t('z_report.excel_cash_reconciliation')],
+      [t('z_report.opening_balance'), data.openingBalance],
+      [t('z_report.excel_cash_sales'), totals.cash],
+      [t('z_report.excel_cash_deposits'), totals.totalDeposits || 0],
+      [t('z_report.excel_cash_returns'), totals.cashReturns],
+      [t('z_report.excel_expenses_withdrawals'), totals.expenses || 0],
+      [t('z_report.expected_cash'), data.expectedCash],
+      [t('z_report.actual_cash'), data.actualCash],
+      [t('z_report.excel_discrepancy'), data.discrepancy],
       [],
-      ['المرتجعات'],
-      ['عدد العمليات', totals.returnCount || 0],
-      ['إجمالي المبالغ المرتجعة', totals.totalReturns]
+      [t('sales_returns.title_returns')],
+      [t('z_report.excel_return_count'), totals.returnCount || 0],
+      [t('z_report.excel_total_returned'), totals.totalReturns]
     ];
 
     const ws = XLSX.utils.aoa_to_sheet(reportData);
@@ -239,13 +244,13 @@ export default function ZReport({ data, onClose }: ZReportProps) {
           <div>
             <p className="text-content-muted font-bold mb-1">{t('shift_history.start_time', 'وقت البداية')}</p>
             <p className="text-content font-bold text-[10px] sm:text-xs" dir="ltr">
-              {new Date(data.startTime).toLocaleString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'))}
+              {new Date(data.startTime).toLocaleString(localeOf(i18n.language))}
             </p>
           </div>
           <div className="text-left">
             <p className="text-content-muted font-bold mb-1">{t('shift_history.end_time', 'وقت الإغلاق')}</p>
             <p className="text-content font-bold text-[10px] sm:text-xs" dir="ltr">
-              {new Date(data.endTime || '').toLocaleString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : (i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'en-US'))}
+              {new Date(data.endTime || '').toLocaleString(localeOf(i18n.language))}
             </p>
           </div>
         </div>

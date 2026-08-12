@@ -65,9 +65,9 @@ export const autoSeed = async () => {
 
       // 5. Seed Inventory
       const sampleInventory = [
-        { name: 'قماش قطن أبيض', category: 'fabric', quantity: 50, unit: 'meter', base_unit: 'meter', sku: 'COT-WHT', min_threshold: 10, price_per_unit: 45, tenant_id: sampleTenantId, updated_at: new Date().toISOString() },
-        { name: 'خيوط ملونة', category: 'thread', quantity: 100, unit: 'spool', base_unit: 'piece', sku: 'THRD-CLR', min_threshold: 20, price_per_unit: 5, tenant_id: sampleTenantId, updated_at: new Date().toISOString() },
-        { name: 'أزرار صدف', category: 'button', quantity: 500, unit: 'box', base_unit: 'piece', sku: 'BTN-SDF', min_threshold: 50, price_per_unit: 2, tenant_id: sampleTenantId, updated_at: new Date().toISOString() }
+        { name: 'قماش قطن أبيض', category: 'fabric', quantity: 50, unit: 'meter', sku: 'COT-WHT', min_threshold: 10, price_per_unit: 45, tenant_id: sampleTenantId, updated_at: new Date().toISOString() },
+        { name: 'خيوط ملونة', category: 'thread', quantity: 100, unit: 'spool', sku: 'THRD-CLR', min_threshold: 20, price_per_unit: 5, tenant_id: sampleTenantId, updated_at: new Date().toISOString() },
+        { name: 'أزرار صدف', category: 'button', quantity: 500, unit: 'box', sku: 'BTN-SDF', min_threshold: 50, price_per_unit: 2, tenant_id: sampleTenantId, updated_at: new Date().toISOString() }
       ];
       await supabase.from('inventory_items').insert(sampleInventory);
       return true;

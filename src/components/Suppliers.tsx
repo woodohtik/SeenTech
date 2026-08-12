@@ -130,7 +130,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
           return {
             ...d,
             supplierId: d.supplier_id,
-            supplierName: supsMap.get(sId) || d.supplier_name || 'مورد غير معروف',
+            supplierName: supsMap.get(sId) || d.supplier_name || t('common.unknown_supplier'),
             poNumber: d.po_number,
             tenantId: d.tenant_id,
             branchId: d.branch_id,
@@ -313,7 +313,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('هل أنت متأكد من حذف هذا المورد؟')) return;
+    if (!confirm(t('procurement.confirm_delete'))) return;
     try {
       const { error } = await supabase
         .from('suppliers')

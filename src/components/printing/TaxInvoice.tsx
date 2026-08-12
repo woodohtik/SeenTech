@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { QRCodeSVG } from 'qrcode.react';
 import Barcode from 'react-barcode';
 import { generateZatcaQR } from '../../services/zatcaService';
@@ -74,6 +75,7 @@ export default function TaxInvoice({
   onPrint,
   hidePrintButton = false,
 }: TaxInvoiceProps) {
+  const { t } = useTranslation();
   const [layoutSettings] = React.useState(() => {
     try {
       const stored = localStorage.getItem('pos_invoice_settings');
@@ -144,7 +146,7 @@ export default function TaxInvoice({
             className="flex items-center gap-2 px-5 py-2.5 bg-brand text-white rounded-xl font-bold text-sm shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
           >
             <Printer size={16} />
-            <span>طباعة الفاتورة / Print Invoice</span>
+            <span>{t('printing.print_invoice')}</span>
           </button>
         </div>
       )}

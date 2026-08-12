@@ -23,6 +23,8 @@
  * ============================================================================
  */
 
+import i18n from 'i18next';
+
 /* ============================ الأنواع ============================ */
 
 export interface RelayPrinter {
@@ -122,7 +124,7 @@ export function bytesToBase64(bytes: Uint8Array): string {
 
 const networkError = (e: any): Error =>
   new Error(
-    `تعذر الوصول لسيرفر النظام (${e?.message || 'خطأ شبكة'}). تأكد من اتصال هذا الجهاز بالإنترنت.`
+    i18n.t('printing.relay.server_unreachable', { error: e?.message || i18n.t('printing.network_error') })
   );
 
 /* ============================================================================
@@ -139,7 +141,7 @@ export async function pairWithStation(pairCode: string): Promise<RelayStation> {
     .replace(/[^0-9A-Z]/g, '');
 
   if (code.length < 4) {
-    throw new Error('أدخل رمز الاقتران الظاهر في نافذة وسيط الطباعة (6 أحرف).');
+    throw new Error(i18n.t('printing.relay.enter_pair_code_6'));
   }
 
   let res: Response;
@@ -155,7 +157,7 @@ export async function pairWithStation(pairCode: string): Promise<RelayStation> {
 
   const data = await readJson(res);
   if (!res.ok || !data?.ok) {
-    throw new Error(data?.error || 'فشل الاقتران. تحقّق من الرمز وأن نافذة الوسيط مفتوحة.');
+    throw new Error(data?.error || i18n.t('printing.relay.pair_failed_check_code'));
   }
 
   setRelayBinding({
@@ -197,12 +199,12 @@ export async function getStationStatus(): Promise<RelayStation | null> {
   if (res.status === 404) {
     setRelayBinding(null);
     throw new Error(
-      'انتهت صلاحية الاقتران (أُعيد تشغيل السيرفر أو الوسيط). أعد الاقتران بالرمز الجديد الظاهر في نافذة الوسيط.'
+      i18n.t('printing.relay.pairing_expired_restarted')
     );
   }
 
   if (!res.ok || !data?.ok) {
-    throw new Error(data?.error || 'تعذر قراءة حالة محطة الطباعة.');
+    throw new Error(data?.error || i18n.t('settings_page.printer.station_status_failed'));
   }
 
   // تحديث اسم الجهاز المحفوظ إن تغيّر
@@ -237,10 +239,10 @@ export async function submitJob(
   const binding = getRelayBinding();
   if (!binding) {
     throw new Error(
-      'لا توجد محطة طباعة مقترنة على هذا الجهاز. اذهب إلى إعدادات الطابعة وأدخل رمز الاقتران الظاهر في نافذة الوسيط.'
+      i18n.t('printing.relay.no_station_on_device')
     );
   }
-  if (!data?.length) throw new Error('بيانات الطباعة فارغة.');
+  if (!data?.length) throw new Error(i18n.t('printing.relay.empty_print_data'));
 
   const target = options.target || 'spooler';
 
@@ -270,12 +272,12 @@ export async function submitJob(
   if (res.status === 404) {
     setRelayBinding(null);
     throw new Error(
-      'انتهت صلاحية الاقتران. أعد الاقتران من إعدادات الطابعة بالرمز الظاهر في نافذة الوسيط.'
+      i18n.t('printing.relay.pairing_expired')
     );
   }
 
   if (!res.ok || !payload?.ok) {
-    throw new Error(payload?.error || 'فشل إرسال مهمة الطباعة إلى الوسيط.');
+    throw new Error(payload?.error || i18n.t('printing.relay.submit_job_failed'));
   }
 
   return String(payload.jobId);
@@ -284,7 +286,7 @@ export async function submitJob(
 /** قراءة حالة مهمة واحدة. */
 export async function getJobState(jobId: string): Promise<RelayJobState> {
   const binding = getRelayBinding();
-  if (!binding) throw new Error('لا توجد محطة طباعة مقترنة.');
+  if (!binding) throw new Error(i18n.t('printing.relay.no_station_paired'));
 
   const url = `/api/print/job/${encodeURIComponent(jobId)}?clientToken=${encodeURIComponent(
     binding.clientToken
@@ -294,7 +296,7 @@ export async function getJobState(jobId: string): Promise<RelayJobState> {
   const data = await readJson(res);
 
   if (!res.ok || !data?.ok) {
-    throw new Error(data?.error || 'تعذر قراءة حالة مهمة الطباعة.');
+    throw new Error(data?.error || i18n.t('printing.relay.job_state_failed'));
   }
   return data.job as RelayJobState;
 }
@@ -314,7 +316,7 @@ export async function waitForJob(jobId: string, timeoutMs = 25_000): Promise<voi
   for (;;) {
     if (Date.now() - startedAt > timeoutMs) {
       throw new Error(
-        'لم يؤكد وسيط الطباعة إتمام الطباعة خلال المدة المتوقعة. تحقّق من الطابعة (ورق/غطاء/طابور الطباعة).'
+        i18n.t('printing.relay.no_confirmation_timeout')
       );
     }
 
@@ -330,7 +332,7 @@ export async function waitForJob(jobId: string, timeoutMs = 25_000): Promise<voi
 
     if (state.status === 'done') return;
     if (state.status === 'failed') {
-      throw new Error(state.error || 'فشلت الطباعة في وسيط الطباعة.');
+      throw new Error(state.error || i18n.t('printing.relay.print_failed_in_agent'));
     }
   }
 }

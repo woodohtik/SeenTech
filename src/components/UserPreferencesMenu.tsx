@@ -21,6 +21,8 @@ import { Staff } from '../types';
 import { cn } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
 
+import { isRtlLang, changeAppLanguage } from '../lib/direction';
+
 interface UserPreferencesMenuProps {
   currentStaff?: Staff | null;
   role?: string | null;
@@ -52,9 +54,9 @@ export default function UserPreferencesMenu({
   const { dbUser } = useAuth();
 
   const effectiveRole = currentStaff?.role || role || dbUser?.role;
-  const effectiveName = currentStaff?.name || dbUser?.display_name || dbUser?.email || t('common.system_user', 'مستخدم النظام');
+  const effectiveName = currentStaff?.name || dbUser?.display_name || dbUser?.email || t('common.system_user');
 
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
 
   // Determine dynamic alignment to prevent clipping when direction is LTR
   let alignmentClass = '';
@@ -84,9 +86,7 @@ export default function UserPreferencesMenu({
     const currentIndex = langs.indexOf(i18n.language || 'ar');
     const nextIndex = (currentIndex + 1) % langs.length;
     const nextLang = langs[nextIndex];
-    i18n.changeLanguage(nextLang);
-    document.documentElement.dir = (nextLang === 'ar' || nextLang === 'ur') ? 'rtl' : 'ltr';
-    document.documentElement.lang = nextLang;
+    changeAppLanguage(nextLang);
   };
 
   const handleThemeToggle = () => {
@@ -98,10 +98,10 @@ export default function UserPreferencesMenu({
 
   const getThemeLabel = (themeVal: string) => {
     switch (themeVal) {
-      case 'light': return t('common.theme_light', 'فاتح');
-      case 'dark': return t('common.theme_dark', 'داكن');
-      case 'elegant': return t('common.theme_elegant', 'كلاسيكي');
-      case 'modern': return t('common.theme_modern', 'عصري');
+      case 'light': return t('common.theme_light');
+      case 'dark': return t('common.theme_dark');
+      case 'elegant': return t('common.theme_elegant');
+      case 'modern': return t('common.theme_modern');
       default: return themeVal;
     }
   };
@@ -128,20 +128,20 @@ export default function UserPreferencesMenu({
               </span>
               <span className="text-[10px] font-bold text-brand uppercase tracking-widest mt-0.5">
                 {effectiveRole === 'owner' 
-                  ? t('common.roles.owner', 'مالك') 
+                  ? t('common.roles.owner') 
                   : effectiveRole === 'cashier' 
-                    ? t('common.roles.cashier', 'كاشير') 
+                    ? t('common.roles.cashier') 
                     : effectiveRole === 'tailor'
-                      ? t('common.roles.tailor', 'خياط')
+                      ? t('common.roles.tailor')
                       : effectiveRole === 'super_admin'
-                        ? 'مشرف عام'
+                        ? t('common.roles.super_admin')
                         : effectiveRole === 'support_tech'
-                          ? 'فني دعم'
+                          ? t('common.roles.support_tech')
                           : effectiveRole === 'billing_admin'
-                            ? 'إدارة الفواتير'
+                            ? t('common.roles.billing_admin')
                             : effectiveRole === 'sales'
-                              ? 'المبيعات'
-                              : (effectiveRole || 'مستخدم')}
+                              ? t('common.sales')
+                              : (effectiveRole || t('common.roles.user'))}
               </span>
             </div>
             <ChevronDown size={16} className={cn("text-content-muted transition-transform duration-300", isOpen && "rotate-180")} />
@@ -167,7 +167,7 @@ export default function UserPreferencesMenu({
           >
             {/* Context Header */}
             <div className="px-3 py-2 border-b border-border mb-1.5">
-              <p className="text-xs font-black text-content-muted uppercase tracking-widest">{t('common.user_preferences', 'تفضيلات المستخدم والسرية')}</p>
+              <p className="text-xs font-black text-content-muted uppercase tracking-widest">{t('common.user_preferences')}</p>
             </div>
 
             {/* Menu Items */}
@@ -186,9 +186,9 @@ export default function UserPreferencesMenu({
               >
                 <LayoutGrid size={18} className="text-brand" />
                 <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
-                  <span className="font-bold">{t('common.navigation_style', 'نمط التنقل')}</span>
+                  <span className="font-bold">{t('common.navigation_style')}</span>
                   <span className="text-[10px] text-content-muted">
-                    {layoutMode === 'grid' ? t('common.layout_grid', 'شبكة لوحة القيادة') : t('common.layout_sidebar', 'شريط جانبي')}
+                    {layoutMode === 'grid' ? t('common.layout_grid') : t('common.layout_sidebar')}
                   </span>
                 </div>
               </button>
@@ -198,7 +198,7 @@ export default function UserPreferencesMenu({
             <div className="flex flex-col gap-1 p-2 bg-surface-muted/60 rounded-2xl border border-border/80">
               <div className="flex items-center gap-2 px-2 pb-1 text-xs font-black text-content-muted">
                 <Globe size={14} className="text-brand" />
-                <span>{t('common.language', 'لغة الواجهة')}</span>
+                <span>{t('common.language')}</span>
               </div>
               <div className="grid grid-cols-3 gap-1">
                 {[
@@ -211,9 +211,7 @@ export default function UserPreferencesMenu({
                     <button
                       key={lang.code}
                       onClick={() => {
-                        i18n.changeLanguage(lang.code);
-                        document.documentElement.dir = (lang.code === 'ar' || lang.code === 'ur') ? 'rtl' : 'ltr';
-                        document.documentElement.lang = lang.code;
+                        changeAppLanguage(lang.code);
                       }}
                       className={cn(
                         "flex flex-col items-center justify-center p-1.5 rounded-xl text-[11px] font-black transition-all cursor-pointer border",
@@ -244,7 +242,7 @@ export default function UserPreferencesMenu({
                 <Sun size={18} className="text-brand" />
               )}
               <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
-                <span className="font-bold">{t('common.theme_mode', 'مظهر الواجهة')}</span>
+                <span className="font-bold">{t('common.theme_mode')}</span>
                 <span className="text-[10px] text-content-muted">
                   {getThemeLabel(theme)}
                 </span>
@@ -264,8 +262,8 @@ export default function UserPreferencesMenu({
             >
               <Compass size={18} className="text-brand" />
               <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
-                <span className="font-bold">{t('common.restart_tour', 'إعادة تشغيل الجولة الإرشادية')}</span>
-                <span className="text-[10px] text-content-muted">{t('common.restart_tour_desc', 'تعلم كيفية استخدام سين')}</span>
+                <span className="font-bold">{t('settings_page.appearance.restart_tour')}</span>
+                <span className="text-[10px] text-content-muted">{t('settings_page.appearance.restart_tour_desc')}</span>
               </div>
             </button>
 
@@ -285,7 +283,7 @@ export default function UserPreferencesMenu({
               >
                 <Lock size={18} />
                 <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
-                  <span>{t('common.lock_screen', 'قفل الشاشة مؤقتاً')}</span>
+                  <span>{t('common.lock_screen')}</span>
                   <span className="text-[9px] font-bold opacity-80 uppercase tracking-widest">{t('common.lock_desc', 'SCREEN LOCK')}</span>
                 </div>
               </button>
@@ -304,7 +302,7 @@ export default function UserPreferencesMenu({
             >
               <LogOut size={18} />
               <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
-                <span>{t('common.logout_account', 'تسجيل خروج آمن')}</span>
+                <span>{t('common.logout_account')}</span>
                 <span className="text-[9px] font-bold opacity-80 uppercase tracking-widest">{t('common.logout_desc', 'LOG OUT')}</span>
               </div>
             </button>

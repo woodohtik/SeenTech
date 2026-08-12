@@ -1,44 +1,46 @@
+import i18n from 'i18next';
+
 export const getAuthErrorMessage = (err: any): string => {
-  if (!err) return 'حدث خطأ غير متوقع أثناء تسجيل الدخول.';
+  if (!err) return i18n.t('errors.auth.unexpected_login');
 
   const code = typeof err === 'string' ? err : err.code || '';
   const message = typeof err === 'string' ? err : err.message || '';
 
   if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
-    return 'البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى التحقق وإعادة المحاولة.';
+    return i18n.t('errors.auth.invalid_credentials');
   }
   if (code === 'auth/email-already-in-use') {
-    return 'هذا البريد الإلكتروني مسجل بالفعل في النظام. يرجى تسجيل الدخول بدلاً من إنشاء حساب جديد.';
+    return i18n.t('errors.auth.email_already_in_use');
   }
   if (code === 'auth/invalid-email') {
-    return 'صيغة البريد الإلكتروني غير صحيحة. يرجى كتابة بريد إلكتروني صحيح.';
+    return i18n.t('errors.auth.invalid_email');
   }
   if (code === 'auth/weak-password') {
-    return 'كلمة المرور ضعيفة جداً. يجب أن تتكون من 6 خانات أو أحرف على الأقل.';
+    return i18n.t('errors.auth.weak_password');
   }
   if (code === 'auth/too-many-requests') {
-    return 'تم تقييد المحاولات مؤقتاً بسبب تكرار إدخال بيانات خاطئة. يرجى الانتظار دقيقة ثم المحاولة مجدداً.';
+    return i18n.t('errors.auth.too_many_requests');
   }
   if (code === 'auth/network-request-failed') {
-    return 'فشل الاتصال بخوادم المصادقة. يرجى التأكد من اتصال الإنترنت وإيقاف إضافات حجب الإعلانات.';
+    return i18n.t('errors.auth.network_request_failed');
   }
   if (code === 'auth/popup-closed-by-user') {
-    return 'تم إغلاق نافذة المصادقة بواسطة المستخدم.';
+    return i18n.t('errors.auth.popup_closed_by_user');
   }
   if (code === 'auth/popup-blocked') {
-    return 'تم حظر النافذة المنبثقة من قبل المتصفح. يرجى السماح بالنوافذ المنبثقة لهذا الموقع.';
+    return i18n.t('errors.auth.popup_blocked');
   }
 
   // Fallback checks for string error messages
   if (message.includes('auth/invalid-credential') || message.includes('auth/wrong-password') || message.includes('auth/user-not-found')) {
-    return 'البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى التحقق وإعادة المحاولة.';
+    return i18n.t('errors.auth.invalid_credentials');
   }
   if (message.includes('auth/email-already-in-use')) {
-    return 'هذا البريد الإلكتروني مسجل بالفعل. يرجى تسجيل الدخول.';
+    return i18n.t('errors.auth.email_already_registered');
   }
   if (message.includes('Firebase: Error') || message.startsWith('Firebase:')) {
-    return 'بيانات الدخول غير صحيحة أو الحساب غير موجود. يرجى التحقق وإعادة المحاولة.';
+    return i18n.t('errors.auth.invalid_login_or_missing_account');
   }
 
-  return message || 'حدث خطأ أثناء المصادقة.';
+  return message || i18n.t('errors.auth.generic');
 };

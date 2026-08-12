@@ -5,21 +5,38 @@
  * ------------------------------------------------------------------
  */
 
+import i18n from 'i18next';
+
+/** Default outbound template in the active UI language. */
+export function getDefaultWhatsAppTemplate(): string {
+  return i18n.t('whatsapp.default_template');
+}
+
+/**
+ * @deprecated Evaluated once at module load, so it never follows a language
+ * change. Use {@link getDefaultWhatsAppTemplate} instead.
+ */
 export const DEFAULT_WHATSAPP_TEMPLATE =
   'مرحباً {customer_name}، تم استلام طلبك رقم {order_id}. الإجمالي: {total_amount} ر.س. يمكنك متابعة حالة الطلب من هنا: {invoice_url}';
 
 export const WHATSAPP_VARIABLES = [
-  { tag: '{customer_name}', label: 'اسم العميل', sample: 'عبدالله علي' },
-  { tag: '{order_id}', label: 'رقم الطلب', sample: '#10482' },
-  { tag: '{total_amount}', label: 'المبلغ الإجمالي', sample: '250' },
-  { tag: '{customer_phone}', label: 'جوال العميل', sample: '0501234567' },
-  { tag: '{invoice_url}', label: 'رابط الفاتورة', sample: 'https://seen-pos.app/order/10482' },
-  { tag: '{store_name}', label: 'اسم المتجر', sample: 'خياطة الأناقة' },
-];
+  { tag: '{customer_name}', labelKey: 'dashboard.cashier.col_customer_name', sample: 'عبدالله علي' },
+  { tag: '{order_id}', labelKey: 'dashboard.cashier.col_order_number', sample: '#10482' },
+  { tag: '{total_amount}', labelKey: 'whatsapp.var_total_amount', sample: '250' },
+  { tag: '{customer_phone}', labelKey: 'whatsapp.var_customer_phone', sample: '0501234567' },
+  { tag: '{invoice_url}', labelKey: 'whatsapp.var_invoice_url', sample: 'https://seen-pos.app/order/10482' },
+  { tag: '{store_name}', labelKey: 'whatsapp.var_store_name', sample: 'خياطة الأناقة' },
+].map((v) => ({
+  ...v,
+  /** Resolved on every access so the label follows the active language. */
+  get label(): string {
+    return i18n.t(v.labelKey);
+  },
+}));
 
 export function getWhatsAppTemplate(): string {
-  if (typeof localStorage === 'undefined') return DEFAULT_WHATSAPP_TEMPLATE;
-  return localStorage.getItem('seen_whatsapp_template') || DEFAULT_WHATSAPP_TEMPLATE;
+  if (typeof localStorage === 'undefined') return getDefaultWhatsAppTemplate();
+  return localStorage.getItem('seen_whatsapp_template') || getDefaultWhatsAppTemplate();
 }
 
 export function saveWhatsAppTemplate(template: string): void {
@@ -56,7 +73,7 @@ export function buildWhatsAppMessage(
   let message = template || getWhatsAppTemplate();
 
   const replacements: Record<string, string> = {
-    '{customer_name}': data.customerName || 'العميل الكريم',
+    '{customer_name}': data.customerName || i18n.t('whatsapp.valued_customer'),
     '{order_id}': data.orderId ? String(data.orderId) : '#10001',
     '{total_amount}': data.totalAmount !== undefined ? String(data.totalAmount) : '0',
     '{customer_phone}': data.customerPhone || '',

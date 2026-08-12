@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import { useTranslation } from 'react-i18next';
 import { Printer } from 'lucide-react';
 import Barcode from 'react-barcode';
 import { CurrencySymbol } from '../CurrencySymbol';
@@ -259,6 +260,7 @@ export default function InvoiceReceipt({
   invoiceData?: InvoiceData; 
   defaultSize?: PrintSize;
 }) {
+  const { t } = useTranslation();
   const [printSize, setPrintSize] = useState<PrintSize>(defaultSize);
 
   // Use provided data or fallback to mock data
@@ -269,11 +271,11 @@ export default function InvoiceReceipt({
       const { printElementDetailed } = await import('../../utils/printManager');
       const res = await printElementDetailed('receipt-printable-content', {
         paperSize: printSize,
-        title: 'إيصال فاتورة ضريبية',
+        title: t('printing.tax_invoice_receipt_title'),
       });
       if (!res.ok) {
         console.error('[InvoiceReceipt] فشل الطباعة:', res.message);
-        alert(`تعذّرت الطباعة: ${res.message}`);
+        alert(t('printing.print_failed_with_reason', { message: res.message }));
       }
     } catch (e) {
       console.error('[InvoiceReceipt] خطأ الطباعة:', e);
@@ -287,7 +289,7 @@ export default function InvoiceReceipt({
       {/* Print Controls (Hidden on Print) */}
       <div className="mb-8 bg-white p-4 rounded-2xl shadow-md border border-gray-200 flex flex-col sm:flex-row items-center gap-4 print:hidden sticky top-4 z-50">
         <div className="flex items-center gap-3">
-          <span className="text-sm font-black text-gray-800">مقاس الطباعة:</span>
+          <span className="text-sm font-black text-gray-800">{t('printing.paper_size')}</span>
           <div className="flex bg-gray-50 rounded-xl p-1 border border-gray-200 shadow-inner">
             {(['58mm', '80mm', 'A5', 'A4'] as PrintSize[]).map((size) => (
               <button
@@ -310,7 +312,7 @@ export default function InvoiceReceipt({
           className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white px-8 py-2.5 rounded-xl font-bold transition-all shadow-md active:scale-95 cursor-pointer"
         >
           <Printer size={18} />
-          <span>طباعة الفاتورة</span>
+          <span>{t('printing.print_invoice')}</span>
         </button>
       </div>
 

@@ -2,7 +2,7 @@ import React, { Fragment, useState } from 'react';
 import { Combobox, Listbox, Transition } from '@headlessui/react';
 import { Check, ChevronDown, Search } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { useTranslation } from 'react-i18next';
+import { useDirection } from '../../lib/direction';
 
 export interface SelectOption {
   value: string;
@@ -26,16 +26,16 @@ export function SmartSelect({
   options,
   value,
   onChange,
-  placeholder = 'اختر...',
+  placeholder,
   className,
   name,
-  searchPlaceholder = 'ابحث...',
+  searchPlaceholder,
   disabled = false,
   error = false,
 }: SmartSelectProps) {
-  const { i18n } = useTranslation();
+  const { t, dir } = useDirection();
   const [query, setQuery] = useState('');
-  const dir = i18n.language === 'en' ? 'ltr' : 'rtl';
+  const resolvedPlaceholder = placeholder ?? t('common.select');
 
   const selectedOption = options.find((opt) => String(opt.value) === String(value)) || null;
 
@@ -49,7 +49,7 @@ export function SmartSelect({
           option.label.toLowerCase().includes(query.toLowerCase())
         );
 
-  const containerClasses = 'relative w-full text-right';
+  const containerClasses = cn('relative w-full', dir === 'rtl' ? 'text-right' : 'text-left');
 
   const hasHeight = className?.includes('h-');
   const hasPadding = className?.includes('p-') || className?.includes('py-') || className?.includes('px-') || className?.includes('pr-') || className?.includes('pl-');
@@ -100,7 +100,7 @@ export function SmartSelect({
               className={buttonClasses}
               displayValue={(opt: SelectOption) => opt?.label || ''}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder={placeholder}
+              placeholder={resolvedPlaceholder}
             />
             <Combobox.Button className={cn(
               "absolute inset-y-0 flex items-center transition-colors",
@@ -112,7 +112,7 @@ export function SmartSelect({
               <Combobox.Options className={popoverClasses} anchor="bottom" style={{ width: "var(--button-width)" }}>
                 {filteredOptions.length === 0 && query !== '' ? (
                   <div className="relative cursor-default select-none py-3 px-4 text-content-muted text-xs font-bold">
-                    {i18n.t('common.no_results', 'لا يوجد نتائج.')}
+                    {t('common.no_results')}
                   </div>
                 ) : (
                   filteredOptions.map((option) => (
@@ -180,7 +180,7 @@ export function SmartSelect({
                   {selectedOption.icon}
                 </span>
               )}
-              {selectedOption ? selectedOption.label : placeholder}
+              {selectedOption ? selectedOption.label : resolvedPlaceholder}
             </span>
             <span className={cn(
               "pointer-events-none absolute inset-y-0 flex items-center transition-colors",

@@ -1,3 +1,4 @@
+import i18n from 'i18next';
 import { supabase } from '../lib/supabase/client';
 import { Role, PermissionsMap, Staff, PermissionKey } from '../types';
 import { SYSTEM_PERMISSIONS } from '../constants/permissions';
@@ -36,29 +37,41 @@ export const isSaaSRole = (roleKey: string): boolean => {
   return SAAS_ROLE_KEYS.includes(roleKey);
 };
 
-export const DEFAULT_ROLES: Record<string, { name: string; description: string; category: 'merchant' | 'saas'; permissions: PermissionsMap }> = {
+/**
+ * `name` / `description` stay Arabic because they are seeded verbatim into the
+ * `roles` table. Render `nameKey` / `descriptionKey` through `t()` instead.
+ */
+export const DEFAULT_ROLES: Record<string, { name: string; nameKey: string; description: string; descriptionKey: string; category: 'merchant' | 'saas'; permissions: PermissionsMap }> = {
   // === أدوار التجار والمتاجر (Merchant Roles) ===
   owner: {
     name: 'صاحب العمل (Owner)',
+    nameKey: 'permissions.roles.owner.name',
     description: 'وصول كامل ومطلق لجميع وحدات النظام مع صلاحيات حصرية للإدارة العليا والإشتراكات',
+    descriptionKey: 'permissions.roles.owner.description',
     category: 'merchant',
     permissions: createPermissions(SYSTEM_PERMISSIONS.map(p => p.id))
   },
   admin: {
     name: 'مسؤول النظام (Admin)',
+    nameKey: 'permissions.roles.admin.name',
     description: 'إدارة تشغيل المتجر والفروع والموظفين والمخزون مع إمكانية تعديل الإعدادات والتقارير',
+    descriptionKey: 'permissions.roles.admin.description',
     category: 'merchant',
     permissions: createPermissions(SYSTEM_PERMISSIONS.filter(p => p.id !== 'system.delete' && p.id !== 'settings.billing').map(p => p.id))
   },
   manager: {
     name: 'المدير العام (Manager)',
+    nameKey: 'permissions.roles.manager.name',
     description: 'إدارة المبيعات والمخزون والموظفين والتقارير المالية المتقدمة ومتابعة الأداء',
+    descriptionKey: 'permissions.roles.manager.description',
     category: 'merchant',
     permissions: createPermissions(SYSTEM_PERMISSIONS.filter(p => p.id !== 'system.delete' && p.id !== 'settings.billing' && p.id !== 'settings.tax' && p.id !== 'staff.permissions').map(p => p.id))
   },
   branch_manager: {
     name: 'مدير الفرع (Branch Manager)',
+    nameKey: 'permissions.roles.branch_manager.name',
     description: 'إدارة مبيعات ومخزون وموظفي الفرع ومتابعة الورديات والطلبات اليومية',
+    descriptionKey: 'permissions.roles.branch_manager.description',
     category: 'merchant',
     permissions: createPermissions([
       'dashboard.view', 'sales.view', 'orders.view', 'customers.view', 'inventory.view', 
@@ -73,7 +86,9 @@ export const DEFAULT_ROLES: Record<string, { name: string; description: string; 
   },
   accountant: {
     name: 'المحاسب (Accountant)',
+    nameKey: 'permissions.roles.accountant.name',
     description: 'إدارة التقارير المالية والضرائب والمصروفات والموردين وتصدير البيانات',
+    descriptionKey: 'permissions.roles.accountant.description',
     category: 'merchant',
     permissions: createPermissions([
       'dashboard.view', 'orders.view', 'suppliers.manage', 'reports.view',
@@ -83,7 +98,9 @@ export const DEFAULT_ROLES: Record<string, { name: string; description: string; 
   },
   warehouse_manager: {
     name: 'مدير المستودع (Warehouse Manager)',
+    nameKey: 'permissions.roles.warehouse_manager.name',
     description: 'إدارة كافة عمليات الأقمشة والمخزون والتوريد والتسويات ومتابعة الجرد والتحويلات',
+    descriptionKey: 'permissions.roles.warehouse_manager.description',
     category: 'merchant',
     permissions: createPermissions([
       'dashboard.view', 'inventory.view', 'inventory.manage', 'inventory.create', 
@@ -93,7 +110,9 @@ export const DEFAULT_ROLES: Record<string, { name: string; description: string; 
   },
   cashier: {
     name: 'الكاشير (Cashier)',
+    nameKey: 'permissions.roles.cashier.name',
     description: 'إضافة العملاء والطلبات ونقطة البيع وتحصيل المدفوعات وإدارة الورديات والخصومات',
+    descriptionKey: 'permissions.roles.cashier.description',
     category: 'merchant',
     permissions: createPermissions([
       'dashboard.view', 'sales.view', 'orders.view', 'customers.view', 'inventory.view',
@@ -104,7 +123,9 @@ export const DEFAULT_ROLES: Record<string, { name: string; description: string; 
   },
   tailor: {
     name: 'الخياط / الفني (Tailor)',
+    nameKey: 'permissions.roles.tailor.name',
     description: 'عرض الطلبات المحالة وتفاصيل المقاسات وتحديث حالة الإنتاج والتفصيل',
+    descriptionKey: 'permissions.roles.tailor.description',
     category: 'merchant',
     permissions: createPermissions([
       'orders.view', 'orders.view_details', 'orders.update_status', 'customers.view'
@@ -114,13 +135,17 @@ export const DEFAULT_ROLES: Record<string, { name: string; description: string; 
   // === أدوار منصة ساس (SaaS Company Roles) ===
   super_admin: {
     name: 'المدير العام للمنصة (Super Admin)',
+    nameKey: 'permissions.roles.super_admin.name',
     description: 'تحكم كامل وشامل بمنصة ساس والتجار والاشتراكات وإدارة النظام بالكامل',
+    descriptionKey: 'permissions.roles.super_admin.description',
     category: 'saas',
     permissions: createPermissions(SYSTEM_PERMISSIONS.map(p => p.id))
   },
   support_tech: {
     name: 'الدعم الفني للمنصة (Support Tech)',
+    nameKey: 'permissions.roles.support_tech.name',
     description: 'معاينة شاشات التاجر والمنصة لمساعدة التجار وحل المشكلات التشغيلية (استعراض فقط)',
+    descriptionKey: 'permissions.roles.support_tech.description',
     category: 'saas',
     permissions: createPermissions([
       'dashboard.view', 'sales.view', 'orders.view', 'orders.view_details', 
@@ -130,7 +155,9 @@ export const DEFAULT_ROLES: Record<string, { name: string; description: string; 
   },
   billing_admin: {
     name: 'مسؤول الفوترة بالمنصة (Billing Admin)',
+    nameKey: 'permissions.roles.billing_admin.name',
     description: 'إدارة اشتراكات التجار والفوترة والتقارير المالية والضرائب بالمنصة',
+    descriptionKey: 'permissions.roles.billing_admin.description',
     category: 'saas',
     permissions: createPermissions([
       'dashboard.view', 'reports.view', 'reports.financial', 'reports.tax', 
@@ -140,7 +167,9 @@ export const DEFAULT_ROLES: Record<string, { name: string; description: string; 
   },
   sales: {
     name: 'مبيعات المنصة والتسويق (Sales)',
+    nameKey: 'permissions.roles.sales.name',
     description: 'إدارة مبيعات المنصة والتسويق وإحصائيات المشتركين والتقارير',
+    descriptionKey: 'permissions.roles.sales.description',
     category: 'saas',
     permissions: createPermissions([
       'dashboard.view', 'sales.view', 'orders.view', 'orders.create', 'orders.view_details',
@@ -400,7 +429,7 @@ export const updateRolePermissions = async (
   
   if (!isUuid(roleId)) {
     if (!isSuperAdmin) {
-      throw new Error('المهن الافتراضية محمية بالنظام ولا يمكن للتاجر تعديلها. يرجى إنشاء مهنة مخصصة بدلاً من ذلك.');
+      throw new Error(i18n.t('permissions.default_roles_protected'));
     }
     return;
   }
@@ -419,7 +448,7 @@ export const updateRolePermissions = async (
   if (!isSuperAdmin) {
     const isDefault = !roleData.tenant_id || roleData.tenant_id === 'system' || Boolean(DEFAULT_ROLES[roleKeyToSave]) || roleData.is_default;
     if (isDefault) {
-      throw new Error('المهن الافتراضية محمية بالنظام ولا يمكن للتاجر تعديلها. يرجى إنشاء مهنة مخصصة بدلاً من ذلك.');
+      throw new Error(i18n.t('permissions.default_roles_protected'));
     }
   }
 
@@ -580,6 +609,9 @@ export interface PermissionDetail {
   id: string;
   name: string;
   description: string;
+  /** Stable, language-independent i18n key — use this for grouping/comparison. */
+  categoryKey: string;
+  /** Category label already resolved in the active language (display only). */
   category: string;
   baseValue: boolean;
   overrideValue?: boolean;

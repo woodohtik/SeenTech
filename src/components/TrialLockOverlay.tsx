@@ -10,6 +10,9 @@
  *   )}
  */
 
+import { useTranslation } from 'react-i18next';
+import { useDirection } from '../lib/direction';
+
 interface Props {
   purgeAt?: string | null;       // ISO — موعد حذف البيانات
   onSubscribe: () => void;
@@ -23,9 +26,11 @@ function daysLeft(iso?: string | null): number | null {
 }
 
 export default function TrialLockOverlay({ purgeAt, onSubscribe, onContactSales }: Props) {
+  const { t } = useTranslation();
+  const { dir } = useDirection();
   const d = daysLeft(purgeAt);
   return (
-    <div dir="rtl" role="dialog" aria-modal="true" style={{
+    <div dir={dir} role="dialog" aria-modal="true" style={{
       position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(15,23,42,0.72)',
       backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center',
       justifyContent: 'center', padding: 20, fontFamily: 'inherit',
@@ -40,10 +45,10 @@ export default function TrialLockOverlay({ purgeAt, onSubscribe, onContactSales 
           alignItems: 'center', justifyContent: 'center', fontSize: 34,
         }} aria-hidden>🔒</div>
         <h2 style={{ fontSize: 22, fontWeight: 800, color: '#0E2A42', margin: '0 0 8px' }}>
-          انتهت تجربتك المجانية
+          {t('subscription.trial_ended_title')}
         </h2>
         <p style={{ color: '#555', fontSize: 15, lineHeight: 1.7, margin: '0 0 6px' }}>
-          نتمنّى إن سين عجبك! اشترك الآن وكمّل شغلك بدون انقطاع — كل بياناتك وطلباتك تبقى كما هي.
+          {t('subscription.trial_ended_desc')}
         </p>
         {d !== null && (
           <p style={{
@@ -51,19 +56,19 @@ export default function TrialLockOverlay({ purgeAt, onSubscribe, onContactSales 
             background: '#FCF3E6', borderRadius: 10, padding: '8px 12px', margin: '14px 0 18px',
           }}>
             {d > 0
-              ? `بياناتك محفوظة ${d} ${d === 1 ? 'يوم' : 'أيام'} — بعدها تُحذف إن لم تشترك.`
-              : 'بياناتك على وشك الحذف — اشترك الآن للاحتفاظ بها.'}
+              ? t('subscription.data_retained', { count: d })
+              : t('subscription.data_purge_imminent')}
           </p>
         )}
         <button onClick={onSubscribe} style={{
           width: '100%', background: '#0BA06B', color: '#fff', border: 'none',
           borderRadius: 999, padding: '13px 0', fontWeight: 800, fontSize: 16,
           cursor: 'pointer', fontFamily: 'inherit',
-        }}>اشترك الآن</button>
+        }}>{t('subscription.subscribe_now')}</button>
         <button onClick={onContactSales} style={{
           width: '100%', background: 'transparent', color: '#0E2A42', border: 'none',
           marginTop: 10, fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
-        }}>عندك سؤال؟ تواصل مع المبيعات</button>
+        }}>{t('subscription.have_question_contact_sales')}</button>
       </div>
     </div>
   );

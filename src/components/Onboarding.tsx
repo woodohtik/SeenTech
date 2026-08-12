@@ -38,6 +38,7 @@ import { cn } from '../lib/utils';
 import { analytics, AnalyticsEvent } from '../services/analyticsService';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import { markSetup } from '../services/activationService';
+import { useDirection } from '../lib/direction';
 
 type Step = 1 | 2 | 3;
 
@@ -93,6 +94,7 @@ function LocationMarker({
 
 export default function Onboarding({ onComplete }: OnboardingProps) {
   const { t, i18n } = useTranslation();
+  const { dir } = useDirection();
   const { success: showSuccess, handleError: handleGlobalError, error: showError } = useToast();
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
@@ -165,9 +167,9 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   }, [currentStep]);
 
   const steps = [
-    { id: 1 as Step, title: t('onboarding.steps.identity', 'الهوية'), icon: Store, description: t('onboarding.steps.identity_desc', 'بيانات المنشأة') },
-    { id: 2 as Step, title: t('onboarding.steps.location', 'الموقع'), icon: MapPin, description: t('onboarding.steps.location_desc', 'تحديد الموقع الجغرافي') },
-    { id: 3 as Step, title: t('onboarding.steps.preferences', 'المالية والضريبة'), icon: ShieldCheck, description: t('onboarding.steps.preferences_desc', 'الإعدادات المالية والضريبية') }
+    { id: 1 as Step, title: t('onboarding.steps.identity'), icon: Store, description: t('onboarding.steps.identity_desc') },
+    { id: 2 as Step, title: t('onboarding.steps.location'), icon: MapPin, description: t('onboarding.steps.location_desc') },
+    { id: 3 as Step, title: t('onboarding.steps.preferences'), icon: ShieldCheck, description: t('onboarding.steps.preferences_desc') }
   ];
 
   const checkVatValid = (vat: string | undefined) => vat && vat.length === 15 && /^\d+$/.test(vat);
@@ -214,7 +216,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           console.error("Form Errors:", errs);
           setLoading(false);
           const errorMessages = Object.values(errs).map(e => (e as any).message).join(', ');
-          showError(t('onboarding.messages.validation_failed', 'يرجى التأكد من صحة البيانات: '), errorMessages);
+          showError(t('onboarding.messages.validation_failed'), errorMessages);
         }
       )();
       return;
@@ -258,7 +260,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
       if (userError) {
          if (userError.message?.includes('row-level security') || userError.code === '42501') {
-            throw new Error(`مشكلة في صلاحيات قاعدة البيانات (RLS). يرجى فتح Supabase SQL Editor وتنفيذ محتوى الملف: allow-all-rls.sql أو fix-rls.sql لتتمكن من إنشاء الحسابات.`);
+            throw new Error(t('onboarding.messages.rls_permission_error'));
          }
          throw new Error(`Failed to initialize global user profile: ${userError.message}`);
       }
@@ -272,7 +274,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         .single();
       
       if (fetchTenantError || !existingTenant) {
-        throw new Error(`لم يتم العثور على المتجر المرتبط بهذا الحساب`);
+        throw new Error(t('onboarding.messages.tenant_not_found'));
       }
       const tenantId = existingTenant.id;
 
@@ -325,7 +327,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       } else {
          const { data: branchData, error: branchError } = await supabase.from('branches').insert({
           tenant_id: tenantId,
-          name: t('common.branches.main_branch', 'المعرض الرئيسي'),
+          name: t('common.branches.main_branch'),
           location: data.address,
           phone: storePhone,
           type: 'store',
@@ -399,7 +401,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-3 sm:p-6 md:p-8 font-sans" dir={i18n.language === 'en' ? 'ltr' : 'rtl'}>
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-3 sm:p-6 md:p-8 font-sans" dir={dir}>
       {/* Container Expansion */}
       <div className="w-full max-w-6xl">
         
@@ -491,7 +493,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
                       <div className="space-y-2">
                         <label className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center gap-2">
-                          {t('onboarding.fields.phone', 'رقم التواصل الموحد')}
+                          {t('settings_page.profile.phone')}
                         </label>
                         <div className={cn(
                           "group flex items-center bg-white border rounded-xl overflow-hidden focus-within:border-brand transition-all shadow-sm focus-within:ring-1 focus-within:ring-brand/30",
@@ -563,7 +565,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
                       <div className="md:col-span-2 pt-4 sm:pt-6 border-t border-slate-100 mt-2">
                         <h3 className="text-base sm:text-lg font-black text-slate-900 mb-3 flex items-center gap-2">
-                          <ShieldCheck className="text-brand" size={18} /> {t('onboarding.fields.tax_info', 'البيانات الضريبية')}
+                          <ShieldCheck className="text-brand" size={18} /> {t('onboarding.fields.tax_info')}
                         </h3>
                       </div>
 
@@ -589,7 +591,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                           />
                           {checkVatValid(watch('taxNumber')) && (
                             <div className="mx-2 bg-emerald-100 text-emerald-600 px-2.5 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1 shrink-0">
-                              <Check size={10} /> {t('common.verified', 'موثق')}
+                              <Check size={10} /> {t('common.verified')}
                             </div>
                           )}
                         </div>
@@ -715,9 +717,9 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                                 <Navigation size={16} />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-0.5">{t('onboarding.fields.location_selected', 'الموقع المحدد')}</p>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-0.5">{t('onboarding.fields.location_selected')}</p>
                                 <p className="text-xs font-bold text-slate-700 line-clamp-2 leading-snug">
-                                  {formData.address || t('onboarding.fields.location_manual', 'تم تحديد الموقع يدوياً')}
+                                  {formData.address || t('onboarding.fields.location_manual')}
                                 </p>
                               </div>
                             </div>

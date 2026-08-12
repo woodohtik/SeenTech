@@ -16,6 +16,8 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useDirection } from '../lib/direction';
 import { supabase } from '../lib/supabase/client';
 import { useStaff } from '../contexts/StaffContext';
 import { PriceDisplay } from './PriceDisplay';
@@ -47,13 +49,14 @@ interface OrderItem {
 }
 
 export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) => {
+  const { t, dir, locale } = useDirection();
   const navigate = useNavigate();
   const { currentStaff } = useStaff();
   const [loading, setLoading] = useState(true);
   
   const [shift, setShift] = useState<ShiftInfo>({
     isOpen: true,
-    openedAt: '08:00 ص',
+    openedAt: t('dashboard.cashier.default_open_time'),
     initialCash: 500,
     currentCashInDrawer: 1850,
     totalSalesInShift: 1350
@@ -105,7 +108,7 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
         const mappedOrders: OrderItem[] = list.map(o => ({
           id: o.id,
           orderNumber: o.order_number || `ORD-${o.id.slice(0, 6)}`,
-          customerName: o.customer_name || 'عميل نقدي',
+          customerName: o.customer_name || t('pos.walk_in_customer'),
           customerPhone: o.customer_phone || '',
           status: (o.status as OrderItem['status']) || 'pending',
           totalAmount: Number(o.total_amount) || 0,
@@ -137,7 +140,7 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
             setShift({
               id: activeShift.id,
               isOpen: true,
-              openedAt: new Date(activeShift.start_time || activeShift.created_at).toLocaleTimeString('ar-SA-u-nu-latn', { hour: '2-digit', minute: '2-digit' }),
+              openedAt: new Date(activeShift.start_time || activeShift.created_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
               initialCash: Number(activeShift.initial_cash) || 500,
               currentCashInDrawer: (Number(activeShift.initial_cash) || 500) + (Number(activeShift.cash_sales) || 1350),
               totalSalesInShift: Number(activeShift.cash_sales) || 1350
@@ -180,24 +183,24 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
   }
 
   return (
-    <div dir="rtl" className="space-y-6 animate-fade-in p-2 sm:p-4">
+    <div dir={dir} className="space-y-6 animate-fade-in p-2 sm:p-4">
       {/* Top Banner & Quick POS Action */}
       <div className="bg-gradient-to-l from-brand/15 via-surface to-surface p-6 rounded-3xl border border-brand/20 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <span className="px-3 py-1 rounded-full bg-brand/10 text-brand text-xs font-black">
-              لوحة الكاشير والاستقبال
+              {t('dashboard.cashier.badge')}
             </span>
             <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 text-xs font-bold flex items-center gap-1">
               <ShieldCheck size={14} />
-              منطقة آمنة (محجوبة مالياً)
+              {t('dashboard.cashier.secure_zone')}
             </span>
           </div>
           <h1 className="text-2xl md:text-3xl font-black text-content tracking-tight">
-            مرحباً {currentStaff?.name || 'الكاشير'}
+            {t('dashboard.cashier.welcome', { name: currentStaff?.name || t('dashboard.cashier.default_name') })}
           </h1>
           <p className="text-sm text-content-muted font-medium mt-1">
-            متابعة حالة الوردية، تسليم الطلبات المعلقة والجاهزة، وتحصيل المبالغ المتبقية.
+            {t('dashboard.cashier.subtitle')}
           </p>
         </div>
 
@@ -207,7 +210,7 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
             className="px-4 py-3 bg-surface-muted hover:bg-surface border border-border text-content font-bold rounded-2xl transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
           >
             <Clock size={18} className="text-emerald-600" />
-            <span>إدارة الوردية</span>
+            <span>{t('dashboard.cashier.manage_shift')}</span>
           </button>
 
           <button
@@ -215,7 +218,7 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
             className="px-6 py-3.5 bg-brand text-white font-black rounded-2xl shadow-lg shadow-brand/25 hover:bg-brand/90 active:scale-95 transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
           >
             <PlusCircle size={20} />
-            <span>فتح شاشة المبيعات (POS)</span>
+            <span>{t('dashboard.cashier.open_pos')}</span>
           </button>
         </div>
       </div>
@@ -225,24 +228,24 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
         {/* Shift Status */}
         <div className="bg-surface p-5 rounded-3xl border border-border shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-black text-content-muted">حالة الوردية الحالية</span>
+            <span className="text-xs font-black text-content-muted">{t('dashboard.cashier.current_shift_status')}</span>
             <div className="w-9 h-9 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
               <Clock size={18} />
             </div>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-emerald-500 animate-ping"></span>
-            <span className="text-xl font-black text-content">وردية مفتوحة</span>
+            <span className="text-xl font-black text-content">{t('dashboard.cashier.shift_open')}</span>
           </div>
           <div className="mt-2 text-xs text-content-muted font-medium">
-            بدأت اليوم الساعة {shift.openedAt}
+            {t('dashboard.cashier.started_today_at', { time: shift.openedAt })}
           </div>
         </div>
 
         {/* Cash in Drawer */}
         <div className="bg-surface p-5 rounded-3xl border border-emerald-500/20 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-black text-content-muted">النقد المتوفر بالدرج</span>
+            <span className="text-xs font-black text-content-muted">{t('dashboard.cashier.cash_in_drawer')}</span>
             <div className="w-9 h-9 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
               <CreditCard size={18} />
             </div>
@@ -251,30 +254,30 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
             <PriceDisplay amount={shift.currentCashInDrawer} />
           </div>
           <div className="mt-2 text-xs text-content-muted font-medium">
-            عهدة البداية: <PriceDisplay amount={shift.initialCash} />
+            {t('dashboard.cashier.opening_float')} <PriceDisplay amount={shift.initialCash} />
           </div>
         </div>
 
         {/* Ready for Pickup */}
         <div className="bg-surface p-5 rounded-3xl border border-brand/20 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-black text-content-muted">طلبات جاهزة للتسليم</span>
+            <span className="text-xs font-black text-content-muted">{t('dashboard.cashier.ready_orders')}</span>
             <div className="w-9 h-9 rounded-2xl bg-brand/10 text-brand flex items-center justify-center">
               <PackageCheck size={18} />
             </div>
           </div>
           <div className="text-2xl font-black text-brand tracking-tight">
-            {summaryStats.readyForPickupCount} طلبات
+            {t('common.orders_count', { count: summaryStats.readyForPickupCount })}
           </div>
           <div className="mt-2 text-xs text-brand font-bold">
-            جاهزة للتسليم للعميل
+            {t('dashboard.cashier.ready_for_customer')}
           </div>
         </div>
 
         {/* Pending Unpaid Invoices */}
         <div className="bg-surface p-5 rounded-3xl border border-amber-500/20 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-black text-content-muted">مبالغ بانتظار التحصيل</span>
+            <span className="text-xs font-black text-content-muted">{t('dashboard.cashier.pending_collection')}</span>
             <div className="w-9 h-9 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
               <Receipt size={18} />
             </div>
@@ -283,7 +286,7 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
             <PriceDisplay amount={summaryStats.pendingUnpaidTotal} />
           </div>
           <div className="mt-2 text-xs text-content-muted font-medium">
-            فواتير غير مكتملة الدفع: {summaryStats.pendingUnpaidCount}
+            {t('dashboard.cashier.unpaid_invoices_count', { count: summaryStats.pendingUnpaidCount })}
           </div>
         </div>
       </div>
@@ -295,10 +298,10 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
           <div>
             <h2 className="text-lg font-black text-content flex items-center gap-2">
               <Receipt size={20} className="text-brand" />
-              <span>جدول الطلبات المعلقة والنشطة</span>
+              <span>{t('dashboard.cashier.pending_orders_table')}</span>
             </h2>
             <p className="text-xs text-content-muted font-medium mt-1">
-              عرض المبالغ المتبقية وحالة التفصيل للتسليم المباشر والتحصيل.
+              {t('dashboard.cashier.pending_orders_desc')}
             </p>
           </div>
 
@@ -308,7 +311,7 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
               <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-content-muted" />
               <input
                 type="text"
-                placeholder="بحث برقم الطلب أو اسم العميل..."
+                placeholder={t('dashboard.cashier.search_placeholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pr-9 pl-3 py-2 bg-surface-muted border border-border rounded-xl text-xs font-bold text-content focus:outline-none focus:border-brand"
@@ -321,19 +324,19 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
                 onClick={() => setFilterStatus('all')}
                 className={`px-3 py-1.5 rounded-lg transition-all ${filterStatus === 'all' ? 'bg-brand text-white shadow-sm' : 'text-content-muted hover:text-content'}`}
               >
-                الكل
+                {t('common.all')}
               </button>
               <button
                 onClick={() => setFilterStatus('ready')}
                 className={`px-3 py-1.5 rounded-lg transition-all ${filterStatus === 'ready' ? 'bg-brand text-white shadow-sm' : 'text-content-muted hover:text-content'}`}
               >
-                جاهز للتسليم
+                {t('orders.ready_for_delivery')}
               </button>
               <button
                 onClick={() => setFilterStatus('unpaid')}
                 className={`px-3 py-1.5 rounded-lg transition-all ${filterStatus === 'unpaid' ? 'bg-amber-600 text-white shadow-sm' : 'text-content-muted hover:text-content'}`}
               >
-                غير مدفوع بالكامل
+                {t('dashboard.cashier.not_fully_paid')}
               </button>
             </div>
           </div>
@@ -344,13 +347,13 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
           <table className="w-full text-right text-xs">
             <thead>
               <tr className="text-content-muted border-b border-border bg-surface-muted/50">
-                <th className="p-3 font-black">رقم الطلب</th>
-                <th className="p-3 font-black">اسم العميل</th>
-                <th className="p-3 font-black">حالة الطلب</th>
-                <th className="p-3 font-black">الإجمالي</th>
-                <th className="p-3 font-black">المدفوع</th>
-                <th className="p-3 font-black">المتبقي</th>
-                <th className="p-3 font-black text-center">الإجراء</th>
+                <th className="p-3 font-black">{t('dashboard.cashier.col_order_number')}</th>
+                <th className="p-3 font-black">{t('dashboard.cashier.col_customer_name')}</th>
+                <th className="p-3 font-black">{t('dashboard.cashier.col_order_status')}</th>
+                <th className="p-3 font-black">{t('common.total')}</th>
+                <th className="p-3 font-black">{t('dashboard.cashier.col_paid')}</th>
+                <th className="p-3 font-black">{t('common.remaining')}</th>
+                <th className="p-3 font-black text-center">{t('dashboard.cashier.col_action')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -358,7 +361,7 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
                 <tr>
                   <td colSpan={7} className="p-8 text-center text-content-muted font-bold">
                     <AlertCircle size={24} className="mx-auto mb-2 text-content-muted/50" />
-                    لا توجد طلبات معلقة تطابق معايير البحث
+                    {t('dashboard.cashier.no_matching_orders')}
                   </td>
                 </tr>
               ) : (
@@ -388,7 +391,7 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
                           <PriceDisplay amount={order.balanceDue} />
                         </span>
                       ) : (
-                        <span className="text-emerald-600 font-bold">مكتمل</span>
+                        <span className="text-emerald-600 font-bold">{t('dashboard.cashier.paid_complete')}</span>
                       )}
                     </td>
                     <td className="p-3 text-center">
@@ -396,7 +399,7 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
                         onClick={() => navigate(`/orders`)}
                         className="px-3 py-1.5 bg-brand/10 text-brand hover:bg-brand hover:text-white font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1 mx-auto"
                       >
-                        <span>عرض التفاصيل</span>
+                        <span>{t('common.view_details')}</span>
                         <ArrowRight size={14} className="rotate-180" />
                       </button>
                     </td>
@@ -414,7 +417,7 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
         <div className="bg-surface p-6 rounded-3xl border border-border shadow-sm space-y-4">
           <h2 className="text-lg font-black text-content flex items-center gap-2">
             <Monitor size={20} className="text-brand" />
-            <span>العمليات التشغيلية السريعة</span>
+            <span>{t('dashboard.cashier.quick_actions')}</span>
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -424,10 +427,10 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
             >
               <div className="font-black text-content group-hover:text-brand flex items-center gap-2">
                 <PlusCircle size={18} />
-                <span>فاتورة جديدة</span>
+                <span>{t('dashboard.cashier.new_invoice')}</span>
               </div>
               <p className="text-xs text-content-muted font-medium mt-1">
-                إصدار فاتورة تفصيل مبسطة وأخذ المقاسات
+                {t('dashboard.cashier.new_invoice_desc')}
               </p>
             </button>
 
@@ -437,10 +440,10 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
             >
               <div className="font-black text-content group-hover:text-brand flex items-center gap-2">
                 <UserCheck size={18} />
-                <span>البحث عن عميل</span>
+                <span>{t('dashboard.cashier.find_customer')}</span>
               </div>
               <p className="text-xs text-content-muted font-medium mt-1">
-                استرجاع سجل العميل ومقاسات الثياب
+                {t('dashboard.cashier.find_customer_desc')}
               </p>
             </button>
           </div>
@@ -451,19 +454,19 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
           <div>
             <div className="flex items-center gap-2 text-xs font-black text-emerald-600 bg-emerald-500/10 px-3 py-1 rounded-full w-fit mb-3">
               <Lock size={14} />
-              حماية البيانات المالية (Data Isolation)
+              {t('dashboard.cashier.data_isolation')}
             </div>
             <h3 className="text-base font-black text-content">
-              صلاحيات كاشير آمنة ومنعكسة في النظام
+              {t('dashboard.cashier.secure_permissions_title')}
             </h3>
             <p className="text-xs text-content-muted font-medium leading-relaxed mt-2">
-              تضمن هذه الشاشة حجب الهوامش الربحية الصافية والتقارير المالية الاستراتيجية تماماً. تُعرض البيانات التشغيلية الخاصة بالوردية واستلام الفواتير فقط لتأمين أقصى مستويات السرية للمنشأة.
+              {t('dashboard.cashier.isolation_desc')}
             </p>
           </div>
 
           <div className="p-3.5 bg-emerald-500/5 rounded-2xl border border-emerald-500/20 text-xs text-emerald-700 font-bold flex items-center gap-2">
             <CheckCircle2 size={18} className="shrink-0" />
-            <span>نظام نقاط البيع سليم وموثق لكل عملية بالورديات.</span>
+            <span>{t('dashboard.cashier.pos_audited_note')}</span>
           </div>
         </div>
       </div>
@@ -473,30 +476,31 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
 
 /* Order Status Badge Helper */
 function OrderStatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
   switch (status) {
     case 'ready':
       return (
         <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 font-black text-[11px] inline-flex items-center gap-1">
           <CheckCircle2 size={12} />
-          جاهز للتسليم
+          {t('orders.ready_for_delivery')}
         </span>
       );
     case 'in_tailoring':
       return (
         <span className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-600 font-black text-[11px]">
-          قيد الخياطة
+          {t('orders.in_tailoring')}
         </span>
       );
     case 'pending':
       return (
         <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-600 font-black text-[11px]">
-          بانتظار التفصيل
+          {t('orders.awaiting_tailoring')}
         </span>
       );
     case 'delivered':
       return (
         <span className="px-2.5 py-1 rounded-lg bg-surface-muted text-content-muted font-bold text-[11px]">
-          تم التسليم
+          {t('common.status_delivered')}
         </span>
       );
     default:
@@ -547,8 +551,9 @@ const mockFallbackOrders: OrderItem[] = [
 
 /* Skeleton Loader for Cashier Dashboard */
 function CashierDashboardSkeleton() {
+  const { dir } = useDirection();
   return (
-    <div dir="rtl" className="space-y-6 animate-pulse p-4">
+    <div dir={dir} className="space-y-6 animate-pulse p-4">
       <div className="h-28 bg-surface-muted rounded-3xl border border-border"></div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[1, 2, 3, 4].map(i => (

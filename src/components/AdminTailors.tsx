@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import SubscriptionRequestsAdminManager from './SubscriptionRequestsAdminManager';
 import { 
   CheckCircle, 
   XCircle, 
@@ -43,6 +42,8 @@ import { autoSeed } from '../services/seedService';
 import { AdminIconInput } from './ui/AdminIconInput';
 import { AdminIconSelect } from './ui/AdminIconSelect';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
+import { useDirection } from '../lib/direction';
 import { 
   AreaChart, 
   Area, 
@@ -57,8 +58,12 @@ import {
   PieChart,
   Pie
 } from 'recharts';
+import { localeOf } from '../lib/direction';
+import i18n from '../i18n/config';
 
 export default function AdminTailors() {
+  const { t } = useTranslation();
+  const { dir } = useDirection();
   const { dbUser } = useAuth();
   const userRole = dbUser?.role;
   const navigate = useNavigate();
@@ -183,7 +188,7 @@ export default function AdminTailors() {
     let totalSales = 0;
 
     orders?.forEach(order => {
-      const date = new Date(order.order_date).toLocaleDateString('ar-SA-u-nu-latn', { day: 'numeric', month: 'short' });
+      const date = new Date(order.order_date).toLocaleDateString(localeOf(i18n.language), { day: 'numeric', month: 'short' });
       const current = dailyMap.get(date) || { sales: 0, count: 0 };
       dailyMap.set(date, {
         sales: current.sales + Number(order.total_amount),
@@ -210,67 +215,171 @@ export default function AdminTailors() {
   const handleStealthLogin = async (tenantId: string) => {
     try {
       // Record stealth session in Audit logs (support_sessions)
-      await supabase.from('support_sessions').insert({
-        tenant_id: tenantId,
-        saas_user_id: dbUser!.id,
-        saas_user_name: dbUser?.display_name || dbUser?.email || 'Admin',
-        access_type: 'stealth',
-        started_at: new Date().toISOString()
-      });
+      try {
+        const { error } = await supabase.from('support_sessions').insert({
+          tenant_id: tenantId,
+          saas_user_id: dbUser!.id,
+          saas_user_name: dbUser?.display_name || dbUser?.email || 'Admin',
+          access_type: 'stealth',
+          started_at: new Date().toISOString()
+        });
+        if (error && (error.code === 'PGRST205' || error.message?.includes('cache') || error.message?.includes('relation'))) {
+          // Fallback to saas_settings
+          const { data: setting } = await supabase
+            .from('saas_settings')
+            .select('*')
+            .eq('key', 'support_sessions')
+            .maybeSingle();
+          const existingSessions = setting?.value && Array.isArray(setting.value) ? setting.value : [];
+          existingSessions.push({
+            id: Math.random().toString(36).substring(2, 15),
+            tenant_id: tenantId,
+            saas_user_id: dbUser!.id,
+            saas_user_name: dbUser?.display_name || dbUser?.email || 'Admin',
+            access_type: 'stealth',
+            started_at: new Date().toISOString()
+          });
+          await supabase.from('saas_settings').upsert({
+            key: 'support_sessions',
+            value: existingSessions,
+            updated_at: new Date().toISOString()
+          });
+        }
+      } catch (err) {
+        console.warn('Stealth audit logging fallback:', err);
+      }
 
       localStorage.setItem('impersonatedTenantId', tenantId);
       localStorage.setItem('tenant_id', tenantId);
       window.location.href = '/dashboard';
     } catch (e) {
-      showToast('خطأ أثناء بدء جلسة الدخول المخفي', 'error');
+      showToast(t('saas.tenants.stealth_login_error'), 'error');
     }
   };
 
   const handleRequestAccess = async (tenantId: string) => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.from('support_access_requests').insert({
+      let requestObj: any = null;
+      let isFallback = false;
+
+      const newRequestData = {
         tenant_id: tenantId,
         saas_user_id: dbUser!.id,
         saas_user_name: dbUser?.display_name || dbUser?.email || 'Support Representative',
         status: 'pending',
         requested_at: new Date().toISOString(),
         expires_at: new Date(Date.now() + 15 * 60000).toISOString() // 15 mins expiry
-      }).select().single();
+      };
 
-      if (error) throw error;
+      try {
+        const { data, error } = await supabase.from('support_access_requests').insert(newRequestData).select().single();
+        if (error) throw error;
+        requestObj = data;
+      } catch (err: any) {
+        console.warn('Direct support access requests insertion failed in AdminTailors, trying fallback:', err);
+        isFallback = true;
+        const newId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        requestObj = { id: newId, ...newRequestData };
 
-      showToast('تم إرسال طلب الدخول للعميل بنجاح بانتظار الموافقة...', 'success');
+        try {
+          const { data: setting } = await supabase
+            .from('saas_settings')
+            .select('*')
+            .eq('key', 'support_access_requests')
+            .maybeSingle();
+
+          const existingRequests = setting?.value && Array.isArray(setting.value) ? setting.value : [];
+          existingRequests.push(requestObj);
+
+          await supabase.from('saas_settings').upsert({
+            key: 'support_access_requests',
+            value: existingRequests,
+            updated_at: new Date().toISOString()
+          });
+        } catch (fallbackErr) {
+          console.error('Fallback support request save failed:', fallbackErr);
+          throw fallbackErr;
+        }
+      }
+
+      showToast(t('saas.tenants.access_request_sent'), 'success');
       
       // Poll for approval...
       const interval = setInterval(async () => {
-        const { data: checkData } = await supabase
-          .from('support_access_requests')
-          .select('status')
-          .eq('id', data.id)
-          .single();
+        let currentStatus = 'pending';
+
+        if (!isFallback) {
+          const { data: checkData } = await supabase
+            .from('support_access_requests')
+            .select('status')
+            .eq('id', requestObj.id)
+            .single();
+          if (checkData) {
+            currentStatus = checkData.status;
+          }
+        } else {
+          // Check from saas_settings fallback
+          const { data: setting } = await supabase
+            .from('saas_settings')
+            .select('*')
+            .eq('key', 'support_access_requests')
+            .maybeSingle();
+          if (setting?.value && Array.isArray(setting.value)) {
+            const req = setting.value.find((r: any) => r.id === requestObj.id);
+            if (req) {
+              currentStatus = req.status;
+            }
+          }
+        }
           
-        if (checkData && checkData.status !== 'pending') {
+        if (currentStatus !== 'pending') {
           clearInterval(interval);
           setLoading(false);
           
-          if (checkData.status === 'approved') {
-            showToast('تمت موافقة العميل! جاري تسجيل الدخول...', 'success');
+          if (currentStatus === 'approved') {
+            showToast(t('saas.tenants.access_approved'), 'success');
             
             // Record explicit session
-            await supabase.from('support_sessions').insert({
-              tenant_id: tenantId,
-              saas_user_id: dbUser!.id,
-              saas_user_name: dbUser?.display_name || dbUser?.email || 'Support Representative',
-              access_type: 'explicit',
-              started_at: new Date().toISOString()
-            });
+            try {
+              if (!isFallback) {
+                await supabase.from('support_sessions').insert({
+                  tenant_id: tenantId,
+                  saas_user_id: dbUser!.id,
+                  saas_user_name: dbUser?.display_name || dbUser?.email || 'Support Representative',
+                  access_type: 'explicit',
+                  started_at: new Date().toISOString()
+                });
+              } else {
+                const { data: setting } = await supabase
+                  .from('saas_settings')
+                  .select('*')
+                  .eq('key', 'support_sessions')
+                  .maybeSingle();
+                const existingSessions = setting?.value && Array.isArray(setting.value) ? setting.value : [];
+                existingSessions.push({
+                  id: Math.random().toString(36).substring(2, 15),
+                  tenant_id: tenantId,
+                  saas_user_id: dbUser!.id,
+                  saas_user_name: dbUser?.display_name || dbUser?.email || 'Support Representative',
+                  access_type: 'explicit',
+                  started_at: new Date().toISOString()
+                });
+                await supabase.from('saas_settings').upsert({
+                  key: 'support_sessions',
+                  value: existingSessions,
+                  updated_at: new Date().toISOString()
+                });
+              }
+            } catch (sessErr) {
+              console.warn('Session recording failed:', sessErr);
+            }
 
             localStorage.setItem('impersonatedTenantId', tenantId);
             localStorage.setItem('tenant_id', tenantId);
             window.location.href = '/dashboard';
           } else {
-            showToast('تم رفض طلب الدخول من قبل العميل.', 'error');
+            showToast(t('saas.tenants.access_rejected'), 'error');
           }
         }
       }, 3000);
@@ -279,12 +388,12 @@ export default function AdminTailors() {
       setTimeout(() => {
         clearInterval(interval);
         setLoading(false);
-        showToast('انتهت صلاحية طلب الموافقة', 'error');
+        showToast(t('saas.tenants.access_request_expired'), 'error');
       }, 15 * 60000);
 
     } catch (e) {
       setLoading(false);
-      showToast('خطأ أثناء طلب إذن الدخول', 'error');
+      showToast(t('saas.tenants.access_request_error'), 'error');
     }
   };
 
@@ -321,7 +430,7 @@ export default function AdminTailors() {
       setDrawerStats({
         lastLogin: recentOrder?.created_at || (tenant as any).updatedAt || null, 
         branchesCount: branchesCount || 0,
-        paymentStatus: info.isTrial ? 'تجربة مجانية' : (tenant.status === 'active' ? 'مدفوع - نشط' : 'غير نشط')
+        paymentStatus: info.isTrial ? t('billing.plans.free.badge') : (tenant.status === 'active' ? t('saas.tenants.payment_paid_active') : t('saas.status_inactive'))
       });
       
     } catch (e) {
@@ -329,14 +438,14 @@ export default function AdminTailors() {
       setDrawerStats({
         lastLogin: (tenant as any).updatedAt || null,
         branchesCount: 0,
-        paymentStatus: 'غير متوفر'
+        paymentStatus: t('common.not_available')
       });
     }
   };
 
   const handleUpdateTenantPlan = (tenantId: string, newPlanId: string) => {
     setConfirmDialog({
-      title: 'هل أنت متأكد من تغيير الباقة؟',
+      title: t('saas.tenants.confirm_change_plan'),
       onConfirm: async () => {
         setConfirmDialog(null);
         try {
@@ -348,10 +457,10 @@ export default function AdminTailors() {
           
           if (error) throw error;
           setTenants(prev => prev.map(t => t.id === tenantId ? { ...t, planId: newPlanId, createdAt: today } : t));
-          showToast('تم تحديث الباقة بنجاح', 'success');
+          showToast(t('saas.tenants.plan_updated'), 'success');
         } catch (error) {
           console.warn("Error updating tenant plan:", error);
-          showToast('فشل تحديث الباقة', 'error');
+          showToast(t('saas.tenants.plan_update_failed'), 'error');
         }
       }
     });
@@ -359,7 +468,7 @@ export default function AdminTailors() {
 
   const handleExtendTrial = (tenantId: string) => {
     setConfirmDialog({
-      title: 'هل أنت متأكد من تمديد الفترة التجريبية 14 يوماً؟',
+      title: t('saas.tenants.confirm_extend_trial'),
       onConfirm: async () => {
         setConfirmDialog(null);
         try {
@@ -371,10 +480,10 @@ export default function AdminTailors() {
           
           if (error) throw error;
           setTenants(prev => prev.map(t => t.id === tenantId ? { ...t, createdAt: today } : t));
-          showToast('تم تمديد الفترة التجريبية لـ 14 يوماً إضافياً', 'success');
+          showToast(t('saas.tenants.trial_extended'), 'success');
         } catch (error) {
           console.warn("Error extending trial:", error);
-          showToast('فشل تمديد الفترة', 'error');
+          showToast(t('saas.tenants.trial_extend_failed'), 'error');
         }
       }
     });
@@ -384,8 +493,8 @@ export default function AdminTailors() {
     const isActive = tenant.status === 'active' || tenant.status === 'onboarding';
     const newStatus = isActive ? 'inactive' : 'active';
     const msg = isActive 
-      ? `هل أنت متأكد من تعطيل حساب ${tenant.name}؟ لن يتمكن المستخدم من الدخول للنظام.`
-      : `هل أنت متأكد من تفعيل حساب ${tenant.name}؟`;
+      ? t('saas.tenants.confirm_deactivate_account', { name: tenant.name })
+      : t('saas.tenants.confirm_activate_account', { name: tenant.name });
 
     setConfirmDialog({
       title: msg,
@@ -409,10 +518,10 @@ export default function AdminTailors() {
             setSelectedTenant(prev => prev ? { ...prev, status: newStatus as any } : null);
           }
 
-          showToast(`تم ${isActive ? 'تعطيل' : 'تفعيل'} الحساب بنجاح`, 'success');
+          showToast(isActive ? t('saas.tenants.account_deactivated') : t('saas.tenants.account_activated'), 'success');
         } catch (error: any) {
           console.error('Error updating status:', error);
-          showToast('حدث خطأ أثناء تحديث حالة الحساب: ' + (error.message || 'خطأ غير معروف'), 'error');
+          showToast(t('saas.tenants.status_update_error', { details: error.message || t('orders.unknown_error') }), 'error');
         } finally {
           setLoading(false);
         }
@@ -422,17 +531,17 @@ export default function AdminTailors() {
 
   const handleManualSeed = () => {
     setConfirmDialog({
-      title: 'هل تريد إضافة بيانات تجريبية؟ سيتم إضافة خطط ومحلات وطلبات وهمية لتجربة النظام.',
+      title: t('saas.tenants.confirm_seed_demo_data'),
       onConfirm: async () => {
         setConfirmDialog(null);
         setLoading(true);
         const success = await autoSeed();
         setLoading(false);
         if (success) {
-          showToast('تمت إضافة البيانات التجريبية بنجاح! يرجى تحديث الصفحة لرؤية التغييرات.', 'success');
+          showToast(t('saas.tenants.seed_success'), 'success');
           setTimeout(() => window.location.reload(), 1500);
         } else {
-          showToast('تمت إضافة البيانات بالفعل أو حدث خطأ أثناء الإضافة.', 'error');
+          showToast(t('saas.tenants.seed_already_done'), 'error');
         }
       }
     });
@@ -440,7 +549,7 @@ export default function AdminTailors() {
 
   const handleRenewSubscription = (tenant: Tenant) => {
     setConfirmDialog({
-      title: `هل أنت متأكد من تجديد اشتراك ${tenant.name} لمدة سنة إضافية؟`,
+      title: t('saas.tenants.confirm_renew_subscription', { name: tenant.name }),
       onConfirm: async () => {
         setConfirmDialog(null);
         setLoading(true);
@@ -472,10 +581,10 @@ export default function AdminTailors() {
             setSelectedTenant(updatedTenant);
           }
 
-          showToast('تم تجديد الاشتراك بنجاح! تم تصفير عداد المدة من اليوم.', 'success');
+          showToast(t('saas.tenants.renew_success'), 'success');
         } catch (err) {
           console.error(err);
-          showToast('فشل تجديد الاشتراك', 'error');
+          showToast(t('saas.tenants.renew_failed'), 'error');
         } finally {
           setLoading(false);
         }
@@ -485,7 +594,7 @@ export default function AdminTailors() {
 
   const handleActivateSubscription = (tenant: Tenant) => {
     setConfirmDialog({
-      title: `هل أنت متأكد من تفعيل حساب ${tenant.name}؟`,
+      title: t('saas.tenants.confirm_activate_account', { name: tenant.name }),
       onConfirm: async () => {
         setConfirmDialog(null);
         setLoading(true);
@@ -506,10 +615,10 @@ export default function AdminTailors() {
             setSelectedTenant({ ...selectedTenant, status: 'active' });
           }
 
-          showToast('تم تفعيل الحساب بنجاح!', 'success');
+          showToast(t('saas.tenants.activate_success'), 'success');
         } catch (err: any) {
           console.error(err);
-          showToast('فشل التفعيل: ' + (err.message || 'خطأ غير معروف'), 'error');
+          showToast(t('saas.tenants.activate_failed', { details: err.message || t('orders.unknown_error') }), 'error');
         } finally {
           setLoading(false);
         }
@@ -518,7 +627,7 @@ export default function AdminTailors() {
   };
 
   const getPlanName = (planId: string) => {
-    return plans.find(p => p.id === planId)?.name || 'خطة مخصصة';
+    return plans.find(p => p.id === planId)?.name || t('saas.tenants.custom_plan');
   };
 
   const getSubscriptionInfo = (tenant: Tenant) => {
@@ -539,7 +648,7 @@ export default function AdminTailors() {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     return {
-      type: isTrial ? 'تجربة مجانية' : 'اشتراك مدفوع',
+      type: isTrial ? t('billing.plans.free.badge') : t('saas.tenants.paid_subscription'),
       isTrial,
       daysLeft: Math.max(0, diffDays),
       expiryDate,
@@ -556,8 +665,8 @@ export default function AdminTailors() {
   const totalTenantsCount = tenants.length;
 
   const pieData = [
-    { name: 'نشط', value: activeTenantsCount, color: '#10B981' },
-    { name: 'غير نشط', value: Math.max(0, totalTenantsCount - activeTenantsCount), color: '#F3F4F6' }
+    { name: t('common.active'), value: activeTenantsCount, color: '#10B981' },
+    { name: t('saas.status_inactive'), value: Math.max(0, totalTenantsCount - activeTenantsCount), color: '#F3F4F6' }
   ];
 
   const monthlyDataMap = tenants.reduce((acc, t) => {
@@ -572,7 +681,7 @@ export default function AdminTailors() {
     .map(([date, count]) => ({ date, التسجيلات: count }));
 
   if (totalRegistrationsData.length === 0) {
-     totalRegistrationsData.push({ date: 'الآن', التسجيلات: 0 });
+     totalRegistrationsData.push({ date: t('saas.tenants.now'), التسجيلات: 0 });
   }
 
   return (
@@ -581,9 +690,9 @@ export default function AdminTailors() {
         <div>
           <h2 className="text-3xl font-black text-content flex items-center gap-3">
             <Users className="text-brand" size={32} />
-            إدارة المشتركين والنمو
+            {t('saas.tenants.title')}
           </h2>
-          <p className="text-content-muted font-bold text-sm mt-1">نظرة شاملة على جميع المحلات وإدارة التراخيص والخطط</p>
+          <p className="text-content-muted font-bold text-sm mt-1">{t('saas.tenants.subtitle')}</p>
         </div>
         
         <div className="flex bg-surface rounded-2xl p-1 border border-border shadow-sm">
@@ -593,7 +702,7 @@ export default function AdminTailors() {
               activeTab === 'tenants' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-content-muted hover:text-content'
             }`}
           >
-            إدارة المشتركين
+            {t('saas.menu_tenants')}
           </button>
           <button
             onClick={() => setActiveTab('subscriptions')}
@@ -601,7 +710,7 @@ export default function AdminTailors() {
               activeTab === 'subscriptions' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-content-muted hover:text-content'
             }`}
           >
-            إدارة الاشتراكات
+            {t('saas.tenants.tab_subscriptions')}
           </button>
         </div>
       </header>
@@ -612,7 +721,7 @@ export default function AdminTailors() {
         <div className="bg-surface p-6 rounded-3xl border border-border shadow-sm flex flex-col justify-between">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <p className="text-content-muted text-sm font-medium mb-1">المشتركين النشطين</p>
+              <p className="text-content-muted text-sm font-medium mb-1">{t('saas.tenants.active_subscribers')}</p>
               <h3 className="text-4xl font-black text-content">{activeTenantsCount}</h3>
             </div>
             <div className="bg-success/10 w-12 h-12 rounded-2xl flex items-center justify-center text-success">
@@ -634,7 +743,7 @@ export default function AdminTailors() {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value: any) => [value, 'مشترك']} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}/>
+                <Tooltip formatter={(value: any) => [value, t('saas.tenant_count_label')]} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}/>
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -644,7 +753,7 @@ export default function AdminTailors() {
         <div className="bg-surface p-6 rounded-3xl border border-border shadow-sm flex flex-col justify-between">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <p className="text-content-muted text-sm font-medium mb-1">تجارب توشك على الانتهاء</p>
+              <p className="text-content-muted text-sm font-medium mb-1">{t('saas.tenants.trials_ending_soon')}</p>
               <h3 className="text-4xl font-black text-warning">{trialExpiringTenantsCount}</h3>
             </div>
             <div className="bg-warning/10 w-12 h-12 rounded-2xl flex items-center justify-center text-warning">
@@ -653,9 +762,9 @@ export default function AdminTailors() {
           </div>
           <div className="h-24 mt-2 w-full flex items-end">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={[{ name: 'قريباً', value: trialExpiringTenantsCount }]} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+              <BarChart data={[{ name: t('common.coming_soon'), value: trialExpiringTenantsCount }]} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                 <Bar dataKey="value" fill="#F59E0B" radius={[8, 8, 0, 0]} barSize={50} />
-                <Tooltip formatter={(value: any) => [value, 'مشترك']} cursor={{fill: 'transparent'}} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}/>
+                <Tooltip formatter={(value: any) => [value, t('saas.tenant_count_label')]} cursor={{fill: 'transparent'}} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}/>
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -665,7 +774,7 @@ export default function AdminTailors() {
         <div className="bg-surface p-6 rounded-3xl border border-border shadow-sm flex flex-col justify-between">
             <div className="flex justify-between items-start mb-4">
             <div>
-              <p className="text-content-muted text-sm font-medium mb-1">إجمالي المسجلين</p>
+              <p className="text-content-muted text-sm font-medium mb-1">{t('saas.tenants.total_registered')}</p>
               <h3 className="text-4xl font-black text-content">{totalTenantsCount}</h3>
             </div>
             <div className="bg-brand/10 w-12 h-12 rounded-2xl flex items-center justify-center text-brand">
@@ -682,7 +791,7 @@ export default function AdminTailors() {
                   </linearGradient>
                 </defs>
                 <Tooltip wrapperStyle={{ outline: 'none' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}/>
-                <Area type="monotone" dataKey="التسجيلات" stroke="#4F46E5" strokeWidth={3} fillOpacity={1} fill="url(#colorReg)" />
+                <Area type="monotone" dataKey="التسجيلات" name={t('saas.tenants.registrations')} stroke="#4F46E5" strokeWidth={3} fillOpacity={1} fill="url(#colorReg)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -702,7 +811,7 @@ export default function AdminTailors() {
               <div className="flex-1 max-w-sm">
                 <AdminIconInput 
                   type="text"
-                  placeholder="بحث عن منشأة، إيميل، أو رقم هاتف..."
+                  placeholder={t('saas.tenants.search_placeholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   startIcon={Search}
@@ -715,9 +824,9 @@ export default function AdminTailors() {
                 startIcon={Filter}
                 className="w-auto"
               >
-                <option value="all">كافة الحالات</option>
-                <option value="active">نشط</option>
-                <option value="inactive">معطل</option>
+                <option value="all">{t('saas.tenants.all_statuses')}</option>
+                <option value="active">{t('common.active')}</option>
+                <option value="inactive">{t('settings_page.staff.permissions.disabled')}</option>
               </AdminIconSelect>
             </div>
             
@@ -725,7 +834,7 @@ export default function AdminTailors() {
 
               <button className="px-6 py-3 bg-surface-muted border border-border rounded-2xl font-bold text-sm flex items-center gap-2 hover:bg-border transition-all">
                 <Download size={18} />
-                تصدير البيانات
+                {t('saas.tenants.export_data')}
               </button>
             </div>
           </div>
@@ -735,17 +844,17 @@ export default function AdminTailors() {
             <div className="space-y-4">
               <h3 className="text-xl font-bold text-content flex items-center gap-2 px-2">
                 <ShieldCheck className="text-brand" size={20} />
-                المحلات المعتمدة
+                {t('saas.tenants.approved_shops')}
               </h3>
               <div className="bg-surface rounded-3xl border border-border shadow-sm overflow-hidden">
                 <table className="w-full text-right">
                   <thead className="bg-surface-muted text-content-muted text-[10px] font-black uppercase tracking-widest border-b border-border">
                     <tr>
-                      <th className="px-8 py-5">المحل</th>
-                      <th className="px-8 py-5">المالك الاتصال</th>
-                      <th className="px-8 py-5">الباقة</th>
-                      <th className="px-8 py-5">الحالة</th>
-                      <th className="px-8 py-5 text-left">العمليات</th>
+                      <th className="px-8 py-5">{t('saas.tenants.col_shop')}</th>
+                      <th className="px-8 py-5">{t('saas.tenants.col_owner_contact')}</th>
+                      <th className="px-8 py-5">{t('saas.tenants.col_plan')}</th>
+                      <th className="px-8 py-5">{t('common.status')}</th>
+                      <th className="px-8 py-5 text-left">{t('saas.tenants.col_operations')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -784,7 +893,6 @@ export default function AdminTailors() {
                                 >
                                   {tenant.name}
                                 </div>
-                                <div className="text-[10px] text-content-muted font-bold mt-0.5">{tenant.id}</div>
                               </div>
                             </div>
                           </td>
@@ -801,12 +909,12 @@ export default function AdminTailors() {
                             {isActive ? (
                               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-success/10 text-success border border-success/20">
                                 <BadgeCheck size={12} />
-                                نشط
+                                {t('common.active')}
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-danger/10 text-danger border border-danger/20">
                                 <Ban size={12} />
-                                معطل
+                                {t('settings_page.staff.permissions.disabled')}
                               </span>
                             )}
                           </td>
@@ -815,10 +923,10 @@ export default function AdminTailors() {
                               <button 
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleImpersonate(tenant.id);
+                                  openTenantDrawer(tenant);
                                 }}
                                 className="p-2 text-content-muted hover:text-emerald-500 hover:bg-emerald-500/5 rounded-xl transition-all"
-                                title="عرض واجهة المحل (Impersonate)"
+                                title={t('saas.tenants.view_shop_ui')}
                               >
                                 <Globe size={18} />
                               </button>
@@ -828,7 +936,7 @@ export default function AdminTailors() {
                                   setSelectedTenant(tenant);
                                 }}
                                 className="p-2 text-content-muted hover:text-brand hover:bg-brand/5 rounded-xl transition-all"
-                                title="تعديل"
+                                title={t('common.edit')}
                               >
                                 <Edit size={18} />
                               </button>
@@ -841,7 +949,7 @@ export default function AdminTailors() {
                                   "p-2 rounded-xl transition-all",
                                   isActive ? "text-danger hover:bg-danger/5" : "text-success hover:bg-success/5"
                                 )}
-                                title={isActive ? "تعطيل" : "تفعيل"}
+                                title={isActive ? t('saas.tenants.deactivate') : t('saas.tenants.activate')}
                               >
                                 {isActive ? <Ban size={18} /> : <BadgeCheck size={18} />}
                               </button>
@@ -863,19 +971,17 @@ export default function AdminTailors() {
            animate={{ opacity: 1, y: 0 }}
            className="space-y-10"
         >
-          {/* Subscription Requests & Proof of Payment Section */}
-          <SubscriptionRequestsAdminManager />
 
           <div className="bg-surface rounded-[3rem] border border-border shadow-sm overflow-hidden">
             <div className="p-8 border-b border-border bg-brand/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
-                <h3 className="text-xl font-black text-content">إدارة تراخيص وخطط المشتركين</h3>
-                <p className="text-content-muted text-xs font-bold mt-1">تمديد الفترات التجريبية، ترقية الباقات، وإدارة الفوترة</p>
+                <h3 className="text-xl font-black text-content">{t('saas.tenants.licenses_title')}</h3>
+                <p className="text-content-muted text-xs font-bold mt-1">{t('saas.tenants.licenses_subtitle')}</p>
               </div>
               <div className="w-full sm:w-80">
                 <AdminIconInput 
                   type="text" 
-                  placeholder="بحث سريع في المشتركين..."
+                  placeholder={t('saas.tenants.quick_search_placeholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   startIcon={Search}
@@ -888,11 +994,11 @@ export default function AdminTailors() {
               <table className="w-full text-right min-w-[900px]">
                 <thead>
                   <tr className="bg-surface-muted/30 border-b border-border">
-                    <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest text-center">المشترك</th>
-                    <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest text-center">الباقة الحالية</th>
-                    <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest text-center">الفترة المتبقية</th>
-                    <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest text-center">تعديل الباقة</th>
-                    <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest text-left">إجراءات</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest text-center">{t('saas.tenants.col_subscriber')}</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest text-center">{t('saas.tenants.col_current_plan')}</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest text-center">{t('saas.tenants.col_remaining_period')}</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest text-center">{t('saas.tenants.col_change_plan')}</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest text-left">{t('shift_history.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -935,7 +1041,7 @@ export default function AdminTailors() {
                                 />
                               </div>
                               <span className={cn("text-xs font-black min-w-[60px]", sub.daysLeft < 7 ? "text-danger animate-pulse" : "text-brand")}>
-                                متبقي {sub.daysLeft} يوم
+                                {t('saas.tenants.days_left', { days: sub.daysLeft })}
                               </span>
                             </div>
                           </td>
@@ -948,8 +1054,8 @@ export default function AdminTailors() {
                                 onChange={(e) => handleUpdateTenantPlan(tenant.id, e.target.value)}
                                 className="w-full bg-surface-muted border-none rounded-xl text-xs font-black min-h-[38px]"
                               >
-                                <option value="free">الباقة المجانية (14 يوم)</option>
-                                <option value="basic">الأساسية (599/سنة)</option>
+                                <option value="free">{t('saas.tenants.plan_option_free')}</option>
+                                <option value="basic">{t('saas.tenants.plan_option_basic')}</option>
                               </AdminIconSelect>
                             </div>
                           </td>
@@ -960,7 +1066,7 @@ export default function AdminTailors() {
                               className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-brand text-white hover:bg-brand/90 rounded-2xl text-xs font-black shadow-lg shadow-brand/20 transition-all active:scale-95 group"
                             >
                               <Clock size={16} className="group-hover:rotate-12 transition-transform" />
-                              تمديد الفترة
+                              {t('saas.tenants.extend_period')}
                             </button>
                           </td>
                         </tr>
@@ -1000,7 +1106,7 @@ export default function AdminTailors() {
                     <h3 className="text-2xl font-bold text-content">{selectedTenant.name}</h3>
                     <p className="text-content-muted flex items-center gap-1 mt-1">
                       <BadgeCheck size={16} className="text-success" />
-                      {selectedTenant.customerId || 'بدون كود'} • {getPlanName(selectedTenant.planId)}
+                      {selectedTenant.customerId || t('saas.tenants.no_code')} • {getPlanName(selectedTenant.planId)}
                     </p>
                   </div>
                 </div>
@@ -1018,21 +1124,21 @@ export default function AdminTailors() {
                 {/* Statistics Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="bg-surface-muted p-6 rounded-3xl border border-border">
-                    <p className="text-xs text-content-muted font-bold mb-1">إجمالي المبيعات (30 يوم)</p>
+                    <p className="text-xs text-content-muted font-bold mb-1">{t('saas.tenants.total_sales_30d')}</p>
                     <div className="text-2xl font-black text-content">
                       <PriceDisplay amount={tenantStats?.summary.totalSales || 0} />
                     </div>
                   </div>
                   <div className="bg-surface-muted p-6 rounded-3xl border border-border">
-                    <p className="text-xs text-content-muted font-bold mb-1">إجمالي الطلبات (30 يوم)</p>
+                    <p className="text-xs text-content-muted font-bold mb-1">{t('saas.tenants.total_orders_30d')}</p>
                     <div className="text-2xl font-black text-content">
-                      {tenantStats?.summary.totalOrders || 0} طلب
+                      {t('saas.tenants.orders_value', { value: tenantStats?.summary.totalOrders || 0 })}
                     </div>
                   </div>
                   <div className="bg-surface-muted p-6 rounded-3xl border border-border">
-                    <p className="text-xs text-content-muted font-bold mb-1">عمر الاشتراك</p>
+                    <p className="text-xs text-content-muted font-bold mb-1">{t('saas.tenants.subscription_age')}</p>
                     <div className="text-2xl font-black text-content">
-                      {Math.ceil((new Date().getTime() - new Date(selectedTenant.createdAt).getTime()) / (1000 * 60 * 60 * 24))} يوم
+                      {t('saas.tenants.days_value', { days: Math.ceil((new Date().getTime() - new Date(selectedTenant.createdAt).getTime()) / (1000 * 60 * 60 * 24)) })}
                     </div>
                   </div>
                 </div>
@@ -1041,7 +1147,7 @@ export default function AdminTailors() {
                 <div className="space-y-4">
                   <h4 className="text-sm font-bold text-content-muted uppercase tracking-wider flex items-center gap-2">
                     <CreditCard size={16} />
-                    تفاصيل الاشتراك والمدة
+                    {t('saas.tenants.subscription_details')}
                   </h4>
                   <div className="bg-surface-muted p-6 rounded-3xl border border-border relative overflow-hidden">
                     {(() => {
@@ -1052,7 +1158,7 @@ export default function AdminTailors() {
                             <div className="flex justify-between items-end">
                               <div>
                                 <p className="text-sm font-bold text-content">{info.type}</p>
-                                <p className="text-xs text-content-muted">باقي على انتهاء المدة: {info.daysLeft} يوم</p>
+                                <p className="text-xs text-content-muted">{t('saas.tenants.remaining_until_expiry', { days: info.daysLeft })}</p>
                               </div>
                               <span className={`text-xs font-black uppercase tracking-widest ${info.isTrial ? 'text-warning' : 'text-success'}`}>
                                 {info.isTrial ? 'TRIAL' : 'PREMIUM'}
@@ -1066,8 +1172,8 @@ export default function AdminTailors() {
                               />
                             </div>
                             <div className="flex justify-between items-center text-[10px] text-content-muted font-bold">
-                              <span>تاريخ الانضمام: {new Date(selectedTenant.createdAt).toLocaleDateString('ar-SA-u-nu-latn')}</span>
-                              <span>تاريخ الانتهاء المتوقع: {info.expiryDate.toLocaleDateString('ar-SA-u-nu-latn')}</span>
+                              <span>{t('saas.tenants.join_date_value', { date: new Date(selectedTenant.createdAt).toLocaleDateString(localeOf(i18n.language)) })}</span>
+                              <span>{t('saas.tenants.expected_expiry_value', { date: info.expiryDate.toLocaleDateString(localeOf(i18n.language)) })}</span>
                             </div>
                           </div>
                           <div className="w-full md:w-auto">
@@ -1078,7 +1184,7 @@ export default function AdminTailors() {
                                 className="w-full md:w-56 bg-success text-white py-4 rounded-2xl font-bold hover:bg-success/90 transition-all shadow-lg shadow-success/10 flex items-center justify-center gap-2"
                               >
                                 <UserCheck size={20} />
-                                تفعيل الاشتراك
+                                {t('saas.tenants.activate_subscription')}
                               </button>
                             ) : (
                               <button 
@@ -1087,7 +1193,7 @@ export default function AdminTailors() {
                                 className="w-full md:w-56 bg-brand text-white py-4 rounded-2xl font-bold hover:bg-brand/90 transition-all shadow-lg shadow-brand/10 flex items-center justify-center gap-2"
                               >
                                 <Calendar size={20} />
-                                تجديد الاشتراك +سنة
+                                {t('saas.tenants.renew_subscription_year')}
                               </button>
                             )}
                           </div>
@@ -1102,7 +1208,7 @@ export default function AdminTailors() {
                   <div className="space-y-4">
                     <h4 className="text-sm font-bold text-content-muted uppercase tracking-wider flex items-center gap-2 px-2">
                        <TrendingUp size={16} />
-                       حجم المبيعات اليومي
+                       {t('saas.tenants.daily_sales_volume')}
                     </h4>
                     <div className="bg-surface-muted p-4 rounded-3xl border border-border h-64">
                       {tenantStats?.ordersData && tenantStats.ordersData.length > 0 ? (
@@ -1141,7 +1247,7 @@ export default function AdminTailors() {
                         </ResponsiveContainer>
                       ) : (
                         <div className="h-full flex items-center justify-center text-content-muted text-sm italic border border-dashed border-border rounded-xl">
-                          لا توجد بيانات مبيعات كافية للعرض
+                          {t('saas.tenants.no_sales_data')}
                         </div>
                       )}
                     </div>
@@ -1150,7 +1256,7 @@ export default function AdminTailors() {
                   <div className="space-y-4">
                     <h4 className="text-sm font-bold text-content-muted uppercase tracking-wider flex items-center gap-2 px-2">
                        <ShoppingBag size={16} />
-                       عدد الطلبات اليومية
+                       {t('saas.tenants.daily_orders_count')}
                     </h4>
                     <div className="bg-surface-muted p-4 rounded-3xl border border-border h-64">
                       {tenantStats?.ordersData && tenantStats.ordersData.length > 0 ? (
@@ -1180,7 +1286,7 @@ export default function AdminTailors() {
                         </ResponsiveContainer>
                       ) : (
                         <div className="h-full flex items-center justify-center text-content-muted text-sm italic border border-dashed border-border rounded-xl">
-                          لا توجد بيانات طلبات كافية للعرض
+                          {t('saas.tenants.no_orders_data')}
                         </div>
                       )}
                     </div>
@@ -1192,20 +1298,20 @@ export default function AdminTailors() {
                   <div className="space-y-4">
                     <h4 className="text-sm font-bold text-content-muted uppercase tracking-wider flex items-center gap-2 px-2">
                       <Mail size={16} />
-                      معلومات التواصل
+                      {t('saas.tenants.contact_info')}
                     </h4>
                     <div className="bg-surface-muted p-4 rounded-2xl border border-border space-y-3 shadow-inner">
                       <div>
-                        <p className="text-[10px] text-content-muted font-bold">البريد الإلكتروني</p>
+                        <p className="text-[10px] text-content-muted font-bold">{t('common.email')}</p>
                         <p className="text-sm font-medium text-content">{selectedTenant.ownerEmail}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-content-muted font-bold">رقم الجوال</p>
+                        <p className="text-[10px] text-content-muted font-bold">{t('login.phone')}</p>
                         <p className="text-sm font-medium text-content">{selectedTenant.phone}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-content-muted font-bold">العنوان</p>
-                        <p className="text-sm font-medium text-content">{selectedTenant.address || 'غير محدد'}</p>
+                        <p className="text-[10px] text-content-muted font-bold">{t('procurement.address')}</p>
+                        <p className="text-sm font-medium text-content">{selectedTenant.address || t('orders.not_specified')}</p>
                       </div>
                     </div>
                   </div>
@@ -1214,21 +1320,21 @@ export default function AdminTailors() {
                   <div className="space-y-4">
                     <h4 className="text-sm font-bold text-content-muted uppercase tracking-wider flex items-center gap-2 px-2">
                       <FileText size={16} />
-                      التراخيص والضرائب
+                      {t('saas.tenants.licenses_and_taxes')}
                     </h4>
                     <div className="bg-surface-muted p-4 rounded-2xl border border-border space-y-3 shadow-inner">
                       <div>
-                        <p className="text-[10px] text-content-muted font-bold">السجل التجاري</p>
-                        <p className="text-sm font-medium text-content">{selectedTenant.commercialRegister || 'غير متوفر'}</p>
+                        <p className="text-[10px] text-content-muted font-bold">{t('saas.tenants.commercial_register')}</p>
+                        <p className="text-sm font-medium text-content">{selectedTenant.commercialRegister || t('common.not_available')}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-content-muted font-bold">الرقم الضريبي</p>
-                        <p className="text-sm font-medium text-content">{selectedTenant.vatNumber || 'غير متوفر'}</p>
+                        <p className="text-[10px] text-content-muted font-bold">{t('customers.trn')}</p>
+                        <p className="text-sm font-medium text-content">{selectedTenant.vatNumber || t('common.not_available')}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-content-muted font-bold">تاريخ الانضمام</p>
+                        <p className="text-[10px] text-content-muted font-bold">{t('saas.tenants.join_date')}</p>
                         <p className="text-sm font-medium text-content">
-                          {new Date(selectedTenant.createdAt).toLocaleDateString('ar-SA-u-nu-latn')}
+                          {new Date(selectedTenant.createdAt).toLocaleDateString(localeOf(i18n.language))}
                         </p>
                       </div>
                     </div>
@@ -1245,7 +1351,7 @@ export default function AdminTailors() {
                   className="flex-1 bg-brand text-white font-bold py-4 rounded-2xl hover:bg-brand/90 transition-all flex items-center justify-center gap-2"
                 >
                   <Activity size={20} />
-                  التحليلات العميقة (Analytics)
+                  {t('saas.tenants.deep_analytics')}
                 </button>
                 {(() => {
                   const isActive = selectedTenant.status === 'active' || selectedTenant.status === 'onboarding';
@@ -1255,7 +1361,7 @@ export default function AdminTailors() {
                       className="flex-1 bg-surface border border-border text-content font-bold py-4 rounded-2xl hover:bg-surface-muted transition-all flex items-center justify-center gap-2"
                     >
                       {isActive ? <ShieldAlert size={20} className="text-danger" /> : <ShieldCheck size={20} className="text-success" />}
-                      {isActive ? 'تعطيل الحساب' : 'تفعيل الحساب'}
+                      {isActive ? t('saas.tenants.deactivate_account') : t('saas.tenants.activate_account')}
                     </button>
                   );
                 })()}
@@ -1263,7 +1369,7 @@ export default function AdminTailors() {
                   onClick={() => setSelectedTenant(null)}
                   className="flex-1 bg-surface-muted text-content-muted font-bold py-4 rounded-2xl hover:bg-border transition-all border border-border"
                 >
-                  إغلاق التفاصيل
+                  {t('saas.tenants.close_details')}
                 </button>
               </div>
             </motion.div>
@@ -1287,7 +1393,7 @@ export default function AdminTailors() {
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="fixed top-0 right-0 bottom-0 w-full max-w-sm bg-surface shadow-2xl z-[100] border-l border-border flex flex-col"
-              dir="rtl"
+              dir={dir}
             >
               <div className="flex items-center justify-between p-6 border-b border-border bg-surface-muted/30">
                 <div className="flex items-center gap-3">
@@ -1295,7 +1401,7 @@ export default function AdminTailors() {
                     <History size={20} />
                   </div>
                   <div>
-                    <h3 className="font-black text-content text-lg">سجل نشاط المشترك</h3>
+                    <h3 className="font-black text-content text-lg">{t('saas.tenants.activity_log_title')}</h3>
                     <p className="text-xs text-content-muted font-bold mt-0.5">{drawerTenant.name}</p>
                   </div>
                 </div>
@@ -1317,10 +1423,10 @@ export default function AdminTailors() {
                     <div className="bg-surface-muted/50 rounded-2xl p-5 border border-border">
                       <div className="flex items-center gap-3 mb-4 text-brand">
                         <Calendar size={18} />
-                        <h4 className="font-bold">تاريخ التسجيل</h4>
+                        <h4 className="font-bold">{t('saas.tenants.registration_date')}</h4>
                       </div>
                       <p className="text-content font-black text-lg">
-                        {new Date(drawerTenant.createdAt).toLocaleDateString('ar-SA-u-nu-latn', {
+                        {new Date(drawerTenant.createdAt).toLocaleDateString(localeOf(i18n.language), {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric'
@@ -1331,16 +1437,16 @@ export default function AdminTailors() {
                     <div className="bg-surface-muted/50 rounded-2xl p-5 border border-border">
                       <div className="flex items-center gap-3 mb-4 text-success">
                         <Clock size={18} />
-                        <h4 className="font-bold">آخر دخول / نشاط</h4>
+                        <h4 className="font-bold">{t('saas.tenants.last_login_activity')}</h4>
                       </div>
                       <p className="text-content font-black text-lg">
-                        {drawerStats.lastLogin ? new Date(drawerStats.lastLogin).toLocaleDateString('ar-SA-u-nu-latn', {
+                        {drawerStats.lastLogin ? new Date(drawerStats.lastLogin).toLocaleDateString(localeOf(i18n.language), {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric',
                           hour: '2-digit',
                           minute: '2-digit'
-                        }) : 'لا يوجد سجل'}
+                        }) : t('saas.tenants.no_record')}
                       </p>
                     </div>
 
@@ -1348,7 +1454,7 @@ export default function AdminTailors() {
                       <div className="bg-surface-muted/50 rounded-2xl p-4 border border-border h-full flex flex-col justify-center">
                         <div className="flex items-center gap-2 mb-2 text-info">
                           <Store size={16} />
-                          <h4 className="font-bold text-sm">الفروع</h4>
+                          <h4 className="font-bold text-sm">{t('common.branches._')}</h4>
                         </div>
                         <p className="text-content font-black text-2xl mt-1">{drawerStats.branchesCount}</p>
                       </div>
@@ -1356,7 +1462,7 @@ export default function AdminTailors() {
                       <div className="bg-surface-muted/50 rounded-2xl p-4 border border-border h-full flex flex-col justify-center">
                         <div className="flex items-center gap-2 mb-2 text-warning">
                           <CreditCard size={16} />
-                          <h4 className="font-bold text-sm">حالة الدفع</h4>
+                          <h4 className="font-bold text-sm">{t('orders.payment_status')}</h4>
                         </div>
                         <p className="text-content font-bold text-sm mt-1">{drawerStats.paymentStatus}</p>
                       </div>
@@ -1372,19 +1478,21 @@ export default function AdminTailors() {
                   className="w-full bg-brand text-white py-3.5 rounded-xl font-bold hover:bg-brand/90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand/20 disabled:opacity-50"
                 >
                   <Globe size={18} />
-                  {loading ? 'جاري طلب الدخول...' : 'طلب إذن الدعم الفني'}
+                  {loading ? t('saas.tenants.requesting_access') : t('saas.tenants.request_support_access')}
                 </button>
                 
-                {(userRole === 'super_admin' || userRole === 'owner' as any) && (
-                  <button
-                    onClick={() => handleStealthLogin(drawerTenant.id)}
-                    disabled={loading}
-                    className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold hover:bg-black transition-all flex items-center justify-center gap-2 shadow-lg shadow-black/20 disabled:opacity-50"
-                  >
-                    <ShieldAlert size={18} />
-                    دخول مخفي (Stealth Login)
-                  </button>
-                )}
+                <button
+                  onClick={() => handleStealthLogin(drawerTenant.id)}
+                  disabled={loading || !(userRole === 'super_admin' || userRole === 'owner' as any || (dbUser as any)?.can_stealth_login === true || (dbUser as any)?.stealth_login_enabled === true)}
+                  className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold hover:bg-black transition-all flex items-center justify-center gap-2 shadow-lg shadow-black/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                  title={!(userRole === 'super_admin' || userRole === 'owner' as any || (dbUser as any)?.can_stealth_login === true || (dbUser as any)?.stealth_login_enabled === true) ? t('saas.tenants.stealth_login_permission_required') : ""}
+                >
+                  <ShieldAlert size={18} />
+                  {t('saas.tenants.stealth_login')}
+                  {!(userRole === 'super_admin' || userRole === 'owner' as any || (dbUser as any)?.can_stealth_login === true || (dbUser as any)?.stealth_login_enabled === true) && (
+                    <span className="text-[10px] bg-red-500/20 text-red-300 px-1.5 py-0.5 rounded ml-1">{t('saas.tenants.locked_badge')}</span>
+                  )}
+                </button>
               </div>
             </motion.div>
           </>
@@ -1434,13 +1542,13 @@ export default function AdminTailors() {
                   onClick={confirmDialog.onConfirm}
                   className="flex-1 bg-brand text-white py-3 rounded-xl font-bold hover:bg-brand/90 transition-all shadow-lg shadow-brand/20"
                 >
-                  تأكيد
+                  {t('common.confirm')}
                 </button>
                 <button
                   onClick={() => setConfirmDialog(null)}
                   className="flex-1 bg-surface-muted text-content font-bold py-3 rounded-xl hover:bg-border transition-all border border-border"
                 >
-                  إلغاء
+                  {t('common.cancel')}
                 </button>
               </div>
             </motion.div>

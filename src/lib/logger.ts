@@ -1,3 +1,4 @@
+import i18n from 'i18next';
 import { OperationType } from './firebase';
 
 /**
@@ -83,9 +84,9 @@ export const logMessage = (message: string, level: 'info' | 'warn' | 'error' | '
 };
 
 export const getFriendlyErrorMessage = (error: any): string => {
-  if (!error) return 'حدث خطأ غير معروف';
+  if (!error) return i18n.t('errors.unknown');
   const code = error.code || '';
-  if (code === 'auth/user-not-found' || code === 'auth/wrong-password') return 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
-  if (code === 'auth/permission-denied' || code === 'permission-denied') return 'ليس لديك صلاحية للقيام بهذا الإجراء';
-  return 'حدث خطأ. يرجى المحاولة مرة أخرى.';
+  if (code === 'auth/user-not-found' || code === 'auth/wrong-password') return i18n.t('login.errors.invalid_credentials');
+  if (code === 'auth/permission-denied' || code === 'permission-denied') return i18n.t('errors.no_permission');
+  return i18n.t('errors.generic_retry');
 };

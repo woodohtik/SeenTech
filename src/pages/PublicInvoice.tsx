@@ -6,8 +6,10 @@ import { QRCodeSVG } from 'qrcode.react';
 import { generateZatcaQR } from '../services/zatcaService';
 import html2pdf from 'html2pdf.js';
 import { CurrencySymbol } from '../components/CurrencySymbol';
+import { useDirection } from '../lib/direction';
 
 export default function PublicInvoice() {
+  const { t, dir } = useDirection();
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<any>(null);
   const [tenant, setTenant] = useState<any>(null);
@@ -19,7 +21,7 @@ export default function PublicInvoice() {
   useEffect(() => {
     const fetchInvoice = async () => {
       if (!id) {
-        setError('رابط غير صالح');
+        setError(t('public_invoice.invalid_link'));
         setLoading(false);
         return;
       }
@@ -28,7 +30,7 @@ export default function PublicInvoice() {
       try {
         const response = await fetch(`/api/public/invoices/${id}`);
         if (!response.ok) {
-          setError('لم يتم العثور على الفاتورة');
+          setError(t('public_invoice.invoice_not_found'));
           setLoading(false);
           return;
         }
@@ -40,7 +42,7 @@ export default function PublicInvoice() {
         setCustomer(data.customer);
 
       } catch (err: any) {
-        setError('حدث خطأ أثناء تحميل الفاتورة');
+        setError(t('public_invoice.load_error'));
       } finally {
         setLoading(false);
       }
@@ -51,24 +53,24 @@ export default function PublicInvoice() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center" dir="rtl">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center" dir={dir}>
         <div className="w-16 h-16 bg-brand/10 text-brand rounded-full flex items-center justify-center mb-4">
           <Loader2 className="animate-spin w-8 h-8" />
         </div>
-        <h1 className="text-xl font-bold text-slate-900 mb-2">جاري استرجاع الفاتورة...</h1>
-        <p className="text-slate-500">يرجى الانتظار لحظات</p>
+        <h1 className="text-xl font-bold text-slate-900 mb-2">{t('public_invoice.retrieving')}</h1>
+        <p className="text-slate-500">{t('public_invoice.please_wait')}</p>
       </div>
     );
   }
 
   if (error || !order) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center" dir="rtl">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center" dir={dir}>
         <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-4">
           <ShoppingBag size={32} />
         </div>
-        <h1 className="text-xl font-bold text-slate-900 mb-2">{error || 'الفاتورة غير موجودة'}</h1>
-        <p className="text-slate-500">الرابط غير صحيح أو قد تم حذف الفاتورة</p>
+        <h1 className="text-xl font-bold text-slate-900 mb-2">{error || t('public_invoice.invoice_missing')}</h1>
+        <p className="text-slate-500">{t('public_invoice.invalid_or_deleted')}</p>
       </div>
     );
   }
@@ -106,20 +108,20 @@ export default function PublicInvoice() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 font-sans flex flex-col" dir="rtl">
+    <div className="min-h-screen bg-slate-50 py-8 px-4 font-sans flex flex-col" dir={dir}>
       <div className="max-w-md w-full mx-auto mb-6 flex justify-between items-center">
-        <h1 className="text-lg font-bold text-slate-900">الوصول الرقمي للفاتورة</h1>
+        <h1 className="text-lg font-bold text-slate-900">{t('public_invoice.digital_access')}</h1>
         <button 
           onClick={handleDownloadPdf}
           disabled={downloading}
           className="flex items-center gap-2 bg-brand text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-brand/90 transition disabled:opacity-70"
         >
           {downloading ? <Loader2 className="animate-spin w-4 h-4" /> : <Download size={16} />}
-          <span>{downloading ? 'جاري التحميل...' : 'تحميل PDF'}</span>
+          <span>{downloading ? t('common.loading') : t('public_invoice.download_pdf')}</span>
         </button>
       </div>
 
-      <div id="digital-invoice-content" className="max-w-md w-full mx-auto bg-white border border-slate-200 rounded-3xl shadow-sm p-6">
+      <div id="digital-invoice-content" dir="rtl" className="max-w-md w-full mx-auto bg-white border border-slate-200 rounded-3xl shadow-sm p-6">
         {/* Header Block */}
         <div className="text-center mb-6 border-b border-dashed border-slate-300 pb-5">
           {tenant?.logoUrl ? (

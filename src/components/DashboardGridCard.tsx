@@ -2,6 +2,7 @@ import React from 'react';
 import { cn } from '../lib/utils';
 import { LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { isRtlLang } from '../lib/direction';
 
 interface DashboardGridCardProps {
   title: string;
@@ -21,7 +22,7 @@ export default function DashboardGridCard({
   onClick
 }: DashboardGridCardProps) {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language !== 'en';
+  const isRtl = isRtlLang(i18n.language);
   const dir = isRtl ? 'rtl' : 'ltr';
   const textAlignmentClass = isRtl ? 'text-right' : 'text-left';
   const flexAlignmentClass = isRtl ? 'items-start' : 'items-end';
@@ -42,7 +43,7 @@ export default function DashboardGridCard({
         </div>
         {isActive && (
           <span className="text-[10px] font-black px-2 py-1 rounded-lg bg-success/10 text-success">
-            {t('common.active', 'نشط')}
+            {t('saas.status_active')}
           </span>
         )}
       </div>

@@ -69,6 +69,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { analytics, AnalyticsEvent } from './services/analyticsService';
 import { useTranslation } from 'react-i18next';
+import { useDirection, localeOf } from './lib/direction';
 
 import SaaSLayout from './components/SaaSLayout';
 import RoleGuard from './components/RoleGuard';
@@ -92,6 +93,7 @@ import { getDeviceSessionId } from './utils/session';
 
 function AppContent() {
   const { t, i18n } = useTranslation();
+  const { dir, isRtl } = useDirection();
   const { currentStaff, setCurrentStaff } = useStaff();
   const { impersonationTenantId } = useAuth();
   const SUPER_ADMIN_EMAIL = "nomansa2566512@gmail.com";
@@ -144,7 +146,7 @@ function AppContent() {
     if (impersonationTenantId && !currentStaff) {
       setCurrentStaff({
         id: 'super_admin_mock_id',
-        name: 'الدعم الفني',
+        name: t('saas.support_staff_name'),
         email: 'support@super.com',
         role: 'owner',
         tenantId: impersonationTenantId,
@@ -670,7 +672,7 @@ function AppContent() {
 
   if (conflictUser) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900/65 backdrop-blur-md text-right p-6 font-sans select-none" dir="rtl">
+      <div className={`min-h-screen flex items-center justify-center bg-slate-900/65 backdrop-blur-md ${isRtl ? 'text-right' : 'text-left'} p-6 font-sans select-none`} dir={dir}>
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -684,9 +686,9 @@ function AppContent() {
             <AlertCircle size={40} className="animate-pulse" />
           </div>
           
-          <h2 className="text-2xl font-black text-slate-900 text-center mb-3 tracking-tight leading-tight">تنبيه تسجيل الدخول المتعدد</h2>
+          <h2 className="text-2xl font-black text-slate-900 text-center mb-3 tracking-tight leading-tight">{t('login.multi_device_title')}</h2>
           <p className="text-slate-500 text-center font-medium leading-relaxed mb-8 px-2 text-sm">
-            هذا الحساب مسجل دخوله حالياً في جهاز آخر. هل تريد تسجيل الدخول في هذا الجهاز وتسجيل الخروج من الجهاز السابق؟
+            {t('login.multi_device_desc')}
           </p>
           
           <div className="flex flex-col gap-3">
@@ -694,13 +696,13 @@ function AppContent() {
               onClick={handleResolveConflict}
               className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-bold transition-all shadow-lg shadow-indigo-600/10 flex items-center justify-center gap-2 text-base"
             >
-              نعم، الدخول في هذا الجهاز
+              {t('login.multi_device_confirm')}
             </button>
             <button 
               onClick={handleRejectConflict}
               className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-base"
             >
-              لا، إلغاء تسجيل الدخول
+              {t('login.multi_device_reject')}
             </button>
           </div>
         </motion.div>
@@ -715,7 +717,7 @@ function AppContent() {
   // Trial or Subscription expiration lock interception
   if ((isTrialExpired || isSubscriptionExpired) && user && !isSaaSStaff) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-950 text-right p-6 font-sans select-none" dir="rtl">
+      <div className={`min-h-screen flex items-center justify-center bg-gray-950 ${isRtl ? 'text-right' : 'text-left'} p-6 font-sans select-none`} dir={dir}>
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -730,37 +732,37 @@ function AppContent() {
           </div>
           
           <h2 className="text-3xl font-black text-white text-center mb-4 tracking-tight leading-tight">
-            {isSubscriptionExpired ? 'انتهت فترة الاشتراك للحساب' : 'انتهت الفترة التجريبية للحساب'}
+            {isSubscriptionExpired ? t('subscription.expired_account_title') : t('subscription.trial_expired_account_title')}
           </h2>
           <p className="text-slate-400 text-center font-medium leading-relaxed mb-10 px-4 text-sm md:text-base">
             {isSubscriptionExpired 
-              ? 'لقد انتهت فترة اشتراك مساحة العمل الخاصة بك. يرجى التواصل مع إدارة النظام أو تجديد الاشتراك لمتابعة أعمالك بسلاسة.'
-              : 'لقد انتهت فترة الـ 14 يوماً التجريبية المجانية المخصصة لمساحة العمل الخاصة بك. يرجى التواصل مع إدارة النظام لتفعيل الاشتراك ومتابعة أعمالك بسلاسة.'}
+              ? t('subscription.expired_account_desc')
+              : t('subscription.trial_expired_account_desc')}
           </p>
           
           <div className="bg-slate-950/50 rounded-2xl p-5 border border-slate-800/65 mb-10 text-sm space-y-2.5">
             <div className="flex justify-between items-center text-slate-300">
-              <span className="text-slate-400 font-medium">اسم الحساب:</span>
-              <span className="font-bold text-white">{(authState.currentUserStaff as any)?.tenant?.name || 'مساحة العمل'}</span>
+              <span className="text-slate-400 font-medium">{t('billing.modal_bank_holder_label')}</span>
+              <span className="font-bold text-white">{(authState.currentUserStaff as any)?.tenant?.name || t('subscription.workspace_fallback_name')}</span>
             </div>
             <div className="flex justify-between items-center text-slate-300">
-              <span className="text-slate-400 font-medium">البريد الإلكتروني للقرصنة:</span>
+              <span className="text-slate-400 font-medium">{t('subscription.account_email_label')}</span>
               <span className="font-mono text-white text-[12px]">{user.email}</span>
             </div>
             <div className="flex justify-between items-center text-slate-300 mb-0.5">
-              <span className="text-slate-400 font-medium">تاريخ البداية:</span>
+              <span className="text-slate-400 font-medium">{t('subscription.start_date_label')}</span>
               <span className="font-mono text-white">
-                {tenantCreatedAt ? new Date(tenantCreatedAt).toLocaleDateString('ar-SA-u-nu-latn', { dateStyle: 'long' }) : '-'}
+                {tenantCreatedAt ? new Date(tenantCreatedAt).toLocaleDateString(localeOf(i18n.language), { dateStyle: 'long' }) : '-'}
               </span>
             </div>
           </div>
           
           <div className="space-y-4">
             <a 
-              href="mailto:nomansa2566512@gmail.com?subject=تفعيل حساب سين"
+              href={`mailto:nomansa2566512@gmail.com?subject=${encodeURIComponent(t('subscription.activation_email_subject'))}`}
               className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-bold transition-all shadow-lg shadow-indigo-900/20 flex items-center justify-center gap-3 text-center"
             >
-              طلب التفعيل والدفع الآن
+              {t('subscription.request_activation_now')}
             </a>
             
             <button 
@@ -777,7 +779,7 @@ function AppContent() {
               className="w-full bg-slate-850 hover:bg-slate-800 text-slate-200 py-4 rounded-2xl font-bold transition-all border border-slate-700/30 flex items-center justify-center gap-2"
             >
               <LogOut size={18} />
-              تسجيل الخروج من الحساب
+              {t('common.logout_from_account')}
             </button>
           </div>
         </motion.div>
@@ -893,7 +895,7 @@ function AppContent() {
               (user && isApproved) ? <Navigate to="/" /> : (
                 needsOnboarding ? <Navigate to="/onboarding" /> : (
                   (user && !isApproved) ? (
-                    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6" dir="rtl">
+                    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6" dir={dir}>
                       <motion.div 
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -906,10 +908,10 @@ function AppContent() {
                           <ClockIcon size={48} strokeWidth={2.5} />
                         </div>
                         
-                        <h2 className="text-3xl font-black text-gray-900 mb-4 tracking-tight">طلبك قيد المراجعة</h2>
+                        <h2 className="text-3xl font-black text-gray-900 mb-4 tracking-tight">{t('login.pending_review')}</h2>
                         <p className="text-gray-500 font-medium leading-relaxed mb-10 px-2">
-                          نسعد بانضمامك إلينا! طلبك حالياً في مرحلة المراجعة من قبل فريقنا الفني. 
-                          <span className="block mt-2 font-bold text-amber-700">سيتم تفعيل حسابك ونقلك للتهيئة قريباً جداً.</span>
+                          {t('login.pending_review_desc')}{' '}
+                          <span className="block mt-2 font-bold text-amber-700">{t('login.pending_review_activation_note')}</span>
                         </p>
                         
                         <div className="space-y-4">
@@ -918,7 +920,7 @@ function AppContent() {
                             className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center justify-center gap-3"
                           >
                             <RefreshCw size={20} />
-                            تحديث الحالة
+                            {t('orders.update_status')}
                           </button>
                           
                           <button 
@@ -935,7 +937,7 @@ function AppContent() {
                             className="w-full bg-gray-50 text-gray-600 py-4 rounded-2xl font-bold hover:bg-gray-100 transition-all border border-gray-100 flex items-center justify-center gap-2"
                           >
                             <LogOut size={18} />
-                            خروج من الحساب
+                            {t('login.exit_account')}
                           </button>
                         </div>
                       </motion.div>

@@ -5,6 +5,8 @@ import { getFilteredMenuItems, MenuItemConfig } from '../config/menuConfig';
 import { usePermissions } from '../hooks/usePermissions';
 import { Staff, PermissionKey } from '../types/index';
 import { motion, AnimatePresence } from 'motion/react';
+import { isRtlLang } from '../lib/direction';
+
 import { 
   ChevronDown, 
   ChevronUp, 
@@ -38,7 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile
 }) => {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
   const { hasPermission } = usePermissions(currentStaff);
   const location = useLocation();
   const navigate = useNavigate();

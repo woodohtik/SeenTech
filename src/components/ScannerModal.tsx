@@ -39,7 +39,7 @@ export default function ScannerModal({ isOpen, onClose, onScan }: ScannerModalPr
           // Error parsing, usually expected while scanning
         }
       ).catch((err) => {
-        setError(t('pos.scanner_error', 'حدث خطأ أثناء تشغيل الكاميرا. يرجى التحقق من الصلاحيات.'));
+        setError(t('pos.scanner_error'));
         console.error(err);
       });
     }
@@ -63,7 +63,7 @@ export default function ScannerModal({ isOpen, onClose, onScan }: ScannerModalPr
             <div className="w-8 h-8 rounded-full bg-brand/10 flex items-center justify-center text-brand">
               <Camera size={16} />
             </div>
-            <h2 className="text-base font-bold text-content">{t('pos.scan_barcode', 'مسح الباركود')}</h2>
+            <h2 className="text-base font-bold text-content">{t('pos.scan_barcode')}</h2>
           </div>
           <button 
             onClick={onClose}
@@ -82,7 +82,7 @@ export default function ScannerModal({ isOpen, onClose, onScan }: ScannerModalPr
             <div id="reader" className="w-full h-full overflow-hidden rounded-xl border border-border bg-black"></div>
           )}
           <p className="text-xs text-content-muted font-semibold mt-4 text-center">
-            {t('pos.scanner_hint', 'وجه الكاميرا نحو الباركود للمسح التلقائي.')}
+            {t('pos.scanner_hint')}
           </p>
         </div>
       </div>

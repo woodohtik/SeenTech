@@ -29,7 +29,7 @@ import { PriceDisplay } from './PriceDisplay';
 import { cn } from '../lib/utils';
 import { jsPDF } from 'jspdf';
 import { toPng } from 'html-to-image';
-import { useTranslation } from 'react-i18next';
+import { useDirection } from '../lib/direction';
 
 interface SupplierLedgerProps {
   supplier: {
@@ -54,7 +54,7 @@ export default function SupplierLedger({
   onBack,
   onReloadSupplier,
 }: SupplierLedgerProps) {
-  const { t } = useTranslation();
+  const { t, dir, locale } = useDirection();
   const [transactions, setTransactions] = useState<SupplierTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -200,7 +200,7 @@ export default function SupplierLedger({
         heightLeft -= pageHeight;
       }
 
-      const fileName = `كشف_حساب_${supplier.name.replace(/\s+/g, '_')}.pdf`;
+      const fileName = t('procurement.ledger_pdf_filename', { name: supplier.name.replace(/\s+/g, '_') });
       pdf.save(fileName);
 
       setWhatsappModalOpen(true);
@@ -235,7 +235,7 @@ export default function SupplierLedger({
   };
 
   return (
-    <div className="space-y-6 font-sans text-right" dir="rtl">
+    <div className="space-y-6 font-sans text-right" dir={dir}>
       
       {/* Top action header for Ledger view */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden">
@@ -603,20 +603,20 @@ export default function SupplierLedger({
 
       {/* WhatsApp Modal Dialog with instructions */}
       {whatsappModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 print:hidden animate-fade-in" dir="rtl">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 print:hidden animate-fade-in" dir={dir}>
           <div className="bg-white border border-slate-100 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-6">
             <div className="text-center space-y-2">
               <div className="mx-auto w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center">
                 <MessageCircle size={24} />
               </div>
-              <h3 className="text-lg font-black text-slate-900">تم تنزيل كشف الحساب بصيغة PDF!</h3>
+              <h3 className="text-lg font-black text-slate-900">{t('procurement.pdf_downloaded')}</h3>
               <p className="text-xs font-bold text-slate-500 leading-relaxed">
-                تم حفظ ملف الـ PDF بنجاح في جهازك باسم: <br />
+                {t('procurement.pdf_saved_as')} <br />
                 <span className="font-mono text-slate-900 bg-slate-100 px-2 py-1 rounded inline-block mt-1 font-bold">
-                  كشف_حساب_{supplier.name.replace(/\s+/g, '_')}.pdf
+                  {t('procurement.ledger_pdf_filename', { name: supplier.name.replace(/\s+/g, '_') })}
                 </span>
                 <br /><br />
-                سنقوم الآن بفتح محادثة الواتساب مع المورد. يرجى إرسال الرسالة ثم إرفاق ملف الـ PDF المُنزّل من جهازك لإرساله مباشرة.
+                {t('procurement.whatsapp_attach_instructions')}
               </p>
             </div>
             <div className="flex gap-2 font-black">
@@ -624,14 +624,14 @@ export default function SupplierLedger({
                 onClick={proceedToWhatsApp}
                 className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-600/15 flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
-                <span>فتح واتساب الآن</span>
+                <span>{t('procurement.open_whatsapp_now')}</span>
                 <ArrowLeft size={14} className="rotate-180" />
               </button>
               <button
                 onClick={() => setWhatsappModalOpen(false)}
                 className="px-4 py-3 bg-slate-150 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black transition-colors cursor-pointer"
               >
-                إلغاء
+                {t('common.cancel')}
               </button>
             </div>
           </div>
@@ -641,7 +641,7 @@ export default function SupplierLedger({
       {/* Hidden container specifically styled for PDF captures */}
       <div 
         className="absolute left-[-9999px] top-[-9999px] w-[800px] bg-white p-8 space-y-6 text-right" 
-        dir="rtl" 
+        dir={dir}
         id="supplier-ledger-pdf-capture"
       >
         {/* Headings */}
@@ -649,24 +649,24 @@ export default function SupplierLedger({
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-black text-slate-950">{tenantName}</h1>
-              <p className="text-xs font-bold text-slate-500 mt-1">كشف حركـات الحساب التفصيلي للشركاء والموردين</p>
+              <p className="text-xs font-bold text-slate-500 mt-1">{t('procurement.detailed_statement_partners')}</p>
             </div>
             <div className="text-left font-mono text-[9px] text-slate-400">
-              <p>تاريخ الاستخراج: {new Date().toLocaleString('ar-SA-u-nu-latn')}</p>
-              <p>النظام: Seen-POS</p>
+              <p>{t('procurement.extraction_date')}: {new Date().toLocaleString(locale)}</p>
+              <p>{t('procurement.system_label')}: Seen-POS</p>
             </div>
           </div>
           
           <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-slate-100 text-xs">
             <div>
-              <p className="font-extrabold text-slate-400 uppercase tracking-wider mb-1">بيانات المورد:</p>
+              <p className="font-extrabold text-slate-400 uppercase tracking-wider mb-1">{t('procurement.supplier_details')}:</p>
               <p className="text-sm font-black text-slate-950">{supplier.name}</p>
-              {supplier.phone && <p className="font-semibold text-slate-600">هاتف: <span className="font-mono">{supplier.phone}</span></p>}
-              {supplier.taxNumber && <p className="font-semibold text-slate-600">الرقم الضريبي للمورد: <span className="font-mono">{supplier.taxNumber}</span></p>}
-              {supplier.address && <p className="font-semibold text-slate-500">العنوان: {supplier.address}</p>}
+              {supplier.phone && <p className="font-semibold text-slate-600">{t('procurement.phone')}: <span className="font-mono">{supplier.phone}</span></p>}
+              {supplier.taxNumber && <p className="font-semibold text-slate-600">{t('procurement.tax_number_lbl')}: <span className="font-mono">{supplier.taxNumber}</span></p>}
+              {supplier.address && <p className="font-semibold text-slate-500">{t('procurement.address')}: {supplier.address}</p>}
             </div>
             <div className="bg-slate-50 p-4 rounded-2xl flex flex-col justify-between items-end text-left h-full border border-slate-200">
-              <span className="font-black text-slate-400 text-[10px] uppercase">إجمالي الرصيد المستحق في الذمة:</span>
+              <span className="font-black text-slate-400 text-[10px] uppercase">{t('procurement.total_balance_due_desc')}:</span>
               <span className="text-2xl font-black text-red-600 font-mono mt-1 flex items-center gap-1">
                 {supplier.balance.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" />
               </span>
@@ -677,19 +677,19 @@ export default function SupplierLedger({
         {/* Accounting aggregates */}
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-            <span className="text-[9px] font-black text-slate-400 block mb-1">إجمالي المشتريات (دائن)</span>
+            <span className="text-[9px] font-black text-slate-400 block mb-1">{t('procurement.total_purchases_credit')}</span>
             <span className="text-sm font-black text-slate-900 font-mono flex items-center gap-1">
               {totalCredit.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" />
             </span>
           </div>
           <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-            <span className="text-[9px] font-black text-slate-400 block mb-1">إجمالي المدفوعات (مدين)</span>
+            <span className="text-[9px] font-black text-slate-400 block mb-1">{t('procurement.total_payments_debit')}</span>
             <span className="text-sm font-black text-red-600 font-mono flex items-center gap-1">
               {totalDebit.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" />
             </span>
           </div>
           <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-100">
-            <span className="text-[9px] font-black text-indigo-500 block mb-1">الرصيد النهائي المستحق للمورد</span>
+            <span className="text-[9px] font-black text-indigo-500 block mb-1">{t('procurement.final_balance_due_supplier')}</span>
             <span className="text-sm font-black text-slate-950 font-mono flex items-center gap-1">
               {supplier.balance.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" />
             </span>
@@ -701,12 +701,12 @@ export default function SupplierLedger({
           <table className="w-full text-right border-collapse text-xs whitespace-nowrap">
             <thead>
               <tr className="bg-slate-100/80 text-[10px] font-black text-slate-500 uppercase tracking-wider border-b border-slate-200">
-                <th className="p-3 text-right">التاريخ</th>
-                <th className="p-3 text-right">المرجع</th>
-                <th className="p-3 text-right">الوصف والبيان</th>
-                <th className="p-3 text-center">المدفوعات (مدين)</th>
-                <th className="p-3 text-center">المطلوبات (دائن)</th>
-                <th className="p-3 text-center bg-slate-50 border-r border-slate-200 text-slate-950 font-black">الرصيد المستحق</th>
+                <th className="p-3 text-right">{t('common.date')}</th>
+                <th className="p-3 text-right">{t('procurement.reference')}</th>
+                <th className="p-3 text-right">{t('procurement.description_statement')}</th>
+                <th className="p-3 text-center">{t('procurement.payments_debit')}</th>
+                <th className="p-3 text-center">{t('procurement.liabilities_credit')}</th>
+                <th className="p-3 text-center bg-slate-50 border-r border-slate-200 text-slate-950 font-black">{t('procurement.due_balance_label')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -715,7 +715,7 @@ export default function SupplierLedger({
                 return (
                   <tr key={tx.id} className="bg-white">
                     <td className="p-3 text-slate-600 font-medium">
-                      {txDate.toLocaleDateString('ar-SA-u-nu-latn')}
+                      {txDate.toLocaleDateString(locale)}
                     </td>
                     <td className="p-3 font-mono font-black text-slate-950">
                       {tx.reference_number}
@@ -740,7 +740,7 @@ export default function SupplierLedger({
         </div>
         
         <div className="text-[10px] text-slate-400 font-bold text-center mt-6 pt-4 border-t border-slate-100">
-          نشكركم لتعاملكم معنا. تم استخراج هذا المستند آلياً ويدوياً عبر مكتب المحاسبة والمستندات الرسمية.
+          {t('procurement.ledger_footer_note')}
         </div>
       </div>
     </div>

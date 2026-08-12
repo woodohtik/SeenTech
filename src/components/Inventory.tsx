@@ -42,6 +42,7 @@ import { useStaff } from '../contexts/StaffContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { analytics, AnalyticsEvent } from '../services/analyticsService';
 import { useTranslation } from 'react-i18next';
+import { useDirection } from '../lib/direction';
 
 import { useSearchParams } from 'react-router-dom';
 
@@ -50,6 +51,7 @@ const isUuid = (val: string | undefined | null) =>
 
 export default function Inventory({ tenantId }: { tenantId: string }) {
   const { t } = useTranslation();
+  const { dir } = useDirection();
   const [searchParams] = useSearchParams();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -743,11 +745,11 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                       </h3>
                       <div className="flex flex-wrap gap-1 mt-1">
                         <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 bg-surface-muted text-content-muted rounded-md border border-border">
-                          {item.category === 'fabric' ? t('inventory.fabric') : item.category === 'thread' ? t('inventory.thread') : item.category === 'button' ? t('inventory.button') : item.category === "ready_made" ? 'جاهز' : t('common.other')}
+                          {item.category === 'fabric' ? t('inventory.fabric') : item.category === 'thread' ? t('inventory.thread') : item.category === 'button' ? t('inventory.button') : item.category === "ready_made" ? t('inventory.category_ready_made') : t('common.other')}
                         </span>
-                        {item.taxType === 'inclusive' && <span className="text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 bg-success/10 text-success rounded-md border border-success/20">شامل</span>}
-                        {item.taxType === 'exclusive' && <span className="text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 bg-brand/10 text-brand rounded-md border border-brand/20">غير شامل</span>}
-                        {item.taxType === 'exempt' && <span className="text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 bg-content-muted/10 text-content-muted rounded-md border border-content-muted/20">معفى</span>}
+                        {item.taxType === 'inclusive' && <span className="text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 bg-success/10 text-success rounded-md border border-success/20">{t('inventory.tax_badge_inclusive')}</span>}
+                        {item.taxType === 'exclusive' && <span className="text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 bg-brand/10 text-brand rounded-md border border-brand/20">{t('inventory.tax_exclusive')}</span>}
+                        {item.taxType === 'exempt' && <span className="text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 bg-content-muted/10 text-content-muted rounded-md border border-content-muted/20">{t('inventory.tax_badge_exempt')}</span>}
                       </div>
                     </div>
                   </div>
@@ -764,7 +766,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                           setIsReconcileModalOpen(true);
                         }}
                         className="p-1.5 sm:p-2 text-warning hover:bg-warning/10 rounded-lg transition-colors"
-                        title="تسوية الكمية"
+                        title={t('inventory.reconcile_quantity')}
                       >
                         <RefreshCcw size={16} className="sm:w-[18px] sm:h-[18px]" />
                       </button>
@@ -1004,7 +1006,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="relative w-full max-w-[clamp(320px,90vw,650px)] max-h-[90vh] rounded-[var(--radius-card)] bg-[var(--surface)] shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-right"
-              dir="rtl"
+              dir={dir}
             >
               <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 max-h-[90vh] overflow-hidden">
                 {/* Header (Fixed) */}
@@ -1031,14 +1033,14 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                   <div className="md:col-span-2">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-bold text-content mb-1">اسم المنتج (عربي)</label>
+                        <label className="block text-sm font-bold text-content mb-1">{t('inventory.item_name_ar')}</label>
                         <input 
                           {...register('name')}
                           className={cn(
                             "w-full px-4 py-2 bg-surface-muted border border-border hover:border-brand/50 transition-colors rounded-xl focus:ring-2 focus:ring-brand outline-none text-content placeholder-content-muted",
                             errors.name && "border-danger"
                           )}
-                          placeholder="مثلاً: قماش قطن ياباني أبيض"
+                          placeholder={t('inventory.item_name_placeholder')}
                         />
                         {errors.name && <p className="text-xs text-danger font-bold mt-1">{errors.name.message}</p>}
                       </div>
@@ -1060,18 +1062,18 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                       {...register('type')}
                       className="w-full px-4 py-2 bg-surface-muted border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-content"
                     >
-                      <option value="fabric">قماش (Fabric)</option>
-                      <option value="ready_made">جاهز (Ready-made)</option>
-                      <option value="accessories">إكسسوارات (Accessories)</option>
-                      <option value="thread">خيوط (Thread)</option>
-                      <option value="button">أزرار (Buttons)</option>
-                      <option value="lining">بطانة (Lining)</option>
-                      <option value="other">أخرى (Other)</option>
+                      <option value="fabric">{t('inventory.category_fabric')}</option>
+                      <option value="ready_made">{t('inventory.category_ready_made')}</option>
+                      <option value="accessories">{t('inventory.category_accessories')}</option>
+                      <option value="thread">{t('inventory.category_thread')}</option>
+                      <option value="button">{t('inventory.category_button')}</option>
+                      <option value="lining">{t('inventory.category_lining')}</option>
+                      <option value="other">{t('inventory.category_other')}</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-content mb-1">الرقم المخزني (SKU)</label>
+                    <label className="block text-sm font-bold text-content mb-1">{t('inventory.stock_number_sku')}</label>
                     <input 
                       {...register('sku', {
                         onChange: (e) => {
@@ -1079,7 +1081,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                         }
                       })}
                       className="w-full px-4 py-2 bg-surface-muted border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-content placeholder-content-muted"
-                      placeholder="رقمي فقط (توليد آلي إن تُرك فارغاً)"
+                      placeholder={t('inventory.sku_placeholder')}
                     />
                   </div>
 
@@ -1089,15 +1091,15 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                       <div className="flex justify-between items-center mb-4">
                         <label className="text-sm font-black text-brand uppercase tracking-wider flex items-center gap-2">
                           <Zap size={14} />
-                          التحكم الضريبي للمنتج (Tax Control)
+                          {t('inventory.tax_control')}
                         </label>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         {[
-                          { value: 'inclusive', label: 'شامل الضريبة', sub: 'Inclusive', desc: 'السعر المدخل يشمل 15%' },
-                          { value: 'exclusive', label: 'غير شامل الضريبة', sub: 'Exclusive', desc: 'يُضاف 15% فوق السعر' },
-                          { value: 'exempt', label: 'معفى ضريبياً', sub: 'Exempt', desc: 'ضريبة بنسبة (0%)' },
+                          { value: 'inclusive', label: t('inventory.tax_inclusive'), sub: 'Inclusive', desc: t('inventory.tax_inclusive_desc') },
+                          { value: 'exclusive', label: t('settings_page.tax.exclusive'), sub: 'Exclusive', desc: t('inventory.tax_exclusive_desc') },
+                          { value: 'exempt', label: t('inventory.tax_exempt'), sub: 'Exempt', desc: t('inventory.tax_exempt_desc') },
                         ].map((tax) => (
                            <label 
                             key={tax.value}
@@ -1130,7 +1132,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
 
                       <div className="mt-4 pt-4 border-t border-border/50 grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-[10px] font-black text-content-muted mb-1 uppercase tracking-widest">السعر الأساسي (Base Price)</label>
+                          <label className="block text-[10px] font-black text-content-muted mb-1 uppercase tracking-widest">{t('inventory.base_price')}</label>
                           <input 
                             type="number"
                             step="0.01"
@@ -1139,19 +1141,19 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                           />
                         </div>
                         <div className="flex flex-col justify-center">
-                          <p className="text-[10px] font-black text-content-muted mb-1 uppercase tracking-widest">معاينة الحساب (Preview)</p>
+                          <p className="text-[10px] font-black text-content-muted mb-1 uppercase tracking-widest">{t('inventory.calc_preview')}</p>
                           <div className="px-4 py-2 bg-brand/10 rounded-xl border border-brand/20">
                             {watchTaxType === 'exclusive' ? (
                               <p className="text-sm font-bold text-brand">
-                                <PriceDisplay amount={Number(watchPrice || 0) * 1.15} /> <span className="text-[10px] font-normal">(بعد الضريبة)</span>
+                                <PriceDisplay amount={Number(watchPrice || 0) * 1.15} /> <span className="text-[10px] font-normal">{t('inventory.after_tax_note')}</span>
                               </p>
                             ) : watchTaxType === 'inclusive' ? (
                               <p className="text-sm font-bold text-brand">
-                                <PriceDisplay amount={Number(watchPrice || 0) / 1.15} /> <span className="text-[10px] font-normal">(قبل الضريبة)</span>
+                                <PriceDisplay amount={Number(watchPrice || 0) / 1.15} /> <span className="text-[10px] font-normal">{t('inventory.before_tax_note')}</span>
                               </p>
                             ) : (
                               <p className="text-sm font-bold text-brand">
-                                <PriceDisplay amount={Number(watchPrice || 0)} /> <span className="text-[10px] font-normal">(معفى)</span>
+                                <PriceDisplay amount={Number(watchPrice || 0)} /> <span className="text-[10px] font-normal">{t('inventory.exempt_note')}</span>
                               </p>
                             )}
                           </div>
@@ -1169,7 +1171,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                       <option value="meter">{t('inventory.units.meter')}</option>
                       <option value="yard">{t('inventory.units.yard')}</option>
                       <option value="roll">{t('inventory.units.roll')}</option>
-                      <option value="bolt">طاقة (Bolt)</option>
+                      <option value="bolt">{t('inventory.unit_bolt')}</option>
                       <option value="piece">{t('inventory.units.piece')}</option>
                       <option value="spool">{t('inventory.units.spool')}</option>
                       <option value="box">{t('inventory.units.box')}</option>
@@ -1177,7 +1179,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-content mb-1">الكمية الحالية</label>
+                    <label className="block text-sm font-bold text-content mb-1">{t('inventory.current_quantity')}</label>
                     <input 
                       type="number"
                       step="0.01"
@@ -1191,7 +1193,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-content mb-1">الحد الأدنى للتنبيه</label>
+                    <label className="block text-sm font-bold text-content mb-1">{t('inventory.min_threshold')}</label>
                     <input 
                       type="number"
                       {...register('minThreshold')}
@@ -1221,7 +1223,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                       className="w-5 h-5 text-brand border-border rounded focus:ring-brand"
                     />
                     <label htmlFor="isTest" className="text-sm font-bold text-warning flex items-center gap-2">
-                       بيانات تجريبية (Test Data)
+                       {t('common.test_data')}
                     </label>
                   </div>
 
@@ -1234,7 +1236,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                       className="w-5 h-5 text-brand border-border rounded focus:ring-brand"
                     />
                     <label htmlFor="showInPos" className="text-sm font-bold text-content flex items-center gap-2">
-                       إظهار في شاشة البيع (Show in POS)
+                       {t('inventory.visible_in_pos')}
                     </label>
                   </div>
                 </div>
@@ -1248,14 +1250,14 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                     className="flex-1 bg-brand text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-brand/90 transition-all shadow-lg shadow-brand/20 disabled:opacity-50"
                   >
                     {isSubmitting ? <Loader2 className="animate-spin" /> : <Plus size={18} />}
-                    {editingItem ? 'حفظ التعديلات' : 'إضافة إلى المخزن'}
+                    {editingItem ? t('procurement.save_changes') : t('inventory.add_to_stock')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
                     className="px-6 py-3 bg-surface-muted text-content font-bold rounded-xl hover:bg-surface transition-all"
                   >
-                    إلغاء
+                    {t('common.cancel')}
                   </button>
                 </div>
               </form>

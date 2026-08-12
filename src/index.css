@@ -748,3 +748,17 @@ html, body {
   border: 2px solid var(--brand, #1c8fff) !important;
 }
 
+/* ---------------------------------------------------------------------------
+   Language-aware typography. `--font-sans` is overwritten at runtime by
+   applyDocumentDirection() in src/lib/direction.ts, but these rules give the
+   correct font before hydration and cover print/iframe contexts.
+   --------------------------------------------------------------------------- */
+html[lang="ur"], html[data-lang="ur"] {
+  --font-sans: "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Tajawal", ui-sans-serif, system-ui, sans-serif;
+}
+html[lang="ur"] body, html[data-lang="ur"] body {
+  line-height: 2.1; /* Nastaliq needs vertical room or descenders clip */
+}
+html[lang="en"], html[data-lang="en"] {
+  --font-sans: "Inter", "Tajawal", ui-sans-serif, system-ui, sans-serif;
+}

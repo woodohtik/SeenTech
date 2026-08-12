@@ -15,6 +15,8 @@
  */
 
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useDirection } from '../lib/direction';
 
 export interface ComplianceHealthProps {
   vatRegistered: boolean;       // رقم تسجيل ضريبي مُدخل
@@ -27,21 +29,23 @@ export interface ComplianceHealthProps {
 interface Check { label: string; ok: boolean; hint?: string }
 
 export default function ComplianceHealthCard(p: ComplianceHealthProps) {
+  const { t } = useTranslation();
+  const { dir } = useDirection();
   const checks: Check[] = [
-    { label: 'تسجيل ضريبي (الرقم الضريبي)', ok: p.vatRegistered, hint: 'أدخل الرقم الضريبي في الإعدادات.' },
-    { label: 'الاسم النظامي للمنشأة', ok: p.hasLegalName, hint: 'يظهر على الفاتورة المعتمدة.' },
-    { label: 'فاتورة المرحلة الأولى (QR)', ok: p.phase1QrEnabled },
-    { label: 'ربط زاتكا — المرحلة الثانية', ok: p.phase2Integrated, hint: 'مطلوب نظاماً عند بلوغ موجتك.' },
-    { label: 'إقرار حماية البيانات (PDPL)', ok: p.pdplAccepted },
+    { label: t('compliance.check_vat_registered'), ok: p.vatRegistered, hint: t('compliance.check_vat_registered_hint') },
+    { label: t('compliance.check_legal_name'), ok: p.hasLegalName, hint: t('compliance.check_legal_name_hint') },
+    { label: t('compliance.check_phase1_qr'), ok: p.phase1QrEnabled },
+    { label: t('compliance.check_phase2'), ok: p.phase2Integrated, hint: t('compliance.check_phase2_hint') },
+    { label: t('compliance.check_pdpl'), ok: p.pdplAccepted },
   ];
   const done = checks.filter((c) => c.ok).length;
   const score = Math.round((done / checks.length) * 100);
   const color = score >= 80 ? '#1E7D45' : score >= 50 ? '#B9770E' : '#C0392B';
 
   return (
-    <div dir="rtl" style={styles.card}>
+    <div dir={dir} style={styles.card}>
       <div style={styles.head}>
-        <span style={styles.title}>صحة الامتثال</span>
+        <span style={styles.title}>{t('compliance.title')}</span>
         <span style={{ ...styles.badge, background: color }}>{score}%</span>
       </div>
       <div style={styles.barTrack}>
@@ -59,7 +63,7 @@ export default function ComplianceHealthCard(p: ComplianceHealthProps) {
         ))}
       </ul>
       {score < 100 && (
-        <div style={styles.cta}>أكمل النواقص لرفع جاهزيتك وتجنّب مخاطر الغرامات.</div>
+        <div style={styles.cta}>{t('compliance.cta')}</div>
       )}
     </div>
   );

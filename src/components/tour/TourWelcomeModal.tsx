@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
+import { isRtlLang } from '../../lib/direction';
+
 interface TourWelcomeModalProps {
   tenantName?: string | null;
   userName?: string | null;
@@ -31,23 +33,23 @@ export default function TourWelcomeModal({
   onSkip,
 }: TourWelcomeModalProps) {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
 
   const highlights = [
     {
       icon: Monitor,
-      title: t('tour.welcome.highlight1_title', 'نقطة بيع سريعة'),
-      desc: t('tour.welcome.highlight1_desc', 'فواتير ضريبية متوافقة مع ZATCA في ثوانٍ'),
+      title: t('tour.welcome.highlight1_title'),
+      desc: t('tour.welcome.highlight1_desc'),
     },
     {
       icon: Scissors,
-      title: t('tour.welcome.highlight2_title', 'متابعة التفصيل'),
-      desc: t('tour.welcome.highlight2_desc', 'من القياس إلى التسليم بخطوات واضحة'),
+      title: t('tour.welcome.highlight2_title'),
+      desc: t('tour.welcome.highlight2_desc'),
     },
     {
       icon: BarChart3,
-      title: t('tour.welcome.highlight3_title', 'تقارير فورية'),
-      desc: t('tour.welcome.highlight3_desc', 'أرباحك ومخزونك وأداء فريقك في لوحة واحدة'),
+      title: t('tour.welcome.highlight3_title'),
+      desc: t('tour.welcome.highlight3_desc'),
     },
   ];
 
@@ -67,7 +69,7 @@ export default function TourWelcomeModal({
         {/* Dismiss */}
         <button
           onClick={onSkip}
-          aria-label={t('tour.welcome.skip', 'تخطي')}
+          aria-label={t('tour.welcome.skip')}
           className={cn(
             'absolute top-4 z-10 p-2 rounded-full text-white/70 hover:text-white hover:bg-white/15 transition-colors',
             isRtl ? 'left-4' : 'right-4'
@@ -93,27 +95,20 @@ export default function TourWelcomeModal({
             <div className="space-y-1.5">
               <h2 className="text-2xl sm:text-[1.7rem] font-black leading-tight">
                 {userName
-                  ? t('tour.welcome.title_named', 'مرحباً {{name}} 👋', { name: userName })
-                  : t('tour.welcome.title', 'مرحباً بك في نظام سين الذكي 👋')}
+                  ? t('tour.welcome.title_named', { name: userName })
+                  : t('tour.welcome.title')}
               </h2>
               <p className="text-white/85 text-sm font-medium leading-relaxed max-w-sm mx-auto">
                 {tenantName
-                  ? t(
-                      'tour.welcome.subtitle_tenant',
-                      'دعنا نأخذك في جولة سريعة داخل {{tenant}} لتتعرف على كل ما يمكنك فعله.',
-                      { tenant: tenantName }
-                    )
-                  : t(
-                      'tour.welcome.subtitle',
-                      'دعنا نأخذك في جولة سريعة لتتعرف على كل ما يمكنك فعله في النظام.'
-                    )}
+                  ? t('tour.welcome.subtitle_tenant', { tenant: tenantName })
+                  : t('tour.welcome.subtitle')}
               </p>
             </div>
 
             <div className="inline-flex items-center gap-2 bg-white/15 border border-white/20 px-3.5 py-1.5 rounded-full text-[11px] font-bold">
               <Clock size={13} />
               <span>
-                {t('tour.welcome.duration', '{{count}} خطوة • أقل من دقيقتين', { count: stepCount })}
+                {t('tour.welcome.duration', { count: stepCount })}
               </span>
             </div>
           </div>
@@ -143,19 +138,19 @@ export default function TourWelcomeModal({
             onClick={onSkip}
             className="flex-1 px-5 py-3.5 rounded-2xl font-bold text-sm text-content-muted bg-surface-muted hover:bg-border/60 transition-colors cursor-pointer"
           >
-            {t('tour.welcome.skip_full', 'تخطي، سأستكشف بنفسي')}
+            {t('tour.welcome.skip_full')}
           </button>
           <button
             onClick={onStart}
             className="flex-[1.4] px-5 py-3.5 rounded-2xl font-black text-sm bg-brand text-white hover:bg-brand/90 shadow-lg shadow-brand/25 transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
           >
-            <span>{t('tour.welcome.start', 'ابدأ الجولة التعريفية')}</span>
+            <span>{t('tour.welcome.start')}</span>
             <ArrowNext size={17} />
           </button>
         </div>
 
         <p className="pb-6 -mt-3 text-center text-[11px] text-content-muted/80 font-medium px-6">
-          {t('tour.welcome.restart_hint', 'يمكنك إعادة الجولة في أي وقت من قائمة المستخدم أو الإعدادات.')}
+          {t('tour.welcome.restart_hint')}
         </p>
       </motion.div>
     </div>

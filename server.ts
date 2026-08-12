@@ -90,6 +90,200 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
+app.get("/api/inventory-adjustments", authenticate, async (req: any, res) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      return res.status(401).json({ error: 'Unauthorized: No tenant ID found' });
+    }
+
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+    const { data, error } = await supabaseAdmin
+      .from("inventory_adjustments")
+      .select("*")
+      .eq("tenant_id", tenantId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json(data || []);
+  } catch (err: any) {
+    console.error("Error in GET /api/inventory-adjustments:", err);
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
+});
+
+app.get("/api/inventory-adjustments/:id/items", authenticate, async (req: any, res) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    const { id } = req.params;
+    if (!tenantId) {
+      return res.status(401).json({ error: 'Unauthorized: No tenant ID found' });
+    }
+
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+    
+    // Security check: verify parent adjustment belongs to this tenant
+    const { data: parentAdj, error: parentErr } = await supabaseAdmin
+      .from("inventory_adjustments")
+      .select("tenant_id")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (parentErr || !parentAdj) {
+      return res.status(404).json({ error: "Adjustment not found" });
+    }
+
+    if (parentAdj.tenant_id !== tenantId) {
+      return res.status(403).json({ error: "Forbidden: Access denied" });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("adjustment_items")
+      .select("*")
+      .eq("adjustment_id", id);
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json(data || []);
+  } catch (err: any) {
+    console.error("Error in GET /api/inventory-adjustments/:id/items:", err);
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
+});
+
+app.post("/api/inventory-adjustments", authenticate, async (req: any, res) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      return res.status(401).json({ error: 'Unauthorized: No tenant ID found' });
+    }
+
+    const { header, details, branchInventoryUpdates, ledgerPayloads } = req.body;
+    if (!header || !details) {
+      return res.status(400).json({ error: 'Missing header or details payload' });
+    }
+
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+
+    // 1. Insert header record with verified tenantId
+    const headerPayload = {
+      ...header,
+      tenant_id: tenantId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data: headerData, error: headerErr } = await supabaseAdmin
+      .from("inventory_adjustments")
+      .insert(headerPayload)
+      .select()
+      .single();
+
+    if (headerErr) {
+      console.error("Error inserting adjustment header:", headerErr);
+      return res.status(500).json({ error: `Header insert failed: ${headerErr.message}` });
+    }
+
+    const adjustmentId = headerData.id;
+
+    // 2. Insert detail records
+    const detailRows = details.map((d: any) => ({
+      ...d,
+      tenant_id: tenantId,
+      adjustment_id: adjustmentId,
+      created_at: new Date().toISOString(),
+    }));
+
+    const { error: detailsErr } = await supabaseAdmin
+      .from("adjustment_items")
+      .insert(detailRows);
+
+    if (detailsErr) {
+      console.error("Error inserting adjustment details:", detailsErr);
+      // Clean up header to avoid dangling reference
+      await supabaseAdmin.from("inventory_adjustments").delete().eq("id", adjustmentId);
+      return res.status(500).json({ error: `Details insert failed: ${detailsErr.message}` });
+    }
+
+    // 3. If Approved, update branch inventories and insert stock ledger rows
+    if (header.status === "Approved") {
+      try {
+        // 3a. Update branch inventories
+        if (Array.isArray(branchInventoryUpdates)) {
+          for (const update of branchInventoryUpdates) {
+            if (update.has_existing) {
+              const { error: stockUpdateErr } = await supabaseAdmin
+                .from("branch_inventory")
+                .update({
+                  quantity: update.quantity,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq("branch_id", update.branch_id)
+                .eq("item_id", update.item_id);
+
+              if (stockUpdateErr) {
+                throw new Error(`Branch stock update failed: ${stockUpdateErr.message}`);
+              }
+            } else {
+              const { error: stockInsertErr } = await supabaseAdmin
+                .from("branch_inventory")
+                .insert({
+                  branch_id: update.branch_id,
+                  item_id: update.item_id,
+                  quantity: update.quantity,
+                  tenant_id: tenantId,
+                  updated_at: new Date().toISOString(),
+                });
+
+              if (stockInsertErr) {
+                throw new Error(`Branch stock insert failed: ${stockInsertErr.message}`);
+              }
+            }
+          }
+        }
+
+        // 3b. Insert stock ledger logs
+        if (Array.isArray(ledgerPayloads) && ledgerPayloads.length > 0) {
+          const loggedRows = ledgerPayloads.map((l: any) => {
+            // Strip out notes or any other fields that aren't on the stock_ledger schema
+            const { notes, ...rest } = l;
+            return {
+              ...rest,
+              tenant_id: tenantId,
+              reference_id: adjustmentId,
+              reference_type: "adjustment",
+              created_at: new Date().toISOString(),
+            };
+          });
+
+          const { error: ledgerErr } = await supabaseAdmin
+            .from("stock_ledger")
+            .insert(loggedRows);
+
+          if (ledgerErr) {
+            throw new Error(`Stock ledger write failed: ${ledgerErr.message}`);
+          }
+        }
+      } catch (innerErr: any) {
+        console.error("Error in stock update/ledger steps, rolling back adjustment records:", innerErr);
+        // Clean up both header and details (cascaded delete)
+        await supabaseAdmin.from("inventory_adjustments").delete().eq("id", adjustmentId);
+        return res.status(500).json({ error: innerErr.message });
+      }
+    }
+
+    res.json(headerData);
+  } catch (err: any) {
+    console.error("Error in POST /api/inventory-adjustments:", err);
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
+});
+
 app.post("/api/saas/complete-temp-password", authenticate, async (req: any, res) => {
   try {
     const uid = req.user?.uid;

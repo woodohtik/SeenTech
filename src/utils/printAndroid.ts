@@ -27,6 +27,8 @@
  * ============================================================================
  */
 
+import i18n from 'i18next';
+
 /* ============================ كشف المنصّة ============================ */
 
 const ua = (): string =>
@@ -54,8 +56,13 @@ export interface PlatformPrintAdvice {
   platform: 'android' | 'ios' | 'windows' | 'other';
   /** المسارات المتاحة فعلياً على هذا الجهاز، مرتّبة من الأفضل للأسوأ */
   available: Array<'usb' | 'bluetooth' | 'relay' | 'network' | 'dialog'>;
-  /** شرح عربي مختصر يُعرض في إعدادات الطابعة */
+  /** شرح مختصر يُعرض في إعدادات الطابعة (مترجم عند الاستدعاء) */
   advice: string;
+  /**
+   * مفتاح الترجمة لنفس الشرح — يفضّل استخدامه في الواجهة
+   * (`t(adviceKey)`) حتى يتحدّث النص عند تغيير اللغة.
+   */
+  adviceKey: string;
 }
 
 /**
@@ -75,9 +82,8 @@ export function getPlatformPrintAdvice(): PlatformPrintAdvice {
     return {
       platform: 'android',
       available,
-      advice:
-        'على الأندرويد تعمل الطباعة المباشرة بشكل جيد: إن كانت الطابعة موصولة USB-OTG أو بلوتوث BLE اربطها مباشرة من هذه الصفحة (لا يوجد على الأندرويد حجز تعريف حصري مثل ويندوز). ' +
-        'وإن كانت الطابعة موصولة بكمبيوتر ويندوز في المتجر، اقترن مع وسيط سين على ذلك الجهاز.',
+      advice: i18n.t('printing.platform_advice.android'),
+      adviceKey: 'printing.platform_advice.android',
     };
   }
 
@@ -85,8 +91,8 @@ export function getPlatformPrintAdvice(): PlatformPrintAdvice {
     return {
       platform: 'ios',
       available: ['relay', 'network', 'dialog'],
-      advice:
-        'متصفحات iOS لا تدعم الوصول المباشر لأجهزة USB أو البلوتوث. استخدم الاقتران مع وسيط سين على جهاز ويندوز في المتجر، أو طابعة شبكة عبر عنوان IP.',
+      advice: i18n.t('printing.platform_advice.ios'),
+      adviceKey: 'printing.platform_advice.ios',
     };
   }
 
@@ -98,16 +104,16 @@ export function getPlatformPrintAdvice(): PlatformPrintAdvice {
     return {
       platform: 'windows',
       available,
-      advice:
-        'على ويندوز لا يستطيع أي متصفح فتح طابعة USB لها تعريف رسمي (النظام يحجزها حجزاً حصرياً — وهذا سبب رسالة Access Denied). ' +
-        'الحل الصحيح هو الاقتران مع وسيط سين: يطبع صامتاً بنفس التعريف الرسمي.',
+      advice: i18n.t('printing.platform_advice.windows'),
+      adviceKey: 'printing.platform_advice.windows',
     };
   }
 
   return {
     platform: 'other',
     available: ['relay', 'network', 'dialog'],
-    advice: 'استخدم الاقتران مع وسيط سين، أو طابعة شبكة عبر عنوان IP، أو مربع حوار الطباعة.',
+    advice: i18n.t('printing.platform_advice.other'),
+    adviceKey: 'printing.platform_advice.other',
   };
 }
 

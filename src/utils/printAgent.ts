@@ -34,6 +34,8 @@
  * ============================================================================
  */
 
+import i18n from 'i18next';
+
 export interface AgentInfo {
   online: boolean;
   version?: string;
@@ -110,7 +112,7 @@ export function localAgentReachability(): {
   message: string;
 } {
   if (typeof window === 'undefined') {
-    return { possible: false, reason: 'not-running', message: 'غير متاح في هذه البيئة.' };
+    return { possible: false, reason: 'not-running', message: i18n.t('printing.agent.env_unavailable') };
   }
 
   const ua = navigator.userAgent || '';
@@ -125,8 +127,7 @@ export function localAgentReachability(): {
     return {
       possible: false,
       reason: 'not-running',
-      message:
-        'الوسيط المحلي غير متاح على الهواتف والأجهزة اللوحية. استخدم الاقتران مع وسيط سين على جهاز ويندوز في المتجر — يعمل من هذا الجهاز بدون أي تنصيب عليه.',
+      message: i18n.t('printing.agent.unavailable_on_mobile'),
     };
   }
 
@@ -134,8 +135,7 @@ export function localAgentReachability(): {
     return {
       possible: false,
       reason: 'mixed-content',
-      message:
-        'هذا المتصفح (Firefox / Safari) يحجب الاتصال بـ 127.0.0.1 من صفحة HTTPS باعتباره Mixed Content. استخدم الاقتران مع وسيط سين — يعمل على كل المتصفحات.',
+      message: i18n.t('printing.agent.mixed_content_blocked'),
     };
   }
 
@@ -143,8 +143,7 @@ export function localAgentReachability(): {
     return {
       possible: true,
       reason: 'blocked-by-browser',
-      message:
-        'قد يحجب Chrome الاتصال بالوسيط المحلي بسبب سياسة Local Network Access. إن ظهر طلب إذن «الوصول للشبكة المحلية» فاضغط سماح. الاقتران مع وسيط سين لا يحتاج هذا الإذن إطلاقاً.',
+      message: i18n.t('printing.agent.local_network_access_warning'),
     };
   }
 
@@ -185,7 +184,7 @@ export async function detectPrintAgent(): Promise<AgentInfo> {
       return {
         online: false,
         reason: 'bad-response',
-        error: `وسيط الطباعة أرجع استجابة غير صالحة (رمز ${res.status}).`,
+        error: i18n.t('printing.agent.bad_response', { status: res.status }),
       };
     }
 
@@ -205,7 +204,7 @@ export async function detectPrintAgent(): Promise<AgentInfo> {
     return {
       online: false,
       reason: 'bad-response',
-      error: data?.error || 'تعذر الاتصال بوسيط الطباعة.',
+      error: data?.error || i18n.t('printing.agent.connect_failed'),
     };
   } catch (err: any) {
     clearTimeout(timeoutId);
@@ -214,8 +213,7 @@ export async function detectPrintAgent(): Promise<AgentInfo> {
       return {
         online: false,
         reason: 'timeout',
-        error:
-          'انتهت مهلة الاتصال بالوسيط المحلي (127.0.0.1:9110). إن كانت نافذة الوسيط مفتوحة فالسبب على الأغلب حجب المتصفح — استخدم الاقتران مع وسيط سين بدلاً من ذلك.',
+        error: i18n.t('printing.agent.timeout'),
       };
     }
 
@@ -229,10 +227,7 @@ export async function detectPrintAgent(): Promise<AgentInfo> {
     return {
       online: false,
       reason: 'blocked-by-browser',
-      error:
-        'تعذر الوصول للوسيط المحلي. السبب أحد أمرين: إمّا أن نافذة الوسيط غير مفتوحة، ' +
-        'أو أن المتصفح حجب الاتصال بـ 127.0.0.1 (سياسة Local Network Access في Chrome الحديث). ' +
-        'الحل المضمون: استخدم «الاقتران مع وسيط سين» — يتصل الوسيط بالسيرفر خارجاً فلا يحتاج أي إذن من المتصفح، ويعمل على الأندرويد أيضاً.',
+      error: i18n.t('printing.agent.unreachable'),
     };
   }
 }
@@ -249,7 +244,7 @@ export async function listAgentPrinters(): Promise<AgentPrinter[]> {
 
   const data = await res.json().catch(() => null);
   if (!res.ok || !data?.ok) {
-    throw new Error(data?.error || 'فشل جلب قائمة الطابعات من وسيط الطباعة.');
+    throw new Error(data?.error || i18n.t('printing.agent.list_printers_failed'));
   }
   return data.printers || [];
 }
@@ -274,7 +269,7 @@ export async function testPrintViaAgent(printerName: string, text?: string): Pro
 
   const data = await res.json().catch(() => null);
   if (!res.ok || !data?.ok) {
-    throw new Error(data?.error || 'فشل إرسال اختبار الطباعة عبر الوسيط.');
+    throw new Error(data?.error || i18n.t('printing.agent.test_print_failed'));
   }
 }
 
@@ -283,7 +278,7 @@ export async function sendRawToAgent(
   data: Uint8Array,
   docName: string = 'SEEN POS Receipt'
 ): Promise<void> {
-  if (!printerName) throw new Error('لم يتم تحديد اسم الطابعة للطباعة عبر الوسيط.');
+  if (!printerName) throw new Error(i18n.t('printing.agent.printer_name_missing'));
 
   const res = await fetch(`${AGENT_BASE_URL}/print/raw`, {
     method: 'POST',
@@ -298,6 +293,8 @@ export async function sendRawToAgent(
 
   const dataRes = await res.json().catch(() => null);
   if (!res.ok || !dataRes?.ok) {
-    throw new Error(dataRes?.error || `فشل إرسال الفاتورة إلى الطابعة "${printerName}".`);
+    throw new Error(
+      dataRes?.error || i18n.t('printing.agent.send_invoice_failed', { printer: printerName })
+    );
   }
 }

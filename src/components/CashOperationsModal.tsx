@@ -9,6 +9,8 @@ import { logEmployeeAction } from '../services/employeeAuditService';
 import { useTranslation } from 'react-i18next';
 import DateTimeDisplay from './DateTimeDisplay';
 
+import { isRtlLang } from '../lib/direction';
+
 interface CashOperationsModalProps {
   shift: Shift;
   tenantId: string;
@@ -26,7 +28,7 @@ interface ShiftEntry {
 
 export default function CashOperationsModal({ shift, tenantId, onClose }: CashOperationsModalProps) {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
 
   const [operationType, setOperationType] = useState<'deposit' | 'withdrawal'>('withdrawal');
   const [amount, setAmount] = useState('');
@@ -188,7 +190,7 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
               type="button" 
               onClick={onClose} 
               className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full transition-all cursor-pointer"
-              title={i18n.language === 'ar' ? 'إغلاق الشاشة' : 'Close Screen'}
+              title={t('cash_operations.close_screen')}
             >
               <X size={18} />
             </button>
@@ -288,7 +290,7 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
                     {t('cash_operations.amount', 'المبلغ المطلوب')}
                   </label>
                   <span className="text-[10px] text-slate-400 font-bold bg-slate-100 px-2 py-0.5 rounded-md">
-                    {i18n.language === 'ar' ? 'عملة محلية' : (i18n.language === 'ur' ? 'مقامی کرنسی' : 'Local Currency')}
+                    {t('cash_operations.local_currency')}
                   </span>
                 </div>
 

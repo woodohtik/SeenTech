@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { InventoryItem } from '../../types/supabase';
 import { ShoppingBag, Ruler } from 'lucide-react';
 import { PriceDisplay } from '../PriceDisplay';
@@ -9,18 +10,19 @@ interface ProductsGridProps {
 }
 
 export default function ProductsGrid({ inventory, onAddToCart }: ProductsGridProps) {
-  
+  const { t } = useTranslation();
+
   return (
     <div className="bg-surface rounded-2xl shadow-sm border border-border p-4 flex-1 overflow-y-auto">
       <h2 className="text-lg font-bold text-content flex items-center gap-2 mb-4">
         <ShoppingBag className="text-brand" size={20} />
-        الأقمشة والخدمات المجردة
+        {t('pos.fabrics_and_services')}
       </h2>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {inventory.length === 0 ? (
            <div className="col-span-full py-12 text-center text-content-muted text-sm">
-             لا توجد منتجات مسجلة في المخزون
+             {t('pos.no_products_in_inventory')}
            </div>
         ) : (
           inventory.map(item => (
@@ -41,7 +43,7 @@ export default function ProductsGrid({ inventory, onAddToCart }: ProductsGridPro
               </span>
               <div className="flex flex-col items-center w-full mt-auto pt-2 border-t border-border">
                 <span className="text-brand font-black"><PriceDisplay amount={Number(item.price_per_unit || 0)} /></span>
-                <span className="text-[10px] text-content-muted mt-0.5">المتوفر: {item.quantity} {item.unit}</span>
+                <span className="text-[10px] text-content-muted mt-0.5">{t('pos.available_qty', { quantity: item.quantity, unit: item.unit })}</span>
               </div>
             </button>
           ))

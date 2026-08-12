@@ -24,9 +24,11 @@ import { AdminIconSelect } from './ui/AdminIconSelect';
 import { useTranslation } from 'react-i18next';
 import GlobalRoleManager from './GlobalRoleManager';
 
+import { isRtlLang } from '../lib/direction';
+
 export default function SaaSSystemSettings() {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [selectedTenantId, setSelectedTenantId] = useState<string>('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -102,7 +104,7 @@ export default function SaaSSystemSettings() {
       const { data: saasUserData } = await supabase
         .from('saas_users')
         .select('*')
-        .eq('uid', auth.currentUser?.uid)
+        .eq('uid', auth?.currentUser?.uid)
         .maybeSingle();
       
       if (saasUserData) {
@@ -116,8 +118,8 @@ export default function SaaSSystemSettings() {
     try {
       await supabase.from('saas_security_logs').insert({
         action,
-        user_id: auth.currentUser?.uid,
-        user_email: auth.currentUser?.email,
+        user_id: auth?.currentUser?.uid,
+        user_email: auth?.currentUser?.email,
         target_tenant_id: targetTenantId,
         details,
         type: action.includes('wipe') ? 'deletion' : 'update',
@@ -137,16 +139,16 @@ export default function SaaSSystemSettings() {
           key: 'branding',
           value: brandingSettings,
           updated_at: new Date().toISOString(),
-          updated_by: auth.currentUser?.uid
+          updated_by: auth?.currentUser?.uid
         }, { onConflict: 'key' });
       
       if (error) throw error;
       
-      alert('تم تحديث إعدادات العلامة التجارية بنجاح');
+      alert(t('saas.branding_saved_success'));
       await logAuditAction('update_branding', `Updated branding to ${brandingSettings.companyName}`);
     } catch (error) {
       console.error('Error saving branding settings:', error);
-      alert('حدث خطأ أثناء حفظ الإعدادات');
+      alert(t('saas.settings_save_error'));
     } finally {
       setIsSavingBranding(false);
     }
@@ -161,16 +163,16 @@ export default function SaaSSystemSettings() {
           key: 'platform',
           value: platformSettings,
           updated_at: new Date().toISOString(),
-          updated_by: auth.currentUser?.uid
+          updated_by: auth?.currentUser?.uid
         }, { onConflict: 'key' });
       
       if (error) throw error;
       
-      alert('تم تحديث إعدادات المنصة بنجاح');
+      alert(t('saas.platform_settings_saved_success'));
       await logAuditAction('update_platform', `Updated platform settings. Trial: ${platformSettings.trialDays}`);
     } catch (error) {
       console.error('Error saving platform settings:', error);
-      alert('حدث خطأ أثناء حفظ الإعدادات');
+      alert(t('saas.settings_save_error'));
     } finally {
       setIsSavingPlatform(false);
     }
@@ -179,7 +181,7 @@ export default function SaaSSystemSettings() {
   const confirmWipeData = async () => {
     const { tenantId, tenantName, inputValue } = confirmModal;
     if (inputValue !== tenantName) {
-      alert('الاسم غير مطابق. تم إلغاء العملية.');
+      alert(t('saas.name_mismatch_cancelled'));
       return;
     }
 
@@ -213,10 +215,10 @@ export default function SaaSSystemSettings() {
       }
 
       await logAuditAction('wipe_tenant_data', `Full data wipe performed for tenant ${tenantId} (${tenantName}). Total records deleted: ${totalDeleted}`, tenantId);
-      alert(`تم مسح كافة بيانات المشترك بنجاح (${totalDeleted} سجل)`);
+      alert(t('saas.tenant_data_wiped_success', { count: totalDeleted }));
     } catch (error) {
       console.error('Error wiping tenant data:', error);
-      alert('حدث خطأ أثناء مسح بيانات المشترك');
+      alert(t('saas.tenant_data_wipe_error'));
     } finally {
       setIsDeleting(false);
     }
@@ -230,13 +232,13 @@ export default function SaaSSystemSettings() {
       const result = await deleteTestDataForTenant(tenantId);
       await logAuditAction('delete_test_data', `Deleted test records for tenant ${tenantId}`, tenantId);
       if (result.success) {
-        alert(`تم حذف سجلات الاختبار بنجاح (${result.deletedCount} سجل)`);
+        alert(t('saas.test_data_deleted_success', { count: result.deletedCount }));
       } else {
-        alert(`حدث خطأ أثناء حذف بيانات الاختبار: ${result.error || ''}`);
+        alert(t('saas.test_data_delete_error_with_message', { error: result.error || '' }));
       }
     } catch (error) {
       console.error('Error deleting test data:', error);
-      alert('حدث خطأ أثناء حذف بيانات الاختبار');
+      alert(t('saas.test_data_delete_error'));
     } finally {
       setIsDeleting(false);
     }

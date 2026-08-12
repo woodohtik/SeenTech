@@ -12,6 +12,8 @@ import ExpansionPrompt from './ExpansionPrompt';
 import UsageGuide from './UsageGuide';
 import { PriceDisplay } from './PriceDisplay';
 import { HelpCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { useDirection } from '../lib/direction';
 
 
 const STAGES = ['measurements_taken','cutting','sewing','embroidery','ironing_packaging','ready','delivered'];
@@ -19,9 +21,17 @@ const STAGE_AR: Record<string,string> = {
   measurements_taken:'أخذ المقاسات', cutting:'قص', sewing:'خياطة', embroidery:'تطريز',
   ironing_packaging:'كي وتغليف', ready:'جاهز', delivered:'تم التسليم'
 };
+/** Display-only labels. STAGE_AR above is kept because it feeds the persisted `history.notes` payload. */
+const STAGE_LABEL_KEYS: Record<string,string> = {
+  measurements_taken:'common.status_measurements_taken', cutting:'dashboard.today.stage_cutting',
+  sewing:'common.status_sewing', embroidery:'common.status_embroidery',
+  ironing_packaging:'dashboard.today.stage_ironing_packaging', ready:'dashboard.ready',
+  delivered:'common.status_delivered'
+};
 const nextStage = (s: string) => STAGES[Math.min(STAGES.indexOf(s) + 1, STAGES.length - 1)];
 
 export default function DashboardToday({ tenantId }: { tenantId: string }) {
+  const { t, dir, locale } = useDirection();
   const navigate = useNavigate();
   const { currentStaff } = useStaff();
   const { hasPermission } = usePermissions(currentStaff);
@@ -70,10 +80,10 @@ export default function DashboardToday({ tenantId }: { tenantId: string }) {
     }).eq('id', o.id);
     load();
   }
-  const todayStr = new Date().toLocaleDateString('ar-SA-u-nu-latn', { weekday:'long', day:'numeric', month:'long' });
+  const todayStr = new Date().toLocaleDateString(locale, { weekday:'long', day:'numeric', month:'long' });
 
   return (
-    <div dir="rtl" className="w-full max-w-4xl mx-auto p-3 sm:p-5 lg:p-6">
+    <div dir={dir} className="w-full max-w-4xl mx-auto p-3 sm:p-5 lg:p-6">
       {showUsageGuide ? (
         <UsageGuide onSkip={() => {
           localStorage.setItem('staff_usage_guide_dismissed', 'true');
@@ -86,7 +96,7 @@ export default function DashboardToday({ tenantId }: { tenantId: string }) {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-black text-content leading-none">اليوم</h1>
+            <h1 className="text-2xl sm:text-3xl font-black text-content leading-none">{t('dashboard.today.title')}</h1>
             {!showUsageGuide && (
               <button 
                 onClick={() => {
@@ -96,7 +106,7 @@ export default function DashboardToday({ tenantId }: { tenantId: string }) {
                 className="text-xs sm:text-sm bg-brand/10 hover:bg-brand/20 text-brand font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors"
               >
                 <HelpCircle size={16} />
-                مساعدة
+                {t('common.help')}
               </button>
             )}
           </div>
@@ -104,25 +114,25 @@ export default function DashboardToday({ tenantId }: { tenantId: string }) {
         </div>
         <button onClick={() => navigate('/sales')}
           className="w-full sm:w-auto min-h-[52px] px-6 rounded-2xl text-white font-extrabold text-base sm:text-lg shadow-md active:scale-[0.98] transition-transform"
-          style={{ background: '#0BA06B' }}>+ طلب جديد</button>
+          style={{ background: '#0BA06B' }}>+ {t('orders.new_order')}</button>
       </div>
 
       {/* الكتل — عمود على الجوال، عمودان من sm */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-        <Section title={`مستحق التسليم (${due.length})`} loading={loading}>
-          {due.length === 0 ? <Empty text="ما في تسليمات مستحقة 👍" /> :
-            due.map((o:any) => <Row key={o.id} name={o.customer_name} note={STAGE_AR[o.status]||o.status}
-              onAction={() => advance(o)} actionLabel="التالي ▸" />)}
+        <Section title={t('dashboard.today.due_for_delivery', { count: due.length })} loading={loading}>
+          {due.length === 0 ? <Empty text={t('dashboard.today.no_due_deliveries')} /> :
+            due.map((o:any) => <Row key={o.id} name={o.customer_name} note={t(STAGE_LABEL_KEYS[o.status] || o.status)}
+              onAction={() => advance(o)} actionLabel={t('dashboard.today.next_stage_short')} />)}
         </Section>
 
-        <Section title={`قيد التنفيذ (${active.length})`} loading={loading}>
-          {active.length === 0 ? <Empty text="لا طلبات جارية" /> :
-            active.slice(0,12).map((o:any) => <Row key={o.id} name={o.customer_name} note={STAGE_AR[o.status]||o.status}
-              onAction={() => advance(o)} actionLabel="نقل للمرحلة التالية" />)}
+        <Section title={t('dashboard.today.in_progress_count', { count: active.length })} loading={loading}>
+          {active.length === 0 ? <Empty text={t('dashboard.today.no_active_orders')} /> :
+            active.slice(0,12).map((o:any) => <Row key={o.id} name={o.customer_name} note={t(STAGE_LABEL_KEYS[o.status] || o.status)}
+              onAction={() => advance(o)} actionLabel={t('dashboard.today.move_to_next_stage')} />)}
         </Section>
 
         {hasPermission('dashboard.revenue') && (
-          <Section title="تحصيل اليوم">
+          <Section title={t('dashboard.today.collected_today')}>
             <div className="text-3xl font-black text-content">
               <PriceDisplay amount={collectedToday} />
             </div>
@@ -130,10 +140,10 @@ export default function DashboardToday({ tenantId }: { tenantId: string }) {
         )}
 
         {hasPermission('dashboard.inventory') && lowStock > 0 && (
-          <Section title="تنبيه مخزون">
+          <Section title={t('dashboard.today.stock_alert')}>
             <button onClick={()=>navigate('/inventory?filter=low_stock')}
               className="w-full min-h-[48px] rounded-xl bg-surface-muted text-content font-bold px-4 text-sm sm:text-base text-right">
-              {lowStock} مادة قاربت على النفاد — راجعها
+              {t('dashboard.today.low_stock_warning', { count: lowStock })}
             </button>
           </Section>
         )}
@@ -145,10 +155,11 @@ export default function DashboardToday({ tenantId }: { tenantId: string }) {
 }
 
 function Section({ title, children, loading }: any) {
+  const { t } = useTranslation();
   return (
     <div className="bg-surface border border-border rounded-2xl p-4 sm:p-5">
       <div className="font-bold text-base sm:text-lg text-content mb-3">{title}</div>
-      {loading ? <div className="text-content-muted text-sm py-2">جارٍ التحميل…</div> : children}
+      {loading ? <div className="text-content-muted text-sm py-2">{t('common.loading')}</div> : children}
     </div>
   );
 }

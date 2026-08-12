@@ -28,11 +28,13 @@ import { adjustStock } from '../services/inventoryService';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import { generateOrderNumber } from '../lib/utils';
 
+import { isRtlLang } from '../lib/direction';
+
 export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, shiftId?: string }) {
   const { t, i18n } = useTranslation();
   const { success: toastSuccess, error: toastError, handleError: globalHandleError } = useToast();
   const { currentStaff } = useStaff();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Order[]>([]);
@@ -105,7 +107,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
       });
 
       if (matchedOrders.length === 0) {
-        toastError(t('sales_returns.invoice_not_found', 'لم يتم العثور على أي فواتير تطابق البحث'));
+        toastError(t('sales_returns.invoice_not_found'));
       } else if (matchedOrders.length === 1) {
         setOrder(matchedOrders[0]);
       } else {
@@ -126,7 +128,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
       const historyEntry = {
         status: 'cancelled',
         updatedAt: new Date().toISOString(),
-        updatedBy: currentStaff?.name || t('common.roles.owner', 'المالك'),
+        updatedBy: currentStaff?.name || t('common.roles.owner'),
         notes: `تم إرجاع الفاتورة. طريقة الاسترجاع: ${
           refundMethod === 'cash' ? 'نقداً' : refundMethod === 'network' ? 'شبكة' : 'تحويل بنكي'
         }. سبب الإرجاع: ${returnReason || 'لا يوجد'}`
@@ -219,7 +221,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
         `تم عمل مرتجع للفاتورة #${order.orderNumber || order.id.slice(-6).toUpperCase()} بمبلغ ${refundTotalAmount} ريال بطريقة ${refundMethod === 'cash' ? 'نقداً' : refundMethod === 'network' ? 'شبكة' : 'تحويل بنكي'}`
       );
 
-      toastSuccess(t('sales_returns.return_success_msg', 'تم إرجاع الفاتورة بنجاح وتحديث الكميات بالمستودع'));
+      toastSuccess(t('sales_returns.return_success_msg'));
       setOrder(null);
       setSearchResults([]);
       setSearchQuery('');
@@ -248,7 +250,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
       <div className="bg-white dark:bg-[#1D1D1D] p-4 sm:p-6 rounded-2xl md:rounded-[2rem] border border-gray-200 dark:border-gray-800 shadow-sm space-y-6">
         <div>
           <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">
-            {t('sales_returns.title', 'إرجاع فاتورة مبيعات')}
+            {t('sales_returns.title')}
           </h2>
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="group flex-1 flex items-center bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-xl focus-within:ring-2 focus-within:ring-[#1C8FFF] transition-all overflow-hidden h-12">
@@ -257,7 +259,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
               </div>
               <input 
                 type="text"
-                placeholder={t('sales_returns.search_placeholder_phone', 'أدخل رقم الفاتورة أو رقم جوال العميل للبحث...')}
+                placeholder={t('sales_returns.search_placeholder_phone')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -269,7 +271,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
               disabled={loading || !searchQuery.trim()}
               className="bg-[#1C8FFF] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#1C8FFF]/90 transition-all active:scale-95 disabled:opacity-50 cursor-pointer h-12 shrink-0"
             >
-              {loading ? t('sales_returns.searching', 'جاري البحث...') : t('sales_returns.search_btn', 'بحث')}
+              {loading ? t('sales_returns.searching') : t('sales_returns.search_btn')}
             </button>
           </div>
         </div>
@@ -280,7 +282,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
             <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
               <AlertTriangle size={18} />
               <h3 className="font-bold text-sm sm:text-base">
-                {t('sales_returns.multiple_found', 'تم العثور على فواتير متعددة لرقم الجوال المدخل:')}
+                {t('sales_returns.multiple_found')}
               </h3>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -288,7 +290,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                 <button
                   key={srvOrder.id}
                   onClick={() => setOrder(srvOrder)}
-                  className="flex flex-col text-right p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 hover:bg-gray-50 dark:bg-slate-900/40 dark:hover:bg-slate-900/80 transition-all w-full focus:ring-2 focus:ring-[#1C8FFF] outline-none"
+                  className={`flex flex-col ${isRtl ? 'text-right' : 'text-left'} p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 hover:bg-gray-50 dark:bg-slate-900/40 dark:hover:bg-slate-900/80 transition-all w-full focus:ring-2 focus:ring-[#1C8FFF] outline-none`}
                 >
                   <div className="flex items-center justify-between w-full mb-2 border-b border-gray-100 dark:border-gray-800/80 pb-2">
                     <span className="font-extrabold text-[#1C8FFF]">#{srvOrder.orderNumber || srvOrder.id.slice(-6).toUpperCase()}</span>
@@ -307,7 +309,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                   </div>
                   {srvOrder.status === 'cancelled' && (
                     <span className="mt-2 text-[10px] self-start bg-red-500/10 text-red-500 px-2 py-0.5 rounded-full font-bold">
-                      {t('sales_returns.status_returned', 'مرتجع')}
+                      {t('procurement.return')}
                     </span>
                   )}
                 </button>
@@ -322,7 +324,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                 <ShoppingBag size={18} className="text-[#1C8FFF]" />
-                {t('sales_returns.order_details', 'تفاصيل الفاتورة المحددة')}
+                {t('sales_returns.order_details')}
               </h3>
               {searchResults.length > 0 && (
                 <button
@@ -330,26 +332,26 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                   className="text-xs text-gray-500 hover:text-[#1C8FFF] flex items-center gap-1 transition-all"
                 >
                   <ChevronRight size={14} className={isRtl ? 'rotate-180' : ''} />
-                  {t('sales_returns.back_to_results', 'العودة لنتائج البحث')}
+                  {t('sales_returns.back_to_results')}
                 </button>
               )}
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-gray-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('sales_returns.invoice_no', 'رقم الفاتورة')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('sales_returns.invoice_no')}</p>
                 <p className="font-bold text-gray-800 dark:text-gray-100">#{order.orderNumber || order.id.slice(-6).toUpperCase()}</p>
               </div>
               <div className="bg-gray-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('sales_returns.customer', 'العميل')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('sales_returns.customer')}</p>
                 <p className="font-bold text-gray-800 dark:text-gray-100">{order.customerName}</p>
               </div>
               <div className="bg-gray-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('sales_returns.date', 'التاريخ')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('sales_returns.date')}</p>
                 <DateTimeDisplay date={order.orderDate} showTime={true} size="xs" />
               </div>
               <div className="bg-gray-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('sales_returns.total', 'الإجمالي')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('sales_returns.total')}</p>
                 <p className="font-bold text-[#1C8FFF]"><PriceDisplay amount={order.totalAmount} /></p>
               </div>
             </div>
@@ -357,7 +359,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
             {/* List items and demonstrate eligibility */}
             <div className="space-y-3">
               <h4 className="font-bold text-sm text-gray-700 dark:text-gray-300">
-                {t('sales_returns.items_list', 'محتويات الفاتورة وحالة الإرجاع')}
+                {t('sales_returns.items_list')}
               </h4>
               <div className="border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
                 {items.map((item: any, idx: number) => {
@@ -370,10 +372,10 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                         </div>
                         <div>
                           <p className="font-bold text-gray-800 dark:text-gray-100 text-sm">
-                            {isCustom ? item.garmentType || t('orders.custom_thobe', 'تفصيل ثوب') : item.name || t('orders.ready_made', 'صنف جاهز')}
+                            {isCustom ? item.garmentType || t('orders.custom_thobe') : item.name || t('orders.ready_made')}
                           </p>
                           <p className="text-xs text-gray-400">
-                            {t('sales_returns.quantity', 'الكمية')}: {item.quantity} × <PriceDisplay amount={item.price} />
+                            {t('common.quantity')}: {item.quantity} × <PriceDisplay amount={item.price} />
                           </p>
                         </div>
                       </div>
@@ -382,12 +384,12 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                         {isCustom ? (
                           <span className="text-xs font-bold px-3 py-1 bg-amber-500/10 text-amber-600 rounded-full flex items-center gap-1">
                             <AlertTriangle size={12} />
-                            {t('sales_returns.non_returnable', 'تفصيل - غير قابل للإرجاع')}
+                            {t('sales_returns.non_returnable')}
                           </span>
                         ) : (
                           <span className="text-xs font-bold px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-full flex items-center gap-1">
                             <CheckCircle2 size={12} />
-                            {t('sales_returns.returnable_restock', 'جاهز - يرجع للمخزون')}
+                            {t('sales_returns.returnable_restock')}
                           </span>
                         )}
                         <span className="font-black text-gray-800 dark:text-gray-200 text-sm">
@@ -406,10 +408,10 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                 <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={18} />
                 <div>
                   <h4 className="font-bold text-red-800 dark:text-red-400 text-sm">
-                    {t('sales_returns.cannot_return_title', 'لا يمكن عمل مرتجع')}
+                    {t('sales_returns.cannot_return_title')}
                   </h4>
                   <p className="text-xs text-red-600 dark:text-red-400/80 mt-1 leading-relaxed">
-                    {t('sales_returns.cannot_return_msg', 'جميع المنتجات في هذه الفاتورة تفصيل (مفصلة خصيصاً). حسب سياسة النظام، لا يمكن إرجاع المنتجات التفصيل.')}
+                    {t('sales_returns.cannot_return_msg')}
                   </p>
                 </div>
               </div>
@@ -418,10 +420,10 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                 <AlertTriangle className="text-amber-500 shrink-0 mt-0.5" size={18} />
                 <div>
                   <h4 className="font-bold text-amber-800 dark:text-amber-400 text-sm">
-                    {t('sales_returns.partial_return_warning_title', 'إرجاع جزئي فقط')}
+                    {t('sales_returns.partial_return_warning_title')}
                   </h4>
                   <p className="text-xs text-amber-600 dark:text-amber-400/80 mt-1 leading-relaxed">
-                    {t('sales_returns.partial_return_warning_msg', 'هذه الفاتورة تحتوي على منتجات تفصيل وأخرى جاهزة. سيتم إرجاع المنتجات الجاهزة فقط وإعادة كميتها للمستودع بمبلغ')} <PriceDisplay amount={refundTotalAmount} />.
+                    {t('sales_returns.partial_return_warning_msg')} <PriceDisplay amount={refundTotalAmount} />.
                   </p>
                 </div>
               </div>
@@ -433,7 +435,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                 {/* 1. Refund Payment Method Selection */}
                 <div className="space-y-3">
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
-                    {t('sales_returns.refund_method_label', 'تحديد طريقة إرجاع المبلغ')}
+                    {t('sales_returns.refund_method_label')}
                   </label>
                   <div className="grid grid-cols-3 gap-3">
                     <button
@@ -446,7 +448,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                       }`}
                     >
                       <Coins size={18} />
-                      {t('sales_returns.method_cash', 'نقداً')}
+                      {t('sales_returns.method_cash')}
                     </button>
                     <button
                       type="button"
@@ -458,7 +460,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                       }`}
                     >
                       <CreditCard size={18} />
-                      {t('sales_returns.method_network', 'شبكة')}
+                      {t('common.payment_methods.network')}
                     </button>
                     <button
                       type="button"
@@ -470,7 +472,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                       }`}
                     >
                       <Landmark size={18} />
-                      {t('sales_returns.method_bank', 'تحويل بنكي')}
+                      {t('pos.bank_transfer')}
                     </button>
                   </div>
                 </div>
@@ -478,13 +480,13 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                 {/* 2. Reason Textarea */}
                 <div>
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                    {t('sales_returns.return_reason', 'سبب الإرجاع')}
+                    {t('sales_returns.return_reason')}
                   </label>
                   <textarea 
                     value={returnReason}
                     onChange={(e) => setReturnReason(e.target.value)}
                     className="w-full p-4 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-[#1C8FFF] outline-none h-24 resize-none text-gray-800 dark:text-gray-100 font-semibold"
-                    placeholder={t('sales_returns.reason_placeholder', 'اكتب سبب الإرجاع هنا...')}
+                    placeholder={t('sales_returns.reason_placeholder')}
                   />
                 </div>
               </>
@@ -498,10 +500,10 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
             >
               <RotateCcw size={20} />
               {order.status === 'cancelled' 
-                ? t('sales_returns.already_returned', 'الفاتورة مرتجعة مسبقاً') 
+                ? t('sales_returns.already_returned') 
                 : isFullyCustom 
-                ? t('sales_returns.no_returnable_items', 'لا توجد منتجات جاهزة لإرجاعها')
-                : t('sales_returns.confirm_return', 'تأكيد الإرجاع')}
+                ? t('sales_returns.no_returnable_items')
+                : t('sales_returns.confirm_return')}
             </button>
           </div>
         )}
@@ -522,30 +524,30 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
               
               <div className="space-y-2">
                 <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-                  {t('sales_returns.confirm_title', 'تأكيد عملية الإرجاع')}
+                  {t('sales_returns.confirm_title')}
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-                  {t('sales_returns.confirm_return_msg_custom', 'هل أنت متأكد من إرجاع هذه الفاتورة؟ سيتم إعادة كمية المنتجات الجاهزة إلى المخزون وتحديث سجلاتك.')}
+                  {t('sales_returns.confirm_return_msg_custom')}
                 </p>
               </div>
 
               {/* Total Summary */}
-              <div className="bg-gray-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 text-right space-y-2.5">
+              <div className={`bg-gray-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 ${isRtl ? 'text-right' : 'text-left'} space-y-2.5`}>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-400 font-bold">{t('sales_returns.refund_amount', 'مبلغ الاسترجاع')}:</span>
+                  <span className="text-xs text-gray-400 font-bold">{t('sales_returns.refund_amount')}:</span>
                   <span className="font-extrabold text-lg text-[#1C8FFF]">
                     <PriceDisplay amount={refundTotalAmount} />
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-400 font-bold">{t('sales_returns.refund_method_confirm', 'طريقة الاسترداد')}:</span>
+                  <span className="text-xs text-gray-400 font-bold">{t('sales_returns.refund_method_confirm')}:</span>
                   <span className="text-sm font-bold text-gray-800 dark:text-gray-200">
-                    {refundMethod === 'cash' ? 'نقداً' : refundMethod === 'network' ? 'شبكة / مدى' : 'تحويل بنكي'}
+                    {refundMethod === 'cash' ? t('sales_returns.method_cash') : refundMethod === 'network' ? t('sales_returns.method_network_mada') : t('pos.bank_transfer')}
                   </span>
                 </div>
                 {returnReason && (
                   <div className="border-t border-gray-100 dark:border-gray-800 pt-2 mt-1">
-                    <p className="text-xs text-gray-400 mb-0.5">{t('sales_returns.return_reason', 'سبب الإرجاع')}:</p>
+                    <p className="text-xs text-gray-400 mb-0.5">{t('sales_returns.return_reason')}:</p>
                     <p className="text-xs font-bold text-gray-700 dark:text-gray-300">{returnReason}</p>
                   </div>
                 )}
@@ -557,7 +559,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                   onClick={() => setShowConfirmModal(false)}
                   className="w-full bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-100 py-3 rounded-xl font-bold text-sm transition-all cursor-pointer"
                 >
-                  {t('common.cancel', 'إلغاء')}
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="button"
@@ -570,7 +572,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                   ) : (
                     <RotateCcw size={16} />
                   )}
-                  {t('sales_returns.confirm_btn', 'تأكيد الإرجاع')}
+                  {t('sales_returns.confirm_return')}
                 </button>
               </div>
             </motion.div>

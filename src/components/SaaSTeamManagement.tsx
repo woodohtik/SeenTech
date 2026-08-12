@@ -23,9 +23,11 @@ import { SaasUser, SaasUserRole } from '../types/supabase';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
 
+import { isRtlLang } from '../lib/direction';
+
 export default function SaaSTeamManagement() {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
 
   const { dbUser } = useAuth();
   const userRole = dbUser?.role;

@@ -24,8 +24,10 @@ import {
   rejectSubscriptionRequest, 
   SubscriptionRequest 
 } from '../services/subscriptionRequestService';
+import { useDirection } from '../lib/direction';
 
 export default function SubscriptionRequestsAdminManager() {
+  const { t, locale } = useDirection();
   const [requests, setRequests] = useState<SubscriptionRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
@@ -65,16 +67,16 @@ export default function SubscriptionRequestsAdminManager() {
   };
 
   const handleApprove = async (req: SubscriptionRequest) => {
-    if (!confirm(`هل أنت تأكد من قبول طلب الاشتراك وتفعيل ${req.plan_name} للمشترك (${req.tenant_name || req.tenant_id})؟`)) {
+    if (!confirm(t('subscription.requests.approve_confirm', { plan: req.plan_name, tenant: req.tenant_name || req.tenant_id }))) {
       return;
     }
     setProcessingId(req.id);
     try {
       await approveSubscriptionRequest(req.id, req.tenant_id, req.plan_id);
-      showToast(`تم قبول الطلب وتفعيل ${req.plan_name} بنجاح ✓`);
+      showToast(t('subscription.requests.approve_success', { plan: req.plan_name }));
       await loadRequests();
     } catch (err: any) {
-      alert(`حدث خطأ أثناء تفعيل الباقة: ${err.message || err}`);
+      alert(t('subscription.requests.approve_error', { error: err.message || err }));
     } finally {
       setProcessingId(null);
     }
@@ -84,13 +86,13 @@ export default function SubscriptionRequestsAdminManager() {
     if (!rejectingReq) return;
     setProcessingId(rejectingReq.id);
     try {
-      await rejectSubscriptionRequest(rejectingReq.id, rejectionReason.trim() || 'تم رفض طلب الاشتراك.');
-      showToast('تم رفض طلب الاشتراك بنجاح');
+      await rejectSubscriptionRequest(rejectingReq.id, rejectionReason.trim() || t('subscription.requests.default_rejection_reason'));
+      showToast(t('subscription.requests.reject_success'));
       setRejectingReq(null);
       setRejectionReason('');
       await loadRequests();
     } catch (err: any) {
-      alert(`حدث خطأ أثناء رفض الطلب: ${err.message || err}`);
+      alert(t('subscription.requests.reject_error', { error: err.message || err }));
     } finally {
       setProcessingId(null);
     }
@@ -125,7 +127,7 @@ export default function SubscriptionRequestsAdminManager() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-surface p-6 rounded-3xl border border-border shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-black text-content-muted uppercase tracking-wider mb-1">الطلبات المعلقة (قيد المراجعة)</p>
+            <p className="text-xs font-black text-content-muted uppercase tracking-wider mb-1">{t('subscription.requests.pending_count_label')}</p>
             <p className="text-3xl font-black text-amber-500">{pendingCount}</p>
           </div>
           <div className="p-4 bg-amber-500/10 text-amber-600 rounded-2xl">
@@ -135,7 +137,7 @@ export default function SubscriptionRequestsAdminManager() {
 
         <div className="bg-surface p-6 rounded-3xl border border-border shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-black text-content-muted uppercase tracking-wider mb-1">الطلبات المقبولة (المفعّلة)</p>
+            <p className="text-xs font-black text-content-muted uppercase tracking-wider mb-1">{t('subscription.requests.approved_count_label')}</p>
             <p className="text-3xl font-black text-emerald-600">{approvedCount}</p>
           </div>
           <div className="p-4 bg-emerald-500/10 text-emerald-600 rounded-2xl">
@@ -145,7 +147,7 @@ export default function SubscriptionRequestsAdminManager() {
 
         <div className="bg-surface p-6 rounded-3xl border border-border shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-black text-content-muted uppercase tracking-wider mb-1">الطلبات المرفوضة</p>
+            <p className="text-xs font-black text-content-muted uppercase tracking-wider mb-1">{t('subscription.requests.rejected_count_label')}</p>
             <p className="text-3xl font-black text-rose-500">{rejectedCount}</p>
           </div>
           <div className="p-4 bg-rose-500/10 text-rose-600 rounded-2xl">
@@ -166,7 +168,7 @@ export default function SubscriptionRequestsAdminManager() {
             }`}
           >
             <Clock size={16} />
-            <span>قيد الانتظار</span>
+            <span>{t('inventory.status_pending')}</span>
             {pendingCount > 0 && (
               <span className="bg-white/20 text-white px-2 py-0.5 rounded-full text-[10px] font-black">
                 {pendingCount}
@@ -182,7 +184,7 @@ export default function SubscriptionRequestsAdminManager() {
                 : 'bg-surface-muted text-content-muted hover:text-content'
             }`}
           >
-            <span>جميع الطلبات ({requests.length})</span>
+            <span>{t('dashboard.all_orders')} ({requests.length})</span>
           </button>
 
           <button
@@ -194,7 +196,7 @@ export default function SubscriptionRequestsAdminManager() {
             }`}
           >
             <CheckCircle2 size={16} />
-            <span>المقبولة ({approvedCount})</span>
+            <span>{t('subscription.requests.filter_approved')} ({approvedCount})</span>
           </button>
 
           <button
@@ -206,7 +208,7 @@ export default function SubscriptionRequestsAdminManager() {
             }`}
           >
             <XCircle size={16} />
-            <span>المرفوضة ({rejectedCount})</span>
+            <span>{t('subscription.requests.filter_rejected')} ({rejectedCount})</span>
           </button>
         </div>
 
@@ -217,7 +219,7 @@ export default function SubscriptionRequestsAdminManager() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="البحث باسم المحل، البريد، المرجع..."
+              placeholder={t('subscription.requests.search_placeholder')}
               className="w-full pr-10 pl-4 py-2.5 bg-surface-muted border border-border rounded-2xl text-xs font-bold text-content focus:border-brand focus:outline-none"
             />
           </div>
@@ -225,7 +227,7 @@ export default function SubscriptionRequestsAdminManager() {
           <button
             onClick={loadRequests}
             className="p-2.5 bg-surface-muted hover:bg-border rounded-2xl text-content-muted hover:text-content transition-all cursor-pointer"
-            title="تحديث القائمة"
+            title={t('subscription.requests.refresh_list')}
           >
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
           </button>
@@ -237,16 +239,16 @@ export default function SubscriptionRequestsAdminManager() {
         {loading ? (
           <div className="p-12 text-center text-content-muted flex flex-col items-center gap-3">
             <RefreshCw size={28} className="animate-spin text-brand" />
-            <p className="text-xs font-bold">جاري تحميل طلبات الاشتراكات وإثباتات الدفع...</p>
+            <p className="text-xs font-bold">{t('subscription.requests.loading')}</p>
           </div>
         ) : filteredRequests.length === 0 ? (
           <div className="p-12 text-center text-content-muted space-y-3">
             <div className="w-16 h-16 bg-surface-muted rounded-full flex items-center justify-center mx-auto text-content-muted">
               <FileText size={28} />
             </div>
-            <p className="text-base font-black text-content">لا توجد طلبات اشتراك في هذه القائمة</p>
+            <p className="text-base font-black text-content">{t('subscription.requests.empty_title')}</p>
             <p className="text-xs font-bold max-w-sm mx-auto">
-              عند إرسال طلب تجديد أو ترقية مع إثبات الدفع من قبل المشتركين، ستظهر الطلبات هنا فوراً لمراجعتها واعتمادها.
+              {t('subscription.requests.empty_desc')}
             </p>
           </div>
         ) : (
@@ -258,26 +260,26 @@ export default function SubscriptionRequestsAdminManager() {
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="text-lg font-black text-content flex items-center gap-2">
                       <Building2 size={18} className="text-brand" />
-                      {req.tenant_name || 'مشترك سين'}
+                      {req.tenant_name || t('saas.default_subscriber_name')}
                     </span>
 
                     {/* Status Badge */}
                     {req.status === 'pending' && (
                       <span className="px-3 py-1 bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 rounded-full text-xs font-black flex items-center gap-1.5 animate-pulse">
                         <Clock size={12} />
-                        قيد المراجعة
+                        {t('referral.withdrawal.pending')}
                       </span>
                     )}
                     {req.status === 'approved' && (
                       <span className="px-3 py-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 rounded-full text-xs font-black flex items-center gap-1.5">
                         <CheckCircle2 size={12} />
-                        مقبول ومفعّل
+                        {t('subscription.requests.status_approved_active')}
                       </span>
                     )}
                     {req.status === 'rejected' && (
                       <span className="px-3 py-1 bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20 rounded-full text-xs font-black flex items-center gap-1.5">
                         <XCircle size={12} />
-                        مرفوض
+                        {t('referral.withdrawal.approved')}
                       </span>
                     )}
                   </div>
@@ -285,28 +287,28 @@ export default function SubscriptionRequestsAdminManager() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-bold text-content-muted">
                     <div className="flex items-center gap-1.5">
                       <Mail size={14} className="text-content-muted" />
-                      <span>البريد: <span className="text-content">{req.tenant_email || 'غير متوفر'}</span></span>
+                      <span>{t('subscription.requests.email')}: <span className="text-content">{req.tenant_email || t('common.not_available')}</span></span>
                     </div>
 
                     <div className="flex items-center gap-1.5">
                       <CreditCard size={14} className="text-content-muted" />
-                      <span>طريقة الدفع: <span className="text-brand font-black">{req.payment_method === 'bank_transfer' ? 'تحويل بنكي' : req.payment_method === 'card' ? 'بطاقة ائتمانية' : 'نقدي / مباشر'}</span></span>
+                      <span>{t('common.method')}: <span className="text-brand font-black">{req.payment_method === 'bank_transfer' ? t('billing.modal_method_bank') : req.payment_method === 'card' ? t('billing.payment_method_card') : t('subscription.requests.method_cash_direct')}</span></span>
                     </div>
 
                     <div className="flex items-center gap-1.5">
                       <Clock size={14} className="text-content-muted" />
-                      <span>التاريخ: <span className="text-content">{new Date(req.created_at).toLocaleDateString('ar-SA-u-nu-latn', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></span>
+                      <span>{t('common.date')}: <span className="text-content">{new Date(req.created_at).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></span>
                     </div>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-4 text-xs font-bold bg-surface-muted/60 p-3 rounded-2xl border border-border/60">
                     <div>
-                      <span>الباقة المطلوبة: </span>
+                      <span>{t('subscription.requests.requested_plan')}: </span>
                       <span className="text-content font-black">{req.plan_name}</span>
                     </div>
                     <span>•</span>
                     <div>
-                      <span>المبلغ: </span>
+                      <span>{t('common.amount')}: </span>
                       <span className="text-emerald-600 font-black dir-ltr inline-block">
                         <PriceDisplay amount={req.amount} />
                       </span>
@@ -315,7 +317,7 @@ export default function SubscriptionRequestsAdminManager() {
                       <>
                         <span>•</span>
                         <div>
-                          <span>رقم المرجع: </span>
+                          <span>{t('subscription.requests.reference_no')}: </span>
                           <span className="text-brand font-mono">{req.reference_no}</span>
                         </div>
                       </>
@@ -324,7 +326,7 @@ export default function SubscriptionRequestsAdminManager() {
                       <>
                         <span>•</span>
                         <div className="text-content-muted truncate max-w-xs">
-                          <span>ملاحظة: </span>
+                          <span>{t('subscription.requests.note')}: </span>
                           <span>"{req.notes}"</span>
                         </div>
                       </>
@@ -333,7 +335,7 @@ export default function SubscriptionRequestsAdminManager() {
 
                   {req.rejection_reason && (
                     <p className="text-xs font-bold text-rose-600 bg-rose-500/5 p-2.5 rounded-xl border border-rose-500/20">
-                      سبب الرفض: {req.rejection_reason}
+                      {t('subscription.requests.rejection_reason_value', { reason: req.rejection_reason })}
                     </p>
                   )}
                 </div>
@@ -348,11 +350,11 @@ export default function SubscriptionRequestsAdminManager() {
                       className="px-4 py-2.5 bg-brand/10 hover:bg-brand/20 text-brand border border-brand/20 rounded-2xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer"
                     >
                       <Eye size={16} />
-                      <span>معاينة إثبات الدفع</span>
+                      <span>{t('subscription.requests.view_proof')}</span>
                     </button>
                   ) : (
                     <span className="px-3 py-2 bg-surface-muted text-content-muted rounded-xl text-xs font-bold border border-border">
-                      لا يوجد ملف مرفق
+                      {t('subscription.requests.no_attachment')}
                     </span>
                   )}
 
@@ -370,7 +372,7 @@ export default function SubscriptionRequestsAdminManager() {
                         ) : (
                           <CheckCircle2 size={16} />
                         )}
-                        <span>قبول وتفعيل</span>
+                        <span>{t('subscription.requests.approve_activate')}</span>
                       </button>
 
                       <button
@@ -380,7 +382,7 @@ export default function SubscriptionRequestsAdminManager() {
                         className="px-4 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 rounded-2xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 border border-rose-500/20"
                       >
                         <XCircle size={16} />
-                        <span>رفض</span>
+                        <span>{t('saas.reject')}</span>
                       </button>
                     </div>
                   )}
@@ -398,7 +400,7 @@ export default function SubscriptionRequestsAdminManager() {
             <div className="flex items-center justify-between border-b border-border pb-3">
               <h4 className="text-base font-black text-content flex items-center gap-2">
                 <FileText size={20} className="text-brand" />
-                <span>صورة إثبات الدفع والإيصال</span>
+                <span>{t('subscription.requests.proof_modal_title')}</span>
               </h4>
               <button
                 onClick={() => setSelectedProofUrl(null)}
@@ -418,7 +420,7 @@ export default function SubscriptionRequestsAdminManager() {
               ) : (
                 <div className="text-white text-center p-8 space-y-3">
                   <FileText size={48} className="mx-auto text-brand" />
-                  <p className="text-sm font-bold">ملف إثبات الدفع بصيغة مستند</p>
+                  <p className="text-sm font-bold">{t('subscription.requests.proof_is_document')}</p>
                   <a
                     href={selectedProofUrl}
                     download="proof_of_payment"
@@ -427,7 +429,7 @@ export default function SubscriptionRequestsAdminManager() {
                     className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand text-white rounded-xl text-xs font-black shadow-lg"
                   >
                     <Download size={16} />
-                    <span>تحميل المستند</span>
+                    <span>{t('subscription.requests.download_document')}</span>
                   </a>
                 </div>
               )}
@@ -442,14 +444,14 @@ export default function SubscriptionRequestsAdminManager() {
                 className="px-4 py-2 bg-surface-muted hover:bg-border text-content text-xs font-bold rounded-xl flex items-center gap-2 cursor-pointer"
               >
                 <Download size={14} />
-                <span>فتح في نافذة جديدة / تحميل</span>
+                <span>{t('subscription.requests.open_new_tab_download')}</span>
               </a>
 
               <button
                 onClick={() => setSelectedProofUrl(null)}
                 className="px-6 py-2 bg-brand text-white text-xs font-black rounded-xl cursor-pointer"
               >
-                إغلاق
+                {t('common.close')}
               </button>
             </div>
           </div>
@@ -463,7 +465,7 @@ export default function SubscriptionRequestsAdminManager() {
             <div className="flex items-center justify-between border-b border-border pb-3">
               <h4 className="text-base font-black text-rose-600 flex items-center gap-2">
                 <AlertCircle size={20} />
-                <span>رفض طلب الاشتراك</span>
+                <span>{t('subscription.requests.reject_title')}</span>
               </h4>
               <button
                 onClick={() => setRejectingReq(null)}
@@ -474,14 +476,14 @@ export default function SubscriptionRequestsAdminManager() {
             </div>
 
             <p className="text-xs font-bold text-content-muted">
-              أنت على وشك رفض طلب الاشتراك الخاص بـ <span className="text-content font-black">{rejectingReq.tenant_name}</span>. يمكنك اختياري كتابة سبب الرفض لتوضيحه للمشترك:
+              {t('subscription.requests.reject_confirm_text', { name: rejectingReq.tenant_name })}
             </p>
 
             <textarea
               rows={3}
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
-              placeholder="مثال: الصورة المرفقة غير واضحة، أو لم يصل التحويل البنكي لحسابنا..."
+              placeholder={t('subscription.requests.reject_reason_placeholder')}
               className="w-full p-3.5 bg-surface-muted border border-border rounded-2xl text-xs font-bold text-content focus:border-rose-500 focus:outline-none resize-none"
             />
 
@@ -491,14 +493,14 @@ export default function SubscriptionRequestsAdminManager() {
                 onClick={() => setRejectingReq(null)}
                 className="flex-1 py-3 bg-surface-muted hover:bg-border text-content font-bold rounded-xl text-xs cursor-pointer"
               >
-                إلغاء
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
                 onClick={handleConfirmReject}
                 className="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20 cursor-pointer"
               >
-                <span>تأكيد الرفض</span>
+                <span>{t('subscription.requests.confirm_reject')}</span>
               </button>
             </div>
           </div>

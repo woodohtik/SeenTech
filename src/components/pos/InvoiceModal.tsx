@@ -3,6 +3,7 @@ import { Dialog, Transition } from '@headlessui/react';
 import { Printer, Download, Share2, FileText, CheckCircle2, X } from 'lucide-react';
 import { Fragment } from 'react';
 import { motion } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../lib/utils';
 import { Customer, TaxInvoice } from '../../types/supabase';
 import { PriceDisplay } from '../PriceDisplay';
@@ -17,6 +18,7 @@ interface InvoiceModalProps {
 }
 
 export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNumber, items }: InvoiceModalProps) {
+  const { t } = useTranslation();
   /*
    * تُعرَّف دالة الطباعة قبل الـ useEffect عن قصد: الـ effect يسجّل مستمع
    * Ctrl+P، ولو كانت الدالة معرّفة بعد `if (!invoice) return null` لصار
@@ -28,17 +30,17 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
       const { printElementDetailed, getConfiguredPaperSize } = await import('../../utils/printManager');
       const res = await printElementDetailed('print-area', {
         paperSize: getConfiguredPaperSize('80mm'),
-        title: `فاتورة-${invoice.invoice_number}`,
+        title: t('printing.invoice_doc_title', { number: invoice.invoice_number }),
       });
       if (!res.ok) {
         console.error('[InvoiceModal] فشل الطباعة:', res.message);
-        alert(`تعذّرت الطباعة: ${res.message}`);
+        alert(t('printing.print_failed', { message: res.message }));
       }
     } catch (e) {
       console.error('[InvoiceModal] خطأ الطباعة:', e);
       window.print();
     }
-  }, [invoice]);
+  }, [invoice, t]);
 
   React.useEffect(() => {
     if (!isOpen) return;
@@ -71,7 +73,11 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
   };
 
   const handleShareWhatsApp = async () => {
-    const text = `فاتورة من ${tenantName}\nرقم الفاتورة: ${invoice.invoice_number}\nالإجمالي: ${invoice.total_amount}`;
+    const text = t('printing.invoice_share_text', {
+      tenant: tenantName,
+      number: invoice.invoice_number,
+      total: invoice.total_amount,
+    });
     try {
       const { shareInvoiceAsPDFFile } = await import('../../utils/pdfGenerator');
       await shareInvoiceAsPDFFile('print-area', `Invoice-${invoice.invoice_number}.pdf`, text);
@@ -115,7 +121,7 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
                       <CheckCircle2 size={20} />
                     </div>
                     <Dialog.Title as="h3" className="text-base font-bold">
-                      تم إصدار الفاتورة بنجاح
+                      {t('pos.invoice_issued_success')}
                     </Dialog.Title>
                   </div>
                   <button onClick={onClose} className="p-1.5 text-content-muted hover:text-content hover:bg-surface-muted rounded-lg transition-colors">
@@ -234,21 +240,21 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
                     className="flex justify-center items-center gap-2 w-full px-4 py-3 bg-content text-surface rounded-xl font-bold hover:bg-content/90 transition-colors"
                   >
                     <Printer size={18} />
-                    <span>طباعة</span>
+                    <span>{t('tax_invoices.print')}</span>
                   </button>
                   <button
                     onClick={handleDownloadPDF}
                     className="flex justify-center items-center gap-2 w-full px-4 py-3 bg-surface border border-border text-content rounded-xl font-bold hover:bg-surface-muted transition-colors"
                   >
                     <Download size={18} />
-                    <span>تنزيل PDF</span>
+                    <span>{t('common.download_pdf')}</span>
                   </button>
                   <button
                     onClick={handleShareWhatsApp}
                     className="flex justify-center items-center gap-2 w-full px-4 py-3 bg-[#25D366] text-white rounded-xl font-bold hover:bg-opacity-90 transition-colors"
                   >
                     <Share2 size={18} />
-                    <span>مشاركة</span>
+                    <span>{t('common.share')}</span>
                   </button>
                 </div>
               </Dialog.Panel>

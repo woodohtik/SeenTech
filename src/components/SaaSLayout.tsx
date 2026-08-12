@@ -38,6 +38,8 @@ import UserPreferencesMenu from './UserPreferencesMenu';
 
 import { AdminIconInput } from './ui/AdminIconInput';
 
+import { isRtlLang, localeOf } from '../lib/direction';
+
 interface SaaSLayoutProps {
   children: React.ReactNode;
   userRole: string | null;
@@ -54,33 +56,19 @@ interface SaaSNotification {
 }
 
 const SAAS_MENU_ITEMS = [
-  { id: 'overview', label: 'لوحة التحكم', icon: LayoutDashboard, path: '/admin/dashboard', roles: ['super_admin', 'support_tech', 'billing_admin', 'sales'] },
-  { id: 'tenants', label: 'إدارة المشتركين', icon: Users, path: '/admin/tailors', roles: ['super_admin', 'support_tech', 'billing_admin', 'sales'] },
-  { id: 'roles', label: 'الأدوار والصلاحيات القياسية', icon: ShieldCheck, path: '/admin/roles', roles: ['super_admin'] },
-  { id: 'reports', label: 'التقارير المالية', icon: BarChart3, path: '/admin/reports', roles: ['super_admin', 'billing_admin', 'sales'] },
-  { id: 'withdrawals', label: 'طلبات السحب', icon: DollarSign, path: '/admin/withdrawals', roles: ['super_admin', 'billing_admin'] },
-  { id: 'audit', label: 'سجل التدقيق', icon: Shield, path: '/admin/audit', roles: ['super_admin'] },
-  { id: 'team', label: 'أعضاء الفريق', icon: Users, path: '/admin/team', roles: ['super_admin'] },
-  { id: 'system', label: 'إعدادات النظام', icon: Settings, path: '/admin/system', roles: ['super_admin'] },
+  { id: 'overview', labelKey: 'saas.menu_overview', icon: LayoutDashboard, path: '/admin/dashboard', roles: ['super_admin', 'support_tech', 'billing_admin', 'sales'] },
+  { id: 'tenants', labelKey: 'saas.menu_tenants', icon: Users, path: '/admin/tailors', roles: ['super_admin', 'support_tech', 'billing_admin', 'sales'] },
+  { id: 'roles', labelKey: 'saas.menu_roles', icon: ShieldCheck, path: '/admin/roles', roles: ['super_admin'] },
+  { id: 'reports', labelKey: 'saas.menu_reports', icon: BarChart3, path: '/admin/reports', roles: ['super_admin', 'billing_admin', 'sales'] },
+  { id: 'withdrawals', labelKey: 'saas.menu_withdrawals', icon: DollarSign, path: '/admin/withdrawals', roles: ['super_admin', 'billing_admin'] },
+  { id: 'audit', labelKey: 'saas.menu_audit', icon: Shield, path: '/admin/audit', roles: ['super_admin'] },
+  { id: 'team', labelKey: 'saas.menu_team', icon: Users, path: '/admin/team', roles: ['super_admin'] },
+  { id: 'system', labelKey: 'saas.menu_system', icon: Settings, path: '/admin/system', roles: ['super_admin'] },
 ];
-
-const getMenuItemLabel = (id: string, defaultLabel: string, t: any) => {
-  switch (id) {
-    case 'overview': return t('saas.menu_overview', defaultLabel);
-    case 'tenants': return t('saas.menu_tenants', defaultLabel);
-    case 'roles': return t('saas.menu_roles', defaultLabel);
-    case 'reports': return t('saas.menu_reports', defaultLabel);
-    case 'withdrawals': return t('saas.menu_withdrawals', defaultLabel);
-    case 'audit': return t('saas.menu_audit', defaultLabel);
-    case 'team': return t('saas.menu_team', defaultLabel);
-    case 'system': return t('saas.menu_system', defaultLabel);
-    default: return defaultLabel;
-  }
-};
 
 export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -111,7 +99,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
 
   useEffect(() => {
     const checkTempPasswordStatus = async () => {
-      if (!auth.currentUser) return;
+      if (!auth || !auth.currentUser) return;
       try {
         const { data } = await supabase
           .from('saas_settings')
@@ -121,7 +109,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
 
         if (data && data.value && typeof data.value === 'object') {
           const tempPasswords = data.value as Record<string, boolean>;
-          if (tempPasswords[auth.currentUser.uid]) {
+          if (auth.currentUser && tempPasswords[auth.currentUser.uid]) {
             setMustChangePassword(true);
           }
         }
@@ -148,17 +136,17 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
     setPassError(null);
 
     if (!currentPassword) {
-      setPassError(t('saas.current_password_required', 'يرجى إدخال كلمة المرور المؤقتة الحالية'));
+      setPassError(t('saas.current_password_required'));
       return;
     }
 
     if (newPassword.length < 6) {
-      setPassError(t('saas.password_too_short', 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'));
+      setPassError(t('saas.password_too_short'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setPassError(t('saas.passwords_do_not_match', 'كلمتا المرور غير متطابقتين'));
+      setPassError(t('saas.passwords_do_not_match'));
       return;
     }
 
@@ -196,9 +184,9 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
       await logSaaSSecurityEvent('saas_password_changed', 'User successfully replaced temporary password');
     } catch (err: any) {
       console.error(err);
-      let errorMsg = err.message || t('saas.error_updating_password', 'حدث خطأ أثناء تحديث كلمة المرور');
+      let errorMsg = err.message || t('saas.error_updating_password');
       if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        errorMsg = t('saas.wrong_current_password', 'كلمة المرور المؤقتة الحالية غير صحيحة');
+        errorMsg = t('saas.wrong_current_password');
       }
       setPassError(errorMsg);
     } finally {
@@ -292,8 +280,8 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
             newAlerts.push({
               id: `new-${tenant.id}`,
               type: 'new_tenant',
-              title: 'مشترك جديد',
-              message: `تم تسجيل اشتراك جديد: ${tenant.name}`,
+              title: t('saas.notif_new_tenant_title'),
+              message: t('saas.notif_new_tenant_msg', { name: tenant.name }),
               date: createdAt.toISOString(),
               read: false,
               tenantId: tenant.id
@@ -315,8 +303,10 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
               newAlerts.push({
                 id: `sub-${tenant.id}`,
                 type: 'trial_expiring',
-                title: isTrial ? 'تنبيه انتهاء تجربة' : 'تنبيه انتهاء اشتراك',
-                message: isTrial ? `الاشتراك التجريبي لـ ${tenant.name} ينتهي خلال ${daysLeft} أيام.` : `اشتراك باقة ${plan?.name || 'الأساسية'} لـ ${tenant.name} ينتهي خلال ${daysLeft} أيام.`,
+                title: isTrial ? t('saas.notif_trial_expiring_title') : t('saas.notif_subscription_expiring_title'),
+                message: isTrial
+                  ? t('saas.notif_trial_expiring_msg', { name: tenant.name, days: daysLeft })
+                  : t('saas.notif_subscription_expiring_msg', { plan: plan?.name || t('saas.plan_basic_default'), name: tenant.name, days: daysLeft }),
                 date: new Date(now.getTime() - Math.random() * 86400000).toISOString(),
                 read: false,
                 tenantId: tenant.id
@@ -349,7 +339,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
       const interval = setInterval(fetchNotifications, 5 * 60 * 1000);
       return () => clearInterval(interval);
     }
-  }, [userRole]);
+  }, [userRole, i18n.language]);
 
   // Click outside to close notifications
   useEffect(() => {
@@ -395,7 +385,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background flex font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="h-screen w-full overflow-hidden bg-background flex font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Impersonation Banner */}
       <AnimatePresence>
         {impersonationTenantId && (
@@ -407,15 +397,15 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
           >
             <div className="flex items-center gap-2 font-black text-sm">
               <AlertCircle size={18} />
-              <span>{t('common.support_mode_desc', 'أنت الآن في وضع الدعم الفني (Impersonation Mode)')}</span>
+              <span>{t('common.support_mode_desc')}</span>
             </div>
             <div className="h-4 w-px bg-white/30 mx-2" />
-            <span className="text-xs font-bold">{t('common.current_subscriber', 'المشترك الحالي')}: {impersonatedTenantName || impersonationTenantId}</span>
+            <span className="text-xs font-bold">{t('common.current_subscriber')}: {impersonatedTenantName || impersonationTenantId}</span>
             <button 
               onClick={stopImpersonation}
               className="bg-white text-warning px-4 py-1 rounded-full text-xs font-black hover:bg-white/90 transition-all ml-4"
             >
-              {t('common.end_impersonation', 'إنهاء الجلسة والعودة للوحة SaaS')}
+              {t('common.end_impersonation')}
             </button>
           </motion.div>
         )}
@@ -443,7 +433,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
         }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
         className={cn(
-          "bg-surface border-l rtl:border-l ltr:border-r border-border shadow-2xl shadow-brand/5 relative z-40 flex flex-col h-screen",
+          "bg-surface border-l rtl:border-l ltr:border-r border-border shadow-2xl shadow-brand/5 relative z-40 flex flex-col h-screen sticky top-0",
           isMobile && cn("fixed inset-y-0 z-40", isRtl ? "right-0" : "left-0")
         )}
       >
@@ -481,7 +471,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                 )}
               >
                 <item.icon size={24} className={cn("shrink-0", isActive ? "text-white" : "group-hover:scale-110 transition-transform")} />
-                {(isSidebarOpen || isMobile) && <span className="font-bold text-sm truncate">{getMenuItemLabel(item.id, item.label, t)}</span>}
+                {(isSidebarOpen || isMobile) && <span className="font-bold text-sm truncate">{t(item.labelKey)}</span>}
                 {(!isSidebarOpen && !isMobile) && isActive && (
                   <div className="absolute right-0 ltr:right-auto ltr:left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-brand rounded-l-full ltr:rounded-r-full" />
                 )}
@@ -518,7 +508,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
             </button>
             <div className="h-8 w-px bg-border mx-2" />
             <div className="flex flex-col">
-              <span className="text-sm font-black text-content">{t('common.welcome_user', 'أهلاً')}، {dbUser?.display_name || auth.currentUser?.displayName || t('common.support_engineer', 'مهندس الدعم')}</span>
+              <span className="text-sm font-black text-content">{t('common.welcome_user', { name: dbUser?.display_name || auth?.currentUser?.displayName || t('common.support_engineer') })}</span>
               <span className="text-[10px] font-bold text-brand">{getRoleLabel(userRole)}</span>
             </div>
           </div>
@@ -604,7 +594,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                                   {notif.message}
                                 </p>
                                 <span className="text-[10px] text-content-muted font-bold pt-1 block opacity-75">
-                                  {new Date(notif.date).toLocaleDateString('ar-SA-u-nu-latn', { 
+                                  {new Date(notif.date).toLocaleDateString(localeOf(i18n.language), { 
                                     month: 'short', 
                                     day: 'numeric', 
                                     hour: '2-digit', 
@@ -632,7 +622,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
               </AnimatePresence>
             </div>
             <div className="w-10 h-10 bg-brand/10 text-brand rounded-2xl flex items-center justify-center font-black shadow-sm">
-              {auth.currentUser?.displayName?.charAt(0) || 'A'}
+              {auth?.currentUser?.displayName?.charAt(0) || 'A'}
             </div>
           </div>
         </header>
@@ -647,20 +637,20 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
 
       <AnimatePresence>
         {mustChangePassword && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" dir="rtl">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" dir={isRtl ? 'rtl' : 'ltr'}>
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 text-right"
+              className={cn("w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100", isRtl ? "text-right" : "text-left")}
             >
               <div className="p-8 text-center bg-brand/5 border-b border-brand/10">
                 <div className="w-16 h-16 bg-brand/10 text-brand rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Lock size={32} />
                 </div>
-                <h2 className="text-2xl font-black text-gray-900 tracking-tight">تعيين كلمة مرور جديدة</h2>
+                <h2 className="text-2xl font-black text-gray-900 tracking-tight">{t('saas.set_new_password_title')}</h2>
                 <p className="text-sm text-gray-500 font-medium mt-1 leading-relaxed">
-                  لقد سجلت الدخول باستخدام كلمة مرور مؤقتة. يرجى تعيين كلمة مرور جديدة وخاصة بك للمتابعة.
+                  {t('saas.set_new_password_desc')}
                 </p>
               </div>
 
@@ -673,7 +663,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                 )}
 
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-700 block">كلمة المرور المؤقتة الحالية</label>
+                  <label className="text-xs font-black text-gray-700 block">{t('saas.current_temp_password')}</label>
                   <div className="relative">
                     <input
                       type={showCurrentPass ? "text" : "password"}
@@ -697,7 +687,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-700 block">كلمة المرور الجديدة</label>
+                  <label className="text-xs font-black text-gray-700 block">{t('saas.new_password')}</label>
                   <div className="relative">
                     <input
                       type={showPass1 ? "text" : "password"}
@@ -721,7 +711,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-700 block">تأكيد كلمة المرور الجديدة</label>
+                  <label className="text-xs font-black text-gray-700 block">{t('saas.confirm_new_password')}</label>
                   <div className="relative">
                     <input
                       type={showPass2 ? "text" : "password"}
@@ -752,10 +742,10 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                   {passSubmitting ? (
                     <>
                       <Loader2 className="animate-spin" size={20} />
-                      <span>جاري الحفظ...</span>
+                      <span>{t('common.saving')}</span>
                     </>
                   ) : (
-                    <span>حفظ كلمة المرور والدخول</span>
+                    <span>{t('saas.save_password_and_login')}</span>
                   )}
                 </button>
               </form>

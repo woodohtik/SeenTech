@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDown, Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../../lib/utils';
 
 export interface SelectOption {
@@ -27,7 +28,7 @@ export const IconSelect: React.FC<IconSelectProps> = ({
   options,
   value,
   onChange,
-  placeholder = 'اختر...',
+  placeholder,
   label,
   error,
   icon: StartIcon,
@@ -36,8 +37,10 @@ export const IconSelect: React.FC<IconSelectProps> = ({
   wrapperClassName,
   className,
 }) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const placeholderText = placeholder ?? t('common.select');
 
   const selectedOption = options.find((opt) => opt.value === value);
 
@@ -134,7 +137,7 @@ export const IconSelect: React.FC<IconSelectProps> = ({
               <span>{selectedOption.label}</span>
             </span>
           ) : (
-            placeholder
+            placeholderText
           )}
         </span>
 
@@ -168,7 +171,7 @@ export const IconSelect: React.FC<IconSelectProps> = ({
             <div className="space-y-0.5">
               {options.length === 0 ? (
                 <div className="text-center py-4 text-xs font-semibold text-content-muted">
-                  لا توجد خيارات متاحة
+                  {t('common.no_options_available')}
                 </div>
               ) : (
                 options.map((option) => {
@@ -201,7 +204,7 @@ export const IconSelect: React.FC<IconSelectProps> = ({
                       </span>
                       
                       {isSelected && (
-                        <motion.div layoutId={`check-${placeholder.replace(/\s+/g, '-')}`}>
+                        <motion.div layoutId={`check-${placeholderText.replace(/\s+/g, '-')}`}>
                           <Check size={14} className="text-brand w-3.5 h-3.5 stroke-[3]" />
                         </motion.div>
                       )}

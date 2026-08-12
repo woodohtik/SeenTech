@@ -53,6 +53,7 @@ import ZReport from './ZReport';
 
 import { useStaff } from '../contexts/StaffContext';
 import { usePermissions } from '../hooks/usePermissions';
+import { useDirection } from '../lib/direction';
 
 const COLORS = ['#1C8FFF', '#22C55E', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
 
@@ -65,6 +66,7 @@ interface DrillDownData {
 }
 
 export default function Reports({ tenantId }: { tenantId: string }) {
+  const { t, dir, locale } = useDirection();
   const { currentStaff } = useStaff();
   const { hasPermission, loading: permsLoading } = usePermissions(currentStaff);
   
@@ -84,6 +86,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
   const [selectedStaff, setSelectedStaff] = useState('all');
   const [paymentStatus, setPaymentStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [excludeTestData, setExcludeTestData] = useState(true);
 
   // Drill-down
   const [drillDown, setDrillDown] = useState<DrillDownData | null>(null);
@@ -144,6 +147,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           tenantId: c.tenant_id,
           companyName: c.company_name,
           isB2B: c.is_b2b,
+          isTest: c.is_test,
           createdAt: c.created_at
         } as Customer)));
 
@@ -160,6 +164,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           cuffType: i.cuff_type,
           pocketType: i.pocket_type,
           chestStyle: i.chest_style,
+          isTest: i.is_test,
           updatedAt: i.updated_at
         } as InventoryItem)));
 
@@ -184,6 +189,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
   // Filtered Data
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
+      const isTestMatch = !excludeTestData || !(order.isTest || (order as any).is_test);
       const dateMatch = (!dateRange.start || order.orderDate >= dateRange.start) && 
                         (!dateRange.end || order.orderDate <= dateRange.end);
       const staffMatch = selectedStaff === 'all' || order.createdBy === selectedStaff;
@@ -195,9 +201,9 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                          order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          order.id.toLowerCase().includes(searchTerm.toLowerCase());
       
-      return dateMatch && staffMatch && paymentMatch && searchMatch;
+      return isTestMatch && dateMatch && staffMatch && paymentMatch && searchMatch;
     });
-  }, [orders, dateRange, selectedStaff, paymentStatus, searchTerm]);
+  }, [orders, dateRange, selectedStaff, paymentStatus, searchTerm, excludeTestData]);
 
   // Financial Calculations
   const financialStats = useMemo(() => {
@@ -208,9 +214,9 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
     // Sales by Payment Method
     const paymentMethods = filteredOrders.reduce((acc: any, o) => {
-      const method = o.paymentMethod === 'cash' ? 'نقدي' : 
-                    o.paymentMethod === 'network' ? 'شبكة' : 
-                    o.paymentMethod === 'cash_on_delivery' ? 'عند الاستلام' : 'أخرى';
+      const method = o.paymentMethod === 'cash' ? t('billing.modal_method_cash') : 
+                    o.paymentMethod === 'network' ? t('common.payment_methods.network') : 
+                    o.paymentMethod === 'cash_on_delivery' ? t('orders.payment_on_delivery_short') : t('common.other');
       acc[method] = (acc[method] || 0) + (o.paidAmount || 0);
       return acc;
     }, {});
@@ -229,7 +235,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
     const trendChartData = Object.values(trendData).sort((a: any, b: any) => a.date.localeCompare(b.date));
 
     return { totalRevenue, totalSales, totalTax, netProfit, paymentChartData, trendChartData };
-  }, [filteredOrders]);
+  }, [filteredOrders, t]);
 
   // Order Stats
   const orderStats = useMemo(() => {
@@ -239,10 +245,10 @@ export default function Reports({ tenantId }: { tenantId: string }) {
     }, {});
 
     const statusChartData = [
-      { name: 'قيد الانتظار', value: statusCounts['pending'] || 0, key: 'pending' },
-      { name: 'في المشغل', value: (statusCounts['cutting'] || 0) + (statusCounts['sewing'] || 0), key: 'processing' },
-      { name: 'جاهز', value: statusCounts['ready'] || 0, key: 'ready' },
-      { name: 'تم التسليم', value: statusCounts['delivered'] || 0, key: 'delivered' },
+      { name: t('inventory.status_pending'), value: statusCounts['pending'] || 0, key: 'pending' },
+      { name: t('reports.status_in_workshop'), value: (statusCounts['cutting'] || 0) + (statusCounts['sewing'] || 0), key: 'processing' },
+      { name: t('dashboard.ready'), value: statusCounts['ready'] || 0, key: 'ready' },
+      { name: t('common.delivered'), value: statusCounts['delivered'] || 0, key: 'delivered' },
     ];
 
     // Delayed Orders (Simplified: orders older than 7 days and not delivered)
@@ -264,15 +270,23 @@ export default function Reports({ tenantId }: { tenantId: string }) {
     const avgTime = completedOrders.length > 0 ? (totalDays / completedOrders.length).toFixed(1) : '0';
 
     return { statusChartData, delayedCount: delayedOrders.length, delayedOrders, avgTime };
-  }, [filteredOrders]);
+  }, [filteredOrders, t]);
+
+  // Filtered Inventory
+  const filteredInventory = useMemo(() => {
+    return inventory.filter(item => {
+      const isTestMatch = !excludeTestData || !item.isTest;
+      return isTestMatch;
+    });
+  }, [inventory, excludeTestData]);
 
   // Inventory Stats
   const inventoryStats = useMemo(() => {
-    const lowStockItems = inventory.filter(item => item.quantity <= item.minThreshold);
-    const topItems = [...inventory].sort((a, b) => b.quantity - a.quantity).slice(0, 5);
+    const lowStockItems = filteredInventory.filter(item => item.quantity <= item.minThreshold);
+    const topItems = [...filteredInventory].sort((a, b) => b.quantity - a.quantity).slice(0, 5);
     
     return { lowStockItems, topItems };
-  }, [inventory]);
+  }, [filteredInventory]);
 
   // Staff Performance
   const staffStats = useMemo(() => {
@@ -319,7 +333,8 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
   // Customer Behavior
   const customerStats = useMemo(() => {
-    const customerPurchases = customers.map(c => {
+    const filteredCustomers = customers.filter(c => !excludeTestData || !c.isTest);
+    const customerPurchases = filteredCustomers.map(c => {
       const customerOrders = filteredOrders.filter(o => o.customerId === c.id || o.customerPhone === c.phone);
       const totalSpent = customerOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
       const orderCount = customerOrders.length;
@@ -340,12 +355,12 @@ export default function Reports({ tenantId }: { tenantId: string }) {
     const returningCustomers = customerPurchases.filter(c => c.orderCount > 1).length;
 
     const retentionChartData = [
-      { name: 'عملاء جدد', value: newCustomers },
-      { name: 'عملاء متكررين', value: returningCustomers }
+      { name: t('reports.new_customers'), value: newCustomers },
+      { name: t('reports.returning_customers'), value: returningCustomers }
     ];
 
     return { topCustomers, retentionChartData, totalActiveCustomers: customerPurchases.length };
-  }, [customers, filteredOrders]);
+  }, [customers, filteredOrders, excludeTestData, t]);
 
   const fetchDailyZReport = async (date: string) => {
     setLoadingZ(true);
@@ -393,7 +408,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
       setDailyZData({
         id: `EOD-${date}`,
         tenantId,
-        staffName: 'تقرير مجمع (مدير النظام)',
+        staffName: t('reports.consolidated_staff_name'),
         startTime: new Date(Math.min(...startTimes)).toISOString(),
         endTime: new Date(Math.max(...endTimes)).toISOString(),
         openingBalance: shifts.find(s => new Date(s.start_time).getTime() === Math.min(...startTimes))?.opening_balance || 0,
@@ -427,22 +442,22 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
   if (!canViewReports) {
     return (
-      <div className="flex flex-col items-center justify-center h-[70vh] text-right" dir="rtl">
+      <div className="flex flex-col items-center justify-center h-[70vh] text-right" dir={dir}>
         <div className="p-6 bg-rose-500/10 text-rose-600 rounded-[2.5rem] mb-6">
           <AlertTriangle size={48} />
         </div>
-        <h2 className="text-2xl font-black text-content mb-2">عذراً، لا تملك صلاحية الوصول</h2>
-        <p className="text-content-muted font-bold">يرجى التواصل مع مدير النظام للحصول على صلاحيات عرض التقارير.</p>
+        <h2 className="text-2xl font-black text-content mb-2">{t('reports.access_denied_title')}</h2>
+        <p className="text-content-muted font-bold">{t('reports.access_denied_desc')}</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 sm:space-y-8 text-right pb-20 px-2 sm:px-0" dir="rtl">
+    <div className="space-y-4 sm:space-y-8 text-right pb-20 px-2 sm:px-0" dir={dir}>
       <Header 
         tenantId={tenantId} 
-        title="مركز التقارير الشامل" 
-        subtitle="تحليلات دقيقة لأداء متجرك المالي والتشغيلي"
+        title={t('reports.title')} 
+        subtitle={t('reports.subtitle')}
       >
         <div className="flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto">
           <button 
@@ -454,7 +469,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
             )}
           >
             <FileSpreadsheet size={16} className="text-emerald-600 sm:w-5 sm:h-5" />
-            <span>تصدير Excel</span>
+            <span>{t('dashboard.export_excel')}</span>
           </button>
           <button 
             onClick={() => canExportReports && window.print()}
@@ -465,7 +480,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
             )}
           >
             <Download size={16} className="sm:w-5 sm:h-5" />
-            <span>تصدير PDF</span>
+            <span>{t('saas.export_pdf')}</span>
           </button>
         </div>
       </Header>
@@ -477,7 +492,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           <input 
             id="reports-search-input"
             type="text" 
-            placeholder="بحث برقم الطلب أو اسم العميل..."
+            placeholder={t('dashboard.cashier.search_placeholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-transparent border-none p-0 focus:ring-0 font-bold text-sm text-content outline-none"
@@ -496,7 +511,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 className="bg-transparent border-none p-0 focus:ring-0 text-xs font-bold text-content w-full cursor-pointer outline-none"
               />
             </div>
-            <span className="text-content-muted/40 font-bold text-xs shrink-0 text-center xs:px-1">إلى</span>
+            <span className="text-content-muted/40 font-bold text-xs shrink-0 text-center xs:px-1">{t('orders.to')}</span>
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <CalendarIcon size={16} className="text-content-muted shrink-0" />
               <input 
@@ -514,7 +529,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               value={selectedStaff}
               onChange={(val) => setSelectedStaff(val)}
               options={[
-                { value: 'all', label: 'جميع الموظفين' },
+                { value: 'all', label: t('reports.filter_all_staff') },
                 ...staff.map(s => ({ value: s.id, label: s.name }))
               ]}
               className="bg-surface-muted w-full"
@@ -526,13 +541,32 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               value={paymentStatus}
               onChange={(val) => setPaymentStatus(val)}
               options={[
-                { value: 'all', label: 'جميع حالات الدفع' },
-                { value: 'paid', label: 'مدفوع بالكامل' },
-                { value: 'partial', label: 'دفع جزئي' },
-                { value: 'unpaid', label: 'غير مدفوع' }
+                { value: 'all', label: t('reports.filter_all_payment_statuses') },
+                { value: 'paid', label: t('orders.fully_paid') },
+                { value: 'partial', label: t('common.payment_methods.partial') },
+                { value: 'unpaid', label: t('reports.payment_unpaid') }
               ]}
               className="bg-surface-muted w-full"
             />
+          </div>
+
+          <div 
+            id="reports-toggle-test-data"
+            onClick={() => setExcludeTestData(!excludeTestData)}
+            className={cn(
+              "flex-1 sm:flex-none flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-2xl border transition-all cursor-pointer select-none font-black text-xs sm:text-sm",
+              excludeTestData 
+                ? "bg-brand/10 text-brand border-brand/20 shadow-sm" 
+                : "bg-surface-muted text-content-muted border-border hover:bg-surface-muted/80"
+            )}
+          >
+            <input 
+              type="checkbox" 
+              checked={excludeTestData} 
+              onChange={() => {}}
+              className="rounded text-brand focus:ring-brand h-4 w-4 border-border cursor-pointer shrink-0"
+            />
+            <span>{t('reports.exclude_test_data', 'إخفاء البيانات التجريبية')}</span>
           </div>
         </div>
       </div>
@@ -541,13 +575,12 @@ export default function Reports({ tenantId }: { tenantId: string }) {
       <div id="reports-tabs-nav-container" className="w-full overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <div className="flex items-center gap-1.5 sm:gap-2 bg-surface p-1.5 sm:p-2 rounded-xl sm:rounded-[2rem] border border-border shadow-sm w-max">
           {[
-            { id: 'general', label: 'اللوحة العامة', icon: TrendingUp },
-            { id: 'financial', label: 'التقارير المالية', icon: DollarSign },
-            { id: 'orders', label: 'تقارير الطلبات', icon: ShoppingBag },
-            { id: 'inventory', label: 'تقارير المخزون', icon: Package },
-            { id: 'staff', label: 'الموظفين والعملاء', icon: Users },
-            { id: 'tailor_commissions', label: 'عمولات الخياطين', icon: Scissors },
-            { id: 'zreports', label: 'تقارير Z (إغلاق اليوم)', icon: Calculator },
+            { id: 'general', label: t('reports.tab_general'), icon: TrendingUp },
+            { id: 'financial', label: t('dashboard.grid.finance'), icon: DollarSign },
+            { id: 'orders', label: t('reports.tab_orders'), icon: ShoppingBag },
+            { id: 'inventory', label: t('inventory.reports'), icon: Package },
+            { id: 'staff', label: t('reports.tab_staff_customers'), icon: Users },
+            { id: 'zreports', label: t('reports.tab_zreports'), icon: Calculator },
           ].map((tab) => (
             <button
               id={`tab-btn-${tab.id}`}
@@ -579,10 +612,10 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           {activeTab === 'general' && (
             <div id="reports-general-grid" className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
               {[
-                { label: 'إجمالي الإيرادات', value: financialStats.totalRevenue, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
-                { label: 'إجمالي المبيعات', value: financialStats.totalSales, icon: TrendingUp, color: 'text-brand', bg: 'bg-brand/10' },
-                { label: 'عدد الطلبات', value: filteredOrders.length, icon: ShoppingBag, color: 'text-amber-600', bg: 'bg-amber-500/10' },
-                { label: 'الطلبات المتأخرة', value: orderStats.delayedCount, icon: AlertTriangle, color: 'text-rose-600', bg: 'bg-rose-500/10' },
+                { label: t('dashboard.total_revenue'), value: financialStats.totalRevenue, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-500/10', isCurrency: true },
+                { label: t('dashboard.admin.total_sales'), value: financialStats.totalSales, icon: TrendingUp, color: 'text-brand', bg: 'bg-brand/10', isCurrency: true },
+                { label: t('dashboard.orders_count'), value: filteredOrders.length, icon: ShoppingBag, color: 'text-amber-600', bg: 'bg-amber-500/10', isCurrency: false },
+                { label: t('reports.delayed_orders'), value: orderStats.delayedCount, icon: AlertTriangle, color: 'text-rose-600', bg: 'bg-rose-500/10', isCurrency: false },
               ].map((stat, i) => (
                 <div key={i} className="bg-surface p-3 sm:p-6 lg:p-8 rounded-xl sm:rounded-[2.5rem] border border-border shadow-sm flex flex-col sm:flex-row items-center sm:items-start lg:items-center gap-3 sm:gap-6 text-center sm:text-right">
                   <div className={cn("p-2.5 sm:p-5 rounded-xl sm:rounded-2xl shrink-0", stat.bg, stat.color)}>
@@ -591,7 +624,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                   <div className="min-w-0">
                     <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest truncate">{stat.label}</p>
                     <h3 className="text-xs sm:text-xl lg:text-2xl font-black text-content mt-0.5 sm:mt-1 truncate">
-                      {typeof stat.value === 'number' && (stat.label.includes('إيرادات') || stat.label.includes('مبيعات'))
+                      {typeof stat.value === 'number' && stat.isCurrency
                         ? <PriceDisplay amount={stat.value} />
                         : stat.value.toLocaleString('en-US')}
                     </h3>
@@ -606,10 +639,10 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               {/* Revenue vs Sales Trend */}
               <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
                 <div className="flex justify-between items-center mb-6 sm:mb-8">
-                  <h3 className="text-sm sm:text-lg font-black text-content">مقارنة الإيرادات والمبيعات</h3>
+                  <h3 className="text-sm sm:text-lg font-black text-content">{t('reports.revenue_vs_sales')}</h3>
                   <div className="flex gap-2 sm:gap-4 text-[10px] sm:text-xs font-bold">
-                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-brand rounded-full" /><span>المبيعات</span></div>
-                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-emerald-500 rounded-full" /><span>الإيرادات</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-brand rounded-full" /><span>{t('common.sales')}</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-emerald-500 rounded-full" /><span>{t('reports.revenue')}</span></div>
                   </div>
                 </div>
                 <div className="h-64 sm:h-80">
@@ -639,11 +672,11 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                                 <div className="text-xs font-black text-content pb-2 mb-2 border-b border-border/60">{label}</div>
                                 <div className="space-y-2 text-xs font-bold">
                                   <div className="flex items-center justify-between gap-4">
-                                    <span className="text-content-muted flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#1C8FFF]" />المبيعات:</span>
+                                    <span className="text-content-muted flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#1C8FFF]" />{t('common.sales')}:</span>
                                     <span className="font-black text-[#1C8FFF]"><PriceDisplay amount={salesVal} /></span>
                                   </div>
                                   <div className="flex items-center justify-between gap-4">
-                                    <span className="text-content-muted flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#22C55E]" />الإيرادات:</span>
+                                    <span className="text-content-muted flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#22C55E]" />{t('reports.revenue')}:</span>
                                     <span className="font-black text-emerald-600"><PriceDisplay amount={revVal} /></span>
                                   </div>
                                 </div>
@@ -662,7 +695,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
               {/* Payment Methods */}
               <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
-                <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">توزيع المبيعات حسب طرق الدفع</h3>
+                <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.sales_by_payment_method')}</h3>
                 <div className="h-64 sm:h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -692,21 +725,21 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               {/* Tax & Profit Cards */}
               <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
                 <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
-                  <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">إجمالي الضريبة</p>
+                  <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.total_tax')}</p>
                   <h3 className="text-base sm:text-2xl font-black text-rose-600 mt-1 sm:mt-2"><PriceDisplay amount={financialStats.totalTax} /></h3>
-                  <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">ضريبة القيمة المضافة (15%)</p>
+                  <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('dashboard.admin.vat_15')}</p>
                 </div>
                 <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
-                  <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">صافي الأرباح</p>
+                  <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.net_profit')}</p>
                   <h3 className="text-base sm:text-2xl font-black text-emerald-600 mt-1 sm:mt-2"><PriceDisplay amount={financialStats.netProfit} /></h3>
-                  <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">بعد خصم الضرائب</p>
+                  <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('reports.after_tax_deduction')}</p>
                 </div>
                 <div className="col-span-2 md:col-span-1 bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
-                  <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">متوسط قيمة الطلب</p>
+                  <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.avg_order_value')}</p>
                   <h3 className="text-base sm:text-2xl font-black text-brand mt-1 sm:mt-2">
                     <PriceDisplay amount={filteredOrders.length > 0 ? financialStats.totalSales / filteredOrders.length : 0} />
                   </h3>
-                  <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">بناءً على {filteredOrders.length} طلب</p>
+                  <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('reports.based_on_orders', { n: filteredOrders.length })}</p>
                 </div>
               </div>
             </div>
@@ -716,7 +749,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
               {/* Order Status Bar Chart */}
               <div className="lg:col-span-2 bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
-                <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">حالات الطلبات الحالية</h3>
+                <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.current_order_statuses')}</h3>
                 <div className="h-64 sm:h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={orderStats.statusChartData} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
@@ -732,17 +765,17 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                         fill="#1C8FFF" 
                         radius={[6, 6, 0, 0]} 
                         onClick={(data) => setDrillDown({
-                          title: `تفاصيل طلبات: ${data.name}`,
+                          title: t('reports.drilldown_orders_title', { name: data.name }),
                           data: filteredOrders.filter(o => {
                             if (data.key === 'processing') return ['cutting', 'sewing'].includes(o.status);
                             return o.status === data.key;
                           }),
                           columns: [
-                            { key: 'id', label: 'رقم الطلب' },
-                            { key: 'customerName', label: 'العميل' },
-                            { key: 'totalAmount', label: 'المبلغ', type: 'currency' },
-                            { key: 'orderDate', label: 'التاريخ', type: 'date' },
-                            { key: 'status', label: 'الحالة', type: 'status' }
+                            { key: 'id', label: t('dashboard.cashier.col_order_number') },
+                            { key: 'customerName', label: t('common.customer') },
+                            { key: 'totalAmount', label: t('common.amount'), type: 'currency' },
+                            { key: 'orderDate', label: t('common.date'), type: 'date' },
+                            { key: 'status', label: t('common.status'), type: 'status' }
                           ]
                         })}
                       />
@@ -757,34 +790,34 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                   <div>
                     <div className="flex items-center gap-2 sm:gap-4 mb-2 sm:mb-4">
                       <div className="p-2 bg-amber-500/10 text-amber-600 rounded-lg sm:rounded-xl shrink-0"><Clock size={16} className="sm:w-6 sm:h-6" /></div>
-                      <h4 className="font-black text-xs sm:text-base text-content">وقت الإنجاز</h4>
+                      <h4 className="font-black text-xs sm:text-base text-content">{t('reports.completion_time')}</h4>
                     </div>
-                    <h3 className="text-lg sm:text-3xl font-black text-content">{orderStats.avgTime} يوم</h3>
+                    <h3 className="text-lg sm:text-3xl font-black text-content">{t('reports.days_value', { n: orderStats.avgTime })}</h3>
                   </div>
-                  <p className="text-[9px] sm:text-xs text-content-muted font-bold mt-2">من استلام الطلب حتى التسليم</p>
+                  <p className="text-[9px] sm:text-xs text-content-muted font-bold mt-2">{t('reports.from_order_to_delivery')}</p>
                 </div>
 
                 <div 
                   className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm cursor-pointer hover:border-rose-500/30 transition-all flex flex-col justify-between"
                   onClick={() => setDrillDown({
-                    title: 'الطلبات المتأخرة عن موعد التسليم',
+                    title: t('reports.delayed_orders_title'),
                     data: orderStats.delayedOrders,
                     columns: [
-                      { key: 'id', label: 'رقم الطلب' },
-                      { key: 'customerName', label: 'العميل' },
-                      { key: 'orderDate', label: 'تاريخ الطلب', type: 'date' },
-                      { key: 'status', label: 'الحالة الحالية', type: 'status' }
+                      { key: 'id', label: t('dashboard.cashier.col_order_number') },
+                      { key: 'customerName', label: t('common.customer') },
+                      { key: 'orderDate', label: t('reports.col_order_date'), type: 'date' },
+                      { key: 'status', label: t('reports.col_current_status'), type: 'status' }
                     ]
                   })}
                 >
                   <div>
                     <div className="flex items-center gap-2 sm:gap-4 mb-2 sm:mb-4">
                       <div className="p-2 bg-rose-500/10 text-rose-600 rounded-lg sm:rounded-xl shrink-0"><AlertTriangle size={16} className="sm:w-6 sm:h-6" /></div>
-                      <h4 className="font-black text-xs sm:text-base text-content">الطلبات المتأخرة</h4>
+                      <h4 className="font-black text-xs sm:text-base text-content">{t('reports.delayed_orders')}</h4>
                     </div>
                     <h3 className="text-lg sm:text-3xl font-black text-rose-600">{orderStats.delayedCount}</h3>
                   </div>
-                  <p className="text-[9px] sm:text-xs text-content-muted font-bold mt-2">تجاوزت 7 أيام عمل</p>
+                  <p className="text-[9px] sm:text-xs text-content-muted font-bold mt-2">{t('reports.over_seven_working_days')}</p>
                 </div>
               </div>
             </div>
@@ -797,10 +830,10 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 <div className="flex items-center justify-between mb-6 sm:mb-8">
                   <h3 className="text-sm sm:text-lg font-black text-content flex items-center gap-1.5 sm:gap-2">
                     <AlertTriangle className="text-rose-500 shrink-0 sm:w-5 sm:h-5" size={18} />
-                    تنبيهات المخزون المنخفض
+                    {t('reports.low_stock_alerts')}
                   </h3>
                   <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-rose-500/10 text-rose-600 rounded-full text-[10px] sm:text-xs font-black">
-                    {inventoryStats.lowStockItems.length} أصناف
+                    {t('reports.items_count', { n: inventoryStats.lowStockItems.length })}
                   </span>
                 </div>
                 <div className="space-y-3 sm:space-y-4 max-h-[320px] overflow-y-auto pr-1">
@@ -813,19 +846,19 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                           </div>
                           <div>
                             <p className="text-xs sm:text-sm font-black text-content truncate max-w-[120px] sm:max-w-none">{item.name}</p>
-                            <p className="text-[9px] sm:text-[10px] text-content-muted font-bold">الحد الأدنى: {item.minThreshold} {item.unit}</p>
+                            <p className="text-[9px] sm:text-[10px] text-content-muted font-bold">{t('reports.min_threshold_value', { value: item.minThreshold, unit: item.unit })}</p>
                           </div>
                         </div>
                         <div className="text-left">
                           <p className="text-xs sm:text-sm font-black text-rose-600">{item.quantity} {item.unit}</p>
-                          <p className="text-[9px] sm:text-[10px] text-content-muted font-bold">الكمية الحالية</p>
+                          <p className="text-[9px] sm:text-[10px] text-content-muted font-bold">{t('reports.current_quantity')}</p>
                         </div>
                       </div>
                     ))
                   ) : (
                     <div className="text-center py-12">
                       <CheckCircle2 size={40} className="text-emerald-500/20 mx-auto mb-3 sm:w-12 sm:h-12" />
-                      <p className="text-content-muted font-bold text-xs sm:text-sm">المخزون في حالة ممتازة</p>
+                      <p className="text-content-muted font-bold text-xs sm:text-sm">{t('reports.stock_healthy')}</p>
                     </div>
                   )}
                 </div>
@@ -833,7 +866,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
               {/* Top Consumed Items */}
               <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
-                <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">الأصناف الأكثر توفراً</h3>
+                <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.most_available_items')}</h3>
                 <div className="h-64 sm:h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={inventoryStats.topItems} layout="vertical" margin={{ left: 10, right: 10 }}>
@@ -860,14 +893,14 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                   <div>
                     <h3 className="text-base sm:text-xl font-black text-content flex items-center gap-2">
                       <TrendingUp className="text-brand shrink-0" size={22} />
-                      تقرير أداء الموظفين التفصيلي
+                      {t('reports.staff_performance_title')}
                     </h3>
                     <p className="text-xs font-medium text-content-muted mt-1">
-                      متابعة وإنجاز المهام والطلبات المسندة لكل موظف في فريق العمل
+                      {t('reports.staff_performance_desc')}
                     </p>
                   </div>
                   <span className="px-3.5 py-1.5 bg-brand/10 text-brand rounded-full text-xs font-black self-start sm:self-auto">
-                    {staffWithPerformance.length} موظف
+                    {t('reports.staff_count', { n: staffWithPerformance.length })}
                   </span>
                 </div>
 
@@ -876,13 +909,13 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     <table className="w-full text-right min-w-max">
                       <thead>
                         <tr className="bg-surface-muted border-b border-border">
-                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">الموظف</th>
-                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">الدور</th>
-                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">إجمالي المهام</th>
-                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">قيد العمل</th>
-                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">المنجزة</th>
-                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">معدل الإنجاز</th>
-                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">التفاصيل</th>
+                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('common.employee')}</th>
+                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('common.role')}</th>
+                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('staff.total_tasks')}</th>
+                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('staff.in_progress')}</th>
+                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('staff.completed_tasks')}</th>
+                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.completion_rate')}</th>
+                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('common.details')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
@@ -915,21 +948,21 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                             <td className="px-6 py-4">
                               <button 
                                 onClick={() => setDrillDown({
-                                  title: `طلبات الموظف: ${member.name}`,
+                                  title: t('reports.staff_orders_title', { name: member.name }),
                                   data: member.ordersToCount,
                                   columns: [
-                                    { key: 'orderNumber', label: 'رقم الطلب' },
-                                    { key: 'customerName', label: 'العميل' },
-                                    { key: 'totalAmount', label: 'المبلغ', type: 'currency' },
-                                    { key: 'orderDate', label: 'التاريخ', type: 'date' },
-                                    { key: 'status', label: 'الحالة', type: 'status' }
+                                    { key: 'orderNumber', label: t('dashboard.cashier.col_order_number') },
+                                    { key: 'customerName', label: t('common.customer') },
+                                    { key: 'totalAmount', label: t('common.amount'), type: 'currency' },
+                                    { key: 'orderDate', label: t('common.date'), type: 'date' },
+                                    { key: 'status', label: t('common.status'), type: 'status' }
                                   ]
                                 })}
                                 className="px-3 py-1.5 bg-brand/10 text-brand hover:bg-brand/20 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer"
-                                title="عرض طلبات الموظف"
+                                title={t('reports.view_staff_orders')}
                               >
                                 <TrendingUp size={14} />
-                                <span>عرض الطلبات</span>
+                                <span>{t('permissions.items.orders.orders_view.name')}</span>
                               </button>
                             </td>
                           </tr>
@@ -937,7 +970,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                         {staffWithPerformance.length === 0 && (
                           <tr>
                             <td colSpan={7} className="text-center py-8 text-content-muted font-bold text-xs sm:text-sm">
-                              لا يوجد موظفين مسجلين حالياً
+                              {t('reports.no_staff_registered')}
                             </td>
                           </tr>
                         )}
@@ -951,7 +984,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
                 {/* Staff Productivity */}
                 <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
-                  <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">إنتاجية الموظفين (الطلبات المكتملة)</h3>
+                  <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.staff_productivity')}</h3>
                   <div className="h-64 sm:h-80">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={staffStats.performance}>
@@ -962,7 +995,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                           cursor={{ fill: 'var(--color-surface-muted)' }}
                           contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
                         />
-                        <Bar dataKey="completed" fill="#22C55E" radius={[6, 6, 0, 0]} name="الطلبات المسلمة" />
+                        <Bar dataKey="completed" fill="#22C55E" radius={[6, 6, 0, 0]} name={t('reports.delivered_orders')} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -970,7 +1003,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
                 {/* Staff Sales */}
                 <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
-                  <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">إجمالي مبيعات الكاشير</h3>
+                  <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.cashier_total_sales')}</h3>
                   <div className="space-y-4 sm:space-y-6">
                     {staffStats.performance.filter(s => s.role === 'cashier' || s.role === 'owner' || s.role === 'admin').map((s, i) => (
                       <div key={i} className="flex items-center gap-3 sm:gap-4">
@@ -1001,9 +1034,9 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 {/* Top Customers */}
                 <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
                   <div className="flex items-center justify-between mb-6 sm:mb-8">
-                    <h3 className="text-sm sm:text-lg font-black text-content">أفضل العملاء (حسب المبيعات)</h3>
+                    <h3 className="text-sm sm:text-lg font-black text-content">{t('reports.top_customers')}</h3>
                     <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-brand/10 text-brand rounded-full text-[10px] sm:text-xs font-black">
-                      {customerStats.totalActiveCustomers} عميل نشط
+                      {t('reports.active_customers_count', { n: customerStats.totalActiveCustomers })}
                     </span>
                   </div>
                   <div className="space-y-3 sm:space-y-4">
@@ -1015,18 +1048,18 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                           </div>
                           <div>
                             <p className="text-xs sm:text-sm font-black text-content truncate max-w-[120px] sm:max-w-none">{customer.name}</p>
-                            <p className="text-[9px] sm:text-[10px] text-content-muted font-bold">{customer.orderCount} طلبات</p>
+                            <p className="text-[9px] sm:text-[10px] text-content-muted font-bold">{t('reports.customer_orders_count', { n: customer.orderCount })}</p>
                           </div>
                         </div>
                         <div className="text-left">
                           <p className="text-xs sm:text-sm font-black text-brand"><PriceDisplay amount={customer.totalSpent} /></p>
-                          <p className="text-[9px] sm:text-[10px] text-content-muted font-bold">إجمالي المشتريات</p>
+                          <p className="text-[9px] sm:text-[10px] text-content-muted font-bold">{t('reports.total_purchases')}</p>
                         </div>
                       </div>
                     ))}
                     {customerStats.topCustomers.length === 0 && (
                       <div className="text-center py-8 text-content-muted font-bold text-xs sm:text-sm">
-                        لا توجد بيانات للعملاء في هذه الفترة
+                        {t('reports.no_customer_data')}
                       </div>
                     )}
                   </div>
@@ -1034,7 +1067,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
                 {/* Customer Retention */}
                 <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
-                  <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">ولاء العملاء (جدد مقابل متكررين)</h3>
+                  <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.customer_retention')}</h3>
                   <div className="h-64 sm:h-80">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -1063,22 +1096,18 @@ export default function Reports({ tenantId }: { tenantId: string }) {
             </div>
           )}
 
-          {activeTab === 'tailor_commissions' && (
-            <TailorStatementReport tenantId={tenantId} />
-          )}
-
           {activeTab === 'zreports' && (
             <div className="space-y-4 sm:space-y-8">
               <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm max-w-xl mx-auto text-center">
                 <div className="bg-brand/10 w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center text-brand mx-auto mb-4 sm:mb-6">
                   <Calculator size={28} className="sm:w-8 sm:h-8" />
                 </div>
-                <h3 className="text-base sm:text-xl font-black text-content mb-2">إصدار تقرير نهاية اليوم (EOD)</h3>
-                <p className="text-content-muted font-bold mb-6 sm:mb-8 text-xs sm:text-sm px-4 sm:px-8">يمكنك معاينة وطباعة التقرير المالي المجمع لجميع الورديات التي تمت في تاريخ محدد.</p>
+                <h3 className="text-base sm:text-xl font-black text-content mb-2">{t('reports.eod_title')}</h3>
+                <p className="text-content-muted font-bold mb-6 sm:mb-8 text-xs sm:text-sm px-4 sm:px-8">{t('reports.eod_desc')}</p>
                 
                 <div className="flex flex-col gap-4 max-w-sm mx-auto">
                   <div className="space-y-1.5 sm:space-y-2 text-right">
-                    <label className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest mr-2">اختر التاريخ</label>
+                    <label className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest mr-2">{t('reports.select_date')}</label>
                     <div className="flex items-center gap-3 px-4 py-3 sm:py-3.5 bg-surface-muted border border-border rounded-2xl focus-within:ring-2 focus-within:ring-brand focus-within:border-transparent transition-all">
                       <CalendarIcon size={20} className="text-content-muted shrink-0" />
                       <input 
@@ -1099,7 +1128,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     ) : (
                       <>
                         <FileText size={18} className="sm:w-5 sm:h-5" />
-                        <span>توليد التقرير المالي المجمع</span>
+                        <span>{t('reports.generate_consolidated')}</span>
                       </>
                     )}
                   </button>
@@ -1117,7 +1146,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
               {!dailyZData && !loadingZ && (
                 <div className="text-center py-12 text-gray-400 font-bold text-xs sm:text-sm">
-                  لم يتم توليد تقرير لهذا التاريخ بعد. يرجى البدء باختيار التاريخ والنقر على الزر أعلاه.
+                  {t('reports.no_report_generated')}
                 </div>
               )}
             </div>
@@ -1149,7 +1178,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                   </div>
                   <div className="min-w-0">
                     <h2 className="text-base sm:text-2xl font-black text-content truncate">{drillDown.title}</h2>
-                    <p className="text-[10px] text-content-muted font-bold uppercase tracking-widest">عرض البيانات التفصيلية</p>
+                    <p className="text-[10px] text-content-muted font-bold uppercase tracking-widest">{t('reports.drilldown_subtitle')}</p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto border-t sm:border-0 pt-3 sm:pt-0 border-border">
@@ -1158,7 +1187,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-emerald-500/10 px-4 py-2 sm:py-2.5 rounded-xl border border-emerald-500/20 text-xs sm:text-sm font-bold text-emerald-600 hover:bg-emerald-500/20 transition-all"
                   >
                     <FileSpreadsheet size={16} />
-                    تصدير Excel
+                    {t('dashboard.export_excel')}
                   </button>
                   <button onClick={() => setDrillDown(null)} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm shrink-0">
                     <X size={20} className="text-content-muted sm:w-6 sm:h-6" />
@@ -1182,7 +1211,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                           {drillDown.columns.map((col, idx) => (
                             <td key={idx} className="px-6 py-4 text-sm font-bold text-content">
                               {col.type === 'currency' ? <PriceDisplay amount={row[col.key]} /> :
-                               col.type === 'date' ? new Date(row[col.key]).toLocaleDateString('ar-SA-u-nu-latn') :
+                               col.type === 'date' ? new Date(row[col.key]).toLocaleDateString(locale) :
                                col.type === 'status' ? (
                                  <span className="px-2 py-1 bg-surface-muted rounded-lg text-[10px] text-content-muted">
                                    {row[col.key]}

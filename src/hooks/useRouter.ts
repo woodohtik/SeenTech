@@ -40,13 +40,7 @@ export function useRefreshCounter() {
  * seamlessly into the client-side SPA runtime without breaking client-side React State.
  */
 export function useRouter() {
-  // Safe routing fallback, as some testing/isolated sub-sections may not have react-router context
-  let navigate: any = () => {};
-  try {
-    navigate = useNavigate();
-  } catch (e) {
-    // react-router context missing, degrade gracefully
-  }
+  const navigate = useNavigate();
 
   return {
     refresh: () => {

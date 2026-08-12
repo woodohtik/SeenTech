@@ -181,7 +181,7 @@ const WarehouseManagement: React.FC<WarehouseManagementProps> = ({ tenantId }) =
                   }}
                   className="px-4 py-2 bg-surface-muted hover:bg-brand/10 hover:text-brand text-content font-bold text-xs rounded-xl transition-all cursor-pointer border border-border/40"
                 >
-                  تعديل الفرع
+                  {t('branches.edit_branch')}
                 </button>
                 <button className="px-4 py-2 bg-brand/5 hover:bg-brand text-brand hover:text-white font-bold text-xs rounded-xl transition-all cursor-pointer">
                   {t('branches.view_stock')}

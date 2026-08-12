@@ -20,6 +20,8 @@ import { cn } from '../../lib/utils';
 import type { TourChecklistItem } from '../../config/tourSteps';
 import { supabase } from '../../lib/supabase/client';
 
+import { isRtlLang } from '../../lib/direction';
+
 const ICONS: Record<string, React.ElementType> = {
   Store,
   Package,
@@ -52,7 +54,7 @@ export default function TourFinishModal({
   onRestart,
 }: TourFinishModalProps) {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
   const Chevron = isRtl ? ChevronLeft : ChevronRight;
 
   const [completion, setCompletion] = useState<CompletionState>({
@@ -165,7 +167,7 @@ export default function TourFinishModal({
       >
         <button
           onClick={onClose}
-          aria-label={t('common.close', 'إغلاق')}
+          aria-label={t('sales.close')}
           className={cn(
             'absolute top-4 z-10 p-2 rounded-full text-content-muted hover:text-content hover:bg-surface-muted transition-colors',
             isRtl ? 'left-4' : 'right-4'
@@ -186,24 +188,21 @@ export default function TourFinishModal({
 
           <h2 className="text-2xl font-black text-content leading-tight">
             {completedCount === totalCount
-              ? t('tour.finish.complete_all_title', 'تهانينا! تم تدشين متجرك بنجاح 🚀')
-              : t('tour.finish.title', 'أنت جاهز للانطلاق! 🎉')}
+              ? t('tour.finish.complete_all_title')
+              : t('tour.finish.title')}
           </h2>
           <p className="text-content-muted text-xs font-semibold mt-2 leading-relaxed max-w-sm mx-auto">
             {completedCount === totalCount
-              ? t('tour.finish.complete_all_desc', 'لقد أكملت جميع خطوات التدشين بنجاح. أنت الآن مستعد لإدارة مبيعاتك ومخزونك بالكامل.')
-              : t(
-                  'tour.finish.subtitle',
-                  'أكملت الجولة التعريفية. هذه أول خطوات مقترحة لتجهيز محلك والبدء في العمل فعلياً.'
-                )}
+              ? t('tour.finish.complete_all_desc')
+              : t('tour.finish.subtitle')}
           </p>
 
           {/* Progress Indicator */}
           <div className="mt-5 max-w-xs mx-auto">
             <div className="flex justify-between text-[11px] font-bold text-content-muted mb-1.5 px-0.5">
-              <span>{t('tour.finish.setup_progress', 'خطوات تدشين المتجر')}</span>
+              <span>{t('tour.finish.setup_progress')}</span>
               <span>
-                {completedCount} {t('common.of', 'من')} {totalCount}
+                {t('tour.finish.progress_count', { completed: completedCount, total: totalCount })}
               </span>
             </div>
             <div className="h-2 w-full bg-surface-muted rounded-full overflow-hidden border border-border/40">
@@ -220,14 +219,14 @@ export default function TourFinishModal({
         {/* Quick start checklist */}
         <div className="px-5 sm:px-6 pb-2 space-y-2 overflow-y-auto">
           <p className="px-1.5 pb-1 text-[11px] font-black text-content-muted uppercase tracking-widest">
-            {t('tour.finish.checklist_title', 'خطوات البدء السريع')}
+            {t('tour.finish.checklist_title')}
           </p>
 
           {loading ? (
             <div className="py-8 flex flex-col items-center justify-center gap-3">
               <Loader2 className="w-6 h-6 animate-spin text-brand" />
               <span className="text-xs font-bold text-content-muted">
-                {t('common.loading', 'جاري تحميل الخطوات...')}
+                {t('common.loading')}
               </span>
             </div>
           ) : (
@@ -286,13 +285,13 @@ export default function TourFinishModal({
 
                       {isCompleted && (
                         <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-black bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase tracking-wider">
-                          {t('common.completed', 'مكتمل')}
+                          {t('common.completed')}
                         </span>
                       )}
 
                       {isActive && (
                         <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-black bg-brand text-white uppercase tracking-wider animate-pulse">
-                          {t('common.next_step', 'الخطوة التالية')}
+                          {t('common.next')}
                         </span>
                       )}
                     </div>
@@ -324,15 +323,15 @@ export default function TourFinishModal({
             className="flex-1 px-5 py-3 rounded-2xl font-bold text-xs sm:text-sm text-content-muted bg-surface-muted hover:bg-border/60 transition-colors cursor-pointer flex items-center justify-center gap-2"
           >
             <RotateCcw size={15} />
-            <span>{t('tour.finish.restart', 'إعادة الجولة')}</span>
+            <span>{t('tour.finish.restart')}</span>
           </button>
           <button
             onClick={onClose}
             className="flex-[1.4] px-5 py-3 rounded-2xl font-black text-sm bg-brand text-white hover:bg-brand/90 shadow-lg shadow-brand/25 transition-all active:scale-[0.98] cursor-pointer"
           >
             {completedCount === totalCount
-              ? t('tour.finish.start_work', 'ابدأ العمل الآن')
-              : t('tour.finish.continue', 'متابعة الخطوات')}
+              ? t('tour.finish.done')
+              : t('tour.finish.continue')}
           </button>
         </div>
       </motion.div>

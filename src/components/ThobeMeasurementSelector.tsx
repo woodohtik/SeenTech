@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { Lightbulb } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -14,28 +15,29 @@ interface ThobeMeasurementSelectorProps {
 type ThobePart = 'neck' | 'chest' | 'waist' | 'hips' | 'shoulder' | 'sleeve' | 'length' | 'bottomWidth';
 
 const PART_LABELS: Record<ThobePart, string> = {
-  neck: 'مقاس الرقبة',
-  chest: 'مقاس الصدر',
-  waist: 'مقاس الخصر',
-  hips: 'مقاس الأرداف',
-  shoulder: 'مقاس الأكتاف',
-  sleeve: 'مقاس الأكمام',
-  length: 'الطول الكلي',
-  bottomWidth: 'وسع الأسفل',
+  neck: 'measurements.part_label.neck',
+  chest: 'measurements.part_label.chest',
+  waist: 'measurements.part_label.waist',
+  hips: 'measurements.part_label.hips',
+  shoulder: 'measurements.part_label.shoulder',
+  sleeve: 'measurements.part_label.sleeve',
+  length: 'measurements.part_label.length',
+  bottomWidth: 'measurements.part_label.bottomWidth',
 };
 
 const PART_HINTS: Record<ThobePart, string> = {
-  neck: 'قم بقياس محيط الرقبة مع ترك مسافة إصبعين للراحة.',
-  chest: 'قم بقياس محيط الصدر تحت الإبطين في أوسع نقطة.',
-  waist: 'قم بقياس محيط الخصر في أضيق نقطة.',
-  hips: 'قم بقياس محيط الأرداف في أوسع نقطة.',
-  shoulder: 'من عظمة الكتف الأيمن إلى الأيسر من الخلف.',
-  sleeve: 'من عظمة الكتف وحتى المعصم.',
-  length: 'من أعلى نقطة في الكتف حتى الطول المطلوب.',
-  bottomWidth: 'عرض الثوب من الأسفل.'
+  neck: 'measurements.part_hint.neck',
+  chest: 'measurements.part_hint.chest',
+  waist: 'measurements.part_hint.waist',
+  hips: 'measurements.part_hint.hips',
+  shoulder: 'measurements.part_hint.shoulder',
+  sleeve: 'measurements.part_hint.sleeve',
+  length: 'measurements.part_hint.length',
+  bottomWidth: 'measurements.part_hint.bottomWidth'
 };
 
 export default function ThobeMeasurementSelector({ values, onChange, readOnly = false }: ThobeMeasurementSelectorProps) {
+  const { t } = useTranslation();
   const [activePart, setActivePart] = useState<ThobePart | null>(null);
   const [isInstructionMode, setIsInstructionMode] = useState(false);
   const [activeHint, setActiveHint] = useState<ThobePart | null>(null);
@@ -329,13 +331,13 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
         <div className="w-full lg:w-[350px] space-y-6">
           <div className="pb-4 border-b border-border flex items-center justify-between gap-2">
             <div>
-              <h2 className="text-xl font-black text-content">مُحدد المقاسات البصري</h2>
-              <p className="text-sm text-content-muted font-bold">أدخل المقاسات بدقة للمراجعة الفورية</p>
+              <h2 className="text-xl font-black text-content">{t('measurements.visual_selector_title')}</h2>
+              <p className="text-sm text-content-muted font-bold">{t('measurements.visual_selector_desc')}</p>
             </div>
             <button 
               type="button"
               onClick={() => setIsInstructionMode(!isInstructionMode)}
-              title="وضع التعليمات"
+              title={t('measurements.instructions_mode')}
               className={cn("p-2.5 rounded-xl transition-colors shrink-0", isInstructionMode ? "bg-amber-100 text-amber-600" : "bg-surface-muted text-content-muted hover:bg-border")}
             >
               <Lightbulb size={24} />
@@ -355,7 +357,7 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
               >
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-[10px] font-black text-content-muted uppercase tracking-widest">
-                    {PART_LABELS[part]}
+                    {t(PART_LABELS[part])}
                   </label>
                   {isInstructionMode && (
                     <button 
@@ -377,7 +379,7 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
                       className="overflow-hidden mb-3"
                     >
                       <p className="text-xs text-amber-700 bg-amber-50/80 p-2.5 rounded-xl font-bold leading-relaxed border border-amber-100/50">
-                        {PART_HINTS[part]}
+                        {t(PART_HINTS[part])}
                       </p>
                     </motion.div>
                   )}
@@ -396,7 +398,7 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
                     placeholder="0.0"
                     className="w-full bg-transparent border-none p-0 text-3xl font-black text-content focus:ring-0 placeholder:text-content-muted/30"
                   />
-                  <span className="text-sm font-bold text-content-muted">سم</span>
+                  <span className="text-sm font-bold text-content-muted">{t('customers.cm')}</span>
                 </div>
               </div>
             ))}
@@ -405,7 +407,7 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
           <div className="pt-4">
             <div className="p-4 bg-brand/10 rounded-2xl border border-brand/20">
               <p className="text-xs font-bold text-brand leading-relaxed">
-                * يتم حفظ هذه المقاسات تلقائياً ككائن JSON مرتبط ببيانات العميل والطلب لضمان دقة التفصيل.
+                {t('measurements.auto_saved_note')}
               </p>
             </div>
           </div>

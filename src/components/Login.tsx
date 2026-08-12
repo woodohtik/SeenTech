@@ -197,7 +197,7 @@ export default function Login() {
       
       if (gUserError) {
          if (gUserError.message?.includes('row-level security') || gUserError.code === '42501') {
-            throw new Error(`مشكلة في صلاحيات قاعدة البيانات (RLS). يرجى تنفيذ ملف allow-all-rls.sql في واجهة Supabase لتتمكن من التسجيل.`);
+            throw new Error(t('login.errors.rls_permission_issue'));
          }
       }
 
@@ -231,13 +231,13 @@ export default function Login() {
       } else {
         console.error('Google Login Error:', err);
         if (err.code === 'auth/popup-blocked') {
-          setError(t('login.errors.popup_blocked', 'تم حظر النوافذ المنبثقة، يرجى السماح بها'));
+          setError(t('login.errors.popup_blocked'));
         } else if (err.code === 'permission-denied') {
-          setError(t('login.errors.permission_denied', 'تم رفض الصلاحية'));
+          setError(t('login.errors.permission_denied'));
         } else if (err.code === 'auth/network-request-failed') {
-          setError('فشل الاتصال بخوادم المصادقة. يرجى التأكد من اتصال الإنترنت وإيقاف إضافات حجب الإعلانات (Ad blockers). إذا كنت تستخدم المعاينة، جرب فتح التطبيق في نافذة جديدة.');
+          setError(t('login.errors.auth_network_failed'));
         } else {
-          setError(t('common.error', 'خطأ') + ': ' + (err.message || 'Unknown error'));
+          setError(t('common.error') + ': ' + (err.message || 'Unknown error'));
         }
       }
     } finally {
@@ -291,7 +291,7 @@ export default function Login() {
           }
         } catch (fetchErr: any) {
              if (fetchErr instanceof TypeError && fetchErr.message === 'Failed to fetch') {
-                 throw new Error(`تعذر الاتصال بقاعدة البيانات. تأكد من أن الروابط تعمل وأنه لا يوجد أداة تحجب الاتصال. ${import.meta.env.VITE_SUPABASE_URL || 'لا يوجد رابط'}`);
+                 throw new Error(t('login.errors.db_unreachable', { url: import.meta.env.VITE_SUPABASE_URL || t('login.errors.no_url') }));
              }
              throw fetchErr;
         }
@@ -300,7 +300,7 @@ export default function Login() {
       console.log("[DEBUG] Triggering signInWithEmailAndPassword...");
       let isSuperAdminFallback = false;
       if (!auth) {
-        throw new Error("لم يتم إعداد خدمات مقبس الحسابات (Firebase). الرجاء إضافتها من قائمة Secrets.");
+        throw new Error(t('login.errors.firebase_not_configured'));
       }
       try {
         await signInWithEmailAndPassword(auth, emailToUse, password);
@@ -341,9 +341,9 @@ export default function Login() {
       const isJwtError = err.message?.includes('suitable key') || err.message?.includes('PGRST301') || err.message?.includes('Expected 3 parts in JWT');
       
       if (isJwtError) {
-        setError("خطأ في الاتصال: لم يتم تفعيل ربط Supabase بـ Firebase. راجع الإعدادات (Custom JWT).");
+        setError(t('login.errors.jwt_link_missing'));
       } else if (isFetchError) {
-        setError(`تعذر الاتصال بقاعدة البيانات. تأكد من أن الروابط تعمل وأنه لا يوجد أداة تحجب الاتصال (Adblocker). ${import.meta.env.VITE_SUPABASE_URL || 'لا يوجد رابط'}`);
+        setError(t('login.errors.db_unreachable_adblocker', { url: import.meta.env.VITE_SUPABASE_URL || t('login.errors.no_url') }));
       } else {
         setError(getAuthErrorMessage(err));
       }
@@ -379,7 +379,7 @@ export default function Login() {
         emailSnap = emailRes.data;
       } catch (checkErr: any) {
         if (checkErr instanceof TypeError && checkErr.message === 'Failed to fetch') {
-           throw new Error(`تعذر الاتصال بقاعدة البيانات. المشكلة قد تكون من إعدادات الشبكة (حاجب الإعلانات) أو روابط Supabase. ${import.meta.env.VITE_SUPABASE_URL || 'لا يوجد رابط'}`);
+           throw new Error(t('login.errors.db_unreachable_network', { url: import.meta.env.VITE_SUPABASE_URL || t('login.errors.no_url') }));
         }
         throw checkErr;
       }
@@ -397,7 +397,7 @@ export default function Login() {
       }
 
       if (!auth) {
-        throw new Error("لم يتم إعداد خدمات مقبس الحسابات (Firebase). الرجاء إضافة متغيرات VITE_FIREBASE_API_KEY من قائمة Secrets.");
+        throw new Error(t('login.errors.firebase_api_key_missing'));
       }
       
       // Lock the Firebase observer in App.tsx from taking over prematurely 
@@ -446,7 +446,7 @@ export default function Login() {
 
         if (userInsertError) {
           if (userInsertError.code === '23505' || userInsertError.message?.includes('users_email_key')) {
-            const friendlyErr = new Error(t('login.errors.email_exists') || 'البريد الإلكتروني مسجل بالفعل');
+            const friendlyErr = new Error(t('login.errors.email_exists'));
             (friendlyErr as any).code = 'auth/email-already-in-use';
             throw friendlyErr;
           }
@@ -477,8 +477,8 @@ export default function Login() {
           .from('branches')
           .insert({
             tenant_id: tenantId,
-            name: 'المعرض الرئيسي',
-            location: 'المنطقة الرئيسية',
+            name: t('common.branches.main_branch'),
+            location: t('login.main_area'),
             phone: formattedPhone,
             type: 'store',
             is_main: true
@@ -533,7 +533,7 @@ export default function Login() {
           }
         }
         if (err instanceof TypeError && err.message === 'Failed to fetch') {
-           throw new Error(`تعذر الاتصال بقاعدة البيانات. ${import.meta.env.VITE_SUPABASE_URL || ''}`);
+           throw new Error(t('login.errors.db_unreachable_short', { url: import.meta.env.VITE_SUPABASE_URL || '' }));
         }
         throw err;
       }
@@ -549,17 +549,17 @@ export default function Login() {
       localStorage.removeItem('is_registering');
       console.error('Registration Error:', err);
       if (err.code === 'auth/email-already-in-use' || err.code === '23505' || err.message?.includes('users_email_key')) {
-        setError(t('login.errors.email_exists') || 'البريد الإلكتروني مسجل بالفعل في النظام');
+        setError(t('login.errors.email_exists'));
       } else if (err.code === 'auth/invalid-email') {
-        setError(t('login.errors.invalid_email', 'البريد الإلكتروني غير صالح'));
+        setError(t('login.errors.invalid_email'));
       } else if (err.code === 'auth/weak-password') {
         setError(t('login.errors.weak_password'));
       } else if (err.code === 'auth/operation-not-allowed') {
-        setError(t('login.errors.operation_not_allowed', 'يجب تفعيل خيار "البريد الإلكتروني وكلمة المرور" في إعدادات Firebase Console'));
+        setError(t('login.errors.operation_not_allowed'));
       } else if (err.code === 'permission-denied') {
         setError(t('login.errors.permission_denied'));
       } else if (err.code === 'auth/network-request-failed') {
-        setError('فشل الاتصال بخوادم المصادقة. يرجى التأكد من اتصال الإنترنت وإيقاف إضافات حجب الإعلانات (Ad blockers). إذا كنت تستخدم المعاينة، جرب فتح التطبيق في نافذة جديدة.');
+        setError(t('login.errors.auth_network_failed'));
       } else {
         console.error("Unknown error caught:", err);
         const isFetchError = 
@@ -569,11 +569,11 @@ export default function Login() {
 
         const isJwtError = err.message?.includes('suitable key') || err.message?.includes('PGRST301') || err.message?.includes('Expected 3 parts in JWT');
         if (isJwtError) {
-          setError("خطأ في الاتصال: لم يتم تفعيل ربط Supabase بـ Firebase. راجع الإعدادات (Custom JWT).");
+          setError(t('login.errors.jwt_link_missing'));
         } else if (isFetchError) {
-          setError(`تعذر الاتصال بقاعدة البيانات. تأكد من أن الروابط تعمل وأنه لا يوجد أداة تحجب الاتصال (Adblocker). ${import.meta.env.VITE_SUPABASE_URL || 'لا يوجد رابط'}`);
+          setError(t('login.errors.db_unreachable_adblocker', { url: import.meta.env.VITE_SUPABASE_URL || t('login.errors.no_url') }));
         } else {
-          setError(`${t('login.errors.unknown', 'حدث خطأ غير معروف')}: ${err.message || 'No additional info'}`);
+          setError(`${t('login.errors.unknown')}: ${err.message || 'No additional info'}`);
         }
       }
     } finally {
@@ -587,8 +587,8 @@ export default function Login() {
       <div className="absolute top-4 left-4 right-4 z-50 flex items-center justify-between pointer-events-none">
         <button 
           onClick={() => navigate('/')}
-          title={t('login.back_to_landing', 'الرجوع لصفحة الهبوط')}
-          aria-label={t('login.back_to_landing', 'الرجوع لصفحة الهبوط')}
+          title={t('login.back_to_landing')}
+          aria-label={t('login.back_to_landing')}
           className="pointer-events-auto p-3 bg-surface hover:bg-brand border border-border hover:border-brand rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 text-content hover:text-white cursor-pointer group flex items-center justify-center active:scale-95"
         >
           <Home size={20} className="transition-all duration-300 group-hover:scale-110 text-current" />
@@ -682,7 +682,7 @@ export default function Login() {
               className="bg-amber-500/10 border border-amber-500/20 text-amber-700 p-4 rounded-2xl flex items-start gap-3 text-sm font-bold"
             >
               <AlertCircle size={18} className="shrink-0 mt-0.5" />
-              <span>تم تسجيل خروجك تلقائياً لأن الحساب تم تسجيل الدخول إليه من جهاز آخر.</span>
+              <span>{t('login.session_conflict_logout')}</span>
             </motion.div>
           )}
 
@@ -712,7 +712,7 @@ export default function Login() {
                   type="text"
                   value={loginId}
                   onChange={(e) => setLoginId(e.target.value)}
-                  placeholder={i18n.language === 'en' ? "example@mail.com or 05xxxxxxxx" : "example@mail.com أو 05xxxxxxxx"}
+                  placeholder={t('login.email_or_phone_placeholder')}
                   startIcon={Mail}
                   label={t('login.email_or_phone')}
                   wrapperClassName="h-11"
@@ -842,7 +842,7 @@ export default function Login() {
                   />
                   {googleUser && (
                     <span className="absolute top-1 left-2 text-[10px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">
-                      متحقق عبر Google ✓
+                      {t('login.google_verified')}
                     </span>
                   )}
                 </div>
@@ -966,10 +966,10 @@ export default function Login() {
                   setLoading(true);
                   try {
                     await sendPasswordResetEmail(auth, loginId);
-                    alert(t('login.reset_link_sent', 'تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني'));
+                    alert(t('login.reset_link_sent'));
                     setView('login');
                   } catch (err) {
-                    setError(t('login.errors.reset_failed', 'فشل إرسال البريد، تأكد من صحة العنوان'));
+                    setError(t('login.errors.reset_failed'));
                   } finally {
                     setLoading(false);
                   }

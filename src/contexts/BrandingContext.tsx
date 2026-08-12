@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase/client';
 
 interface BrandingSettings {
@@ -15,10 +16,11 @@ interface BrandingContextType {
 const BrandingContext = createContext<BrandingContextType | undefined>(undefined);
 
 export function BrandingProvider({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
   const [settings, setSettings] = useState<BrandingSettings>({
     websiteUrl: '#',
     companyName: 'Seen',
-    storeName: 'تطبيق سين'
+    storeName: t('common.default_store_name')
   });
   const [loading, setLoading] = useState(true);
 
@@ -35,7 +37,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
           setSettings({
             websiteUrl: data.value.websiteUrl || '#',
             companyName: data.value.companyName || 'Seen',
-            storeName: data.value.storeName || 'تطبيق سين'
+            storeName: data.value.storeName || t('common.default_store_name')
           });
         }
       } catch (error) {
@@ -59,7 +61,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
           setSettings({
             websiteUrl: payload.new.value.websiteUrl || '#',
             companyName: payload.new.value.companyName || 'Seen',
-            storeName: payload.new.value.storeName || 'تطبيق سين'
+            storeName: payload.new.value.storeName || t('common.default_store_name')
           });
         }
       })

@@ -7,6 +7,7 @@
  * SQL المطلوب: PLG_trial_lifecycle.sql (الدوال start_tenant_trial / activate_tenant_subscription).
  */
 
+import i18n from 'i18next';
 import { supabase } from '../lib/supabase/client';
 
 export const TRIAL_DAYS = 14;
@@ -51,8 +52,8 @@ export async function seedTrialData(tenantId: string): Promise<void> {
   ]).select();
 
   await supabase.from('inventory_items').insert([
-    { name: 'قماش قطن أبيض', category: 'fabric', quantity: 50, unit: 'meter', base_unit: 'meter', sku: 'COT-WHT', min_threshold: 10, price_per_unit: 45, tenant_id: tenantId, is_test: true, updated_at: new Date().toISOString() },
-    { name: 'أزرار صدف', category: 'button', quantity: 500, unit: 'box', base_unit: 'piece', sku: 'BTN-SDF', min_threshold: 50, price_per_unit: 2, tenant_id: tenantId, is_test: true, updated_at: new Date().toISOString() },
+    { name: 'قماش قطن أبيض', category: 'fabric', quantity: 50, unit: 'meter', sku: 'COT-WHT', min_threshold: 10, price_per_unit: 45, tenant_id: tenantId, is_test: true, updated_at: new Date().toISOString() },
+    { name: 'أزرار صدف', category: 'button', quantity: 500, unit: 'box', sku: 'BTN-SDF', min_threshold: 50, price_per_unit: 2, tenant_id: tenantId, is_test: true, updated_at: new Date().toISOString() },
   ]);
 
   if (customers && customers.length) {
@@ -213,7 +214,7 @@ export async function deleteTestDataForTenant(tenantId: string): Promise<{ succe
     return { success: true, deletedCount: totalDeleted };
   } catch (err: any) {
     console.error('Error in deleteTestDataForTenant:', err);
-    return { success: false, deletedCount: totalDeleted, error: err?.message || 'فشل حذف البيانات التجريبية' };
+    return { success: false, deletedCount: totalDeleted, error: err?.message || i18n.t('common.delete_test_data_failed') };
   }
 }
 

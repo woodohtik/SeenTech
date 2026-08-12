@@ -4,12 +4,19 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
+import {
+  applyDocumentDirection,
+  normalizeLang,
+  SUPPORTED_LANGS,
+  DEFAULT_LANG,
+} from '../lib/direction';
+
 import ar from './locales/ar.json';
 import en from './locales/en.json';
 import ur from './locales/ur.json';
 
 // Get and normalize the language choice, default to 'ar'
-let defaultLanguage = 'ar';
+let defaultLanguage: string = DEFAULT_LANG;
 if (typeof window !== 'undefined') {
   // Safe localStorage.clear wrapper: logout wipes storage, but a few keys must
   // survive it — the chosen language, and the onboarding-tour state (otherwise
@@ -48,13 +55,19 @@ if (typeof window !== 'undefined') {
   };
 
   const saved = localStorage.getItem('i18nextLng');
-  if (saved === 'ar' || saved === 'en' || saved === 'ur') {
-    defaultLanguage = saved;
+  const normalized = saved ? normalizeLang(saved) : null;
+  if (normalized && saved && (SUPPORTED_LANGS as readonly string[]).includes(normalized)) {
+    defaultLanguage = normalized;
+    // Rewrite region-tagged values ("en-US") back to the bare code so the
+    // resource bundles always resolve on the next boot.
+    if (saved !== normalized) localStorage.setItem('i18nextLng', normalized);
   } else {
-    localStorage.setItem('i18nextLng', 'ar');
-    defaultLanguage = 'ar';
+    localStorage.setItem('i18nextLng', DEFAULT_LANG);
+    defaultLanguage = DEFAULT_LANG;
   }
 }
+
+const SUPPORTED_LNG_LIST = [...SUPPORTED_LANGS];
 
 // Add custom postProcessor to guarantee all i18n output uses English (Latin) digits (0-9)
 i18n.use({
@@ -68,12 +81,23 @@ i18n
   .use(initReactI18next)
   .init({
     lng: defaultLanguage,
+    saveMissing: Boolean(import.meta.env?.DEV),
     resources: {
       ar: { translation: ar },
       en: { translation: en },
       ur: { translation: ur },
     },
-    fallbackLng: 'ar',
+    // Strip region subtags ("en-US" -> "en") so bundles always resolve.
+    load: 'languageOnly',
+    supportedLngs: SUPPORTED_LNG_LIST,
+    nonExplicitSupportedLngs: true,
+    // A missing Urdu key must NOT fall back to Arabic — that is exactly the
+    // "mixed language UI" bug. Urdu degrades to English, English to Arabic.
+    fallbackLng: {
+      ur: ['en', 'ar'],
+      en: ['ar'],
+      default: ['ar'],
+    },
     postProcess: ['latinDigits'],
     interpolation: {
       escapeValue: false,
@@ -93,11 +117,21 @@ i18n
     },
   } as any);
 
-// Synchronize document dir and lang immediately on load
-if (typeof window !== 'undefined') {
-  const dir = defaultLanguage === 'en' ? 'ltr' : 'rtl';
-  document.documentElement.dir = dir;
-  document.documentElement.lang = defaultLanguage;
+// Synchronize <html lang/dir/font> immediately on load AND on every language
+// change. Centralizing it here means no component has to touch the DOM, and
+// Urdu correctly gets dir="rtl" (it used to be treated as LTR).
+applyDocumentDirection(defaultLanguage);
+i18n.on('languageChanged', (lng) => {
+  applyDocumentDirection(lng);
+});
+
+// Development guard: surface any key that resolves to nothing so untranslated
+// strings are caught before they reach users instead of silently showing Arabic.
+if (import.meta.env?.DEV) {
+  i18n.on('missingKey', (lngs, namespace, key) => {
+    // eslint-disable-next-line no-console
+    console.warn(`[i18n] missing key "${key}" for ${JSON.stringify(lngs)} (${namespace})`);
+  });
 }
 
 export default i18n;

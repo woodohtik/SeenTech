@@ -45,6 +45,16 @@ import EmployeeActivityLogTab from './EmployeeActivityLog';
 import AddEmployeeModal from './AddEmployeeModal';
 import AdminTailorCommissions from './AdminTailorCommissions';
 
+import { isRtlLang } from '../lib/direction';
+
+/** Permission `categoryKey` -> the stable slug used by the settings_page.* translation keys. */
+const getCategoryKey = (cat: string): string => {
+  // `cat` is a permission `categoryKey` (e.g. 'settings_page.staff.permissions.categories.orders');
+  // the trailing segment is the stable slug. This previously mapped Arabic labels,
+  // which silently broke as soon as the UI language was not Arabic.
+  return cat.split('.').pop() || cat;
+};
+
 interface StaffMember extends StaffMemberType {
   performance?: {
     totalHandled: number;
@@ -55,41 +65,27 @@ interface StaffMember extends StaffMemberType {
 
 interface StaffProps {
   tenantId: string;
-  initialViewMode?: 'list' | 'permissions' | 'employee_activity' | 'tailor_commissions';
+  initialViewMode?: 'list' | 'permissions' | 'employee_activity';
 }
 
 export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps) {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur' || !i18n.language;
+  const isRtl = isRtlLang(i18n.language);
 
   // Translation helpers for permissions and categories
-  const getCategoryKey = (cat: string): string => {
-    const catKeys: Record<string, string> = {
-      'التبويبات والشاشات': 'tabs_screens',
-      'الطلبات': 'orders',
-      'المالية': 'financial',
-      'المخزون': 'inventory',
-      'العملاء': 'customers',
-      'لوحة التحكم': 'dashboard',
-      'التقارير': 'reports',
-      'الإعدادات': 'settings'
-    };
-    return catKeys[cat] || cat;
-  };
-
   const getTransCat = (cat: string): string => {
     const key = getCategoryKey(cat);
-    return t(`settings.staff.permissions.categories.${key}`, { defaultValue: cat });
+    return t(`settings_page.staff.permissions.categories.${key}`, { defaultValue: cat });
   };
 
   const getTransPermName = (permId: string, cat: string, defaultName: string): string => {
     const catKey = getCategoryKey(cat);
-    return t(`settings.staff.permissions.items.${permId}.${catKey}.name`, { defaultValue: defaultName });
+    return t(`settings_page.staff.permissions.items.${permId}.${catKey}.name`, { defaultValue: defaultName });
   };
 
   const getTransPermDesc = (permId: string, cat: string, defaultDesc: string): string => {
     const catKey = getCategoryKey(cat);
-    return t(`settings.staff.permissions.items.${permId}.${catKey}.description`, { defaultValue: defaultDesc });
+    return t(`settings_page.staff.permissions.items.${permId}.${catKey}.description`, { defaultValue: defaultDesc });
   };
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -100,7 +96,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [selectedStaffForDetails, setSelectedStaffForDetails] = useState<StaffMember | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'permissions' | 'employee_activity' | 'tailor_commissions'>(initialViewMode === ('performance' as any) ? 'list' : initialViewMode);
+  const [viewMode, setViewMode] = useState<'list' | 'permissions' | 'employee_activity'>(initialViewMode === ('performance' as any) ? 'list' : initialViewMode);
   const [permissionTabMode, setPermissionTabMode] = useState<'roles' | 'staff'>('roles');
   const [sidebarSearchTerm, setSidebarSearchTerm] = useState('');
   const [selectedRoleForPermissions, setSelectedRoleForPermissions] = useState<Role | null>(null);
@@ -123,14 +119,14 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       const { autoSeed } = await import('../services/seedService');
       const success = await autoSeed();
       if (success) {
-        setToast({ message: 'تم إضافة المهن الافتراضية بنجاح', type: 'success' });
+        setToast({ message: t('settings_page.staff.seed_success'), type: 'success' });
         await fetchRoles();
       } else {
-        setToast({ message: 'فشل في إضافة المهن، يرجى المحاولة مرة أخرى', type: 'error' });
+        setToast({ message: t('settings_page.staff.seed_failed'), type: 'error' });
       }
     } catch (error) {
       console.warn('Seeding error:', error);
-      setToast({ message: 'حدث خطأ أثناء إضافة المهن', type: 'error' });
+      setToast({ message: t('settings_page.staff.seed_error'), type: 'error' });
     } finally {
       setIsSeeding(false);
     }
@@ -233,7 +229,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
 
   useEffect(() => {
     // Expand all categories by default
-    const cats = Array.from(new Set(SYSTEM_PERMISSIONS.map(p => p.category)));
+    const cats = Array.from(new Set(SYSTEM_PERMISSIONS.map(p => p.categoryKey)));
     setExpandedCategories(cats);
   }, []);
 
@@ -471,21 +467,21 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
     console.error("Staff form validation errors:", errors);
     const messages = Object.entries(errors)
       .map(([field, err]: [string, any]) => {
-        const fieldNameAr: Record<string, string> = {
-          name: 'الاسم الكامل',
-          email: 'البريد الإلكتروني',
-          phone: 'رقم الهاتف',
-          role: 'الدور الوظيفي',
-          branchId: 'الفرع',
-          pin: 'رمز الدخول'
+        const fieldLabelKeys: Record<string, string> = {
+          name: 'login.full_name',
+          email: 'common.email',
+          phone: 'onboarding.fields.phone',
+          role: 'settings_page.staff.field_role',
+          branchId: 'common.branch',
+          pin: 'settings_page.staff.field_pin'
         };
-        const label = fieldNameAr[field] || field;
-        return `• ${label}: ${err.message || 'حقل غير صالح'}`;
+        const label = fieldLabelKeys[field] ? t(fieldLabelKeys[field]) : field;
+        return `• ${label}: ${err.message || t('settings_page.staff.invalid_field')}`;
       })
       .join('\n');
 
     setToast({ 
-      message: `يرجى تصحيح الأخطاء التالية:\n${messages}`, 
+      message: t('settings_page.staff.fix_errors', { errors: messages }), 
       type: 'error' 
     });
   };
@@ -513,7 +509,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
             attempts++;
           }
           
-          if (!uniquePin) throw new Error('تعذر إنشاء رمز دخول فريد، يرجى المحاولة مرة أخرى');
+          if (!uniquePin) throw new Error(t('settings_page.staff.pin_unique_failed'));
           
           finalPin = uniquePin;
           isAutoGenerated = true;
@@ -559,7 +555,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
 
         const { error } = await supabase.from('staff').update(updateData).eq('id', editingStaff.id);
         if (error) throw error;
-        setToast({ message: 'تم تحديث بيانات الموظف بنجاح', type: 'success' });
+        setToast({ message: t('saas.update_success'), type: 'success' });
       } else {
         const { error } = await supabase.from('staff').insert({
           name: data.name,
@@ -589,14 +585,14 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
           type: 'security'
         });
 
-        setToast({ message: isAutoGenerated ? 'تم إضافة الموظف وإنشاء رمز سري عشوائي بنجاح' : 'تم إضافة الموظف بنجاح', type: 'success' });
+        setToast({ message: isAutoGenerated ? t('settings_page.staff.add_success_with_pin') : t('settings_page.staff.add_success'), type: 'success' });
       }
       setIsModalOpen(false);
       setEditingStaff(null);
       reset();
     } catch (error: any) {
       console.error('Error saving staff:', error);
-      let errorString = 'حدث خطأ في النظام. يرجى المحاولة مرة أخرى لاحقاً.';
+      let errorString = t('errors.system_generic');
       if (error) {
         if (error instanceof Error) {
           errorString = error.message;
@@ -616,29 +612,29 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       let friendlyMsg = errorString;
       if (errorString.includes('duplicate key') || errorString.includes('unique constraint') || errorString.includes('already exists')) {
         if (errorString.includes('email')) {
-          friendlyMsg = 'البريد الإلكتروني مستخدم بالفعل لموظف آخر.';
+          friendlyMsg = t('settings_page.staff.email_duplicate');
         } else if (errorString.includes('phone')) {
-          friendlyMsg = 'رقم الهاتف مستخدم بالفعل لموظف آخر.';
+          friendlyMsg = t('settings_page.staff.phone_duplicate');
         } else {
-          friendlyMsg = 'هناك بيانات مكررة مسجلة لموظف آخر بالفعل.';
+          friendlyMsg = t('settings_page.staff.duplicate_data');
         }
       } else if (errorString.includes('JWT') || errorString.includes('token') || errorString.includes('authenticated') || errorString.includes('Permission')) {
-        friendlyMsg = 'ليس لديك الصلاحيات الكافية للقيام بهذا الإجراء.';
+        friendlyMsg = t('errors.insufficient_permissions');
       }
 
-      setToast({ message: `فشل الحفظ: ${friendlyMsg}`, type: 'error' });
+      setToast({ message: t('settings_page.staff.save_failed', { message: friendlyMsg }), type: 'error' });
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('هل أنت متأكد من حذف هذا الموظف؟')) return;
+    if (!confirm(t('settings_page.staff.confirm_delete_employee'))) return;
     try {
       const { error } = await supabase.from('staff').delete().eq('id', id);
       if (error) throw error;
-      setToast({ message: 'تم حذف الموظف بنجاح', type: 'success' });
+      setToast({ message: t('settings_page.staff.delete_success'), type: 'success' });
     } catch (error: any) {
       console.error('Error deleting staff:', error);
-      setToast({ message: `فشل حذف الموظف: ${error?.message || 'حدث خطأ غير معروف'}`, type: 'error' });
+      setToast({ message: t('settings_page.staff.delete_failed', { message: error?.message || t('errors.unknown') }), type: 'error' });
     }
   };
 
@@ -649,10 +645,10 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
         updated_at: new Date().toISOString()
       }).eq('id', member.id);
       if (error) throw error;
-      setToast({ message: 'تم تحديث حالة الموظف بنجاح', type: 'success' });
+      setToast({ message: t('settings_page.staff.status_update_success'), type: 'success' });
     } catch (error: any) {
       console.error('Error toggling staff status:', error);
-      setToast({ message: `فشل تحديث حالة الموظف: ${error?.message || 'حدث خطأ غير معروف'}`, type: 'error' });
+      setToast({ message: t('settings_page.staff.status_update_failed', { message: error?.message || t('errors.unknown') }), type: 'error' });
     }
   };
 
@@ -679,7 +675,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
           type: 'security'
         });
 
-        setToast({ message: 'تم إلغاء رمز الدخول للموظف بنجاح', type: 'success' });
+        setToast({ message: t('settings_page.staff.pin_disabled_success'), type: 'success' });
       } else {
         // Enable PIN - Auto generate
         let uniquePin = '';
@@ -693,7 +689,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
           attempts++;
         }
         
-        if (!uniquePin) throw new Error('تعذر إنشاء رمز دخول فريد، يرجى المحاولة مرة أخرى');
+        if (!uniquePin) throw new Error(t('settings_page.staff.pin_unique_failed'));
         
         const pinHash = await hashPin(uniquePin);
         
@@ -717,13 +713,13 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
         });
 
         setToast({ 
-          message: `تم تفعيل الرمز بنجاح. رمز الدخول الجديد للموظف ${member.name} هو: ${uniquePin}`, 
+          message: t('settings_page.staff.pin_enabled_success', { name: member.name, pin: uniquePin }), 
           type: 'success' 
         });
       }
     } catch (error: any) {
       console.error('Error toggling staff pin:', error);
-      setToast({ message: `فشل تعديل الرمز للموظف: ${error?.message || 'حدث خطأ غير معروف'}`, type: 'error' });
+      setToast({ message: t('settings_page.staff.pin_update_failed', { message: error?.message || t('errors.unknown') }), type: 'error' });
     }
   };
 
@@ -734,7 +730,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
 
       const isDefaultRole = Boolean(!role.tenantId || role.tenantId === 'system' || DEFAULT_ROLES[role.roleKey] || role.isDefault);
       if (!isSuperAdmin && (role.roleKey === 'owner' || isDefaultRole)) {
-        setToast({ message: 'المهن الافتراضية محمية بالنظام. للتعديل، يرجى إنشاء مهنة مخصصة جديدة.', type: 'error' });
+        setToast({ message: t('settings_page.staff.permissions.default_roles_protected'), type: 'error' });
         return;
       }
 
@@ -754,9 +750,9 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
         auth.currentUser?.email || '',
         tenantId!
       );
-      setToast({ message: 'تم تحديث الصلاحية بنجاح', type: 'success' });
+      setToast({ message: t('settings_page.staff.permissions.update_success'), type: 'success' });
     } catch (error) {
-      setToast({ message: 'حدث خطأ أثناء تحديث الصلاحيات', type: 'error' });
+      setToast({ message: t('settings_page.staff.permissions.update_error'), type: 'error' });
       await fetchRoles(); // Revert back to database state on failure
     }
   };
@@ -791,23 +787,23 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
         auth.currentUser?.uid || null,
         auth.currentUser?.email || ''
       );
-      setToast({ message: 'تم تحديث استثناء الصلاحية بنجاح', type: 'success' });
+      setToast({ message: t('settings_page.staff.permissions.override_success'), type: 'success' });
     } catch (err) {
-      setToast({ message: 'فشل تحديث استثناء الصلاحية', type: 'error' });
+      setToast({ message: t('settings_page.staff.permissions.override_failed'), type: 'error' });
       await fetchOverrides();
     }
   };
 
   const handleResetOverrides = async (staffId: string) => {
-    if (!window.confirm('هل أنت متأكد من استعادة الصلاحيات الافتراضية لهذا الموظف؟ سيتم حذف جميع الاستثناءات المخصصة.')) return;
+    if (!window.confirm(t('settings_page.staff.permissions.confirm_reset_overrides'))) return;
 
     setIsSavingPermissions(true);
     try {
       await supabase.from('user_permission_overrides').delete().eq('staff_id', staffId);
       setOverrides(prev => ({ ...prev, [staffId]: {} }));
-      setToast({ message: 'تم استعادة الصلاحيات الافتراضية بنجاح', type: 'success' });
+      setToast({ message: t('settings_page.staff.permissions.reset_success'), type: 'success' });
     } catch (err) {
-      setToast({ message: 'فشل استعادة الصلاحيات', type: 'error' });
+      setToast({ message: t('settings_page.staff.permissions.reset_failed'), type: 'error' });
     } finally {
       setIsSavingPermissions(false);
       setTimeout(() => setToast(null), 3000);
@@ -829,13 +825,13 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
         auth.currentUser?.uid || null,
         auth.currentUser?.email || ''
       );
-      setToast({ message: 'تم إنشاء المهنة المخصصة بنجاح', type: 'success' });
+      setToast({ message: t('settings_page.staff.permissions.create_success'), type: 'success' });
       setShowCreateRole(false);
       setNewRoleName('');
       setNewRoleDesc('');
       await fetchRoles();
     } catch (err) {
-      setToast({ message: 'فشل إنشاء المهنة', type: 'error' });
+      setToast({ message: t('settings_page.staff.permissions.create_failed'), type: 'error' });
     } finally {
       setIsSavingPermissions(false);
       setTimeout(() => setToast(null), 3000);
@@ -855,13 +851,13 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       }).eq('id', editingRole.id);
       if (error) throw error;
       
-      setToast({ message: 'تم تحديث المهنة بنجاح', type: 'success' });
+      setToast({ message: t('settings_page.staff.permissions.role_update_success'), type: 'success' });
       setEditingRole(null);
       setNewRoleName('');
       setNewRoleDesc('');
       await fetchRoles();
     } catch (err) {
-      setToast({ message: 'فشل تحديث المهنة', type: 'error' });
+      setToast({ message: t('settings_page.staff.permissions.role_update_failed'), type: 'error' });
     } finally {
       setIsSavingPermissions(false);
       setTimeout(() => setToast(null), 3000);
@@ -870,7 +866,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
 
   const confirmDeleteRole = (role: Role) => {
     if (role.roleKey === 'owner' || role.roleKey === 'manager') {
-      setToast({ message: 'لا يمكن حذف المهن الأساسية', type: 'error' });
+      setToast({ message: t('settings_page.staff.permissions.cannot_delete_core'), type: 'error' });
       return;
     }
     setRoleToDelete(role);
@@ -883,12 +879,12 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
     try {
       const { error } = await supabase.from('roles').delete().eq('id', roleToDelete.id);
       if (error) throw error;
-      setToast({ message: 'تم حذف المهنة بنجاح', type: 'success' });
+      setToast({ message: t('settings_page.staff.permissions.delete_success'), type: 'success' });
       await fetchRoles();
       setRoleToDelete(null);
     } catch (err: any) {
       console.warn("Error deleting role:", err);
-      setToast({ message: err?.message || 'فشل حذف المهنة', type: 'error' });
+      setToast({ message: err?.message || t('settings_page.staff.permissions.delete_failed'), type: 'error' });
     } finally {
       setIsSavingPermissions(false);
       setTimeout(() => setToast(null), 3000);
@@ -912,14 +908,14 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
   };
 
   const filteredPermissions = SYSTEM_PERMISSIONS.filter(p => {
-    const transName = getTransPermName(p.id, p.category, p.name);
-    const transDesc = getTransPermDesc(p.id, p.category, p.description);
+    const transName = getTransPermName(p.id, p.categoryKey, p.name);
+    const transDesc = getTransPermDesc(p.id, p.categoryKey, p.description);
     return transName.toLowerCase().includes(searchTerm.toLowerCase()) || 
            transDesc.toLowerCase().includes(searchTerm.toLowerCase()) ||
            p.id.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  const categories = Array.from(new Set(filteredPermissions.map(p => p.category)));
+  const categories = Array.from(new Set(filteredPermissions.map(p => p.categoryKey)));
 
   return (
     <div className={cn("p-4 sm:p-6 space-y-6 sm:space-y-8", isRtl ? "text-right" : "text-left")} dir={isRtl ? "rtl" : "ltr"}>
@@ -927,9 +923,9 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
         <div className="min-w-0">
           <h1 className="text-xl sm:text-3xl font-black text-content flex items-center gap-2 sm:gap-3">
             <Shield className="text-brand shrink-0" size={24} />
-            {t('settings_page.staff.title', 'إدارة فريق العمل')}
+            {t('settings_page.staff.title')}
           </h1>
-          <p className="text-content-muted font-medium mt-1 text-sm sm:text-base">{t('settings_page.staff.subtitle', 'تتبع أداء الخياطين والموظفين')}</p>
+          <p className="text-content-muted font-medium mt-1 text-sm sm:text-base">{t('settings_page.staff.subtitle')}</p>
         </div>
         {/* The view switcher holds up to 5 tabs; it scrolls horizontally on
             narrow screens instead of being clipped by the Settings shell. */}
@@ -939,32 +935,24 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
               onClick={() => setViewMode('list')}
               className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all shrink-0 whitespace-nowrap ${viewMode === 'list' ? 'bg-surface text-brand shadow-sm' : 'text-content-muted'}`}
             >
-              {t('settings_page.staff.tab_list', 'القائمة')}
+              {t('settings_page.staff.tab_list')}
             </button>
             <button 
               onClick={() => setViewMode('permissions')}
               className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all shrink-0 whitespace-nowrap ${viewMode === 'permissions' ? 'bg-surface text-brand shadow-sm' : 'text-content-muted'}`}
             >
-              {t('settings_page.staff.tab_permissions', 'الصلاحيات')}
+              {t('settings_page.staff.tab_permissions')}
             </button>
             {(hasPermission('reports.view') || currentStaff?.role === 'manager' || currentStaff?.role === 'owner') && (
               <button 
                 onClick={() => setViewMode('employee_activity')}
                 className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all shrink-0 whitespace-nowrap ${viewMode === 'employee_activity' ? 'bg-surface text-brand shadow-sm' : 'text-content-muted'}`}
               >
-                {t('settings_page.staff.tab_activity', 'نشاط الموظفين')}
-              </button>
-            )}
-            {(hasPermission('staff.edit') || currentStaff?.role === 'manager' || currentStaff?.role === 'owner') && (
-              <button 
-                onClick={() => setViewMode('tailor_commissions')}
-                className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all shrink-0 whitespace-nowrap ${viewMode === 'tailor_commissions' ? 'bg-surface text-brand shadow-sm' : 'text-content-muted'}`}
-              >
-                {t('settings_page.staff.tab_commissions', 'عمولات الخياطين')}
+                {t('settings_page.staff.tab_activity')}
               </button>
             )}
           </div>
-          {canCreate && viewMode !== 'permissions' && viewMode !== 'employee_activity' && viewMode !== 'tailor_commissions' && (
+          {canCreate && viewMode !== 'permissions' && viewMode !== 'employee_activity' && (
             <button 
               onClick={() => {
                 setIsAddModalOpen(true);
@@ -972,7 +960,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
               className="bg-brand text-white px-5 sm:px-6 py-3 rounded-2xl flex items-center justify-center gap-2 hover:bg-brand/90 transition-all shadow-lg shadow-brand/10 font-bold shrink-0 whitespace-nowrap w-full sm:w-auto"
             >
               <Plus size={20} />
-              <span>{t('settings_page.staff.add_employee', 'إضافة موظف')}</span>
+              <span>{t('settings_page.staff.add_employee')}</span>
             </button>
           )}
           {viewMode === 'permissions' && (
@@ -984,7 +972,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                   className="bg-warning text-white px-6 py-3 rounded-2xl flex items-center gap-2 hover:bg-warning/90 transition-all shadow-lg shadow-warning/20 font-bold disabled:opacity-50"
                 >
                   <Zap size={20} className={isSeeding ? "animate-pulse" : ""} />
-                  <span>{isSeeding ? t('settings_page.staff.seeding_roles', 'جاري الإضافة...') : t('settings_page.staff.seed_default_roles', 'إضافة المهن الافتراضية')}</span>
+                  <span>{isSeeding ? t('settings_page.staff.seeding_roles') : t('settings_page.staff.seed_default_roles')}</span>
                 </button>
               )}
               <button 
@@ -992,7 +980,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                 className="bg-brand text-white px-6 py-3 rounded-2xl flex items-center gap-2 hover:bg-brand/90 transition-all shadow-lg shadow-brand/10 font-bold"
               >
                 <Plus size={20} />
-                <span>{t('settings_page.staff.add_custom_role', 'إضافة مهنة مخصصة')}</span>
+                <span>{t('settings_page.staff.add_custom_role')}</span>
               </button>
             </div>
           )}
@@ -1030,7 +1018,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
             <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-content-muted" size={20} />
             <input 
               type="text"
-              placeholder={t('settings_page.staff.search_placeholder', 'بحث في الموظفين...')}
+              placeholder={t('settings_page.staff.search_placeholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl py-3 pr-12 pl-4 font-bold transition-all outline-none"
@@ -1042,7 +1030,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
             onChange={(val) => setRoleFilter(val)}
             className="w-full md:w-auto"
             options={[
-              { value: 'all', label: t('settings_page.staff.all_roles', 'جميع الأدوار') },
+              { value: 'all', label: t('settings_page.staff.all_roles') },
               ...roles.map(role => ({ value: role.roleKey, label: role.name }))
             ]}
           />
@@ -1052,7 +1040,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
             onChange={(val) => setBranchFilter(val)}
             className="w-full md:w-auto"
             options={[
-              { value: 'all', label: t('settings_page.staff.all_branches', 'جميع الفروع') },
+              { value: 'all', label: t('settings_page.staff.all_branches') },
               ...branches.map(branch => ({ value: branch.id, label: branch.name }))
             ]}
           />
@@ -1062,9 +1050,9 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
             onChange={(val) => setStatusFilter(val)}
             className="w-full md:w-auto"
             options={[
-              { value: 'all', label: t('settings_page.staff.all_statuses', 'جميع الحالات') },
-              { value: 'active', label: t('settings_page.staff.status_active', 'نشط') },
-              { value: 'inactive', label: t('settings_page.staff.status_inactive', 'غير نشط') }
+              { value: 'all', label: t('settings_page.staff.all_statuses') },
+              { value: 'active', label: t('settings_page.staff.status_active') },
+              { value: 'inactive', label: t('settings_page.staff.status_inactive') }
             ]}
           />
         </div>
@@ -1072,10 +1060,6 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
 
       {viewMode === 'employee_activity' && (
         <EmployeeActivityLogTab tenantId={tenantId} />
-      )}
-
-      {viewMode === 'tailor_commissions' && (
-        <AdminTailorCommissions tenantId={tenantId} />
       )}
 
       {viewMode === 'list' && (
@@ -1114,7 +1098,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                       {member.isTest && (
                         <span className="text-[9px] bg-danger/10 text-danger px-2 py-0.5 rounded-full font-black uppercase tracking-wider flex items-center gap-1 shrink-0">
                           <Zap size={9} />
-                          تجريبي
+                          {t('common.test')}
                         </span>
                       )}
                       <span className="text-[10px] font-black text-content-muted uppercase tracking-wider bg-surface-muted px-2.5 py-0.5 rounded-full flex items-center gap-1 shrink-0">
@@ -1139,7 +1123,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                       <div className="flex items-center gap-1.5 shrink-0">
                         <Building2 size={13} className="text-brand shrink-0" />
                         <span className="font-bold text-brand">
-                          {branches.find(b => b.id === member.branchId)?.name || 'غير محدد'}
+                          {branches.find(b => b.id === member.branchId)?.name || t('orders.not_specified')}
                         </span>
                       </div>
                     </div>
@@ -1157,7 +1141,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                       "text-xs font-black",
                       member.status === 'active' ? 'text-success' : 'text-content-muted'
                     )}>
-                      {member.status === 'active' ? 'نشط' : 'معطل'}
+                      {member.status === 'active' ? t('common.active') : t('settings_page.staff.permissions.disabled')}
                     </span>
                   </div>
 
@@ -1172,7 +1156,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                         "p-2 rounded-xl transition-all border border-border/60 hover:bg-surface-muted text-content hover:text-brand cursor-pointer flex items-center justify-center",
                         isDropdownOpen ? "bg-surface-muted text-brand border-brand/20" : "bg-surface"
                       )}
-                      title="الإجراءات"
+                      title={t('common.actions')}
                     >
                       <Settings size={18} className={cn("transition-transform duration-300", isDropdownOpen && "rotate-45")} />
                     </button>
@@ -1206,7 +1190,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                             className="w-full text-right px-3 py-2 text-xs font-black text-content hover:bg-surface-muted/80 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
                           >
                             <User size={14} className="text-content-muted" />
-                            <span>عرض التفاصيل</span>
+                            <span>{t('settings_page.printer.show_details')}</span>
                           </button>
 
                           {canEdit && (
@@ -1220,7 +1204,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                 className="w-full text-right px-3 py-2 text-xs font-black text-content hover:bg-surface-muted/80 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
                               >
                                 <Edit2 size={14} className="text-content-muted" />
-                                <span>تعديل البيانات</span>
+                                <span>{t('customers.edit_data')}</span>
                               </button>
 
                               <button 
@@ -1233,7 +1217,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                 className="w-full text-right px-3 py-2 text-xs font-black text-content hover:bg-surface-muted/80 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
                               >
                                 <Shield size={14} className="text-content-muted" />
-                                <span>إدارة الصلاحيات</span>
+                                <span>{t('staff.manage_permissions')}</span>
                               </button>
 
                               <button 
@@ -1244,7 +1228,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                 className="w-full text-right px-3 py-2 text-xs font-black text-content hover:bg-surface-muted/80 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
                               >
                                 <Key size={14} className="text-content-muted" />
-                                <span>{member.pin ? 'إلغاء رمز الموظف' : 'تفعيل رمز الموظف'}</span>
+                                <span>{member.pin ? t('staff.disable_employee_pin') : t('staff.force_pin.enable_toggle')}</span>
                               </button>
                             </>
                           )}
@@ -1262,7 +1246,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                             )}
                           >
                             <CheckCircle size={14} className={member.status === 'active' ? "text-danger" : "text-success"} />
-                            <span>{member.status === 'active' ? 'تعطيل الحساب' : 'تفعيل الحساب'}</span>
+                            <span>{member.status === 'active' ? t('staff.deactivate_account') : t('staff.activate_account')}</span>
                           </button>
 
                           {canDelete && (
@@ -1275,7 +1259,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                 className="w-full text-right px-3 py-2 text-xs font-black text-danger hover:bg-danger/10 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
                               >
                                 <Trash2 size={14} className="text-danger" />
-                                <span>حذف الموظف</span>
+                                <span>{t('staff.delete_employee')}</span>
                               </button>
                             </div>
                           )}
@@ -1302,13 +1286,13 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                 }}
                 className={`flex-1 sm:flex-initial px-4 sm:px-6 py-2 rounded-lg sm:rounded-xl text-xs font-black transition-all ${permissionTabMode === 'roles' ? 'bg-surface text-brand shadow-sm' : 'text-content-muted hover:text-content'}`}
               >
-                {t('settings_page.staff.tab_by_role', 'حسب الدور الوظيفي')}
+                {t('settings_page.staff.tab_by_role')}
               </button>
               <button 
                 onClick={() => setPermissionTabMode('staff')}
                 className={`flex-1 sm:flex-initial px-4 sm:px-6 py-2 rounded-lg sm:rounded-xl text-xs font-black transition-all ${permissionTabMode === 'staff' ? 'bg-surface text-brand shadow-sm' : 'text-content-muted hover:text-content'}`}
               >
-                {t('settings_page.staff.tab_by_employee', 'حسب الموظف (استثناءات)')}
+                {t('settings_page.staff.tab_by_employee')}
               </button>
             </div>
 
@@ -1318,14 +1302,14 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                   onClick={toggleAllCategories}
                   className="px-3.5 py-2 rounded-xl text-xs font-black bg-surface-muted border border-border text-content-muted hover:text-content hover:bg-border transition-all whitespace-nowrap"
                 >
-                  {expandedCategories.length === categories.length ? t('settings_page.staff.permissions.collapse_all', 'طي الكل') : t('settings_page.staff.permissions.expand_all', 'توسيع الكل')}
+                  {expandedCategories.length === categories.length ? t('settings_page.staff.permissions.collapse_all') : t('settings_page.staff.permissions.expand_all')}
                 </button>
                 <button 
                   onClick={() => setShowCreateRole(true)}
                   className="px-4 py-2 rounded-xl text-xs font-black bg-brand text-white hover:bg-brand/90 shadow-md shadow-brand/10 transition-all flex items-center gap-1.5 whitespace-nowrap"
                 >
                   <Plus size={15} />
-                  <span>{t('settings_page.staff.permissions.add_custom_role', 'إضافة مهنة مخصصة')}</span>
+                  <span>{t('settings_page.staff.permissions.add_custom_role')}</span>
                 </button>
               </div>
             )}
@@ -1337,11 +1321,11 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
               <div className="lg:col-span-4 xl:col-span-3 space-y-4">
                 <div className="bg-surface rounded-2xl sm:rounded-[2rem] border border-border shadow-sm overflow-hidden">
                   <div className="p-4 sm:p-5 bg-surface-muted/50 border-b border-border flex justify-between items-center">
-                    <h4 className="text-xs font-black text-content-muted uppercase tracking-widest">{t('settings_page.staff.permissions.roles_title', 'الأدوار الوظيفية')}</h4>
+                    <h4 className="text-xs font-black text-content-muted uppercase tracking-widest">{t('settings_page.staff.permissions.roles_title')}</h4>
                     <button 
                       onClick={() => setShowCreateRole(true)}
                       className="p-1.5 bg-brand text-white rounded-lg hover:bg-brand/90 transition-all shadow-sm"
-                      title={t('settings_page.staff.permissions.add_custom_role', 'إضافة مهنة مخصصة')}
+                      title={t('settings_page.staff.permissions.add_custom_role')}
                     >
                       <Plus size={16} />
                     </button>
@@ -1351,7 +1335,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                       <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-content-muted" size={14} />
                       <input 
                         type="text" 
-                        placeholder={t('settings_page.staff.permissions.search_roles', 'بحث في المهن...')} 
+                        placeholder={t('settings_page.staff.permissions.search_roles')} 
                         value={sidebarSearchTerm} 
                         onChange={e => setSidebarSearchTerm(e.target.value)} 
                         className="w-full bg-surface border border-border rounded-xl py-2 pr-9 pl-3 text-xs font-bold outline-none text-content focus:border-brand" 
@@ -1380,7 +1364,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                           <div className="min-w-0 flex-1">
                             <p className="text-xs sm:text-sm font-black text-content truncate">{role.name}</p>
                             <span className="text-[9px] font-bold text-content-muted block">
-                              {(!role.tenantId || role.tenantId === 'system') ? t('settings_page.staff.permissions.system_template', 'قالب نظام') : t('settings_page.staff.permissions.custom_role', 'مهنة مخصصة')}
+                              {(!role.tenantId || role.tenantId === 'system') ? t('settings_page.staff.permissions.system_template') : t('settings_page.staff.permissions.custom_role')}
                             </span>
                           </div>
                         </div>
@@ -1396,7 +1380,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                   setNewRoleDesc(role.description || '');
                                 }}
                                 className="p-1.5 text-content-muted hover:text-brand rounded-lg hover:bg-surface"
-                                title={t('settings_page.staff.permissions.edit_role_title', 'تعديل اسم المهنة')}
+                                title={t('settings_page.staff.permissions.edit_role_title')}
                               >
                                 <Edit2 size={13} />
                               </button>
@@ -1407,7 +1391,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                     confirmDeleteRole(role);
                                   }}
                                   className="p-1.5 text-content-muted hover:text-danger rounded-lg hover:bg-surface"
-                                  title={t('settings_page.staff.permissions.delete_role_title', 'حذف المهنة')}
+                                  title={t('settings_page.staff.permissions.delete_role_title')}
                                 >
                                   <Trash2 size={13} />
                                 </button>
@@ -1439,7 +1423,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                           </div>
                           <div className="min-w-0">
                             <h3 className="text-base sm:text-xl font-black text-content truncate">
-                              {t('settings_page.staff.permissions.role_permissions', { defaultValue: `صلاحيات ${selectedRoleForPermissions.name}`, name: selectedRoleForPermissions.name })}
+                              {t('settings_page.staff.permissions.role_permissions', { name: selectedRoleForPermissions.name })}
                             </h3>
                             <p className="text-xs text-content-muted font-bold mt-0.5 line-clamp-1">{selectedRoleForPermissions.description}</p>
                           </div>
@@ -1449,7 +1433,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                           <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 text-content-muted" size={16} />
                           <input 
                             type="text"
-                            placeholder={t('settings_page.staff.permissions.search_permissions', 'بحث في الصلاحيات...')}
+                            placeholder={t('settings_page.staff.permissions.search_permissions')}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full bg-surface-muted border border-border rounded-xl py-2 pr-10 pl-3 text-xs font-bold focus:border-brand outline-none transition-all text-content"
@@ -1463,7 +1447,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                         return roleStaffMembers.length > 0 ? (
                           <div className="pt-3 border-t border-border/50 flex flex-wrap items-center gap-2">
                             <span className="text-xs font-black text-content-muted shrink-0">
-                              {t('settings_page.staff.permissions.employees_in_role', { defaultValue: `الموظفون في هذا الدور (${roleStaffMembers.length}):`, count: roleStaffMembers.length })}
+                              {t('settings_page.staff.permissions.employees_in_role', { count: roleStaffMembers.length })}
                             </span>
                             <div className="flex items-center gap-1.5 flex-wrap">
                               {roleStaffMembers.map(s => (
@@ -1475,7 +1459,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                     setSelectedRoleForPermissions(null);
                                   }}
                                   className="px-2.5 py-1 bg-brand/10 hover:bg-brand text-brand hover:text-white rounded-xl text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer border border-brand/20"
-                                  title={t('settings_page.staff.permissions.view_employee_exceptions', 'عرض وتعديل استثناءات صلاحيات هذا الموظف')}
+                                  title={t('settings_page.staff.permissions.view_employee_exceptions')}
                                 >
                                   <User size={12} />
                                   <span>{s.name}</span>
@@ -1496,18 +1480,18 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                       <div className="p-4 bg-amber-500/10 rounded-2xl border border-amber-500/30 text-right flex items-center justify-between flex-wrap gap-3 shadow-sm">
                         <div className="flex items-center gap-2 text-amber-800 dark:text-amber-400 font-bold text-xs">
                           <Lock size={16} className="shrink-0" />
-                          <span>{t('settings_page.staff.permissions.protected_role_msg', 'مهنة افتراضية محمية. تعديل المهن الافتراضية متاح فقط للسوبر أدمن.')}</span>
+                          <span>{t('settings_page.staff.permissions.protected_role_msg')}</span>
                         </div>
                         <button
                           onClick={() => {
-                            setNewRoleName(`${selectedRoleForPermissions.name} مخصص`);
-                            setNewRoleDesc(`نسخة مخصصة من ${selectedRoleForPermissions.name}`);
+                            setNewRoleName(t('permissions.suggested_custom_role_name', { role: selectedRoleForPermissions.name }));
+                            setNewRoleDesc(t('permissions.suggested_custom_role_desc', { role: selectedRoleForPermissions.name }));
                             setShowCreateRole(true);
                           }}
                           className="px-3.5 py-1.5 bg-brand text-white font-black text-xs rounded-xl shadow-sm hover:bg-brand/90 transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
                         >
                           <Plus size={14} />
-                          <span>{t('settings_page.staff.permissions.create_custom_role', 'إنشاء مهنة مخصصة')}</span>
+                          <span>{t('settings_page.staff.permissions.create_custom_role')}</span>
                         </button>
                       </div>
                     )}
@@ -1516,9 +1500,9 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 items-start">
                       {categories.map(category => {
                         const categoryPerms = SYSTEM_PERMISSIONS.filter(p => {
-                          const transName = getTransPermName(p.id, p.category, p.name);
-                          const transDesc = getTransPermDesc(p.id, p.category, p.description);
-                          return p.category === category && 
+                          const transName = getTransPermName(p.id, p.categoryKey, p.name);
+                          const transDesc = getTransPermDesc(p.id, p.categoryKey, p.description);
+                          return p.categoryKey === category && 
                             (transName.toLowerCase().includes(searchTerm.toLowerCase()) || transDesc.toLowerCase().includes(searchTerm.toLowerCase()));
                         });
                         
@@ -1536,7 +1520,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                 <div className="w-2 h-5 bg-brand rounded-full shrink-0" />
                                 <h4 className="text-xs sm:text-sm font-black text-brand uppercase tracking-wider truncate">{getTransCat(category)}</h4>
                                 <span className="bg-brand/10 text-brand text-[10px] px-2 py-0.5 rounded-full font-black shrink-0">
-                                  {t('settings_page.staff.permissions.enabled_count', { defaultValue: `${enabledCount} / ${categoryPerms.length} مفعلة`, enabled: enabledCount, total: categoryPerms.length })}
+                                  {t('settings_page.staff.permissions.enabled_count', { enabled: enabledCount, total: categoryPerms.length })}
                                 </span>
                               </div>
                               <div className={cn(
@@ -1565,8 +1549,8 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                       return (
                                         <div key={perm.id} className={cn("flex items-start justify-between gap-3 p-3.5 sm:p-4 bg-surface-muted/30 hover:bg-surface-muted/70 rounded-2xl border border-border/60 transition-all group", isReadOnlyRole ? "opacity-75 cursor-not-allowed" : "hover:border-brand/30")}>
                                           <div className="min-w-0 flex-1 space-y-0.5">
-                                            <span className="text-xs sm:text-sm font-bold text-content group-hover:text-brand transition-colors block leading-tight">{getTransPermName(perm.id, perm.category, perm.name)}</span>
-                                            <span className="text-[11px] text-content-muted font-medium leading-relaxed block">{getTransPermDesc(perm.id, perm.category, perm.description)}</span>
+                                            <span className="text-xs sm:text-sm font-bold text-content group-hover:text-brand transition-colors block leading-tight">{getTransPermName(perm.id, perm.categoryKey, perm.name)}</span>
+                                            <span className="text-[11px] text-content-muted font-medium leading-relaxed block">{getTransPermDesc(perm.id, perm.categoryKey, perm.description)}</span>
                                           </div>
                                           
                                           <div className="shrink-0 flex items-center gap-2 pt-0.5">
@@ -1574,7 +1558,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                               "text-[9px] font-black px-2 py-0.5 rounded-full hidden sm:inline-block",
                                               isEnabled ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-surface-muted text-content-muted"
                                             )}>
-                                              {isEnabled ? t('settings_page.staff.permissions.enabled', 'مفعل') : t('settings_page.staff.permissions.disabled', 'معطل')}
+                                              {isEnabled ? t('settings_page.staff.permissions.enabled') : t('settings_page.staff.permissions.disabled')}
                                             </span>
                                             
                                             <button
@@ -1613,14 +1597,14 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
               <div className="lg:col-span-4 xl:col-span-3 space-y-4">
                 <div className="bg-surface rounded-2xl sm:rounded-[2rem] border border-border shadow-sm overflow-hidden">
                   <div className="p-4 sm:p-5 bg-surface-muted border-b border-border">
-                    <h4 className="text-xs font-black text-content-muted uppercase tracking-widest">{t('settings_page.staff.permissions.choose_employee', 'اختر الموظف')}</h4>
+                    <h4 className="text-xs font-black text-content-muted uppercase tracking-widest">{t('settings_page.staff.permissions.choose_employee')}</h4>
                   </div>
                   <div className="p-3 border-b border-border bg-surface-muted/20">
                     <div className="relative">
                       <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-content-muted" size={14} />
                       <input 
                         type="text" 
-                        placeholder={t('settings_page.staff.permissions.search_employees', 'بحث في الموظفين...')} 
+                        placeholder={t('settings_page.staff.permissions.search_employees')} 
                         value={sidebarSearchTerm} 
                         onChange={e => setSidebarSearchTerm(e.target.value)} 
                         className="w-full bg-surface border border-border rounded-xl py-2 pr-9 pl-3 text-xs font-bold outline-none text-content focus:border-brand" 
@@ -1651,7 +1635,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                          </div>
                          {Object.keys(overrides[member.id] || {}).length > 0 && (
                            <span className="bg-amber-500/10 text-amber-600 border border-amber-500/20 text-[9px] px-1.5 py-0.5 rounded-full font-black shrink-0">
-                             {t('settings_page.staff.permissions.exceptions_count', { defaultValue: `${Object.keys(overrides[member.id] || {}).length} استثناء`, count: Object.keys(overrides[member.id] || {}).length })}
+                             {t('settings_page.staff.permissions.exceptions_count', { count: Object.keys(overrides[member.id] || {}).length })}
                            </span>
                          )}
                        </button>
@@ -1673,10 +1657,10 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                           </div>
                           <div className="min-w-0">
                             <h3 className="text-base sm:text-xl font-black text-content truncate">
-                              {t('settings_page.staff.permissions.employee_permissions', { defaultValue: `صلاحيات ${selectedStaffForPermissions.name}`, name: selectedStaffForPermissions.name })}
+                              {t('settings_page.staff.permissions.employee_permissions', { name: selectedStaffForPermissions.name })}
                             </h3>
                             <p className="text-xs text-content-muted font-bold mt-0.5">
-                              {t('settings_page.staff.permissions.edit_exceptions_subtitle', 'تعديل الاستثناءات الخاصة بهذا الموظف')}
+                              {t('settings_page.staff.permissions.edit_exceptions_subtitle')}
                             </p>
                           </div>
                         </div>
@@ -1688,14 +1672,14 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                             className="flex-1 sm:flex-initial px-4 py-2 bg-danger/10 hover:bg-danger/20 text-danger rounded-xl text-xs font-black transition-all border border-danger/20 flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                           >
                             <TrendingUp className="rotate-180 shrink-0" size={14} />
-                            <span>{t('settings_page.staff.permissions.restore_defaults', 'استعادة الافتراضي')}</span>
+                            <span>{t('settings_page.staff.permissions.restore_defaults')}</span>
                           </button>
                           
                           <div className="relative w-full sm:w-56 shrink-0">
                             <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 text-content-muted" size={15} />
                             <input 
                               type="text"
-                              placeholder={t('settings_page.staff.permissions.search', 'بحث...')}
+                              placeholder={t('settings_page.staff.permissions.search')}
                               value={searchTerm}
                               onChange={(e) => setSearchTerm(e.target.value)}
                               className="w-full bg-surface-muted border border-border rounded-xl py-2 pr-9 pl-3 text-xs font-bold outline-none text-content focus:border-brand"
@@ -1717,20 +1701,20 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                 setSelectedStaffForPermissions(null);
                               }}
                               className="px-3 py-1 bg-brand/10 hover:bg-brand text-brand hover:text-white rounded-xl text-xs font-black flex items-center gap-1.5 transition-all border border-brand/20 cursor-pointer"
-                              title={t('settings_page.staff.permissions.transition_to_role', 'الانتقال لتعديل صلاحيات هذا الدور الوظيفي')}
+                              title={t('settings_page.staff.permissions.transition_to_role')}
                             >
                               <Shield size={14} />
-                              <span>{t('settings_page.staff.permissions.primary_role', { defaultValue: `الدور الأساسي: ${staffRoleObj?.name || selectedStaffForPermissions.role}`, role: staffRoleObj?.name || selectedStaffForPermissions.role })}</span>
-                              <span className="text-[10px] underline">{t('settings_page.staff.permissions.edit_role_link', '(تعديل صلاحيات الدور)')}</span>
+                              <span>{t('settings_page.staff.permissions.primary_role', { role: staffRoleObj?.name || selectedStaffForPermissions.role })}</span>
+                              <span className="text-[10px] underline">{t('settings_page.staff.permissions.edit_role_link')}</span>
                             </button>
                             {staffOverrideCount > 0 ? (
                               <span className="bg-amber-500/10 text-amber-600 border border-amber-500/20 px-3 py-1 rounded-xl text-xs font-black flex items-center gap-1">
                                 <Zap size={12} />
-                                <span>{t('settings_page.staff.permissions.exceptions_present', { defaultValue: `يوجد ${staffOverrideCount} استثناء مخصص`, count: staffOverrideCount })}</span>
+                                <span>{t('settings_page.staff.permissions.exceptions_present', { count: staffOverrideCount })}</span>
                               </span>
                             ) : (
                               <span className="bg-surface-muted text-content-muted px-3 py-1 rounded-xl text-xs font-bold border border-border">
-                                {t('settings_page.staff.permissions.follows_role', 'يتبع صلاحيات الدور تماماً')}
+                                {t('settings_page.staff.permissions.follows_role')}
                               </span>
                             )}
                           </div>
@@ -1743,9 +1727,9 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                       {categories.map(category => {
                         const isExpanded = expandedCategories.includes(category);
                         const categoryPerms = SYSTEM_PERMISSIONS.filter(p => {
-                          const transName = getTransPermName(p.id, p.category, p.name);
-                          const transDesc = getTransPermDesc(p.id, p.category, p.description);
-                          return p.category === category && 
+                          const transName = getTransPermName(p.id, p.categoryKey, p.name);
+                          const transDesc = getTransPermDesc(p.id, p.categoryKey, p.description);
+                          return p.categoryKey === category && 
                             (transName.toLowerCase().includes(searchTerm.toLowerCase()) || transDesc.toLowerCase().includes(searchTerm.toLowerCase()));
                         });
 
@@ -1791,15 +1775,15 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                         <div key={perm.id} className="flex items-start justify-between gap-3 p-3.5 sm:p-4 bg-surface-muted/30 hover:bg-surface-muted/70 rounded-2xl border border-border/60 transition-all">
                                           <div className="min-w-0 flex-1 space-y-0.5">
                                             <div className="flex items-center gap-2 flex-wrap">
-                                              <span className="text-xs sm:text-sm font-bold text-content leading-tight">{getTransPermName(perm.id, perm.category, perm.name)}</span>
+                                              <span className="text-xs sm:text-sm font-bold text-content leading-tight">{getTransPermName(perm.id, perm.categoryKey, perm.name)}</span>
                                               <span className={cn(
                                                 "text-[9px] font-black px-2 py-0.5 rounded-full uppercase",
                                                 isOverridden ? "bg-amber-500/10 text-amber-600 border border-amber-500/20" : "bg-surface-muted text-content-muted border border-border/40"
                                               )}>
-                                                {isOverridden ? t('settings_page.staff.permissions.custom_exception', 'استثناء خاص') : t('settings_page.staff.permissions.inherited', 'من الدور')}
+                                                {isOverridden ? t('settings_page.staff.permissions.custom_exception') : t('settings_page.staff.permissions.inherited')}
                                               </span>
                                             </div>
-                                            <span className="text-[11px] text-content-muted font-medium leading-relaxed block">{getTransPermDesc(perm.id, perm.category, perm.description)}</span>
+                                            <span className="text-[11px] text-content-muted font-medium leading-relaxed block">{getTransPermDesc(perm.id, perm.categoryKey, perm.description)}</span>
                                           </div>
 
                                           <div className="shrink-0 flex items-center gap-2 pt-0.5">
@@ -1807,9 +1791,9 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                               <button 
                                                 onClick={() => handleToggleStaffOverride(selectedStaffForPermissions.id, perm.id as PermissionKey)}
                                                 className="text-[10px] text-danger hover:underline font-bold px-1 hidden sm:inline-block"
-                                                title={t('settings_page.staff.permissions.cancel_exception_title', 'إلغاء الاستثناء والتراجع للدور')}
+                                                title={t('settings_page.staff.permissions.cancel_exception_title')}
                                               >
-                                                {t('settings_page.staff.permissions.cancel', 'إلغاء')}
+                                                {t('settings_page.staff.permissions.cancel')}
                                               </button>
                                             )}
 
@@ -1845,9 +1829,9 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                     <div className="w-16 h-16 bg-surface-muted rounded-full flex items-center justify-center text-content-muted mb-4">
                       <User size={32} />
                     </div>
-                    <h3 className="text-base font-black text-content">{t('settings_page.staff.permissions.select_employee_start', 'يرجى اختيار موظف للبدء')}</h3>
+                    <h3 className="text-base font-black text-content">{t('settings_page.staff.permissions.select_employee_start')}</h3>
                     <p className="text-xs text-content-muted font-bold mt-1 max-w-xs">
-                      {t('settings_page.staff.permissions.select_employee_desc', 'اختر موظفاً من القائمة الجانبية لتعديل صلاحياته الفردية بشكل مستقل عن دوره الوظيفي')}
+                      {t('settings_page.staff.permissions.select_employee_desc')}
                     </p>
                   </div>
                 )}
@@ -1860,11 +1844,11 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
               <Info size={24} />
             </div>
             <div className="space-y-1">
-              <h4 className="text-sm font-black text-content">{t('settings_page.staff.permissions.how_matrix_works', 'كيف تعمل مصفوفة الصلاحيات؟')}</h4>
+              <h4 className="text-sm font-black text-content">{t('settings_page.staff.permissions.how_matrix_works')}</h4>
               <p className="text-xs text-content-muted font-medium leading-relaxed">
-                {t('settings_page.staff.permissions.matrix_desc', 'تتيح لك هذه المصفوفة التحكم الكامل في ما يمكن لكل دور وظيفي القيام به. التغييرات هنا تنطبق فوراً على جميع الموظفين المرتبطين بهذا الدور.')}
+                {t('settings_page.staff.permissions.matrix_desc')}
                 <br />
-                <span className="font-black text-content">{t('settings_page.staff.permissions.owner_note', 'ملاحظة: دور "المالك" يمتلك دائماً كافة الصلاحيات ولا يمكن تعديله لضمان عدم انقطاع الوصول للنظام.')}</span>
+                <span className="font-black text-content">{t('settings_page.staff.permissions.owner_note')}</span>
               </p>
             </div>
           </div>
@@ -1893,7 +1877,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                 >
                   <div className="flex items-center justify-between mb-8">
                     <h3 className="text-xl font-black text-content">
-                      {editingRole ? t('settings_page.staff.permissions.edit_role', 'تعديل المهنة') : t('settings_page.staff.permissions.add_custom_role', 'إضافة مهنة مخصصة')}
+                      {editingRole ? t('settings_page.staff.permissions.edit_role') : t('settings_page.staff.permissions.add_custom_role')}
                     </h3>
                     <button 
                       onClick={() => {
@@ -1910,24 +1894,24 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
 
                   <form onSubmit={editingRole ? handleUpdateRole : handleCreateRole} className="space-y-6">
                     <div className="space-y-2">
-                      <label className="text-xs font-black text-content-muted uppercase tracking-widest mr-2">{t('settings_page.staff.permissions.role_name', 'اسم المهنة')}</label>
+                      <label className="text-xs font-black text-content-muted uppercase tracking-widest mr-2">{t('settings_page.staff.permissions.role_name')}</label>
                       <input 
                         type="text"
                         value={newRoleName}
                         onChange={(e) => setNewRoleName(e.target.value)}
                         className="w-full bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl p-4 font-bold outline-none transition-all text-content"
-                        placeholder={t('settings_page.staff.permissions.role_name_example', 'مثال: مشرف مبيعات')}
+                        placeholder={t('settings_page.staff.permissions.role_name_example')}
                         required
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-xs font-black text-content-muted uppercase tracking-widest mr-2">{t('settings_page.staff.permissions.role_desc', 'وصف المهنة')}</label>
+                      <label className="text-xs font-black text-content-muted uppercase tracking-widest mr-2">{t('settings_page.staff.permissions.role_desc')}</label>
                       <textarea 
                         value={newRoleDesc}
                         onChange={(e) => setNewRoleDesc(e.target.value)}
                         className="w-full bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl p-4 font-bold outline-none transition-all h-24 resize-none text-content"
-                        placeholder={t('settings_page.staff.permissions.role_desc_placeholder', 'وصف مختصر للمهام...')}
+                        placeholder={t('settings_page.staff.permissions.role_desc_placeholder')}
                       />
                     </div>
 
@@ -1937,7 +1921,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                       className="w-full bg-brand text-white py-4 rounded-2xl font-black hover:bg-brand/90 shadow-xl shadow-brand/10 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       {isSavingPermissions ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Plus size={20} />}
-                      <span>{editingRole ? t('settings_page.staff.permissions.save_changes', 'حفظ التعديلات') : t('settings_page.staff.permissions.create_role', 'إنشاء المهنة')}</span>
+                      <span>{editingRole ? t('settings_page.staff.permissions.save_changes') : t('settings_page.staff.permissions.create_role')}</span>
                     </button>
                   </form>
                 </motion.div>
@@ -1963,9 +1947,9 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                     <Trash2 size={32} className="text-danger" />
                   </div>
                   
-                  <h3 className="text-xl font-black text-content text-center mb-2">{t('settings_page.staff.permissions.confirm_delete_title', 'حذف المهنة')}</h3>
+                  <h3 className="text-xl font-black text-content text-center mb-2">{t('settings_page.staff.permissions.confirm_delete_title')}</h3>
                   <p className="text-sm font-bold text-content-muted text-center mb-8 leading-relaxed">
-                    {t('settings_page.staff.permissions.confirm_delete_desc', { defaultValue: `هل أنت متأكد من حذف مهنة "${roleToDelete.name}"؟ سيتم فقدان كافة الصلاحيات المرتبطة بها نهائياً.`, name: roleToDelete.name })}
+                    {t('settings_page.staff.permissions.confirm_delete_desc', { name: roleToDelete.name })}
                   </p>
 
                   <div className="flex gap-3">
@@ -1974,14 +1958,14 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                       disabled={isSavingPermissions}
                       className="flex-1 px-4 py-3 rounded-2xl font-black text-sm text-content-muted bg-surface-muted hover:bg-border transition-all disabled:opacity-50"
                     >
-                      {t('settings_page.staff.permissions.cancel', 'إلغاء')}
+                      {t('settings_page.staff.permissions.cancel')}
                     </button>
                     <button
                       onClick={executeDeleteRole}
                       disabled={isSavingPermissions}
                       className="flex-1 px-4 py-3 rounded-2xl font-black text-sm text-white bg-danger hover:bg-danger/90 transition-all shadow-xl shadow-danger/20 disabled:opacity-50 flex items-center justify-center"
                     >
-                      {isSavingPermissions ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t('settings_page.staff.permissions.confirm_delete', 'تأكيد الحذف')}
+                      {isSavingPermissions ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t('settings_page.staff.permissions.confirm_delete')}
                     </button>
                   </div>
                 </motion.div>
@@ -2028,15 +2012,15 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
               <div className="p-8 overflow-y-auto space-y-6">
                 <div className="grid grid-cols-3 gap-4">
                   <div className="bg-surface-muted p-4 rounded-2xl text-center">
-                    <p className="text-[10px] text-content-muted font-black uppercase mb-1">إجمالي المهام</p>
+                    <p className="text-[10px] text-content-muted font-black uppercase mb-1">{t('staff.total_tasks')}</p>
                     <p className="text-2xl font-black text-content">{selectedStaffForDetails.performance?.totalHandled}</p>
                   </div>
                   <div className="bg-brand/10 p-4 rounded-2xl text-center">
-                    <p className="text-[10px] text-brand font-black uppercase mb-1">قيد العمل</p>
+                    <p className="text-[10px] text-brand font-black uppercase mb-1">{t('staff.in_progress')}</p>
                     <p className="text-2xl font-black text-brand">{selectedStaffForDetails.performance?.active}</p>
                   </div>
                   <div className="bg-success/5 p-4 rounded-2xl text-center">
-                    <p className="text-[10px] text-success font-black uppercase mb-1">المنجزة</p>
+                    <p className="text-[10px] text-success font-black uppercase mb-1">{t('staff.completed_tasks')}</p>
                     <p className="text-2xl font-black text-success">{selectedStaffForDetails.performance?.completed}</p>
                   </div>
                 </div>
@@ -2044,7 +2028,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                 <div className="space-y-4">
                   <h3 className="font-black text-content flex items-center gap-2">
                     <Clock size={18} className="text-brand" />
-                    آخر الطلبات التي تم التعامل معها
+                    {t('staff.recent_handled_orders')}
                   </h3>
                   <div className="space-y-3">
                     {orders
@@ -2058,7 +2042,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                               <ShoppingBag size={20} />
                             </div>
                             <div>
-                              <p className="font-bold text-content">طلب #{order.orderNumber}</p>
+                              <p className="font-bold text-content">{t('staff.order_number', { number: order.orderNumber })}</p>
                               <p className="text-[10px] text-content-muted font-bold">{new Date(order.updatedAt || '').toLocaleDateString('ar-SA-u-nu-latn')}</p>
                             </div>
                           </div>
@@ -2113,7 +2097,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
             >
               <div className="p-6 border-b border-border flex justify-between items-center bg-surface-muted">
                 <h2 className="text-xl font-black text-content">
-                  تعديل بيانات موظف
+                  {t('staff.edit_employee_title')}
                 </h2>
                 <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm">
                   <X size={24} className="text-content-muted" />
@@ -2121,7 +2105,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
               </div>
               <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="p-8 space-y-6">
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-content-muted uppercase tracking-widest">الاسم الكامل</label>
+                  <label className="text-xs font-black text-content-muted uppercase tracking-widest">{t('common.full_name')}</label>
                   <div className="relative">
                     <User className="absolute right-4 top-1/2 -translate-y-1/2 text-content-muted" size={20} />
                     <input 
@@ -2135,7 +2119,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                   {errors.name && <p className="text-xs text-red-500 font-bold">{errors.name.message}</p>}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-content-muted uppercase tracking-widest">الدور الوظيفي</label>
+                  <label className="text-xs font-black text-content-muted uppercase tracking-widest">{t('staff.job_role')}</label>
                   <Controller
                     name="role"
                     control={control}
@@ -2149,7 +2133,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-content-muted uppercase tracking-widest">الفرع</label>
+                  <label className="text-xs font-black text-content-muted uppercase tracking-widest">{t('common.branch')}</label>
                   <Controller
                     name="branchId"
                     control={control}
@@ -2158,7 +2142,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                         {...field}
                         className={cn("w-full", errors.branchId && "ring-2 ring-red-500")}
                         options={[
-                          { value: '', label: 'اختر الفرع...' },
+                          { value: '', label: t('staff.select_branch_placeholder') },
                           ...branches.map(branch => ({ value: branch.id, label: branch.name }))
                         ]}
                       />
@@ -2167,7 +2151,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                   {errors.branchId && <p className="text-xs text-red-500 font-bold">{errors.branchId.message}</p>}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-content-muted uppercase tracking-widest">البريد الإلكتروني</label>
+                  <label className="text-xs font-black text-content-muted uppercase tracking-widest">{t('common.email')}</label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-content-muted" size={20} />
                     <input 
@@ -2182,7 +2166,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                   {errors.email && <p className="text-xs text-red-500 font-bold">{errors.email.message}</p>}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-content-muted uppercase tracking-widest">رقم الهاتف</label>
+                  <label className="text-xs font-black text-content-muted uppercase tracking-widest">{t('onboarding.fields.phone')}</label>
                   <div className="relative">
                     <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-content-muted" size={20} />
                     <input 
@@ -2206,15 +2190,15 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                   />
                   <div className="flex-1">
                     <label htmlFor="enablePin" className="font-bold text-content block cursor-pointer">
-                      تفعيل رمز الموظف
+                      {t('staff.force_pin.enable_toggle')}
                     </label>
-                    <p className="text-xs text-content-muted">السماح للموظف بتسجيل الدخول باستخدام رمز سري</p>
+                    <p className="text-xs text-content-muted">{t('staff.pin_login_hint')}</p>
                   </div>
                 </div>
 
                 {enablePin && (
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-content-muted uppercase tracking-widest">رمز الدخول (4 أرقام)</label>
+                    <label className="text-xs font-black text-content-muted uppercase tracking-widest">{t('staff.pin_field_label')}</label>
                     <div className="relative">
                       <Shield className="absolute right-4 top-1/2 -translate-y-1/2 text-content-muted" size={20} />
                       <input 
@@ -2229,7 +2213,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                       />
                     </div>
                     {errors.pin && <p className="text-xs text-red-500 font-bold">{errors.pin.message}</p>}
-                    <p className="text-xs text-brand font-bold mt-2">اتركه فارغاً لإنشاء رمز عشوائي للموظف</p>
+                    <p className="text-xs text-brand font-bold mt-2">{t('staff.pin_leave_empty_hint')}</p>
                   </div>
                 )}
 
@@ -2243,7 +2227,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                   />
                   <label htmlFor="isTest" className="text-sm font-bold text-amber-600 flex items-center gap-2">
                     <Zap size={16} />
-                    بيانات تجريبية (Test Data)
+                    {t('common.test_data')}
                   </label>
                 </div>
 
@@ -2252,7 +2236,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                   disabled={isSubmitting}
                   className="w-full bg-brand text-white py-4 rounded-2xl font-black hover:bg-brand/90 shadow-xl shadow-brand/10 transition-all hover:scale-105 active:scale-95 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+                  {isSubmitting ? t('common.saving') : t('procurement.save_changes')}
                 </button>
               </form>
             </motion.div>
@@ -2264,7 +2248,11 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
 }
 
 const RolePermissionsModal = ({ role, onClose }: { role: Role; onClose: () => void }) => {
-  const categories = Array.from(new Set(SYSTEM_PERMISSIONS.map(p => p.category)));
+  const { t } = useTranslation();
+  const transCat = (cat: string): string => t(`settings_page.staff.permissions.categories.${getCategoryKey(cat)}`, { defaultValue: cat });
+  const transPermName = (permId: string, cat: string, defaultName: string): string => t(`settings_page.staff.permissions.items.${permId}.${getCategoryKey(cat)}.name`, { defaultValue: defaultName });
+  const transPermDesc = (permId: string, cat: string, defaultDesc: string): string => t(`settings_page.staff.permissions.items.${permId}.${getCategoryKey(cat)}.description`, { defaultValue: defaultDesc });
+  const categories = Array.from(new Set(SYSTEM_PERMISSIONS.map(p => p.categoryKey)));
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
 
   const toggleCategory = (category: string) => {
@@ -2304,8 +2292,8 @@ const RolePermissionsModal = ({ role, onClose }: { role: Role; onClose: () => vo
               <Shield size={24} />
             </div>
             <div>
-              <h2 className="text-2xl font-black text-content">صلاحيات {role.name}</h2>
-              <p className="text-xs text-content-muted font-bold uppercase tracking-widest">عرض مصفوفة الصلاحيات لهذا الدور</p>
+              <h2 className="text-2xl font-black text-content">{t('settings_page.staff.permissions.role_permissions', { name: role.name })}</h2>
+              <p className="text-xs text-content-muted font-bold uppercase tracking-widest">{t('staff.role_matrix_subtitle')}</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -2313,7 +2301,7 @@ const RolePermissionsModal = ({ role, onClose }: { role: Role; onClose: () => vo
               onClick={toggleAll}
               className="text-xs font-bold text-brand hover:text-brand/80 transition-colors"
             >
-              {expandedCategories.length === categories.length ? 'طي الكل' : 'توسيع الكل'}
+              {expandedCategories.length === categories.length ? t('settings_page.staff.permissions.collapse_all') : t('settings_page.staff.permissions.expand_all')}
             </button>
             <button onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm bg-surface">
               <X size={24} className="text-content-muted" />
@@ -2324,7 +2312,7 @@ const RolePermissionsModal = ({ role, onClose }: { role: Role; onClose: () => vo
         <div className="p-8 overflow-y-auto space-y-4">
           {categories.map(category => {
             const isExpanded = expandedCategories.includes(category);
-            const categoryPerms = SYSTEM_PERMISSIONS.filter(p => p.category === category);
+            const categoryPerms = SYSTEM_PERMISSIONS.filter(p => p.categoryKey === category);
             
             return (
               <div key={category} className="bg-surface rounded-[2rem] border border-border overflow-hidden">
@@ -2334,7 +2322,7 @@ const RolePermissionsModal = ({ role, onClose }: { role: Role; onClose: () => vo
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-1.5 h-5 bg-brand rounded-full" />
-                    <h3 className="text-sm font-black text-brand uppercase tracking-widest">{category}</h3>
+                    <h3 className="text-sm font-black text-brand uppercase tracking-widest">{transCat(category)}</h3>
                     <span className="bg-brand/10 text-brand text-[10px] px-2 py-0.5 rounded-full font-black">
                       {categoryPerms.length}
                     </span>
@@ -2363,8 +2351,8 @@ const RolePermissionsModal = ({ role, onClose }: { role: Role; onClose: () => vo
                             return (
                               <div key={perm.id} className="flex items-center justify-between p-4 bg-surface-muted rounded-2xl border border-border/50">
                                 <div className="flex flex-col">
-                                  <span className="text-sm font-bold text-content">{perm.name}</span>
-                                  <span className="text-[10px] text-content-muted font-medium">{perm.description}</span>
+                                  <span className="text-sm font-bold text-content">{transPermName(perm.id, perm.categoryKey, perm.name)}</span>
+                                  <span className="text-[10px] text-content-muted font-medium">{transPermDesc(perm.id, perm.categoryKey, perm.description)}</span>
                                 </div>
                                 {isEnabled ? (
                                   <div className="bg-emerald-500/10 text-emerald-600 p-1 rounded-full">
@@ -2393,7 +2381,7 @@ const RolePermissionsModal = ({ role, onClose }: { role: Role; onClose: () => vo
             onClick={onClose}
             className="w-full bg-brand text-white py-4 rounded-2xl font-black text-lg shadow-xl shadow-brand/10 hover:bg-brand/90 transition-all"
           >
-            إغلاق
+            {t('common.close')}
           </button>
         </div>
       </motion.div>

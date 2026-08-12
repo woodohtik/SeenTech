@@ -17,6 +17,8 @@
  * ------------------------------------------------------------------
  */
 
+import i18n from 'i18next';
+
 /* ============================ الأنواع ============================ */
 
 /**
@@ -136,11 +138,9 @@ export const getSupportInfo = (): SupportInfo => {
   let reason: string | null = null;
   if (!anyDiscovery) {
     if (!secureContext) {
-      reason =
-        'الربط المباشر بالأجهزة يتطلب اتصالاً آمناً (HTTPS). افتح النظام عبر رابط https أو على localhost. يمكنك مع ذلك استخدام "طابعة النظام" أو "طابعة الشبكة" للطباعة بشكل طبيعي.';
+      reason = i18n.t('printing.requires_secure_context');
     } else {
-      reason =
-        'متصفحك لا يدعم الربط المباشر بالأجهزة. استخدم Google Chrome أو Microsoft Edge (إصدار حديث)، أو اعتمد على "طابعة النظام" عبر مربع حوار الطباعة، أو "طابعة الشبكة" عبر عنوان IP.';
+      reason = i18n.t('printing.browser_unsupported_pairing');
     }
   }
 
@@ -157,9 +157,9 @@ const deviceLabel = (d: {
 }) => {
   const parts = [d.manufacturerName, d.productName].filter(Boolean).join(' ').trim();
   if (parts) return parts;
-  return `طابعة USB ${d.vendorId.toString(16).padStart(4, '0')}:${d.productId
-    .toString(16)
-    .padStart(4, '0')}`;
+  return i18n.t('printing.usb_printer_named', {
+    id: `${d.vendorId.toString(16).padStart(4, '0')}:${d.productId.toString(16).padStart(4, '0')}`,
+  });
 };
 
 /** أخطاء إلغاء المستخدم لنافذة الاختيار — ليست أعطالاً حقيقية */
@@ -223,8 +223,10 @@ export const listPairedPrinters = async (): Promise<DiscoveredPrinter[]> => {
         found.push({
           id,
           name: info.usbVendorId
-            ? `طابعة تسلسلية ${info.usbVendorId.toString(16)}:${(info.usbProductId ?? 0).toString(16)}`
-            : `منفذ تسلسلي #${i + 1}`,
+            ? i18n.t('printing.serial_printer_named', {
+                id: `${info.usbVendorId.toString(16)}:${(info.usbProductId ?? 0).toString(16)}`,
+              })
+            : i18n.t('printing.serial_port_numbered', { number: i + 1 }),
           transport: 'serial',
           vendorId: info.usbVendorId,
           productId: info.usbProductId,
@@ -244,7 +246,7 @@ export const listPairedPrinters = async (): Promise<DiscoveredPrinter[]> => {
         btDeviceRegistry.set(id, d); // مهم: استعادة أجهزة البلوتوث بعد إعادة التحميل
         found.push({
           id,
-          name: d.name || 'طابعة بلوتوث',
+          name: d.name || i18n.t('printing.bluetooth_printer'),
           transport: 'bluetooth',
           bluetoothId: d.id,
           paired: true,
@@ -262,7 +264,7 @@ export const listPairedPrinters = async (): Promise<DiscoveredPrinter[]> => {
 
 /** فتح نافذة اختيار أجهزة USB المعرّفة كفئة طابعة (classCode 7). */
 export const requestUsbPrinter = async (): Promise<DiscoveredPrinter> => {
-  if (!nav?.usb) throw new Error('WebUSB غير مدعوم في هذا المتصفح.');
+  if (!nav?.usb) throw new Error(i18n.t('printing.webusb_unsupported'));
 
   const device: USBDeviceLike = await nav.usb.requestDevice({ filters: [{ classCode: 7 }] });
   const id = usbId(device);
@@ -280,7 +282,7 @@ export const requestUsbPrinter = async (): Promise<DiscoveredPrinter> => {
 
 /** فتح نافذة اختيار أجهزة USB بدون تصفية — لطابعات POS التي تظهر كـ Vendor Specific. */
 export const requestAnyUsbDevice = async (): Promise<DiscoveredPrinter> => {
-  if (!nav?.usb) throw new Error('WebUSB غير مدعوم في هذا المتصفح.');
+  if (!nav?.usb) throw new Error(i18n.t('printing.webusb_unsupported'));
 
   const device: USBDeviceLike = await nav.usb.requestDevice({ filters: [] });
   const id = usbId(device);
@@ -298,7 +300,7 @@ export const requestAnyUsbDevice = async (): Promise<DiscoveredPrinter> => {
 
 /** فتح نافذة اختيار المنافذ التسلسلية (COM / RS-232 / USB-Serial). */
 export const requestSerialPrinter = async (): Promise<DiscoveredPrinter> => {
-  if (!nav?.serial) throw new Error('Web Serial غير مدعوم في هذا المتصفح.');
+  if (!nav?.serial) throw new Error(i18n.t('printing.web_serial_unsupported'));
 
   const port: SerialPortLike = await nav.serial.requestPort();
   const info = port.getInfo();
@@ -319,8 +321,10 @@ export const requestSerialPrinter = async (): Promise<DiscoveredPrinter> => {
   return {
     id,
     name: info.usbVendorId
-      ? `طابعة تسلسلية ${info.usbVendorId.toString(16)}:${(info.usbProductId ?? 0).toString(16)}`
-      : 'طابعة عبر المنفذ التسلسلي',
+      ? i18n.t('printing.serial_printer_named', {
+          id: `${info.usbVendorId.toString(16)}:${(info.usbProductId ?? 0).toString(16)}`,
+        })
+      : i18n.t('printing.serial_printer'),
     transport: 'serial',
     vendorId: info.usbVendorId,
     productId: info.usbProductId,
@@ -340,7 +344,7 @@ const BT_PRINTER_SERVICES: (number | string)[] = [
 
 /** فتح نافذة اختيار أجهزة البلوتوث القريبة. */
 export const requestBluetoothPrinter = async (): Promise<DiscoveredPrinter> => {
-  if (!nav?.bluetooth) throw new Error('Web Bluetooth غير مدعوم في هذا المتصفح.');
+  if (!nav?.bluetooth) throw new Error(i18n.t('printing.web_bluetooth_unsupported'));
 
   const device: BluetoothDeviceLike = await nav.bluetooth.requestDevice({
     acceptAllDevices: true,
@@ -352,7 +356,7 @@ export const requestBluetoothPrinter = async (): Promise<DiscoveredPrinter> => {
 
   return {
     id,
-    name: device.name || 'طابعة بلوتوث',
+    name: device.name || i18n.t('printing.bluetooth_printer'),
     transport: 'bluetooth',
     bluetoothId: device.id,
     paired: true,
@@ -371,10 +375,7 @@ const sendToUsb = async (id: string, data: Uint8Array): Promise<void> => {
     if (device) usbDeviceRegistry.set(id, device);
   }
 
-  if (!device)
-    throw new Error(
-      'الطابعة غير مقترنة بالمتصفح. اضغط "تحديث" في إعدادات الطابعة أو أعد ربطها عبر زر "طابعة USB".'
-    );
+  if (!device) throw new Error(i18n.t('printing.usb_not_paired'));
 
   let claimed = -1;
 
@@ -415,8 +416,7 @@ const sendToUsb = async (id: string, data: Uint8Array): Promise<void> => {
       if (iface) break;
     }
 
-    if (!iface || !endpoint)
-      throw new Error('لم يتم العثور على منفذ إخراج (bulk out) في هذه الطابعة.');
+    if (!iface || !endpoint) throw new Error(i18n.t('printing.no_bulk_out_endpoint'));
 
     try {
       await device.claimInterface(iface.interfaceNumber);
@@ -443,7 +443,7 @@ const sendToUsb = async (id: string, data: Uint8Array): Promise<void> => {
     for (let i = 0; i < data.length; i += CHUNK) {
       const res = await device.transferOut(endpoint.endpointNumber, data.slice(i, i + CHUNK));
       if (res.status !== 'ok') {
-        const err: any = new Error(`الطابعة رفضت البيانات (${res.status}).`);
+        const err: any = new Error(i18n.t('printing.printer_rejected_data', { status: res.status }));
         /*
          * فشل بعد قبول الدفعة الأولى: جزء من الفاتورة خرج على الورق بالفعل.
          * نُعلّم الخطأ حتى لا يُعاد الطبع تلقائياً فيخرج إيصال ثانٍ كامل
@@ -469,17 +469,10 @@ const sendToUsb = async (id: string, data: Uint8Array): Promise<void> => {
 
       // على الأندرويد لا يوجد usbprint.sys يحجز الجهاز، فسبب الفشل مختلف
       if (onAndroid) {
-        throw new Error(
-          'تم رفض الوصول للطابعة عبر USB. على الأندرويد جرّب: فصل كابل OTG وإعادة توصيله، ثم اختر «سين» عند سؤال النظام عن التطبيق الذي يفتح الجهاز.'
-        );
+        throw new Error(i18n.t('printing.usb_access_denied_android'));
       }
 
-      throw new Error(
-        'تم رفض الوصول لجهاز USB (Access Denied). هذا ليس عطلاً — بل سلوك مقصود في ويندوز: عندما يكون للطابعة تعريف رسمي مثبّت يحجزها النظام حجزاً حصرياً عبر usbprint.sys، ولا يستطيع أي متصفح فتحها. لن ينجح WebUSB على ويندوز في هذه الحالة أبداً. ' +
-          'الحل الصحيح: «الاقتران مع وسيط سين» من أعلى هذه الصفحة — يطبع صامتاً بنفس التعريف الرسمي، ويعمل من الأندرويد أيضاً. ' +
-          'البدائل: «طابعة النظام» عبر مربع حوار الطباعة، أو طابعة شبكة عبر عنوان IP. ' +
-          'لا نوصي باستبدال التعريف بـ WinUSB عبر Zadig لأنه يُعطّل الطباعة من كل البرامج الأخرى على الجهاز.'
-      );
+      throw new Error(i18n.t('printing.usb_access_denied_windows'));
     }
     throw err;
   } finally {
@@ -519,7 +512,7 @@ const sendToSerial = async (id: string, data: Uint8Array, preferredBaud?: number
     if (port) serialPortRegistry.set(id, port);
   }
 
-  if (!port) throw new Error('المنفذ التسلسلي غير مقترن. أعد ربط الطابعة من زر "منفذ تسلسلي / COM".');
+  if (!port) throw new Error(i18n.t('printing.serial_not_paired'));
 
   const known = serialBaudRegistry.get(id);
   const bauds = Array.from(
@@ -553,13 +546,13 @@ const sendToSerial = async (id: string, data: Uint8Array, preferredBaud?: number
 
   if (!opened) {
     throw new Error(
-      `تعذر فتح المنفذ التسلسلي. ${lastErr?.message || ''} تأكد أن الطابعة مشغّلة وأن المنفذ غير مستخدم من برنامج آخر.`
+      i18n.t('printing.serial_open_failed', { error: lastErr?.message || '' })
     );
   }
 
   serialBaudRegistry.set(id, usedBaud);
 
-  if (!port.writable) throw new Error('المنفذ التسلسلي لا يقبل الكتابة.');
+  if (!port.writable) throw new Error(i18n.t('printing.serial_not_writable'));
 
   const writer = port.writable.getWriter();
   try {
@@ -593,10 +586,7 @@ const sendToBluetooth = async (id: string, data: Uint8Array): Promise<void> => {
     }
   }
 
-  if (!device?.gatt)
-    throw new Error(
-      'طابعة البلوتوث غير مقترنة. أعد ربطها من زر "طابعة بلوتوث" (يتطلب نقرة من المستخدم).'
-    );
+  if (!device?.gatt) throw new Error(i18n.t('printing.bluetooth_not_paired'));
 
   const server = await device.gatt.connect();
 
@@ -628,10 +618,7 @@ const sendToBluetooth = async (id: string, data: Uint8Array): Promise<void> => {
     }
   }
 
-  if (!characteristic)
-    throw new Error(
-      'لم يتم العثور على خدمة طباعة في جهاز البلوتوث. تأكد أن الطابعة تدعم BLE — طابعات Bluetooth Classic لا تظهر في المتصفح، اربطها عبر نظام التشغيل واستخدم "طابعة النظام".'
-    );
+  if (!characteristic) throw new Error(i18n.t('printing.bluetooth_no_service'));
 
   // BLE محدود بحزم صغيرة
   const CHUNK = 180;
@@ -661,7 +648,7 @@ const bytesToBase64 = (data: Uint8Array): string => {
  */
 const sendToNetwork = async (conn: ConnectionOptions, data: Uint8Array): Promise<void> => {
   const ip = (conn.ipAddress || '').trim();
-  if (!ip) throw new Error('لم يتم تحديد عنوان IP لطابعة الشبكة. عدّل الطابعة وأدخل عنوان IP.');
+  if (!ip) throw new Error(i18n.t('printing.network_ip_missing'));
 
   const port = Number(conn.port || 9100) || 9100;
   const dataBase64 = bytesToBase64(data);
@@ -683,7 +670,9 @@ const sendToNetwork = async (conn: ConnectionOptions, data: Uint8Array): Promise
       });
     } catch (e: any) {
       const err: any = new Error(
-        `تعذر الوصول لوسيط الطباعة في السيرفر (${e?.message || 'خطأ شبكة'}). تأكد أن السيرفر يعمل وأنه على نفس الشبكة المحلية للطابعة.`
+        i18n.t('printing.server_relay_unreachable_detail', {
+          error: e?.message || i18n.t('printing.network_error'),
+        })
       );
       // نجحت نسخة على الأقل قبل هذا الفشل → لا يجوز إعادة الطبع تلقائياً
       if (i > 0) err.dispatched = true;
@@ -699,8 +688,7 @@ const sendToNetwork = async (conn: ConnectionOptions, data: Uint8Array): Promise
 
     if (!res.ok || payload?.ok === false) {
       const err: any = new Error(
-        payload?.error ||
-          `فشل الإرسال إلى الطابعة ${ip}:${port}. تحقّق من تشغيل الطابعة وصحة عنوان IP، وأن السيرفر على نفس الشبكة.`
+        payload?.error || i18n.t('printing.network_send_failed', { host: ip, port })
       );
       if (i > 0) err.dispatched = true;
       throw err;
@@ -774,9 +762,7 @@ export const sendRawToPrinter = async (
     }
 
     default:
-      throw new Error(
-        'طابعة النظام تُطبع عبر مربع حوار الطباعة، ولا تدعم الإرسال المباشر بأوامر ESC/POS.'
-      );
+      throw new Error(i18n.t('printing.system_printer_no_raw'));
   }
 };
 
@@ -792,10 +778,10 @@ export const probeNetworkPrinter = async (
       body: JSON.stringify({ host: ipAddress, port: Number(port) || 9100 }),
     });
     const payload = await res.json().catch(() => null);
-    if (res.ok && payload?.ok) return { ok: true, message: 'تم الاتصال بالطابعة بنجاح.' };
-    return { ok: false, message: payload?.error || 'لم يستجب عنوان الطابعة.' };
+    if (res.ok && payload?.ok) return { ok: true, message: i18n.t('printing.probe_success') };
+    return { ok: false, message: payload?.error || i18n.t('printing.probe_no_response') };
   } catch (e: any) {
-    return { ok: false, message: e?.message || 'تعذر الوصول لوسيط الطباعة في السيرفر.' };
+    return { ok: false, message: e?.message || i18n.t('printing.server_relay_unreachable') };
   }
 };
 
@@ -815,11 +801,11 @@ export const canvasToEscPosRaster = (
   sliceHeight = 128
 ): Uint8Array => {
   const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('تعذر قراءة محتوى الصورة للطباعة.');
+  if (!ctx) throw new Error(i18n.t('printing.canvas_read_failed'));
 
   const width = Math.floor(canvas.width / 8) * 8;
   const height = canvas.height;
-  if (width < 8 || height < 1) throw new Error('أبعاد الفاتورة غير صالحة للطباعة.');
+  if (width < 8 || height < 1) throw new Error(i18n.t('printing.invalid_invoice_dimensions'));
 
   const bytesPerRow = width / 8;
   const img = ctx.getImageData(0, 0, width, height).data;

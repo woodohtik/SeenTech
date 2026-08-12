@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase/client';
 import { Combobox, Transition, Dialog } from '@headlessui/react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
+import { useDirection } from '../../lib/direction';
 
 interface CustomerSectionProps {
   tenantId: string;
@@ -22,6 +23,7 @@ export default function CustomerSection({
   setSelectedCustomer,
   onCustomerAdded
 }: CustomerSectionProps) {
+  const { t, dir } = useDirection();
   const [query, setQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isWorking, setIsWorking] = useState(false);
@@ -45,7 +47,7 @@ export default function CustomerSection({
 
   const handleSaveCustomer = async () => {
     if (!newName || !newPhone) {
-      alert('يرجى إدخال اسم العميل ورقم الجوال');
+      alert(t('pos.customer_name_phone_required'));
       return;
     }
     
@@ -89,7 +91,7 @@ export default function CustomerSection({
       
     } catch (error: any) {
       console.error('Error saving customer:', error);
-      alert('فشل حفظ العميل: ' + error.message);
+      alert(t('pos.save_customer_failed', { error: error.message }));
     } finally {
       setIsWorking(false);
     }
@@ -102,7 +104,7 @@ export default function CustomerSection({
           <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center">
             <UserPlus className="text-brand" size={18} />
           </div>
-          العميل والمقاسات
+          {t('pos.customer_and_measurements')}
         </h2>
       </div>
 
@@ -116,8 +118,8 @@ export default function CustomerSection({
                   className="w-full border-none py-3 pl-10 pr-10 text-sm leading-5 text-content focus:ring-0 bg-transparent font-medium"
                   displayValue={(customer: Customer | null) => customer?.name || ''}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="ابحث بالاسم أو رقم الجوال..."
-                  dir="rtl"
+                  placeholder={t('pos.search_customer_placeholder')}
+                  dir={dir}
                 />
                 <Combobox.Button className="absolute inset-y-0 left-0 flex items-center pr-2">
                   <ChevronsUpDown
@@ -144,7 +146,7 @@ export default function CustomerSection({
                 <Combobox.Options className="absolute mt-2 max-h-60 w-full overflow-auto rounded-xl bg-surface py-1 text-base shadow-xl border border-border ring-1 ring-black/5 focus:outline-none sm:text-sm z-50 divide-y divide-surface-muted">
                   {filteredCustomers.length === 0 && query !== '' ? (
                     <div className="relative cursor-default select-none py-4 px-4 text-content-muted text-center">
-                      لم يتم العثور على نتائج.
+                      {t('common.no_results')}
                     </div>
                   ) : (
                     filteredCustomers.map((customer) => (
@@ -186,7 +188,7 @@ export default function CustomerSection({
         <button 
           onClick={() => setIsModalOpen(true)}
           className="mt-1 h-12 w-12 flex items-center justify-center bg-brand text-white rounded-xl hover:bg-brand/90 transition-all shadow-sm shrink-0"
-          title="إضافة عميل جديد"
+          title={t('pos.add_new_customer')}
         >
           <Plus size={24} />
         </button>
@@ -217,10 +219,10 @@ export default function CustomerSection({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 className="mx-auto max-w-xl w-full rounded-2xl bg-surface p-6 shadow-2xl border border-border"
-                dir="rtl"
+                dir={dir}
               >
                 <div className="flex justify-between items-center mb-6">
-                  <Dialog.Title className="text-xl font-bold text-content">إضافة عميل جديد</Dialog.Title>
+                  <Dialog.Title className="text-xl font-bold text-content">{t('pos.add_new_customer')}</Dialog.Title>
                   <button onClick={() => setIsModalOpen(false)} className="text-content-muted hover:text-danger p-1">
                     <X size={24} />
                   </button>
@@ -229,16 +231,16 @@ export default function CustomerSection({
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5 md:col-span-2">
-                      <label className="text-sm font-bold text-content">اسم العميل <span className="text-danger">*</span></label>
+                      <label className="text-sm font-bold text-content">{t('pos.customer_name')} <span className="text-danger">*</span></label>
                       <input 
                         type="text" 
                         value={newName} onChange={e => setNewName(e.target.value)}
                         className="w-full p-3 rounded-xl border border-border bg-surface-muted focus:bg-surface focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all text-content" 
-                        placeholder="أدخل الاسم..."
+                        placeholder={t('pos.enter_name_placeholder')}
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-sm font-bold text-content">رقم الجوال <span className="text-danger">*</span></label>
+                      <label className="text-sm font-bold text-content">{t('login.phone')} <span className="text-danger">*</span></label>
                       <input 
                         type="text" 
                         value={newPhone} 
@@ -249,12 +251,12 @@ export default function CustomerSection({
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-sm font-bold text-content">الرقم الضريبي <span className="text-content-muted font-normal">(للشركات فقط)</span></label>
+                      <label className="text-sm font-bold text-content">{t('pos.vat_number')} <span className="text-content-muted font-normal">{t('pos.companies_only')}</span></label>
                       <input 
                         type="text" 
                         value={newVat} onChange={e => setNewVat(e.target.value)}
                         className="w-full p-3 rounded-xl border border-border bg-surface-muted focus:bg-surface focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all text-content" 
-                        placeholder="أدخل الرقم الضريبي للعميل..."
+                        placeholder={t('pos.vat_number_placeholder')}
                       />
                     </div>
                   </div>
@@ -262,23 +264,23 @@ export default function CustomerSection({
                   <div className="bg-surface-muted p-4 rounded-xl border border-border">
                     <h4 className="text-sm font-bold text-content mb-4 flex items-center gap-2">
                       <div className="w-1 h-4 bg-brand rounded-full" />
-                      سجل المقاسات (اختياري)
+                      {t('measurements.record_optional')}
                     </h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <div className="space-y-1">
-                        <label className="text-xs font-bold text-content-muted">الطول</label>
+                        <label className="text-xs font-bold text-content-muted">{t('measurements.length')}</label>
                         <input type="number" value={length} onChange={e => setLength(e.target.value)} placeholder="0" className="w-full p-2.5 text-center rounded-lg border border-border bg-surface focus:border-brand outline-none text-content" />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs font-bold text-content-muted">الكتف</label>
+                        <label className="text-xs font-bold text-content-muted">{t('measurements.shoulder')}</label>
                         <input type="number" value={shoulder} onChange={e => setShoulder(e.target.value)} placeholder="0" className="w-full p-2.5 text-center rounded-lg border border-border bg-surface focus:border-brand outline-none text-content" />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs font-bold text-content-muted">الصدر</label>
+                        <label className="text-xs font-bold text-content-muted">{t('measurements.chest')}</label>
                         <input type="number" value={chest} onChange={e => setChest(e.target.value)} placeholder="0" className="w-full p-2.5 text-center rounded-lg border border-border bg-surface focus:border-brand outline-none text-content" />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs font-bold text-content-muted">الكم</label>
+                        <label className="text-xs font-bold text-content-muted">{t('measurements.sleeve')}</label>
                         <input type="number" value={sleeve} onChange={e => setSleeve(e.target.value)} placeholder="0" className="w-full p-2.5 text-center rounded-lg border border-border bg-surface focus:border-brand outline-none text-content" />
                       </div>
                     </div>
@@ -291,14 +293,14 @@ export default function CustomerSection({
                       className="flex-1 bg-brand text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-brand/90 transition-all disabled:opacity-50 shadow-md shadow-brand/20"
                     >
                       {isWorking ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                      حفظ العميل والبدء بالطلب
+                      {t('pos.save_customer_and_start_order')}
                     </button>
                     <button 
                       onClick={() => setIsModalOpen(false)}
                       disabled={isWorking}
                       className="px-6 py-3.5 rounded-xl font-bold text-content-muted hover:bg-surface-muted transition-all"
                     >
-                      إلغاء
+                      {t('common.cancel')}
                     </button>
                   </div>
                 </div>

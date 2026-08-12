@@ -24,6 +24,8 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 import Branding from '../Branding';
+import { localeOf } from '../../lib/direction';
+import i18n from '../../i18n/config';
 
 interface StockTransferWorkflowProps {
   tenantId: string;
@@ -36,6 +38,9 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
   const [loading, setLoading] = useState(true);
   const [selectedTransfer, setSelectedTransfer] = useState<StockTransfer | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  // Ship/receive had no re-entrancy guard and no disabled button, so two clicks ran the
+  // whole deduction loop twice — 60 m in stock, ship 50 m twice, balance -40 m.
+  const [busyTransferId, setBusyTransferId] = useState<string | null>(null);
 
   const mapDbTransferToStockTransfer = (item: any): StockTransfer => {
     const dbItems = item.stock_transfer_items || [];
@@ -122,51 +127,37 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
   const getBranchName = (id: string) => branches.find(b => b.id === id)?.name || id;
 
   const handleShip = async (transfer: StockTransfer) => {
+    if (busyTransferId) return;
+    setBusyTransferId(transfer.id);
     try {
-      // 1. Deduct from source branch inventory
+      /* --------------------------------------------------------------------
+         The old loop did: read quantity -> compute currentQty - requested ->
+         write the absolute value, all client-side, with
+           * no availability re-check at ship time (only at request time), so a
+             transfer requested on Monday could drive the branch negative on
+             Wednesday after the stock had been sold;
+           * an `if (stockSnap)` that silently skipped the deduction AND the
+             ledger row when the source branch had no inventory row, while
+             still marking the line shipped — the destination was then credited
+             the full amount, creating stock from nothing;
+           * a lost-update race against any concurrent sale.
+
+         One server call per line now does the delta, the >= 0 check and the
+         ledger row in a single transaction, keyed for idempotency.
+         -------------------------------------------------------------------- */
       for (const item of transfer.items) {
-        const { data: stockSnap } = await supabase
-          .from('branch_inventory')
-          .select('quantity')
-          .eq('branch_id', transfer.fromBranchId)
-          .eq('item_id', item.itemId)
-          .maybeSingle();
-        
-        if (stockSnap) {
-          const currentQty = stockSnap.quantity;
-          const newQty = currentQty - item.requestedQuantity;
-          
-          await supabase
-            .from('branch_inventory')
-            .update({
-              quantity: newQty,
-              updated_at: new Date().toISOString()
-            })
-            .eq('branch_id', transfer.fromBranchId)
-            .eq('item_id', item.itemId);
+        const { error } = await supabase.rpc('transfer_ship_item', {
+          p_operation_id: `${transfer.id}:${item.itemId}:ship`,
+          p_transfer_id: transfer.id,
+          p_from_branch: transfer.fromBranchId,
+          p_item_id: item.itemId,
+          p_qty: item.requestedQuantity,
+        });
+        if (error) throw error;
 
-          // 2. Add to Stock Ledger (Reduction)
-          await supabase.from('stock_ledger').insert({
-            item_id: item.itemId,
-            branch_id: transfer.fromBranchId,
-            type: 'transfer_out',
-            previous_quantity: currentQty,
-            new_quantity: newQty,
-            change: -item.requestedQuantity,
-            reference_id: transfer.id,
-            staff_id: auth.currentUser?.uid,
-            staff_name: auth.currentUser?.displayName || 'Staff',
-            tenant_id: tenantId,
-            created_at: new Date().toISOString()
-          });
-        }
-
-        // 3. Update stock_transfer_items shipped quantity
         await supabase
           .from('stock_transfer_items')
-          .update({
-            shipped_quantity: item.requestedQuantity
-          })
+          .update({ shipped_quantity: item.requestedQuantity })
           .eq('transfer_id', transfer.id)
           .eq('item_id', item.itemId);
       }
@@ -184,91 +175,44 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
 
     } catch (error) {
       handleError(error as any, OperationType.UPDATE, 'stock_transfers');
+    } finally {
+      setBusyTransferId(null);
     }
   };
 
   const handleReceive = async (transfer: StockTransfer, receivedQuantities: Record<string, number>, remarks: string) => {
+    if (busyTransferId) return;
+    setBusyTransferId(transfer.id);
     try {
+      /* --------------------------------------------------------------------
+         Same treatment as handleShip. Additionally the old code wrote a
+         "discrepancy" ledger row with previous_quantity == new_quantity but a
+         non-zero `change`, and with no matching stock write — so a shortfall
+         was counted twice in the reports. The received quantity is the only
+         thing that moves stock; the shortfall is recorded on the transfer line
+         itself, not as a phantom ledger entry.
+         -------------------------------------------------------------------- */
       for (const item of transfer.items) {
-        const receivedQty = receivedQuantities[item.itemId];
-        
-        const { data: stockSnap } = await supabase
-          .from('branch_inventory')
-          .select('quantity')
-          .eq('branch_id', transfer.toBranchId)
-          .eq('item_id', item.itemId)
-          .maybeSingle();
-        
-        const currentQty = stockSnap ? stockSnap.quantity : 0;
-        const newQty = currentQty + receivedQty;
-        
-        // 1. Add to destination branch inventory
-        if (stockSnap) {
-          await supabase
-            .from('branch_inventory')
-            .update({
-              quantity: newQty,
-              updated_at: new Date().toISOString()
-            })
-            .eq('branch_id', transfer.toBranchId)
-            .eq('item_id', item.itemId);
-        } else {
-          await supabase
-            .from('branch_inventory')
-            .insert({
-              branch_id: transfer.toBranchId,
-              item_id: item.itemId,
-              quantity: newQty,
-              tenant_id: tenantId,
-              updated_at: new Date().toISOString()
-            });
-        }
+        const receivedQty = Math.max(0, Number(receivedQuantities[item.itemId]) || 0);
 
-        // 2. Add to Stock Ledger (Addition)
-        await supabase.from('stock_ledger').insert({
-          item_id: item.itemId,
-          branch_id: transfer.toBranchId,
-          type: 'transfer_in',
-          previous_quantity: currentQty,
-          new_quantity: newQty,
-          change: receivedQty,
-          reference_id: transfer.id,
-          staff_id: auth.currentUser?.uid,
-          staff_name: auth.currentUser?.displayName || 'Staff',
-          tenant_id: tenantId,
-          created_at: new Date().toISOString()
-        });
-
-        // 3. Handle Discrepancy (if any)
-        const discrepancy = (item.shippedQuantity || 0) - receivedQty;
-        if (discrepancy > 0) {
-          await supabase.from('stock_ledger').insert({
-            item_id: item.itemId,
-            branch_id: transfer.toBranchId,
-            type: 'adjustment',
-            previous_quantity: newQty,
-            new_quantity: newQty,
-            change: -discrepancy,
-            notes: 'Discrepancy during transfer',
-            reference_id: transfer.id,
-            staff_id: auth.currentUser?.uid,
-            staff_name: auth.currentUser?.displayName || 'Staff',
-            tenant_id: tenantId,
-            created_at: new Date().toISOString()
+        if (receivedQty > 0) {
+          const { error } = await supabase.rpc('transfer_receive_item', {
+            p_operation_id: `${transfer.id}:${item.itemId}:receive`,
+            p_transfer_id: transfer.id,
+            p_to_branch: transfer.toBranchId,
+            p_item_id: item.itemId,
+            p_qty: receivedQty,
           });
+          if (error) throw error;
         }
 
-        // 4. Update stock_transfer_items received quantity
         await supabase
           .from('stock_transfer_items')
-          .update({
-            received_quantity: receivedQty
-          })
+          .update({ received_quantity: receivedQty })
           .eq('transfer_id', transfer.id)
           .eq('item_id', item.itemId);
       }
 
-      // 5. Update transfer status to completed
       await supabase
         .from('stock_transfers')
         .update({
@@ -283,6 +227,8 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
       setSelectedTransfer(null);
     } catch (error) {
       handleError(error as any, OperationType.UPDATE, 'stock_transfers');
+    } finally {
+      setBusyTransferId(null);
     }
   };
 
@@ -319,7 +265,7 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
                   : "bg-surface-muted text-content-muted hover:bg-border/20"
               )}
             >
-              {status === 'all' ? t('common.all', 'الكل') : t(`inventory.status_${status}`, statusMap[status]?.label || status)}
+              {status === 'all' ? t('common.all') : t(`inventory.status_${status}`, statusMap[status]?.label || status)}
             </button>
           ))}
         </div>
@@ -352,7 +298,7 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
                       </div>
                       <div className="flex items-center gap-4 text-xs font-bold text-content-muted uppercase tracking-widest">
                         <span className="flex items-center gap-1"><Package size={12} /> {transfer.items.length} {t('inventory.items')}</span>
-                        <span className="flex items-center gap-1"><Calendar size={12} /> {new Date(transfer.createdAt).toLocaleDateString('ar-SA-u-nu-latn')}</span>
+                        <span className="flex items-center gap-1"><Calendar size={12} /> {new Date(transfer.createdAt).toLocaleDateString(localeOf(i18n.language))}</span>
                         <span className="flex items-center gap-1"><User size={12} /> {transfer.requestedByName}</span>
                       </div>
                     </div>
@@ -362,9 +308,10 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
                     {transfer.status === 'pending' && (
                       <button 
                         onClick={() => handleShip(transfer)}
-                        className="bg-brand text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-brand/90 transition-all shadow-lg shadow-brand/10"
+                        disabled={busyTransferId === transfer.id}
+                        className="bg-brand text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-brand/90 transition-all shadow-lg shadow-brand/10 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {t('inventory.ship_items')}
+                        {busyTransferId === transfer.id ? t('common.saving') : t('inventory.ship_items')}
                       </button>
                     )}
                     {transfer.status === 'in_transit' && (

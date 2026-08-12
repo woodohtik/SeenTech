@@ -13,7 +13,9 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase/client';
+import { useDirection } from '../../lib/direction';
 
 type PublicStatus =
   | 'measurements_taken' | 'cutting' | 'sewing' | 'embroidery'
@@ -28,12 +30,12 @@ interface PublicOrder {
 }
 
 // مراحل العرض للعميل (نطوي الحالات الداخلية في خطوات بسيطة)
-const STEPS: { key: PublicStatus[]; label: string }[] = [
-  { key: ['measurements_taken'], label: 'تم استلام الطلب' },
-  { key: ['cutting'], label: 'القص' },
-  { key: ['sewing', 'embroidery'], label: 'الخياطة' },
-  { key: ['ironing_packaging'], label: 'التجهيز' },
-  { key: ['ready', 'partial_delivered', 'delivered'], label: 'جاهز للاستلام' },
+const STEPS: { key: PublicStatus[]; labelKey: string }[] = [
+  { key: ['measurements_taken'], labelKey: 'public_tracking.step_received' },
+  { key: ['cutting'], labelKey: 'public_tracking.step_cutting' },
+  { key: ['sewing', 'embroidery'], labelKey: 'public_tracking.step_sewing' },
+  { key: ['ironing_packaging'], labelKey: 'public_tracking.step_preparing' },
+  { key: ['ready', 'partial_delivered', 'delivered'], labelKey: 'common.status_ready' },
 ];
 
 function activeStepIndex(status: PublicStatus): number {
@@ -42,6 +44,8 @@ function activeStepIndex(status: PublicStatus): number {
 }
 
 export default function OrderTracking({ token }: { token: string }) {
+  const { t } = useTranslation();
+  const { dir, isRtl } = useDirection();
   const [order, setOrder] = useState<PublicOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -56,26 +60,26 @@ export default function OrderTracking({ token }: { token: string }) {
         if (!alive) return;
         if (error) throw error;
         const row = Array.isArray(data) ? data[0] : data;
-        if (!row) setError('لم نعثر على هذا الطلب. تأكّد من الرابط.');
+        if (!row) setError(t('public_tracking.order_not_found'));
         else setOrder(row as PublicOrder);
       } catch (e) {
-        if (alive) setError('تعذّر تحميل حالة الطلب حالياً.');
+        if (alive) setError(t('public_tracking.load_failed'));
       } finally {
         if (alive) setLoading(false);
       }
     })();
     return () => { alive = false; };
-  }, [token]);
+  }, [token, t]);
 
   return (
-    <div dir="rtl" style={styles.page}>
+    <div dir={dir} style={styles.page}>
       <div style={styles.card}>
         <div style={styles.brand}>
-          <span style={styles.brandMark}>سِين</span>
-          <span style={styles.brandSub}>تتبّع طلبك</span>
+          <span style={styles.brandMark}>{t('public_tracking.brand_mark')}</span>
+          <span style={styles.brandSub}>{t('public_tracking.title')}</span>
         </div>
 
-        {loading && <p style={styles.muted}>جارٍ التحميل…</p>}
+        {loading && <p style={styles.muted}>{t('public_tracking.loading')}</p>}
         {error && !loading && <p style={styles.error}>{error}</p>}
 
         {order && !loading && (
@@ -84,18 +88,18 @@ export default function OrderTracking({ token }: { token: string }) {
               <img src={order.shop_logo_url} alt={order.shop_name} style={styles.logo} />
             )}
             <h2 style={styles.shop}>{order.shop_name}</h2>
-            <p style={styles.muted}>طلب رقم #{order.order_number}</p>
+            <p style={styles.muted}>{t('public_tracking.order_number', { number: order.order_number })}</p>
 
             {order.status === 'cancelled' ? (
-              <p style={styles.error}>تم إلغاء هذا الطلب.</p>
+              <p style={styles.error}>{t('public_tracking.order_cancelled')}</p>
             ) : (
-              <ol style={styles.steps}>
+              <ol style={{ ...styles.steps, textAlign: isRtl ? 'right' : 'left' }}>
                 {STEPS.map((s, idx) => {
                   const active = idx <= activeStepIndex(order.status);
                   return (
-                    <li key={s.label} style={{ ...styles.step, ...(active ? styles.stepActive : {}) }}>
+                    <li key={s.labelKey} style={{ ...styles.step, ...(active ? styles.stepActive : {}) }}>
                       <span style={{ ...styles.dot, ...(active ? styles.dotActive : {}) }}>{active ? '✓' : idx + 1}</span>
-                      <span>{s.label}</span>
+                      <span>{t(s.labelKey)}</span>
                     </li>
                   );
                 })}
@@ -103,12 +107,12 @@ export default function OrderTracking({ token }: { token: string }) {
             )}
 
             {order.delivery_date && order.status !== 'cancelled' && (
-              <p style={styles.delivery}>التسليم المتوقّع: {order.delivery_date}</p>
+              <p style={styles.delivery}>{t('public_tracking.expected_delivery', { date: order.delivery_date })}</p>
             )}
           </>
         )}
 
-        <div style={styles.footer}>مدعوم بنظام «سين» لإدارة محلات التفصيل</div>
+        <div style={styles.footer}>{t('public_tracking.powered_by')}</div>
       </div>
     </div>
   );

@@ -59,6 +59,8 @@ import OnboardingTour from './OnboardingTour';
 
 
 
+import { isRtlLang } from '../lib/direction';
+
 interface LayoutProps {
   children: React.ReactNode;
   role?: UserRole | null;
@@ -72,7 +74,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
   const navigate = useNavigate();
   const location = useLocation();
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
   const { theme, setTheme } = useTheme();
   const { impersonationTenantId, setImpersonationTenantId, dbUser } = useAuth();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
@@ -209,17 +211,17 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
   const canViewNotifications = hasPermission('settings.notifications');
 
   const settingsSubTabs = [
-    { id: 'profile', label: t('settings_page.tabs.profile', 'الملف الشخصي'), icon: Store, visible: true },
-    { id: 'tax', label: t('settings_page.tabs.tax', 'الإعدادات الضريبية'), icon: FileText, visible: canEdit },
-    { id: 'branches', label: t('settings_page.tabs.branches', 'الفروع والمواقع'), icon: MapPin, visible: hasPermission('branches.manage') },
-    { id: 'appearance', label: t('settings_page.tabs.appearance', 'المظهر والسمات'), icon: Palette, visible: true },
-    { id: 'invoice', label: t('settings_page.tabs.invoice', 'تخطيط الفاتورة'), icon: FileText, visible: true },
-    { id: 'printer', label: t('settings_page.tabs.printer', 'إعدادات الطابعة'), icon: Printer, visible: true },
-    { id: 'notifications', label: t('settings_page.tabs.notifications', 'التنبيهات'), icon: Bell, visible: canViewNotifications },
-    { id: 'whatsapp', label: t('settings_page.tabs.whatsapp', 'تكامل واتساب'), icon: MessageSquare, visible: canViewWhatsApp },
-    { id: 'staff', label: t('settings_page.tabs.staff', 'طاقم الموظفين'), icon: Shield, visible: hasPermission('staff.manage') },
-    { id: 'billing', label: t('settings_page.tabs.billing', 'الاشتراك والمدفوعات'), icon: CreditCard, visible: canViewBilling },
-    { id: 'data', label: t('settings_page.tabs.data', 'إدارة البيانات'), icon: Database, visible: currentStaff?.role === 'owner' || currentStaff?.role === 'super_admin' },
+    { id: 'profile', label: t('settings_page.tabs.profile'), icon: Store, visible: true },
+    { id: 'tax', label: t('settings_page.tabs.tax'), icon: FileText, visible: canEdit },
+    { id: 'branches', label: t('settings_page.tabs.branches'), icon: MapPin, visible: hasPermission('branches.manage') },
+    { id: 'appearance', label: t('settings_page.tabs.appearance'), icon: Palette, visible: true },
+    { id: 'invoice', label: t('settings_page.tabs.invoice'), icon: FileText, visible: true },
+    { id: 'printer', label: t('settings_page.tabs.printer'), icon: Printer, visible: true },
+    { id: 'notifications', label: t('settings_page.tabs.notifications'), icon: Bell, visible: canViewNotifications },
+    { id: 'whatsapp', label: t('settings_page.tabs.whatsapp'), icon: MessageSquare, visible: canViewWhatsApp },
+    { id: 'staff', label: t('settings_page.tabs.staff'), icon: Shield, visible: hasPermission('staff.manage') },
+    { id: 'billing', label: t('settings_page.tabs.billing'), icon: CreditCard, visible: canViewBilling },
+    { id: 'data', label: t('settings_page.tabs.data'), icon: Database, visible: currentStaff?.role === 'owner' || currentStaff?.role === 'super_admin' },
   ].filter(t => t.visible);
 
   // Stable identities for the guided tour, so its internal memoization holds
@@ -248,10 +250,10 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
           >
             <div className="flex items-center gap-2 font-black text-sm">
               <AlertCircle size={18} />
-              <span>أنت الآن في وضع الدعم الفني (Impersonation Mode)</span>
+              <span>{t('saas.impersonation_banner')}</span>
             </div>
             <div className="h-4 w-px bg-white/30 mx-2" />
-            <span className="text-xs font-bold">المشترك الحالي: {tenantName}</span>
+            <span className="text-xs font-bold">{t('saas.current_tenant', { name: tenantName })}</span>
             <button 
               onClick={async () => {
                 try {
@@ -282,7 +284,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
               }}
               className="bg-white text-warning px-4 py-1 rounded-full text-xs font-black hover:bg-white/90 transition-all ml-4"
             >
-              إنهاء الجلسة والعودة للوحة SaaS
+              {t('saas.end_impersonation')}
             </button>
           </motion.div>
         )}
@@ -544,7 +546,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
                   <div className="flex items-center gap-1.5 mt-0.5 justify-start rtl:justify-start ltr:justify-start">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
                     <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider leading-none">
-                      {t('common.active', 'نشط')}
+                      {t('saas.status_active')}
                     </span>
                   </div>
                 </div>
@@ -555,17 +557,17 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
               <div className={cn("hidden sm:flex flex-col", isRtl ? "items-start ml-2" : "items-end mr-2")}>
                 <span className="text-xs font-black text-content leading-none">{currentStaff?.name || dbUser?.display_name || dbUser?.email || 'User'}</span>
                 <span className="text-[10px] font-bold text-content-muted uppercase tracking-tighter mt-1">
-                  {effectiveRole === 'owner' 
-                    ? t('common.roles.owner', 'مالك') 
-                    : effectiveRole === 'cashier' 
-                      ? t('common.roles.cashier', 'كاشير') 
+                  {effectiveRole === 'owner'
+                    ? t('common.roles.owner')
+                    : effectiveRole === 'cashier'
+                      ? t('common.roles.cashier')
                       : effectiveRole === 'tailor'
-                        ? t('common.roles.tailor', 'خياط')
+                        ? t('common.roles.tailor')
                         : effectiveRole === 'super_admin'
-                          ? 'مشرف عام'
+                          ? t('common.roles.super_admin')
                           : effectiveRole === 'support_tech'
-                            ? 'فني دعم'
-                            : (effectiveRole || 'مستخدم')}
+                            ? t('common.roles.support_tech')
+                            : (effectiveRole || t('common.roles.user'))}
                 </span>
               </div>
               
@@ -610,7 +612,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
                   className="flex items-center gap-2 px-4 py-2 bg-surface-muted hover:bg-border text-content rounded-xl transition-all font-medium text-sm"
                 >
                   <LayoutGrid size={18} />
-                  {t('common.home', 'الرئيسية')}
+                  {t('common.home')}
                 </button>
               )}
               
@@ -642,10 +644,10 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
             <div className="max-w-7xl mx-auto space-y-12 py-8 flex-1">
               <div className="text-center space-y-2">
                 <h2 className="text-3xl sm:text-4xl font-black text-content">
-                  {t('dashboard.welcome_to', `مرحباً بك في ${tenantName}`, { name: tenantName })}
+                  {t('dashboard.welcome_to', { name: tenantName })}
                 </h2>
                 <p className="text-content-muted font-medium text-base sm:text-lg">
-                  {t('dashboard.select_system', 'اختر النظام الذي تود إدارته')}
+                  {t('dashboard.select_system')}
                 </p>
               </div>
               

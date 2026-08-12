@@ -8,6 +8,7 @@ import { Staff } from '../types';
 import { cn } from '../lib/utils';
 import bcrypt from 'bcryptjs';
 import { hashPin } from '../services/staffService';
+import { useDirection } from '../lib/direction';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import Branding from './Branding';
 
@@ -18,6 +19,7 @@ interface PinLoginProps {
 }
 
 export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLoginProps) {
+  const { t, dir } = useDirection();
   const [pin, setPin] = useState('');
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -158,13 +160,13 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
           // Note: we don't necessarily need setIsVerifying(false) here if unmounting
         }
       } else {
-        setError('رمز الدخول غير صحيح');
+        setError(t('login.pin_incorrect'));
         setPin('');
         setIsVerifying(false);
       }
     } catch (err) {
       console.error("[PinLogin] Error:", err);
-      setError('حدث خطأ أثناء التحقق');
+      setError(t('login.pin_verify_error'));
       setIsVerifying(false);
     }
   };
@@ -172,11 +174,11 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
   const handlePinChange = async () => {
     if (!mustChangePin) return;
     if (newPin.length !== 4) {
-      setError('يجب أن يكون الرمز الجديد 4 أرقام');
+      setError(t('login.pin_must_be_4_digits'));
       return;
     }
     if (newPin !== confirmPin) {
-      setError('الرمزان غير متطابقين');
+      setError(t('login.pin_mismatch'));
       return;
     }
 
@@ -200,14 +202,14 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
 
       onLogin({ ...mustChangePin, pin: hashedPin, mustChangePin: false });
     } catch (err) {
-      setError('فشل تحديث الرمز السري');
+      setError(t('login.pin_update_failed'));
     } finally {
       setIsChanging(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-surface flex items-center justify-center overflow-hidden font-sans" dir="rtl">
+    <div className="fixed inset-0 z-[100] bg-surface flex items-center justify-center overflow-hidden font-sans" dir={dir}>
       <div className="flex w-full h-full">
         {/* Right Side: PIN Login Form */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-surface-muted/50">
@@ -223,12 +225,12 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                 <div className="w-20 h-20 bg-warning/10 rounded-3xl flex items-center justify-center text-warning mb-6 shadow-inner">
                   <Lock size={40} />
                 </div>
-                <h2 className="text-3xl font-black text-content mb-2 text-center">تغيير رمز الدخول</h2>
-                <p className="text-content-muted text-sm mb-8 text-center font-medium">لأمان حسابك، يرجى تعيين رمز دخول جديد خاص بك</p>
+                <h2 className="text-3xl font-black text-content mb-2 text-center">{t('login.change_pin_title')}</h2>
+                <p className="text-content-muted text-sm mb-8 text-center font-medium">{t('login.change_pin_desc')}</p>
 
                 <div className="w-full space-y-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-content-muted uppercase tracking-widest mr-2">الرمز الجديد</label>
+                    <label className="text-xs font-black text-content-muted uppercase tracking-widest mr-2">{t('login.new_pin')}</label>
                     <input 
                       type="password"
                       maxLength={4}
@@ -239,7 +241,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-content-muted uppercase tracking-widest mr-2">تأكيد الرمز</label>
+                    <label className="text-xs font-black text-content-muted uppercase tracking-widest mr-2">{t('login.confirm_pin')}</label>
                     <input 
                       type="password"
                       maxLength={4}
@@ -262,7 +264,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                     disabled={isChanging || newPin.length !== 4 || confirmPin.length !== 4}
                     className="w-full bg-brand text-white py-4 rounded-2xl font-black hover:bg-brand/90 shadow-xl shadow-brand/10 transition-all active:scale-95 disabled:opacity-50"
                   >
-                    {isChanging ? 'جاري الحفظ...' : 'تأكيد الرمز الجديد'}
+                    {isChanging ? t('common.saving') : t('login.confirm_new_pin')}
                   </button>
                   
                   <button 
@@ -275,7 +277,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                     }}
                     className="w-full text-content-muted font-bold py-2 hover:text-content transition-colors"
                   >
-                    إلغاء
+                    {t('common.cancel')}
                   </button>
                 </div>
               </motion.div>
@@ -291,8 +293,8 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                   <Shield size={40} />
                 </div>
 
-                <h2 className="text-3xl font-black text-content mb-2 text-center">دخول الموظفين</h2>
-                <p className="text-content-muted text-sm mb-10 text-center font-medium">الرجاء إدخال رمز الدخول السريع الخاص بك</p>
+                <h2 className="text-3xl font-black text-content mb-2 text-center">{t('login.staff_login_title')}</h2>
+                <p className="text-content-muted text-sm mb-10 text-center font-medium">{t('login.staff_login_desc')}</p>
 
                 {/* PIN Display */}
                 <div className="flex gap-4 mb-10 relative">
@@ -396,7 +398,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                     className="w-full flex items-center justify-center gap-3 text-content-muted hover:text-content font-black transition-colors py-2"
                   >
                     <LogOut size={20} />
-                    <span>خروج من النظام</span>
+                    <span>{t('login.exit_system')}</span>
                   </button>
                 </div>
 
@@ -480,19 +482,19 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
               </svg>
             </div>
 
-            <h1 className="text-5xl font-black mb-6 leading-tight">بوابة الموظفين<br />الذكية</h1>
+            <h1 className="text-5xl font-black mb-6 leading-tight whitespace-pre-line">{t('login.staff_portal_headline')}</h1>
             <p className="text-white/80 text-xl font-medium max-w-md mx-auto leading-relaxed opacity-80">
-              وصول سريع وآمن لكل أفراد فريق العمل باستخدام رمز الدخول الخاص بك.
+              {t('login.staff_portal_desc')}
             </p>
             
             <div className="mt-12 flex flex-wrap items-center justify-center gap-6">
               <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/10">
                 <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
-                <span className="text-xs font-bold text-white/80 uppercase tracking-widest">نظام نشط</span>
+                <span className="text-xs font-bold text-white/80 uppercase tracking-widest">{t('login.system_active')}</span>
               </div>
               <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/10">
                 <Shield size={14} className="text-white/60" />
-                <span className="text-xs font-bold text-white/80 uppercase tracking-widest">حماية متطورة</span>
+                <span className="text-xs font-bold text-white/80 uppercase tracking-widest">{t('login.advanced_protection')}</span>
               </div>
             </div>
           </motion.div>

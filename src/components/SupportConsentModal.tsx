@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase/client';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { ShieldAlert, Check, X, Shield } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { SupportAccessRequest } from '../types/supabase';
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function SupportConsentModal({ tenantId }: Props) {
+  const { t } = useTranslation();
   const [requests, setRequests] = useState<SupportAccessRequest[]>([]);
   const { dbUser } = useAuth();
   const userRole = dbUser?.role;
@@ -47,8 +49,8 @@ export default function SupportConsentModal({ tenantId }: Props) {
       })
       .subscribe();
       
-    // Polling fallback
-    const interval = setInterval(fetchPendingRequests, 10000);
+    // Polling fallback - every 3 seconds for fast responsiveness
+    const interval = setInterval(fetchPendingRequests, 3000);
 
     return () => {
       subscription.unsubscribe();
@@ -57,14 +59,54 @@ export default function SupportConsentModal({ tenantId }: Props) {
   }, [tenantId, isAuthorizedToApprove]);
 
   const fetchPendingRequests = async () => {
-    const { data, error } = await supabase
-        .from('support_access_requests')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .eq('status', 'pending');
+    try {
+      const { data, error } = await supabase
+          .from('support_access_requests')
+          .select('*')
+          .eq('tenant_id', tenantId)
+          .eq('status', 'pending');
 
-    if (!error && data) {
-      setRequests(data);
+      if (!error && data) {
+        setRequests(data);
+      } else {
+        // Fallback to saas_settings on any error (table missing, RLS policies, etc.)
+        const { data: setting } = await supabase
+          .from('saas_settings')
+          .select('*')
+          .eq('key', 'support_access_requests')
+          .maybeSingle();
+
+        if (setting?.value && Array.isArray(setting.value)) {
+          const now = new Date().getTime();
+          const pending = setting.value.filter((r: any) => 
+            r.tenant_id === tenantId && 
+            r.status === 'pending' &&
+            new Date(r.expires_at).getTime() > now
+          );
+          setRequests(pending);
+        }
+      }
+    } catch (err) {
+      console.error("Error in fetchPendingRequests, trying fallback:", err);
+      try {
+        const { data: setting } = await supabase
+          .from('saas_settings')
+          .select('*')
+          .eq('key', 'support_access_requests')
+          .maybeSingle();
+
+        if (setting?.value && Array.isArray(setting.value)) {
+          const now = new Date().getTime();
+          const pending = setting.value.filter((r: any) => 
+            r.tenant_id === tenantId && 
+            r.status === 'pending' &&
+            new Date(r.expires_at).getTime() > now
+          );
+          setRequests(pending);
+        }
+      } catch (fallbackErr) {
+        console.error("Fallback failed as well:", fallbackErr);
+      }
     }
   };
 
@@ -72,13 +114,52 @@ export default function SupportConsentModal({ tenantId }: Props) {
     // Optimistic UI
     setRequests(prev => prev.filter(r => r.id !== requestId));
     
-    await supabase
-        .from('support_access_requests')
-        .update({ 
-          status,
-          responded_at: new Date().toISOString()
-        })
-        .eq('id', requestId);
+    try {
+      const { error } = await supabase
+          .from('support_access_requests')
+          .update({ 
+            status,
+            responded_at: new Date().toISOString()
+          })
+          .eq('id', requestId);
+
+      if (error) {
+        throw error;
+      }
+    } catch (err) {
+      console.warn("Error updating support_access_requests directly, using fallback:", err);
+      try {
+        // Fallback to saas_settings
+        const { data: setting } = await supabase
+          .from('saas_settings')
+          .select('*')
+          .eq('key', 'support_access_requests')
+          .maybeSingle();
+
+        if (setting?.value && Array.isArray(setting.value)) {
+          const updated = setting.value.map((r: any) => {
+            if (r.id === requestId) {
+              return {
+                ...r,
+                status,
+                responded_at: new Date().toISOString()
+              };
+            }
+            return r;
+          });
+
+          await supabase
+            .from('saas_settings')
+            .upsert({
+              key: 'support_access_requests',
+              value: updated,
+              updated_at: new Date().toISOString()
+            });
+        }
+      } catch (fallbackErr) {
+        console.error("Fallback response failed:", fallbackErr);
+      }
+    }
   };
 
   if (requests.length === 0) return null;
@@ -100,11 +181,11 @@ export default function SupportConsentModal({ tenantId }: Props) {
                    <ShieldAlert size={32} />
                    <div className="absolute inset-0 bg-brand/20 animate-ping rounded-full"></div>
                  </div>
-                 <h3 className="text-xl font-black text-content">طلب إذن دخول للصيانة</h3>
+                 <h3 className="text-xl font-black text-content">{t('saas.support_access_request_title')}</h3>
               </div>
               <div className="p-6">
                 <p className="text-content-muted leading-relaxed text-center mb-6 font-bold">
-                  موظف الدعم الفني <span className="text-content font-black bg-surface-muted px-2 py-1 rounded mx-1">{request.saas_user_name}</span> يطلب إذن الدخول إلى نظامك لإجراء أعمال الصيانة وحل المشكلات.
+                  {t('saas.support_access_request_desc', { name: request.saas_user_name })}
                 </p>
                 <div className="flex gap-4">
                   <button
@@ -112,14 +193,14 @@ export default function SupportConsentModal({ tenantId }: Props) {
                     className="flex-1 bg-success text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-success/90 transition-all shadow-lg shadow-success/20"
                   >
                     <Check size={20} />
-                    موافقة مؤقتة
+                    {t('saas.support_access_approve_temporarily')}
                   </button>
                   <button
                     onClick={() => handleRespond(request.id, 'rejected')}
                     className="flex-1 bg-surface-muted border border-border text-content py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-border transition-all"
                   >
                     <X size={20} />
-                    رفض
+                    {t('saas.reject')}
                   </button>
                 </div>
               </div>

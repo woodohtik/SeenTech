@@ -5,9 +5,13 @@
  */
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getHealth, type Health } from '../services/activationService';
+import { useDirection } from '../lib/direction';
 
 export default function ExpansionPrompt({ tenantId }: { tenantId: string }) {
+  const { t } = useTranslation();
+  const { dir } = useDirection();
   const navigate = useNavigate();
   const [h, setH] = useState<Health | null>(null);
   const [dismissed, setDismissed] = useState(false);
@@ -28,18 +32,18 @@ export default function ExpansionPrompt({ tenantId }: { tenantId: string }) {
   }
 
   return (
-    <div dir="rtl" className="w-full rounded-2xl p-4 sm:p-5 mb-4 border" style={{ background: '#EAF6FD', borderColor: '#CFE6F7' }}>
+    <div dir={dir} className="w-full rounded-2xl p-4 sm:p-5 mb-4 border" style={{ background: '#EAF6FD', borderColor: '#CFE6F7' }}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="font-bold text-base sm:text-lg" style={{ color: '#0E2A42' }}>محلك من الأكثر نشاطاً 👏</div>
+          <div className="font-bold text-base sm:text-lg" style={{ color: '#0E2A42' }}>{t('billing.expansion.title')}</div>
           <p className="text-sm mt-1" style={{ color: '#34404D' }}>
-            أنت تستخدم سين باحتراف — أضف فرعاً جديداً أو فعّل تقارير الذكاء الاصطناعي لتنمو أكثر بنفس النظام.
+            {t('billing.expansion.description')}
           </p>
           <button onClick={() => navigate('/subscribe')}
             className="mt-3 min-h-[44px] px-5 rounded-xl text-white font-bold text-sm active:scale-95 transition-transform"
-            style={{ background: '#0BA06B' }}>شوف الإضافات</button>
+            style={{ background: '#0BA06B' }}>{t('billing.expansion.cta')}</button>
         </div>
-        <button onClick={dismiss} aria-label="إغلاق" className="text-content-muted text-lg leading-none px-1">×</button>
+        <button onClick={dismiss} aria-label={t('sales.close')} className="text-content-muted text-lg leading-none px-1">×</button>
       </div>
     </div>
   );

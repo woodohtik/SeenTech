@@ -54,12 +54,14 @@ import { encodeOrderB2BNotes, encodeInvoiceExtendedNotes } from '../utils/b2bHel
 import { useTranslation } from 'react-i18next';
 import ScannerModal from './ScannerModal';
 
+import { isRtlLang } from '../lib/direction';
+
 export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?: string }) {
   const router = useRouter();
   const refreshCounter = useRefreshCounter();
   const { error: toastError, success: toastSuccess, handleError } = useToast();
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [cart, setCart] = useState<OrderItem[]>([]);
@@ -524,13 +526,13 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                   (completedOrderRef.current as any)?.invoiceType === 'standard_b2b'
                     ? 'A4'
                     : getConfiguredPaperSize('80mm'),
-                title: 'إيصال فاتورة',
+                title: t('pos.receipt_print_title'),
               });
               if (!res.ok) {
                 // لا نكتفي بالـ console: مع الطباعة الصامتة قد لا تُفتح نافذة
                 // طباعة إطلاقاً، فيبقى الكاشير بلا ورق وبلا أي إشعار.
                 console.error('[POS] فشل الطباعة السريعة:', res.message);
-                toastError('تعذّرت الطباعة', res.message);
+                toastError(t('printing.print_failed'), res.message);
               }
             } catch (err) {
               console.error('[POS] خطأ الطباعة السريعة:', err);
@@ -545,7 +547,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       if (e.key === 'F4' && !isPaymentModalOpenRef.current && !completedOrderRef.current) {
         e.preventDefault();
         if (cartRef.current.length > 0) {
-          if (confirm('هل أنت متأكد من رغبتك في إفراغ سلة المشتريات بالكامل؟')) {
+          if (confirm(t('pos.confirm_clear_cart'))) {
             setCart([]);
           }
         }
@@ -592,11 +594,11 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
 
   const getCategoryLabel = (cat: string) => {
     switch (cat) {
-      case 'all': return t('pos.categories.all', 'الكل');
-      case 'fabric': return t('pos.categories.fabric', 'الأقمشة');
-      case 'ready_made': return t('pos.categories.ready_made', 'جاهز');
-      case 'clothing': return t('pos.categories.clothing', 'ملابس');
-      case 'accessory': return t('pos.categories.accessory', 'مستلزمات');
+      case 'all': return t('pos.categories.all');
+      case 'fabric': return t('pos.categories.fabric');
+      case 'ready_made': return t('pos.categories.ready_made');
+      case 'clothing': return t('pos.categories.clothing');
+      case 'accessory': return t('pos.categories.accessory');
       default: return cat.charAt(0).toUpperCase() + cat.slice(1);
     }
   };
@@ -613,9 +615,9 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     const item = inventory.find(i => i.barcode === decodedText || i.sku === decodedText);
     if (item) {
       addToCart(item);
-      toastSuccess(t('pos.item_added_from_scan', 'تمت إضافة المنتج من الباركود'));
+      toastSuccess(t('pos.item_added_from_scan'));
     } else {
-      toastError(t('pos.item_not_found', 'لم يتم العثور على المنتج'));
+      toastError(t('pos.item_not_found'));
     }
   };
 
@@ -628,12 +630,12 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     const currentQtyInCart = existingInCart ? existingInCart.quantity : 0;
     
     if (availableStock <= 0) {
-      toastError(t('pos.out_of_stock', 'المنتج غير متوفر في مخزون الفرع الحالي'), `${item.name} (${t('pos.available', 'المتوفر')}: 0)`);
+      toastError(t('pos.out_of_stock'), `${item.name} (${t('inventory.available')}: 0)`);
       return;
     }
     
     if (currentQtyInCart + 1 > availableStock) {
-      toastError(t('pos.insufficient_stock', 'الكمية المطلوبة تتجاوز المخزون المتوفر'), `${item.name} (${t('pos.available', 'المتوفر')}: ${availableStock})`);
+      toastError(t('pos.insufficient_stock'), `${item.name} (${t('inventory.available')}: ${availableStock})`);
       return;
     }
 
@@ -684,12 +686,12 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
 
   const handleAddCustomItem = async () => {
     if (!selectedCustomer) {
-      toastError('خطأ', 'يجب اختيار العميل أولاً لطلبات التفصيل');
+      toastError(t('common.error'), t('pos.customer_required_custom_order'));
       return;
     }
 
     if (!customItemForm.garmentType || !customItemForm.price || customItemForm.price <= 0) {
-      toastError('خطأ في البيانات', 'الرجاء إدخال نوع الثوب والسعر');
+      toastError(t('common.invalid_data'), t('pos.enter_garment_type_and_price'));
       return;
     }
 
@@ -758,7 +760,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
 
   const handleSaveCustomer = async () => {
     if (!newCustomerName || !newCustomerPhone) {
-      toastError('خطأ', 'الرجاء إدخال اسم العميل ورقم الجوال');
+      toastError(t('common.error'), t('pos.enter_customer_name_and_phone'));
       return;
     }
     
@@ -795,10 +797,10 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       setNewCustomerPhone('');
       setNewCustomerVat('');
       router.refresh();
-      toastSuccess('تم إضافة العميل بنجاح');
+      toastSuccess(t('pos.customer_added'));
     } catch (error) {
       console.error('Error adding customer:', error);
-      toastError('خطأ', 'فشل في إضافة العميل');
+      toastError(t('common.error'), t('pos.add_customer_failed'));
     } finally {
       setIsSavingCustomer(false);
     }
@@ -821,7 +823,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       return i;
     }));
     if (stockExceeded) {
-      toastError(t('pos.insufficient_stock', 'الكمية المطلوبة تتجاوز المخزون المتوفر'));
+      toastError(t('pos.insufficient_stock'));
     }
   };
 
@@ -859,7 +861,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
 
   const handleCheckout = async () => {
     if (cart.length === 0) {
-      toastError('السلة فارغة', 'يرجى إضافة منتجات لإتمام الطلب');
+      toastError(t('pos.empty_cart'), t('pos.add_products_to_checkout'));
       return;
     }
 
@@ -868,7 +870,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       if (item.type === 'ready_made' && item.itemId) {
         const availableStock = branchStock[item.itemId] || 0;
         if (item.quantity > availableStock) {
-          toastError(t('pos.insufficient_stock_checkout', 'فشل إتمام العملية: الكمية المطلوبة غير متوفرة في المخزون'), `${item.name} (${t('pos.available', 'المتوفر')}: ${availableStock})`);
+          toastError(t('pos.insufficient_stock_checkout'), `${item.name} (${t('inventory.available')}: ${availableStock})`);
           return;
         }
       }
@@ -895,7 +897,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       
       if (isB2B) {
          if (!b2bCompanyName || !b2bTRN) {
-             toastError('بيانات ناقصة', 'يرجى إدخال اسم الشركة والرقم الضريبي لفاتورة الأعمال B2B');
+             toastError(t('common.missing_data'), t('pos.b2b_requires_company_and_trn'));
              setLoading(false);
              return;
          }
@@ -1110,7 +1112,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         console.error('Failed to trigger fetchCashDrawerBalance after order:', err);
       }
       router.refresh();
-      toastSuccess('تم إصدار الفاتورة الضريبية بنجاح');
+      toastSuccess(t('pos.tax_invoice_issued'));
       
       if (isAutoPrintEnabled) {
         flushSync(() => {
@@ -1130,11 +1132,11 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
 
             const res = await printElementDetailed('pos-invoice-print-area', {
               paperSize,
-              title: 'فاتورة كاشير',
+              title: t('pos.cashier_invoice_print_title'),
             });
             if (!res.ok) {
               console.error('Print failed in POS:', res.message);
-              toastError('تعذّرت الطباعة', res.message);
+              toastError(t('printing.print_failed'), res.message);
             }
           } catch (printErr) {
             console.error('Print error in POS:', printErr);
@@ -1144,7 +1146,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       }
     } catch (error) {
       console.error('Checkout error:', error);
-      handleError(error as any, 'فشل إتمام العملية');
+      handleError(error as any, t('pos.checkout_failed'));
     } finally {
       setLoading(false);
     }
@@ -1160,7 +1162,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
             {isMobilePanel && <div className="lg:hidden w-10 h-1 bg-border rounded-full absolute top-2 left-1/2 -translate-x-1/2" />}
             <ShoppingCart size={22} className="text-brand" />
             <h2 className="text-base lg:text-lg font-black text-content">
-              {t('pos.cart_title', 'سلة المشتريات')}
+              {t('pos.cart_title')}
             </h2>
             <span className="bg-brand/10 text-brand text-xs px-2.5 py-0.5 rounded-full font-black">{cart.length}</span>
           </div>
@@ -1193,7 +1195,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
               <div className="relative flex-1">
                 <Combobox.Input
                   className="w-full p-2.5 bg-surface text-content border border-border rounded-xl focus:ring-2 focus:ring-brand focus:border-brand shadow-sm font-bold text-sm rtl:pr-9 ltr:pl-9"
-                  placeholder={t('pos.search_customer', 'ابحث عن عميل...')}
+                  placeholder={t('pos.search_customer')}
                   displayValue={(person: Customer) => person?.name || ''}
                   onChange={(event) => setCustomerQuery(event.target.value)}
                 />
@@ -1216,7 +1218,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                       }
                       value={null}
                     >
-                      <span className="block truncate font-bold text-xs">{t('pos.walk_in_customer', 'عميل نقدي (بدون اسم)')}</span>
+                      <span className="block truncate font-bold text-xs">{t('pos.walk_in_customer')}</span>
                     </Combobox.Option>
                     {customers
                       .filter((person) =>
@@ -1244,7 +1246,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
             <button 
               onClick={() => setIsAddCustomerModalOpen(true)}
               className="p-2.5 bg-surface-muted border border-border rounded-xl text-content-muted hover:text-brand hover:border-brand/50 transition-all flex items-center justify-center shrink-0 cursor-pointer"
-              title={t('pos.add_new_customer', 'إضافة عميل جديد')}
+              title={t('pos.add_new_customer')}
             >
               <UserPlus size={18} />
             </button>
@@ -1252,23 +1254,23 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
           {selectedCustomer && (
             <div className="p-3 bg-surface-muted border border-border rounded-xl space-y-1.5 text-xs">
               <div className="flex justify-between items-center text-content-muted">
-                <span className="font-medium">{t('pos.customer_name', 'اسم العميل:')}</span>
+                <span className="font-medium">{t('pos.customer_name')}</span>
                 <span className="font-black text-content">{selectedCustomer.name}</span>
               </div>
               <div className="flex justify-between items-center text-content-muted">
-                <span className="font-medium">{t('pos.customer_phone', 'رقم الجوال:')}</span>
+                <span className="font-medium">{t('pos.customer_phone')}</span>
                 <span className="font-mono font-bold text-content">{selectedCustomer.phone}</span>
               </div>
               {customerUnpaidBalance > 0 ? (
                 <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-lg flex justify-between items-center font-bold">
-                  <span>{t('pos.previous_due_balance', 'مستحقات سابقة على العميل:')}</span>
+                  <span>{t('pos.previous_due_balance')}</span>
                   <span className="font-mono font-black text-sm text-red-700 dark:text-red-300">
                     <PriceDisplay amount={customerUnpaidBalance} />
                   </span>
                 </div>
               ) : (
                 <div className="mt-2 p-1.5 px-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg text-center font-bold text-[11px]">
-                  {t('pos.no_previous_due', 'الحساب سليم (لا توجد مبالغ متبقية)')}
+                  {t('pos.no_previous_due')}
                 </div>
               )}
             </div>
@@ -1331,12 +1333,12 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                       {item.type === 'custom' ? (
                         <span className="px-2 py-0.5 bg-[#1C8FFF]/10 text-[#1C8FFF] text-xs font-bold rounded-md flex items-center gap-1">
                           <Scissors size={12} />
-                          {t('pos.type_custom', 'تفصيل')}
+                          {t('pos.type_custom')}
                         </span>
                       ) : (
                         <span className="px-2 py-0.5 bg-[#6B7280]/10 text-[#6B7280] text-xs font-bold rounded-md flex items-center gap-1">
                           <Package size={12} />
-                          {t('pos.type_ready_made', 'جاهز')}
+                          {t('pos.type_ready_made')}
                         </span>
                       )}
                       <span className="font-medium text-content line-clamp-1">
@@ -1371,7 +1373,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                         input.click();
                       }}
                     >
-                      {t('pos.change_image', 'تغيير الصورة')}
+                      {t('pos.change_image')}
                     </button>
                   </div>
                 )}
@@ -1380,7 +1382,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
           {cart.length === 0 && (
             <div className="h-full flex flex-col items-center justify-center text-[#6B7280] space-y-2 py-12">
               <ShoppingCart size={48} className="opacity-20" />
-              <p>{t('pos.empty_cart', 'السلة فارغة')}</p>
+              <p>{t('pos.empty_cart')}</p>
             </div>
           )}
         </div>
@@ -1389,13 +1391,13 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         <div className="p-4 sm:px-6 sm:py-5 border-t border-border bg-surface shadow-lg shrink-0">
           <div className="space-y-2 mb-4">
             <div className="flex justify-between items-center text-xs sm:text-sm">
-              <span className="text-content-muted font-bold">{t('pos.subtotal', 'المجموع الفرعي')}</span>
+              <span className="text-content-muted font-bold">{t('pos.subtotal')}</span>
               <span className="text-content font-black"><PriceDisplay amount={subTotalAmount} /></span>
             </div>
             
             {calculatedDiscountAmount > 0 && (
               <div className="flex justify-between items-center text-xs sm:text-sm text-brand font-bold">
-                <span>{t('pos.discount_applied', 'الخصم المستقطع')}</span>
+                <span>{t('pos.discount_applied')}</span>
                 <span className="font-black relative flex items-center">
                   -<PriceDisplay amount={calculatedDiscountAmount} className="inline-flex mr-1" />
                 </span>
@@ -1404,7 +1406,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
 
             {isTaxEnabled && (
               <div className="flex justify-between items-center text-xs sm:text-sm">
-                <span className="text-content-muted font-bold">{t('pos.vat', 'الضريبة')} ({vatRate}%)</span>
+                <span className="text-content-muted font-bold">{t('pos.vat')} ({vatRate}%)</span>
                 <span className="text-content font-black"><PriceDisplay amount={taxAmount} /></span>
               </div>
             )}
@@ -1412,7 +1414,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
           
           <div className="flex justify-between items-center mb-4 pt-3 border-t border-border">
             <span className="text-content-muted font-black uppercase tracking-wider text-xs sm:text-sm">
-              {t('pos.grand_total', 'الإجمالي')} {isTaxEnabled && t('pos.inclusive_vat', '(شامل الضريبة)')}
+              {t('pos.grand_total')} {isTaxEnabled && t('pos.inclusive_vat')}
             </span>
             <span className="text-xl sm:text-2xl font-black text-brand"><PriceDisplay amount={totalAmount} /></span>
           </div>
@@ -1426,7 +1428,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
             className="w-full py-3.5 sm:py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-base sm:text-lg transition-all shadow-md shadow-emerald-600/10 active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:scale-100 flex items-center justify-center gap-2.5 cursor-pointer"
           >
             <CreditCard size={22} />
-            <span>{t('pos.checkout_and_pay', 'الدفع وإتمام الطلب')}</span>
+            <span>{t('pos.checkout_and_pay')}</span>
           </button>
         </div>
       </div>
@@ -1471,7 +1473,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
             <input
               ref={searchInputRef}
               type="text"
-              placeholder={t('pos.search_placeholder', 'ابحث عن منتج أو باركود...')}
+              placeholder={t('pos.search_placeholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1 min-w-0 bg-transparent border-none py-2 px-3 text-sm text-content outline-none ring-0 placeholder:text-content-muted/60 font-bold"
@@ -1490,10 +1492,10 @@ const invoiceData: InvoiceData | null = completedOrder ? {
           <button
             onClick={() => setIsShortcutsModalOpen(true)}
             className="hidden sm:flex items-center justify-center gap-2 px-4 h-11 bg-surface border border-border text-content hover:bg-surface-muted rounded-xl transition-all font-black shadow-sm active:scale-95 cursor-pointer text-xs sm:text-sm shrink-0"
-            title="جدول اختصارات لوحة المفاتيح"
+            title={t('pos.shortcuts_tooltip')}
           >
             <span>⌨️</span>
-            <span className="whitespace-nowrap">الاختصارات (F1)</span>
+            <span className="whitespace-nowrap">{t('pos.shortcuts_button')}</span>
           </button>
 
           <button
@@ -1501,7 +1503,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
             className="flex items-center justify-center gap-2 px-5 h-11 bg-brand text-white rounded-xl hover:bg-brand/90 transition-all font-black shadow-sm active:scale-95 cursor-pointer text-xs sm:text-sm shrink-0"
           >
             <Scissors size={18} />
-            <span className="whitespace-nowrap">{t('pos.custom_tailor', 'تفصيل جديد')}</span>
+            <span className="whitespace-nowrap">{t('pos.custom_tailor')}</span>
           </button>
         </div>
 
@@ -1536,7 +1538,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   ? "bg-brand text-white shadow-sm"
                   : "text-content-muted hover:bg-surface-muted"
               )}
-              title={t('pos.grid_view', 'عرض شبكي')}
+              title={t('pos.grid_view')}
             >
               <LayoutGrid size={16} />
             </button>
@@ -1548,7 +1550,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   ? "bg-brand text-white shadow-sm"
                   : "text-content-muted hover:bg-surface-muted"
               )}
-              title={t('pos.list_view', 'عرض قائمة')}
+              title={t('pos.list_view')}
             >
               <List size={16} />
             </button>
@@ -1591,7 +1593,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                           ? "bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400"
                           : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400"
                       )}>
-                        {t('pos.available', 'المتوفر')}: {branchStock[item.id] || 0}
+                        {t('inventory.available')}: {branchStock[item.id] || 0}
                       </span>
                     </div>
                   </button>
@@ -1636,7 +1638,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                             ? "bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400"
                             : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400"
                         )}>
-                          {t('pos.available', 'المتوفر')}: {branchStock[item.id] || 0}
+                          {t('inventory.available')}: {branchStock[item.id] || 0}
                         </span>
                       </div>
                     </div>
@@ -1648,7 +1650,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       </span>
                       <div className="px-2.5 py-1 bg-brand/10 text-brand group-hover:bg-brand group-hover:text-white rounded-lg transition-colors text-xs font-black flex items-center gap-1">
                         <Plus size={12} />
-                        <span>{t('pos.add_to_cart', 'إضافة')}</span>
+                        <span>{t('common.add')}</span>
                       </div>
                     </div>
                   </button>
@@ -1658,7 +1660,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-content-muted space-y-2 py-12">
               <Package size={44} className="opacity-20" />
-              <p className="text-sm font-bold">{t('pos.no_products_found', 'لم يتم العثور على منتجات')}</p>
+              <p className="text-sm font-bold">{t('pos.no_products_found')}</p>
             </div>
           )}
         </div>
@@ -1711,7 +1713,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
             </span>
           </div>
           <div className="flex flex-col items-start pr-1">
-             <span className="text-[10px] font-bold uppercase opacity-80 leading-none mb-1">الإجمالي</span>
+             <span className="text-[10px] font-bold uppercase opacity-80 leading-none mb-1">{t('common.total')}</span>
              <PriceDisplay amount={totalAmount} className="text-sm font-black leading-none" />
           </div>
         </motion.button>
@@ -1734,7 +1736,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               exit={{ y: window.innerWidth < 1024 ? '100%' : 0, x: window.innerWidth >= 1024 ? '100%' : 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="bg-surface w-full lg:w-[450px] md:h-auto lg:h-full h-[90vh] shadow-2xl relative z-10 flex flex-col lg:rounded-none rounded-t-[2.5rem] border-t lg:border-t-0 lg:border-r border-border overflow-hidden lg:mr-auto md:max-w-md md:rounded-[2.5rem] md:mb-10 lg:max-w-none lg:mb-0 lg:ml-0"
-              dir="rtl"
+              dir={isRtl ? 'rtl' : 'ltr'}
             >
               <div className="flex-1 overflow-y-auto p-4 lg:p-6 pb-24 lg:pb-6">
               {completedOrder ? (
@@ -1747,7 +1749,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     <CheckCircle2 size={40} className="text-success" />
                   </motion.div>
                   <div>
-                    <h2 className="text-2xl font-black text-content mb-1">تم إصدار الفاتورة</h2>
+                    <h2 className="text-2xl font-black text-content mb-1">{t('pos.invoice_issued')}</h2>
                     <p className="text-content-muted">{completedOrder.invoiceNumber}</p>
                   </div>
                   <div className="w-full max-h-[50vh] overflow-y-auto bg-gray-100 rounded-xl border border-border p-4 flex justify-center custom-scrollbar">
@@ -1765,9 +1767,9 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                               invoiceData?.invoiceType === 'standard_b2b'
                                 ? 'A4'
                                 : getConfiguredPaperSize('80mm'),
-                            title: 'إيصال فاتورة',
+                            title: t('pos.receipt_print_title'),
                           });
-                          if (!res.ok) toastError('تعذّرت الطباعة', res.message);
+                          if (!res.ok) toastError(t('printing.print_failed'), res.message);
                         } catch (e) {
                           console.error('[POS] خطأ الطباعة:', e);
                           window.print();
@@ -1776,7 +1778,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       className="flex flex-col items-center justify-center p-4 rounded-2xl border border-border hover:border-brand hover:bg-brand/5 transition-all text-content group cursor-pointer"
                     >
                       <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">🖨️</span>
-                      <span className="text-sm font-bold">إيصال / طباعة</span>
+                      <span className="text-sm font-bold">{t('pos.receipt_print')}</span>
                     </button>
                     <button 
                       onClick={async () => {
@@ -1784,18 +1786,22 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                           await downloadInvoicePDF('pos-invoice-print-area', `Invoice-${completedOrder.invoiceNumber}.pdf`);
                         } catch (e) {
                           console.error(e);
-                          toastError('فشل تنزيل الفاتورة');
+                          toastError(t('pos.invoice_download_failed'));
                         }
                       }}
                       className="flex flex-col items-center justify-center p-4 rounded-2xl border border-border hover:border-brand hover:bg-brand/5 transition-all text-content group"
                     >
                       <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">📥</span>
-                      <span className="text-sm font-bold">تحميل PDF</span>
+                      <span className="text-sm font-bold">{t('pos.download_pdf')}</span>
                     </button>
                     <button 
                        className="col-span-2 flex flex-col items-center justify-center p-4 rounded-2xl border border-success/20 hover:border-success hover:bg-success/5 transition-all text-success group"
                        onClick={async () => {
-                         const text = `فاتورة من ${brandingSettings?.storeName || 'المتجر'}\nرقم الفاتورة: ${completedOrder.invoiceNumber}\nالإجمالي: ${completedOrder.total} ﷼.`;
+                         const text = t('pos.whatsapp_invoice_text', {
+                           store: brandingSettings?.storeName || t('pos.store_default'),
+                           invoiceNumber: completedOrder.invoiceNumber,
+                           total: completedOrder.total,
+                         });
                          try {
                            await shareInvoiceAsPDFFile('pos-invoice-print-area', `Invoice-${completedOrder.invoiceNumber}.pdf`, text);
                          } catch (e) {
@@ -1804,7 +1810,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                        }}
                     >
                       <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">📱</span>
-                      <span className="text-sm font-bold">مشاركة واتساب (نص + PDF)</span>
+                      <span className="text-sm font-bold">{t('pos.share_whatsapp')}</span>
                     </button>
                   </div>
                   
@@ -1815,14 +1821,14 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     }}
                     className="w-full mt-4 py-3 bg-surface-muted text-content font-bold rounded-xl hover:bg-border transition-colors"
                   >
-                    إغلاق وبدء طلب جديد
+                    {t('pos.close_and_new_order')}
                   </button>
                 </div>
               ) : (
                 // Payment form
                 <div className="flex flex-col min-h-full">
                   <div className="flex justify-between items-center mb-6 border-b border-border pb-4">
-                    <h2 className="text-2xl font-black text-content">{t('pos.complete_order', 'إتمام الطلب')}</h2>
+                    <h2 className="text-2xl font-black text-content">{t('pos.complete_order')}</h2>
                     <button onClick={() => setIsPaymentModalOpen(false)} className="p-2 hover:bg-surface-muted rounded-full">
                       <X size={24} />
                     </button>
@@ -1835,7 +1841,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                         <div className="flex items-center gap-2.5">
                           <span className="text-2xl">⚠️</span>
                           <div>
-                            <div className="text-sm font-black">{t('pos.customer_has_due', 'تنبيه: يوجد متبقي مستحق سابق على العميل')}</div>
+                            <div className="text-sm font-black">{t('pos.customer_has_due')}</div>
                             <div className="text-xs opacity-80">{selectedCustomer.name}</div>
                           </div>
                         </div>
@@ -1847,7 +1853,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
 
                     {/* Invoice Type */}
                     <div className="bg-surface p-4 rounded-2xl border border-border">
-                      <label className="block text-sm font-bold text-content mb-3">{t('pos.invoice_type', 'نوع الفاتورة')}</label>
+                      <label className="block text-sm font-bold text-content mb-3">{t('tax_invoices.invoice_type')}</label>
                       <div className="flex bg-surface-muted p-1 rounded-xl">
                         <button
                           className={cn("flex-1 py-2 text-sm font-bold rounded-lg transition-colors", !isB2B ? "bg-white shadow-sm text-brand" : "text-content-muted hover:text-content")}
@@ -1856,7 +1862,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                             setB2bData({ companyName: '', trn: '' });
                           }}
                         >
-                          {t('pos.simple_invoice', 'عادي (ضريبية مبسطة)')}
+                          {t('pos.simple_invoice')}
                         </button>
                         <button
                           className={cn("flex-1 py-2 text-sm font-bold rounded-lg transition-colors", isB2B ? "bg-white shadow-sm text-brand" : "text-content-muted hover:text-content")}
@@ -1865,16 +1871,16 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                             setIsB2bModalOpen(true);
                           }}
                         >
-                          {t('pos.b2b_invoice', 'ضريبية (أعمال B2B)')}
+                          {t('pos.b2b_invoice')}
                         </button>
                       </div>
                       {isB2B && b2bData.companyName && (
                         <div className="mt-3 p-3 bg-brand/5 border border-brand/20 rounded-xl text-sm">
                            <div className="flex justify-between items-center mb-1">
                              <span className="font-bold text-brand">{b2bData.companyName}</span>
-                             <button onClick={() => setIsB2bModalOpen(true)} className="text-brand text-xs font-bold hover:underline">{t('common.edit', 'تعديل')}</button>
+                             <button onClick={() => setIsB2bModalOpen(true)} className="text-brand text-xs font-bold hover:underline">{t('common.edit')}</button>
                            </div>
-                           <div className="text-content-muted">{t('pos.trn_label', 'الرقم الضريبي:')} {b2bData.trn}</div>
+                           <div className="text-content-muted">{t('pos.trn_label')} {b2bData.trn}</div>
                         </div>
                       )}
                     </div>
@@ -1882,7 +1888,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     {/* Discount */}
                     <div className="bg-surface p-4 rounded-2xl border border-border">
                       <div className="flex justify-between items-center mb-3">
-                        <label className="text-sm font-bold text-content">{t('pos.discount', 'الخصم')}</label>
+                        <label className="text-sm font-bold text-content">{t('pos.discount')}</label>
                         <div className="flex bg-surface-muted rounded-lg p-0.5">
                           <button
                             type="button"
@@ -1895,7 +1901,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                               if (discountValue > 100) setDiscountValue(100);
                             }}
                           >
-                            {t('pos.percentage_label', 'نسبة (%)')}
+                            {t('settings_page.staff.commissions.percentage')}
                           </button>
                           <button
                             type="button"
@@ -1905,7 +1911,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                             )}
                             onClick={() => setDiscountType('fixed')}
                           >
-                            {t('pos.fixed_amount', 'مبلغ ثابت')}
+                            {t('settings_page.staff.commissions.fixed_amount')}
                           </button>
                         </div>
                       </div>
@@ -1929,13 +1935,13 @@ const invoiceData: InvoiceData | null = completedOrder ? {
 
                     {/* Payment Method */}
                     <div className="bg-surface p-4 rounded-2xl border border-border">
-                      <label className="block text-sm font-bold text-content mb-3">{t('pos.payment_method', 'طريقة الدفع')}</label>
+                      <label className="block text-sm font-bold text-content mb-3">{t('pos.payment_method')}</label>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {[
-                          { id: 'cash', label: t('pos.cash', 'كاش'), icon: Banknote },
-                          { id: 'network', label: t('pos.card', 'شبكة'), icon: CreditCard },
-                          { id: 'bank_transfer', label: t('pos.bank_transfer', 'تحويل بنكي'), icon: Landmark },
-                          { id: 'partial', label: t('pos.partial_credit', 'آجل / دفع جزئي'), icon: Wallet }
+                          { id: 'cash', label: t('pos.cash'), icon: Banknote },
+                          { id: 'network', label: t('pos.card'), icon: CreditCard },
+                          { id: 'bank_transfer', label: t('pos.bank_transfer'), icon: Landmark },
+                          { id: 'partial', label: t('pos.partial_credit'), icon: Wallet }
                         ].map(method => (
                           <button
                             key={method.id}
@@ -1962,7 +1968,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     </div>
 
                     <div className="bg-surface p-4 rounded-2xl border border-border">
-                      <label className="block text-sm font-bold text-content mb-3">{t('pos.paid_amount_now', 'المبلغ المدفوع الآن')}</label>
+                      <label className="block text-sm font-bold text-content mb-3">{t('orders.pay_amount_now')}</label>
                       <input
                         type="number"
                         value={paidAmount === 0 ? '' : paidAmount}
@@ -1979,36 +1985,36 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   <div className="absolute bottom-0 right-0 left-0 p-4 md:p-6 bg-surface border-t border-border md:static md:mt-8 md:mb-4 md:border-none md:p-0">
                     <div className="hidden md:block">
                       <div className="flex justify-between items-center mb-2 px-1 text-content-muted">
-                        <span>{t('pos.total_required', 'الإجمالي المطلوب:')}</span>
+                        <span>{t('pos.total_required')}</span>
                         <span className="font-bold text-content line-through opacity-70"><PriceDisplay amount={totalAmount + calculatedDiscountAmount} /></span>
                       </div>
                       {calculatedDiscountAmount > 0 && (
                         <div className="flex justify-between items-center mb-2 px-1 text-red-500 font-bold">
-                          <span>{t('pos.discount', 'الخصم')}:</span>
+                          <span>{t('pos.discount')}:</span>
                           <span>-<PriceDisplay amount={calculatedDiscountAmount} /></span>
                         </div>
                       )}
                       <div className="flex justify-between items-center bg-surface-muted p-4 rounded-2xl border border-border mb-4">
-                        <span className="font-bold text-content">{t('pos.net_amount', 'الصافي:')}</span>
+                        <span className="font-bold text-content">{t('pos.net_amount')}</span>
                         <span className="font-black text-2xl text-brand"><PriceDisplay amount={totalAmount} /></span>
                       </div>
                     </div>
                     
                     <div className="md:hidden flex justify-between items-center mb-4">
                         <div className="flex flex-col">
-                            <span className="text-[10px] text-content-muted font-bold uppercase">{t('pos.net_payable', 'الصافي للدفع')}</span>
+                            <span className="text-[10px] text-content-muted font-bold uppercase">{t('pos.net_payable')}</span>
                             <span className="text-xl font-black text-brand"><PriceDisplay amount={totalAmount} /></span>
                         </div>
                         {totalAmount - paidAmount > 0 && (
                             <div className="flex flex-col items-end">
-                                <span className="text-[10px] text-red-500 font-bold uppercase">{t('pos.remaining_amount', 'المتبقي')}</span>
+                                <span className="text-[10px] text-red-500 font-bold uppercase">{t('pos.remaining_amount')}</span>
                                 <span className="text-lg font-bold text-red-600"><PriceDisplay amount={totalAmount - paidAmount} /></span>
                             </div>
                         )}
                     </div>
 
                     <div className="flex items-center justify-between bg-surface p-4 rounded-xl border border-border mb-4">
-                      <span className="text-sm font-bold text-content">{t('pos.auto_print_enabled', 'الطباعة التلقائية عند الإصدار')}</span>
+                      <span className="text-sm font-bold text-content">{t('pos.auto_print_enabled')}</span>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input 
                           type="checkbox" 
@@ -2029,10 +2035,10 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       disabled={loading}
                       className="w-full py-4 bg-brand text-white rounded-xl md:rounded-2xl font-black text-lg hover:bg-brand/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg active:scale-95"
                     >
-                      {loading ? t('common.processing', 'جاري التنفيذ...') : (
+                      {loading ? t('common.processing') : (
                         <>
                           <CheckCircle2 size={24} />
-                          {t('pos.issue_invoice', 'إصدار الفاتورة')}
+                          {t('pos.issue_invoice')}
                         </>
                       )}
                     </button>
@@ -2055,7 +2061,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="relative w-full max-w-md rounded-[2.5rem] bg-surface shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-right"
-              dir="rtl"
+              dir={isRtl ? 'rtl' : 'ltr'}
             >
               {/* Header */}
               <div className="sticky top-0 z-10 flex items-center justify-between p-6 border-b border-border bg-surface shrink-0 bg-brand/5">
@@ -2064,8 +2070,8 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     <Wallet size={24} />
                   </div>
                   <div>
-                    <h2 className="text-lg font-black text-content">{t('pos.cash_flow_details', 'تدفق نقدية الصندوق')}</h2>
-                    <p className="text-xs font-bold text-content-muted mt-0.5">{t('pos.cash_flow_desc', 'تفاصيل وحالة نقدية الوردية الحالية')}</p>
+                    <h2 className="text-lg font-black text-content">{t('sales.cash_drawer_details')}</h2>
+                    <p className="text-xs font-bold text-content-muted mt-0.5">{t('sales.shift_cash_details')}</p>
                   </div>
                 </div>
                 <button 
@@ -2080,26 +2086,26 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               <div className="p-6 space-y-6">
                 {/* Employee / Shift info */}
                 <div className="flex justify-between items-center text-xs font-bold text-content-muted bg-surface-muted/35 px-4 py-2.5 rounded-xl border border-border">
-                  <span>{t('pos.employee_label', 'الموظف:')} <span className="text-content font-extrabold">{currentStaff?.name || t('common.unknown', 'غير معروف')}</span></span>
-                  <span>{t('pos.shift_id_label', 'رقم الوردية:')} <span className="font-sans text-content font-extrabold">#{shiftId?.slice(-6).toUpperCase()}</span></span>
+                  <span>{t('pos.employee_label')} <span className="text-content font-extrabold">{currentStaff?.name || t('sales.unknown')}</span></span>
+                  <span>{t('pos.shift_id_label')} <span className="font-sans text-content font-extrabold">#{shiftId?.slice(-6).toUpperCase()}</span></span>
                 </div>
 
                 {/* Main Cash Drawer Indicator */}
                 <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-3xl p-5 text-center space-y-2">
                   <span className="text-xs font-black text-emerald-600 block uppercase tracking-widest">
-                    {t('pos.expected_cash', 'صافي النقدية المتوقعة بالصندوق (كاش)')}
+                    {t('sales.expected_cash')}
                   </span>
                   <div className="text-3xl font-black text-emerald-500 tracking-tight">
                     <PriceDisplay amount={cashDrawerBalance} />
                   </div>
                   <p className="text-[10px] text-content-muted">
-                    {t('pos.cash_calc_note', '* هذا المبلغ يمثل الرصيد المسجل بالإضافة للمبيعات والإيداعات مخصوماً منه المصروفات والمرتجعات.')}
+                    {t('sales.expected_cash_desc')}
                   </p>
                 </div>
 
                 {/* Operations Breakdown Grid */}
                 <div className="space-y-3.5">
-                  <h3 className="text-xs font-black text-content-muted uppercase tracking-widest">{t('pos.cash_breakdown_title', 'تفاصيل التدفق المالي')}</h3>
+                  <h3 className="text-xs font-black text-content-muted uppercase tracking-widest">{t('sales.flow_details')}</h3>
                   
                   <div className="grid grid-cols-1 gap-3">
                     {/* Opening Balance */}
@@ -2108,7 +2114,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                         <div className="p-2 bg-blue-500/10 text-blue-500 rounded-xl">
                           <Coins size={18} />
                         </div>
-                        <span className="text-xs font-bold text-content">{t('pos.opening_balance_label', 'الرصيد الافتتاحي')}</span>
+                        <span className="text-xs font-bold text-content">{t('sales.opening_balance')}</span>
                       </div>
                       <span className="text-sm font-black text-content">
                         <PriceDisplay amount={cashDrawerBreakdown.opening} />
@@ -2121,7 +2127,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                         <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-xl">
                           <TrendingUp size={18} />
                         </div>
-                        <span className="text-xs font-bold text-content">{t('pos.cash_sales_label', 'مبيعات كاش')}</span>
+                        <span className="text-xs font-bold text-content">{t('sales.cash_sales')}</span>
                       </div>
                       <span className="text-sm font-black text-emerald-500">
                         + <PriceDisplay amount={cashDrawerBreakdown.sales} />
@@ -2135,7 +2141,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                           <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-xl">
                             <Plus size={18} />
                           </div>
-                          <span className="text-xs font-bold text-content">{t('pos.cash_deposits_label', 'عمليات الإيداع كاش')}</span>
+                          <span className="text-xs font-bold text-content">{t('sales.cash_deposits')}</span>
                         </div>
                         <span className="text-sm font-black text-emerald-500">
                           + <PriceDisplay amount={cashDrawerBreakdown.deposits} />
@@ -2150,7 +2156,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                           <div className="p-2 bg-red-500/10 text-red-500 rounded-xl">
                             <TrendingDown size={18} />
                           </div>
-                          <span className="text-xs font-bold text-content">{t('pos.cash_returns_label', 'مرتجعات مبيعات (كاش)')}</span>
+                          <span className="text-xs font-bold text-content">{t('sales.cash_returns')}</span>
                         </div>
                         <span className="text-sm font-black text-red-500">
                           - <PriceDisplay amount={cashDrawerBreakdown.returns} />
@@ -2165,7 +2171,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                           <div className="p-2 bg-red-500/10 text-red-500 rounded-xl">
                             <X size={18} />
                           </div>
-                          <span className="text-xs font-bold text-content">{t('pos.cash_withdrawals_label', 'المصروفات والمسحوبات')}</span>
+                          <span className="text-xs font-bold text-content">{t('sales.expenses_withdrawals')}</span>
                         </div>
                         <span className="text-sm font-black text-red-500">
                           - <PriceDisplay amount={cashDrawerBreakdown.withdrawals} />
@@ -2180,18 +2186,18 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   <button
                     onClick={() => {
                       fetchCashDrawerBalance();
-                      toastSuccess(t('pos.cash_drawer_refreshed', 'تم تحديث نقدية الصندوق فورا'));
+                      toastSuccess(t('pos.cash_drawer_refreshed'));
                     }}
                     className="flex-1 py-3 bg-surface border border-border text-content hover:bg-surface-muted rounded-xl transition-all font-bold text-xs sm:text-sm text-center flex items-center justify-center gap-2 active:scale-95"
                   >
                     <Coins size={16} />
-                    <span>{t('common.refresh', 'تحديث البيانات')}</span>
+                    <span>{t('sales.refresh_data')}</span>
                   </button>
                   <button
                     onClick={() => setShowCashDrawerDetails(false)}
                     className="flex-1 py-3 bg-brand text-white hover:bg-brand/90 rounded-xl transition-all font-bold text-xs sm:text-sm text-center active:scale-95"
                   >
-                    {t('common.close', 'إغلاق النافذة')}
+                    {t('pos.close_window')}
                   </button>
                 </div>
               </div>
@@ -2210,7 +2216,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="relative w-full max-w-[clamp(320px,94vw,1100px)] max-h-[90vh] rounded-[var(--radius-card)] bg-[var(--surface)] shadow-2xl flex flex-col my-auto border border-border z-10 overflow-hidden" 
-              dir="rtl"
+              dir={isRtl ? 'rtl' : 'ltr'}
             >
               {/* Header (Fixed) */}
               <div className="sticky top-0 z-10 flex items-center justify-between p-4 sm:p-6 border-b border-[var(--border)] bg-[var(--surface)] shrink-0 bg-brand/5">
@@ -2218,7 +2224,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   <div className="p-2.5 bg-brand text-white rounded-2xl shrink-0 shadow-sm">
                     <Scissors size={20} />
                   </div>
-                  {t('pos.custom_tailoring_title', 'تفصيل جديد')}
+                  {t('pos.custom_tailor')}
                 </h2>
                 <button onClick={() => setIsCustomOrderModalOpen(false)} className="p-2 hover:bg-surface-muted rounded-full transition-colors shadow-sm text-content-muted">
                   <X size={20} />
@@ -2232,11 +2238,11 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   <div className="flex items-center justify-between mb-2">
                     <label className="block text-sm font-black text-content flex items-center gap-2">
                       <User size={18} className="text-brand" />
-                      {t('pos.customer', 'العميل')}
+                      {t('common.customer')}
                     </label>
                     {!selectedCustomer && (
                       <span className="text-xs text-danger font-bold">
-                        {t('pos.customer_required_for_custom', '* مطلوب لطلبات التفصيل')}
+                        {t('pos.customer_required_for_custom')}
                       </span>
                     )}
                   </div>
@@ -2265,7 +2271,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       <div className="relative flex-1">
                         <Combobox.Input
                           className="w-full p-3 bg-[#FFFFFF] dark:bg-[#1D1D1D] text-content border border-border rounded-xl focus:ring-2 focus:ring-[#1C8FFF] focus:border-[#1C8FFF] shadow-sm font-medium rtl:pr-10 ltr:pl-10"
-                          placeholder={t('pos.search_customer', 'ابحث عن عميل...')}
+                          placeholder={t('pos.search_customer')}
                           displayValue={(person: Customer) => person?.name || ''}
                           onChange={(event) => setCustomerQuery(event.target.value)}
                         />
@@ -2306,7 +2312,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     <button 
                       onClick={() => setIsAddCustomerModalOpen(true)}
                       className="px-3 bg-[var(--surface)] border border-border rounded-xl text-brand hover:bg-brand hover:text-white transition-all flex items-center justify-center shrink-0 shadow-sm"
-                      title={t('pos.add_new_customer', 'إضافة عميل جديد')}
+                      title={t('pos.add_new_customer')}
                     >
                       <UserPlus size={20} />
                     </button>
@@ -2315,7 +2321,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                   <div>
-                    <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">{t('pos.garment_type_label', 'نوع الثوب')}</label>
+                    <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">{t('pos.garment_type_label')}</label>
                     <input 
                       type="text" 
                       value={customItemForm.garmentType}
@@ -2324,7 +2330,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">{t('pos.price_label', 'السعر')}</label>
+                    <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">{t('orders.price')}</label>
                     <input 
                       type="number" 
                       value={customItemForm.price || ''}
@@ -2333,7 +2339,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">{t('pos.fabric_label', 'القماش')}</label>
+                    <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">{t('orders.fabric')}</label>
                     <SmartSelect 
                       value={customItemForm.fabricId}
                       onChange={(val) => {
@@ -2346,14 +2352,14 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       }}
                       className="w-full"
                       options={[
-                        { value: '', label: t('pos.select_fabric_placeholder', 'اختر قماش...') },
+                        { value: '', label: t('orders.choose_fabric') },
                         ...inventory.filter(i => i.category === 'fabric').map(item => ({ value: item.id, label: `${item.name} (${item.quantity} ${item.unit})` })),
-                        { value: 'custom', label: t('pos.external_fabric_label', 'قماش خارجي') }
+                        { value: 'custom', label: t('orders.external_fabric') }
                       ]}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">{t('pos.quantity_label', 'الكمية')}</label>
+                    <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">{t('common.quantity')}</label>
                     <input 
                       type="number" 
                       value={customItemForm.quantity || ''}
@@ -2368,14 +2374,14 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   <div className="bg-brand/5 p-4 rounded-xl border border-brand/10 space-y-4">
                     <div className="flex items-center gap-2 text-brand mb-2">
                       <Ruler size={18} />
-                      <h4 className="font-bold text-sm">{t('pos.customer_saved_measurements', 'مقاسات العميل المحددة')}</h4>
+                      <h4 className="font-bold text-sm">{t('pos.customer_saved_measurements')}</h4>
                     </div>
                     <div className="grid grid-cols-4 gap-2">
                       {[
-                        { label: t('measurements.length', 'الطول'), value: selectedCustomer.measurements?.length },
-                        { label: t('measurements.shoulder', 'الكتف'), value: selectedCustomer.measurements?.shoulder },
-                        { label: t('measurements.chest', 'الصدر'), value: selectedCustomer.measurements?.chest },
-                        { label: t('measurements.sleeve', 'الكم'), value: selectedCustomer.measurements?.sleeve },
+                        { label: t('measurements.length'), value: selectedCustomer.measurements?.length },
+                        { label: t('measurements.shoulder'), value: selectedCustomer.measurements?.shoulder },
+                        { label: t('measurements.chest'), value: selectedCustomer.measurements?.chest },
+                        { label: t('measurements.sleeve'), value: selectedCustomer.measurements?.sleeve },
                       ].map((m) => (
                         <div key={m.label} className="bg-surface p-2 rounded-lg border border-brand/10 text-center">
                           <p className="text-[10px] text-content-muted">{m.label}</p>
@@ -2385,7 +2391,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     </div>
                     <p className="text-xs text-content-muted mt-2 flex items-center gap-1">
                       <Zap size={12} />
-                      {t('pos.measurements_auto_attached_note', 'سيتم إرفاق المقاسات الحالية للعميل مع هذا الطلب تلقائياً.')}
+                      {t('pos.measurements_auto_attached_note')}
                     </p>
                   </div>
                 )}
@@ -2393,7 +2399,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                 <div className="space-y-4 border-t border-border pt-6">
                   <h4 className="text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest flex items-center gap-2">
                     <Zap size={16} />
-                    {t('pos.visual_details_interactive_measurements', 'التفاصيل البصرية والمقاسات التفاعلية')}
+                    {t('pos.visual_details_interactive_measurements')}
                   </h4>
                   <VisualMeasurements 
                     values={customMeasurements} 
@@ -2403,7 +2409,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   <div className="mt-8 pt-8 border-t border-border">
                     <h3 className="text-sm font-black text-content flex items-center gap-2 mb-4">
                       <div className="w-1.5 h-4 bg-brand rounded-full" />
-                      {t('pos.interactive_visual_measurement_selector', 'مُحدد المقاسات البصري التفاعلي')}
+                      {t('pos.interactive_visual_measurement_selector')}
                     </h3>
                     <ThobeMeasurementSelector 
                       values={customMeasurements as any || {}}
@@ -2420,7 +2426,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   className="w-full py-3 sm:py-3.5 bg-brand text-white rounded-xl font-bold hover:bg-brand/90 transition-all shadow-lg shadow-brand/20 flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer"
                 >
                   <Plus size={18} />
-                  {t('pos.add_to_cart_btn', 'إضافة للسلة')}
+                  {t('pos.add_to_cart_btn')}
                 </button>
               </div>
             </motion.div>
@@ -2459,7 +2465,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     as="h3"
                     className="text-lg font-bold leading-6 text-gray-900 mb-4 flex items-center justify-between"
                   >
-                    {t('pos.add_new_customer', 'إضافة عميل جديد')}
+                    {t('pos.add_new_customer')}
                     <button title="Close" onClick={() => setIsAddCustomerModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
                       <X size={20} />
                     </button>
@@ -2467,17 +2473,17 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('pos.customer_name', 'اسم العميل')} <span className="text-red-500">*</span></label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('pos.customer_name')} <span className="text-red-500">*</span></label>
                       <input 
                         type="text" 
                         value={newCustomerName}
                         onChange={(e) => setNewCustomerName(e.target.value)}
                         className="w-full p-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand focus:border-brand" 
-                        placeholder="محمد عبدالله"
+                        placeholder={t('pos.customer_name_placeholder')}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('pos.mobile_number', 'رقم الجوال')} <span className="text-red-500">*</span></label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('login.phone')} <span className="text-red-500">*</span></label>
                       <input 
                         type="tel" 
                         value={newCustomerPhone}
@@ -2489,13 +2495,13 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('pos.trn_label_clean', 'الرقم الضريبي')} <span className="text-gray-400 text-xs font-normal">{t('pos.for_b2b_only', '(للأعمال B2B)')}</span></label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('pos.trn_label_clean')} <span className="text-gray-400 text-xs font-normal">{t('pos.for_b2b_only')}</span></label>
                       <input 
                         type="text" 
                         value={newCustomerVat}
                         onChange={(e) => setNewCustomerVat(e.target.value)}
                         className="w-full p-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand focus:border-brand" 
-                        placeholder={t('pos.optional_b2b_desc', 'اختياري (سيعتبر العميل شركة)')}
+                        placeholder={t('pos.optional_b2b_desc')}
                       />
                     </div>
                   </div>
@@ -2506,7 +2512,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       className="px-4 py-2 font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
                       onClick={() => setIsAddCustomerModalOpen(false)}
                     >
-                      {t('common.cancel', 'إلغاء')}
+                      {t('common.cancel')}
                     </button>
                     <button
                       type="button"
@@ -2514,7 +2520,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       className="px-4 py-2 font-medium text-white bg-brand hover:bg-brand/90 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
                       onClick={handleSaveCustomer}
                     >
-                      {isSavingCustomer ? t('common.saving', 'جاري الحفظ...') : t('pos.save_customer', 'حفظ العميل')}
+                      {isSavingCustomer ? t('common.saving') : t('pos.save_customer')}
                     </button>
                   </div>
                 </Dialog.Panel>
@@ -2551,12 +2557,12 @@ const invoiceData: InvoiceData | null = completedOrder ? {
       )}
 
       {/* B2B Data Modal */}
-      <Dialog open={isB2bModalOpen} onClose={() => setIsB2bModalOpen(false)} className="relative z-[100]" dir="rtl">
+      <Dialog open={isB2bModalOpen} onClose={() => setIsB2bModalOpen(false)} className="relative z-[100]" dir={isRtl ? 'rtl' : 'ltr'}>
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <Dialog.Panel className="w-full max-w-md bg-surface p-6 rounded-2xl shadow-xl border border-border">
             <div className="flex justify-between items-center mb-6">
-              <Dialog.Title className="text-xl font-bold text-content">{t('pos.b2b_data_title', 'بيانات الفاتورة الضريبية (B2B)')}</Dialog.Title>
+              <Dialog.Title className="text-xl font-bold text-content">{t('pos.b2b_data_title')}</Dialog.Title>
               <button onClick={() => setIsB2bModalOpen(false)} className="p-2 hover:bg-surface-muted rounded-full">
                 <X size={20} />
               </button>
@@ -2564,17 +2570,17 @@ const invoiceData: InvoiceData | null = completedOrder ? {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-bold text-content mb-2">{t('pos.company_name', 'اسم الشركة')} <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-bold text-content mb-2">{t('pos.company_name')} <span className="text-red-500">*</span></label>
                 <input
                   type="text"
-                  placeholder={t('pos.company_name_placeholder', 'مثال: شركة وضوح الشاملة')}
+                  placeholder={t('pos.company_name_placeholder')}
                   value={b2bData.companyName}
                   onChange={e => setB2bData({...b2bData, companyName: e.target.value})}
                   className="w-full p-3 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand"
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-content mb-2">{t('pos.trn_label_clean', 'الرقم الضريبي')} <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-bold text-content mb-2">{t('pos.trn_label_clean')} <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   placeholder="300000000000003"
@@ -2591,7 +2597,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                 className="flex-1 py-3 bg-brand text-white font-bold rounded-xl hover:bg-brand/90 transition-colors"
                 disabled={!b2bData.companyName || !b2bData.trn}
               >
-                {t('pos.update_and_continue', 'تحديث ومتابعة')}
+                {t('pos.update_and_continue')}
               </button>
               <button
                 onClick={() => {
@@ -2603,7 +2609,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                 }}
                 className="py-3 px-6 bg-surface-muted text-content font-bold rounded-xl hover:bg-border transition-colors"
               >
-                {t('common.cancel', 'إلغاء')}
+                {t('common.cancel')}
               </button>
             </div>
           </Dialog.Panel>
@@ -2615,11 +2621,11 @@ const invoiceData: InvoiceData | null = completedOrder ? {
         <Dialog as="div" className="relative z-[150] flex items-center justify-center" onClose={() => setIsShortcutsModalOpen(false)}>
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" aria-hidden="true" onClick={() => setIsShortcutsModalOpen(false)} />
           <div className="fixed inset-0 flex items-center justify-center p-4">
-            <Dialog.Panel className="w-full max-w-lg bg-surface p-6 rounded-3xl shadow-2xl border border-border text-right" dir="rtl">
+            <Dialog.Panel className="w-full max-w-lg bg-surface p-6 rounded-3xl shadow-2xl border border-border text-right" dir={isRtl ? 'rtl' : 'ltr'}>
               <div className="flex justify-between items-center mb-6 border-b border-border pb-4">
                 <Dialog.Title className="text-xl font-black text-content flex items-center gap-2">
                   <span>⌨️</span>
-                  <span>{t('pos.keyboard_shortcuts_title', 'اختصارات لوحة المفاتيح للكاشير')}</span>
+                  <span>{t('pos.keyboard_shortcuts_title')}</span>
                 </Dialog.Title>
                 <button onClick={() => setIsShortcutsModalOpen(false)} className="p-2 hover:bg-surface-muted rounded-full transition-colors">
                   <X size={20} />
@@ -2628,21 +2634,21 @@ const invoiceData: InvoiceData | null = completedOrder ? {
 
               <div className="space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
                 <p className="text-sm text-content-muted font-bold mb-4">
-                  {t('pos.keyboard_shortcuts_desc', 'استخدم هذه الاختصارات لتسريع عملية البيع وإصدار الفواتير دون الحاجة لاستخدام الماوس:')}
+                  {t('pos.keyboard_shortcuts_desc')}
                 </p>
 
                 <div className="grid grid-cols-1 gap-2">
                   {[
-                    { keys: ['F1', 'Ctrl + /'], label: t('pos.shortcut_toggle_help', 'فتح / إغلاق دليل الاختصارات') },
-                    { keys: ['F3', 'Ctrl + F'], label: t('pos.shortcut_focus_search', 'التركيز على حقل البحث عن منتج') },
-                    { keys: ['F8', 'Ctrl + Enter'], label: t('pos.shortcut_open_payment', 'فتح نافذة الدفع وإتمام الطلب') },
-                    { keys: ['F9'], label: t('pos.shortcut_confirm_payment', 'تأكيد الدفع وإصدار الفاتورة (داخل نافذة الدفع)') },
-                    { keys: ['Ctrl + 1'], label: t('pos.shortcut_cash_payment', 'اختيار الدفع النقدي (داخل نافذة الدفع)') },
-                    { keys: ['Ctrl + 2'], label: t('pos.shortcut_card_payment', 'اختيار الدفع بالشبكة/مدى (داخل نافذة الدفع)') },
-                    { keys: ['Ctrl + P'], label: t('pos.shortcut_quick_print', 'الطباعة السريعة للإيصال (بعد إصدار الفاتورة)') },
-                    { keys: ['F2', 'Esc'], label: t('pos.shortcut_close_invoice_new', 'إغلاق شاشة الفاتورة وبدء طلب جديد') },
-                    { keys: ['F7', 'Ctrl + Shift + A'], label: t('pos.shortcut_open_custom_thobe', 'فتح نافذة تفصيل ثوب جديد مخصص') },
-                    { keys: ['F4'], label: t('pos.shortcut_clear_cart', 'إفراغ سلة المشتريات بالكامل') },
+                    { keys: ['F1', 'Ctrl + /'], label: t('pos.shortcut_toggle_help') },
+                    { keys: ['F3', 'Ctrl + F'], label: t('pos.shortcut_focus_search') },
+                    { keys: ['F8', 'Ctrl + Enter'], label: t('pos.shortcut_open_payment') },
+                    { keys: ['F9'], label: t('pos.shortcut_confirm_payment') },
+                    { keys: ['Ctrl + 1'], label: t('pos.shortcut_cash_payment') },
+                    { keys: ['Ctrl + 2'], label: t('pos.shortcut_card_payment') },
+                    { keys: ['Ctrl + P'], label: t('pos.shortcut_quick_print') },
+                    { keys: ['F2', 'Esc'], label: t('pos.shortcut_close_invoice_new') },
+                    { keys: ['F7', 'Ctrl + Shift + A'], label: t('pos.shortcut_open_custom_thobe') },
+                    { keys: ['F4'], label: t('pos.shortcut_clear_cart') },
                   ].map((shortcut, idx) => (
                     <div key={idx} className="flex justify-between items-center p-3 bg-surface-muted rounded-xl border border-border/50 hover:bg-brand/5 transition-all">
                       <span className="text-sm font-bold text-content">{shortcut.label}</span>
@@ -2666,7 +2672,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   onClick={() => setIsShortcutsModalOpen(false)}
                   className="px-6 py-2.5 bg-brand text-white font-bold rounded-xl hover:bg-brand/90 transition-all text-sm shadow-md"
                 >
-                  {t('common.got_it_close', 'فهمت، إغلاق')}
+                  {t('common.got_it_close')}
                 </button>
               </div>
             </Dialog.Panel>

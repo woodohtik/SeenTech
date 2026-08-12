@@ -5,6 +5,7 @@ import { Staff } from '../types';
 import bcrypt from 'bcryptjs';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
+import { useDirection } from '../lib/direction';
 import { supabase } from '../lib/supabase/client';
 import { logEmployeeAction } from '../services/employeeAuditService';
 
@@ -17,6 +18,7 @@ interface LockScreenProps {
 
 export default function LockScreen({ currentStaff, onUnlock, tenantId, onUnlockWithStaff }: LockScreenProps) {
   const { t } = useTranslation();
+  const { dir } = useDirection();
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -152,7 +154,7 @@ export default function LockScreen({ currentStaff, onUnlock, tenantId, onUnlockW
                 matchedStaff.id,
                 matchedStaff.name,
                 'login',
-                'تسجيل الدخول للنظام بعد إلغاء القفل (PIN)'
+                t('staff.audit_unlock_login')
               ).catch(() => {});
             }
           } else {
@@ -162,12 +164,12 @@ export default function LockScreen({ currentStaff, onUnlock, tenantId, onUnlockW
               onUnlock();
               return;
             }
-            setError(t('common.invalid_pin', 'رمز الدخول غير صحيح'));
+            setError(t('common.invalid_pin'));
             setPin('');
           }
         } catch (err) {
           console.error('[LockScreen] Error verifying lock pin:', err);
-          setError(t('common.error_verifying', 'حدث خطأ أثناء التحقق'));
+          setError(t('common.error_verifying'));
           setPin('');
         } finally {
           setIsVerifying(false);
@@ -178,7 +180,7 @@ export default function LockScreen({ currentStaff, onUnlock, tenantId, onUnlockW
   }, [pin, staffList, currentStaff, onUnlock, onUnlockWithStaff, tenantId, t]);
 
   return (
-    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/95 backdrop-blur-2xl text-white overflow-y-auto p-4 select-none" dir="rtl">
+    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/95 backdrop-blur-2xl text-white overflow-y-auto p-4 select-none" dir={dir}>
       {/* Decorative ambient blobs */}
       <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-brand/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-[#EF4444]/5 rounded-full blur-3xl pointer-events-none" />
@@ -207,10 +209,10 @@ export default function LockScreen({ currentStaff, onUnlock, tenantId, onUnlockW
         {/* User identification */}
         <div className="space-y-2">
           <h2 className="text-2xl font-black tracking-tight text-white/90">
-            {currentStaff ? currentStaff.name : t('common.user', 'المستخدم')}
+            {currentStaff ? currentStaff.name : t('common.user')}
           </h2>
           <p className="text-sm font-bold text-brand uppercase tracking-widest">
-            {t('common.screen_locked', 'النظام مقفل حالياً')}
+            {t('common.screen_locked')}
           </p>
         </div>
 
@@ -267,7 +269,7 @@ export default function LockScreen({ currentStaff, onUnlock, tenantId, onUnlockW
             onClick={handleClear}
             className="h-16 rounded-2xl text-xs font-bold text-white/40 hover:text-white flex items-center justify-center transition-all cursor-pointer min-h-[44px] focus:outline-none"
           >
-            {t('common.clear', 'مسح')}
+            {t('common.clear')}
           </button>
           
           <button

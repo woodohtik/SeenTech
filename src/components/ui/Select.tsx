@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDown, Check } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useDirection } from '../../lib/direction';
 
 interface SelectOption {
   value: string;
@@ -18,17 +19,19 @@ interface SelectProps {
   label?: string;
 }
 
-export default function Select({ 
-  options, 
-  value, 
-  onChange, 
-  placeholder = 'اختر...', 
+export default function Select({
+  options,
+  value,
+  onChange,
+  placeholder,
   className,
-  label 
+  label
 }: SelectProps) {
+  const { t, dir, isRtl } = useDirection();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  
+  const resolvedPlaceholder = placeholder ?? t('common.select');
+
   const selectedOption = options.find(opt => opt.value === value);
 
   useEffect(() => {
@@ -42,7 +45,7 @@ export default function Select({
   }, []);
 
   return (
-    <div className={cn("relative w-full text-right", className)} ref={containerRef} dir="rtl">
+    <div className={cn("relative w-full", isRtl ? "text-right" : "text-left", className)} ref={containerRef} dir={dir}>
       {label && (
         <label className="block text-xs font-black text-content-muted uppercase tracking-widest mb-2 px-1">
           {label}
@@ -59,7 +62,8 @@ export default function Select({
         )}
       >
         <span className={cn(
-          "text-sm truncate flex-1 block text-right flex items-center gap-3 pe-9",
+          "text-sm truncate flex-1 block flex items-center gap-3 pe-9",
+          isRtl ? "text-right" : "text-left",
           selectedOption ? "text-content" : "text-content-muted"
         )}>
           {selectedOption?.icon && (
@@ -67,9 +71,12 @@ export default function Select({
               {selectedOption.icon}
             </span>
           )}
-          <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
+          <span className="truncate">{selectedOption ? selectedOption.label : resolvedPlaceholder}</span>
         </span>
-        <div className="absolute top-1/2 -translate-y-1/2 left-4 text-gray-400 group-hover:text-brand transition-colors flex-shrink-0 pointer-events-none">
+        <div className={cn(
+          "absolute top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-brand transition-colors flex-shrink-0 pointer-events-none",
+          isRtl ? "left-4" : "right-4"
+        )}>
           <motion.div
             animate={{ rotate: isOpen ? 180 : 0 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
@@ -98,7 +105,8 @@ export default function Select({
                     setIsOpen(false);
                   }}
                   className={cn(
-                    "w-full text-right px-3 py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-between group/item",
+                    "w-full px-3 py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-between group/item",
+                    isRtl ? "text-right" : "text-left",
                     value === option.value 
                       ? "bg-brand/10 text-brand font-bold" 
                       : "text-content hover:bg-surface-muted hover:text-content dark:hover:bg-gray-800"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -41,7 +41,9 @@ import {
   Shirt,
   Maximize2,
   Archive,
+  Scale,
   Layout as LayoutIcon,
+  ClipboardList,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase/client";
 import { auth, handleFirestoreError, OperationType } from "../../lib/firebase";
@@ -58,6 +60,7 @@ import ProductImageUploader from "./ProductImageUploader";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useStaff } from "../../contexts/StaffContext";
 import { useTranslation } from "react-i18next";
+import { useDirection } from "../../lib/direction";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../../lib/utils";
 import Branding from "../Branding";
@@ -71,6 +74,9 @@ import { useCallback } from "react";
 import { useRouter, useRefreshCounter } from "../../hooks/useRouter";
 
 import StockTransferWorkflow from "./StockTransferWorkflow";
+import { InventoryAdjustment } from "./InventoryAdjustment";
+import FabricUomConversion from "./FabricUomConversion";
+import { formatSmartStockDisplay, getUnitLabel } from "../../utils/fabricUomConverter";
 
 const generateSKU = (name?: string) => {
   const random = Math.floor(10000000 + Math.random() * 90000000);
@@ -113,10 +119,15 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
     variant?: InventoryVariant;
     branch: Branch;
   } | null>(null);
+  const [showConversionModal, setShowConversionModal] = useState(false);
+  const [selectedItemForConversion, setSelectedItemForConversion] = useState<{
+    item: InventoryItem;
+    branch: Branch;
+  } | null>(null);
   const [showOpeningBalanceModal, setShowOpeningBalanceModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "inventory" | "reports" | "transfers"
+    "inventory" | "reports" | "transfers" | "stock_take" | "fabric_uom"
   >("inventory");
   const [lowStockItems, setLowStockItems] = useState<any[]>([]);
   const [isLowStockOnly, setIsLowStockOnly] = useState(false);
@@ -474,6 +485,34 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
         >
           {t("inventory.reports")}
         </button>
+        <button
+          onClick={() => setActiveTab("stock_take")}
+          className={cn(
+            "px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold transition-all whitespace-nowrap text-xs sm:text-sm flex-1 sm:flex-none text-center flex items-center justify-center gap-1.5",
+            activeTab === "stock_take"
+              ? "bg-brand text-brand-content shadow-lg shadow-brand/10"
+              : "text-content-muted hover:bg-surface-muted",
+          )}
+        >
+          <span>{t("inventory.stock_take", "جرد المخزون")}</span>
+          <span className="bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 text-[10px] px-1.5 py-0.5 rounded-md font-black">
+            قريباً
+          </span>
+        </button>
+        <button
+          onClick={() => setActiveTab("fabric_uom")}
+          className={cn(
+            "px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold transition-all whitespace-nowrap text-xs sm:text-sm flex-1 sm:flex-none text-center flex items-center justify-center gap-1.5",
+            activeTab === "fabric_uom"
+              ? "bg-brand text-brand-content shadow-lg shadow-brand/10"
+              : "text-content-muted hover:bg-surface-muted",
+          )}
+        >
+          <span>{t("inventory.fabric_uom", "معايرة الأقمشة")}</span>
+          <span className="bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 text-[10px] px-1.5 py-0.5 rounded-md font-black">
+            قريباً
+          </span>
+        </button>
       </div>
 
       {activeTab === "inventory" && (
@@ -760,8 +799,13 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                             {t("inventory.total_stock")}
                           </span>
                           <p className="text-xs sm:text-sm font-black text-content">
-                            {totalStock} {t(`inventory.unit_${item.unit}`)}
+                            {totalStock} {t(`inventory.unit_${item.baseUnit || item.unit}`)}
                           </p>
+                          {item.category === "fabric" && item.conversionRate > 1 && (
+                            <span className="text-[9px] text-brand font-black block mt-0.5">
+                              {formatSmartStockDisplay(totalStock, item.unit, item.baseUnit || "meter", item.conversionRate)}
+                            </span>
+                          )}
                         </div>
                         <div className="flex flex-col gap-0.5 border-l border-border/50 pl-2 sm:pl-4 rtl:pr-2 rtl:pl-0 sm:rtl:pr-4 rtl:border-l-0 rtl:border-r">
                           <span className="text-[9px] sm:text-[10px] font-black text-content-muted uppercase tracking-wider">
@@ -923,6 +967,21 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                       <span className="text-sm font-black text-content">
                                         {stock}
                                       </span>
+                                      {item.category === "fabric" && (
+                                        <button
+                                          onClick={() => {
+                                            setSelectedItemForConversion({
+                                              item,
+                                              branch,
+                                            });
+                                            setShowConversionModal(true);
+                                          }}
+                                          className="p-1.5 bg-brand/5 text-brand rounded-lg"
+                                          title={t("inventory.manual_convert_action", "فك وتحويل يدوي")}
+                                        >
+                                          <Scale size={12} />
+                                        </button>
+                                      )}
                                       <button
                                         onClick={() => {
                                           setSelectedItemForAdjustment({
@@ -1055,13 +1114,24 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                             </span>
                           </td>
                           <td className="px-8 py-6">
-                            <div className="flex items-center gap-2">
-                              <p className="font-black text-content text-lg">
-                                {totalStock}
-                              </p>
-                              <p className="text-xs font-bold text-content-muted uppercase">
-                                {t(`inventory.unit_${item.unit}`)}
-                              </p>
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-2">
+                                <p className="font-black text-content text-lg">
+                                  {totalStock}
+                                </p>
+                                <p className="text-xs font-bold text-content-muted uppercase">
+                                  {/* `totalStock` is stored in the BASE unit, so it must be
+                                      labelled with the base unit. Labelling it with the large
+                                      unit made this line read "100 roll" directly above a
+                                      sub-line reading "4 roll" — a 25x contradiction. */}
+                                  {t(`inventory.unit_${item.baseUnit || item.unit}`)}
+                                </p>
+                              </div>
+                              {item.category === "fabric" && item.conversionRate > 1 && (
+                                <span className="text-[10px] text-brand font-black block mt-0.5">
+                                  {formatSmartStockDisplay(totalStock, item.unit, item.baseUnit || "meter", item.conversionRate)}
+                                </span>
+                              )}
                             </div>
                           </td>
                           <td className="px-8 py-6">
@@ -1337,6 +1407,21 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                                         )}
                                                       </button>
                                                     )}
+                                                    {item.category === "fabric" && hasPermission("inventory.create") && (
+                                                      <button
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          setSelectedItemForConversion({
+                                                            item,
+                                                            branch,
+                                                          });
+                                                          setShowConversionModal(true);
+                                                        }}
+                                                        className="text-[9px] font-black text-amber-600 hover:underline uppercase tracking-tighter"
+                                                      >
+                                                        {t("inventory.manual_convert_action", "فك يدوي")}
+                                                      </button>
+                                                    )}
                                                     {hasPermission(
                                                       "inventory.reconcile",
                                                     ) && (
@@ -1394,6 +1479,40 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
         />
       )}
 
+      {activeTab === "stock_take" && (
+        <div className="bg-surface rounded-[2rem] border border-border shadow-sm p-8 sm:p-12 text-center flex flex-col items-center justify-center min-h-[350px]">
+          <div className="p-4 bg-brand/10 text-brand rounded-full mb-4">
+            <ClipboardList size={40} className="sm:size-[48px] animate-pulse" />
+          </div>
+          <h3 className="text-lg sm:text-xl font-bold text-content mb-2">
+            ميزة جرد المخزون (تسوية المخزون)
+          </h3>
+          <p className="text-content-muted text-xs sm:text-sm max-w-md leading-relaxed mb-6">
+            ستتمكن قريباً من إجراء عمليات الجرد الدوري والتسويات المخزنية ومعالجة الفروقات والكميات التالفة بشكل متكامل مع النظام المحاسبي.
+          </p>
+          <span className="bg-brand/10 text-brand px-4 py-1.5 rounded-full text-xs font-black">
+            قريباً جداً
+          </span>
+        </div>
+      )}
+
+      {activeTab === "fabric_uom" && (
+        <div className="bg-surface rounded-[2rem] border border-border shadow-sm p-8 sm:p-12 text-center flex flex-col items-center justify-center min-h-[350px]">
+          <div className="p-4 bg-brand/10 text-brand rounded-full mb-4">
+            <Layers size={40} className="sm:size-[48px] animate-pulse" />
+          </div>
+          <h3 className="text-lg sm:text-xl font-bold text-content mb-2">
+            ميزة معايرة وتحويل وحدات الأقمشة
+          </h3>
+          <p className="text-content-muted text-xs sm:text-sm max-w-md leading-relaxed mb-6">
+            ستتمكن قريباً من معايرة الأقمشة بالياردة، المتر، أو الثوب، وإجراء تحويلات تلقائية ذكية ومخصصة لمحلات تفصيل الأثواب والمستلزمات الرجالية والنسائية.
+          </p>
+          <span className="bg-brand/10 text-brand px-4 py-1.5 rounded-full text-xs font-black">
+            قريباً جداً
+          </span>
+        </div>
+      )}
+
       {/* Modals Placeholder */}
       <AnimatePresence>
         {showAddModal && (
@@ -1438,6 +1557,16 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
             }}
             tenantId={tenantId}
             {...selectedItemForAdjustment}
+          />
+        )}
+        {showConversionModal && selectedItemForConversion && (
+          <ManualConversionModal
+            onClose={() => {
+              setShowConversionModal(false);
+              setSelectedItemForConversion(null);
+            }}
+            tenantId={tenantId}
+            {...selectedItemForConversion}
           />
         )}
         {(deleteConfirmId || isBulkDeleteConfirm) && (
@@ -1545,6 +1674,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
 const AddItemModal = ({ onClose, tenantId, branches }: any) => {
   const router = useRouter();
   const { t } = useTranslation();
+  const { dir } = useDirection();
   const { currentStaff } = useStaff();
   const { error: toastError, success: toastSuccess, handleError } = useToast();
   const [suppliersList, setSuppliersList] = useState<any[]>([]);
@@ -1643,6 +1773,11 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
     setSubmitting(true);
     try {
       const defaultQty = formData.initialStock || formData.openingBalance || 0;
+      if (defaultQty < 0) {
+        toastError(t("inventory.negative_stock_error"));
+        setSubmitting(false);
+        return;
+      }
       const sanitizedSku = formData.sku ? formData.sku.replace(/\D/g, '') : generateSKU();
       const itemData: any = {
         name: formData.name,
@@ -1758,7 +1893,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
           </button>
         </div>
 
-        <form onSubmit={handleAdd} dir="rtl" className="p-4 sm:p-8 space-y-4 sm:space-y-8 overflow-y-auto text-right">
+        <form onSubmit={handleAdd} dir={dir} className="p-4 sm:p-8 space-y-4 sm:space-y-8 overflow-y-auto text-right">
           {/* Image Uploader */}
           <div className="bg-surface-muted/50 p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-border">
             <ProductImageUploader
@@ -2084,6 +2219,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                 </label>
                 <input
                   type="number"
+                  min="0"
                   placeholder="0.00"
                   value={formData.openingBalance || ""}
                   onChange={(e) => {
@@ -2402,7 +2538,7 @@ const StockTransferModal = ({
                           ? (branchStock[it.id]?.find((s: any) => s.branchId === formData.fromBranchId)?.quantity || 0)
                           : null;
                         const labelText = available !== null
-                          ? `${it.name} (${t("inventory.available_qty") || "الكمية المتوفرة"}: ${available})`
+                          ? `${it.name} (${t("inventory.available_qty")}: ${available})`
                           : it.name;
                         return {
                           value: it.id,
@@ -2508,6 +2644,12 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
       const currentQty = currentStock?.quantity || 0;
       const finalQuantity =
         mode === "add" ? currentQty + addQuantity : newQuantity;
+
+      if (finalQuantity < 0) {
+        toastError(t("inventory.negative_stock_error"));
+        setLoading(false);
+        return;
+      }
 
       // Update Stock (Insert or Update check)
       let upsertError;
@@ -2651,6 +2793,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
               </label>
               <input
                 type="number"
+                min="0"
                 required
                 autoFocus
                 value={newQuantity}
@@ -2678,6 +2821,235 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
             className="w-full bg-brand text-brand-content py-4 rounded-2xl font-black text-lg shadow-xl shadow-brand/10 hover:bg-brand/90 transition-all disabled:opacity-50"
           >
             {loading ? t("common.saving") : t("common.save")}
+          </button>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
+
+const ManualConversionModal = ({ onClose, tenantId, item, branch }: any) => {
+  const router = useRouter();
+  const { t } = useTranslation();
+  const { currentStaff } = useStaff();
+  const { error: toastError, success: toastSuccess, handleError } = useToast();
+  const [qty, setQty] = useState<number | "">("");
+  const [conversionAction, setConversionAction] = useState<"unroll" | "bundle">("unroll");
+  const [notes, setNotes] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [currentQty, setCurrentQty] = useState(0);
+
+  const rate = Number(item.conversionRate) || 1;
+  const largeUnit = item.unit || "roll";
+  const smallUnit = item.baseUnit || "meter";
+
+  useEffect(() => {
+    const fetchCurrent = async () => {
+      const { data } = await supabase
+        .from("branch_inventory")
+        .select("quantity")
+        .eq("branch_id", branch.id)
+        .eq("item_id", item.id)
+        .maybeSingle();
+
+      if (data) {
+        setCurrentQty(data.quantity);
+      }
+    };
+    fetchCurrent();
+  }, [branch.id, item.id]);
+
+  const resultingQty = qty ? (conversionAction === "unroll" ? Number(qty) * rate : Number(qty) / rate) : 0;
+
+  const handleConvert = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loading) return;                      // double-click guard: the old code had none
+    if (!qty || Number(qty) <= 0) {
+      toastError(t("errors.invalid_quantity"));
+      return;
+    }
+
+    setLoading(true);
+    try {
+      /* ------------------------------------------------------------------
+         Unrolling a bolt or bundling metres is REPACKAGING: the number of
+         metres on hand does not change. `branch_inventory.quantity` is a
+         single scalar held in the base unit (this modal labels it
+         "المخزون الحالي بالأمتار"), so the old arithmetic —
+             change = unroll ? +qty*rate : -(qty*rate)
+         invented `qty*rate` metres on every unroll and destroyed 25x the
+         previewed amount on every bundle. It also read the stock once when
+         the modal opened and wrote back an absolute value, erasing any sale
+         or transfer that happened in between.
+
+         The whole operation now runs server-side in one transaction:
+         validates the rate and the available stock, writes the conversion log
+         and a net-zero ledger entry, and is idempotent on operationId.
+         ------------------------------------------------------------------ */
+      const operationId =
+        (globalThis.crypto?.randomUUID?.() as string | undefined) ??
+        `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+      const { error: rpcError } = await supabase.rpc("record_uom_conversion", {
+        p_operation_id: operationId,
+        p_branch_id: branch.id,
+        p_item_id: item.id,
+        p_direction: conversionAction,
+        p_qty: Number(qty),
+        p_notes: notes || null,
+      });
+
+      if (rpcError) throw rpcError;
+
+      toastSuccess(t("inventory.conversion_success"));
+      onClose();
+      router.refresh();
+    } catch (error) {
+      handleError(error as any, t("inventory.conversion_failed"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-black/60 backdrop-blur-md"
+        onClick={onClose}
+      />
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        className="bg-surface w-full max-w-md rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden border border-border p-8"
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-6 right-6 p-2 hover:bg-surface-muted rounded-full text-content-muted transition-all"
+        >
+          <X size={20} />
+        </button>
+
+        <div className="flex flex-col items-center text-center space-y-4 mb-6">
+          <div className="p-4 bg-brand/10 text-brand rounded-full">
+            <Scale size={32} />
+          </div>
+          <div>
+            <h3 className="text-xl font-black text-content">
+              {t("inventory.manual_convert_action", "فك وتحويل يدوي للوحدات")}
+            </h3>
+            <p className="text-xs font-bold text-content-muted mt-1">
+              {item.name} ({branch.name})
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={handleConvert} className="space-y-6">
+          {/* Conversion Action Toggle */}
+          <div className="grid grid-cols-2 gap-2 bg-surface-muted p-1 rounded-2xl">
+            <button
+              type="button"
+              onClick={() => setConversionAction("unroll")}
+              className={cn(
+                "py-2.5 rounded-xl text-xs font-black transition-all",
+                conversionAction === "unroll" ? "bg-surface shadow-sm text-brand" : "text-content-muted hover:text-content"
+              )}
+            >
+              {t("inventory.unroll", "فك (طاقة -> متر)")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConversionAction("bundle")}
+              className={cn(
+                "py-2.5 rounded-xl text-xs font-black transition-all",
+                conversionAction === "bundle" ? "bg-surface shadow-sm text-brand" : "text-content-muted hover:text-content"
+              )}
+            >
+              {t("inventory.bundle", "لف (متر -> طاقة)")}
+            </button>
+          </div>
+
+          {/* Current Stock */}
+          <div className="bg-surface-muted p-4 rounded-2xl border border-border/50 text-center">
+            <p className="text-[10px] font-black text-content-muted uppercase tracking-widest">
+              {t("inventory.current_stock", "المخزون الحالي بالأمتار")}
+            </p>
+            <p className="text-2xl font-black text-content mt-1">
+              {currentQty.toFixed(2)} {String(t(`inventory.unit_${smallUnit}`, smallUnit))}
+            </p>
+            <p className="text-[10px] font-bold text-brand mt-1">
+              1 {String(t(`inventory.unit_${largeUnit}`, largeUnit))} = {rate} {String(t(`inventory.unit_${smallUnit}`, smallUnit))}
+            </p>
+          </div>
+
+          {/* Quantity Input */}
+          <div className="space-y-2">
+            <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
+              {conversionAction === "unroll" 
+                ? t("inventory.qty_to_unroll", "عدد الطاقات المراد فكها")
+                : t("inventory.qty_to_bundle", "عدد الأمتار المراد تحويلها لطاقة")}
+            </label>
+            <input
+              required
+              type="number"
+              min="0.01"
+              step="any"
+              value={qty}
+              onChange={(e) => setQty(e.target.value ? Number(e.target.value) : "")}
+              placeholder={conversionAction === "unroll" ? t("inventory.example_unroll_qty") : t("inventory.example_bundle_qty")}
+              className="w-full px-4 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-sm text-content"
+            />
+          </div>
+
+          {/* Result Preview */}
+          {qty && qty > 0 && (
+            <div className="bg-brand/5 border border-brand/10 p-4 rounded-2xl text-center">
+              <p className="text-[10px] font-black text-brand uppercase tracking-widest">
+                {t("inventory.conversion_result_preview")}
+              </p>
+              <p className="text-lg font-black text-brand mt-1">
+                {conversionAction === "unroll" ? (
+                  <>
+                    {Number(qty).toFixed(2)} {String(t(`inventory.unit_${largeUnit}`, largeUnit))}
+                    {" \u2190 "}
+                    {resultingQty.toFixed(2)} {String(t(`inventory.unit_${smallUnit}`, smallUnit))}
+                  </>
+                ) : (
+                  <>
+                    {Number(qty).toFixed(2)} {String(t(`inventory.unit_${smallUnit}`, smallUnit))}
+                    {" \u2190 "}
+                    {resultingQty.toFixed(2)} {String(t(`inventory.unit_${largeUnit}`, largeUnit))}
+                  </>
+                )}
+              </p>
+              <p className="text-[10px] font-bold text-content-muted mt-1">
+                {t("inventory.repackaging_note")}
+              </p>
+            </div>
+          )}
+
+          {/* Notes */}
+          <div className="space-y-2">
+            <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
+              {t("common.notes", "ملاحظات")}
+            </label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder={t("inventory.example_conversion_note")}
+              className="w-full px-4 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-sm text-content min-h-[80px]"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-brand text-brand-content py-4 rounded-2xl font-black text-lg shadow-xl shadow-brand/10 hover:bg-brand/90 transition-all disabled:opacity-50"
+          >
+            {loading ? t("common.processing", "جاري التحويل...") : t("inventory.execute_conversion", "تنفيذ التحويل")}
           </button>
         </form>
       </motion.div>
@@ -2715,7 +3087,7 @@ const OpeningBalanceModal = ({ onClose, tenantId, branches, items }: any) => {
             itemId: item?.id,
             sku: row.SKU,
             name: item?.name,
-            quantity: Number(row.Quantity) || 0,
+            quantity: Math.max(0, Number(row.Quantity) || 0),
           };
         })
         .filter((e) => e.itemId);
@@ -2943,6 +3315,77 @@ const OpeningBalanceModal = ({ onClose, tenantId, branches, items }: any) => {
 
 const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
   const { t } = useTranslation();
+  const { isRtl } = useDirection();
+  const [ledgerData, setLedgerData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [daysRange, setDaysRange] = useState<7 | 30>(30);
+
+  useEffect(() => {
+    if (!tenantId) return;
+
+    const fetchLedger = async () => {
+      setLoading(true);
+      try {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const { data, error } = await supabase
+          .from("stock_ledger")
+          .select("*")
+          .eq("tenant_id", tenantId)
+          .gte("created_at", thirtyDaysAgo.toISOString())
+          .order("created_at", { ascending: true });
+
+        if (!error && data) {
+          setLedgerData(data);
+        }
+      } catch (err) {
+        console.error("Error fetching stock ledger in InventoryReports:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLedger();
+  }, [tenantId]);
+
+  // Generate dynamic 7 or 30 days stock movement trend data
+  const trendData = useMemo(() => {
+    const dates: string[] = [];
+    const map = new Map<string, number>();
+
+    // Generate last N days
+    for (let i = daysRange - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split("T")[0];
+      dates.push(dateStr);
+      map.set(dateStr, 0);
+    }
+
+    // Accumulate ledger changes per date
+    ledgerData.forEach((entry) => {
+      const dateStr = entry.created_at ? entry.created_at.split("T")[0] : "";
+      if (map.has(dateStr)) {
+        map.set(dateStr, map.get(dateStr)! + (entry.change || 0));
+      }
+    });
+
+    // Format for Recharts
+    return dates.map((date) => ({
+      date: new Date(date).toLocaleDateString(isRtl ? "ar-EG" : "en-US", {
+        day: "numeric",
+        month: "short",
+      }),
+      change: map.get(date) || 0,
+    }));
+  }, [ledgerData, daysRange, isRtl]);
+
+  const filteredLedgerData = useMemo(() => {
+    const limitDate = new Date();
+    limitDate.setDate(limitDate.getDate() - daysRange);
+    return ledgerData.filter((entry) => new Date(entry.created_at) >= limitDate);
+  }, [ledgerData, daysRange]);
 
   const categoryData = [
     {
@@ -2981,21 +3424,40 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
     <div className="space-y-8">
       {/* Stock Movement Trend */}
       <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
-        <h3 className="text-xl font-black text-content mb-8 flex items-center gap-3">
-          <TrendingUp className="text-brand" />
-          {t("inventory.stock_movement_trend")}
-        </h3>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <h3 className="text-xl font-black text-content flex items-center gap-3">
+            <TrendingUp className="text-brand" />
+            {t("inventory.stock_movement_trend")}
+          </h3>
+          
+          <div className="flex items-center gap-2 bg-surface-muted p-1 rounded-2xl border border-border self-start sm:self-auto">
+            <button
+              onClick={() => setDaysRange(7)}
+              className={cn(
+                "px-4 py-1.5 rounded-xl text-xs font-black transition-all",
+                daysRange === 7
+                  ? "bg-brand text-white shadow-sm"
+                  : "text-content-muted hover:text-content"
+              )}
+            >
+              {t("common.7_days", "7 أيام")}
+            </button>
+            <button
+              onClick={() => setDaysRange(30)}
+              className={cn(
+                "px-4 py-1.5 rounded-xl text-xs font-black transition-all",
+                daysRange === 30
+                  ? "bg-brand text-white shadow-sm"
+                  : "text-content-muted hover:text-content"
+              )}
+            >
+              {t("common.30_days", "30 يوم")}
+            </button>
+          </div>
+        </div>
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={[
-                { date: "2024-01-01", change: 10 },
-                { date: "2024-01-02", change: -5 },
-                { date: "2024-01-03", change: 15 },
-                { date: "2024-01-04", change: -2 },
-                { date: "2024-01-05", change: 8 },
-              ]}
-            >
+            <LineChart data={trendData}>
               <CartesianGrid
                 strokeDasharray="3 3"
                 vertical={false}
@@ -3122,22 +3584,74 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
         </div>
       </div>
 
-      {/* Audit Trail Placeholder */}
+      {/* Audit Trail */}
       <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
         <div className="flex items-center justify-between mb-8">
           <h3 className="text-xl font-black text-content flex items-center gap-3">
             <History className="text-brand" />
             {t("inventory.audit_trail")}
           </h3>
-          <button className="text-xs font-black text-brand hover:underline uppercase tracking-widest">
-            {t("common.view_all")}
-          </button>
         </div>
-        <div className="space-y-4">
-          <p className="text-content-muted font-medium text-center py-12 bg-surface-muted rounded-3xl border-2 border-dashed border-border">
-            {t("inventory.audit_trail_coming_soon")}
-          </p>
-        </div>
+        
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Clock className="animate-spin text-brand shrink-0" size={24} />
+          </div>
+        ) : filteredLedgerData.length === 0 ? (
+          <div className="space-y-4">
+            <p className="text-content-muted font-medium text-center py-12 bg-surface-muted rounded-3xl border-2 border-dashed border-border">
+              {t("inventory.no_audit_trail_yet", "لا توجد حركات مخزون مسجلة بعد")}
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto whitespace-nowrap scrollbar-hide">
+            <table className="w-full text-right min-w-max">
+              <thead className="bg-surface-muted text-content-muted text-sm border-b border-border">
+                <tr>
+                  <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">{t("common.date")}</th>
+                  <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">{t("inventory.item_name")}</th>
+                  <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">{t("inventory.branch")}</th>
+                  <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">{t("reconciliation.difference")}</th>
+                  <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">{t("inventory.type")}</th>
+                  <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">{t("reconciliation.reconciled_by")}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {[...filteredLedgerData].reverse().slice(0, 30).map((ledger: any) => {
+                  const item = items.find((i: any) => i.id === ledger.item_id);
+                  const branch = branches.find((b: any) => b.id === ledger.branch_id);
+                  return (
+                    <tr key={ledger.id} className="hover:bg-surface-muted transition-colors group">
+                      <td className="px-6 py-4 text-sm text-content-muted font-medium">
+                        {new Date(ledger.created_at).toLocaleString(isRtl ? "ar-EG" : "en-US", {
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit"
+                        })}
+                      </td>
+                      <td className="px-6 py-4 font-bold text-content">{item?.name || ledger.item_name || t("common.unknown")}</td>
+                      <td className="px-6 py-4 text-sm font-bold text-content-muted">{branch?.name || t("common.unknown")}</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-3 py-1 rounded-lg text-xs font-black ${ledger.change > 0 ? 'bg-success/10 text-success' : ledger.change < 0 ? 'bg-danger/10 text-danger' : 'bg-content-muted/10 text-content-muted'}`}>
+                          {ledger.change > 0 ? '+' : ''}{ledger.change}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-content-muted font-medium">
+                        {ledger.type === "addition" 
+                          ? t("inventory.addition", "إضافة") 
+                          : ledger.type === "adjustment" 
+                          ? t("inventory.adjustment", "تسوية") 
+                          : ledger.type}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-content-muted font-medium">{ledger.staff_name || "—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -3146,6 +3660,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
 const EditItemModal = ({ onClose, tenantId, item }: any) => {
   const router = useRouter();
   const { t } = useTranslation();
+  const { dir } = useDirection();
   const { error: toastError, success: toastSuccess, handleError } = useToast();
   const [suppliersList, setSuppliersList] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -3272,7 +3787,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
           </button>
         </div>
 
-        <form onSubmit={handleUpdate} dir="rtl" className="p-4 sm:p-8 space-y-4 sm:space-y-8 overflow-y-auto text-right">
+        <form onSubmit={handleUpdate} dir={dir} className="p-4 sm:p-8 space-y-4 sm:space-y-8 overflow-y-auto text-right">
           {/* Image Uploader */}
           <div className="bg-surface-muted/50 p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-border">
             <ProductImageUploader

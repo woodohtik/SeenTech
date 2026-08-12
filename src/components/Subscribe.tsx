@@ -11,6 +11,7 @@
  */
 
 import { useState } from 'react';
+import { useDirection } from '../lib/direction';
 
 const INK = '#0E2A42', INK2 = '#15395A', BRAND = '#61BEED', BRAND2 = '#5AA2D6';
 const CTA = '#0BA06B', CTA_INK = '#0A7E54', TINT = '#EAF6FD', SURFACE = '#F5F7FA';
@@ -21,21 +22,23 @@ interface Props {
   logoSrc?: string;
 }
 
-const CORE_FEATURES = [
-  'نقطة بيع متخصصة (POS)', 'قياسات وأوامر تفصيل', 'فوترة زاتكا معتمدة',
-  'إدارة مخزون وخصم تلقائي', 'تقارير ولوحة تحكم', 'دعم فني',
+// Translation keys — resolved at render time so they follow language changes.
+const CORE_FEATURE_KEYS = [
+  'subscription.features.pos', 'subscription.features.measurements_orders', 'subscription.features.zatca_invoicing',
+  'subscription.features.inventory_auto_deduct', 'subscription.features.reports_dashboard', 'saas.role_support_tech',
 ];
-const FREE_FEATURES = [
-  'تجربة جميع المزايا لمدة 14 يوم', 'عدد لا محدود من الفواتير', 
-  'إدارة عملاء متكاملة', 'تقارير أساسية', 'بدون ربط بطاقة'
+const FREE_FEATURE_KEYS = [
+  'subscription.features.trial_all_features_14_days', 'subscription.features.unlimited_invoices',
+  'subscription.features.full_customer_management', 'subscription.features.basic_reports', 'subscription.features.no_card_required'
 ];
 
 export default function Subscribe({ onCheckout, onContactSales, logoSrc = '/Logo.svg' }: Props) {
+  const { t, dir } = useDirection();
   const [hover, setHover] = useState(false);
   const [hoverFree, setHoverFree] = useState(false);
 
   return (
-    <div dir="rtl" style={st.page}>
+    <div dir={dir} style={st.page}>
       <div style={st.bgGlow} aria-hidden />
 
       <header style={st.head}>
@@ -49,59 +52,59 @@ export default function Subscribe({ onCheckout, onContactSales, logoSrc = '/Logo
             <circle cx="34" cy="64" r="1.6" fill="#fff" opacity="0.7" /><circle cx="50" cy="56" r="1.6" fill="#fff" opacity="0.7" /><circle cx="66" cy="47" r="1.6" fill="#fff" opacity="0.6" />
             <path d="M34 64 H50 M50 56 H66" stroke="#fff" strokeWidth="1" opacity="0.5" />
           </svg>
-          <span style={st.brandText}>سين<span style={st.brandPos}>POS</span></span>
+          <span style={st.brandText}>{t('procurement.pv_footer')}<span style={st.brandPos}>POS</span></span>
         </div>
-        <h1 style={st.title}>اختر باقتك وابدأ بوضوح</h1>
-        <p style={st.sub}>باقات واضحة تلبي احتياجات محلك من البداية وبدون رسوم خفية.</p>
+        <h1 style={st.title}>{t('subscription.pick_your_plan_title')}</h1>
+        <p style={st.sub}>{t('subscription.pick_your_plan_subtitle')}</p>
       </header>
 
       <div style={st.grid}>
         {/* الباقة المجانية */}
         <section style={{ ...st.card, ...st.cardEnt }}>
-          <h2 style={st.planName}>الباقة المجانية</h2>
-          <p style={st.planDesc}>جرّب سين وجميع الأدوات قبل ما تدفع أي ريال.</p>
+          <h2 style={st.planName}>{t('subscription.free_plan_name')}</h2>
+          <p style={st.planDesc}>{t('subscription.free_plan_desc')}</p>
           <div style={st.priceRow}>
             <span style={st.price}>0</span>
-            <span style={st.cur}>﷼ / 14 يوم</span>
+            <span style={st.cur}>{t('subscription.per_14_days')}</span>
           </div>
           <ul style={st.feats}>
-            {FREE_FEATURES.map((f) => (
-              <li key={f} style={st.feat}><Check /> <span>{f}</span></li>
+            {FREE_FEATURE_KEYS.map((f) => (
+              <li key={f} style={st.feat}><Check /> <span>{t(f)}</span></li>
             ))}
           </ul>
           <button 
             onMouseEnter={() => setHoverFree(true)} onMouseLeave={() => setHoverFree(false)}
             onClick={() => onCheckout?.('free', 0)} 
             style={{ ...st.ghost, ...(hoverFree ? { background: '#EDF2F7' } : {}) }}>
-            ابدأ التجربة المجانية
+            {t('subscription.start_free_trial')}
           </button>
         </section>
 
         {/* سين الأساسية — فعّالة */}
         <section style={{ ...st.card, ...st.cardCore }}>
-          <div style={st.ribbon}>الأكثر اختياراً</div>
-          <h2 style={st.planName}>سين الأساسية</h2>
-          <p style={st.planDesc}>كل ما يحتاجه محلك ليشتغل رقمياً باشتراك سنوي واضح.</p>
+          <div style={st.ribbon}>{t('subscription.most_popular')}</div>
+          <h2 style={st.planName}>{t('subscription.basic_plan_name')}</h2>
+          <p style={st.planDesc}>{t('subscription.basic_plan_desc')}</p>
           <div style={st.priceRow}>
             <span style={st.price}>599</span>
-            <span style={st.cur}>﷼ / سنة</span>
+            <span style={st.cur}>{t('subscription.per_year')}</span>
           </div>
           <ul style={st.feats}>
-            {CORE_FEATURES.map((f) => (
-              <li key={f} style={st.feat}><Check /> <span>{f}</span></li>
+            {CORE_FEATURE_KEYS.map((f) => (
+              <li key={f} style={st.feat}><Check /> <span>{t(f)}</span></li>
             ))}
           </ul>
           <button
             onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
             onClick={() => onCheckout?.('basic', 599)}
             style={{ ...st.cta, ...(hover ? st.ctaHover : {}) }}>
-            اشترك الآن
+            {t('subscription.subscribe_now')}
           </button>
-          <p style={st.guarantee}>اشتراك سنوي شامل (شامل التحديثات)</p>
+          <p style={st.guarantee}>{t('subscription.annual_all_inclusive')}</p>
         </section>
       </div>
 
-      <p style={st.foot}>الدفع آمن ومشفّر · بالاشتراك أنت توافق على شروط الخدمة</p>
+      <p style={st.foot}>{t('subscription.secure_payment_terms')}</p>
     </div>
   );
 }

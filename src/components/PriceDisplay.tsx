@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { formatCurrency, cn } from '../lib/utils';
 import { CurrencySymbol } from './CurrencySymbol';
 
+import { normalizeLang } from '../lib/direction';
+
 interface PriceDisplayProps {
   amount: number;
   className?: string;
@@ -22,7 +24,7 @@ export const PriceDisplay: React.FC<PriceDisplayProps> = ({
   showSymbol = true 
 }) => {
   const { i18n } = useTranslation();
-  const isAr = i18n.language === 'ar' || i18n.language?.startsWith('ar-');
+  const isAr = normalizeLang(i18n.language) === 'ar';
 
   return (
     <span className={cn("inline-flex items-center gap-1.5", className)} dir={isAr ? "rtl" : "ltr"}>

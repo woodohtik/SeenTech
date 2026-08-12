@@ -12,9 +12,11 @@ import { useToast } from '../contexts/ToastContext';
 import { useTranslation } from 'react-i18next';
 import DateTimeDisplay from './DateTimeDisplay';
 
+import { isRtlLang } from '../lib/direction';
+
 export default function CreditNotes({ tenantId }: { tenantId: string }) {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
 
   const [invoices, setInvoices] = useState<TaxInvoice[]>([]);
   const [creditNotes, setCreditNotes] = useState<CreditNote[]>([]);

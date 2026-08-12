@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase/client';
 import { SupportSession } from '../types/supabase';
 import { Shield, Clock, Search, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   tenantId: string;
 }
 
 export default function TenantSupportHistory({ tenantId }: Props) {
+  const { t } = useTranslation();
   const [sessions, setSessions] = useState<SupportSession[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -34,7 +36,7 @@ export default function TenantSupportHistory({ tenantId }: Props) {
           id: 'mock',
           tenant_id: tenantId,
           saas_user_id: 'mock-user',
-          saas_user_name: 'دعم سين',
+          saas_user_name: t('saas.support_history.default_agent_name'),
           access_type: 'explicit',
           started_at: new Date().toISOString(),
           ended_at: null,
@@ -46,10 +48,10 @@ export default function TenantSupportHistory({ tenantId }: Props) {
   };
 
   const getDuration = (start: string, end: string | null, minutesRecord: number | null) => {
-    if (minutesRecord !== null) return `${minutesRecord} دقيقة`;
-    if (!end) return 'نشط الآن (Active)';
+    if (minutesRecord !== null) return t('saas.support_history.minutes_value', { minutes: minutesRecord });
+    if (!end) return t('saas.support_history.active_now_label');
     const ms = new Date(end).getTime() - new Date(start).getTime();
-    return `${Math.ceil(ms / 60000)} دقيقة`;
+    return t('saas.support_history.minutes_value', { minutes: Math.ceil(ms / 60000) });
   };
 
   return (
@@ -59,8 +61,8 @@ export default function TenantSupportHistory({ tenantId }: Props) {
           <Shield size={24} />
         </div>
         <div>
-          <h2 className="text-xl font-black text-content">سجل زيارات الدعم الفني</h2>
-          <p className="text-sm font-bold text-content-muted mt-1">تاريخ دخول موظفي النظام لحسابك بغرض الصيانة والدعم</p>
+          <h2 className="text-xl font-black text-content">{t('saas.support_history.title')}</h2>
+          <p className="text-sm font-bold text-content-muted mt-1">{t('saas.support_history.subtitle')}</p>
         </div>
       </div>
 
@@ -69,7 +71,7 @@ export default function TenantSupportHistory({ tenantId }: Props) {
       ) : sessions.length === 0 ? (
         <div className="text-center p-8 bg-surface-muted rounded-xl border border-border">
           <Shield className="mx-auto mb-3 opacity-20" size={48} />
-          <p className="font-bold text-content-muted">لم يتم تسجيل أي زيارات دخول للصيانة</p>
+          <p className="font-bold text-content-muted">{t('saas.support_history.empty')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -84,7 +86,7 @@ export default function TenantSupportHistory({ tenantId }: Props) {
                   <div>
                     <h3 className="font-black text-content flex items-center gap-2">
                       {session.saas_user_name}
-                      {isActive && <span className="bg-success text-white text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">نشط الآن</span>}
+                      {isActive && <span className="bg-success text-white text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">{t('saas.support_history.active_now')}</span>}
                     </h3>
                     <p className="text-xs text-content-muted font-bold flex items-center gap-1 mt-1">
                       <Clock size={12} />

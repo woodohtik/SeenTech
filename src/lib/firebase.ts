@@ -1,3 +1,4 @@
+import i18n from 'i18next';
 import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
@@ -111,22 +112,25 @@ export function handleFirestoreError(error: any, operationType: OperationType, p
 export const handleError = handleFirestoreError;
 
 export const getFriendlyErrorMessage = (error: any): string => {
-  if (!error) return 'حدث خطأ غير معروف';
+  if (!error) return i18n.t('errors.unknown');
 
   const errorMsg = typeof error === 'string' ? error : (error.error || error.message || '');
   const code = error.code || '';
 
-  if (code === 'auth/user-not-found' || code === 'auth/wrong-password') return 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
+  if (code === 'auth/user-not-found' || code === 'auth/wrong-password') return i18n.t('login.errors.invalid_credentials');
+  if (errorMsg.toLowerCase().includes('jwt expired') || errorMsg.includes('PGRST303') || errorMsg.toLowerCase().includes('token expired') || errorMsg.toLowerCase().includes('token_expired')) {
+    return i18n.t('errors.jwt_expired');
+  }
   if (code === 'auth/permission-denied' || code === 'permission-denied' || errorMsg.toLowerCase().includes('permission-denied') || errorMsg.includes('insufficient permissions')) {
-    return 'ليس لديك صلاحية للقيام بهذا الإجراء. يرجى التأكد من صلاحيات حسابك.';
+    return i18n.t('errors.permission_denied_check_account');
   }
   if (errorMsg.toLowerCase().includes('offline') || errorMsg.toLowerCase().includes('network') || errorMsg.toLowerCase().includes('fetch')) {
-    return 'فشل الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت وحاول مرة أخرى.';
+    return i18n.t('errors.server_connection_failed');
   }
   if (errorMsg.toLowerCase().includes('quota-exceeded')) {
-    return 'لقد تجاوزت حصة الاستخدام المسموح بها لهذا اليوم. يرجى المحاولة غداً.';
+    return i18n.t('errors.daily_quota_exceeded');
   }
 
-  const finalMsg = errorMsg && errorMsg.length < 100 ? `${errorMsg}` : 'حدث خطأ في النظام. يرجى المحاولة مرة أخرى لاحقاً.';
+  const finalMsg = errorMsg && errorMsg.length < 100 ? `${errorMsg}` : i18n.t('errors.system_generic');
   return finalMsg;
 };

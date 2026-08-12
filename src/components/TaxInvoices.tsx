@@ -16,9 +16,11 @@ import DateTimeDisplay from './DateTimeDisplay';
 import { downloadInvoicePDF, shareInvoiceAsPDFFile } from '../utils/pdfGenerator';
 import { useToast } from '../contexts/ToastContext';
 
+import { isRtlLang } from '../lib/direction';
+
 export default function TaxInvoices({ tenantId }: { tenantId: string }) {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
 
   const [invoices, setInvoices] = useState<TaxInvoice[]>([]);
   const [tenant, setTenant] = useState<Tenant | null>(null);
@@ -105,7 +107,7 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
           const extNotes = decodeInvoiceExtendedNotes(d.notes);
           const resolvedCreator = extNotes.created_by ||
             (d.created_by && staffMap.has(d.created_by) ? staffMap.get(d.created_by) : d.created_by) ||
-            'النظام';
+            t('common.system');
 
           return {
             id: d.id,
@@ -128,7 +130,7 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
             status: d.status === 'issued' ? 'valid' : 'cancelled',
             paidAmount: d.paid_amount !== undefined && d.paid_amount !== null ? Number(d.paid_amount) : Number(d.total_amount),
             remainingAmount: Math.max(0, Number(d.total_amount) - (d.paid_amount !== undefined && d.paid_amount !== null ? Number(d.paid_amount) : Number(d.total_amount))),
-            branchName: d.order_id ? (orderBranchMap.get(d.order_id) || t('common.main_branch', 'الفرع الرئيسي')) : t('common.main_branch', 'الفرع الرئيسي')
+            branchName: d.order_id ? (orderBranchMap.get(d.order_id) || t('common.main_branch')) : t('common.main_branch')
           } as TaxInvoice;
         });
 
@@ -157,9 +159,9 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
         <div>
           <h2 className="text-xl font-black text-content flex items-center gap-2">
             <FileText className="text-brand" />
-            {t('tax_invoices.title', 'الفواتير الضريبية')}
+            {t('tax_invoices.title')}
           </h2>
-          <p className="text-sm font-bold text-content-muted mt-1">{t('tax_invoices.records_desc', 'سجل الفواتير المتوافقة مع متطلبات هيئة الزكاة والضريبة والجمارك (ZATCA)')}</p>
+          <p className="text-sm font-bold text-content-muted mt-1">{t('tax_invoices.records_desc')}</p>
         </div>
       </div>
 
@@ -169,17 +171,17 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
           <table className="w-full text-right min-w-max">
             <thead className="bg-surface-muted border-b border-border text-content-muted text-[10px] uppercase font-black tracking-wider">
               <tr>
-                <th className="p-4">{t('tax_invoices.invoice_no', 'رقم الفاتورة')}</th>
-                <th className="p-4">{t('tax_invoices.date_time', 'التاريخ والوقت')}</th>
-                <th className="p-4">{t('tax_invoices.customer', 'العميل')}</th>
-                <th className="p-4">{t('tax_invoices.invoice_type', 'نوع الفاتورة')}</th>
-                <th className="p-4">{t('tax_invoices.total_vat', 'المبلغ شامل الضريبة')}</th>
-                <th className="p-4 text-left">{t('tax_invoices.actions', 'الإجراءات')}</th>
+                <th className="p-4">{t('tax_invoices.invoice_no')}</th>
+                <th className="p-4">{t('tax_invoices.date_time')}</th>
+                <th className="p-4">{t('tax_invoices.customer')}</th>
+                <th className="p-4">{t('tax_invoices.invoice_type')}</th>
+                <th className="p-4">{t('tax_invoices.total_vat')}</th>
+                <th className="p-4 text-left">{t('tax_invoices.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border text-sm font-medium">
               {invoices.map((inv) => {
-                const invoiceType = inv.isB2B ? t('tax_invoices.b2b_label', 'فاتورة ضريبية (B2B)') : t('tax_invoices.b2c_label', 'فاتورة ضريبية مبسطة (B2C)');
+                const invoiceType = inv.isB2B ? t('tax_invoices.b2b_label') : t('tax_invoices.b2c_label');
 
                 return (
                   <tr key={inv.id} className="hover:bg-brand/5 transition-colors group cursor-pointer" onClick={() => setSelectedInvoice(inv)}>
@@ -189,7 +191,7 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
                     <td className="p-4 text-content-muted font-bold">
                       <DateTimeDisplay date={inv.issuedAt} showTime={true} />
                     </td>
-                    <td className="p-4 text-content font-bold">{inv.customerName || t('tax_invoices.walk_in_customer', 'عميل نقدي')}</td>
+                    <td className="p-4 text-content font-bold">{inv.customerName || t('tax_invoices.walk_in_customer')}</td>
                     <td className="p-4 text-content-muted text-xs">
                       <span className="bg-brand/10 text-brand px-2 py-1 rounded-lg font-bold">{invoiceType}</span>
                     </td>
@@ -203,7 +205,7 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
                         className="px-4 py-2 bg-brand/10 text-brand rounded-xl font-bold hover:bg-brand hover:text-white transition-all text-xs flex items-center gap-2 mr-auto"
                       >
                         <Eye size={16} />
-                        {t('tax_invoices.view_invoice', 'عرض الفاتورة')}
+                        {t('tax_invoices.view_invoice')}
                       </button>
                     </td>
                   </tr>
@@ -220,7 +222,7 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <p className="text-xs font-black text-brand mb-1">{inv.invoiceNumber}</p>
-                  <p className="font-bold text-content">{inv.customerName || t('tax_invoices.walk_in_customer', 'عميل نقدي')}</p>
+                  <p className="font-bold text-content">{inv.customerName || t('tax_invoices.walk_in_customer')}</p>
                 </div>
                 <div className="text-left">
                   <p className="font-black text-brand"><PriceDisplay amount={inv.totalAmount} /></p>
@@ -232,13 +234,13 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
                   {inv.isB2B ? 'B2B' : 'B2C'}
                 </span>
                 <button className="text-brand text-xs font-bold flex items-center gap-1">
-                  {t('tax_invoices.view_invoice', 'عرض التفاصيل')} <Eye size={14} />
+                  {t('tax_invoices.view_invoice')} <Eye size={14} />
                 </button>
               </div>
             </div>
           ))}
           {invoices.length === 0 && (
-            <div className="p-8 text-center text-content-muted font-bold">{t('tax_invoices.no_invoices', 'لا توجد فواتير متاحة حالياً')}</div>
+            <div className="p-8 text-center text-content-muted font-bold">{t('tax_invoices.no_invoices')}</div>
           )}
         </div>
       </div>
@@ -267,7 +269,7 @@ interface TaxInvoiceModalProps {
 
 function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
   const { error: toastError } = useToast();
 
   React.useEffect(() => {
@@ -331,12 +333,12 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
       const { printElementDetailed, getConfiguredPaperSize } = await import('../utils/printManager');
       const res = await printElementDetailed('print-area', {
         paperSize: isB2B ? 'A4' : getConfiguredPaperSize('80mm'),
-        title: `فاتورة-${order.invoiceNumber || order.id}`,
+        title: t('printing.invoice_doc_title', { number: order.invoiceNumber || order.id }),
       });
       if (!res.ok) {
         // مع الطباعة الصامتة قد لا تُفتح نافذة طباعة، فلا بد من إشعار مرئي
         console.error('[TaxInvoices] فشل الطباعة:', res.message);
-        toastError('تعذّرت الطباعة', res.message);
+        toastError(t('printing.print_failed'), res.message);
       }
     } catch (e) {
       console.error('[TaxInvoices] خطأ الطباعة:', e);
@@ -363,7 +365,7 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
 
   // Build items list
   const formattedItems = order.items.map((item: any) => ({
-    name: item.type === 'custom' ? item.garmentType || t('orders.custom_thobe', 'تفصيل ثوب') : item.name || t('orders.ready_made', 'صنف جاهز'),
+    name: item.type === 'custom' ? item.garmentType || t('orders.custom_thobe') : item.name || t('orders.ready_made'),
     quantity: Number(item.quantity || 0),
     unitPrice: Number(item.price || item.unitPrice || 0),
     vatAmount: Number((item.price || item.unitPrice || 0) * item.quantity - ((item.price || item.unitPrice || 0) * item.quantity) / 1.15),
@@ -383,7 +385,7 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
   };
 
   const buyerInfo = {
-    name: order.b2bCompanyName || order.customerName || t('tax_invoices.walk_in_customer', 'عميل نقدي / Guest Customer'),
+    name: order.b2bCompanyName || order.customerName || t('tax_invoices.walk_in_customer'),
     nameEn: (order as any).customer_name_en || 'Guest Client',
     vatNumber: order.b2bTRN,
     address: (order as any).customer_address || '',
@@ -402,11 +404,11 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
   // Extract payment method safely if defined
   // @ts-ignore
   const orderPayMethod = String(order.paymentMethod || (order as any).payment_method || 'cash').toLowerCase();
-  const paymentMethodAr = (orderPayMethod === 'network' || orderPayMethod === 'card' || orderPayMethod === 'mada') ? t('pos.card', 'شبكة/بطاقة') : 
-    (orderPayMethod === 'bank_transfer' || orderPayMethod === 'transfer') ? t('pos.bank_transfer', 'تحويل بنكي') : 
-    (orderPayMethod === 'partial' || orderPayMethod === 'credit') ? t('pos.partial_credit', 'آجل / دفع جزئي') : 
-    (orderPayMethod === 'cash_on_delivery' || orderPayMethod === 'cod') ? 'الدفع عند الاستلام' : 
-    t('pos.cash', 'نقدي');
+  const paymentMethodAr = (orderPayMethod === 'network' || orderPayMethod === 'card' || orderPayMethod === 'mada') ? t('pos.card') : 
+    (orderPayMethod === 'bank_transfer' || orderPayMethod === 'transfer') ? t('pos.bank_transfer') : 
+    (orderPayMethod === 'partial' || orderPayMethod === 'credit') ? t('pos.partial_credit') : 
+    (orderPayMethod === 'cash_on_delivery' || orderPayMethod === 'cod') ? t('common.payment_methods.cash_on_delivery') : 
+    t('pos.cash');
   const paymentMethodEn = (orderPayMethod === 'network' || orderPayMethod === 'card' || orderPayMethod === 'mada') ? 'Card/Mada' : 
     (orderPayMethod === 'bank_transfer' || orderPayMethod === 'transfer') ? 'Bank Transfer' : 
     (orderPayMethod === 'partial' || orderPayMethod === 'credit') ? 'Credit/Partial' : 
@@ -423,25 +425,25 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
         
         {/* Modal Controls */}
         <div className="p-4 border-b border-border flex flex-wrap gap-3 justify-between items-center bg-surface-muted/50 print:hidden shrink-0">
-          <h3 className="text-lg font-black text-content">{t('tax_invoices.preview_title', 'معاينة الفاتورة الضريبية')}</h3>
+          <h3 className="text-lg font-black text-content">{t('tax_invoices.preview_title')}</h3>
           <div className="flex flex-wrap gap-2">
             <button 
               onClick={handleDownloadPDF}
               className="px-4 py-2 bg-brand text-white rounded-xl font-bold flex items-center gap-2 hover:bg-brand/90 transition-all shadow-sm cursor-pointer text-xs"
             >
-              <Download size={16} /> {t('sales_record.download_pdf', 'تحميل كـ PDF')}
+              <Download size={16} /> {t('sales_record.download_pdf')}
             </button>
             <button 
               onClick={handleShareWhatsApp}
               className="px-4 py-2 bg-[#25D366] text-white rounded-xl font-bold flex items-center gap-2 hover:bg-[#20ba56] transition-all shadow-sm cursor-pointer text-xs"
             >
-              <Share2 size={16} /> {t('sales_record.share_whatsapp', 'مشاركة عبر واتساب')}
+              <Share2 size={16} /> {t('sales_record.share_whatsapp')}
             </button>
             <button
               onClick={handlePrint}
               className="px-4 py-2 bg-slate-600 text-white rounded-xl font-bold flex items-center gap-2 hover:bg-slate-700 transition-colors shadow-sm cursor-pointer text-xs"
             >
-              <Printer size={16} /> {t('tax_invoices.print', 'طباعة')}
+              <Printer size={16} /> {t('tax_invoices.print')}
             </button>
             <button onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm text-content-muted cursor-pointer">
               <X size={20} />

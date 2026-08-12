@@ -13,6 +13,8 @@ import {
 import TourWelcomeModal from './tour/TourWelcomeModal';
 import TourFinishModal from './tour/TourFinishModal';
 
+import { isRtlLang } from '../lib/direction';
+
 /* ------------------------------------------------------------------ */
 /*  Public API                                                        */
 /* ------------------------------------------------------------------ */
@@ -134,7 +136,7 @@ export default function OnboardingTour({
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur';
+  const isRtl = isRtlLang(i18n.language);
 
   const [phase, setPhase] = useState<'idle' | 'welcome' | 'running' | 'finish'>('idle');
 
@@ -443,13 +445,12 @@ export default function OnboardingTour({
         // route-aware handlers — so we keep navigation to the buttons.
         allowKeyboardControl: false,
         showButtons: ['next', 'previous', 'close'],
-        nextBtnText: t('tour.controls.next', 'التالي'),
-        prevBtnText: t('tour.controls.prev', 'السابق'),
-        doneBtnText: t('tour.controls.done', 'إنهاء الجولة'),
+        nextBtnText: t('tour.controls.next'),
+        prevBtnText: t('tour.controls.prev'),
+        doneBtnText: t('tour.controls.done'),
         // Keep {{current}} / {{total}} intact — driver.js does the interpolation,
         // so we swap i18next's delimiters while resolving this one string.
         progressText: t('tour.controls.progress', {
-          defaultValue: '{{current}} من {{total}}',
           interpolation: { prefix: '[[', suffix: ']]' },
         }),
         onNextClick: () => {
@@ -471,7 +472,7 @@ export default function OnboardingTour({
             const skip = document.createElement('button');
             skip.type = 'button';
             skip.className = 'seen-tour-skip';
-            skip.textContent = t('tour.controls.skip', 'تخطي الجولة');
+            skip.textContent = t('tour.controls.skip');
             skip.addEventListener('click', () => {
               teardown('skipped');
               setPhase('idle');

@@ -33,6 +33,7 @@ import { DEFAULT_ROLES, updateRolePermissions, createCustomRole, isMerchantRole,
 import { cn } from '../lib/utils';
 import { useToast } from '../contexts/ToastContext';
 import { useTranslation } from 'react-i18next';
+import { useDirection } from '../lib/direction';
 
 interface RolePermissionsSettingsProps {
   tenantId?: string | null;
@@ -60,35 +61,28 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
 
   const { success, error, info } = useToast();
   const { t } = useTranslation();
+  const { dir } = useDirection();
 
   // Translation helpers for permissions and categories
+  // `cat` is a permission `categoryKey` (e.g. 'permissions.categories.orders');
+  // the trailing segment is the stable slug used by the settings_page.* keys.
   const getCategoryKey = (cat: string): string => {
-    const catKeys: Record<string, string> = {
-      'التبويبات والشاشات': 'tabs_screens',
-      'الطلبات': 'orders',
-      'المالية': 'financial',
-      'المخزون': 'inventory',
-      'العملاء': 'customers',
-      'لوحة التحكم': 'dashboard',
-      'التقارير': 'reports',
-      'الإعدادات': 'settings'
-    };
-    return catKeys[cat] || cat;
+    return cat.split('.').pop() || cat;
   };
 
   const getTransCat = (cat: string): string => {
     const key = getCategoryKey(cat);
-    return t(`settings.staff.permissions.categories.${key}`, { defaultValue: cat });
+    return t(`settings_page.staff.permissions.categories.${key}`, { defaultValue: cat });
   };
 
   const getTransPermName = (permId: string, cat: string, defaultName: string): string => {
     const catKey = getCategoryKey(cat);
-    return t(`settings.staff.permissions.items.${permId}.${catKey}.name`, { defaultValue: defaultName });
+    return t(`settings_page.staff.permissions.items.${permId}.${catKey}.name`, { defaultValue: defaultName });
   };
 
   const getTransPermDesc = (permId: string, cat: string, defaultDesc: string): string => {
     const catKey = getCategoryKey(cat);
-    return t(`settings.staff.permissions.items.${permId}.${catKey}.description`, { defaultValue: defaultDesc });
+    return t(`settings_page.staff.permissions.items.${permId}.${catKey}.description`, { defaultValue: defaultDesc });
   };
 
   const fetchRoles = async () => {
@@ -199,7 +193,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
       }
     } catch (err) {
       console.error('Error fetching roles for settings:', err);
-      error('خطأ في الاتصال', 'تعذر تحميل الأدوار والصلاحيات من قاعدة البيانات');
+      error(t('permissions.load_failed_title'), t('permissions.load_failed_desc'));
     } finally {
       setLoading(false);
     }
@@ -223,7 +217,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
 
   const handleSelectRole = (role: Role) => {
     if (hasChanges) {
-      if (!window.confirm('لديك تغييرات غير محفوظة في صلاحيات الدور الحالي. هل تريد التجاهل والانتقال لدور آخر؟')) {
+      if (!window.confirm(t('permissions.unsaved_changes_confirm'))) {
         return;
       }
     }
@@ -249,7 +243,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
     setPermissionsState(prev => {
       const updated = { ...prev };
       SYSTEM_PERMISSIONS.forEach(p => {
-        if (!category || category === 'all' || p.category === category) {
+        if (!category || category === 'all' || p.categoryKey === category) {
           updated[p.id as PermissionKey] = true;
         }
       });
@@ -263,7 +257,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
     setPermissionsState(prev => {
       const updated = { ...prev };
       SYSTEM_PERMISSIONS.forEach(p => {
-        if (!category || category === 'all' || p.category === category) {
+        if (!category || category === 'all' || p.categoryKey === category) {
           updated[p.id as PermissionKey] = false;
         }
       });
@@ -277,7 +271,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
     const defaultTemplate = DEFAULT_ROLES[selectedRole.roleKey]?.permissions || DEFAULT_ROLES.tailor.permissions;
     setPermissionsState({ ...defaultTemplate });
     setHasChanges(true);
-    info('إعادة الضبط', 'تمت استعادة قالب الصلاحيات الافتراضي لهذا الدور. اضغط حفظ لتطبيق التغييرات.');
+    info(t('permissions.reset_title'), t('permissions.reset_desc'));
   };
 
   const handleSaveChanges = async () => {
@@ -358,15 +352,15 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
       }
 
       if (isSuperAdmin) {
-        success('تم تحديث النموذج القياسي للنظام', `تم تحديث الصلاحيات الافتراضية لدور (${selectedRole.name}) لجميع التجار الذين يستخدمون النموذج القياسي.`);
+        success(t('permissions.saved_global_title'), t('permissions.saved_global_desc', { role: selectedRole.name }));
       } else {
-        success('تم حفظ صلاحيات التاجر', `تم تحديث صلاحيات دور (${selectedRole.name}) لمتجرك الخاص فقط.`);
+        success(t('permissions.saved_tenant_title'), t('permissions.saved_tenant_desc', { role: selectedRole.name }));
       }
 
       if (onPermissionsSaved) onPermissionsSaved();
     } catch (err) {
       console.error('Error saving role permissions:', err);
-      error('فشل الحفظ', 'حدث خطأ أثناء حفظ الصلاحيات في قاعدة البيانات');
+      error(t('permissions.save_failed_title'), t('permissions.save_failed_desc'));
     } finally {
       setSaving(false);
     }
@@ -389,29 +383,29 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
         auth.currentUser?.uid || null,
         auth.currentUser?.email || ''
       );
-      success('تم إضافة المهنة', `تم إنشاء دور (${newRoleName}) بنجاح`);
+      success(t('permissions.role_created_title'), t('permissions.role_created_desc', { role: newRoleName }));
       setShowCreateRoleModal(false);
       setNewRoleName('');
       setNewRoleDesc('');
       await fetchRoles();
     } catch (err) {
       console.error('Error creating custom role:', err);
-      error('خطأ', 'فشل إنشاء المهنة المخصصة');
+      error(t('common.error'), t('permissions.create_role_failed'));
     } finally {
       setSaving(false);
     }
   };
 
   // Filter permissions
-  const categories = Array.from(new Set(SYSTEM_PERMISSIONS.map(p => p.category)));
+  const categories = Array.from(new Set(SYSTEM_PERMISSIONS.map(p => p.categoryKey)));
 
   const filteredPermissions = SYSTEM_PERMISSIONS.filter(p => {
-    const transName = getTransPermName(p.id, p.category, p.name);
-    const transDesc = getTransPermDesc(p.id, p.category, p.description);
+    const transName = getTransPermName(p.id, p.categoryKey, p.name);
+    const transDesc = getTransPermDesc(p.id, p.categoryKey, p.description);
     const matchesSearch = transName.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           transDesc.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           p.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || p.category === selectedCategory;
+    const matchesCategory = selectedCategory === 'all' || p.categoryKey === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -424,13 +418,13 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
     return (
       <div className="bg-surface rounded-3xl p-12 border border-border flex flex-col items-center justify-center min-h-[400px]">
         <div className="w-12 h-12 border-4 border-brand border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-sm font-bold text-content-muted">جاري تحميل مصفوفة الصلاحيات...</p>
+        <p className="text-sm font-bold text-content-muted">{t('permissions.loading_matrix')}</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8" dir="rtl">
+    <div className="space-y-8" dir={dir}>
       {/* Top Banner Header */}
       <div className="bg-gradient-to-r from-brand/10 via-surface to-brand/5 p-6 md:p-8 rounded-[2.5rem] border border-brand/20 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="space-y-2">
@@ -440,16 +434,16 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
             </div>
             <div>
               <h2 className="text-2xl font-black text-content flex items-center gap-2">
-                {isSuperAdmin ? 'إدارة الصلاحيات القياسية للنظام (السوبر أدمن)' : 'إدارة صلاحيات الأدوار الوظيفية'}
+                {isSuperAdmin ? t('permissions.title_super_admin') : t('permissions.title_tenant')}
                 <span className="text-xs bg-emerald-500/10 text-emerald-600 px-3 py-1 rounded-full border border-emerald-500/20 font-bold flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                  {isSuperAdmin ? 'تعديل النموذج العام القياسي' : 'تطبيق فوري بدون تحديث'}
+                  {isSuperAdmin ? t('permissions.badge_super_admin') : t('permissions.badge_tenant')}
                 </span>
               </h2>
               <p className="text-xs text-content-muted font-bold mt-1">
                 {isSuperAdmin 
-                  ? 'التعديل هنا يُعدل النموذج الافتراضي بالنظام. التجار الذين لم يخصصوا صلاحياتهم سيتأثرون فوراً بالتعديلات، بينما التجار الذين خصصوا صلاحياتهم سيحتفظون بتخصيصاتهم.' 
-                  : 'تفعيل أو تعطيل التبويبات والشاشات والعمليات لكل مسمى وظيفي في متجرك وتحديد المسارات المتاحة لكل موظف.'
+                  ? t('permissions.subtitle_super_admin')
+                  : t('permissions.subtitle_tenant')
                 }
               </p>
             </div>
@@ -462,7 +456,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
             className="px-5 py-3 bg-surface hover:bg-surface-muted text-content font-bold text-xs rounded-2xl border border-border flex items-center gap-2 transition-all shadow-sm"
           >
             <Plus size={16} className="text-brand" />
-            <span>إضافة مهنة مخصصة</span>
+            <span>{t('settings_page.staff.add_custom_role')}</span>
           </button>
           
           <button
@@ -480,7 +474,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
             ) : (
               <Save size={16} />
             )}
-            <span>{hasChanges ? (isSuperAdmin ? 'حفظ النموذج القياسي' : 'حفظ التغييرات الآن') : 'التغييرات محفوظة'}</span>
+            <span>{hasChanges ? (isSuperAdmin ? t('permissions.save_global_template') : t('permissions.save_changes_now')) : t('permissions.changes_saved')}</span>
           </button>
         </div>
       </div>
@@ -511,10 +505,10 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
               <div className="bg-surface rounded-[2.5rem] border border-border shadow-sm p-5 space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-border">
                   <h3 className="text-xs font-black text-content-muted uppercase tracking-wider">
-                    {isSuperAdmin ? 'الأدوار القابلة للتخصيص' : 'أدوار المتجر المتاحة'}
+                    {isSuperAdmin ? t('permissions.roles_list_super_admin') : t('permissions.roles_list_tenant')}
                   </h3>
                   <span className="text-[10px] bg-brand/10 text-brand px-2.5 py-1 rounded-full font-black">
-                    {displayedRoles.length} أدوار
+                    {t('permissions.roles_count', { n: displayedRoles.length })}
                   </span>
                 </div>
 
@@ -530,7 +524,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                           : "text-content-muted hover:text-content"
                       )}
                     >
-                      الجميع ({roles.length})
+                      {t('permissions.filter_all_roles')} ({roles.length})
                     </button>
                     <button
                       type="button"
@@ -542,7 +536,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                           : "text-content-muted hover:text-content"
                       )}
                     >
-                      <span>المتاجر</span>
+                      <span>{t('permissions.filter_merchants')}</span>
                       <span className="text-[9px] opacity-80">
                         ({roles.filter(r => (r.category || (isSaaSRole(r.roleKey) ? 'saas' : 'merchant')) === 'merchant').length})
                       </span>
@@ -557,7 +551,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                           : "text-content-muted hover:text-content"
                       )}
                     >
-                      <span>فريق ساس</span>
+                      <span>{t('permissions.filter_saas')}</span>
                       <span className="text-[9px] opacity-80">
                         ({roles.filter(r => (r.category || (isSaaSRole(r.roleKey) ? 'saas' : 'merchant')) === 'saas').length})
                       </span>
@@ -607,7 +601,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                               <span className="text-sm font-black text-content truncate">{role.name}</span>
                               {isOwner && (
                                 <span className="text-[9px] bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-full font-bold">
-                                  وصول كامل
+                                  {t('permissions.badge_full_access')}
                                 </span>
                               )}
                               {isSuperAdmin && (
@@ -617,22 +611,22 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                                     ? "bg-purple-500/10 text-purple-600 border-purple-500/20"
                                     : "bg-blue-500/10 text-blue-600 border-blue-500/20"
                                 )}>
-                                  {isSaas ? 'فريق ساس' : 'أدوار المتاجر'}
+                                  {isSaas ? t('permissions.filter_saas') : t('permissions.badge_merchant_roles')}
                                 </span>
                               )}
                               {!isOwner && isTenantCustom && !isSuperAdmin && (
                                 <span className="text-[9px] bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-full font-bold">
-                                  مخصص لمتجرك
+                                  {t('permissions.badge_custom_to_store')}
                                 </span>
                               )}
                               {!isOwner && !isTenantCustom && !isSuperAdmin && (
                                 <span className="text-[9px] bg-brand/10 text-brand px-2 py-0.5 rounded-full font-bold">
-                                  النموذج القياسي
+                                  {t('permissions.badge_standard_template')}
                                 </span>
                               )}
                             </div>
                             <p className="text-[11px] text-content-muted font-bold truncate mt-0.5">
-                              {role.description || 'لا يوجد وصف'}
+                              {role.description || t('permissions.no_description')}
                             </p>
                           </div>
                         </div>
@@ -641,7 +635,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                           <div className="text-xs font-black text-brand">
                             {enabledCount} / {totalCount}
                           </div>
-                          <div className="text-[9px] text-content-muted font-bold mt-0.5">صلاحيات ترفيهية</div>
+                          <div className="text-[9px] text-content-muted font-bold mt-0.5">{t('permissions.enabled_permissions_label')}</div>
                         </div>
                       </button>
                     );
@@ -652,10 +646,10 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
           <div className="p-5 bg-amber-500/5 rounded-2xl border border-amber-500/20 text-right space-y-2">
             <div className="flex items-center gap-2 text-amber-600 font-black text-xs">
               <Info size={16} />
-              <span>ملاحظة حول دور صاحب العمل (Owner)</span>
+              <span>{t('permissions.owner_note_title')}</span>
             </div>
             <p className="text-[11px] text-content-muted font-medium leading-relaxed">
-              دور المالك يمتلك دائماً كافة الصلاحيات بشكل مطلق لضمان عدم حظر الإدارة العليا من الوصول للنظام وإعدادات المتجر.
+              {t('permissions.owner_note_desc')}
             </p>
           </div>
         </div>
@@ -668,7 +662,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-border">
                 <div>
                   <h3 className="text-xl font-black text-content flex items-center gap-2">
-                    تعديل صلاحيات: <span className="text-brand">{selectedRole.name}</span>
+                    {t('permissions.edit_permissions_for')} <span className="text-brand">{selectedRole.name}</span>
                   </h3>
                   <p className="text-xs text-content-muted font-bold mt-1">
                     {selectedRole.description}
@@ -682,7 +676,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                     className="px-3.5 py-2 bg-surface-muted hover:bg-border text-content text-xs font-bold rounded-xl border border-border transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <CheckSquare size={14} className="text-brand" />
-                    <span>تحديد الكل</span>
+                    <span>{t('inventory.select_all')}</span>
                   </button>
 
                   <button
@@ -691,7 +685,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                     className="px-3.5 py-2 bg-surface-muted hover:bg-border text-content text-xs font-bold rounded-xl border border-border transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <Square size={14} className="text-content-muted" />
-                    <span>إلغاء الكل</span>
+                    <span>{t('customers.deselect_all')}</span>
                   </button>
 
                   <button
@@ -700,7 +694,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                     className="px-3.5 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 text-xs font-bold rounded-xl border border-amber-500/20 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <RotateCcw size={14} />
-                    <span>الافتراضي</span>
+                    <span>{t('permissions.default_button')}</span>
                   </button>
                 </div>
               </div>
@@ -711,23 +705,23 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                   <div className="flex items-center justify-between flex-wrap gap-3">
                     <div className="flex items-center gap-2.5 text-amber-700 dark:text-amber-400 font-black text-sm">
                       <Lock size={18} />
-                      <span>مهنة افتراضية محمية من النظام</span>
+                      <span>{t('permissions.protected_default_role')}</span>
                     </div>
                     <button
                       type="button"
                       onClick={() => {
-                        setNewRoleName(`${selectedRole.name} مخصص`);
-                        setNewRoleDesc(`نسخة مخصصة من ${selectedRole.name}`);
+                        setNewRoleName(t('permissions.suggested_custom_role_name', { role: selectedRole.name }));
+                        setNewRoleDesc(t('permissions.suggested_custom_role_desc', { role: selectedRole.name }));
                         setShowCreateRoleModal(true);
                       }}
                       className="px-4 py-2 bg-brand text-white font-black text-xs rounded-xl shadow-sm hover:bg-brand/90 transition-all flex items-center gap-1.5 cursor-pointer"
                     >
                       <Plus size={14} />
-                      <span>إنشاء مهنة مخصصة بناءً على هذا الدور</span>
+                      <span>{t('permissions.create_role_from_this')}</span>
                     </button>
                   </div>
                   <p className="text-xs text-content-muted font-bold leading-relaxed">
-                    المهن الافتراضية (مثل المدير، المحاسب، الكاشير...) محمية بالنظام ولا يمكن للتاجر تعديل صلاحياتها مباشرة. تعديل المهن الافتراضية متاح فقط للسوبر أدمن. لإعطاء صلاحيات مختلفة لموظفيك، يمكنك إنشاء مهنة مخصصة جديدة وتخصيص صلاحياتها بكل حرية.
+                    {t('permissions.protected_default_note')}
                   </p>
                 </div>
               )}
@@ -740,7 +734,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="ابحث في أسماء ووصف الصلاحيات..."
+                    placeholder={t('permissions.search_placeholder')}
                     className="w-full bg-surface-muted border border-border rounded-2xl py-3 pr-11 pl-4 text-xs font-bold text-content focus:border-brand outline-none transition-all"
                   />
                   {searchTerm && (
@@ -760,10 +754,10 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                         : "bg-surface-muted text-content-muted hover:text-content"
                     )}
                   >
-                    {t('settings.staff.permissions.all_roles', { defaultValue: 'الكل' })} ({SYSTEM_PERMISSIONS.length})
+                    {t('settings.staff.permissions.all_roles')} ({SYSTEM_PERMISSIONS.length})
                   </button>
                   {categories.map(cat => {
-                    const count = SYSTEM_PERMISSIONS.filter(p => p.category === cat).length;
+                    const count = SYSTEM_PERMISSIONS.filter(p => p.categoryKey === cat).length;
                     return (
                       <button
                         key={cat}
@@ -787,7 +781,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                 {categories
                   .filter(cat => selectedCategory === 'all' || selectedCategory === cat)
                   .map(category => {
-                    const categoryPerms = filteredPermissions.filter(p => p.category === category);
+                    const categoryPerms = filteredPermissions.filter(p => p.categoryKey === category);
                     if (categoryPerms.length === 0) return null;
 
                     return (
@@ -798,7 +792,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                             {getTransCat(category)}
                           </h4>
                           <span className="text-[10px] text-content-muted font-bold">
-                            {categoryPerms.filter(p => permissionsState[p.id as PermissionKey]).length} / {categoryPerms.length} {t('settings.staff.permissions.enabled', { defaultValue: 'مفعل' })}
+                            {categoryPerms.filter(p => permissionsState[p.id as PermissionKey]).length} / {categoryPerms.length} {t('settings.staff.permissions.enabled')}
                           </span>
                         </div>
 
@@ -819,16 +813,16 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                                 )}
                               >
                                 <div className="space-y-1">
-                                  <div className="text-xs font-black text-content group-hover:text-brand transition-colors flex items-center gap-2">
-                                    <span>{getTransPermName(perm.id, perm.category, perm.name)}</span>
+                                  <div className="text-xs font-black text-content group-hover:text-brand transition-colors flex items-center gap-2 flex-wrap">
+                                    <span>{getTransPermName(perm.id, perm.categoryKey, perm.name)}</span>
                                     {perm.id.endsWith('.view') && (
                                       <span className="text-[9px] bg-blue-500/10 text-blue-600 px-2 py-0.2 rounded font-bold">
-                                        {t('settings.staff.permissions.view_badge', { defaultValue: 'شاشة/تبويب' })}
+                                        {t('settings.staff.permissions.view_badge')}
                                       </span>
                                     )}
                                   </div>
                                   <p className="text-[10px] text-content-muted font-bold leading-relaxed">
-                                    {getTransPermDesc(perm.id, perm.category, perm.description)}
+                                    {getTransPermDesc(perm.id, perm.categoryKey, perm.description)}
                                   </p>
                                 </div>
 
@@ -862,7 +856,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                 <div className="sticky bottom-4 bg-brand/95 backdrop-blur-md text-white p-4 rounded-2xl shadow-xl flex items-center justify-between gap-4 border border-brand/20 animate-bounce-short">
                   <div className="flex items-center gap-2 text-xs font-bold">
                     <Sparkles size={18} />
-                    <span>تنبيه: لديك تغييرات غير محفوظة في صلاحيات دور ({selectedRole.name}).</span>
+                    <span>{t('permissions.unsaved_banner', { role: selectedRole.name })}</span>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -873,14 +867,14 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                       }}
                       className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-xl text-xs font-bold transition-all"
                     >
-                      إلغاء التغييرات
+                      {t('permissions.discard_changes')}
                     </button>
                     <button
                       onClick={handleSaveChanges}
                       disabled={saving}
                       className="px-5 py-2 bg-white text-brand font-black rounded-xl text-xs transition-all hover:bg-surface shadow-md"
                     >
-                      {saving ? 'جاري الحفظ...' : 'حفظ الصلاحيات الآن'}
+                      {saving ? t('common.saving') : t('permissions.save_permissions_now')}
                     </button>
                   </div>
                 </div>
@@ -888,7 +882,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
             </div>
           ) : (
             <div className="bg-surface rounded-[2.5rem] border border-border p-12 text-center text-content-muted font-bold">
-              اختر دوراً وظيفياً من القائمة لعرض وتعديل صلاحياته.
+              {t('permissions.select_role_hint')}
             </div>
           )}
         </div>
@@ -899,7 +893,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
       {/* Create Custom Role Modal */}
       <AnimatePresence>
         {showCreateRoleModal && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" dir="rtl">
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" dir={dir}>
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -909,7 +903,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
               <div className="flex items-center justify-between pb-4 border-b border-border">
                 <h3 className="text-lg font-black text-content flex items-center gap-2">
                   <Plus size={20} className="text-brand" />
-                  إضافة مهنة مخصصة جديدة
+                  {t('permissions.add_custom_role_modal_title')}
                 </h3>
                 <button onClick={() => setShowCreateRoleModal(false)} className="text-content-muted hover:text-content">
                   <X size={20} />
@@ -918,11 +912,11 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
 
               <form onSubmit={handleCreateCustomRole} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-black text-content-muted">اسم المهنة المخصصة</label>
+                  <label className="text-xs font-black text-content-muted">{t('permissions.custom_role_name_label')}</label>
                   <input
                     type="text"
                     required
-                    placeholder="مثال: مشرف مخزون، كاشير مسائي"
+                    placeholder={t('permissions.custom_role_name_placeholder')}
                     value={newRoleName}
                     onChange={(e) => setNewRoleName(e.target.value)}
                     className="w-full bg-surface-muted border border-border rounded-2xl p-3.5 text-xs font-bold text-content focus:border-brand outline-none"
@@ -930,10 +924,10 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-black text-content-muted">وصف الوظيفة (اختياري)</label>
+                  <label className="text-xs font-black text-content-muted">{t('permissions.custom_role_desc_label')}</label>
                   <textarea
                     rows={3}
-                    placeholder="وصف مختصر لمسؤوليات هذا الدور الوظيفي..."
+                    placeholder={t('permissions.custom_role_desc_placeholder')}
                     value={newRoleDesc}
                     onChange={(e) => setNewRoleDesc(e.target.value)}
                     className="w-full bg-surface-muted border border-border rounded-2xl p-3.5 text-xs font-bold text-content focus:border-brand outline-none resize-none"
@@ -946,14 +940,14 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                     onClick={() => setShowCreateRoleModal(false)}
                     className="px-5 py-2.5 bg-surface-muted hover:bg-border text-content text-xs font-bold rounded-xl transition-all"
                   >
-                    إلغاء
+                    {t('common.cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={saving || !newRoleName.trim()}
                     className="px-6 py-2.5 bg-brand text-white text-xs font-black rounded-xl transition-all shadow-md shadow-brand/10 disabled:opacity-50"
                   >
-                    {saving ? 'جاري الإضافة...' : 'إنشاء المهنة المخصصة'}
+                    {saving ? t('settings_page.staff.seeding_roles') : t('permissions.create_custom_role_submit')}
                   </button>
                 </div>
               </form>

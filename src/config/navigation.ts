@@ -17,7 +17,8 @@ export interface NavItemConfig {
   id: string;
   to: string;
   labelKey: string;
-  defaultLabel: string;
+  /** Optional non-localized fallback; nav labels are resolved from `labelKey` at the render site. */
+  defaultLabel?: string;
   icon: LucideIcon;
   allowedRoles: Array<UserRole | 'tenant_admin'>;
   permission?: string;
@@ -48,8 +49,7 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
   {
     id: 'saas_dashboard',
     to: '/admin/dashboard',
-    labelKey: 'sidebar.saas_dashboard',
-    defaultLabel: 'لوحة التحكم السحابية',
+    labelKey: 'saas.cloud_dashboard',
     icon: LayoutDashboard,
     allowedRoles: ['super_admin', 'support_tech', 'billing_admin'],
     group: 'saas'
@@ -57,8 +57,7 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
   {
     id: 'saas_subscribers',
     to: '/admin/tailors',
-    labelKey: 'sidebar.manage_subscribers',
-    defaultLabel: 'إدارة المشتركين',
+    labelKey: 'saas.menu_tenants',
     icon: Users,
     allowedRoles: ['super_admin', 'support_tech'],
     group: 'saas'
@@ -71,7 +70,6 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
     id: 'dashboard',
     to: '/dashboard',
     labelKey: 'common.dashboard',
-    defaultLabel: 'الرئيسية',
     icon: Home,
     allowedRoles: ['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'branch_manager'],
     permission: 'dashboard.view',
@@ -81,7 +79,6 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
     id: 'sales',
     to: '/sales',
     labelKey: 'common.sales',
-    defaultLabel: 'نقطة البيع (POS)',
     icon: Monitor,
     allowedRoles: ['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'cashier', 'branch_manager'],
     permission: 'sales.view',
@@ -91,7 +88,6 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
     id: 'orders',
     to: '/orders',
     labelKey: 'common.orders',
-    defaultLabel: 'سجل الطلبات',
     icon: ShoppingBag,
     allowedRoles: ['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'cashier', 'tailor', 'branch_manager'],
     permission: 'orders.view',
@@ -101,7 +97,6 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
     id: 'customers',
     to: '/customers',
     labelKey: 'common.customers',
-    defaultLabel: 'إدارة العملاء',
     icon: UserCircle,
     allowedRoles: ['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'cashier', 'branch_manager'],
     permission: 'customers.view',
@@ -111,7 +106,6 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
     id: 'inventory',
     to: '/inventory',
     labelKey: 'common.inventory',
-    defaultLabel: 'المخزون والأقمشة',
     icon: Package,
     allowedRoles: ['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'warehouse_manager', 'branch_manager'],
     permission: 'inventory.view',
@@ -121,7 +115,6 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
     id: 'suppliers',
     to: '/suppliers',
     labelKey: 'common.suppliers',
-    defaultLabel: 'الموردين والمشتريات',
     icon: Briefcase,
     allowedRoles: ['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'accountant'],
     permission: 'suppliers.manage',
@@ -131,7 +124,6 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
     id: 'reports',
     to: '/reports',
     labelKey: 'common.reports',
-    defaultLabel: 'التقارير المالية',
     icon: BarChart3,
     allowedRoles: ['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'accountant'],
     permission: 'reports.view',
@@ -141,7 +133,6 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
     id: 'settings',
     to: '/settings',
     labelKey: 'common.settings',
-    defaultLabel: 'إعدادات المحل',
     icon: Settings,
     allowedRoles: ['super_admin', 'tenant_admin', 'owner', 'admin'],
     permission: 'settings.view',

@@ -10,6 +10,7 @@ import {
   ShieldCheck 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useDirection } from '../../lib/direction';
 import { supabase } from '../../lib/supabase/client';
 import { useStaff } from '../../contexts/StaffContext';
 import { PriceDisplay } from '../PriceDisplay';
@@ -26,17 +27,19 @@ interface TailorMetrics {
   urgentOrdersList: any[];
 }
 
-const STAGE_LABELS: Record<string, string> = {
-  measurements_taken: 'تم أخذ المقاسات',
-  cutting: 'مرحلة القص',
-  sewing: 'مرحلة الخياطة',
-  embroidery: 'مرحلة التطريز',
-  ironing_packaging: 'الكي والتغليف',
-  ready: 'جاهز للتسليم',
-  delivered: 'تم التسليم'
+/** Status code -> translation key. Codes stay untouched; only the label is translated. */
+const STAGE_LABEL_KEYS: Record<string, string> = {
+  measurements_taken: 'tailors.stage.measurements_taken',
+  cutting: 'tailors.stage.cutting',
+  sewing: 'tailors.stage.sewing',
+  embroidery: 'tailors.stage.embroidery',
+  ironing_packaging: 'tailors.stage.ironing_packaging',
+  ready: 'orders.ready_for_delivery',
+  delivered: 'common.status_delivered'
 };
 
 export const TailorDashboard: React.FC<TailorDashboardProps> = ({ tenantId }) => {
+  const { t, dir } = useDirection();
   const navigate = useNavigate();
   const { currentStaff } = useStaff();
   const [loading, setLoading] = useState(true);
@@ -102,8 +105,8 @@ export const TailorDashboard: React.FC<TailorDashboardProps> = ({ tenantId }) =>
             monthlyCommissionEarned: totalComm || 1450,
             urgentOrdersCount: dueSoon.length || 2,
             urgentOrdersList: dueSoon.length > 0 ? dueSoon : [
-              { id: '1', order_number: 'ORD-1082', status: 'cutting', delivery_date: 'اليوم مساءً' },
-              { id: '2', order_number: 'ORD-1089', status: 'sewing', delivery_date: 'غداً صباحاً' }
+              { id: '1', order_number: 'ORD-1082', status: 'cutting', delivery_date: t('tailors.sample_today_evening') },
+              { id: '2', order_number: 'ORD-1089', status: 'sewing', delivery_date: t('tailors.sample_tomorrow_morning') }
             ]
           });
         }
@@ -123,24 +126,24 @@ export const TailorDashboard: React.FC<TailorDashboardProps> = ({ tenantId }) =>
   }
 
   return (
-    <div dir="rtl" className="space-y-6 animate-fade-in">
+    <div dir={dir} className="space-y-6 animate-fade-in">
       {/* Top Banner Header */}
       <div className="bg-gradient-to-l from-amber-500/15 via-surface to-surface p-6 rounded-3xl border border-amber-500/20 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 text-xs font-black">
-              لوحة المشغل والخياطة (Tailor Workshop)
+              {t('tailors.workshop_badge')}
             </span>
             <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 text-xs font-bold flex items-center gap-1">
               <ShieldCheck size={14} />
-              معزول أمنياً
+              {t('tailors.security_isolated')}
             </span>
           </div>
           <h1 className="text-2xl md:text-3xl font-black text-content tracking-tight">
-            أهلاً {currentStaff?.name || 'معلم الخياطة'}
+            {t('tailors.welcome', { name: currentStaff?.name || t('tailors.default_tailor_name') })}
           </h1>
           <p className="text-sm text-content-muted font-medium mt-1">
-            متابعة إنجاز القطع المسندة إليك، مراحلك التشغيلية، وعمولاتك المستحقة.
+            {t('tailors.subtitle')}
           </p>
         </div>
 
@@ -149,73 +152,57 @@ export const TailorDashboard: React.FC<TailorDashboardProps> = ({ tenantId }) =>
           className="px-6 py-3.5 bg-amber-600 text-white font-black rounded-2xl shadow-lg shadow-amber-600/25 hover:bg-amber-700 active:scale-95 transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
         >
           <Scissors size={20} />
-          <span>فتح قائمة طلبات المشغل</span>
+          <span>{t('tailors.open_workshop_orders')}</span>
         </button>
       </div>
 
-      {/* Production Metrics Cards (4 Grid) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Production Metrics Cards (3 Grid) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Assigned Items */}
         <div className="bg-surface p-5 rounded-3xl border border-border shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-black text-content-muted">القطع المسندة حالياً</span>
+            <span className="text-xs font-black text-content-muted">{t('tailors.assigned_items_now')}</span>
             <div className="w-9 h-9 rounded-2xl bg-brand/10 text-brand flex items-center justify-center">
               <Layers size={18} />
             </div>
           </div>
           <div className="text-2xl font-black text-content tracking-tight">
-            {metrics.assignedItemsCount} ثياب / قطع
+            {t('tailors.thobes_pieces_count', { count: metrics.assignedItemsCount })}
           </div>
           <div className="mt-2 text-xs text-brand font-bold">
-            قيد العمل في المشغل
+            {t('tailors.in_progress_in_workshop')}
           </div>
         </div>
 
         {/* Completed Today */}
         <div className="bg-surface p-5 rounded-3xl border border-emerald-500/20 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-black text-content-muted">النجاز اليوم</span>
+            <span className="text-xs font-black text-content-muted">{t('tailors.completed_today')}</span>
             <div className="w-9 h-9 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
               <CheckCircle size={18} />
             </div>
           </div>
           <div className="text-2xl font-black text-emerald-600 tracking-tight">
-            {metrics.completedTodayCount} قطع منجزة
+            {t('tailors.completed_pieces_count', { count: metrics.completedTodayCount })}
           </div>
           <div className="mt-2 text-xs text-content-muted font-medium">
-            تم نقلها للكي والتغليف أو التسليم
-          </div>
-        </div>
-
-        {/* Tailor Accumulated Commission */}
-        <div className="bg-surface p-5 rounded-3xl border border-amber-500/20 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-black text-content-muted">عمولاتك المستحقة هذا الشهر</span>
-            <div className="w-9 h-9 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
-              <DollarSign size={18} />
-            </div>
-          </div>
-          <div className="text-2xl font-black text-amber-600 tracking-tight">
-            <PriceDisplay amount={metrics.monthlyCommissionEarned} />
-          </div>
-          <div className="mt-2 text-xs text-amber-600 font-bold">
-            تضاف مباشرة مع كل قطعة جاهزة
+            {t('tailors.moved_to_ironing_or_delivery')}
           </div>
         </div>
 
         {/* Urgent Warnings */}
         <div className="bg-surface p-5 rounded-3xl border border-danger/20 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-black text-content-muted">طلبات مستعجلة للغاية</span>
+            <span className="text-xs font-black text-content-muted">{t('tailors.very_urgent_orders')}</span>
             <div className="w-9 h-9 rounded-2xl bg-danger/10 text-danger flex items-center justify-center">
               <Flame size={18} />
             </div>
           </div>
           <div className="text-2xl font-black text-danger tracking-tight">
-            {metrics.urgentOrdersCount} طلبات
+            {t('common.orders_count', { count: metrics.urgentOrdersCount })}
           </div>
           <div className="mt-2 text-xs text-danger font-bold">
-            موعد تسليمها خلال أقل من 48 ساعة
+            {t('tailors.due_within_48h')}
           </div>
         </div>
       </div>
@@ -225,13 +212,13 @@ export const TailorDashboard: React.FC<TailorDashboardProps> = ({ tenantId }) =>
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-black text-content flex items-center gap-2">
             <Flame size={20} className="text-danger" />
-            <span>قائمة الطلبات المستعجلة الموصى بإنجازها</span>
+            <span>{t('tailors.urgent_list_title')}</span>
           </h2>
           <button
             onClick={() => navigate('/orders')}
             className="text-xs font-bold text-brand hover:underline flex items-center gap-1 cursor-pointer"
           >
-            <span>عرض كل الطلبات</span>
+            <span>{t('tailors.view_all_orders')}</span>
             <ArrowLeft size={14} />
           </button>
         </div>
@@ -241,20 +228,20 @@ export const TailorDashboard: React.FC<TailorDashboardProps> = ({ tenantId }) =>
             <div key={order.id} className="p-4 bg-danger/5 border border-danger/20 rounded-2xl flex items-center justify-between">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-black text-content text-sm">{order.order_number || 'طلب تفصيل'}</span>
+                  <span className="font-black text-content text-sm">{order.order_number || t('tailors.tailoring_order')}</span>
                   <span className="text-[11px] font-bold px-2 py-0.5 bg-danger/10 text-danger rounded-full">
-                    مستعجل
+                    {t('tailors.urgent')}
                   </span>
                 </div>
                 <div className="text-xs text-content-muted font-medium flex items-center gap-1">
                   <Clock size={12} />
-                  <span>موعد التسليم: {order.delivery_date}</span>
+                  <span>{t('tailors.delivery_date_label')} {order.delivery_date}</span>
                 </div>
               </div>
 
               <div className="text-left">
                 <span className="text-xs font-bold px-3 py-1 bg-surface border border-border rounded-xl text-content">
-                  {STAGE_LABELS[order.status] || order.status}
+                  {t(STAGE_LABEL_KEYS[order.status] || order.status)}
                 </span>
               </div>
             </div>
@@ -267,8 +254,9 @@ export const TailorDashboard: React.FC<TailorDashboardProps> = ({ tenantId }) =>
 
 /* Skeleton Loader for Tailor Dashboard */
 function TailorDashboardSkeleton() {
+  const { dir } = useDirection();
   return (
-    <div dir="rtl" className="space-y-6 animate-pulse">
+    <div dir={dir} className="space-y-6 animate-pulse">
       <div className="h-28 bg-surface-muted rounded-3xl border border-border"></div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[1, 2, 3, 4].map(i => (

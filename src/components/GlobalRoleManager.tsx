@@ -21,41 +21,17 @@ import { seedGlobalRoles, DEFAULT_ROLES, isSaaSRole, isMerchantRole } from '../s
 import { SYSTEM_PERMISSIONS } from '../constants/permissions';
 import { useTranslation } from 'react-i18next';
 
-const ALL_PERMISSIONS: { key: PermissionKey; label: string; category: string }[] = SYSTEM_PERMISSIONS.map(p => ({
+const ALL_PERMISSIONS: { key: PermissionKey; labelKey: string; categoryKey: string }[] = SYSTEM_PERMISSIONS.map(p => ({
   key: p.id as PermissionKey,
-  label: p.name,
-  category: p.category
+  labelKey: p.nameKey,
+  categoryKey: p.categoryKey
 }));
 
-const CATEGORIES = Array.from(new Set(ALL_PERMISSIONS.map(p => p.category)));
+const CATEGORIES = Array.from(new Set(ALL_PERMISSIONS.map(p => p.categoryKey)));
 
 export default function GlobalRoleManager() {
   const { t } = useTranslation();
 
-  // Translation helpers for permissions and categories
-  const getCategoryKey = (cat: string): string => {
-    const catKeys: Record<string, string> = {
-      'التبويبات والشاشات': 'tabs_screens',
-      'الطلبات': 'orders',
-      'المالية': 'financial',
-      'المخزون': 'inventory',
-      'العملاء': 'customers',
-      'لوحة التحكم': 'dashboard',
-      'التقارير': 'reports',
-      'الإعدادات': 'settings'
-    };
-    return catKeys[cat] || cat;
-  };
-
-  const getTransCat = (cat: string): string => {
-    const key = getCategoryKey(cat);
-    return t(`settings.staff.permissions.categories.${key}`, { defaultValue: cat });
-  };
-
-  const getTransPermName = (permId: string, cat: string, defaultName: string): string => {
-    const catKey = getCategoryKey(cat);
-    return t(`settings.staff.permissions.items.${permId}.${catKey}.name`, { defaultValue: defaultName });
-  };
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
@@ -171,7 +147,7 @@ export default function GlobalRoleManager() {
           .eq('id', editingRole.id);
         
         if (error) throw error;
-        setToast({ message: 'تم تحديث المهنة بنجاح', type: 'success' });
+        setToast({ message: t('settings_page.staff.permissions.role_update_success'), type: 'success' });
         setEditingRole(null);
       } else {
         const cleanedName = roleToSave.name?.toLowerCase().replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_') || '';
@@ -191,7 +167,7 @@ export default function GlobalRoleManager() {
           });
         
         if (error) throw error;
-        setToast({ message: 'تم إنشاء مهنة النظام بنجاح', type: 'success' });
+        setToast({ message: t('saas.global_roles.create_success'), type: 'success' });
         setIsAdding(false);
         setNewRole({
           name: '',
@@ -204,7 +180,7 @@ export default function GlobalRoleManager() {
       await fetchRoles();
     } catch (error: any) {
       console.warn('Error saving role:', error);
-      setToast({ message: `فشل الحفظ: ${error.message || 'خطأ غير معروف'}`, type: 'error' });
+      setToast({ message: t('saas.global_roles.save_failed', { details: error.message || t('orders.unknown_error') }), type: 'error' });
     } finally {
       setIsSaving(false);
     }
@@ -224,12 +200,12 @@ export default function GlobalRoleManager() {
         .delete()
         .eq("id", roleToDelete.id);
       if (error) throw error;
-      setToast({ message: "تم حذف المهنة بنجاح", type: "success" });
+      setToast({ message: t('settings_page.staff.permissions.delete_success'), type: "success" });
       await fetchRoles();
       setRoleToDelete(null);
     } catch (error: any) {
       console.warn("Error deleting role:", error);
-      setToast({ message: `فشل الحذف: ${error.message || "خطأ غير معروف"}`, type: "error" });
+      setToast({ message: t('saas.global_roles.delete_failed', { details: error.message || t('orders.unknown_error') }), type: "error" });
     } finally {
       setIsSaving(false);
     }
@@ -247,29 +223,29 @@ export default function GlobalRoleManager() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-black text-gray-900">إدارة المهن الافتراضية</h2>
-          <p className="text-gray-500 font-medium mt-1">تحديد المهن والصلاحيات الأساسية المتاحة لجميع المشتركين</p>
+          <h2 className="text-2xl font-black text-gray-900">{t('saas.global_roles.title')}</h2>
+          <p className="text-gray-500 font-medium mt-1">{t('saas.global_roles.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={async () => {
-              if (window.confirm('هل تريد تهيئة المهن الافتراضية للنظام؟')) {
+              if (window.confirm(t('saas.global_roles.confirm_seed'))) {
                 const seeded = await seedGlobalRoles();
-                if (seeded) alert('تمت تهيئة المهن بنجاح');
-                else alert('المهن موجودة بالفعل');
+                if (seeded) alert(t('saas.global_roles.seed_success'));
+                else alert(t('saas.global_roles.seed_already_exists'));
               }
             }}
             className="flex items-center gap-2 px-6 py-3 bg-indigo-50 text-indigo-600 rounded-2xl font-black hover:bg-indigo-100 transition-all"
           >
             <Database size={20} />
-            <span>تهيئة المهن الافتراضية</span>
+            <span>{t('saas.global_roles.seed_button')}</span>
           </button>
           <button
             onClick={() => setIsAdding(true)}
             className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl font-black hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
           >
             <Plus size={20} />
-            <span>إضافة مهنة نظام</span>
+            <span>{t('saas.global_roles.add_system_role')}</span>
           </button>
         </div>
       </div>
@@ -283,7 +259,7 @@ export default function GlobalRoleManager() {
             categoryTab === 'all' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
           )}
         >
-          الجميع ({roles.length})
+          {t('saas.global_roles.tab_all')} ({roles.length})
         </button>
         <button
           onClick={() => setCategoryTab('merchant')}
@@ -292,7 +268,7 @@ export default function GlobalRoleManager() {
             categoryTab === 'merchant' ? "bg-indigo-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-900"
           )}
         >
-          <span>أدوار التجار والمتاجر</span>
+          <span>{t('saas.global_roles.tab_merchant')}</span>
           <span className="text-[10px] opacity-80">({roles.filter(r => isMerchantRole(r.roleKey)).length})</span>
         </button>
         <button
@@ -302,7 +278,7 @@ export default function GlobalRoleManager() {
             categoryTab === 'saas' ? "bg-purple-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-900"
           )}
         >
-          <span>أدوار منصة ساس</span>
+          <span>{t('saas.global_roles.tab_saas')}</span>
           <span className="text-[10px] opacity-80">({roles.filter(r => isSaaSRole(r.roleKey)).length})</span>
         </button>
       </div>
@@ -335,7 +311,7 @@ export default function GlobalRoleManager() {
                       "text-[10px] font-black px-2.5 py-1 rounded-full border",
                       isSaas ? "bg-purple-50 text-purple-600 border-purple-200" : "bg-blue-50 text-blue-600 border-blue-200"
                     )}>
-                      {isSaas ? 'فريق ساس' : 'أدوار المتاجر'}
+                      {isSaas ? t('saas.global_roles.badge_saas_team') : t('saas.global_roles.badge_merchant_roles')}
                     </span>
                     <button
                       onClick={() => setEditingRole(role)}
@@ -354,23 +330,23 @@ export default function GlobalRoleManager() {
 
             <h3 className="text-lg font-black text-gray-900">{role.name}</h3>
             <p className="text-sm text-gray-500 font-medium mt-1 line-clamp-2 h-10">
-              {role.description || 'لا يوجد وصف متاح'}
+              {role.description || t('saas.global_roles.no_description')}
             </p>
 
             <div className="mt-6 pt-6 border-t border-gray-50">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-400 font-bold">الصلاحيات الممنوحة</span>
+                <span className="text-gray-400 font-bold">{t('saas.global_roles.granted_permissions')}</span>
                 <span className="text-indigo-600 font-black">
                   {Object.values(role.permissions || {}).filter(Boolean).length} / {ALL_PERMISSIONS.length}
                 </span>
               </div>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {CATEGORIES.slice(0, 3).map(cat => {
-                  const count = ALL_PERMISSIONS.filter(p => p.category === cat && role.permissions?.[p.key]).length;
+                  const count = ALL_PERMISSIONS.filter(p => p.categoryKey === cat && role.permissions?.[p.key]).length;
                   if (count === 0) return null;
                   return (
                     <span key={cat} className="px-2.5 py-1 bg-gray-50 text-gray-600 text-[10px] font-black rounded-lg">
-                      {getTransCat(cat)}: {count}
+                      {t(cat)}: {count}
                     </span>
                   );
                 })}
@@ -403,9 +379,9 @@ export default function GlobalRoleManager() {
                   </div>
                   <div>
                     <h3 className="text-xl font-black text-gray-900">
-                      {editingRole ? 'تعديل مهنة النظام' : 'إضافة مهنة نظام جديدة'}
+                      {editingRole ? t('saas.global_roles.edit_system_role') : t('saas.global_roles.add_system_role_new')}
                     </h3>
-                    <p className="text-sm text-gray-500 font-bold">تحديد الصلاحيات الافتراضية للقالب</p>
+                    <p className="text-sm text-gray-500 font-bold">{t('saas.global_roles.template_defaults_hint')}</p>
                   </div>
                 </div>
                 <button
@@ -422,7 +398,7 @@ export default function GlobalRoleManager() {
               <div className="flex-1 overflow-y-auto p-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
                   <div className="space-y-3">
-                    <label className="block text-sm font-black text-gray-700">اسم المهنة</label>
+                    <label className="block text-sm font-black text-gray-700">{t('settings_page.staff.permissions.role_name')}</label>
                     <input
                       type="text"
                       value={editingRole?.name || newRole.name}
@@ -430,12 +406,12 @@ export default function GlobalRoleManager() {
                         ? setEditingRole({ ...editingRole, name: e.target.value })
                         : setNewRole({ ...newRole, name: e.target.value })
                       }
-                      placeholder="مثال: مدير المتجر، كاشير..."
+                      placeholder={t('saas.global_roles.role_name_placeholder')}
                       className="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 font-bold"
                     />
                   </div>
                   <div className="space-y-3">
-                    <label className="block text-sm font-black text-gray-700">وصف المهنة</label>
+                    <label className="block text-sm font-black text-gray-700">{t('settings_page.staff.permissions.role_desc')}</label>
                     <input
                       type="text"
                       value={editingRole?.description || newRole.description}
@@ -443,7 +419,7 @@ export default function GlobalRoleManager() {
                         ? setEditingRole({ ...editingRole, description: e.target.value })
                         : setNewRole({ ...newRole, description: e.target.value })
                       }
-                      placeholder="وصف مختصر لمسؤوليات هذه المهنة"
+                      placeholder={t('saas.global_roles.role_desc_placeholder')}
                       className="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 font-bold"
                     />
                   </div>
@@ -453,7 +429,7 @@ export default function GlobalRoleManager() {
                   <div className="flex items-center justify-between">
                     <h4 className="text-lg font-black text-gray-900 flex items-center gap-2">
                       <Lock className="text-indigo-600" size={20} />
-                      مصفوفة الصلاحيات
+                      {t('saas.global_roles.permissions_matrix')}
                     </h4>
                     <div className="flex gap-2">
                       <button 
@@ -465,7 +441,7 @@ export default function GlobalRoleManager() {
                         }}
                         className="text-xs font-black text-indigo-600 hover:underline"
                       >
-                        تحديد الكل
+                        {t('inventory.select_all')}
                       </button>
                       <span className="text-gray-300">|</span>
                       <button 
@@ -477,7 +453,7 @@ export default function GlobalRoleManager() {
                         }}
                         className="text-xs font-black text-gray-400 hover:underline"
                       >
-                        إلغاء الكل
+                        {t('customers.deselect_all')}
                       </button>
                     </div>
                   </div>
@@ -487,10 +463,10 @@ export default function GlobalRoleManager() {
                       <div key={category} className="space-y-4">
                         <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
                           <div className="w-1.5 h-6 bg-indigo-600 rounded-full" />
-                          <h5 className="font-black text-gray-900">{getTransCat(category)}</h5>
+                          <h5 className="font-black text-gray-900">{t(category)}</h5>
                         </div>
                         <div className="grid grid-cols-1 gap-3">
-                          {ALL_PERMISSIONS.filter(p => p.category === category).map(permission => {
+                          {ALL_PERMISSIONS.filter(p => p.categoryKey === category).map(permission => {
                             const isChecked = editingRole 
                               ? editingRole.permissions?.[permission.key]
                               : newRole.permissions?.[permission.key];
@@ -516,7 +492,7 @@ export default function GlobalRoleManager() {
                                     "text-sm font-bold",
                                     isChecked ? "text-indigo-900" : "text-gray-600"
                                   )}>
-                                    {getTransPermName(permission.key, category, permission.label)}
+                                    {t(permission.labelKey)}
                                   </span>
                                 </div>
                                 <input
@@ -538,7 +514,7 @@ export default function GlobalRoleManager() {
               <div className="p-8 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-amber-600">
                   <Info size={18} />
-                  <span className="text-xs font-bold">تعديل هذه المهنة سيؤثر على جميع المشتركين الجدد.</span>
+                  <span className="text-xs font-bold">{t('saas.global_roles.edit_warning')}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <button
@@ -548,14 +524,14 @@ export default function GlobalRoleManager() {
                     }}
                     className="px-8 py-4 text-gray-500 font-black hover:bg-white rounded-2xl transition-all"
                   >
-                    إلغاء
+                    {t('common.cancel')}
                   </button>
                   <button
                     onClick={handleSaveRole}
                     className="px-12 py-4 bg-indigo-600 text-white rounded-2xl font-black hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center gap-2"
                   >
                     <Check size={20} />
-                    <span>حفظ المهنة</span>
+                    <span>{t('saas.global_roles.save_role')}</span>
                   </button>
                 </div>
               </div>
@@ -581,11 +557,11 @@ export default function GlobalRoleManager() {
               <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mb-6 mx-auto">
                 <Trash2 size={32} className="text-rose-600" />
               </div>
-              <h3 className="text-xl font-black text-gray-900 text-center mb-2">تأكيد الحذف</h3>
+              <h3 className="text-xl font-black text-gray-900 text-center mb-2">{t('settings_page.staff.permissions.confirm_delete')}</h3>
               <p className="text-sm font-medium text-gray-500 text-center mb-8">
-                هل أنت متأكد من حذف مهنة "{roleToDelete.name}"؟ 
+                {t('saas.global_roles.confirm_delete_role', { name: roleToDelete.name })}
                 <br />
-                <span className="text-rose-600 font-bold">هذا الإجراء سيؤثر على المشتركين الذين يستخدمونها.</span>
+                <span className="text-rose-600 font-bold">{t('saas.global_roles.delete_impact_warning')}</span>
               </p>
               <div className="flex gap-3">
                 <button
@@ -593,14 +569,14 @@ export default function GlobalRoleManager() {
                   disabled={isSaving}
                   className="flex-1 px-4 py-3 rounded-2xl font-black text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 transition-all disabled:opacity-50"
                 >
-                  إلغاء
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={executeDeleteRole}
                   disabled={isSaving}
                   className="flex-1 px-4 py-3 rounded-2xl font-black text-sm text-white bg-rose-600 hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 disabled:opacity-50 flex items-center justify-center"
                 >
-                  {isSaving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'حذف المهنة'}
+                  {isSaving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t('settings_page.staff.permissions.confirm_delete_title')}
                 </button>
               </div>
             </motion.div>

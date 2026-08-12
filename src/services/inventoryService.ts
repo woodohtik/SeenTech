@@ -1,3 +1,4 @@
+import i18n from 'i18next';
 import { supabase } from '../lib/supabase/client';
 import { Order, Tenant, BranchInventory, InventoryItem, Staff } from '../types';
 
@@ -35,7 +36,7 @@ export async function checkStockAvailability(
       .maybeSingle();
 
     if (branchError || !branches) {
-      return { available: false, missingItems: ['المستودع المركزي غير موجود'] };
+      return { available: false, missingItems: [i18n.t('inventory.main_warehouse_not_found')] };
     }
     targetBranchId = branches.id;
   }
@@ -90,11 +91,11 @@ export async function deductStock(
       .eq('is_main', true)
       .maybeSingle();
 
-    if (branchError || !branches) throw new Error('المستودع المركزي غير موجود');
+    if (branchError || !branches) throw new Error(i18n.t('inventory.main_warehouse_not_found'));
     targetBranchId = branches.id;
   }
 
-  if (!targetBranchId) throw new Error('لم يتم تحديد الفرع للخصم');
+  if (!targetBranchId) throw new Error(i18n.t('inventory.branch_not_set_for_deduction'));
 
   for (const item of order.items) {
     const { data: inventoryItem, error: invError } = await supabase
@@ -106,40 +107,32 @@ export async function deductStock(
     
     if (invError || !inventoryItem) continue;
 
-    const { data: branchInv, error: branchInvError } = await supabase
-      .from('branch_inventory')
-      .select('quantity')
-      .eq('branch_id', targetBranchId)
-      .eq('item_id', inventoryItem.id)
-      .maybeSingle();
-
     const deductionAmount = item.consumedMeters || convertToMeters(item.quantity, item.selectedUnit || 'meter');
-    const currentQty = branchInv?.quantity || 0;
-    const newQty = currentQty - deductionAmount;
+    if (!deductionAmount) continue;
 
-    await supabase
-      .from('branch_inventory')
-      .update({
-        quantity: newQty,
-        updated_at: new Date().toISOString()
-      })
-      .eq('branch_id', targetBranchId)
-      .eq('item_id', inventoryItem.id);
+    /* --------------------------------------------------------------------
+       Was: read quantity -> compute currentQty - deductionAmount -> write the
+       absolute value, with no negative guard and no check that the update
+       actually applied. Two concurrent sales of the same fabric each wrote
+       their own absolute total, so one of them vanished; and the ledger row
+       was inserted unconditionally, asserting a deduction that may never have
+       happened.
 
-    // Add to ledger
-    await supabase.from('stock_ledger').insert({
-      item_id: inventoryItem.id,
-      branch_id: targetBranchId,
-      type: 'deduction',
-      previous_quantity: currentQty,
-      new_quantity: newQty,
-      change: -deductionAmount,
-      reference_id: order.id,
-      staff_id: staff.id,
-      staff_name: staff.name,
-      tenant_id: tenantId,
-      created_at: new Date().toISOString()
+       One transactional server call instead: relative delta, >= 0 enforced,
+       ledger row derived from the real before/after values, idempotent on the
+       order + item key so a retried checkout cannot double-deduct.
+       -------------------------------------------------------------------- */
+    const { error: moveError } = await supabase.rpc('apply_stock_movement', {
+      p_operation_id: `order:${order.id}:item:${inventoryItem.id}`,
+      p_branch_id: targetBranchId,
+      p_item_id: inventoryItem.id,
+      p_delta: -Math.abs(deductionAmount),
+      p_type: 'deduction',
+      p_reference_id: order.id,
+      p_reference_type: 'order',
     });
+
+    if (moveError) throw moveError;
   }
 }
 
@@ -150,7 +143,9 @@ export async function adjustStock({
   reason,
   type,
   staffId,
-  tenantId
+  tenantId,
+  operationId,
+  referenceId,
 }: {
   branchId: string;
   itemId: string;
@@ -159,71 +154,43 @@ export async function adjustStock({
   type: string;
   staffId: string | null;
   tenantId: string;
+  /** Deterministic key so a retry cannot apply the same adjustment twice. */
+  operationId?: string;
+  referenceId?: string | null;
 }) {
-  // 1. Get current inventory
-  const { data: currentInv, error: invError } = await supabase
-    .from('branch_inventory')
-    .select('id, quantity, tenant_id')
-    .eq('branch_id', branchId)
-    .eq('item_id', itemId)
-    .maybeSingle();
+  /* ----------------------------------------------------------------------
+     Was: read -> `currentQty + quantity` -> absolute write, with no negative
+     guard, no transaction, and a ledger failure that was merely
+     `console.error`-ed while the caller was told the adjustment succeeded —
+     stock moved, audit row lost.
 
-  if (invError) throw invError;
-
-  let currentQty = 0;
-  let finalTenantId = tenantId;
-
-  if (currentInv) {
-    currentQty = Number(currentInv.quantity);
-    finalTenantId = currentInv.tenant_id;
-    // Update existing
-    const { error: updateError } = await supabase
-      .from('branch_inventory')
-      .update({ 
-        quantity: currentQty + quantity,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', currentInv.id);
-    
-    if (updateError) throw updateError;
-  } else {
-    // Insert new
-    const { error: insertError } = await supabase
-      .from('branch_inventory')
-      .insert({
-        tenant_id: finalTenantId,
-        branch_id: branchId,
-        item_id: itemId,
-        quantity: quantity
-      });
-      
-    if (insertError) throw insertError;
-  }
-
-  // 2. Log to stock_ledger
+     Now one transactional call: relative delta, >= 0 enforced in the
+     database, ledger row derived from the actual before/after values, and
+     `staff_id` resolved server-side from the verified token (the old code
+     passed a raw string that broke the UUID foreign key).
+     ---------------------------------------------------------------------- */
   let movementType = 'adjustment';
   if (type === 'out') movementType = 'sale';
-  if (quantity < 0 && type !== 'out') movementType = 'deduction';
-  if (quantity > 0 && type !== 'out') movementType = 'addition';
+  else if (quantity < 0) movementType = 'deduction';
+  else if (quantity > 0) movementType = 'addition';
 
-  const { error: ledgerError } = await supabase
-    .from('stock_ledger')
-    .insert({
-      tenant_id: finalTenantId,
-      branch_id: branchId,
-      item_id: itemId,
-      type: movementType,
-      previous_quantity: currentQty,
-      new_quantity: currentQty + quantity,
-      change: quantity,
-      reference_id: null,
-      staff_id: staffId,
-      staff_name: staffId ? 'Staff' : 'System',
-      created_at: new Date().toISOString()
-    });
+  const opId =
+    operationId ||
+    (globalThis.crypto?.randomUUID?.() as string | undefined) ||
+    `adjust:${branchId}:${itemId}:${Date.now()}`;
 
-  if (ledgerError) console.error('Ledger error:', ledgerError);
-  
+  const { error } = await supabase.rpc('apply_stock_movement', {
+    p_operation_id: opId,
+    p_branch_id: branchId,
+    p_item_id: itemId,
+    p_delta: quantity,
+    p_type: movementType,
+    p_reference_id: referenceId ?? null,
+    p_reference_type: reason || null,
+  });
+
+  if (error) throw error;
   return { error: null };
 }
+
 

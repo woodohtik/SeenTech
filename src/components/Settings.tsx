@@ -30,6 +30,8 @@ import Branding from './Branding';
 
 import { deleteTestDataForTenant } from '../services/trialService';
 
+import { isRtlLang, localeOf } from '../lib/direction';
+
 interface SettingsProps {
   tenantId: string;
 }
@@ -38,7 +40,7 @@ type TabType = 'profile' | 'appearance' | 'invoice' | 'printer' | 'tax' | 'branc
 
 export default function Settings({ tenantId }: SettingsProps) {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur' || !i18n.language;
+  const isRtl = isRtlLang(i18n.language);
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = (searchParams.get('tab') as TabType) || 'profile';
@@ -217,7 +219,7 @@ export default function Settings({ tenantId }: SettingsProps) {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 1024 * 1024) { // 1MB limit for base64
-        alert('حجم الصورة كبير جداً، يرجى اختيار صورة أقل من 1 ميجابايت');
+        alert(t('settings_page.invoice.logo_too_large_error'));
         return;
       }
       const reader = new FileReader();
@@ -281,20 +283,20 @@ export default function Settings({ tenantId }: SettingsProps) {
 
   const handleDeleteTestData = async () => {
     if (!tenantId) return;
-    if (!confirm('هل أنت متأكد من حذف جميع البيانات التجريبية؟ لا يمكن التراجع عن هذه الخطوة.')) return;
+    if (!confirm(t('settings_page.data.delete_test_confirm'))) return;
 
     setIsDeletingTestData(true);
     try {
       const result = await deleteTestDataForTenant(tenantId);
       if (result.success) {
-        alert(`تم حذف البيانات التجريبية بنجاح (${result.deletedCount} سجل)`);
+        alert(t('settings_page.data.delete_test_success', { records: result.deletedCount }));
         window.dispatchEvent(new CustomEvent('data_cleared'));
       } else {
-        alert(`حدث خطأ أثناء حذف البيانات التجريبية: ${result.error || ''}`);
+        alert(t('settings_page.data.delete_test_error', { error: result.error || '' }));
       }
     } catch (error) {
       handleError(error, OperationType.DELETE, 'test_data');
-      alert('حدث خطأ أثناء حذف البيانات التجريبية');
+      alert(t('settings_page.data.delete_test_failed'));
     } finally {
       setIsDeletingTestData(false);
     }
@@ -349,7 +351,7 @@ export default function Settings({ tenantId }: SettingsProps) {
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Export error:', err);
-      alert('حدث خطأ أثناء تصدير البيانات');
+      alert(t('settings_page.data.export_error'));
     } finally {
       setIsExporting(false);
     }
@@ -1003,7 +1005,7 @@ export default function Settings({ tenantId }: SettingsProps) {
             className="fixed bottom-6 left-6 z-50 bg-emerald-600 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 font-black text-sm border border-emerald-400/30"
           >
             <CheckCircle2 size={22} className="text-white" />
-            <span>تم حفظ الإعدادات بنجاح</span>
+            <span>{t('settings_page.data.save_success')}</span>
           </motion.div>
         )}
 
@@ -1109,7 +1111,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                             </p>
                           </div>
                           <div className={cn("shrink-0 text-[10px] font-bold text-content-muted flex items-center gap-1.5", isRtl ? "justify-end text-right" : "justify-start text-left")}>
-                            <span>{new Date(log.occurred_at).toLocaleString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}</span>
+                            <span>{new Date(log.occurred_at).toLocaleString(localeOf(i18n.language))}</span>
                           </div>
                         </div>
                       ))}

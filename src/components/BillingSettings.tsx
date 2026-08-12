@@ -30,13 +30,15 @@ import { supabase } from '../lib/supabase/client';
 import { PriceDisplay } from './PriceDisplay';
 import { createSubscriptionRequest, fetchSubscriptionRequests, SubscriptionRequest } from '../services/subscriptionRequestService';
 
+import { isRtlLang } from '../lib/direction';
+
 interface BillingSettingsProps {
   tenantId: string;
 }
 
 export default function BillingSettings({ tenantId }: BillingSettingsProps) {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === 'ar' || i18n.language === 'ur' || !i18n.language;
+  const isRtl = isRtlLang(i18n.language);
 
   const [loading, setLoading] = useState(true);
   const [tenant, setTenant] = useState<any>(null);
@@ -62,51 +64,51 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
   const PLANS = [
     {
       id: 'basic' as const,
-      name: t('billing.plans.basic.name', 'الباقة الأساسية'),
-      tagline: t('billing.plans.basic.tagline', 'الحل الشامل والاحترافي لمحلات الخياطة والتفصيل'),
+      name: t('billing.plans.basic.name'),
+      tagline: t('billing.plans.basic.tagline'),
       price: 599,
-      period: t('billing.plans.basic.period', 'سنوياً'),
-      badge: t('billing.plans.basic.badge', 'الأكثر طلباً'),
+      period: t('billing.plans.basic.period'),
+      badge: t('billing.plans.basic.badge'),
       isPopular: true,
-      desc: t('billing.plans.basic.desc', 'باقة متكاملة تمنحك وصولاً بلا حدود لجميع الخصائص، الفواتير الضريبية المعتمدة من زاتكا، وإدارة التفصيل والمخزون.'),
+      desc: t('billing.plans.basic.desc'),
       features: [
-        t('billing.plans.basic.f1', 'فواتير إلكترونية متوافقة مع هيئة الزكاة والضريبة والجمارك (زاتكا)'),
-        t('billing.plans.basic.f2', 'إدارة التفصيل والتفصيل المخصص وأوامر الشغل للعمال'),
-        t('billing.plans.basic.f3', 'نظام المقاسات المرن مع حفظ سجل المقاسات لكل عميل'),
-        t('billing.plans.basic.f4', 'إدارة المخزون، الأقمشة، المستلزمات والموردين'),
-        t('billing.plans.basic.f5', 'تقارير مالية، مبيعات، وأداء العمال والمحاسبة'),
-        t('billing.plans.basic.f6', 'دعم الفروع المتعددة والموظفين مع صلاحيات مخصصة'),
-        t('billing.plans.basic.f7', 'حفظ سحابي آمن وتحديثات مجانية مستمرة 24/7'),
-        t('billing.plans.basic.f8', 'دعم فني مباشر وتدريب للموظفين')
+        t('billing.plans.basic.f1'),
+        t('billing.plans.basic.f2'),
+        t('billing.plans.basic.f3'),
+        t('billing.plans.basic.f4'),
+        t('billing.plans.basic.f5'),
+        t('billing.plans.basic.f6'),
+        t('billing.plans.basic.f7'),
+        t('billing.plans.basic.f8')
       ]
     },
     {
       id: 'free' as const,
-      name: t('billing.plans.free.name', 'الباقة المجانية التجريبية'),
-      tagline: t('billing.plans.free.tagline', 'لتجربة كافة خصائص النظام قبل الاشتراك'),
+      name: t('billing.plans.free.name'),
+      tagline: t('billing.plans.free.tagline'),
       price: 0,
-      period: t('billing.plans.free.period', '14 يوم'),
-      badge: t('billing.plans.free.badge', 'تجربة مجانية'),
+      period: t('billing.plans.free.period'),
+      badge: t('billing.plans.free.badge'),
       isPopular: false,
-      desc: t('billing.plans.free.desc', 'فرصة لاستكشاف جميع أدوات منصة سين للتفصيل لمدة 14 يوماً بدون الحاجة لبطاقة ائتمانية.'),
+      desc: t('billing.plans.free.desc'),
       features: [
-        t('billing.plans.free.f1', 'تجربة جميع خصائص وأدوات النظام مجاناً'),
-        t('billing.plans.free.f2', 'إصدار الفواتير وإضافة العملاء والمقاسات'),
-        t('billing.plans.free.f3', 'تجربة لوحات التحكم والتقارير العامة'),
-        t('billing.plans.free.f4', 'بدون شروط أو التزامات مالية')
+        t('billing.plans.free.f1'),
+        t('billing.plans.free.f2'),
+        t('billing.plans.free.f3'),
+        t('billing.plans.free.f4')
       ]
     }
   ];
 
   const COMPARISON_FEATURES = [
-    { name: t('billing.compare.f1', 'الربط المباشر مع زاتكا (الفواتير الضريبية)'), free: true, basic: true },
-    { name: t('billing.compare.f2', 'إدارة التفصيل وأوامر الشغل والمقاسات'), free: true, basic: true },
-    { name: t('billing.compare.f3', 'إدارة المخزون والأقمشة والموردين'), free: true, basic: true },
-    { name: t('billing.compare.f4', 'سجل حركات الخزينة والمدفوعات'), free: true, basic: true },
-    { name: t('billing.compare.f5', 'دعم الفروع المتعددة والموظفين'), free: t('billing.compare.limited', 'محدود'), basic: t('billing.compare.unlimited', 'غير محدود') },
-    { name: t('billing.compare.f6', 'الدعم الفني المباشر والتدريب'), free: t('billing.compare.by_email', 'عبر البريد'), basic: t('billing.compare.live_support', 'مباشر 24/7') },
-    { name: t('billing.compare.f7', 'النسخ الاحتياطي واسترجاع البيانات السحابي'), free: true, basic: true },
-    { name: t('billing.compare.f8', 'التقارير المالية المتقدمة والإحصائيات'), free: t('billing.compare.basic', 'أساسي'), basic: t('billing.compare.advanced', 'متقدمة كلياً') },
+    { name: t('billing.compare.f1'), free: true, basic: true },
+    { name: t('billing.compare.f2'), free: true, basic: true },
+    { name: t('billing.compare.f3'), free: true, basic: true },
+    { name: t('billing.compare.f4'), free: true, basic: true },
+    { name: t('billing.compare.f5'), free: t('billing.compare.limited'), basic: t('billing.compare.unlimited') },
+    { name: t('billing.compare.f6'), free: t('billing.compare.by_email'), basic: t('billing.compare.live_support') },
+    { name: t('billing.compare.f7'), free: true, basic: true },
+    { name: t('billing.compare.f8'), free: t('billing.compare.basic'), basic: t('billing.compare.advanced') },
   ];
 
   const fetchRealBillingData = async () => {
@@ -181,7 +183,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        alert('حجم الملف كبير جداً. يرجى اختيار ملف بحجم أقل من 5 ميجابايت.');
+        alert(t('billing.file_too_large'));
         return;
       }
       setProofFile(file);
@@ -200,7 +202,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
     const targetPlan = PLANS.find(p => p.id === selectedPlanId) || PLANS[0];
 
     if (targetPlan.price > 0 && !proofPreview && !referenceNo.trim()) {
-      alert('يرجى إرفاق صورة إثبات الدفع أو إدخال رقم المرجع/الحوالة لإكمال طلب الاشتراك.');
+      alert(t('billing.proof_required_alert'));
       return;
     }
 
@@ -220,7 +222,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
         notes: notes.trim() || null,
       });
 
-      showToast('تم إرسال طلب الاشتراك وإثبات الدفع بنجاح. سيتم الاعتماد وتفعيل الباقة من السوبر أدمن فوراً ✓');
+      showToast(t('billing.request_sent_success'));
       setShowUpgradeModal(false);
       setProofFile(null);
       setProofPreview(null);
@@ -228,31 +230,31 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
       setNotes('');
       await fetchRealBillingData();
     } catch (err: any) {
-      alert(`حدث خطأ أثناء تقديم الطلب: ${err.message || err}`);
+      alert(t('billing.request_submit_error', { error: err.message || err }));
     } finally {
       setSubmitting(false);
     }
   };
 
   const getPlanDisplayName = () => {
-    if (tenant?.plan_id === 'basic') return t('billing.plans.basic.name', 'الباقة الأساسية');
-    if (tenant?.plan_id === 'free') return t('billing.plans.free.name', 'الباقة المجانية');
-    return currentPlan?.name || t('billing.plans.free.name_trial', 'الباقة المجانية (تجريبية)');
+    if (tenant?.plan_id === 'basic') return t('billing.plans.basic.name');
+    if (tenant?.plan_id === 'free') return t('billing.plans.free.name');
+    return currentPlan?.name || t('billing.plans.free.name_trial');
   };
 
   const getPlanStatusLabel = () => {
     const status = tenant?.status || 'active';
     switch (status) {
       case 'active':
-        return { label: t('billing.status.active', 'اشتراك نشط'), bg: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' };
+        return { label: t('billing.status.active'), bg: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' };
       case 'trial':
       case 'onboarding':
-        return { label: t('billing.status.trial', 'فترة تجريبية'), bg: 'bg-amber-500/10 text-amber-600 border-amber-500/20' };
+        return { label: t('billing.status.trial'), bg: 'bg-amber-500/10 text-amber-600 border-amber-500/20' };
       case 'suspended':
       case 'locked':
-        return { label: t('billing.status.suspended', 'موقوف'), bg: 'bg-rose-500/10 text-rose-600 border-rose-500/20' };
+        return { label: t('billing.status.suspended'), bg: 'bg-rose-500/10 text-rose-600 border-rose-500/20' };
       default:
-        return { label: t('billing.status.active', 'اشتراك نشط'), bg: 'bg-brand/10 text-brand border-brand/20' };
+        return { label: t('billing.status.active'), bg: 'bg-brand/10 text-brand border-brand/20' };
     }
   };
 
@@ -279,7 +281,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
     return (
       <div className="bg-surface p-12 rounded-3xl border border-border flex flex-col items-center justify-center space-y-4">
         <RefreshCw size={32} className="text-brand animate-spin" />
-        <p className="text-sm font-bold text-content-muted">جاري تحميل بيانات خطة الاشتراك والعمليات المالية...</p>
+        <p className="text-sm font-bold text-content-muted">{t('billing.loading_text')}</p>
       </div>
     );
   }
@@ -302,9 +304,9 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
               <Clock size={24} className="animate-spin" />
             </div>
             <div>
-              <h4 className="font-black text-sm sm:text-base">{t('billing.pending_request_title', 'طلب تجديد / ترقية قيد المراجعة')}</h4>
+              <h4 className="font-black text-sm sm:text-base">{t('billing.pending_request_title')}</h4>
               <p className="text-xs text-content-muted font-bold mt-0.5">
-                {t('billing.pending_request_desc', 'تم استلام إثبات الدفع لباقة ({{planName}}) بتاريخ {{date}}. سيتم تفعيل حسابك فوراً بمجرد الاعتماد.', {
+                {t('billing.pending_request_desc', {
                   planName: pendingRequests[0].plan_name,
                   date: new Date(pendingRequests[0].created_at).toLocaleDateString(isRtl ? 'ar-SA-u-nu-latn' : 'en-US')
                 })}
@@ -312,7 +314,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
             </div>
           </div>
           <span className="px-4 py-1.5 bg-amber-500/20 border border-amber-500/40 rounded-full text-xs font-black text-amber-700 dark:text-amber-300 shrink-0">
-            {t('billing.pending_request_status', 'قيد المراجعة لدى السوبر أدمن')}
+            {t('billing.pending_request_status')}
           </span>
         </div>
       )}
@@ -327,7 +329,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="inline-flex items-center gap-1.5 bg-brand/10 border border-brand/20 px-3.5 py-1 rounded-full text-xs font-black text-brand">
                 <Zap size={14} className="fill-brand" />
-                <span>{t('billing.current_plan_badge', 'اشتراكك الحالي')}</span>
+                <span>{t('billing.current_plan_badge')}</span>
               </span>
               <span className={`px-3 py-1 rounded-full text-xs font-black border ${statusBadge.bg}`}>
                 {statusBadge.label}
@@ -339,32 +341,32 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                 {getPlanDisplayName()}
               </h2>
               <span className="text-brand text-2xl sm:text-3xl font-black font-mono dir-ltr">
-                {tenant?.plan_id === 'basic' ? '599 SAR / ' + t('billing.plans.basic.period', 'سنوياً') : t('billing.plans.free.badge', 'مجاناً')}
+                {tenant?.plan_id === 'basic' ? '599 SAR / ' + t('billing.plans.basic.period') : t('billing.plans.free.badge')}
               </span>
             </div>
 
             <p className="text-content-muted font-bold text-xs sm:text-sm leading-relaxed max-w-2xl">
               {tenant?.plan_id === 'basic'
-                ? t('billing.current_plan_basic_desc', 'الباقة الأساسية الشاملة مع ربط زاتكا المباشر، إدارة تفصيل الأثواب والمقاسات، الفواتير، المخزون، والدعم الفني.')
-                : t('billing.current_plan_free_desc', 'أنت الآن على الفترة التجريبية. يمكنك الترقية للباقة الأساسية للاستمتاع بخصائص الاستخدام غير المحدود وربط زاتكا المعتمد.')}
+                ? t('billing.current_plan_basic_desc')
+                : t('billing.current_plan_free_desc')}
             </p>
 
             <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-content-muted pt-3 border-t border-border/60">
               <span className="flex items-center gap-1.5 text-content font-bold">
                 <ShieldCheck size={16} className="text-emerald-500" />
-                {t('billing.store_id', 'معرّف المتجر:')} <span className="font-mono text-brand font-black">{tenantId.slice(0, 8).toUpperCase()}</span>
+                {t('billing.store_id')} <span className="font-mono text-brand font-black">{tenantId.slice(0, 8).toUpperCase()}</span>
               </span>
               <span>•</span>
-              <span>{t('billing.next_billing_date', 'تاريخ التجديد القادم:')} <span className="text-content font-black">{getNextBillingDate()}</span></span>
+              <span>{t('billing.next_billing_date')} <span className="text-content font-black">{getNextBillingDate()}</span></span>
             </div>
           </div>
 
           {/* min-width only from sm: at 320-360px a hard 280px floor overflowed. */}
           <div className="bg-surface-muted/90 backdrop-blur-md p-5 sm:p-8 rounded-2xl sm:rounded-[2rem] border border-border text-center sm:min-w-[280px] w-full lg:w-auto shrink-0 flex flex-col justify-between shadow-sm space-y-4">
             <div>
-              <p className="text-content-muted font-black uppercase tracking-wider text-[11px] mb-1">{t('billing.billing_status_title', 'حالة الفوترة والتجديد')}</p>
+              <p className="text-content-muted font-black uppercase tracking-wider text-[11px] mb-1">{t('billing.billing_status_title')}</p>
               <p className="text-2xl sm:text-3xl font-black text-content">{getNextBillingDate()}</p>
-              <p className="text-[11px] text-emerald-600 font-bold mt-1">✓ {t('billing.vat_included_hint', 'الرسوم شاملة ضريبة القيمة المضافة 15%')}</p>
+              <p className="text-[11px] text-emerald-600 font-bold mt-1">✓ {t('billing.vat_included_hint')}</p>
             </div>
 
             <button
@@ -376,7 +378,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
               className="w-full bg-brand hover:bg-brand-dark text-white px-6 py-4 rounded-2xl font-black transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-brand/20 flex items-center justify-center gap-2 cursor-pointer text-sm"
             >
               <Sparkles size={18} />
-              <span>{t('billing.upgrade_btn_action', 'تجديد أو ترقية الباقة الآن')}</span>
+              <span>{t('billing.upgrade_btn_action')}</span>
             </button>
           </div>
         </div>
@@ -386,11 +388,11 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
       <div className="space-y-6">
         <div className="text-center space-y-2 max-w-xl mx-auto">
           <span className="text-xs font-black text-brand bg-brand/10 px-4 py-1.5 rounded-full border border-brand/20 uppercase tracking-wider inline-block">
-            {t('billing.pricing_eyebrow', 'باقات الاشتراكات الشفافة')}
+            {t('billing.pricing_eyebrow')}
           </span>
-          <h3 className="text-2xl sm:text-3xl font-black text-content">{t('billing.pricing_title', 'اختر الباقة المناسبة لطموح متجرك')}</h3>
+          <h3 className="text-2xl sm:text-3xl font-black text-content">{t('billing.pricing_title')}</h3>
           <p className="text-xs sm:text-sm text-content-muted font-bold">
-            {t('billing.pricing_desc', 'أسعار واضحة ومحددة بدون أي رسوم خفية. نظام سين متكامل لخدمة الخياطين ومحلات التفصيل.')}
+            {t('billing.pricing_desc')}
           </p>
         </div>
 
@@ -425,7 +427,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                       <h4 className="text-xl sm:text-2xl font-black text-content">{plan.name}</h4>
                       {isCurrent && (
                         <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 rounded-full text-xs font-black">
-                          باقتك الحالية ✓
+                          {t('billing.card_current_plan')}
                         </span>
                       )}
                     </div>
@@ -433,7 +435,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
 
                     <div className="flex items-baseline gap-2 pt-2">
                       <span className="text-3xl sm:text-4xl font-black text-content font-mono dir-ltr">
-                        {plan.price > 0 ? `${plan.price} SAR` : 'مجاناً'}
+                        {plan.price > 0 ? `${plan.price} SAR` : t('billing.price_free')}
                       </span>
                       <span className="text-xs font-bold text-content-muted">/ {plan.period}</span>
                     </div>
@@ -441,7 +443,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
 
                   {/* Plan Features Checklist */}
                   <div className="space-y-3">
-                    <p className="text-xs font-black text-content uppercase tracking-wider">مميزات الباقة المشمولة:</p>
+                    <p className="text-xs font-black text-content uppercase tracking-wider">{t('billing.card_included_features')}</p>
                     <ul className="space-y-2.5">
                       {plan.features.map((feat, idx) => (
                         <li key={idx} className="flex items-start gap-2.5 text-xs font-bold text-content leading-relaxed">
@@ -468,7 +470,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                     }`}
                   >
                     <Sparkles size={16} />
-                    <span>{isCurrent ? 'تجديد أو تأكيد الباقة' : `الانتقال إلى ${plan.name}`}</span>
+                    <span>{isCurrent ? t('billing.card_renew_or_confirm') : t('billing.card_switch_to', { planName: plan.name })}</span>
                   </button>
                 </div>
               </div>
@@ -483,10 +485,10 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
           <div>
             <h4 className="text-lg sm:text-xl font-black text-content flex items-center gap-2">
               <FileText size={22} className="text-brand" />
-              <span>جدول مقارنة خصائص ومزايا النظام</span>
+              <span>{t('billing.compare_table_title')}</span>
             </h4>
             <p className="text-xs text-content-muted font-bold mt-1">
-              مقارنة بين الباقة المجانية التجريبية والباقة الأساسية الشاملة
+              {t('billing.compare_table_subtitle')}
             </p>
           </div>
         </div>
@@ -498,9 +500,9 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
           <table className="w-full min-w-[600px] text-right text-xs">
             <thead>
               <tr className="border-b border-border bg-surface-muted/50 text-content-muted font-black">
-                <th className="p-2.5 sm:p-4 rounded-r-2xl">الخاصية / الميزة</th>
-                <th className="p-2.5 sm:p-4 text-center">الباقة المجانية (14 يوم)</th>
-                <th className="p-2.5 sm:p-4 text-center rounded-l-2xl text-brand font-black">الباقة الأساسية (599 ريال)</th>
+                <th className="p-2.5 sm:p-4 rounded-r-2xl">{t('billing.compare_col_feature')}</th>
+                <th className="p-2.5 sm:p-4 text-center">{t('billing.compare_col_free')}</th>
+                <th className="p-2.5 sm:p-4 text-center rounded-l-2xl text-brand font-black">{t('billing.compare_col_basic')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
@@ -542,10 +544,10 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
           <div>
             <h4 className="text-lg sm:text-xl font-black text-content flex items-center gap-2.5">
               <CreditCard size={22} className="text-brand" />
-              <span>سجل الفواتير والعمليات المالية</span>
+              <span>{t('billing.history_title')}</span>
             </h4>
             <p className="text-xs text-content-muted font-bold mt-1">
-              جميع السدادات المسجلة بحسابك المالي
+              {t('billing.history_subtitle')}
             </p>
           </div>
 
@@ -554,7 +556,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
               type="button"
               onClick={fetchRealBillingData}
               className="p-2.5 bg-surface-muted hover:bg-border rounded-xl text-content-muted hover:text-content transition-all cursor-pointer"
-              title="تحديث البيانات"
+              title={t('billing.history_refresh_tip')}
             >
               <RefreshCw size={16} />
             </button>
@@ -565,7 +567,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
               className="text-xs font-black text-white bg-brand hover:bg-brand-dark px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 w-full sm:w-auto justify-center shadow-md shadow-brand/20 cursor-pointer"
             >
               <Plus size={16} />
-              <span>إرسال إثبات دفع جديد</span>
+              <span>{t('billing.history_send_proof')}</span>
             </button>
           </div>
         </div>
@@ -583,7 +585,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                   </div>
                   <div>
                     <p className="font-black text-content text-sm sm:text-base">
-                      {inv.notes || 'سداد رسوم اشتراك سين POS'}
+                      {inv.notes || t('billing.history_notes_fallback')}
                     </p>
                     <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-xs text-content-muted font-bold mt-1">
                       <span>{new Date(inv.received_at || inv.created_at).toLocaleDateString('ar-SA-u-nu-latn', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
@@ -593,7 +595,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                       </span>
                       <span>•</span>
                       <span className="bg-brand/10 text-brand px-2 py-0.5 rounded-md text-[10px] font-black">
-                        {inv.method === 'card' ? 'بطاقة ائتمانية' : inv.method === 'bank_transfer' ? 'تحويل بنكي' : inv.method === 'cash' ? 'نقدي' : 'شبكة / نقاط بيع'}
+                        {inv.method === 'card' ? t('billing.payment_method_card') : inv.method === 'bank_transfer' ? t('billing.payment_method_bank') : inv.method === 'cash' ? t('billing.payment_method_cash') : t('billing.payment_method_pos')}
                       </span>
                     </div>
                   </div>
@@ -604,7 +606,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                     <PriceDisplay amount={Number(inv.amount)} />
                   </span>
                   <div className="p-2 bg-emerald-500/10 text-emerald-700 rounded-xl text-xs font-black flex items-center gap-1">
-                    <span>مكتمل ✓</span>
+                    <span>{t('billing.status_completed')}</span>
                   </div>
                 </div>
               </div>
@@ -616,9 +618,9 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
               <AlertCircle size={28} />
             </div>
             <div className="space-y-1">
-              <p className="text-base font-black text-content">لا توجد عمليات سداد مسجلة سابقة</p>
+              <p className="text-base font-black text-content">{t('billing.history_empty_title')}</p>
               <p className="text-xs text-content-muted font-bold max-w-md mx-auto leading-relaxed">
-                عند تقديم طلب تجديد وإرفاق إثبات الدفع، سيقوم السوبر أدمن باعتماده وتوثيقه في سجلك المالي فوراً.
+                {t('billing.history_empty_desc')}
               </p>
             </div>
             <button
@@ -627,7 +629,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
               className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 bg-brand text-white rounded-xl text-xs font-black hover:bg-brand-dark transition-all cursor-pointer shadow-md shadow-brand/20"
             >
               <Plus size={16} />
-              <span>إرسال إثبات سداد أو ترقية</span>
+              <span>{t('billing.history_empty_btn')}</span>
             </button>
           </div>
         )}
@@ -640,7 +642,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
             <div className="flex items-center justify-between border-b border-border pb-4">
               <h4 className="text-xl font-black text-content flex items-center gap-2">
                 <Sparkles size={22} className="text-amber-500" />
-                <span>تجديد أو ترقية الاشتراك</span>
+                <span>{t('billing.modal_title')}</span>
               </h4>
               <button
                 type="button"
@@ -655,7 +657,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
               {/* Plan Selection */}
               <div className="space-y-2">
                 <label className="text-xs font-black text-content uppercase tracking-wider block">
-                  اختر الباقة المراد الترقية إليها:
+                  {t('billing.modal_choose_plan')}
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {PLANS.map((p) => (
@@ -676,7 +678,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                       <div className="flex items-center justify-between pl-5">
                         <span className="font-black text-content text-sm">{p.name}</span>
                         <span className="text-xs font-black text-brand dir-ltr font-mono">
-                          {p.price > 0 ? `${p.price} SAR` : 'مجاناً'}
+                          {p.price > 0 ? `${p.price} SAR` : t('billing.price_free')}
                         </span>
                       </div>
                       <p className="text-[11px] text-content-muted font-bold leading-relaxed">{p.desc}</p>
@@ -687,13 +689,13 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
 
               {/* Payment Method */}
               <div className="space-y-2">
-                <label className="text-xs font-black text-content uppercase tracking-wider block">وسيلة الدفع:</label>
+                <label className="text-xs font-black text-content uppercase tracking-wider block">{t('billing.modal_payment_method')}</label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {[
-                    { id: 'bank_transfer', label: 'تحويل بنكي' },
-                    { id: 'card', label: 'بطاقة / مدى' },
-                    { id: 'network', label: 'نقاط بيع' },
-                    { id: 'cash', label: 'نقدي' },
+                    { id: 'bank_transfer', label: t('billing.modal_method_bank') },
+                    { id: 'card', label: t('billing.modal_method_card') },
+                    { id: 'network', label: t('billing.modal_method_pos') },
+                    { id: 'cash', label: t('billing.modal_method_cash') },
                   ].map((m) => (
                     <button
                       key={m.id}
@@ -717,7 +719,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                   <div className="flex items-center justify-between">
                     <p className="font-black text-content flex items-center gap-1.5">
                       <Building2 size={16} className="text-brand" />
-                      <span>الحساب البنكي المعتمد للتحويل:</span>
+                      <span>{t('billing.modal_bank_approved')}</span>
                     </p>
                     <button
                       type="button"
@@ -725,14 +727,14 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                       className="px-3 py-1 bg-brand/10 hover:bg-brand/20 text-brand rounded-lg text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer"
                     >
                       {copiedIban ? <Check size={12} /> : <Copy size={12} />}
-                      <span>{copiedIban ? 'تم النسخ ✓' : 'نسخ IBAN'}</span>
+                      <span>{copiedIban ? t('billing.modal_iban_copied') : t('billing.modal_copy_iban')}</span>
                     </button>
                   </div>
 
                   <div className="space-y-1 text-content-muted font-bold text-[11px]">
-                    <p>البنك: <span className="text-content font-mono font-bold">مصرف الراجحي</span></p>
-                    <p>اسم الحساب: <span className="text-content font-bold">شركة سين لنظم المعلومات والتكلفة</span></p>
-                    <p>رقم الآيبان (IBAN): <span className="text-brand font-mono dir-ltr select-all font-black">SA1280000456123456789012</span></p>
+                    <p>{t('billing.modal_bank_name_label')} <span className="text-content font-mono font-bold">{t('billing.modal_bank_name_val')}</span></p>
+                    <p>{t('billing.modal_bank_holder_label')} <span className="text-content font-bold">{t('billing.modal_bank_holder_val')}</span></p>
+                    <p>{t('billing.modal_iban_label')} <span className="text-brand font-mono dir-ltr select-all font-black">SA1280000456123456789012</span></p>
                   </div>
                 </div>
               )}
@@ -740,8 +742,8 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
               {/* Attach Proof File (إرفاق إثبات الدفع) */}
               <div className="space-y-2">
                 <label className="text-xs font-black text-content uppercase tracking-wider block flex items-center justify-between">
-                  <span>إرفاق إثبات الدفع (الإيصال / الحوالة) <span className="text-rose-500">*</span></span>
-                  <span className="text-[10px] text-content-muted font-bold">(صورة أو PDF حتى 5MB)</span>
+                  <span>{t('billing.modal_proof_label')} <span className="text-rose-500">{t('billing.modal_proof_req')}</span></span>
+                  <span className="text-[10px] text-content-muted font-bold">{t('billing.modal_proof_hint')}</span>
                 </label>
 
                 <input
@@ -762,8 +764,8 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                       <Upload size={24} />
                     </div>
                     <div className="text-center">
-                      <p className="text-xs font-black text-content">انقر هنا لإرفاق صورة الحوالة أو الإيصال</p>
-                      <p className="text-[10px] text-content-muted font-bold mt-1">PNG, JPG, JPEG, PDF</p>
+                      <p className="text-xs font-black text-content">{t('billing.modal_proof_btn')}</p>
+                      <p className="text-[10px] text-content-muted font-bold mt-1">{t('billing.modal_proof_formats')}</p>
                     </div>
                   </button>
                 ) : (
@@ -777,8 +779,8 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                         )}
                       </div>
                       <div className="truncate">
-                        <p className="text-xs font-black text-content truncate">{proofFile?.name || 'إثبات_الدفع.png'}</p>
-                        <p className="text-[10px] text-emerald-600 font-bold mt-0.5">تم مرفق الملف بنجاح ✓</p>
+                        <p className="text-xs font-black text-content truncate">{proofFile?.name || t('billing.modal_proof_fallback_filename')}</p>
+                        <p className="text-[10px] text-emerald-600 font-bold mt-0.5">{t('billing.modal_proof_success')}</p>
                       </div>
                     </div>
                     <button
@@ -788,7 +790,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                         setProofPreview(null);
                       }}
                       className="p-2 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 rounded-xl transition-all cursor-pointer shrink-0"
-                      title="حذف الملف"
+                      title={t('billing.modal_proof_delete')}
                     >
                       <X size={18} />
                     </button>
@@ -799,13 +801,13 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
               {/* Reference No */}
               <div className="space-y-1.5">
                 <label className="text-xs font-black text-content uppercase tracking-wider block">
-                  رقم المرجع / الحوالة (اختياري):
+                  {t('billing.modal_ref_label')}
                 </label>
                 <input
                   type="text"
                   value={referenceNo}
                   onChange={(e) => setReferenceNo(e.target.value)}
-                  placeholder="مثال: REF-984210"
+                  placeholder={t('billing.modal_ref_placeholder')}
                   className="w-full p-3.5 bg-surface-muted border border-border rounded-xl text-xs font-bold text-content focus:border-brand focus:outline-none"
                 />
               </div>
@@ -813,19 +815,19 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
               {/* Notes */}
               <div className="space-y-1.5">
                 <label className="text-xs font-black text-content uppercase tracking-wider block">
-                  ملاحظات إضافية (اختياري):
+                  {t('billing.modal_notes_label')}
                 </label>
                 <textarea
                   rows={2}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="أي معلومات ترغب في تسجيلها للإدارة..."
+                  placeholder={t('billing.modal_notes_placeholder')}
                   className="w-full p-3.5 bg-surface-muted border border-border rounded-xl text-xs font-bold text-content focus:border-brand focus:outline-none resize-none"
                 />
               </div>
 
               <div className="p-4 bg-brand/10 border border-brand/20 rounded-2xl text-xs font-bold text-brand leading-relaxed">
-                عند إرسال الطلب، يصل الإشعارات مباشرة للسوبر أدمن للتدقيق والاعتماد وتفعيل حسابك.
+                {t('billing.modal_submit_tip')}
               </div>
 
               <div className="flex items-center gap-3 pt-2">
@@ -834,7 +836,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                   onClick={() => setShowUpgradeModal(false)}
                   className="flex-1 py-3.5 bg-surface-muted hover:bg-border text-content font-bold rounded-xl text-xs transition-all cursor-pointer"
                 >
-                  إلغاء
+                  {t('billing.modal_cancel')}
                 </button>
                 <button
                   type="submit"
@@ -846,7 +848,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                   ) : (
                     <>
                       <CheckCircle2 size={16} />
-                      <span>إرسال طلب الاشتراك وإثبات الدفع</span>
+                      <span>{t('billing.modal_submit')}</span>
                     </>
                   )}
                 </button>

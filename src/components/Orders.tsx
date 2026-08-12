@@ -73,16 +73,18 @@ import { useStaff } from '../contexts/StaffContext';
 import { useBranding } from '../contexts/BrandingContext';
 import { analytics, AnalyticsEvent } from '../services/analyticsService';
 
-export const STATUS_CONFIG: Record<OrderStatus, { label: string, icon: any, color: string, bgColor: string }> = {
-  'measurements_taken': { label: 'أخذ المقاسات', icon: User, color: 'text-info', bgColor: 'bg-info/10' },
-  'cutting': { label: 'قص القماش', icon: Scissors, color: 'text-warning', bgColor: 'bg-warning/10' },
-  'sewing': { label: 'خياطة', icon: Clock, color: 'text-info', bgColor: 'bg-info/10' },
-  'embroidery': { label: 'تطريز', icon: CheckSquare, color: 'text-brand', bgColor: 'bg-brand/10' },
-  'ironing_packaging': { label: 'كوي وتغليف', icon: Package, color: 'text-info', bgColor: 'bg-info/10' },
-  'ready': { label: 'جاهز للاستلام', icon: CheckCircle2, color: 'text-success', bgColor: 'bg-success/10' },
-  'partial_delivered': { label: 'تسليم جزئي', icon: Package, color: 'text-info', bgColor: 'bg-info/10' },
-  'delivered': { label: 'تم التسليم', icon: Truck, color: 'text-content-muted', bgColor: 'bg-surface-muted' },
-  'cancelled': { label: 'ملغي', icon: X, color: 'text-danger', bgColor: 'bg-danger/10' }
+import { isRtlLang, localeOf } from '../lib/direction';
+
+export const STATUS_CONFIG: Record<OrderStatus, { labelKey: string, icon: any, color: string, bgColor: string }> = {
+  'measurements_taken': { labelKey: 'common.status_measurements_taken', icon: User, color: 'text-info', bgColor: 'bg-info/10' },
+  'cutting': { labelKey: 'common.status_cutting', icon: Scissors, color: 'text-warning', bgColor: 'bg-warning/10' },
+  'sewing': { labelKey: 'common.status_sewing', icon: Clock, color: 'text-info', bgColor: 'bg-info/10' },
+  'embroidery': { labelKey: 'common.status_embroidery', icon: CheckSquare, color: 'text-brand', bgColor: 'bg-brand/10' },
+  'ironing_packaging': { labelKey: 'common.status_ironing_packaging', icon: Package, color: 'text-info', bgColor: 'bg-info/10' },
+  'ready': { labelKey: 'common.status_ready', icon: CheckCircle2, color: 'text-success', bgColor: 'bg-success/10' },
+  'partial_delivered': { labelKey: 'common.status_partial_delivered', icon: Package, color: 'text-info', bgColor: 'bg-info/10' },
+  'delivered': { labelKey: 'common.status_delivered', icon: Truck, color: 'text-content-muted', bgColor: 'bg-surface-muted' },
+  'cancelled': { labelKey: 'common.status_cancelled', icon: X, color: 'text-danger', bgColor: 'bg-danger/10' }
 };
 
 const ORDER_STAGES: OrderStatus[] = [
@@ -96,6 +98,7 @@ const ORDER_STAGES: OrderStatus[] = [
 ];
 
 const OrderStepper = ({ currentStatus }: { currentStatus: OrderStatus }) => {
+  const { t } = useTranslation();
   const currentIdx = ORDER_STAGES.indexOf(currentStatus === 'partial_delivered' ? 'ready' : currentStatus);
   
   return (
@@ -137,7 +140,7 @@ const OrderStepper = ({ currentStatus }: { currentStatus: OrderStatus }) => {
                   "text-[10px] font-black text-center whitespace-nowrap px-2 py-1 rounded-lg transition-colors",
                   isActive ? "text-brand bg-brand/5" : isCompleted ? "text-brand" : "text-content-muted"
                 )}>
-                  {config.label}
+                  {t(config.labelKey)}
                 </span>
                 {isActive && (
                   <motion.div 
@@ -155,10 +158,10 @@ const OrderStepper = ({ currentStatus }: { currentStatus: OrderStatus }) => {
 };
 
 const PAYMENT_METHODS = [
-  { id: 'cash', label: 'كاش', icon: ShoppingBag },
-  { id: 'network', label: 'شبكة', icon: CreditCard },
-  { id: 'cash_on_delivery', label: 'الدفع عند الاستلام', icon: Truck },
-  { id: 'partial', label: 'دفع جزئي', icon: Clock },
+  { id: 'cash', labelKey: 'common.payment_methods.cash', icon: ShoppingBag },
+  { id: 'network', labelKey: 'common.payment_methods.network', icon: CreditCard },
+  { id: 'cash_on_delivery', labelKey: 'common.payment_methods.cash_on_delivery', icon: Truck },
+  { id: 'partial', labelKey: 'common.payment_methods.partial', icon: Clock },
 ];
 
 export default function Orders({ tenantId }: { tenantId: string }) {
@@ -276,29 +279,29 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     const missingFields: string[] = [];
 
     if (formErrors.customerId) {
-      missingFields.push(t('common.customer', 'العميل'));
+      missingFields.push(t('common.customer'));
     }
     if (formErrors.deliveryDate) {
-      missingFields.push(t('orders.expected_delivery_date', 'تاريخ التسليم المتوقع'));
+      missingFields.push(t('orders.expected_delivery_date'));
     }
     if (formErrors.items) {
       if (Array.isArray(formErrors.items)) {
         formErrors.items.forEach((itemErr: any, idx: number) => {
           if (!itemErr) return;
           const itemNum = idx + 1;
-          if (itemErr.garmentType) missingFields.push(`نوع القطعة (صنف ${itemNum})`);
-          if (itemErr.fabric) missingFields.push(`القماش (صنف ${itemNum})`);
-          if (itemErr.price) missingFields.push(`السعر (صنف ${itemNum})`);
-          if (itemErr.quantity) missingFields.push(`الكمية (صنف ${itemNum})`);
+          if (itemErr.garmentType) missingFields.push(t('orders.missing_item_field', { field: t('orders.item_type'), index: itemNum }));
+          if (itemErr.fabric) missingFields.push(t('orders.missing_item_field', { field: t('orders.fabric'), index: itemNum }));
+          if (itemErr.price) missingFields.push(t('orders.missing_item_field', { field: t('orders.price'), index: itemNum }));
+          if (itemErr.quantity) missingFields.push(t('orders.missing_item_field', { field: t('common.quantity'), index: itemNum }));
         });
       } else {
-        missingFields.push(t('orders.requested_items', 'الأصناف المطلوبة'));
+        missingFields.push(t('orders.required_items'));
       }
     }
 
     const errorMessage = missingFields.length > 0
-      ? `يرجى إكمال الحقول التالية: ${missingFields.join('، ')}`
-      : t('orders.fill_required_fields', 'يرجى إكمال جميع الحقول المطلوبة بشكل صحيح');
+      ? t('orders.complete_following_fields', { fields: missingFields.join(t('common.list_separator')) })
+      : t('orders.fill_required_fields');
 
     toastError(errorMessage);
 
@@ -534,7 +537,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         if (e.key === 'Enter') {
           // If they pressed Enter in the search box
-          if ((e.target as HTMLInputElement).placeholder?.includes('ابحث برقم')) {
+          if ((e.target as HTMLInputElement).dataset.ordersSearch) {
              const searchLower = search.toLowerCase();
              const localFiltered = orders.filter(o => {
                const orderNumberStr = o.orderNumber ? o.orderNumber.toString() : '';
@@ -671,18 +674,18 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
     const onQuickAddInvalid = (errs: any) => {
       const missing: string[] = [];
-      if (errs.name) missing.push('الاسم الكامل');
-      if (errs.phone) missing.push('رقم الهاتف');
+      if (errs.name) missing.push(t('login.full_name'));
+      if (errs.phone) missing.push(t('onboarding.fields.phone'));
       
       const msg = missing.length > 0 
-        ? `يرجى إكمال الحقول التالية للعميل: ${missing.join('، ')}`
-        : 'يرجى كتابة اسم العميل ورقم الهاتف بشكل صحيح';
+        ? t('orders.complete_customer_fields', { fields: missing.join(t('common.list_separator')) })
+        : t('orders.customer_name_phone_invalid');
       toastError(msg);
     };
 
     const onQuickAddSubmit = async (data: any) => {
       if (!tenantId) {
-        toastError('خطأ: لم يتم العثور على المتجر');
+        toastError(t('orders.error_store_not_found'));
         return;
       }
 
@@ -743,12 +746,12 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
         setCustomers(prev => [mappedCust, ...prev]);
         setValue('customerId', mappedCust.id);
-        toastSuccess('تمت إضافة العميل بنجاح');
+        toastSuccess(t('orders.customer_added_success'));
         setIsQuickAddOpen(false);
         resetCust();
       } catch (error: any) {
         console.error(error);
-        toastError(error?.message || 'فشل إضافة العميل، يرجى التأكد من البيانات والمحاولة مجدداً');
+        toastError(error?.message || t('orders.customer_add_failed'));
       }
     };
 
@@ -759,8 +762,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           animate={{ scale: 1, opacity: 1, y: 0 }} 
           exit={{ scale: 0.95, opacity: 0, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="relative w-full max-w-[clamp(320px,94vw,1100px)] max-h-[90vh] rounded-[var(--radius-card)] bg-[var(--surface)] shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-right" 
-          dir="rtl"
+          className="relative w-full max-w-[clamp(320px,94vw,1100px)] max-h-[90vh] rounded-[var(--radius-card)] bg-[var(--surface)] shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-start" 
+          dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}
         >
           {/* Header (Fixed) */}
           <div className="sticky top-0 z-10 flex items-center justify-between p-4 sm:p-6 border-b border-[var(--border)] bg-[var(--surface)] shrink-0 bg-brand/5">
@@ -768,7 +771,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               <div className="p-2.5 bg-brand text-white rounded-2xl shrink-0 shadow-sm">
                 <UserPlus size={20} />
               </div>
-              <h3 className="text-base sm:text-lg lg:text-xl font-black text-content">إضافة عميل جديد</h3>
+              <h3 className="text-base sm:text-lg lg:text-xl font-black text-content">{t('pos.add_new_customer')}</h3>
             </div>
             <button type="button" onClick={() => setIsQuickAddOpen(false)} className="p-2 hover:bg-surface-muted rounded-full transition-colors shadow-sm text-content-muted">
               <X size={20} />
@@ -778,12 +781,12 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           <form onSubmit={handleCustSubmit(onQuickAddSubmit, onQuickAddInvalid)} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-content-muted">الاسم الكامل</label>
+                <label className="text-xs font-bold text-content-muted">{t('login.full_name')}</label>
                 <input {...regCust('name')} className="w-full bg-surface-muted border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand text-content" />
                 {custErrors.name && <p className="text-[10px] text-danger font-bold">{custErrors.name.message}</p>}
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-content-muted">رقم الهاتف</label>
+                <label className="text-xs font-bold text-content-muted">{t('onboarding.fields.phone')}</label>
                 <input 
                   {...regCust('phone')} 
                   onChange={(e) => {
@@ -802,22 +805,22 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
             <h4 className="text-lg font-bold text-content mb-4 pt-4 border-t border-border flex items-center gap-2">
               <ShoppingBag size={20} className="text-brand" />
-              بيانات الشركات (B2B)
+              {t('orders.b2b_data_title')}
             </h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-4 border-b border-border">
               <div className="space-y-2">
-                <label className="text-sm font-bold text-content-muted">اسم الشركة / المؤسسة <span className="opacity-70 text-xs">(اختياري)</span></label>
+                <label className="text-sm font-bold text-content-muted">{t('orders.company_name_label')} <span className="opacity-70 text-xs">{t('common.optional')}</span></label>
                 <input 
                   type="text"
                   {...regCust('companyName')} 
                   className="w-full bg-surface-muted border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand text-content"
-                  placeholder="لإصدار فواتير ضريبية B2B"
+                  placeholder={t('orders.company_name_placeholder')}
                 />
                 {custErrors.companyName && <p className="text-xs text-danger font-bold">{custErrors.companyName.message}</p>}
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-bold text-content-muted">الرقم الضريبي للشركة (TRN) <span className="opacity-70 text-xs">(اختياري)</span></label>
+                <label className="text-sm font-bold text-content-muted">{t('orders.company_trn_label')} <span className="opacity-70 text-xs">{t('common.optional')}</span></label>
                 <input 
                   type="text"
                   {...regCust('trn')} 
@@ -832,7 +835,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             <div className="space-y-4">
               <h4 className="text-sm font-black text-content-muted uppercase tracking-widest flex items-center gap-2">
                 <Zap size={16} />
-                التفاصيل البصرية والمقاسات التفاعلية
+                {t('orders.visual_details_title')}
               </h4>
               <VisualMeasurements 
                 values={watchCustMeasurements || {}} 
@@ -842,7 +845,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               <div className="mt-8 pt-8 border-t border-border">
                 <h3 className="text-sm font-black text-content flex items-center gap-2 mb-4">
                   <div className="w-1.5 h-4 bg-brand rounded-full" />
-                  مُحدد المقاسات البصري التفاعلي
+                  {t('orders.visual_measurement_selector')}
                 </h3>
                 <ThobeMeasurementSelector 
                   values={(watchCustMeasurements as Measurements) || {}}
@@ -856,7 +859,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             </div>
 
             <div className="space-y-2 pt-8 border-t border-border">
-              <label className="text-sm font-bold text-content-muted">ملاحظات إضافية</label>
+              <label className="text-sm font-bold text-content-muted">{t('orders.extra_notes')}</label>
               <textarea {...regCust('notes')} className="w-full bg-surface-muted border-none rounded-xl p-3 focus:ring-2 focus:ring-brand h-24 text-content" />
             </div>
 
@@ -870,7 +873,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               />
               <label htmlFor="isTest" className="text-sm font-bold text-warning flex items-center gap-2">
                 <Zap size={16} />
-                بيانات تجريبية (Test Data)
+                {t('common.test_data')}
               </label>
             </div>
 
@@ -880,14 +883,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 {Object.keys(custErrors).length > 0 && (
                   <p className="text-xs text-danger font-bold flex items-center gap-1">
                     <AlertCircle size={14} />
-                    <span>يرجى كتابة الاسم الكامل ورقم الهاتف بشكل صحيح</span>
+                    <span>{t('orders.customer_name_phone_required')}</span>
                   </p>
                 )}
               </div>
               <div className="flex items-center gap-3">
-                <button type="button" onClick={() => setIsQuickAddOpen(false)} className="px-6 py-2.5 sm:px-8 sm:py-3.5 text-content-muted font-bold hover:text-content transition-colors text-sm sm:text-base">إلغاء</button>
+                <button type="button" onClick={() => setIsQuickAddOpen(false)} className="px-6 py-2.5 sm:px-8 sm:py-3.5 text-content-muted font-bold hover:text-content transition-colors text-sm sm:text-base">{t('common.cancel')}</button>
                 <button type="submit" disabled={custSubmitting} className="bg-brand text-white px-8 py-2.5 sm:px-12 sm:py-3.5 rounded-xl font-bold hover:bg-brand/90 shadow-lg shadow-brand/20 transition-all hover:scale-102 active:scale-98 disabled:opacity-50 text-sm sm:text-base">
-                  {custSubmitting ? 'جاري الحفظ...' : 'تأكيد وإضافة العميل'}
+                  {custSubmitting ? t('common.saving') : t('orders.confirm_add_customer')}
                 </button>
               </div>
             </div>
@@ -905,21 +908,21 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
   const onSubmit = async (data: any) => {
     if (!tenantId) {
-      toastError('خطأ: لم يتم العثور على كود المتجر');
+      toastError(t('orders.error_store_code_not_found'));
       return;
     }
 
     if (tenantStrategy === 'decentralized' && !currentStaff?.branchId) {
-      toastError('خطأ: يجب ربط الموظف بفرع لاستخدام استراتيجية المخزون اللامركزية');
+      toastError(t('orders.error_staff_branch_required'));
       return;
     }
 
     const initialHistory: OrderHistory = {
       status: 'measurements_taken',
       updatedAt: new Date().toISOString(),
-      updatedBy: currentStaff?.name || 'المالك',
+      updatedBy: currentStaff?.name || t('common.owner'),
       updatedByUid: currentStaff?.id || auth.currentUser?.uid,
-      notes: 'تم إنشاء الطلب'
+      notes: t('orders.order_created_note')
     };
 
     const isUuid = (val: string | undefined | null) => 
@@ -929,7 +932,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       tenant_id: tenantId,
       branch_id: (currentStaff?.branchId && isUuid(currentStaff.branchId)) ? currentStaff.branchId : null,
       customer_id: isUuid(data.customerId) ? data.customerId : null,
-      customer_name: selectedCustomer?.name || 'عميل غير معروف',
+      customer_name: selectedCustomer?.name || t('orders.unknown_customer'),
       order_number: generateOrderNumber(),
       status: data.status || 'measurements_taken',
       payment_method: data.paymentMethod || 'cash',
@@ -960,8 +963,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       );
 
       if (!available) {
-        if (!confirm(`تحذير: الكميات التالية غير متوفرة في المخزون: ${missingItems.join(', ')}. هل تود المتابعة على أي حال؟`)) {
-          toastWarning('تم إلغاء إضافة الطلب بسبب نقص المخزون');
+        if (!confirm(t('orders.stock_shortage_confirm', { items: missingItems.join(', ') }))) {
+          toastWarning(t('orders.order_cancelled_low_stock'));
           return;
         }
       }
@@ -978,8 +981,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       try {
         await supabase.from('notifications').insert({
           tenant_id: tenantId,
-          title: 'طلب مبيعات جديد',
-          message: `تم إنشاء الفاتورة رقم ${newOrder.order_number || ''} للعميل ${newOrder.customer_name || 'عميل نقدي'} بقيمة ${newOrder.total_amount || 0} ر.س`,
+          title: t('orders.notification_new_order_title'),
+          message: t('orders.notification_new_order_message', { number: newOrder.order_number || '', customer: newOrder.customer_name || t('pos.walk_in_customer'), amount: newOrder.total_amount || 0 }),
           type: 'order',
           status: 'unread',
           created_at: new Date().toISOString(),
@@ -1017,7 +1020,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
       handleCloseModal();
       router.refresh();
-      toastSuccess('تم إضافة الطلب بنجاح');
+      toastSuccess(t('orders.order_added_success'));
     } catch (error: any) {
       console.error('Order submission error:', error);
       handleFirestoreError(error, OperationType.WRITE, 'orders');
@@ -1031,7 +1034,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
     // Prevent any changes if order is already delivered (locked)
     if (order.status === 'delivered') {
-      alert('لا يمكن تعديل حالة الطلب بعد تسليمه.');
+      alert(t('orders.cannot_edit_delivered'));
       return;
     }
 
@@ -1039,7 +1042,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     if (status === 'delivered') {
       const remaining = Number(order.remainingAmount || 0);
       if (remaining > 0) {
-        alert('لا يمكن تسليم الطلب قبل سداد كامل المبلغ المتبقي.');
+        alert(t('orders.cannot_deliver_unpaid'));
         setPendingStatusUpdate({ id, status });
         setSelectedOrder(order);
         setIsPaymentModalOpen(true);
@@ -1059,7 +1062,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           await deductStock(order, currentStaff!, tenantStrategy);
         } catch (err) {
           console.error('Stock deduction error:', err);
-          alert(t('inventory.stock_deduction_error', 'حدث خطأ أثناء خصم المخزون: ') + (err instanceof Error ? err.message : t('orders.unknown_error', 'خطأ غير معروف')));
+          alert(t('inventory.stock_deduction_error') + (err instanceof Error ? err.message : t('orders.unknown_error')));
           return;
         }
       }
@@ -1067,9 +1070,9 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       const historyEntry: OrderHistory = {
         status,
         updatedAt: new Date().toISOString(),
-        updatedBy: currentStaff?.name || t('common.roles.owner', 'المالك'),
+        updatedBy: currentStaff?.name || t('common.roles.owner'),
         updatedByUid: currentStaff?.id || auth.currentUser?.uid,
-        notes: notes || `${t('orders.status_changed_to', 'تغيير الحالة إلى')} ${t(`common.status_${status}`, STATUS_CONFIG[status].label)}`
+        notes: notes || t('orders.status_change_note', { status: t(STATUS_CONFIG[status].labelKey) })
       };
 
       const updatedHistory = [...(order.history || []), historyEntry];
@@ -1090,7 +1093,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       setUnpaidOrders(prev => prev.map(o => o.id === id ? { ...o, status, history: updatedHistory } : o));
 
       router.refresh();
-      toastSuccess(`تم تحديث حالة الطلب بنجاح`);
+      toastSuccess(t('orders.status_updated_success'));
     } catch (error) {
       handleFirestoreError(error as any, OperationType.UPDATE, 'orders');
     }
@@ -1107,9 +1110,9 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       const historyEntry: OrderHistory = {
         status,
         updatedAt: new Date().toISOString(),
-        updatedBy: currentStaff?.name || 'المالك',
+        updatedBy: currentStaff?.name || t('common.owner'),
         updatedByUid: currentStaff?.id || auth.currentUser?.uid,
-        notes: `تم تسليم الطلب وإغلاقه`
+        notes: t('orders.order_delivered_closed_note')
       };
 
       const updatedHistory = [...(order.history || []), historyEntry];
@@ -1139,17 +1142,17 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       setIsConfirmDeliveryOpen(false);
       setPendingStatusUpdate(null);
       router.refresh();
-      toastSuccess('تم تسليم الطلب بنجاح');
+      toastSuccess(t('orders.order_delivered_success'));
     } catch (error) {
       handleFirestoreError(error as any, OperationType.UPDATE, 'orders');
     }
   };
 
   const handleDelete = async (id: string, orderNumber: string) => {
-    const allowed = await checkPermission('orders.delete', 'إدارة الطلبات');
+    const allowed = await checkPermission('orders.delete', t('orders.manage_orders'));
     if (!allowed) return;
 
-    if (window.confirm('هل أنت متأكد من حذف هذا الطلب والفاتورة الخاصة به؟')) {
+    if (window.confirm(t('orders.confirm_delete_order'))) {
       try {
         const { error } = await supabase
           .from('orders')
@@ -1174,7 +1177,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         }
 
         router.refresh();
-        toastSuccess('تم حذف الطلب بنجاح');
+        toastSuccess(t('orders.order_deleted_success'));
       } catch (error) {
         handleFirestoreError(error as any, OperationType.DELETE, 'orders');
       }
@@ -1193,7 +1196,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         setSearch(scanned);
         setSelectedOrder(matchedOrder);
         setIsInvoiceOpen(true);
-        toastSuccess('تم العثور على الطلب من الباركود');
+        toastSuccess(t('orders.order_found_by_barcode'));
     } else {
         const partialMatch = orders.find(o => 
             (o as any).invoiceNumber?.toString().toLowerCase().includes(scanned) ||
@@ -1204,9 +1207,9 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             setSearch(scanned);
             setSelectedOrder(partialMatch);
             setIsInvoiceOpen(true);
-            toastSuccess('تم العثور على الطلب من الباركود');
+            toastSuccess(t('orders.order_found_by_barcode'));
         } else {
-            toastError('لم يتم العثور على طلب بهذا الباركود');
+            toastError(t('orders.order_not_found_by_barcode'));
         }
     }
   };
@@ -1249,7 +1252,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       totalAmount: order.totalAmount,
       customerPhone: phone,
       invoiceUrl: invoiceUrl,
-      storeName: branding.companyName || 'المتجر',
+      storeName: branding.companyName || t('pos.store_default'),
     });
 
     sendWhatsAppMessage(phone, message);
@@ -1281,9 +1284,9 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         const historyEntry: OrderHistory = {
           status: order.status,
           updatedAt: new Date().toISOString(),
-          updatedBy: currentStaff?.name || t('common.roles.owner', 'المالك'),
+          updatedBy: currentStaff?.name || t('common.roles.owner'),
           updatedByUid: currentStaff?.id || auth.currentUser?.uid,
-          notes: t('orders.payment_note', 'تسديد مبلغ: {{amount}} ﷼ عبر {{method}}', { amount: payAmount, method: t(`common.payment_methods.${payMethod}`, PAYMENT_METHODS.find(m => m.id === payMethod)?.label || payMethod) })
+          notes: t('orders.payment_note', { amount: payAmount, method: t(`common.payment_methods.${payMethod}`, payMethod) })
         };
 
         const updatedHistory = [...(order.history || []), historyEntry];
@@ -1334,8 +1337,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           animate={{ x: 0, y: 0 }}
           exit={{ x: '100%', y: '100%' }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className={cn("bg-surface w-full lg:max-w-md h-[95vh] lg:h-full shadow-2xl relative z-10 flex flex-col lg:rounded-none rounded-t-[3rem] overflow-hidden", i18n.language === 'ar' ? "text-right" : "text-left")}
-          dir={i18n.language === 'ar' ? "rtl" : "ltr"}
+          className={cn("bg-surface w-full lg:max-w-md h-[95vh] lg:h-full shadow-2xl relative z-10 flex flex-col lg:rounded-none rounded-t-[3rem] overflow-hidden", isRtlLang(i18n.language) ? "text-right" : "text-left")}
+          dir={isRtlLang(i18n.language) ? "rtl" : "ltr"}
         >
           <div className="p-6 border-b border-border flex justify-between items-center bg-brand/5">
             <div className="flex items-center gap-3">
@@ -1343,7 +1346,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 <Info size={24} />
               </div>
               <div>
-                <h2 className="text-xl font-black text-content">{t('orders.order_details', 'تفاصيل الطلب')}</h2>
+                <h2 className="text-xl font-black text-content">{t('orders.order_details')}</h2>
                 <p className="text-xs text-content-muted font-bold">#{order.id.slice(-6).toUpperCase()}</p>
               </div>
             </div>
@@ -1359,12 +1362,12 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             <section className="bg-surface p-5 rounded-3xl border border-border space-y-3">
               <div className="flex items-center gap-2 mb-2">
                 <CheckCircle2 size={16} className="text-brand" />
-                <h3 className="font-black text-content text-sm">{t('orders.update_status', 'تحديث حالة الطلب')}</h3>
+                <h3 className="font-black text-content text-sm">{t('orders.update_status')}</h3>
               </div>
               
               {order.status === 'delivered' ? (
                 <div className="bg-surface-muted p-3.5 rounded-2xl border border-border text-center text-xs font-bold text-content-muted">
-                  {t('orders.order_delivered_locked', 'تم تسليم الطلب وإغلاقه بنجاح، لا يمكن تعديل حالته بعد التسليم.')}
+                  {t('orders.order_delivered_locked')}
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -1376,7 +1379,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                     >
                       {(Object.keys(STATUS_CONFIG) as OrderStatus[]).map((status) => (
                         <option key={status} value={status}>
-                          {t(`common.status_${status}`, STATUS_CONFIG[status].label)}
+                          {t(STATUS_CONFIG[status].labelKey)}
                         </option>
                       ))}
                     </select>
@@ -1394,24 +1397,24 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               order.remainingAmount > 0 ? "bg-danger/5 border-danger/10" : "bg-success/5 border-success/10"
             )}>
               <div className="flex justify-between items-center mb-4">
-                <h3 className="font-black text-content">{t('orders.payment_status', 'حالة الدفع')}</h3>
+                <h3 className="font-black text-content">{t('orders.payment_status')}</h3>
                 {order.remainingAmount > 0 ? (
-                  <span className="bg-danger text-white text-[10px] px-2 py-1 rounded-full font-bold">{t('orders.partial_balance', 'متبقي رصيد')}</span>
+                  <span className="bg-danger text-white text-[10px] px-2 py-1 rounded-full font-bold">{t('orders.partial_balance')}</span>
                 ) : (
-                  <span className="bg-success text-white text-[10px] px-2 py-1 rounded-full font-bold">{t('orders.fully_paid', 'مدفوع بالكامل')}</span>
+                  <span className="bg-success text-white text-[10px] px-2 py-1 rounded-full font-bold">{t('orders.fully_paid')}</span>
                 )}
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-content-muted">{t('common.total', 'الإجمالي')}:</span>
+                  <span className="text-content-muted">{t('common.total')}:</span>
                   <span className="font-bold text-content"><PriceDisplay amount={order.totalAmount} /></span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-content-muted">{t('orders.amount_paid', 'المدفوع')}:</span>
+                  <span className="text-content-muted">{t('orders.amount_paid')}:</span>
                   <span className="font-bold text-success"><PriceDisplay amount={order.paidAmount} /></span>
                 </div>
                 <div className="flex justify-between text-lg pt-2 border-t border-border/50">
-                  <span className="font-bold text-content">{t('orders.remaining_label', 'المتبقي')}:</span>
+                  <span className="font-bold text-content">{t('orders.remaining_label')}:</span>
                   <span className={cn("font-black", order.remainingAmount > 0 ? "text-danger" : "text-success")}>
                     <PriceDisplay amount={order.remainingAmount} />
                   </span>
@@ -1424,14 +1427,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   className="w-full mt-4 bg-brand text-white py-3 rounded-2xl font-bold hover:bg-brand/90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand/10"
                 >
                   <CreditCard size={18} />
-                  {t('orders.pay_remaining', 'تسديد المتبقي')}
+                  {t('orders.pay_remaining')}
                 </button>
               )}
 
               {isPaying && (
                 <div className="mt-4 p-4 bg-surface rounded-2xl border border-red-500/20 space-y-4 animate-in fade-in slide-in-from-top-2">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-content-muted uppercase">{t('orders.pay_amount_now', 'المبلغ المراد تسديده')}</label>
+                    <label className="text-[10px] font-black text-content-muted uppercase">{t('orders.pay_amount_now')}</label>
                     <input 
                       type="number" 
                       value={payAmount}
@@ -1450,7 +1453,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         )}
                       >
                         <m.icon size={16} />
-                        {t(`common.payment_methods.${m.id}`, m.label)}
+                        {t(m.labelKey)}
                       </button>
                     ))}
                   </div>
@@ -1460,13 +1463,13 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                       disabled={isProcessing || payAmount <= 0}
                       className="flex-1 bg-brand text-white py-3 rounded-xl font-bold text-sm hover:bg-brand/90 disabled:opacity-50"
                     >
-                      {isProcessing ? t('orders.processing', 'جاري...') : t('orders.confirm_payment', 'تأكيد الدفع')}
+                      {isProcessing ? t('orders.processing') : t('orders.confirm_payment')}
                     </button>
                     <button 
                       onClick={() => setIsPaying(false)}
                       className="px-4 py-3 text-content-muted font-bold text-sm hover:bg-surface-muted rounded-xl"
                     >
-                      {t('common.cancel', 'إلغاء')}
+                      {t('common.cancel')}
                     </button>
                   </div>
                 </div>
@@ -1477,7 +1480,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             <section className="space-y-4">
               <h3 className="text-xs font-black text-content-muted uppercase tracking-widest flex items-center gap-2">
                 <History size={14} />
-                {t('orders.status_history', 'سجل الحالة')}
+                {t('orders.status_history')}
               </h3>
               <div className="space-y-4 relative before:absolute before:right-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-border">
                 {order.history?.slice().reverse().map((h, idx) => {
@@ -1489,10 +1492,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
                   if (updater) {
                     updaterName = updater.name;
-                    updaterRole = updater.role === 'tailor' ? t('common.roles.tailor', 'خياط') : t('common.roles.employee', 'موظف');
+                    updaterRole = updater.role === 'tailor' ? t('common.roles.tailor') : t('orders.employee');
                   } else if (isOwner) {
                     updaterName = tenant.name;
-                    updaterRole = t('common.roles.owner', 'المالك');
+                    updaterRole = t('common.roles.owner');
                   }
 
                   return (
@@ -1505,7 +1508,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex flex-col">
                             <span className={cn("text-xs font-bold", STATUS_CONFIG[h.status].color)}>
-                              {t(`common.status_${h.status}`, STATUS_CONFIG[h.status].label)}
+                              {t(STATUS_CONFIG[h.status].labelKey)}
                             </span>
                             <div className="flex items-center gap-1.5 mt-1">
                               <div className="w-5 h-5 rounded-full bg-surface flex items-center justify-center border border-border">
@@ -1534,19 +1537,19 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               <section className="space-y-4">
                 <h3 className="text-xs font-black text-content-muted uppercase tracking-widest flex items-center gap-2">
                   <Ruler size={14} />
-                  {t('orders.customer_measurements_thobe', 'مقاسات العميل (الثوب)')}
+                  {t('orders.customer_measurements')}
                 </h3>
                 <div className="bg-brand/5 p-6 rounded-3xl border border-brand/10">
                   <div className="grid grid-cols-3 gap-4">
                     {[
-                      { label: t('measurements.neck', 'الرقبة'), value: customers.find(c => c.id === order.customerId)?.measurements?.neck },
-                      { label: t('measurements.chest', 'الصدر'), value: customers.find(c => c.id === order.customerId)?.measurements?.chest },
-                      { label: t('measurements.waist', 'الخصر'), value: customers.find(c => c.id === order.customerId)?.measurements?.waist },
-                      { label: t('measurements.hips', 'الأرداف'), value: customers.find(c => c.id === order.customerId)?.measurements?.hips },
-                      { label: t('measurements.shoulder', 'الأكتاف'), value: customers.find(c => c.id === order.customerId)?.measurements?.shoulder },
-                      { label: t('measurements.sleeve', 'الأكمام'), value: customers.find(c => c.id === order.customerId)?.measurements?.sleeve },
-                      { label: t('measurements.length', 'الطول'), value: customers.find(c => c.id === order.customerId)?.measurements?.length },
-                      { label: t('measurements.bottomWidth', 'الوسع'), value: customers.find(c => c.id === order.customerId)?.measurements?.bottomWidth },
+                      { label: t('measurements.neck'), value: customers.find(c => c.id === order.customerId)?.measurements?.neck },
+                      { label: t('measurements.chest'), value: customers.find(c => c.id === order.customerId)?.measurements?.chest },
+                      { label: t('measurements.waist'), value: customers.find(c => c.id === order.customerId)?.measurements?.waist },
+                      { label: t('measurements.hips'), value: customers.find(c => c.id === order.customerId)?.measurements?.hips },
+                      { label: t('measurements.shoulder'), value: customers.find(c => c.id === order.customerId)?.measurements?.shoulder },
+                      { label: t('measurements.sleeve'), value: customers.find(c => c.id === order.customerId)?.measurements?.sleeve },
+                      { label: t('measurements.length'), value: customers.find(c => c.id === order.customerId)?.measurements?.length },
+                      { label: t('measurements.bottomWidth'), value: customers.find(c => c.id === order.customerId)?.measurements?.bottomWidth },
                     ].filter(m => m.value).map((m, i) => (
                       <div key={i} className="text-center">
                         <span className="block text-[10px] text-content-muted font-bold mb-1">{m.label}</span>
@@ -1562,7 +1565,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             <section className="space-y-4">
               <h3 className="text-xs font-black text-content-muted uppercase tracking-widest flex items-center gap-2">
                 <ShoppingBag size={14} />
-                {t('orders.items', 'الأصناف')}
+                {t('orders.items')}
               </h3>
               <div className="space-y-3">
                 {order.items.map((item: any, idx: number) => (
@@ -1587,15 +1590,15 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                     <div className="grid grid-cols-1 gap-2 text-xs text-content-muted font-bold relative z-10">
                       <div className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-brand/30" />
-                        <span>{t('orders.fabric', 'القماش')}: <span className="text-content">{item.fabric === 'custom' ? t('orders.external_fabric', 'قماش خارجي') : (item.fabric || t('orders.not_specified', 'غير محدد'))}</span></span>
+                        <span>{t('orders.fabric')}: <span className="text-content">{item.fabric === 'custom' ? t('orders.external_fabric') : (item.fabric || t('orders.not_specified'))}</span></span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-brand/30" />
-                        <span>{t('orders.additions', 'الإضافات')}: <span className="text-content">{item.additions || t('orders.none', 'لا يوجد')}</span></span>
+                        <span>{t('orders.additions')}: <span className="text-content">{item.additions || t('orders.none')}</span></span>
                       </div>
                       <div className="flex items-center gap-2 text-brand">
                         <Zap size={12} />
-                        <span>{t('orders.embroidery', 'التطريز')}: <span className="font-black">{item.embroidery || t('orders.none', 'لا يوجد')}</span></span>
+                        <span>{t('orders.embroidery')}: <span className="font-black">{item.embroidery || t('orders.none')}</span></span>
                       </div>
                     </div>
                   </motion.div>
@@ -1607,14 +1610,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           <div className="p-6 bg-surface-muted border-t border-border grid grid-cols-2 gap-3">
             <button className="flex items-center justify-center gap-2 bg-surface text-content py-4 rounded-2xl font-bold border border-border hover:bg-surface-muted transition-all text-sm">
               <Printer size={18} />
-              <span>{t('orders.print', 'طباعة')}</span>
+              <span>{t('orders.print')}</span>
             </button>
             <button 
               onClick={() => sendToWhatsApp(order)}
               className="flex items-center justify-center gap-2 bg-success text-white py-4 rounded-2xl font-bold hover:bg-success/90 transition-all shadow-lg shadow-success/10 text-sm"
             >
               <MessageSquare size={18} />
-              <span>{t('orders.whatsapp', 'واتساب')}</span>
+              <span>{t('orders.whatsapp')}</span>
             </button>
           </div>
         </motion.div>
@@ -1625,24 +1628,24 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const ConfirmDeliveryModal = () => (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsConfirmDeliveryOpen(false)} />
-      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-surface w-full max-w-sm rounded-[2rem] shadow-2xl relative z-10 p-8 text-center" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
+      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-surface w-full max-w-sm rounded-[2rem] shadow-2xl relative z-10 p-8 text-center" dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}>
         <div className="w-20 h-20 bg-success/10 text-success rounded-full flex items-center justify-center mx-auto mb-6">
           <CheckCircle2 size={40} />
         </div>
-        <h3 className="text-xl font-black text-content mb-2">{t('orders.confirm_delivery_title', 'تأكيد تسليم الطلب')}</h3>
-        <p className="text-content-muted text-sm mb-8 font-medium">{t('orders.confirm_delivery_desc', 'هل تم تسليم الطلب للعميل بنجاح؟ سيتم إغلاق الطلب نهائياً ولا يمكن تعديله لاحقاً.')}</p>
+        <h3 className="text-xl font-black text-content mb-2">{t('orders.confirm_delivery_title')}</h3>
+        <p className="text-content-muted text-sm mb-8 font-medium">{t('orders.confirm_delivery_desc')}</p>
         <div className="flex flex-col gap-3">
           <button 
             onClick={confirmDelivery}
             className="w-full bg-success text-white py-4 rounded-2xl font-bold hover:bg-success/90 shadow-lg shadow-success/10 transition-all"
           >
-            {t('orders.confirm_delivery_btn', 'تأكيد التسليم')}
+            {t('orders.confirm_delivery_btn')}
           </button>
           <button 
             onClick={() => setIsConfirmDeliveryOpen(false)}
             className="w-full py-4 text-content-muted font-bold hover:bg-surface-muted rounded-2xl transition-all"
           >
-            {t('common.cancel', 'إلغاء')}
+            {t('common.cancel')}
           </button>
         </div>
       </motion.div>
@@ -1665,9 +1668,9 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         const historyEntry: OrderHistory = {
           status: order.status,
           updatedAt: new Date().toISOString(),
-          updatedBy: currentStaff?.name || t('common.roles.owner', 'المالك'),
+          updatedBy: currentStaff?.name || t('common.roles.owner'),
           updatedByUid: currentStaff?.id || auth.currentUser?.uid,
-          notes: t('orders.payment_completed_note', 'تم سداد مبلغ {{amount}} ﷼ بواسطة {{method}}. المتبقي: {{remaining}} ﷼', { amount, method: t(`common.payment_methods.${method}`, PAYMENT_METHODS.find(m => m.id === method)?.label || method), remaining: newRemainingAmount })
+          notes: t('orders.payment_completed_note', { amount, method: t(`common.payment_methods.${method}`, method), remaining: newRemainingAmount })
         };
 
         const updatedHistory = [...(order.history || []), historyEntry];
@@ -1686,9 +1689,9 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           const finalHistoryEntry: OrderHistory = {
             status: pendingStatusUpdate.status,
             updatedAt: new Date().toISOString(),
-            updatedBy: currentStaff?.name || 'المالك',
+            updatedBy: currentStaff?.name || t('common.owner'),
             updatedByUid: currentStaff?.id || auth.currentUser?.uid,
-            notes: 'تم سداد المتبقي وتسليم الطلب'
+            notes: t('orders.remaining_paid_delivered_note')
           };
 
           const finalHistory = [...(order.history || []), historyEntry, finalHistoryEntry];
@@ -1728,15 +1731,15 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           animate={{ scale: 1, opacity: 1, y: 0 }} 
           exit={{ scale: 0.95, opacity: 0, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="bg-surface w-full lg:max-w-md rounded-3xl shadow-2xl relative z-10 overflow-y-auto max-h-[90vh] text-right border border-border" 
-          dir="rtl"
+          className="bg-surface w-full lg:max-w-md rounded-3xl shadow-2xl relative z-10 overflow-y-auto max-h-[90vh] text-start border border-border" 
+          dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}
         >
           <div className="p-6 border-b border-border flex justify-between items-center bg-success/5">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-success text-white rounded-2xl">
                 <CreditCard size={24} />
               </div>
-              <h3 className="text-xl font-black text-content">استكمال الدفع</h3>
+              <h3 className="text-xl font-black text-content">{t('orders.complete_payment_title')}</h3>
             </div>
             <button onClick={() => setIsPaymentModalOpen(false)} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm">
               <X size={24} className="text-content-muted" />
@@ -1745,12 +1748,12 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           
           <div className="p-8 space-y-6">
             <div className="bg-surface-muted p-6 rounded-3xl border border-border text-center">
-              <p className="text-xs font-bold text-content-muted uppercase tracking-widest mb-1">المبلغ المتبقي</p>
+              <p className="text-xs font-bold text-content-muted uppercase tracking-widest mb-1">{t('orders.remaining_amount')}</p>
               <p className="text-3xl font-black text-danger"><PriceDisplay amount={order.remainingAmount} /></p>
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-bold text-content-muted uppercase tracking-widest">{t('orders.pay_amount_now', 'المبلغ المدفوع الآن')}</label>
+              <label className="text-xs font-bold text-content-muted uppercase tracking-widest">{t('orders.pay_amount_now')}</label>
               <input 
                 type="number" 
                 value={amount}
@@ -1761,7 +1764,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-bold text-content-muted uppercase tracking-widest">{t('orders.payment_method', 'طريقة الدفع')}</label>
+              <label className="text-xs font-bold text-content-muted uppercase tracking-widest">{t('orders.payment_method')}</label>
               <div className="grid grid-cols-2 gap-2">
                 {PAYMENT_METHODS.filter(m => m.id !== 'partial').map((m) => (
                   <button
@@ -1773,7 +1776,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                     )}
                   >
                     <m.icon size={16} />
-                    {t(`common.payment_methods.${m.id}`, m.label)}
+                    {t(m.labelKey)}
                   </button>
                 ))}
               </div>
@@ -1784,7 +1787,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               disabled={isProcessing || amount <= 0}
               className="w-full bg-success text-white py-4 rounded-2xl font-black hover:bg-success/90 shadow-xl shadow-success/10 transition-all disabled:opacity-50"
             >
-              {isProcessing ? 'جاري المعالجة...' : 'تأكيد الدفع والاستلام'}
+              {isProcessing ? t('orders.processing_payment') : t('orders.confirm_payment_and_delivery')}
             </button>
           </div>
         </motion.div>
@@ -1808,7 +1811,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
         className="bg-surface w-full max-w-[92mm] sm:max-w-[100mm] rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl relative z-10 overflow-hidden"
       >
-        <div className={cn("p-8 space-y-6", i18n.language === 'ar' ? "text-right" : "text-left")} dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
+        <div className={cn("p-8 space-y-6", isRtlLang(i18n.language) ? "text-right" : "text-left")} dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}>
           <div className="flex justify-between items-start">
             <div className="bg-brand text-white p-4 rounded-3xl">
               <ShoppingBag size={32} />
@@ -1819,8 +1822,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           </div>
 
           <div className="text-center space-y-1">
-            <h2 className="text-2xl font-black text-content">{t('orders.invoice', 'فاتورة طلب')}</h2>
-            <p className="text-content-muted font-medium">{t('common.order', 'رقم الطلب')}: #{order.orderNumber || order.id.slice(-6).toUpperCase()}</p>
+            <h2 className="text-2xl font-black text-content">{t('orders.invoice')}</h2>
+            <p className="text-content-muted font-medium">{t('common.order')}: #{order.orderNumber || order.id.slice(-6).toUpperCase()}</p>
           </div>
 
           <div className="bg-surface-muted p-6 rounded-[2rem] space-y-4">
@@ -1830,12 +1833,12 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   <User size={18} className="text-brand" />
                 </div>
                 <div>
-                  <p className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('common.customer', 'العميل')}</p>
+                  <p className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('common.customer')}</p>
                   <p className="font-bold text-content">{order.customerName}</p>
                 </div>
               </div>
               <div className="text-left">
-                <p className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('common.date', 'التاريخ')}</p>
+                <p className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('common.date')}</p>
                 <DateTimeDisplay date={order.orderDate} showTime={true} size="xs" />
               </div>
             </div>
@@ -1843,7 +1846,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             <div className="border-t border-dashed border-border pt-4 space-y-3">
               {order.items?.map((item: any, idx: number) => (
                 <div key={item.garmentType + item.fabric + idx} className="flex justify-between text-sm">
-                  <span className="text-content-muted">{item.garmentType} ({item.fabric === 'custom' ? t('orders.external_fabric', 'قماش خارجي') : item.fabric})</span>
+                  <span className="text-content-muted">{item.garmentType} ({item.fabric === 'custom' ? t('orders.external_fabric') : item.fabric})</span>
                   <span className="font-bold text-content"><PriceDisplay amount={item.price * item.quantity} /></span>
                 </div>
               ))}
@@ -1853,30 +1856,30 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               {order.taxAmount && Number(order.taxAmount) > 0 ? (
                 <>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-content-muted">{t('orders.subtotal', 'الإجمالي الخاضع للضريبة')}</span>
+                    <span className="text-content-muted">{t('orders.subtotal')}</span>
                     <span className="font-bold text-content"><PriceDisplay amount={Number(order.totalAmount) - Number(order.taxAmount)} /></span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-content-muted">{t('orders.vat_label', 'ضريبة القيمة المضافة')} ({order.taxRate}%)</span>
+                    <span className="text-content-muted">{t('orders.vat_label')} ({order.taxRate}%)</span>
                     <span className="font-bold text-content"><PriceDisplay amount={Number(order.taxAmount)} /></span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-content-muted font-black">{t('orders.grand_total', 'الإجمالي الكلي')}</span>
+                    <span className="text-content-muted font-black">{t('orders.grand_total')}</span>
                     <span className="text-xl font-black text-brand"><PriceDisplay amount={order.totalAmount} /></span>
                   </div>
                 </>
               ) : (
                 <div className="flex justify-between items-center">
-                  <span className="text-content-muted font-medium">{t('common.total', 'الإجمالي')}</span>
+                  <span className="text-content-muted font-medium">{t('common.total')}</span>
                   <span className="text-xl font-black text-brand"><PriceDisplay amount={order.totalAmount} /></span>
                 </div>
               )}
               <div className="flex justify-between items-center text-sm">
-                <span className="text-content-muted">{t('orders.amount_paid', 'المدفوع')} ({t(`common.payment_methods.${order.paymentMethod}`, PAYMENT_METHODS.find(m => m.id === order.paymentMethod)?.label || order.paymentMethod)})</span>
+                <span className="text-content-muted">{t('orders.amount_paid')} ({t(`common.payment_methods.${order.paymentMethod}`, order.paymentMethod)})</span>
                 <span className="font-bold text-success"><PriceDisplay amount={order.paidAmount} /></span>
               </div>
               <div className="flex justify-between items-center text-sm pt-2 border-t border-border">
-                <span className="text-content-muted">{t('orders.remaining_label', 'المتبقي')}</span>
+                <span className="text-content-muted">{t('orders.remaining_label')}</span>
                 <span className="font-black text-danger"><PriceDisplay amount={order.remainingAmount} /></span>
               </div>
             </div>
@@ -1887,7 +1890,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               <QRCodeSVG value={order.qrCode || order.id} size={120} />
             </div>
             <p className="text-[10px] text-content-muted font-bold text-center px-8 uppercase tracking-widest">
-              {t('orders.scan_qr_desc', 'امسح الكود لمتابعة حالة الطلب عبر تطبيق العملاء')}
+              {t('orders.scan_qr_desc')}
             </p>
 
             <Branding className="opacity-40 py-0" />
@@ -1896,14 +1899,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           <div className="grid grid-cols-2 gap-3">
             <button className="flex items-center justify-center gap-2 bg-brand text-white py-4 rounded-2xl font-bold hover:bg-brand/90 transition-all shadow-lg shadow-brand/10">
               <Printer size={20} />
-              <span>{t('orders.print', 'طباعة')}</span>
+              <span>{t('orders.print')}</span>
             </button>
             <button 
               onClick={() => sendToWhatsApp(order)}
               className="flex items-center justify-center gap-2 bg-success text-white py-4 rounded-2xl font-bold hover:bg-success/90 transition-all shadow-lg shadow-success/10"
             >
               <MessageSquare size={20} />
-              <span>{t('orders.whatsapp', 'واتساب')}</span>
+              <span>{t('orders.whatsapp')}</span>
             </button>
           </div>
         </div>
@@ -1916,34 +1919,34 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   }
 
   return (
-    <div className={cn("space-y-6", i18n.language === 'ar' ? "text-right" : "text-left")} dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
+    <div className={cn("space-y-6", isRtlLang(i18n.language) ? "text-right" : "text-left")} dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}>
       <Header 
         tenantId={tenantId} 
-        title={t('common.orders', 'الطلبات')} 
-        subtitle={t('orders.subtitle', 'إدارة طلبات الخياطة والمواعيد')}
+        title={t('common.orders')} 
+        subtitle={t('orders.subtitle')}
       >
         <div className="flex flex-wrap items-center gap-3">
           <button 
             onClick={() => {
               const exportData = filteredOrders.map(o => ({
-                [t('common.order', 'رقم الطلب')]: o.orderNumber || o.id.slice(-6).toUpperCase(),
-                [t('common.customer', 'العميل')]: o.customerName,
-                [t('common.date', 'التاريخ')]: new Date(o.orderDate).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US'),
-                [t('common.total', 'الإجمالي')]: o.totalAmount,
-                [t('orders.amount_paid', 'المدفوع')]: o.paidAmount,
-                [t('orders.remaining_label', 'المتبقي')]: o.remainingAmount,
-                [t('common.status', 'الحالة')]: t(`common.status_${o.status}`, STATUS_CONFIG[o.status].label),
-                [t('orders.payment_method', 'طريقة الدفع')]: t(`common.payment_methods.${o.paymentMethod}`, PAYMENT_METHODS.find(m => m.id === o.paymentMethod)?.label || o.paymentMethod)
+                [t('common.order')]: o.orderNumber || o.id.slice(-6).toUpperCase(),
+                [t('common.customer')]: o.customerName,
+                [t('common.date')]: new Date(o.orderDate).toLocaleDateString(localeOf(i18n.language)),
+                [t('common.total')]: o.totalAmount,
+                [t('orders.amount_paid')]: o.paidAmount,
+                [t('orders.remaining_label')]: o.remainingAmount,
+                [t('common.status')]: t(STATUS_CONFIG[o.status].labelKey),
+                [t('orders.payment_method')]: t(`common.payment_methods.${o.paymentMethod}`, o.paymentMethod)
               }));
               const worksheet = XLSX.utils.json_to_sheet(exportData);
               const workbook = XLSX.utils.book_new();
               XLSX.utils.book_append_sheet(workbook, worksheet, "Orders");
-              XLSX.writeFile(workbook, `${t('common.orders', 'الطلبات')}_${new Date().toLocaleDateString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US')}.xlsx`);
+              XLSX.writeFile(workbook, `${t('common.orders')}_${new Date().toLocaleDateString(localeOf(i18n.language))}.xlsx`);
             }}
             className="bg-success/5 text-success px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-success/10 transition-all border border-success/10"
           >
             <FileSpreadsheet size={20} />
-            <span>{t('orders.export_excel', 'تصدير Excel')}</span>
+            <span>{t('orders.export_excel')}</span>
           </button>
           <div id="tour-orders-tabs" data-tour="orders-tabs" className="flex bg-surface p-1 rounded-2xl border border-border shadow-sm">
             <button
@@ -1953,7 +1956,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 activeTab === 'active' ? "bg-brand text-white shadow-lg shadow-brand/10" : "text-content-muted hover:bg-surface-muted"
               )}
             >
-              {t('orders.active_orders', 'الطلبات النشطة')}
+              {t('orders.active_orders')}
             </button>
             <button
               onClick={() => setActiveTab('completed')}
@@ -1962,7 +1965,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 activeTab === 'completed' ? "bg-brand text-white shadow-lg shadow-brand/10" : "text-content-muted hover:bg-surface-muted"
               )}
             >
-              {t('orders.completed_orders', 'الطلبات المكتملة')}
+              {t('orders.completed_orders')}
             </button>
           </div>
           <button
@@ -1972,7 +1975,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             className="bg-brand text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-brand/90 transition-all shadow-lg shadow-brand/10"
           >
             <Plus size={20} />
-            <span>{t('orders.create_new_order', 'إنشاء طلب جديد')}</span>
+            <span>{t('orders.create_new_order')}</span>
           </button>
         </div>
       </Header>
@@ -1982,7 +1985,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           <Search size={20} className="text-content-muted" />
           <input 
             type="text" 
-            placeholder={t('orders.search_placeholder', 'ابحث برقم الطلب أو اسم العميل...')} 
+            placeholder={t('orders.search_placeholder')} 
+            data-orders-search="true"
             className="flex-1 bg-transparent border-none focus:ring-0 text-content"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -2002,10 +2006,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               value={statusFilter}
               onChange={(val) => setStatusFilter(val as OrderStatus | '')}
               options={[
-                { value: '', label: t('orders.all_statuses', 'كل الحالات') },
+                { value: '', label: t('orders.all_statuses') },
                 ...(Object.keys(STATUS_CONFIG) as OrderStatus[]).map((status) => ({
                   value: status,
-                  label: t(`common.status_${status}`, STATUS_CONFIG[status].label)
+                  label: t(STATUS_CONFIG[status].labelKey)
                 }))
               ]}
               className="bg-surface-muted"
@@ -2021,7 +2025,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 onChange={(e) => setStartDate(e.target.value)}
                 className="bg-surface-muted border-none rounded-xl px-3 py-2 text-[10px] font-bold text-content focus:ring-2 focus:ring-brand"
               />
-              <span className="text-content-muted text-xs">{t('orders.to', 'إلى')}</span>
+              <span className="text-content-muted text-xs">{t('orders.to')}</span>
               <input
                 type="date"
                 value={endDate}
@@ -2039,7 +2043,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 setEndDate('');
               }}
               className="p-2 text-danger hover:bg-danger/10 rounded-xl transition-all"
-              title={t('orders.clear_filters', 'مسح الفلاتر')}
+              title={t('orders.clear_filters')}
             >
               <X size={18} />
             </button>
@@ -2054,10 +2058,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               <ShoppingBag size={32} />
             </div>
             <h3 className="text-lg font-black text-content mb-1">
-              {t('orders.no_orders_currently', 'لا يوجد طلبات حالياً')}
+              {t('orders.no_orders_currently')}
             </h3>
             <p className="text-xs text-content-muted font-bold max-w-sm">
-              {t('orders.no_orders_desc', 'لم يتم العثور على أي طلبات تطابق الفلاتر المحددة أو لا توجد طلبات مسجلة.')}
+              {t('orders.no_orders_desc')}
             </p>
           </div>
         ) : (
@@ -2132,7 +2136,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           {order.isTest && (
                             <span className="text-[9px] bg-danger/10 text-danger px-1.5 py-0.5 rounded-md font-black flex items-center gap-0.5 shrink-0">
                               <Zap size={8} />
-                              {t('orders.test_data_badge', 'تجريبي')}
+                              {t('orders.test_data_badge')}
                             </span>
                           )}
                         </div>
@@ -2155,14 +2159,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         )}
                       >
                         <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse", STATUS_CONFIG[order.status].color.replace('text', 'bg'))} />
-                        <span>{t(`common.status_${order.status}`, STATUS_CONFIG[order.status].label)}</span>
+                        <span>{t(STATUS_CONFIG[order.status].labelKey)}</span>
                         {order.status !== 'delivered' && <ChevronDown size={12} className="opacity-60" />}
                       </button>
 
                       {order.status !== 'delivered' && openStatusDropdownId === order.id && (
                         <div className={cn(
                           "absolute top-full mt-2 w-48 bg-surface rounded-2xl shadow-2xl border border-border py-2 z-50 backdrop-blur-xl",
-                          i18n.language === 'ar' ? "left-0" : "right-0"
+                          isRtlLang(i18n.language) ? "left-0" : "right-0"
                         )}>
                           {(Object.keys(STATUS_CONFIG) as OrderStatus[]).map((status) => {
                             const cfg = STATUS_CONFIG[status];
@@ -2176,13 +2180,13 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                 }}
                                 className={cn(
                                   "w-full px-3 py-2 text-xs font-bold hover:bg-brand/10 flex items-center justify-between",
-                                  i18n.language === 'ar' ? "text-right" : "text-left",
+                                  isRtlLang(i18n.language) ? "text-right" : "text-left",
                                   order.status === status ? cfg.color : "text-content-muted"
                                 )}
                               >
                                 <span className="flex items-center gap-2">
                                   <cfg.icon size={12} />
-                                  {t(`common.status_${status}`, cfg.label)}
+                                  {t(cfg.labelKey)}
                                 </span>
                                 {order.status === status && <CheckCircle2 size={12} />}
                               </button>
@@ -2199,7 +2203,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                     <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
                       <span className="text-[10px] font-bold text-content-muted flex items-center gap-1">
                         <Calendar size={10} className="text-brand shrink-0" />
-                        {t('common.date', 'التاريخ')}
+                        {t('common.date')}
                       </span>
                       <DateTimeDisplay date={order.orderDate} showTime={true} size="xs" />
                     </div>
@@ -2208,13 +2212,13 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                     <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
                       <span className="text-[10px] font-bold text-content-muted flex items-center gap-1">
                         <CreditCard size={10} className="text-brand shrink-0" />
-                        {t('orders.payment_method', 'طريقة الدفع')}
+                        {t('orders.payment_method')}
                       </span>
                       <span className="font-bold text-content text-[11px] truncate">
-                        {(order.paymentMethod as any) === 'network' || (order.paymentMethod as any) === 'card' ? 'شبكة / بطاقة' :
-                         order.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' :
-                         order.paymentMethod === 'partial' ? 'آجل / جزئي' :
-                         order.paymentMethod === 'cash_on_delivery' ? 'عند الاستلام' : 'نقدي'}
+                        {(order.paymentMethod as any) === 'network' || (order.paymentMethod as any) === 'card' ? t('orders.payment_network_card') :
+                         order.paymentMethod === 'bank_transfer' ? t('pos.bank_transfer') :
+                         order.paymentMethod === 'partial' ? t('orders.payment_deferred_partial_short') :
+                         order.paymentMethod === 'cash_on_delivery' ? t('orders.payment_on_delivery_short') : t('common.payment_methods.cash')}
                       </span>
                     </div>
 
@@ -2222,7 +2226,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                     <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
                       <span className="text-[10px] font-bold text-content-muted flex items-center gap-1">
                         <ShoppingBag size={10} className="text-brand shrink-0" />
-                        {t('common.total', 'الإجمالي')}
+                        {t('common.total')}
                       </span>
                       <span className="font-black text-brand text-xs">
                         <PriceDisplay amount={order.totalAmount} />
@@ -2232,7 +2236,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                     {/* Box 4: Balance / Remaining */}
                     <div className="bg-surface-muted/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 justify-center">
                       <span className="text-[10px] font-bold text-content-muted">
-                        {t('orders.remaining_label', 'المتبقي')}
+                        {t('orders.remaining_label')}
                       </span>
                       <div>
                         {order.remainingAmount > 0 ? (
@@ -2243,7 +2247,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         ) : (
                           <span className="bg-green-500/10 text-green-600 border border-green-500/20 px-2 py-0.5 rounded-md text-[10px] font-black inline-flex items-center gap-1 truncate">
                             <span className="w-1.5 h-1.5 bg-green-500 rounded-full shrink-0" />
-                            {t('orders.fully_paid', 'مدفوع')}
+                            {t('orders.fully_paid')}
                           </span>
                         )}
                       </div>
@@ -2263,7 +2267,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         className="px-2.5 py-1.5 bg-brand/10 text-brand hover:bg-brand hover:text-white rounded-xl transition-all flex items-center gap-1.5 font-bold text-xs"
                       >
                         <Eye size={14} />
-                        <span>{t('orders.invoice', 'الفاتورة')}</span>
+                        <span>{t('orders.invoice')}</span>
                       </button>
 
                       <button 
@@ -2273,7 +2277,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           setSelectedOrder(order);
                         }}
                         className="p-1.5 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all border border-border/40"
-                        title={t('orders.quick_print', 'طباعة')}
+                        title={t('orders.quick_print')}
                       >
                         <Printer size={16} />
                       </button>
@@ -2286,7 +2290,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           setIsDetailsOpen(true); 
                         }}
                         className="p-1.5 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all border border-border/40"
-                        title={t('orders.details', 'التفاصيل')}
+                        title={t('orders.details')}
                       >
                         <Info size={16} />
                       </button>
@@ -2305,7 +2309,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           ? "text-content-muted/20 cursor-not-allowed" 
                           : "text-content-muted hover:text-danger hover:bg-danger/10 hover:border-danger/20"
                       )}
-                      title={t('orders.delete_order', 'حذف الطلب')}
+                      title={t('orders.delete_order')}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -2339,7 +2343,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                               setDueDetailsCustomer(matchingCustomer);
                             }}
                             className="flex items-center gap-1 bg-red-500/10 hover:bg-red-500/20 text-red-600 border border-red-500/20 px-2.5 py-1 rounded-full text-xs font-black transition-all animate-pulse"
-                            title={t('orders.customer_has_dues', 'العميل لديه مستحقات معلقة. اضغط لعرض التفاصيل')}
+                            title={t('orders.customer_has_dues')}
                           >
                             <AlertCircle size={14} className="text-red-600" />
                             <span><PriceDisplay amount={totalUnpaid} /></span>
@@ -2351,7 +2355,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         {order.isTest && (
                           <span className="text-[10px] bg-danger/10 text-danger px-2 py-0.5 rounded-full font-black uppercase tracking-widest flex items-center gap-1">
                             <Zap size={10} />
-                            {t('orders.test_data_badge', 'بيانات تجريبية')}
+                            {t('orders.test_data_badge')}
                           </span>
                         )}
                       </div>
@@ -2363,10 +2367,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         <div className="w-1 h-1 bg-border rounded-full hidden sm:block" />
                         <span className="text-xs font-bold bg-surface-muted px-2.5 py-1 rounded-lg border border-border flex items-center gap-1">
                           <CreditCard size={12} className="text-brand" />
-                          {(order.paymentMethod as any) === 'network' || (order.paymentMethod as any) === 'card' ? 'شبكة / بطاقة' :
-                           order.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' :
-                           order.paymentMethod === 'partial' ? 'آجل / دفع جزئي' :
-                           order.paymentMethod === 'cash_on_delivery' ? 'الدفع عند الاستلام' : 'نقدي'}
+                          {(order.paymentMethod as any) === 'network' || (order.paymentMethod as any) === 'card' ? t('orders.payment_network_card') :
+                           order.paymentMethod === 'bank_transfer' ? t('pos.bank_transfer') :
+                           order.paymentMethod === 'partial' ? t('orders.payment_deferred_partial') :
+                           order.paymentMethod === 'cash_on_delivery' ? t('common.payment_methods.cash_on_delivery') : t('common.payment_methods.cash')}
                         </span>
                         <div className="w-1 h-1 bg-border rounded-full hidden sm:block" />
                         <span className="font-black text-brand text-lg">
@@ -2384,10 +2388,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           setIsInvoiceOpen(true);
                         }}
                         className="px-3 py-2 text-brand hover:bg-brand hover:text-white rounded-xl transition-all flex items-center gap-2 font-black text-xs"
-                        title={t('orders.view_invoice', 'استعراض الفاتورة')}
+                        title={t('orders.view_invoice')}
                       >
                         <Eye size={16} />
-                        <span>{t('orders.invoice', 'الفاتورة')}</span>
+                        <span>{t('orders.invoice')}</span>
                       </button>
 
                       <button 
@@ -2395,7 +2399,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           setSelectedOrder(order);
                         }}
                         className="p-2 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all"
-                        title={t('orders.quick_print', 'طباعة سريعة')}
+                        title={t('orders.quick_print')}
                       >
                         <Printer size={18} />
                       </button>
@@ -2403,7 +2407,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                       <button 
                         onClick={() => { setSelectedOrder(order); setIsDetailsOpen(true); }}
                         className="p-2 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all"
-                        title={t('orders.details', 'التفاصيل')}
+                        title={t('orders.details')}
                       >
                         <Info size={18} />
                       </button>
@@ -2439,17 +2443,17 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         )}
                       >
                         <div className={cn("w-2 h-2 rounded-full animate-pulse", STATUS_CONFIG[order.status].color.replace('text', 'bg'))} />
-                        <span>{t(`common.status_${order.status}`, STATUS_CONFIG[order.status].label)}</span>
+                        <span>{t(STATUS_CONFIG[order.status].labelKey)}</span>
                         {order.status !== 'delivered' && <ChevronDown size={14} className="opacity-50" />}
                       </motion.button>
                       
                       {order.status !== 'delivered' && openStatusDropdownId === order.id && (
                         <div className={cn(
                           "absolute top-full mt-2 w-56 bg-surface rounded-[2rem] shadow-2xl border border-border/50 py-3 z-30 animate-in fade-in zoom-in duration-200 backdrop-blur-xl",
-                          i18n.language === 'ar' ? "right-0" : "left-0"
+                          isRtlLang(i18n.language) ? "right-0" : "left-0"
                         )}>
                           <div className="px-4 py-2 mb-2 border-b border-border/50">
-                            <span className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('orders.update_status', 'تحديث الحالة')}</span>
+                            <span className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('orders.update_status')}</span>
                           </div>
                           {(Object.keys(STATUS_CONFIG) as OrderStatus[]).map((status) => {
                             const cfg = STATUS_CONFIG[status];
@@ -2459,13 +2463,13 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                 onClick={() => updateStatus(order.id, status)}
                                 className={cn(
                                   "w-full px-4 py-2.5 text-xs font-black hover:bg-brand/5 transition-all flex items-center justify-between group/item",
-                                  i18n.language === 'ar' ? "text-right" : "text-left",
+                                  isRtlLang(i18n.language) ? "text-right" : "text-left",
                                   order.status === status ? cfg.color : "text-content-muted hover:text-brand"
                                 )}
                               >
                                 <div className="flex items-center gap-3">
                                   <cfg.icon size={14} className={cn("transition-transform group-hover/item:scale-110", order.status === status ? cfg.color : "text-content-muted/50")} />
-                                  {t(`common.status_${status}`, cfg.label)}
+                                  {t(cfg.labelKey)}
                                 </div>
                                 {order.status === status && <CheckCircle2 size={12} />}
                               </button>
@@ -2484,7 +2488,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           ? "text-content-muted/20 cursor-not-allowed" 
                           : "text-content-muted hover:text-danger hover:bg-danger/10 hover:border-danger/20"
                       )}
-                      title={t('orders.delete_order', 'حذف الطلب')}
+                      title={t('orders.delete_order')}
                     >
                       <Trash2 size={18} />
                     </button>
@@ -2530,7 +2534,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               exit={{ y: '100%', opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="relative w-full max-w-lg rounded-t-[2.5rem] lg:rounded-[2.5rem] shadow-2xl z-10 overflow-hidden bg-surface border border-border flex flex-col max-h-[85vh]"
-              dir={i18n.language === 'ar' ? "rtl" : "ltr"}
+              dir={isRtlLang(i18n.language) ? "rtl" : "ltr"}
             >
               <div className="flex items-center justify-between p-6 border-b border-border bg-brand/5 shrink-0">
                 <div className="flex items-center gap-3">
@@ -2539,7 +2543,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   </div>
                   <div>
                     <h3 className="text-lg font-black text-content">
-                      {t('orders.due_details_title', 'تفاصيل المبالغ المتبقية')}
+                      {t('orders.due_details_title')}
                     </h3>
                     <p className="text-xs text-content-muted mt-0.5 font-bold">
                       {dueDetailsCustomer.name}
@@ -2557,7 +2561,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
                 <div className="p-4 bg-danger/10 border border-danger/20 rounded-2xl flex justify-between items-center">
-                  <span className="font-bold text-sm text-danger">{t('orders.total_customer_dues', 'إجمالي المستحقات المتبقية:')}</span>
+                  <span className="font-bold text-sm text-danger">{t('orders.total_customer_dues')}</span>
                   <span className="font-mono font-black text-xl text-red-700">
                     <PriceDisplay amount={unpaidOrders.filter(o => o.customerId === dueDetailsCustomer.id).reduce((sum, o) => sum + (o.remainingAmount || 0), 0)} />
                   </span>
@@ -2565,7 +2569,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
                 <div className="space-y-3">
                   <h4 className="font-black text-sm text-content-muted px-1">
-                    {t('orders.unpaid_orders_list', 'قائمة الفواتير غير المدفوعة بالكامل')}
+                    {t('orders.unpaid_orders_list')}
                   </h4>
 
                   <div className="space-y-2.5 max-h-[40vh] overflow-y-auto pr-1">
@@ -2585,23 +2589,23 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                               #{o.orderNumber || o.id.slice(-6).toUpperCase()}
                             </span>
                             <span className="text-[10px] bg-brand/10 text-brand px-2 py-0.5 rounded-full font-bold">
-                              {STATUS_CONFIG[o.status]?.label || o.status}
+                              {t(STATUS_CONFIG[o.status]?.labelKey || `common.status_${o.status}`)}
                             </span>
                           </div>
                           <p className="text-xs text-content-muted font-bold">
-                            {new Date(o.orderDate).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US')}
+                            {new Date(o.orderDate).toLocaleDateString(localeOf(i18n.language))}
                           </p>
                         </div>
 
                         <div className="text-left rtl:text-right space-y-0.5">
                           <div className="text-xs text-content-muted font-bold">
-                            {t('orders.remaining_label', 'المتبقي')}
+                            {t('orders.remaining_label')}
                           </div>
                           <div className="font-mono font-black text-base text-red-600">
                             <PriceDisplay amount={o.remainingAmount} />
                           </div>
                           <div className="text-[10px] text-content-muted font-bold">
-                            {t('orders.total_label', 'الإجمالي')}: <PriceDisplay amount={o.totalAmount} />
+                            {t('common.total')}: <PriceDisplay amount={o.totalAmount} />
                           </div>
                         </div>
                       </div>
@@ -2616,7 +2620,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   onClick={() => setDueDetailsCustomer(null)}
                   className="px-5 py-2.5 bg-surface border border-border text-content-muted hover:bg-surface-muted rounded-xl transition-all font-black text-sm"
                 >
-                  {t('common.close', 'إغلاق')}
+                  {t('sales.close')}
                 </button>
               </div>
             </motion.div>
@@ -2642,8 +2646,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className={cn("relative w-full lg:max-w-4xl rounded-t-[2.5rem] lg:rounded-[2.5rem] shadow-2xl z-10 overflow-hidden h-[95vh] lg:h-auto lg:max-h-[90vh] flex flex-col border border-border bg-surface", i18n.language === 'ar' ? "text-right" : "text-left")}
-              dir={i18n.language === 'ar' ? "rtl" : "ltr"}
+              className={cn("relative w-full lg:max-w-4xl rounded-t-[2.5rem] lg:rounded-[2.5rem] shadow-2xl z-10 overflow-hidden h-[95vh] lg:h-auto lg:max-h-[90vh] flex flex-col border border-border bg-surface", isRtlLang(i18n.language) ? "text-right" : "text-left")}
+              dir={isRtlLang(i18n.language) ? "rtl" : "ltr"}
             >
               {/* Header (Fixed) */}
               <div className="sticky top-0 z-10 flex items-center justify-between p-4 sm:p-6 border-b border-[var(--border)] bg-[var(--surface)] shrink-0 bg-brand/5">
@@ -2651,7 +2655,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   <div className="p-2.5 bg-brand text-white rounded-2xl shrink-0 shadow-sm">
                     <Plus size={20} />
                   </div>
-                  <h3 className="text-base sm:text-lg lg:text-xl font-black text-content">{t('orders.create_new_order', 'إنشاء طلب جديد')}</h3>
+                  <h3 className="text-base sm:text-lg lg:text-xl font-black text-content">{t('orders.create_new_order')}</h3>
                 </div>
                 <button type="button" onClick={handleCloseModal} className="p-2 hover:bg-surface-muted rounded-full transition-colors shadow-sm text-content-muted">
                   <X size={20} />
@@ -2666,7 +2670,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                     {/* Customer Selection & Info */}
                     <div className="space-y-6">
                       <div className="space-y-2">
-                        <label className="text-sm font-black text-content-muted uppercase tracking-widest">{t('common.customer', 'العميل')}</label>
+                        <label className="text-sm font-black text-content-muted uppercase tracking-widest">{t('common.customer')}</label>
                         <div className="flex items-center gap-2">
                           <div className="flex-1 min-w-0">
                             <Controller 
@@ -2677,7 +2681,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                   value={field.value}
                                   onChange={field.onChange}
                                   options={[
-                                    { value: '', label: t('orders.select_customer', 'اختر عميل...') },
+                                    { value: '', label: t('orders.choose_customer') },
                                     ...customers.map(c => ({ value: c.id, label: c.name }))
                                   ]}
                                   error={!!errors.customerId}
@@ -2689,7 +2693,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           <button 
                             type="button" 
                             onClick={() => setIsQuickAddOpen(true)}
-                            title={t('orders.add_new_customer', 'إضافة عميل جديد')}
+                            title={t('orders.add_new_customer')}
                             className="w-12 h-12 bg-brand text-white rounded-2xl flex items-center justify-center hover:bg-brand/90 transition-all shrink-0 shadow-sm active:scale-95"
                           >
                             <UserPlus size={20} />
@@ -2707,7 +2711,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           <div className="flex items-center justify-between text-brand mb-1">
                             <div className="flex items-center gap-2">
                               <Ruler size={18} />
-                              <h4 className="font-black text-sm uppercase tracking-wider">{t('orders.customer_measurements_auto', 'مقاسات العميل (آلي)')}</h4>
+                              <h4 className="font-black text-sm uppercase tracking-wider">{t('orders.customer_measurements_auto')}</h4>
                             </div>
                             {!isEditingMeasurements ? (
                               <button
@@ -2719,7 +2723,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                 className="text-xs font-bold text-brand bg-surface border border-brand/20 hover:bg-brand hover:text-white px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
                               >
                                 <Edit2 size={13} />
-                                <span>{t('common.edit', 'تعديل القياسات')}</span>
+                                <span>{t('common.edit')}</span>
                               </button>
                             ) : (
                               <div className="flex items-center gap-2">
@@ -2728,7 +2732,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                   onClick={() => setIsEditingMeasurements(false)}
                                   className="text-xs font-bold text-content-muted bg-surface hover:bg-surface-muted px-2.5 py-1 rounded-xl transition-all"
                                 >
-                                  {t('common.cancel', 'إلغاء')}
+                                  {t('common.cancel')}
                                 </button>
                                 <button
                                   type="button"
@@ -2744,11 +2748,11 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                       if (error) throw error;
 
                                       setCustomers(prev => prev.map(c => c.id === selectedCustomer.id ? { ...c, measurements: tempMeasurements } : c));
-                                      toastSuccess('تم تحديث قياسات العميل في ملفه بنجاح');
+                                      toastSuccess(t('orders.measurements_updated_success'));
                                       setIsEditingMeasurements(false);
                                     } catch (err) {
                                       console.error(err);
-                                      toastError('حدث خطأ أثناء تحديث القياسات');
+                                      toastError(t('orders.measurements_update_failed'));
                                     } finally {
                                       setIsSavingMeasurements(false);
                                     }
@@ -2756,7 +2760,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                   className="text-xs font-bold text-white bg-brand hover:bg-brand/90 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 shadow-sm active:scale-95 disabled:opacity-50"
                                 >
                                   <Check size={13} />
-                                  <span>{isSavingMeasurements ? 'جاري الحفظ...' : 'حفظ القياسات'}</span>
+                                  <span>{isSavingMeasurements ? t('common.saving') : t('orders.save_measurements')}</span>
                                 </button>
                               </div>
                             )}
@@ -2766,13 +2770,13 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                             <>
                               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
                                 {[
-                                  { label: t('measurements.length', 'الطول'), value: selectedCustomer.measurements?.length },
-                                  { label: t('measurements.shoulder', 'الكتف'), value: selectedCustomer.measurements?.shoulder },
-                                  { label: t('measurements.chest', 'الصدر'), value: selectedCustomer.measurements?.chest },
-                                  { label: t('measurements.waist', 'الخصر'), value: selectedCustomer.measurements?.waist },
-                                  { label: t('measurements.hips', 'الأرداف'), value: selectedCustomer.measurements?.hips },
-                                  { label: t('measurements.sleeve', 'الكم'), value: selectedCustomer.measurements?.sleeve },
-                                  { label: t('measurements.neck', 'الرقبة'), value: selectedCustomer.measurements?.neck },
+                                  { label: t('measurements.length'), value: selectedCustomer.measurements?.length },
+                                  { label: t('measurements.shoulder'), value: selectedCustomer.measurements?.shoulder },
+                                  { label: t('measurements.chest'), value: selectedCustomer.measurements?.chest },
+                                  { label: t('measurements.waist'), value: selectedCustomer.measurements?.waist },
+                                  { label: t('measurements.hips'), value: selectedCustomer.measurements?.hips },
+                                  { label: t('measurements.sleeve'), value: selectedCustomer.measurements?.sleeve },
+                                  { label: t('measurements.neck'), value: selectedCustomer.measurements?.neck },
                                 ].map((m) => (
                                   <div key={m.label} className="bg-surface p-2 rounded-xl border border-brand/10 text-center">
                                     <p className="text-[10px] text-content-muted font-bold">{m.label}</p>
@@ -2784,10 +2788,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                               {/* Visual Details Display */}
                               <div className="pt-3 border-t border-brand/10 grid grid-cols-2 gap-2">
                                 {[
-                                  { label: t('measurements.collarType', 'الياقة'), value: selectedCustomer.measurements?.collarType },
-                                  { label: t('measurements.cuffType', 'الكبك'), value: selectedCustomer.measurements?.cuffType },
-                                  { label: t('measurements.pocketType', 'الجيب'), value: selectedCustomer.measurements?.pocketType },
-                                  { label: t('measurements.chestStyle', 'الصدر'), value: selectedCustomer.measurements?.chestStyle },
+                                  { label: t('measurements.collarType'), value: selectedCustomer.measurements?.collarType },
+                                  { label: t('measurements.cuffType'), value: selectedCustomer.measurements?.cuffType },
+                                  { label: t('measurements.pocketType'), value: selectedCustomer.measurements?.pocketType },
+                                  { label: t('measurements.chestStyle'), value: selectedCustomer.measurements?.chestStyle },
                                 ].filter(v => v.value).map((v) => (
                                   <div key={v.label} className="flex items-center gap-2 bg-surface/50 p-2 rounded-lg border border-brand/5">
                                     <Zap size={12} className="text-brand/40" />
@@ -2798,17 +2802,17 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                             </>
                           ) : (
                             <div className="space-y-3 pt-1">
-                              <p className="text-xs font-bold text-content-muted">تعديل المقاسات الرئيسية:</p>
+                              <p className="text-xs font-bold text-content-muted">{t('orders.edit_main_measurements')}</p>
                               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                 {[
-                                  { key: 'length', label: t('measurements.length', 'الطول') },
-                                  { key: 'shoulder', label: t('measurements.shoulder', 'الكتف') },
-                                  { key: 'chest', label: t('measurements.chest', 'الصدر') },
-                                  { key: 'waist', label: t('measurements.waist', 'الخصر') },
-                                  { key: 'hips', label: t('measurements.hips', 'الأرداف') },
-                                  { key: 'sleeve', label: t('measurements.sleeve', 'الكم') },
-                                  { key: 'neck', label: t('measurements.neck', 'الرقبة') },
-                                  { key: 'bottomWidth', label: t('measurements.bottomWidth', 'الوسع السفلي') },
+                                  { key: 'length', label: t('measurements.length') },
+                                  { key: 'shoulder', label: t('measurements.shoulder') },
+                                  { key: 'chest', label: t('measurements.chest') },
+                                  { key: 'waist', label: t('measurements.waist') },
+                                  { key: 'hips', label: t('measurements.hips') },
+                                  { key: 'sleeve', label: t('measurements.sleeve') },
+                                  { key: 'neck', label: t('measurements.neck') },
+                                  { key: 'bottomWidth', label: t('measurements.bottomWidth') },
                                 ].map((item) => (
                                   <div key={item.key} className="bg-surface p-2 rounded-xl border border-brand/10">
                                     <label className="text-[10px] text-content-muted font-bold block mb-1">{item.label}</label>
@@ -2827,13 +2831,13 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                 ))}
                               </div>
 
-                              <p className="text-xs font-bold text-content-muted pt-2 border-t border-brand/10">تعديل التفاصيل والشكل:</p>
+                              <p className="text-xs font-bold text-content-muted pt-2 border-t border-brand/10">{t('orders.edit_style_details')}</p>
                               <div className="grid grid-cols-2 gap-2">
                                 {[
-                                  { key: 'collarType', label: t('measurements.collarType', 'الياقة') },
-                                  { key: 'cuffType', label: t('measurements.cuffType', 'الكبك') },
-                                  { key: 'pocketType', label: t('measurements.pocketType', 'الجيب') },
-                                  { key: 'chestStyle', label: t('measurements.chestStyle', 'الصدر') },
+                                  { key: 'collarType', label: t('measurements.collarType') },
+                                  { key: 'cuffType', label: t('measurements.cuffType') },
+                                  { key: 'pocketType', label: t('measurements.pocketType') },
+                                  { key: 'chestStyle', label: t('measurements.chestStyle') },
                                 ].map((styleItem) => (
                                   <div key={styleItem.key} className="bg-surface p-2 rounded-xl border border-brand/10">
                                     <label className="text-[10px] text-content-muted font-bold block mb-1">{styleItem.label}</label>
@@ -2858,7 +2862,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   {/* Delivery Info */}
                   <div className="space-y-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-black text-content-muted uppercase tracking-widest">{t('orders.expected_delivery_date', 'تاريخ التسليم المتوقع')}</label>
+                      <label className="text-sm font-black text-content-muted uppercase tracking-widest">{t('orders.expected_delivery_date')}</label>
                       <div className="relative">
                         <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 text-content-muted" size={20} />
                         <input 
@@ -2874,10 +2878,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-black text-content-muted uppercase tracking-widest">{t('orders.general_notes', 'ملاحظات عامة')}</label>
+                      <label className="text-sm font-black text-content-muted uppercase tracking-widest">{t('orders.general_notes')}</label>
                       <textarea 
                         {...register('notes')} 
-                        placeholder={t('orders.any_instructions_placeholder', 'أي تعليمات إضافية...')}
+                        placeholder={t('orders.additional_instructions')}
                         className="w-full bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl p-4 font-bold transition-all outline-none h-32 resize-none text-content" 
                       />
                     </div>
@@ -2889,14 +2893,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   <div className="flex justify-between items-center">
                     <h4 className="text-sm font-black text-content-muted uppercase tracking-widest flex items-center gap-2">
                       <ShoppingBag size={16} />
-                      {t('orders.requested_items', 'الأصناف المطلوبة')}
+                      {t('orders.required_items')}
                     </h4>
                     <button 
                       type="button" 
                       onClick={() => append({ garmentType: 'ثوب', quantity: 1, price: 0, fabric: '' })}
                       className="bg-brand/5 text-brand px-4 py-2 rounded-xl text-xs font-black hover:bg-brand/10 transition-all flex items-center gap-2"
                     >
-                      <Plus size={14} /> {t('orders.add_item', 'إضافة صنف')}
+                      <Plus size={14} /> {t('orders.add_item')}
                     </button>
                   </div>
                   
@@ -2909,18 +2913,18 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-surface-muted p-6 rounded-[2rem] relative group border border-transparent hover:border-brand/10 transition-all"
                         >
                           <div className="space-y-1">
-                            <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.item_type', 'نوع القطعة')}</label>
+                            <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.item_type')}</label>
                             <input 
                               {...register(`items.${index}.garmentType` as any)} 
                               className={cn(
                                 "w-full bg-surface border-none rounded-xl p-3 text-sm font-bold shadow-sm text-content",
                                 (errors.items as any)?.[index]?.garmentType && "ring-2 ring-danger"
                               )} 
-                              placeholder={t('orders.item_type_placeholder', 'مثلاً: ثوب، قميص...')}
+                              placeholder={t('orders.item_type_placeholder')}
                             />
                           </div>
                           <div className="space-y-1">
-                            <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.fabric_label', 'القماش')}</label>
+                            <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.fabric')}</label>
                             <Controller
                               name={`items.${index}.fabric` as any}
                               control={control}
@@ -2943,16 +2947,16 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                     (errors.items as any)?.[index]?.fabric && "ring-2 ring-danger"
                                   )}
                                   options={[
-                                    { value: '', label: t('orders.select_fabric', 'اختر قماش...') },
+                                    { value: '', label: t('orders.choose_fabric') },
                                     ...inventory.map(item => ({ value: item.name, label: `${item.name} (${item.quantity} ${item.unit})` })),
-                                    { value: 'custom', label: t('orders.external_fabric', 'قماش خارجي') }
+                                    { value: 'custom', label: t('orders.external_fabric') }
                                   ]}
                                 />
                               )}
                             />
                           </div>
                           <div className="space-y-1">
-                            <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.qty_and_unit', 'الكمية والوحدة')}</label>
+                            <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.qty_and_unit')}</label>
                             <div className="flex gap-1">
                               <input 
                                 type="number" 
@@ -2981,10 +2985,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                       {...field}
                                       className="w-full bg-surface rounded-xl text-xs font-bold shadow-sm"
                                       options={[
-                                        { value: 'meter', label: t('orders.meter', 'متر') },
-                                        { value: 'yard', label: t('orders.yard', 'ياردة') },
-                                        { value: 'roll', label: t('orders.roll', 'رول') },
-                                        { value: 'bolt', label: t('orders.bolt', 'طاقة') }
+                                        { value: 'meter', label: t('inventory.unit_meter') },
+                                        { value: 'yard', label: t('inventory.unit_yard') },
+                                        { value: 'roll', label: t('orders.roll') },
+                                        { value: 'bolt', label: t('orders.bolt') }
                                       ]}
                                     />
                                   )}
@@ -2993,12 +2997,12 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                             </div>
                             {watch(`items.${index}.consumedMeters` as any) > 0 && (
                               <p className="text-[10px] text-brand font-bold mt-1">
-                                {t('orders.consumed_meters_equivalent', 'يعادل: {{meters}} متر مستهلك', { meters: Number(watch(`items.${index}.consumedMeters` as any)).toFixed(2) })}
+                                {t('orders.equivalent_meters', { meters: Number(watch(`items.${index}.consumedMeters` as any)).toFixed(2) })}
                               </p>
                             )}
                           </div>
                           <div className="space-y-1">
-                            <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.price_label', 'السعر')}</label>
+                            <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.price')}</label>
                             <input 
                               type="number" 
                               {...register(`items.${index}.price` as any)} 
@@ -3018,7 +3022,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                             
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                               <div className="space-y-2">
-                                <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.collar_padding', 'نوع الحشو (الياقة)')}</label>
+                                <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.padding_type')}</label>
                                 <div className="flex gap-2">
                                   <button
                                     type="button"
@@ -3029,7 +3033,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                     )}
                                   >
                                     <Shield size={18} />
-                                    <span className="text-[10px] font-bold">{t('orders.padding_hard', 'قاسي')}</span>
+                                    <span className="text-[10px] font-bold">{t('orders.padding_hard')}</span>
                                   </button>
                                   <button
                                     type="button"
@@ -3040,25 +3044,25 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                     )}
                                   >
                                     <Clock size={18} />
-                                    <span className="text-[10px] font-bold">{t('orders.padding_soft', 'لين')}</span>
+                                    <span className="text-[10px] font-bold">{t('orders.padding_soft')}</span>
                                   </button>
                                 </div>
                               </div>
 
                               <div className="space-y-2">
-                                <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.other_additions', 'إضافات أخرى')}</label>
+                                <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.other_additions')}</label>
                                 <input 
                                   {...register(`items.${index}.additions` as any)}
-                                  placeholder={t('orders.additions_placeholder', 'مثلاً: جيب إضافي...')}
+                                  placeholder={t('orders.other_additions_placeholder')}
                                   className="w-full bg-surface border-none rounded-xl p-3 text-xs font-bold shadow-sm text-content"
                                 />
                               </div>
 
                               <div className="space-y-2">
-                                <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.embroidery_label', 'التطريز')}</label>
+                                <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.embroidery_label')}</label>
                                 <input 
                                   {...register(`items.${index}.embroidery` as any)}
-                                  placeholder={t('orders.embroidery_placeholder', 'نوع التطريز...')}
+                                  placeholder={t('orders.embroidery_placeholder')}
                                   className="w-full bg-surface border-none rounded-xl p-3 text-xs font-bold shadow-sm text-content"
                                 />
                               </div>
@@ -3089,27 +3093,27 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         {isTaxEnabled ? (
                           <>
                             <div className="flex justify-between items-center text-sm border-b border-white/10 pb-2">
-                              <span className="text-brand-content/70 font-medium">{t('orders.subtotal', 'الإجمالي الخاضع للضريبة')}</span>
+                              <span className="text-brand-content/70 font-medium">{t('orders.subtotal')}</span>
                               <span className="font-bold text-white"><PriceDisplay amount={roundedSubtotal} /></span>
                             </div>
                             <div className="flex justify-between items-center text-sm border-b border-white/10 pb-2">
-                              <span className="text-brand-content/70 font-medium">{t('orders.vat_label', 'ضريبة القيمة المضافة')} ({vatRatePercentage}%)</span>
+                              <span className="text-brand-content/70 font-medium">{t('orders.vat_label')} ({vatRatePercentage}%)</span>
                               <span className="font-bold text-white"><PriceDisplay amount={roundedVat} /></span>
                             </div>
                             <div className="flex justify-between items-center">
-                              <span className="text-brand-content/90 font-black text-sm uppercase tracking-widest">{t('orders.grand_total', 'الإجمالي الكلي')}</span>
+                              <span className="text-brand-content/90 font-black text-sm uppercase tracking-widest">{t('orders.grand_total')}</span>
                               <span className="text-3xl font-black text-white"><PriceDisplay amount={roundedGrandTotal} /></span>
                             </div>
                           </>
                         ) : (
                           <div className="flex justify-between items-center">
-                            <span className="text-brand-content/80 font-bold text-sm uppercase tracking-widest">{t('orders.grand_total', 'الإجمالي الكلي')}</span>
+                            <span className="text-brand-content/80 font-bold text-sm uppercase tracking-widest">{t('orders.grand_total')}</span>
                             <span className="text-3xl font-black text-white"><PriceDisplay amount={roundedGrandTotal} /></span>
                           </div>
                         )}
                         
                         <div className="space-y-3 mt-6">
-                          <label className="text-xs font-bold text-brand-content/60 uppercase tracking-widest">{t('orders.payment_method_label', 'طريقة الدفع')}</label>
+                          <label className="text-xs font-bold text-brand-content/60 uppercase tracking-widest">{t('orders.payment_method_label')}</label>
                           <div className="grid grid-cols-2 gap-2">
                             {PAYMENT_METHODS.map((method) => (
                               <button
@@ -3122,14 +3126,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                 )}
                               >
                                 <method.icon size={16} />
-                                {t(`common.payment_methods.${method.id}`, method.label)}
+                                {t(method.labelKey)}
                               </button>
                             ))}
                           </div>
                         </div>
 
                         <div className="space-y-3 pt-6 border-t border-white/10 mt-6">
-                          <label className="text-xs font-bold text-brand-content/60 uppercase tracking-widest">{t('orders.amount_paid', 'المبلغ المدفوع')}</label>
+                          <label className="text-xs font-bold text-brand-content/60 uppercase tracking-widest">{t('orders.amount_paid')}</label>
                           <div className="relative">
                             <CreditCard className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40" size={20} />
                             <input 
@@ -3139,7 +3143,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                             />
                           </div>
                           <div className="flex justify-between text-xs font-bold pt-2">
-                            <span className="text-brand-content/80">{t('orders.remaining_label', 'المتبقي:')}</span>
+                            <span className="text-brand-content/80">{t('orders.remaining_label')}</span>
                             <span className="text-white bg-danger px-2 py-0.5 rounded-lg"><PriceDisplay amount={Number(roundedGrandTotal) - Number(watch('paidAmount') || 0)} /></span>
                           </div>
                         </div>
@@ -3155,7 +3159,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                       />
                       <label htmlFor="isTest" className="text-sm font-bold text-content-muted/60 flex items-center gap-2">
                         <Zap size={16} className="text-warning" />
-                        {t('orders.test_data_checkbox', 'بيانات تجريبية (Test Data)')}
+                        {t('common.test_data')}
                       </label>
                     </div>
                   </div>
@@ -3163,14 +3167,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   <div className="space-y-4">
                     <h4 className="text-sm font-black text-content-muted uppercase tracking-widest flex items-center gap-2">
                       <ImageIcon size={16} />
-                      {t('orders.illustration_images', 'صور توضيحية / تصاميم')}
+                      {t('orders.illustration_images')}
                     </h4>
                     <div className="space-y-3">
                       <div className="flex gap-2">
                         <input 
                           type="text" 
                           id="imageUrlInput"
-                          placeholder={t('orders.image_url_placeholder', 'رابط الصورة (URL)...')}
+                          placeholder={t('orders.image_url_placeholder')}
                           className="flex-1 bg-surface-muted border-none rounded-xl p-3 text-sm font-bold text-content"
                         />
                         <button 
@@ -3185,7 +3189,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           }}
                           className="bg-brand text-white px-4 rounded-xl font-bold text-xs"
                         >
-                          {t('common.add', 'إضافة')}
+                          {t('common.add')}
                         </button>
                       </div>
                       <div className="grid grid-cols-3 gap-2">
@@ -3219,7 +3223,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   />
                   <label htmlFor="isTestOrder" className="text-sm font-bold text-amber-600 flex items-center gap-2">
                     <Zap size={16} />
-                    {t('orders.test_data_checkbox', 'بيانات تجريبية (Test Data)')}
+                    {t('common.test_data')}
                   </label>
                 </div>
 
@@ -3231,7 +3235,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                     {Object.keys(errors).length > 0 && (
                       <p className="text-xs text-danger font-bold flex items-center gap-1">
                         <AlertCircle size={14} />
-                        {t('orders.fill_required_fields', 'يرجى إكمال جميع الحقول المطلوبة بشكل صحيح')}
+                        {t('orders.fill_required_fields')}
                       </p>
                     )}
                   </div>
@@ -3241,14 +3245,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                       onClick={handleCloseModal} 
                       className="px-6 py-2.5 sm:px-8 sm:py-3.5 text-content-muted font-bold hover:text-content transition-colors text-sm sm:text-base rounded-xl hover:bg-surface-muted"
                     >
-                      {t('common.cancel', 'إلغاء')}
+                      {t('common.cancel')}
                     </button>
                     <button 
                       type="submit" 
                       disabled={isSubmitting}
                       className="bg-brand text-white px-8 py-2.5 sm:px-12 sm:py-3.5 rounded-xl font-bold hover:bg-brand/90 shadow-lg shadow-brand/20 transition-all hover:scale-102 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                     >
-                      {isSubmitting ? t('orders.saving', 'جاري الحفظ...') : t('orders.confirm_and_create_order', 'تأكيد وإنشاء الطلب')}
+                      {isSubmitting ? t('orders.saving') : t('orders.confirm_create_order')}
                     </button>
                   </div>
                 </div>

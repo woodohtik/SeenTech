@@ -1,5 +1,6 @@
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
+import i18n from 'i18next';
 
 export const generateInvoicePDF = async (elementId: string, filename: string): Promise<Blob> => {
   const element = document.getElementById(elementId);
@@ -59,7 +60,7 @@ export const downloadInvoicePDF = async (elementId: string, filename: string) =>
     }, 100);
   } catch (error) {
     console.error("PDF generation failed:", error);
-    alert('تعذر إنشاء ملف PDF (قد لا يتم دعم بعض الألوان)، سيتم فتح نافذة الطباعة بدلاً من ذلك.');
+    alert(i18n.t('printing.pdf_generation_failed'));
     window.print();
   }
 };
@@ -71,7 +72,7 @@ export const shareInvoiceAsPDFFile = async (elementId: string, filename: string,
     
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({
-        title: 'فاتورة ضريبية',
+        title: i18n.t('settings_page.invoice.tax'),
         text: text,
         files: [file]
       });

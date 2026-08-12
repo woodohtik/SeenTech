@@ -12,10 +12,13 @@ import {
   type Wallet, type ReferralRow, type Withdrawal,
 } from '../services/referralService';
 import { CurrencySymbol } from './CurrencySymbol';
+import i18n from 'i18next';
+import { useDirection } from '../lib/direction';
 
 const INK = '#0E2A42', BRAND = '#34BBED', CTA = '#0BA06B', CTA2 = '#0A8A5C';
 const SURF = '#F5F7FA', GRAY = '#6B7280', TEXT = '#34404D', LINE = '#E5EAF1', MINT = '#E7F7EE', TINT = '#EAF6FD';
 export default function Referral({ tenantId }: { tenantId: string }) {
+  const { t, dir } = useDirection();
   const [link, setLink] = useState('');
   const [wallet, setWallet] = useState<Wallet>({ balance: 0, total_earned: 0 });
   const [refs, setRefs] = useState<ReferralRow[]>([]);
@@ -42,7 +45,7 @@ export default function Referral({ tenantId }: { tenantId: string }) {
     navigator.clipboard?.writeText(link).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1600); }).catch(() => {});
   }
   function shareWhatsApp() {
-    const msg = `جرّب «سين» — نظام إدارة محلات الخياطة. سجّل من رابطي: ${link}`;
+    const msg = t('referral.whatsapp_share_text', { link });
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   }
 
@@ -50,43 +53,45 @@ export default function Referral({ tenantId }: { tenantId: string }) {
   const canWithdraw = wallet.balance > MIN_WITHDRAWAL;
 
   return (
-    <div dir="rtl" style={s.wrap}>
+    <div dir={dir} style={s.wrap}>
       <div style={s.head}>
-        <h2 style={s.title}>برنامج الإحالة</h2>
-        <p style={s.sub}>ادعُ محلات خياطة أخرى لسين — لك {REWARD_PER_REFERRAL} ﷼ عن كل محل يشترك عبر رابطك.</p>
+        <h2 style={s.title}>{t('referral.title')}</h2>
+        <p style={s.sub}>{t('referral.subtitle', { reward: REWARD_PER_REFERRAL })}</p>
       </div>
 
       <div style={s.grid}>
         {/* wallet */}
         <div style={{ ...s.card, ...s.walletCard }}>
-          <div style={s.cardLbl}>رصيد محفظتك</div>
+          <div style={s.cardLbl}>{t('referral.wallet_balance')}</div>
           <div style={s.balance}>{wallet.balance.toLocaleString('en-US')} <span style={s.cur}><CurrencySymbol className="h-[0.9em] w-auto inline-block" /></span></div>
           <div style={s.barTrack}><div style={{ ...s.barFill, width: `${pct}%` }} /></div>
           <div style={s.barNote}>
-            {canWithdraw ? 'جاهز للسحب ✓' : `باقي ${(MIN_WITHDRAWAL - wallet.balance).toLocaleString('en-US')} ﷼ للسحب (فوق ${MIN_WITHDRAWAL})`}
+            {canWithdraw
+              ? t('referral.ready_to_withdraw')
+              : t('referral.remaining_to_withdraw', { amount: (MIN_WITHDRAWAL - wallet.balance).toLocaleString('en-US'), min: MIN_WITHDRAWAL })}
           </div>
           <button disabled={!canWithdraw} onClick={() => setShowModal(true)}
-            style={{ ...s.cta, ...(canWithdraw ? {} : s.ctaDisabled) }}>اطلب تحويل المبلغ</button>
-          <div style={s.earned}>إجمالي ما كسبته: {wallet.total_earned.toLocaleString('en-US')} ﷼ · {refs.length} إحالة</div>
+            style={{ ...s.cta, ...(canWithdraw ? {} : s.ctaDisabled) }}>{t('referral.request_transfer')}</button>
+          <div style={s.earned}>{t('referral.total_earned', { amount: wallet.total_earned.toLocaleString('en-US'), refs: refs.length })}</div>
         </div>
 
         {/* link */}
         <div style={s.card}>
-          <div style={s.cardLbl}>رابط الإحالة الخاص بك</div>
+          <div style={s.cardLbl}>{t('referral.your_link')}</div>
           <div style={s.linkRow}>
             <input readOnly value={link} style={s.linkInput} dir="ltr" />
-            <button onClick={copy} style={s.copyBtn}>{copied ? 'تم النسخ ✓' : 'نسخ'}</button>
+            <button onClick={copy} style={s.copyBtn}>{copied ? t('billing.modal_iban_copied') : t('common.copy')}</button>
           </div>
-          <button onClick={shareWhatsApp} style={s.waBtn}>شارك عبر واتساب</button>
-          <div style={s.hint}>عند اشتراك أي محل سجّل من رابطك (خلال شهر من تسجيله) تُضاف لك {REWARD_PER_REFERRAL} ﷼ تلقائياً في محفظتك.</div>
+          <button onClick={shareWhatsApp} style={s.waBtn}>{t('referral.share_whatsapp')}</button>
+          <div style={s.hint}>{t('referral.link_hint', { reward: REWARD_PER_REFERRAL })}</div>
         </div>
       </div>
 
       {/* referrals */}
       <div style={{ ...s.card, marginTop: 18 }}>
-        <div style={s.cardLbl}>إحالاتك ({refs.length})</div>
-        {loading ? <div style={s.empty}>جارٍ التحميل…</div> :
-          refs.length === 0 ? <div style={s.empty}>لا إحالات بعد — شارك رابطك وابدأ الكسب.</div> :
+        <div style={s.cardLbl}>{t('referral.your_referrals', { n: refs.length })}</div>
+        {loading ? <div style={s.empty}>{t('referral.loading')}</div> :
+          refs.length === 0 ? <div style={s.empty}>{t('referral.no_referrals')}</div> :
           <div>{refs.map(r => { const rs = refStatus(r); return (
             <div key={r.id} style={s.rowItem}>
               <span style={{ ...s.badge, background: rs.bg, color: rs.fg }}>{rs.label}</span>
@@ -99,7 +104,7 @@ export default function Referral({ tenantId }: { tenantId: string }) {
       {/* withdrawals */}
       {withdrawals.length > 0 && (
         <div style={{ ...s.card, marginTop: 18 }}>
-          <div style={s.cardLbl}>طلبات السحب</div>
+          <div style={s.cardLbl}>{t('saas.menu_withdrawals')}</div>
           {withdrawals.map(w => (
             <div key={w.id} style={s.rowItem}>
               <span style={{ ...s.badge, background: wStatusColor(w.status).bg, color: wStatusColor(w.status).fg }}>{wStatusLabel(w.status)}</span>
@@ -118,6 +123,7 @@ export default function Referral({ tenantId }: { tenantId: string }) {
 
 function WithdrawModal({ tenantId, balance, onClose, onDone }:
   { tenantId: string; balance: number; onClose: () => void; onDone: () => void }) {
+  const { t, dir } = useDirection();
   const [iban, setIban] = useState('');
   const [name, setName] = useState('');
   const [amount, setAmount] = useState<number>(balance);
@@ -126,29 +132,29 @@ function WithdrawModal({ tenantId, balance, onClose, onDone }:
 
   async function submit() {
     setErr('');
-    if (!/^SA\d{22}$/.test(iban.replace(/\s/g, ''))) { setErr('أدخل رقم آيبان سعودي صحيح (SA + 22 رقم).'); return; }
-    if (!name.trim()) { setErr('أدخل اسم المستفيد.'); return; }
-    if (amount <= MIN_WITHDRAWAL || amount > balance) { setErr(`المبلغ أكثر من ${MIN_WITHDRAWAL} وحتى ${balance} ﷼.`); return; }
+    if (!/^SA\d{22}$/.test(iban.replace(/\s/g, ''))) { setErr(t('referral.invalid_iban')); return; }
+    if (!name.trim()) { setErr(t('referral.enter_beneficiary_name')); return; }
+    if (amount <= MIN_WITHDRAWAL || amount > balance) { setErr(t('referral.amount_range', { min: MIN_WITHDRAWAL, max: balance })); return; }
     setBusy(true);
     try { await requestWithdrawal(tenantId, amount, iban.replace(/\s/g, ''), name.trim()); onDone(); }
-    catch (e: any) { setErr(e?.message || 'تعذّر إرسال الطلب.'); setBusy(false); }
+    catch (e: any) { setErr(e?.message || t('referral.submit_failed')); setBusy(false); }
   }
 
   return (
-    <div dir="rtl" style={s.overlay}>
+    <div dir={dir} style={s.overlay}>
       <div style={s.modal}>
-        <h3 style={s.modalTitle}>طلب تحويل المبلغ</h3>
-        <p style={s.modalSub}>يصل طلبك لفريق سين، ونحوّل المبلغ خلال 3–5 أيام عمل بعد التأكّد.</p>
-        <label style={s.field}><span style={s.flbl}>اسم المستفيد</span>
+        <h3 style={s.modalTitle}>{t('referral.withdraw_modal_title')}</h3>
+        <p style={s.modalSub}>{t('referral.withdraw_modal_subtitle')}</p>
+        <label style={s.field}><span style={s.flbl}>{t('referral.beneficiary_name')}</span>
           <input value={name} onChange={e => setName(e.target.value)} style={s.input} /></label>
-        <label style={s.field}><span style={s.flbl}>رقم الآيبان (IBAN)</span>
+        <label style={s.field}><span style={s.flbl}>{t('referral.iban')}</span>
           <input value={iban} onChange={e => setIban(e.target.value)} placeholder="SAxxxxxxxxxxxxxxxxxxxxxx" dir="ltr" style={s.input} /></label>
-        <label style={s.field}><span style={s.flbl}>المبلغ (﷼)</span>
+        <label style={s.field}><span style={s.flbl}>{t('referral.amount_sar')}</span>
           <input type="number" value={amount} onChange={e => setAmount(Number(e.target.value) || 0)} style={s.input} /></label>
         {err && <div style={s.err}>{err}</div>}
         <button onClick={submit} disabled={busy} style={{ ...s.cta, marginTop: 8, ...(busy ? s.ctaDisabled : {}) }}>
-          {busy ? 'جارٍ الإرسال…' : 'إرسال الطلب'}</button>
-        <button onClick={onClose} style={s.cancel}>إلغاء</button>
+          {busy ? t('referral.sending') : t('referral.send_request')}</button>
+        <button onClick={onClose} style={s.cancel}>{t('common.cancel')}</button>
       </div>
     </div>
   );
@@ -156,12 +162,12 @@ function WithdrawModal({ tenantId, balance, onClose, onDone }:
 
 function refStatus(r: ReferralRow): { label: string; text: string; bg: string; fg: string } {
   const expiredByTime = r.status === 'pending' && r.qualified_until && new Date(r.qualified_until).getTime() < Date.now();
-  if (r.status === 'credited') return { label: `+${r.reward_amount} ﷼`, text: 'اشترك — أُضيفت المكافأة', bg: MINT, fg: CTA2 };
-  if (r.status === 'expired' || expiredByTime) return { label: 'انتهت المهلة', text: 'لم يشترك خلال شهر', bg: '#EEF1F4', fg: GRAY };
-  if (r.status === 'rejected') return { label: 'مرفوضة', text: 'إحالة غير مؤهّلة', bg: '#F7D9D5', fg: '#C0392B' };
-  return { label: 'بانتظار الاشتراك', text: 'سجّل — المكافأة عند اشتراكه', bg: '#FBEAD0', fg: '#B9770E' };
+  if (r.status === 'credited') return { label: `+${r.reward_amount} ﷼`, text: i18n.t('referral.status.credited_text'), bg: MINT, fg: CTA2 };
+  if (r.status === 'expired' || expiredByTime) return { label: i18n.t('referral.status.expired_label'), text: i18n.t('referral.status.expired_text'), bg: '#EEF1F4', fg: GRAY };
+  if (r.status === 'rejected') return { label: i18n.t('inventory.status_rejected'), text: i18n.t('referral.status.rejected_text'), bg: '#F7D9D5', fg: '#C0392B' };
+  return { label: i18n.t('referral.status.pending_label'), text: i18n.t('referral.status.pending_text'), bg: '#FBEAD0', fg: '#B9770E' };
 }
-function wStatusLabel(s: string) { return s === 'paid' ? 'تم التحويل ✓' : s === 'pending' ? 'قيد المراجعة' : s === 'approved' ? 'موافَق عليه' : 'مرفوض'; }
+function wStatusLabel(s: string) { return s === 'paid' ? i18n.t('referral.withdrawal.paid') : s === 'pending' ? i18n.t('referral.withdrawal.pending') : s === 'approved' ? i18n.t('referral.withdrawal.approved') : i18n.t('saas.rejection_reason_default'); }
 function wStatusColor(s: string) { return s === 'paid' ? { bg: MINT, fg: CTA2 } : s === 'rejected' ? { bg: '#F7D9D5', fg: '#C0392B' } : { bg: TINT, fg: '#2E75B6' }; }
 
 const s: Record<string, React.CSSProperties> = {
@@ -190,7 +196,7 @@ const s: Record<string, React.CSSProperties> = {
   rowItem: { display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0', borderBottom: `1px solid ${LINE}` },
   badge: { fontWeight: 800, fontSize: 13, borderRadius: 8, padding: '4px 12px' },
   rowDate: { fontSize: 13, color: GRAY, direction: 'ltr' },
-  rowText: { fontSize: 14.5, color: TEXT, marginRight: 'auto' },
+  rowText: { fontSize: 14.5, color: TEXT, marginInlineStart: 'auto' },
   overlay: { position: 'fixed', inset: 0, background: 'rgba(15,23,42,.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: 16 },
   modal: { width: '100%', maxWidth: 440, background: '#fff', borderRadius: 18, padding: 26 },
   modalTitle: { fontFamily: "'Tajawal', sans-serif", fontWeight: 800, fontSize: 21, color: INK, margin: 0 },

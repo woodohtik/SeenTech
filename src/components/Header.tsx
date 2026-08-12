@@ -142,7 +142,7 @@ export default function Header({ tenantId, title, subtitle, children }: HeaderPr
         {tenant?.logoUrl && (
           <img 
             src={tenant.logoUrl} 
-            alt={t('common.shop_logo', 'شعار المتجر')} 
+            alt={t('common.shop_logo')} 
             className="w-16 h-16 rounded-2xl object-cover shadow-md border border-border" 
           />
         )}
@@ -157,7 +157,11 @@ export default function Header({ tenantId, title, subtitle, children }: HeaderPr
                   : "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-900/30"
               )}>
                 <Calendar size={13} strokeWidth={2.5} />
-                {trialDays === 0 ? (isTrialPlan ? "انتهت التجربة" : "انتهى الاشتراك") : `${isTrialPlan ? 'تجربة' : 'اشتراك'}: متبقي ${trialDays} يوم`}
+                {trialDays === 0
+                  ? (isTrialPlan ? t('subscription.trial_ended') : t('subscription.subscription_ended'))
+                  : (isTrialPlan
+                      ? t('subscription.trial_days_left', { days: trialDays })
+                      : t('subscription.subscription_days_left', { days: trialDays }))}
               </span>
             )}
           </div>
