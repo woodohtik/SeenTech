@@ -32,6 +32,8 @@ import { supplierSchema } from '../lib/validations';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import { useStaff } from '../contexts/StaffContext';
 import { cn } from '../lib/utils';
+import { useToast } from '../contexts/ToastContext';
+import { useSafeMutation } from '../hooks/useSafeMutation';
 import Branding from './Branding';
 import { PriceDisplay } from './PriceDisplay';
 import PurchaseOrders from './PurchaseOrders';
@@ -44,6 +46,68 @@ import { useTranslation } from 'react-i18next';
 export default function Suppliers({ tenantId }: { tenantId: string }) {
   const { t } = useTranslation();
   const { currentStaff } = useStaff();
+
+  // Centralized Mutations for Suppliers (Strict Persistence)
+  const saveSupplierMutation = useSafeMutation(
+    async ({ supplierData, id }: { supplierData: any; id?: string }) => {
+      if (id) {
+        const { error } = await supabase
+          .from('suppliers')
+          .update(supplierData)
+          .eq('id', id);
+        if (error) throw error;
+      } else {
+        const { data: newSup, error } = await supabase
+          .from('suppliers')
+          .insert({
+            ...supplierData,
+            balance: 0,
+            tenant_id: tenantId,
+            created_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+        if (error) throw error;
+        
+        // Audit Log for new supplier
+        if (currentStaff) {
+          await logEmployeeAction(
+            tenantId,
+            currentStaff.id,
+            currentStaff.name,
+            'add_supplier',
+            `إضافة مورد جديد: ${supplierData.name}`
+          );
+        }
+        return newSup;
+      }
+    },
+    {
+      onSuccess: () => {
+        setIsModalOpen(false);
+        setEditingSupplier(null);
+        reset();
+        setSupplierReloadTrigger(prev => prev + 1);
+      }
+    }
+  );
+
+  const deleteSupplierMutation = useSafeMutation(
+    async (id: string) => {
+      const { error } = await supabase
+        .from('suppliers')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    {
+      successMessage: t('procurement.delete_success') || 'تم حذف المورد بنجاح',
+      onSuccess: () => {
+        setSupplierReloadTrigger(prev => prev + 1);
+      }
+    }
+  );
+
   const [activeTab, setActiveTab] = useState<'suppliers' | 'purchase_orders' | 'returns'>('suppliers');
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
@@ -233,98 +297,30 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
   }, [tenantId, supplierReloadTrigger]);
 
   const onSubmit = async (formData: any) => {
+    const data = {
+      name: formData.name,
+      contact_person: formData.contactPerson,
+      email: formData.email,
+      phone: formData.phone,
+      address: formData.address,
+      tax_number: formData.taxNumber,
+      category: formData.category,
+      updated_at: new Date().toISOString()
+    };
+
     try {
-      const data = {
-        name: formData.name,
-        contact_person: formData.contactPerson,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-        tax_number: formData.taxNumber,
-        category: formData.category,
-        updated_at: new Date().toISOString()
-      };
-
-      if (editingSupplier) {
-        const { error } = await supabase
-          .from('suppliers')
-          .update(data)
-          .eq('id', editingSupplier.id);
-        if (error) throw error;
-
-        setSuppliers(prev => prev.map(s => s.id === editingSupplier.id ? {
-          ...s,
-          name: data.name,
-          contactPerson: data.contact_person,
-          email: data.email,
-          phone: data.phone,
-          address: data.address,
-          taxNumber: data.tax_number,
-          category: data.category as any,
-        } : s));
-      } else {
-        const { data: newSup, error } = await supabase
-          .from('suppliers')
-          .insert({
-            ...data,
-            balance: 0,
-            tenant_id: tenantId,
-            created_at: new Date().toISOString()
-          })
-          .select()
-          .single();
-        if (error) throw error;
-
-        if (newSup) {
-          const insertedSupplier: Supplier = {
-            id: newSup.id,
-            name: newSup.name,
-            contactPerson: newSup.contact_person,
-            email: newSup.email,
-            phone: newSup.phone,
-            address: newSup.address,
-            taxNumber: newSup.tax_number,
-            category: newSup.category,
-            balance: 0,
-            createdAt: newSup.created_at,
-            tenantId: newSup.tenant_id
-          };
-          setSuppliers(prev => [insertedSupplier, ...prev]);
-        }
-
-        // Audit Log
-        if (currentStaff) {
-          await logEmployeeAction(
-            tenantId,
-            currentStaff.id,
-            currentStaff.name,
-            'add_supplier',
-            `إضافة مورد جديد: ${formData.name}`
-          );
-        }
-      }
-      setIsModalOpen(false);
-      setEditingSupplier(null);
-      reset();
-      setSupplierReloadTrigger(prev => prev + 1);
-    } catch (error) {
-      handleError(error as any, OperationType.WRITE, 'suppliers');
+      await saveSupplierMutation.mutateAsync({ supplierData: data, id: editingSupplier?.id });
+    } catch (err) {
+      // Handled inside the safe mutation hook
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm(t('procurement.confirm_delete'))) return;
     try {
-      const { error } = await supabase
-        .from('suppliers')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
-
-      setSuppliers(prev => prev.filter(s => s.id !== id));
-      setSupplierReloadTrigger(prev => prev + 1);
-      
       const supplier = suppliers.find(s => s.id === id);
+      await deleteSupplierMutation.mutateAsync(id);
+      
       if (currentStaff && supplier) {
         await logEmployeeAction(
           tenantId,
@@ -335,7 +331,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
         );
       }
     } catch (error) {
-      handleError(error as any, OperationType.DELETE, 'suppliers');
+      // Handled inside the safe mutation hook
     }
   };
 
@@ -481,14 +477,14 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-surface border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand focus-within:border-transparent transition-all">
-                  <Search className="text-content-muted shrink-0" size={20} />
+                <div className="flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface rounded-2xl px-4 h-12 transition-all w-full shadow-inner shadow-black/5">
+                  <Search className="text-content-muted shrink-0" size={18} />
                   <input 
                     type="text"
                     placeholder={t('procurement.search_placeholder', 'بحث عن مورد بسجل المحاسبة...')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-transparent border-none p-0 outline-none text-content font-medium focus:ring-0"
+                    className="w-full bg-transparent font-bold outline-none text-content border-none p-0 focus:ring-0 text-sm"
                   />
                 </div>
               </div>

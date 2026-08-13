@@ -45,6 +45,7 @@ export const supabase: SupabaseClient<any> =
 
                     const urlStr = typeof url === 'string' ? url : (url && typeof url === 'object' && 'url' in url) ? (url as any).url : '';
                     const isOrdersRequest = urlStr.includes('/rest/v1/orders');
+                    const isTenantsRequest = urlStr.includes('/rest/v1/tenants');
                     
                     let modifiedOptions = options;
                     
@@ -151,6 +152,49 @@ export const supabase: SupabaseClient<any> =
                                     });
                                 } catch (err) {
                                     console.warn('[Supabase Fetch Interceptor] Failed to decode orders response (likely network disconnect):', err);
+                                    return res;
+                                }
+                            }
+                            return res;
+                        });
+                    }
+
+                    if (isTenantsRequest) {
+                        return responsePromise.then(async (res) => {
+                            if (res.ok) {
+                                const clonedRes = res.clone();
+                                try {
+                                    const text = await clonedRes.text();
+                                    if (!text) return res;
+                                    let parsed = JSON.parse(text);
+                                    
+                                    const mapTenantRow = (row: any) => {
+                                        if (row && row.legacy_id && row.legacy_id.startsWith('{')) {
+                                            try {
+                                                const parsedMeta = JSON.parse(row.legacy_id);
+                                                if (parsedMeta) {
+                                                    row.tax_settings = parsedMeta.tax_settings || parsedMeta;
+                                                }
+                                            } catch (e) {
+                                                console.warn('[Supabase Fetch Interceptor] Failed to parse tenant metadata JSON:', e);
+                                            }
+                                        }
+                                        return row;
+                                    };
+
+                                    if (Array.isArray(parsed)) {
+                                        parsed = parsed.map(mapTenantRow);
+                                    } else {
+                                        parsed = mapTenantRow(parsed);
+                                    }
+
+                                    return new Response(JSON.stringify(parsed), {
+                                        status: res.status,
+                                        statusText: res.statusText,
+                                        headers: res.headers
+                                    });
+                                } catch (err) {
+                                    console.warn('[Supabase Fetch Interceptor] Failed to parse tenants response:', err);
                                     return res;
                                 }
                             }

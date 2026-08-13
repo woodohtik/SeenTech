@@ -90,24 +90,24 @@ export default function EmployeeActivityLogTab({ tenantId }: { tenantId: string 
     <div className="space-y-6 font-sans">
       
       {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="relative">
-          <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+        <div className="flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface rounded-2xl px-4 h-12 transition-all w-full shadow-inner shadow-black/5">
+          <Search className="text-content-muted shrink-0" size={18} />
           <input 
             type="text"
             placeholder={t('settings_page.staff.activity.search_placeholder', 'بحث بالإسم أو العملية...')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-surface border border-border rounded-xl py-3 pr-12 pl-4 text-content outline-none focus:border-brand transition-colors"
+            className="w-full bg-transparent font-bold outline-none text-content border-none p-0 focus:ring-0 text-sm"
           />
         </div>
-        <div className="relative">
-          <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 text-content-muted" size={20} />
+        <div className="flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface rounded-2xl px-4 h-12 transition-all w-full shadow-inner shadow-black/5">
+          <Calendar className="text-content-muted shrink-0" size={18} />
           <input 
             type="date"
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
-            className="w-full bg-surface border border-border rounded-xl py-3 pr-12 pl-4 text-content outline-none focus:border-brand transition-colors"
+            className="w-full bg-transparent font-bold outline-none text-content border-none p-0 focus:ring-0 text-sm"
           />
         </div>
       </div>

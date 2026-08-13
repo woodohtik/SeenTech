@@ -474,16 +474,16 @@ export default function PurchaseOrders({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-center">
         {/* Search Input */}
-        <div className="relative lg:col-span-2">
-          <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-content-muted pointer-events-none" size={18} />
+        <div className="lg:col-span-2 flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface rounded-2xl px-4 h-12 transition-all w-full shadow-inner shadow-black/5">
+          <Search className="text-content-muted shrink-0" size={18} />
           <input
             type="text"
             placeholder={t('procurement.search_po_placeholder', 'بحث برقم السند أو اسم المورد...')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-4 pr-12 py-3.5 bg-surface border border-border rounded-2xl focus:ring-2 focus:ring-brand outline-none text-content font-bold placeholder:text-content-muted/80 text-sm"
+            className="w-full bg-transparent font-bold outline-none text-content border-none p-0 focus:ring-0 text-sm"
           />
         </div>
 

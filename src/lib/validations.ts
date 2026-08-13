@@ -16,7 +16,9 @@ export const customerSchema = z.object({
   phone: phoneField,
   email: z.string().email(t('validation.invalid_email')).optional().or(z.literal('')),
   companyName: z.string().optional(),
-  trn: z.string().optional(),
+  trn: z.string().refine((val) => !val || /^\d{15}$/.test(val), {
+    message: t('validation.tax_number_format')
+  }).optional().or(z.literal('')),
   isB2B: z.boolean().optional().default(false),
   address: z.string().optional(),
   city: z.string().optional(),
@@ -172,7 +174,7 @@ export const settingsSchema = z.object({
   currencySymbol: z.string().optional(),
   taxSettings: z.object({
     enabled: z.boolean(),
-    trn: z.string().optional(),
+    trn: z.string().optional().or(z.literal('')),
     legalName: z.string().optional(),
     vatRate: z.coerce.number().min(0).max(100),
     tailoringTaxType: z.enum(['inclusive', 'exclusive', 'exempt']).optional().default('exclusive')
@@ -183,5 +185,16 @@ export const settingsSchema = z.object({
     dailyClose: z.boolean().optional().default(true),
     tomorrowDelivery: z.boolean().optional().default(true)
   }).optional(),
+}).refine((data) => {
+  if (data.taxSettings?.enabled) {
+    return !!data.taxSettings.trn && /^\d{15}$/.test(data.taxSettings.trn);
+  }
+  if (data.taxSettings?.trn) {
+    return /^\d{15}$/.test(data.taxSettings.trn);
+  }
+  return true;
+}, {
+  message: t('validation.tax_number_format'),
+  path: ['taxSettings', 'trn']
 });
 

@@ -59,6 +59,7 @@ import VisualMeasurements from './VisualMeasurements';
 import { useStaff } from '../contexts/StaffContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { useToast } from '../contexts/ToastContext';
+import { useSafeMutation } from '../hooks/useSafeMutation';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import { PermissionKey } from '../types';
 import { SmartSelect } from './ui/SmartSelect';
@@ -101,6 +102,51 @@ export default function Customers({ tenantId }: CustomersProps) {
   const { currentStaff } = useStaff();
   const { hasPermission, checkPermission } = usePermissions(currentStaff);
   const navigate = useNavigate();
+
+  // Centralized Mutations for Secure, Strict Persistence
+  const saveCustomerMutation = useSafeMutation(
+    async ({ customerData, id }: { customerData: any; id?: string }) => {
+      if (id) {
+        const { error } = await supabase.from('customers').update(customerData).eq('id', id);
+        if (error) throw error;
+        
+        if (currentStaff) {
+          await logEmployeeAction(
+            tenantId,
+            currentStaff.id,
+            currentStaff.name,
+            'edit_measurements',
+            t('customers.audit_edit_measurements', { name: customerData.name })
+          );
+        }
+      } else {
+        const { error } = await supabase.from('customers').insert(customerData);
+        if (error) throw error;
+      }
+    },
+    {
+      onSuccess: () => {
+        setIsModalOpen(false);
+        setEditingCustomer(null);
+        reset();
+        fetchCustomers(false);
+      }
+    }
+  );
+
+  const deleteCustomerMutation = useSafeMutation(
+    async (id: string) => {
+      const { error } = await supabase.from('customers').delete().eq('id', id);
+      if (error) throw error;
+    },
+    {
+      successMessage: t('customers.delete_success'),
+      errorMessage: t('customers.delete_fail'),
+      onSuccess: () => {
+        fetchCustomers(false);
+      }
+    }
+  );
 
   const canCreate = hasPermission('customers.create');
   const canEdit = hasPermission('customers.edit');
@@ -301,33 +347,10 @@ export default function Customers({ tenantId }: CustomersProps) {
     }
 
     try {
-      if (editingCustomer) {
-        const { error } = await supabase.from('customers').update(customerData).eq('id', editingCustomer.id);
-        if (error) throw error;
-        
-        // Audit log
-        if (currentStaff) {
-          await logEmployeeAction(
-            tenantId,
-            currentStaff.id,
-            currentStaff.name,
-            'edit_measurements',
-            t('customers.audit_edit_measurements', { name: data.name })
-          );
-        }
-
-        toastSuccess(t('customers.update_success'));
-      } else {
-        const { error } = await supabase.from('customers').insert(customerData);
-        if (error) throw error;
-        toastSuccess(t('customers.add_success'));
-      }
-      setIsModalOpen(false);
-      setEditingCustomer(null);
-      reset();
-      fetchCustomers(false);
+      await saveCustomerMutation.mutateAsync({ customerData, id: editingCustomer?.id });
+      // Centralized success handler inside useSafeMutation handles success toast, resetting, closing, and refreshing!
     } catch (error) {
-      handleError(error as any, editingCustomer ? t('customers.update_fail') : t('customers.add_fail'));
+      // Error is caught and displayed securely by the hook
     }
   };
 
@@ -357,12 +380,9 @@ export default function Customers({ tenantId }: CustomersProps) {
 
     if (window.confirm(t('customers.delete_confirm'))) {
       try {
-        const { error } = await supabase.from('customers').delete().eq('id', id);
-        if (error) throw error;
-        toastSuccess(t('customers.delete_success'));
-        fetchCustomers(false);
+        await deleteCustomerMutation.mutateAsync(id);
       } catch (error) {
-        handleError(error as any, t('customers.delete_fail'));
+        // Error is handled inside deleteCustomerMutation hook
       }
     }
   };
@@ -1658,7 +1678,12 @@ export default function Customers({ tenantId }: CustomersProps) {
                     <label className="text-sm font-bold text-content-muted">{t('customers.trn_company')} <span className="opacity-70 text-xs">({t('common.optional')})</span></label>
                     <input 
                       type="text"
+                      maxLength={15}
                       {...register('trn' as any)} 
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 15);
+                        setValue('trn' as any, val, { shouldValidate: true });
+                      }}
                       className={cn(
                         "w-full bg-surface-muted border-none rounded-xl p-3 focus:ring-2 focus:ring-brand text-content",
                         errors.trn && "ring-2 ring-danger"

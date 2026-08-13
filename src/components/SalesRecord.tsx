@@ -4,6 +4,7 @@ import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/fire
 import { Order } from '../types';
 import { cn, getCurrencySymbol } from '../lib/utils';
 import { decodeOrderB2BNotes } from '../utils/b2bHelper';
+import { decodeOrderRow } from '../utils/orderHistoryHelper';
 import { PriceDisplay } from './PriceDisplay';
 import { FileText, Eye, X, Download, Package, Scissors, User, Calendar, CreditCard, ShoppingBag, Clock, Printer, Share2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -25,6 +26,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [tenantInfo, setTenantInfo] = useState<{ name: string; vat_number: string; address?: string; phone?: string } | null>(null);
 
   const handleDownloadPDF = async () => {
     if (!selectedOrder) return;
@@ -91,14 +93,15 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
     setLoading(true);
     setError(null);
     try {
-      const [{ data: staffData }, { data: ordersData, error: fetchError }] = await Promise.all([
+      const [{ data: staffData }, { data: ordersData, error: fetchError }, { data: tenantData }] = await Promise.all([
         supabase.from('staff').select('id, name'),
         (() => {
           let query = supabase.from('orders').select('*').eq('tenant_id', tenantId);
           if (shiftId) query = query.eq('shift_id', shiftId);
           if (filterStatus) query = query.eq('status', filterStatus);
           return query.order('created_at', { ascending: false });
-        })()
+        })(),
+        supabase.from('tenants').select('name, vat_number, address, phone').eq('id', tenantId).maybeSingle()
       ]);
 
       if (fetchError) throw fetchError;
@@ -110,40 +113,47 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
         });
       }
 
+      if (tenantData) {
+        setTenantInfo(tenantData);
+      }
+
       const mappedOrders = ordersData ? ordersData.map(d => {
-        const b2bMeta = decodeOrderB2BNotes(d.notes);
-        const resolvedCreator = (d as any).seller_name ||
-          (d as any).sellerName ||
-          (d as any).staff_name ||
-          (d as any).cashier_name ||
-          (d.created_by && staffMap[d.created_by] ? staffMap[d.created_by] : d.created_by) ||
+        const decoded = decodeOrderRow(d);
+        const b2bMeta = decodeOrderB2BNotes(decoded.notes);
+        const resolvedCreator = decoded.seller_name ||
+          decoded.sellerName ||
+          decoded.staff_name ||
+          decoded.cashier_name ||
+          (decoded.created_by && staffMap[decoded.created_by] ? staffMap[decoded.created_by] : decoded.created_by) ||
           t('common.system');
 
         return {
-          ...d,
-          orderNumber: d.order_number,
-          customerId: d.customer_id,
-          customerName: d.customer_name,
-          tenantId: d.tenant_id,
-          shiftId: d.shift_id,
-          subtotalAmount: d.subtotal_amount,
-          totalAmount: d.total_amount,
-          paidAmount: d.paid_amount,
-          discountAmount: d.discount_amount,
-          remainingAmount: d.remaining_amount,
-          paymentMethod: d.payment_method,
-          orderDate: d.order_date,
-          deliveryDate: d.delivery_date,
+          ...decoded,
+          orderNumber: decoded.order_number || decoded.orderNumber,
+          customerId: decoded.customer_id || decoded.customerId,
+          customerName: decoded.customer_name || decoded.customerName,
+          tenantId: decoded.tenant_id || decoded.tenantId,
+          shiftId: decoded.shift_id || decoded.shiftId,
+          subtotalAmount: decoded.subtotal_amount || decoded.subtotalAmount,
+          totalAmount: decoded.total_amount || decoded.totalAmount,
+          paidAmount: decoded.paid_amount || decoded.paidAmount,
+          discountAmount: decoded.discount_amount || decoded.discountAmount,
+          remainingAmount: decoded.remaining_amount || decoded.remainingAmount,
+          paymentMethod: decoded.payment_method || decoded.paymentMethod,
+          orderDate: decoded.order_date || decoded.orderDate,
+          deliveryDate: decoded.delivery_date || decoded.deliveryDate,
           createdBy: resolvedCreator,
-          taxAmount: d.tax_amount,
-          taxRate: d.tax_rate,
+          taxAmount: decoded.tax_amount || decoded.taxAmount,
+          taxRate: decoded.tax_rate || decoded.taxRate,
           isB2B: b2bMeta.isB2B,
           b2bCompanyName: b2bMeta.b2bCompanyName,
           b2bTRN: b2bMeta.b2bTRN,
-          notes: b2bMeta.originalNotes || d.notes,
-          qrCode: d.qr_code,
-          createdAt: d.created_at,
-          updatedAt: d.updated_at
+          notes: b2bMeta.originalNotes || decoded.notes,
+          qrCode: decoded.qr_code || decoded.qrCode,
+          items: decoded.items || [],
+          history: decoded.history || [],
+          createdAt: decoded.created_at || decoded.createdAt,
+          updatedAt: decoded.updated_at || decoded.updatedAt
         } as Order;
       }) : [];
 
@@ -302,10 +312,10 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
 
             {(() => {
               const sellerInfo = {
-                name: (selectedOrder as any).sellerName || 'المنشأة',
-                vatNumber: (selectedOrder as any).sellerTRN || '000000000000000',
-                address: 'المملكة العربية السعودية',
-                phone: '',
+                name: (selectedOrder as any).sellerName || tenantInfo?.name || 'المنشأة',
+                vatNumber: (selectedOrder as any).sellerTRN || tenantInfo?.vat_number || '000000000000000',
+                address: tenantInfo?.address || 'المملكة العربية السعودية',
+                phone: tenantInfo?.phone || '',
                 logoUrl: '',
               };
 

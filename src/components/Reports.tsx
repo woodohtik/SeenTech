@@ -47,6 +47,8 @@ import Header from './Header';
 import TailorStatementReport from './TailorStatementReport';
 import Branding from './Branding';
 import Select from './ui/Select';
+import { DatePicker } from './ui/DatePicker';
+import { useToast } from '../contexts/ToastContext';
 import { motion, AnimatePresence } from 'motion/react';
 import * as XLSX from 'xlsx';
 import ZReport from './ZReport';
@@ -69,6 +71,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
   const { t, dir, locale } = useDirection();
   const { currentStaff } = useStaff();
   const { hasPermission, loading: permsLoading } = usePermissions(currentStaff);
+  const { success: toastSuccess, error: toastError, warning: toastWarning } = useToast();
   
   const canViewReports = hasPermission('reports.view');
   const canExportReports = hasPermission('reports.export');
@@ -377,6 +380,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
       if (!shifts || shifts.length === 0) {
         setDailyZData(null);
+        toastWarning(t('reports.no_shifts_found', 'لم يتم العثور على ورديات مغلقة لهذا التاريخ لتوليد التقرير المجمع'));
         return;
       }
 
@@ -418,8 +422,11 @@ export default function Reports({ tenantId }: { tenantId: string }) {
         totals: consolidatedTotals,
         type: 'daily'
       });
-    } catch (error) {
+      
+      toastSuccess(t('reports.z_report_success', 'تم توليد التقرير المالي المجمع بنجاح'));
+    } catch (error: any) {
       console.error('Error fetching Z-report:', error);
+      toastError(error.message || t('reports.z_report_error', 'حدث خطأ أثناء توليد التقرير المالي المجمع'));
     } finally {
       setLoadingZ(false);
     }
@@ -487,7 +494,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
       {/* Filters Bar */}
       <div id="reports-filters-bar" className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm flex flex-col lg:flex-row lg:items-center gap-4 sm:gap-6">
-        <div className="w-full lg:flex-1 flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-2xl border border-transparent focus-within:ring-2 focus-within:ring-brand focus-within:border-transparent transition-all">
+        <div className="w-full lg:flex-1 flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface rounded-2xl px-4 h-12 transition-all shadow-inner shadow-black/5">
           <Search className="text-content-muted shrink-0" size={18} />
           <input 
             id="reports-search-input"
@@ -500,26 +507,32 @@ export default function Reports({ tenantId }: { tenantId: string }) {
         </div>
         
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
-          <div id="reports-date-picker-wrapper" className="flex flex-col xs:flex-row flex-1 items-stretch xs:items-center justify-between gap-3 bg-surface-muted px-4 py-2.5 rounded-2xl border border-border">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <CalendarIcon size={16} className="text-content-muted shrink-0" />
+          {/* Start Date */}
+          <div className="flex-1 sm:flex-none flex items-center gap-2 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface rounded-2xl px-4 h-12 transition-all shadow-inner shadow-black/5 min-w-[130px] lg:min-w-[150px]">
+            <CalendarIcon size={16} className="text-content-muted shrink-0" />
+            <div className="flex flex-col flex-1">
+              <span className="text-[9px] text-content-muted font-black leading-none uppercase tracking-wider">{t('common.from', 'من')}</span>
               <input 
                 id="reports-date-start"
                 type="date" 
                 value={dateRange.start}
                 onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                className="bg-transparent border-none p-0 focus:ring-0 text-xs font-bold text-content w-full cursor-pointer outline-none"
+                className="bg-transparent border-none p-0 focus:ring-0 text-[11px] font-black text-content w-full cursor-pointer outline-none mt-0.5 leading-none"
               />
             </div>
-            <span className="text-content-muted/40 font-bold text-xs shrink-0 text-center xs:px-1">{t('orders.to')}</span>
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <CalendarIcon size={16} className="text-content-muted shrink-0" />
+          </div>
+
+          {/* End Date */}
+          <div className="flex-1 sm:flex-none flex items-center gap-2 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface rounded-2xl px-4 h-12 transition-all shadow-inner shadow-black/5 min-w-[130px] lg:min-w-[150px]">
+            <CalendarIcon size={16} className="text-content-muted shrink-0" />
+            <div className="flex flex-col flex-1">
+              <span className="text-[9px] text-content-muted font-black leading-none uppercase tracking-wider">{t('common.to', 'إلى')}</span>
               <input 
                 id="reports-date-end"
                 type="date" 
                 value={dateRange.end}
                 onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                className="bg-transparent border-none p-0 focus:ring-0 text-xs font-bold text-content w-full cursor-pointer outline-none"
+                className="bg-transparent border-none p-0 focus:ring-0 text-[11px] font-black text-content w-full cursor-pointer outline-none mt-0.5 leading-none"
               />
             </div>
           </div>
@@ -532,7 +545,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 { value: 'all', label: t('reports.filter_all_staff') },
                 ...staff.map(s => ({ value: s.id, label: s.name }))
               ]}
-              className="bg-surface-muted w-full"
+              className="h-12 rounded-2xl bg-surface-muted/50 hover:bg-surface-muted/80 border-border text-sm font-bold text-content shadow-inner shadow-black/5 focus:ring-0 focus:border-brand/40"
             />
           </div>
 
@@ -546,27 +559,8 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 { value: 'partial', label: t('common.payment_methods.partial') },
                 { value: 'unpaid', label: t('reports.payment_unpaid') }
               ]}
-              className="bg-surface-muted w-full"
+              className="h-12 rounded-2xl bg-surface-muted/50 hover:bg-surface-muted/80 border-border text-sm font-bold text-content shadow-inner shadow-black/5 focus:ring-0 focus:border-brand/40"
             />
-          </div>
-
-          <div 
-            id="reports-toggle-test-data"
-            onClick={() => setExcludeTestData(!excludeTestData)}
-            className={cn(
-              "flex-1 sm:flex-none flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-2xl border transition-all cursor-pointer select-none font-black text-xs sm:text-sm",
-              excludeTestData 
-                ? "bg-brand/10 text-brand border-brand/20 shadow-sm" 
-                : "bg-surface-muted text-content-muted border-border hover:bg-surface-muted/80"
-            )}
-          >
-            <input 
-              type="checkbox" 
-              checked={excludeTestData} 
-              onChange={() => {}}
-              className="rounded text-brand focus:ring-brand h-4 w-4 border-border cursor-pointer shrink-0"
-            />
-            <span>{t('reports.exclude_test_data', 'إخفاء البيانات التجريبية')}</span>
           </div>
         </div>
       </div>
@@ -1108,15 +1102,11 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 <div className="flex flex-col gap-4 max-w-sm mx-auto">
                   <div className="space-y-1.5 sm:space-y-2 text-right">
                     <label className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest mr-2">{t('reports.select_date')}</label>
-                    <div className="flex items-center gap-3 px-4 py-3 sm:py-3.5 bg-surface-muted border border-border rounded-2xl focus-within:ring-2 focus-within:ring-brand focus-within:border-transparent transition-all">
-                      <CalendarIcon size={20} className="text-content-muted shrink-0" />
-                      <input 
-                        type="date" 
-                        value={selectedZDate}
-                        onChange={(e) => setSelectedZDate(e.target.value)}
-                        className="w-full bg-transparent border-none p-0 focus:ring-0 font-black text-base sm:text-lg text-content cursor-pointer text-right outline-none"
-                      />
-                    </div>
+                    <DatePicker 
+                      id="report-date-input" 
+                      value={selectedZDate} 
+                      onChange={(val) => setSelectedZDate(val)} 
+                    />
                   </div>
                   <button 
                     onClick={() => fetchDailyZReport(selectedZDate)}

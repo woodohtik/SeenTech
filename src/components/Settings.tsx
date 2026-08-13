@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { formatSaudiPhone } from '../utils/phoneUtils';
 import { Store, MapPin, Phone, Globe, Bell, Shield, CreditCard, MessageSquare, CheckCircle2, AlertCircle, ChevronRight, ExternalLink, Zap, Upload, X as CloseIcon, Database, Trash2, ShieldCheck, Palette, FileText, HelpCircle, Layout, Mail, Printer } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
-import { handleError, OperationType } from '../lib/firebase';
+import { handleError, OperationType, auth } from '../lib/firebase';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
@@ -151,6 +151,37 @@ export default function Settings({ tenantId }: SettingsProps) {
         return;
       }
       try {
+        // Try to load via backend API endpoint (bypasses direct database restrictions securely)
+        const idToken = await auth?.currentUser?.getIdToken();
+        const headers: HeadersInit = {};
+        if (idToken) {
+          headers['Authorization'] = `Bearer ${idToken}`;
+        }
+        
+        let loadedData: any = null;
+        try {
+          const apiRes = await fetch('/api/tenant/settings', { headers });
+          if (apiRes.ok) {
+            loadedData = await apiRes.json();
+          }
+        } catch (apiErr) {
+          console.warn('[Settings] Failed to fetch settings via API, falling back to direct Supabase:', apiErr);
+        }
+
+        if (loadedData) {
+          reset({
+            name: loadedData.name || '',
+            phone: loadedData.phone || '',
+            address: loadedData.address || '',
+            inventoryStrategy: 'decentralized',
+            logoUrl: loadedData.logoUrl || '',
+            taxSettings: loadedData.taxSettings,
+            notificationSettings: loadedData.notificationSettings
+          });
+          setLogoPreview(loadedData.logoUrl || null);
+          return;
+        }
+
         const { data, error } = await supabase
           .from('tenants')
           .select('*')
@@ -235,43 +266,76 @@ export default function Settings({ tenantId }: SettingsProps) {
   const onSave = async (data: any) => {
     if (!tenantId || tenantId === 'saas_management') return;
     try {
-      const updatePayload: any = {
-        name: data.name,
-        phone: data.phone ? formatSaudiPhone(data.phone) : '',
-        address: data.address,
-        inventory_strategy: 'decentralized',
-        logo_url: data.logoUrl,
-        vat_number: data.taxSettings?.trn || '',
-        is_tax_enabled: Boolean(data.taxSettings?.enabled),
-        default_tax_rate: data.taxSettings?.vatRate || 15,
-        tax_settings: {
-          ...data.taxSettings,
-          notificationSettings: data.notificationSettings
-        }
-      };
-
-      let { error } = await supabase
-        .from('tenants')
-        .update(updatePayload)
-        .eq('id', tenantId);
-
-      if (error && (error.code === 'PGRST204' || error.message?.includes('tax_settings'))) {
-        console.warn('[Settings] tax_settings column not found in schema. Storing locally and retrying update without it...');
-        try {
-          localStorage.setItem(`tenant_tax_settings_${tenantId}`, JSON.stringify(updatePayload.tax_settings));
-        } catch (e) {
-          console.error('Failed to save fallback tax settings to localStorage:', e);
+      // Try posting to backend API endpoint first
+      let apiSuccess = false;
+      try {
+        const idToken = await auth?.currentUser?.getIdToken();
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json'
+        };
+        if (idToken) {
+          headers['Authorization'] = `Bearer ${idToken}`;
         }
         
-        const { tax_settings, ...retryPayload } = updatePayload;
-        const retryResult = await supabase
-          .from('tenants')
-          .update(retryPayload)
-          .eq('id', tenantId);
-        error = retryResult.error;
+        const apiRes = await fetch('/api/tenant/settings', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            name: data.name,
+            phone: data.phone,
+            address: data.address,
+            logoUrl: data.logoUrl,
+            taxSettings: data.taxSettings,
+            notificationSettings: data.notificationSettings
+          })
+        });
+        
+        if (apiRes.ok) {
+          apiSuccess = true;
+        }
+      } catch (apiErr) {
+        console.warn('[Settings] Failed to save settings via API, falling back to direct Supabase update:', apiErr);
       }
 
-      if (error) throw error;
+      if (!apiSuccess) {
+        const updatePayload: any = {
+          name: data.name,
+          phone: data.phone ? formatSaudiPhone(data.phone) : '',
+          address: data.address,
+          inventory_strategy: 'decentralized',
+          logo_url: data.logoUrl,
+          vat_number: data.taxSettings?.trn || '',
+          is_tax_enabled: Boolean(data.taxSettings?.enabled),
+          default_tax_rate: data.taxSettings?.vatRate || 15,
+          tax_settings: {
+            ...data.taxSettings,
+            notificationSettings: data.notificationSettings
+          }
+        };
+
+        let { error } = await supabase
+          .from('tenants')
+          .update(updatePayload)
+          .eq('id', tenantId);
+
+        if (error && (error.code === 'PGRST204' || error.message?.includes('tax_settings'))) {
+          console.warn('[Settings] tax_settings column not found in schema. Storing locally and retrying update without it...');
+          try {
+            localStorage.setItem(`tenant_tax_settings_${tenantId}`, JSON.stringify(updatePayload.tax_settings));
+          } catch (e) {
+            console.error('Failed to save fallback tax settings to localStorage:', e);
+          }
+          
+          const { tax_settings, ...retryPayload } = updatePayload;
+          const retryResult = await supabase
+            .from('tenants')
+            .update(retryPayload)
+            .eq('id', tenantId);
+          error = retryResult.error;
+        }
+
+        if (error) throw error;
+      }
 
       setSaveSuccess(true);
       window.dispatchEvent(new CustomEvent('tenant_settings_updated'));
@@ -714,7 +778,13 @@ export default function Settings({ tenantId }: SettingsProps) {
                             <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em] px-1">{t('settings_page.tax.trn', 'الرقم الضريبي (TRN - 15 خانة)')}</label>
                             <input 
                               type="text" 
+                              maxLength={15}
+                              placeholder="300000000000003"
                               {...register('taxSettings.trn')}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/\D/g, '').slice(0, 15);
+                                setValue('taxSettings.trn', val, { shouldValidate: true });
+                              }}
                               className={cn(
                                 "w-full bg-surface border-2 border-transparent focus:border-brand/30 rounded-xl p-3 font-black transition-all outline-none text-content text-left tracking-widest shadow-inner shadow-black/5 text-sm",
                                 errors.taxSettings?.trn && "border-red-500"

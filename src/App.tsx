@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle, Clock as ClockIcon, RefreshCw, LogOut, AlertCircle } from 'lucide-react';
 import {
@@ -1139,22 +1140,33 @@ function AppContent() {
   );
 }
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: false,
+    },
+  },
+});
+
 export default function App() {
   return (
-    <ErrorBoundary>
-      <ToastProvider>
-        <ThemeProvider>
-          <Router>
-            <AuthProvider>
-              <BrandingProvider>
-                <StaffProvider>
-                  <AppContent />
-                </StaffProvider>
-              </BrandingProvider>
-            </AuthProvider>
-          </Router>
-        </ThemeProvider>
-      </ToastProvider>
-    </ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <ErrorBoundary>
+        <ToastProvider>
+          <ThemeProvider>
+            <Router>
+              <AuthProvider>
+                <BrandingProvider>
+                  <StaffProvider>
+                    <AppContent />
+                  </StaffProvider>
+                </BrandingProvider>
+              </AuthProvider>
+            </Router>
+          </ThemeProvider>
+        </ToastProvider>
+      </ErrorBoundary>
+    </QueryClientProvider>
   );
 }

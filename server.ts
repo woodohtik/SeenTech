@@ -332,12 +332,128 @@ app.get("/api/admin/stats", authenticate, authorize(['super_admin']), (req, res)
   });
 });
 
-// Example Protected Route: Accessible by Owners and Admins
-app.get("/api/tenant/settings", authenticate, authorize(['owner', 'admin']), (req, res) => {
-  res.json({
-    message: "Tenant Settings",
-    tenantId: (req as any).user.tenantId
-  });
+// Example Protected Route: Accessible by Owners and Admins (and managers for GET)
+app.get("/api/tenant/settings", authenticate, authorize(['owner', 'admin', 'manager']), async (req: any, res) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      return res.status(401).json({ error: 'Unauthorized: No tenant ID found' });
+    }
+
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+    const { data: tenant, error } = await supabaseAdmin
+      .from("tenants")
+      .select("*")
+      .eq("id", tenantId)
+      .maybeSingle();
+
+    if (error || !tenant) {
+      return res.status(404).json({ error: "Tenant not found" });
+    }
+
+    let parsedMeta: any = {};
+    if (tenant.legacy_id && tenant.legacy_id.startsWith("{")) {
+      try {
+        parsedMeta = JSON.parse(tenant.legacy_id);
+      } catch (e) {
+        console.warn("Failed to parse tenant.legacy_id JSON:", e);
+      }
+    }
+
+    const hasVat = Boolean(tenant.vat_number && tenant.vat_number.trim().length > 0);
+    const rawTax = parsedMeta.tax_settings || parsedMeta;
+
+    const taxSettings = rawTax ? {
+      ...rawTax,
+      enabled: rawTax.enabled ?? (hasVat || Boolean(rawTax.trn)),
+      trn: rawTax.trn || tenant.vat_number || '',
+      legalName: rawTax.legalName || tenant.name || '',
+      vatRate: rawTax.vatRate ?? 15,
+      tailoringTaxType: rawTax.tailoringTaxType || 'exclusive'
+    } : {
+      enabled: hasVat,
+      trn: tenant.vat_number || '',
+      legalName: tenant.name || '',
+      vatRate: 15,
+      tailoringTaxType: 'exclusive'
+    };
+
+    const notificationSettings = rawTax?.notificationSettings || parsedMeta?.notificationSettings || {
+      lowStock: true,
+      newOrder: true,
+      dailyClose: true,
+      tomorrowDelivery: true
+    };
+
+    res.json({
+      name: tenant.name || '',
+      phone: tenant.phone || '',
+      address: tenant.address || '',
+      logoUrl: tenant.logo_url || '',
+      taxSettings,
+      notificationSettings
+    });
+  } catch (err: any) {
+    console.error("Error in GET /api/tenant/settings:", err);
+    res.status(500).json({ error: err.message || "Internal Server Error" });
+  }
+});
+
+app.post("/api/tenant/settings", authenticate, authorize(['owner', 'admin']), async (req: any, res) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      return res.status(401).json({ error: 'Unauthorized: No tenant ID found' });
+    }
+
+    const data = req.body;
+    if (!data) {
+      return res.status(400).json({ error: "Missing body data" });
+    }
+
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+
+    // Format phone number to Saudi style if needed
+    const formatSaudiPhone = (phone: string) => {
+      let cleaned = phone.replace(/\D/g, '');
+      if (cleaned.startsWith('0')) cleaned = cleaned.substring(1);
+      if (cleaned.startsWith('966')) cleaned = cleaned.substring(3);
+      if (cleaned.length === 9) return `+966${cleaned}`;
+      return phone;
+    };
+
+    const tax_settings = {
+      ...data.taxSettings,
+      notificationSettings: data.notificationSettings
+    };
+
+    const updatePayload: any = {
+      name: data.name,
+      phone: data.phone ? formatSaudiPhone(data.phone) : '',
+      address: data.address,
+      inventory_strategy: 'decentralized',
+      logo_url: data.logoUrl,
+      vat_number: data.taxSettings?.trn || '',
+      is_tax_enabled: Boolean(data.taxSettings?.enabled),
+      default_tax_rate: data.taxSettings?.vatRate || 15,
+      legacy_id: JSON.stringify(tax_settings), // Store the complete JSON metadata in legacy_id
+      updated_at: new Date().toISOString()
+    };
+
+    const { error } = await supabaseAdmin
+      .from("tenants")
+      .update(updatePayload)
+      .eq("id", tenantId);
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error("Error in POST /api/tenant/settings:", err);
+    res.status(500).json({ error: err.message || "Internal Server Error" });
+  }
 });
 
 async function setupServer() {
