@@ -335,6 +335,7 @@ export interface Staff {
     status: StaffStatus;
     pin_hash: string | null;
     must_change_pin: boolean;
+    has_seen_onboarding: boolean;
     is_test: boolean;
     commission_type: 'percentage' | 'fixed_amount' | null;
     commission_value: Numeric | null;
