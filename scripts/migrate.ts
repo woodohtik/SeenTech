@@ -27,7 +27,19 @@ if (fs.existsSync(envPath)) {
 
 console.log('--- Starting Migration from Firebase to Supabase ---');
 
-// 1. Initialize Firebase Admin
+// CLI flags (parsed up-front since Firebase Admin init below depends on
+// whether --export was given, and the Firestore data-migration section is
+// opt-in -- see the "Stage 2 user migration" comment block further down).
+const DRY_RUN = process.argv.includes('--dry-run');
+const EXPORT_ARG = process.argv.find(a => a.startsWith('--export='));
+const FIREBASE_EXPORT_PATH = EXPORT_ARG ? EXPORT_ARG.slice('--export='.length) : (process.env.FIREBASE_AUTH_EXPORT_PATH || '');
+const INCLUDE_FIRESTORE_DATA = process.argv.includes('--include-firestore-data');
+
+// 1. Initialize Firebase Admin.
+// Strictly required only when no --export file is given (the fallback path
+// calls admin.auth().listUsers()) or when --include-firestore-data is passed.
+// When an export file is provided, a failure here is non-fatal -- the whole
+// user-migration path can run off the export file alone.
 if (!admin.apps.length) {
   try {
     if (fs.existsSync(path.resolve(process.cwd(), 'firebase.json'))) {
@@ -53,13 +65,22 @@ if (!admin.apps.length) {
       throw new Error('NO VALID FIREBASE CREDENTIALS FOUND. Please set FIREBASE_SERVICE_ACCOUNT JSON string.');
     }
   } catch (error) {
-    console.error('Failed to initialize Firebase Admin:', error);
-    process.exit(1);
+    if (FIREBASE_EXPORT_PATH) {
+      console.warn('Firebase Admin failed to initialize; continuing since --export/FIREBASE_AUTH_EXPORT_PATH was provided:', error);
+    } else {
+      console.error('Failed to initialize Firebase Admin:', error);
+      process.exit(1);
+    }
   }
 }
 const configPath = path.resolve(process.cwd(), 'firebase-applet-config.json');
 const config = fs.existsSync(configPath) ? JSON.parse(fs.readFileSync(configPath, 'utf-8')) : {};
-const db = getFirestore(admin.app(), config.firestoreDatabaseId || '(default)');
+// Firestore access is only needed for the legacy, opt-in data-migration
+// section below -- constructed lazily so an unreachable/decommissioned
+// Firestore project doesn't block the (now primary) auth-migration path.
+function getDb() {
+  return getFirestore(admin.app(), config.firestoreDatabaseId || '(default)');
+}
 
 // 2. Initialize Supabase Admin Client
 let supabaseUrl = process.env.VITE_SUPABASE_URL;
@@ -113,56 +134,217 @@ const mapTimestamps = (data: any) => {
   return result;
 };
 
+// =============================================================================
+// Stage 2 (Firebase Auth -> Supabase Auth) user migration
+//
+// Usage:
+//   tsx scripts/migrate.ts --export=./firebase-users-export.json [--dry-run]
+//
+// The export file is produced by:
+//   firebase auth:export firebase-users-export.json --format=json --project <project-id>
+// which prints out the project's scrypt hash parameters (signer key, salt
+// separator, rounds, mem cost) needed below. Provide them via
+// FIREBASE_SCRYPT_SIGNER_KEY / FIREBASE_SCRYPT_SALT_SEPARATOR /
+// FIREBASE_SCRYPT_ROUNDS / FIREBASE_SCRYPT_MEM_COST if the export JSON
+// itself doesn't embed a `hash_config` object.
+//
+// Without --export, this falls back to enumerating via the Admin SDK
+// (no password hashes available — every account gets a random temp password
+// and is queued in the report file for a manual password-reset email).
+//
+// Pass --include-firestore-data to also run the legacy one-time Firestore ->
+// Supabase data migration further below (tenants/staff/customers/inventory/
+// orders/invoices) -- that migration already ran against production; it's
+// opt-in here so re-running this script for the auth migration doesn't touch
+// it or require Firestore to still be reachable.
+// =============================================================================
+
+interface FirebaseExportUser {
+  localId: string;
+  email?: string;
+  displayName?: string;
+  passwordHash?: string;
+  salt?: string;
+}
+
+interface FirebaseScryptConfig {
+  memCost: number;
+  rounds: number;
+  saltSeparator: string; // base64
+  signerKey: string;     // base64
+}
+
+function loadFirebaseExport(exportPath: string): { users: FirebaseExportUser[]; hashConfig: FirebaseScryptConfig | null } {
+  const raw = JSON.parse(fs.readFileSync(exportPath, 'utf-8'));
+  const users: FirebaseExportUser[] = raw.users || [];
+
+  const rawConfig = raw.hash_config || raw.passwordHashes || null;
+  let hashConfig: FirebaseScryptConfig | null = null;
+  if (rawConfig) {
+    hashConfig = {
+      memCost: Number(rawConfig.mem_cost ?? rawConfig.memCost),
+      rounds: Number(rawConfig.rounds),
+      saltSeparator: rawConfig.base64_salt_separator ?? rawConfig.saltSeparator,
+      signerKey: rawConfig.base64_signer_key ?? rawConfig.signerKey,
+    };
+  } else if (process.env.FIREBASE_SCRYPT_SIGNER_KEY) {
+    hashConfig = {
+      memCost: Number(process.env.FIREBASE_SCRYPT_MEM_COST),
+      rounds: Number(process.env.FIREBASE_SCRYPT_ROUNDS),
+      saltSeparator: process.env.FIREBASE_SCRYPT_SALT_SEPARATOR!,
+      signerKey: process.env.FIREBASE_SCRYPT_SIGNER_KEY!,
+    };
+  }
+
+  return { users, hashConfig };
+}
+
+// GoTrue's Firebase-scrypt import format: $fbscrypt$v=1,n=<memCost>,r=<rounds>,p=1,ss=<b64 salt_separator>,sk=<b64 signer_key>$<b64 salt>$<b64 hash>
+function buildFirebaseScryptHash(passwordHashB64: string, saltB64: string, cfg: FirebaseScryptConfig): string {
+  return `$fbscrypt$v=1,n=${cfg.memCost},r=${cfg.rounds},p=1,ss=${cfg.saltSeparator},sk=${cfg.signerKey}$${saltB64}$${passwordHashB64}`;
+}
+
+async function migrateUsersToSupabaseAuth(): Promise<{ userIdMap: Map<string, string>; fbUidToSupabaseUid: Map<string, string> }> {
+  const userIdMap = new Map<string, string>(); // fb uid AND email -> supabase uuid (kept for the Firestore sections below)
+  const fbUidToSupabaseUid = new Map<string, string>(); // fb uid ONLY -> supabase uuid (used for the RLS uid remap)
+  const needsPasswordReset: Array<{ uid: string; email: string; reason: string }> = [];
+
+  let sourceUsers: FirebaseExportUser[];
+  let hashConfig: FirebaseScryptConfig | null = null;
+
+  if (FIREBASE_EXPORT_PATH) {
+    console.log(`Loading Firebase user export from ${FIREBASE_EXPORT_PATH} ...`);
+    const loaded = loadFirebaseExport(FIREBASE_EXPORT_PATH);
+    sourceUsers = loaded.users;
+    hashConfig = loaded.hashConfig;
+    if (!hashConfig) {
+      console.warn('No scrypt hash_config found in the export file or FIREBASE_SCRYPT_* env vars -- passwords will NOT be imported; every account will need a password-reset email.');
+    }
+  } else {
+    console.warn('No --export=<path>/FIREBASE_AUTH_EXPORT_PATH provided -- falling back to Admin SDK listUsers() (no password hashes available; every account gets a random temp password and needs a reset).');
+    const fbUsers = await admin.auth().listUsers(1000);
+    sourceUsers = fbUsers.users.map(u => ({ localId: u.uid, email: u.email, displayName: u.displayName }));
+  }
+
+  console.log(`\n--> Migrating ${sourceUsers.length} users to Supabase Auth...`);
+
+  // Fetch existing Supabase Auth users once (not per-user, unlike the prior version of this script).
+  const { data: existingUsersData, error: existingUsersError } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+  if (existingUsersError) console.error('Failed to list existing Supabase Auth users:', existingUsersError.message);
+  const existingByEmail = new Map((existingUsersData?.users || []).map((u: any) => [u.email?.toLowerCase(), u]));
+
+  for (const u of sourceUsers) {
+    if (!u.email) continue;
+    const emailLower = u.email.toLowerCase();
+
+    let supUid: string;
+    const existing = existingByEmail.get(emailLower);
+
+    if (existing) {
+      supUid = existing.id;
+      console.log(`User ${u.email} already in Supabase Auth as ${supUid}`);
+    } else if (DRY_RUN) {
+      const hasHash = !!(hashConfig && u.passwordHash && u.salt);
+      console.log(`[dry-run] Would create Supabase Auth user for ${u.email} (password hash import: ${hasHash})`);
+      continue;
+    } else {
+      try {
+        const hasHash = !!(hashConfig && u.passwordHash && u.salt);
+        const createPayload: any = {
+          email: u.email,
+          email_confirm: true,
+          user_metadata: { name: u.displayName || '' },
+        };
+        if (hasHash) {
+          createPayload.password_hash = buildFirebaseScryptHash(u.passwordHash!, u.salt!, hashConfig!);
+        } else {
+          // Google-only accounts don't need a password (they'll use
+          // signInWithOAuth); non-Google accounts with no exportable hash get
+          // a random temp password and are queued for a reset email below.
+          createPayload.password = crypto.randomBytes(18).toString('base64url');
+        }
+
+        const { data: newUser, error: createError } = await supabase.auth.admin.createUser(createPayload);
+        if (createError || !newUser.user) {
+          console.error(`Error creating user ${u.email}:`, createError?.message);
+          needsPasswordReset.push({ uid: u.localId, email: u.email, reason: createError?.message || 'account creation failed' });
+          continue;
+        }
+        supUid = newUser.user.id;
+        if (!hasHash) {
+          needsPasswordReset.push({ uid: u.localId, email: u.email, reason: 'no exportable password hash -- temp password set, needs reset email' });
+        }
+        console.log(`Created user ${u.email} in Supabase Auth: ${supUid}`);
+      } catch (e: any) {
+        console.error(`Failed to create user ${u.email}:`, e.message);
+        needsPasswordReset.push({ uid: u.localId, email: u.email, reason: e.message });
+        continue;
+      }
+    }
+
+    fbUidToSupabaseUid.set(u.localId, supUid);
+    userIdMap.set(u.localId, supUid);
+    userIdMap.set(u.email, supUid); // map by email too just in case
+  }
+
+  if (needsPasswordReset.length > 0) {
+    const reportPath = path.resolve(process.cwd(), 'migration-hash-import-report.json');
+    fs.writeFileSync(reportPath, JSON.stringify(needsPasswordReset, null, 2));
+    console.warn(`\n${needsPasswordReset.length} account(s) need a follow-up password-reset email -- see ${reportPath}`);
+  }
+
+  console.log(`Prepared user mapping for ${userIdMap.size} identifiers.`);
+  return { userIdMap, fbUidToSupabaseUid };
+}
+
+// Re-points every TEXT-uid column (users.id, tenants.owner_uid, staff.uid,
+// saas_users.uid, etc.) from the old Firebase uid to the new Supabase Auth
+// uuid, via the remap_user_uid() Postgres function (see
+// supabase/migrations/20260815_remap_user_uid_function.sql) so the whole
+// per-user column set is repointed atomically. Safe to re-run: the function
+// is a no-op for any old uid that's already been remapped.
+async function remapUserUids(fbUidToSupabaseUid: Map<string, string>): Promise<void> {
+  console.log('\n--> Remapping uid columns (users.id, tenants.owner_uid, staff.uid, ...)...');
+
+  let remapped = 0, failed = 0;
+  for (const [oldUid, newUid] of fbUidToSupabaseUid.entries()) {
+    if (DRY_RUN) {
+      console.log(`[dry-run] Would remap uid ${oldUid} -> ${newUid}`);
+      remapped++;
+      continue;
+    }
+
+    const { error } = await supabase.rpc('remap_user_uid', { p_old_uid: oldUid, p_new_uid: newUid });
+    if (error) {
+      console.error(`Failed to remap uid ${oldUid} -> ${newUid}:`, error.message);
+      failed++;
+    } else {
+      remapped++;
+    }
+  }
+
+  console.log(`Remap complete: ${remapped} remapped, ${failed} failed.`);
+}
+
 // Main migration runner
 async function runMigration() {
   try {
-    console.log('\n--> Migrating Users to Supabase Auth...');
-    const fbUsers = await admin.auth().listUsers(1000);
-    const userIdMap = new Map<string, string>(); // fb uid -> supabase uuid
+    const { userIdMap, fbUidToSupabaseUid } = await migrateUsersToSupabaseAuth();
+    await remapUserUids(fbUidToSupabaseUid);
 
-    for (const u of fbUsers.users) {
-      if (!u.email) continue;
-      
-      let supUid: string;
-      // check if user with this email already exists
-      const { data: usersData, error: usersError } = await supabase.auth.admin.listUsers();
-      let existing = null;
-      if (!usersError && usersData && usersData.users) {
-          existing = usersData.users.find((supU: any) => supU.email === u.email);
-      }
-
-      if (existing) {
-          supUid = existing.id;
-          console.log(`User ${u.email} already in Supabase Auth as ${supUid}`);
-      } else {
-          try {
-              const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-                  email: u.email,
-                  email_confirm: true,
-                  password: 'TempPassword123!',
-                  user_metadata: {
-                     name: u.displayName || ''
-                  }
-              });
-              if (createError || !newUser.user) {
-                  console.error(`Error creating user ${u.email}:`, createError?.message);
-                  continue;
-              }
-              supUid = newUser.user.id;
-              console.log(`Created user ${u.email} in Supabase Auth: ${supUid}`);
-          } catch(e: any) {
-              console.error(`Failed to create user ${u.email}:`, e.message);
-              continue;
-          }
-      }
-      userIdMap.set(u.uid, supUid);
-      userIdMap.set(u.email, supUid); // map by email too just in case
+    if (!INCLUDE_FIRESTORE_DATA) {
+      console.log('\nSkipping legacy Firestore data migration (pass --include-firestore-data to run it).');
+      console.log('\nMigration completed successfully! 🎉');
+      process.exit(0);
     }
-    console.log(`Prepared user mapping for ${userIdMap.size} identifiers.`);
+
+    if (DRY_RUN) {
+      console.warn('\n[dry-run] NOTE: --dry-run only applies to the user/uid migration above -- the legacy Firestore data migration below does NOT check --dry-run and will write data (it is idempotent via upsert/ignoreDuplicates, so re-running it is safe, but it is not a no-op).');
+    }
 
     // Migrate Tenants
     console.log('\\n--> Migrating Tenants...');
-    const tenantsSnap = await db.collection('tenants').get();
+    const tenantsSnap = await getDb().collection('tenants').get();
     const tenants = tenantsSnap.docs.map(doc => {
       const data = mapTimestamps(doc.data());
       return {
@@ -185,7 +367,7 @@ async function runMigration() {
 
     // Migrate Staff
     console.log('\\n--> Migrating Staff...');
-    const staffSnap = await db.collection('staff').get();
+    const staffSnap = await getDb().collection('staff').get();
     const staffs = staffSnap.docs.map(doc => {
       const data = mapTimestamps(doc.data());
       const validRoles = ['admin', 'manager', 'cashier', 'tailor'];
@@ -209,7 +391,7 @@ async function runMigration() {
 
     // Migrate Customers
     console.log('\\n--> Migrating Customers...');
-    const customersSnap = await db.collection('customers').get();
+    const customersSnap = await getDb().collection('customers').get();
     const customers = customersSnap.docs.map(doc => {
       const data = mapTimestamps(doc.data());
       return {
@@ -227,7 +409,7 @@ async function runMigration() {
     await batchInsert('customers', customers);
 
     console.log('\n--> Migrating Inventory Items...');
-    const inventorySnap = await db.collection('inventory').get();
+    const inventorySnap = await getDb().collection('inventory').get();
     const inventoryItems = inventorySnap.docs.map(doc => {
       const data = mapTimestamps(doc.data());
       return {
@@ -254,7 +436,7 @@ async function runMigration() {
     const validInventoryIds = new Set(inventoryItems.map(i => i.id));
 
     console.log('\n--> Migrating Orders...');
-    const ordersSnap = await db.collection('orders').get();
+    const ordersSnap = await getDb().collection('orders').get();
     const ordersItemRows: any[] = [];
     const tenantOrdersMap = new Map<string, number>();
     
@@ -318,7 +500,7 @@ async function runMigration() {
     await batchInsert('order_items', ordersItemRows);
 
     console.log('\n--> Migrating Invoices...');
-    const invoicesSnap = await db.collection('invoices').get();
+    const invoicesSnap = await getDb().collection('invoices').get();
     const invoices = invoicesSnap.docs.map(doc => {
       const data = mapTimestamps(doc.data());
       return {
