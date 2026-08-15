@@ -26,7 +26,6 @@ import {
   Lock
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
-import { auth } from '../lib/firebase';
 import { Role, PermissionKey, PermissionsMap } from '../types';
 import { SYSTEM_PERMISSIONS } from '../constants/permissions';
 import { DEFAULT_ROLES, updateRolePermissions, createCustomRole, isMerchantRole, isSaaSRole } from '../services/permissionService';
@@ -34,6 +33,7 @@ import { cn } from '../lib/utils';
 import { useToast } from '../contexts/ToastContext';
 import { useTranslation } from 'react-i18next';
 import { useDirection } from '../lib/direction';
+import { useAuth } from '../contexts/AuthContext';
 
 interface RolePermissionsSettingsProps {
   tenantId?: string | null;
@@ -62,6 +62,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
   const { success, error, info } = useToast();
   const { t } = useTranslation();
   const { dir } = useDirection();
+  const { user: currentAuthUser } = useAuth();
 
   // Translation helpers for permissions and categories
   // `cat` is a permission `categoryKey` (e.g. 'permissions.categories.orders');
@@ -284,8 +285,8 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
       await updateRolePermissions(
         selectedRole.id,
         permissionsState,
-        auth.currentUser?.uid || null,
-        auth.currentUser?.email || '',
+        currentAuthUser?.id || null,
+        currentAuthUser?.email || '',
         targetTenantId,
         isSuperAdmin
       );
@@ -380,8 +381,8 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
         newRoleName,
         newRoleDesc,
         initialPerms,
-        auth.currentUser?.uid || null,
-        auth.currentUser?.email || ''
+        currentAuthUser?.id || null,
+        currentAuthUser?.email || ''
       );
       success(t('permissions.role_created_title'), t('permissions.role_created_desc', { role: newRoleName }));
       setShowCreateRoleModal(false);

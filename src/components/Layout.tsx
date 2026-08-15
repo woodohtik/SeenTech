@@ -36,8 +36,6 @@ import {
   CreditCard,
   Database
 } from 'lucide-react';
-import { auth } from '../lib/firebase';
-import { signOut } from 'firebase/auth';
 import { supabase } from '../lib/supabase/client';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -76,7 +74,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
   const { theme, setTheme } = useTheme();
-  const { impersonationTenantId, setImpersonationTenantId, dbUser } = useAuth();
+  const { impersonationTenantId, setImpersonationTenantId, dbUser, logout } = useAuth();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
   const [isSettingsSubMenuOpen, setIsSettingsSubMenuOpen] = React.useState(location.pathname.startsWith('/settings'));
   const [isHovered, setIsHovered] = React.useState(false);
@@ -155,26 +153,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      if (auth?.currentUser) {
-        await supabase
-          .from('users')
-          .update({ photo_url: null })
-          .eq('id', auth.currentUser.uid);
-      }
-    } catch (err) {
-      console.warn("Failed to reset session on logout:", err);
-    }
-    try {
-      localStorage.clear();
-      sessionStorage.clear();
-      await signOut(auth);
-    } catch (e) {
-      console.error(e);
-    }
-    window.location.replace('/login');
-  };
+  const handleLogout = () => logout();
 
   const isSuperAdmin = role === 'super_admin';
   const isSupportTech = role === 'support_tech';

@@ -64,9 +64,16 @@ export interface FirestoreErrorInfo {
   authInfo: {
     userId?: string | null;
     email?: string | null;
-    emailVerified?: boolean | null;
-    isAnonymous?: boolean | null;
   }
+}
+
+// Supabase Auth has no synchronous "current user" accessor (unlike Firebase's
+// auth.currentUser), so AuthContext pushes the current session's identity
+// here on every auth-state change, keeping this function's synchronous
+// signature intact for its ~30 call sites.
+let currentSessionInfo: { userId?: string | null; email?: string | null } = {};
+export function setCurrentAuthSessionInfo(info: { userId?: string | null; email?: string | null }) {
+  currentSessionInfo = info;
 }
 
 export function handleFirestoreError(error: any, operationType: OperationType, path: string | null) {
@@ -87,10 +94,8 @@ export function handleFirestoreError(error: any, operationType: OperationType, p
   const errInfo: FirestoreErrorInfo = {
     error: errorString,
     authInfo: {
-      userId: auth?.currentUser?.uid,
-      email: auth?.currentUser?.email,
-      emailVerified: auth?.currentUser?.emailVerified,
-      isAnonymous: auth?.currentUser?.isAnonymous,
+      userId: currentSessionInfo.userId,
+      email: currentSessionInfo.email,
     },
     operationType,
     path

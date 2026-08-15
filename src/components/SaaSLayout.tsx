@@ -27,8 +27,6 @@ import {
   Loader2
 } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { auth } from '../lib/firebase';
-import { signOut, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { cn } from '../lib/utils';
 import { logSaaSSecurityEvent } from '../services/saasSecurityService';
 import { useAuth } from '../contexts/AuthContext';
@@ -72,7 +70,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const { impersonationTenantId, setImpersonationTenantId, dbUser } = useAuth();
+  const { impersonationTenantId, setImpersonationTenantId, dbUser, user: currentAuthUser } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [impersonatedTenantName, setImpersonatedTenantName] = useState<string | null>(null);
@@ -99,7 +97,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
 
   useEffect(() => {
     const checkTempPasswordStatus = async () => {
-      if (!auth || !auth.currentUser) return;
+      if (!currentAuthUser) return;
       try {
         const { data } = await supabase
           .from('saas_settings')
@@ -109,7 +107,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
 
         if (data && data.value && typeof data.value === 'object') {
           const tempPasswords = data.value as Record<string, boolean>;
-          if (auth.currentUser && tempPasswords[auth.currentUser.uid]) {
+          if (tempPasswords[currentAuthUser.id]) {
             setMustChangePassword(true);
           }
         }
@@ -120,7 +118,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
       }
     };
     checkTempPasswordStatus();
-  }, [dbUser]);
+  }, [dbUser, currentAuthUser]);
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -152,15 +150,20 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
 
     setPassSubmitting(true);
     try {
-      if (!auth.currentUser) throw new Error("No user logged in");
-      if (!auth.currentUser.email) throw new Error("User email is not available");
+      if (!currentAuthUser?.email) throw new Error("No user logged in");
 
-      // Re-authenticate user first using EmailAuthProvider to prevent auth/requires-recent-login
-      const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
-      await reauthenticateWithCredential(auth.currentUser, credential);
+      // Re-verify the current password. Supabase has no dedicated
+      // reauthenticate-without-replacing-the-session primitive (unlike
+      // Firebase's reauthenticateWithCredential) — signing in again with the
+      // current password is the practical equivalent here, and it's fine to
+      // let it replace the session since it's the same user.
+      const { data: reauthData, error: reauthErr } = await supabase.auth.signInWithPassword({
+        email: currentAuthUser.email,
+        password: currentPassword
+      });
+      if (reauthErr) throw reauthErr;
 
-      // Get token first before changing password (so it's valid)
-      const token = await auth.currentUser.getIdToken(true);
+      const token = reauthData.session?.access_token;
 
       // Call server endpoint to remove from saas_settings temp_passwords list
       const response = await fetch('/api/saas/complete-temp-password', {
@@ -176,8 +179,8 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
         throw new Error(errData.error || 'Failed to complete password setup');
       }
 
-      // Update in Firebase Auth
-      await updatePassword(auth.currentUser, newPassword);
+      const { error: updateErr } = await supabase.auth.updateUser({ password: newPassword });
+      if (updateErr) throw updateErr;
 
       setMustChangePassword(false);
       // Log security event
@@ -185,7 +188,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
     } catch (err: any) {
       console.error(err);
       let errorMsg = err.message || t('saas.error_updating_password');
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+      if (err.message === 'Invalid login credentials') {
         errorMsg = t('saas.wrong_current_password');
       }
       setPassError(errorMsg);
@@ -203,7 +206,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
     try {
       localStorage.clear();
       sessionStorage.clear();
-      await signOut(auth);
+      await supabase.auth.signOut();
     } catch (e) {
       console.error(e);
     }
@@ -508,7 +511,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
             </button>
             <div className="h-8 w-px bg-border mx-2" />
             <div className="flex flex-col">
-              <span className="text-sm font-black text-content">{t('common.welcome_user', { name: dbUser?.display_name || auth?.currentUser?.displayName || t('common.support_engineer') })}</span>
+              <span className="text-sm font-black text-content">{t('common.welcome_user', { name: dbUser?.display_name || currentAuthUser?.user_metadata?.full_name || t('common.support_engineer') })}</span>
               <span className="text-[10px] font-bold text-brand">{getRoleLabel(userRole)}</span>
             </div>
           </div>
@@ -622,7 +625,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
               </AnimatePresence>
             </div>
             <div className="w-10 h-10 bg-brand/10 text-brand rounded-2xl flex items-center justify-center font-black shadow-sm">
-              {auth?.currentUser?.displayName?.charAt(0) || 'A'}
+              {currentAuthUser?.user_metadata?.full_name?.charAt(0) || 'A'}
             </div>
           </div>
         </header>

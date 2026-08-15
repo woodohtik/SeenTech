@@ -29,7 +29,7 @@ import {
   List
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
-import { auth, handleError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
+import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
 import { Combobox, Transition, Dialog } from '@headlessui/react';
 import { Customer, InventoryItem, OrderItem, Order, PaymentMethod, OrderStatus } from '../types';
 import { cn, generateOrderNumber } from '../lib/utils';
@@ -39,6 +39,7 @@ import { PriceDisplay } from './PriceDisplay';
 import { decodeInventoryDescription, calculateItemTax } from '../utils/b2bHelper';
 import { QRCodeSVG } from 'qrcode.react';
 import { useStaff } from '../contexts/StaffContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import { adjustStock } from '../services/inventoryService';
@@ -83,6 +84,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const [completedOrder, setCompletedOrder] = useState<any>(null);
   const [showCartOnMobile, setShowCartOnMobile] = useState(false);
   const { currentStaff } = useStaff();
+  const { user: currentAuthUser } = useAuth();
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -939,7 +941,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
           status: orderStatus,
           updatedAt: timestamp,
           updatedBy: currentStaff?.name || 'System',
-          updatedByUid: currentStaff?.id || auth.currentUser?.uid,
+          updatedByUid: currentStaff?.id || currentAuthUser?.id,
           notes: 'إنشاء الطلب عبر نقطة البيع'
         }]
       };

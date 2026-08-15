@@ -45,7 +45,7 @@ import {
 import * as XLSX from 'xlsx';
 
 import { supabase } from '../lib/supabase/client';
-import { auth, handleFirestoreError, OperationType } from '../lib/firebase';
+import { handleFirestoreError, OperationType } from '../lib/firebase';
 import { Customer, Measurements, Styles, Order, ThobeMeasurements } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { useForm, Controller } from 'react-hook-form';
@@ -57,6 +57,7 @@ import Header from './Header';
 import ThobeMeasurementSelector from './ThobeMeasurementSelector';
 import VisualMeasurements from './VisualMeasurements';
 import { useStaff } from '../contexts/StaffContext';
+import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { useToast } from '../contexts/ToastContext';
 import { useSafeMutation } from '../hooks/useSafeMutation';
@@ -2079,6 +2080,7 @@ const CustomerStatementModal = ({
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
   const { currentStaff } = useStaff();
+  const { user: currentAuthUser } = useAuth();
   const { error: toastError, success: toastSuccess } = useToast();
 
   const [payingOrderId, setPayingOrderId] = useState<string | null>(null);
@@ -2106,7 +2108,7 @@ const CustomerStatementModal = ({
         status: order.status,
         updatedAt: new Date().toISOString(),
         updatedBy: currentStaff?.name || t('common.roles.owner'),
-        updatedByUid: currentStaff?.id || auth.currentUser?.uid,
+        updatedByUid: currentStaff?.id || currentAuthUser?.id,
         notes: t('orders.payment_note', { 
           amount: payAmount, 
           method: t(`common.payment_methods.${payMethod}`) 

@@ -1,45 +1,26 @@
 import i18n from 'i18next';
 
+// Supabase Auth returns errors as { message, status } — plain strings, not
+// Firebase-style `auth/xxx` codes — so matching is done against the message
+// text. i18n keys are kept identical to the Firebase-era ones where the
+// semantic meaning matches, so translation files didn't need restructuring.
+const SUPABASE_AUTH_MESSAGE_MAP: Array<[RegExp, string]> = [
+  [/invalid login credentials/i, 'errors.auth.invalid_credentials'],
+  [/user already registered/i, 'errors.auth.email_already_in_use'],
+  [/email not confirmed/i, 'errors.auth.email_not_confirmed'],
+  [/password should be at least/i, 'errors.auth.weak_password'],
+  [/unable to validate email address/i, 'errors.auth.invalid_email'],
+  [/email rate limit exceeded|too many requests/i, 'errors.auth.too_many_requests'],
+  [/network/i, 'errors.auth.network_request_failed'],
+];
+
 export const getAuthErrorMessage = (err: any): string => {
   if (!err) return i18n.t('errors.auth.unexpected_login');
 
-  const code = typeof err === 'string' ? err : err.code || '';
   const message = typeof err === 'string' ? err : err.message || '';
 
-  if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
-    return i18n.t('errors.auth.invalid_credentials');
-  }
-  if (code === 'auth/email-already-in-use') {
-    return i18n.t('errors.auth.email_already_in_use');
-  }
-  if (code === 'auth/invalid-email') {
-    return i18n.t('errors.auth.invalid_email');
-  }
-  if (code === 'auth/weak-password') {
-    return i18n.t('errors.auth.weak_password');
-  }
-  if (code === 'auth/too-many-requests') {
-    return i18n.t('errors.auth.too_many_requests');
-  }
-  if (code === 'auth/network-request-failed') {
-    return i18n.t('errors.auth.network_request_failed');
-  }
-  if (code === 'auth/popup-closed-by-user') {
-    return i18n.t('errors.auth.popup_closed_by_user');
-  }
-  if (code === 'auth/popup-blocked') {
-    return i18n.t('errors.auth.popup_blocked');
-  }
-
-  // Fallback checks for string error messages
-  if (message.includes('auth/invalid-credential') || message.includes('auth/wrong-password') || message.includes('auth/user-not-found')) {
-    return i18n.t('errors.auth.invalid_credentials');
-  }
-  if (message.includes('auth/email-already-in-use')) {
-    return i18n.t('errors.auth.email_already_registered');
-  }
-  if (message.includes('Firebase: Error') || message.startsWith('Firebase:')) {
-    return i18n.t('errors.auth.invalid_login_or_missing_account');
+  for (const [pattern, key] of SUPABASE_AUTH_MESSAGE_MAP) {
+    if (pattern.test(message)) return i18n.t(key);
   }
 
   return message || i18n.t('errors.auth.generic');

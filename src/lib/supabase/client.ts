@@ -1,1 +1,1 @@
-export { supabase, setSupabaseAuthToken } from '../../services/supabase/client';
+export { supabase } from '../../services/supabase/client';

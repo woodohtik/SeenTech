@@ -1,4 +1,3 @@
-import { auth } from '../lib/firebase';
 import { UserRole } from '../types';
 
 /**

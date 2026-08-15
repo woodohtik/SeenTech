@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase/client';
-import { auth } from '../lib/firebase';
 import { Tenant, Order, AuditLog, EmployeeActivityLog } from '../types';
 import { 
   Users, 
@@ -62,7 +61,7 @@ export default function SuperAdminDashboard() {
   const isRtl = isRtlLang(i18n.language);
   const { success: toastSuccess, handleError: toastHandleError } = useToast();
 
-  const { setImpersonationTenantId, dbUser } = useAuth();
+  const { setImpersonationTenantId, dbUser, user: currentAuthUser } = useAuth();
   const userRole = dbUser?.role;
   const [supportModalTenant, setSupportModalTenant] = useState<{ id: string, name: string } | null>(null);
   const [requestLoading, setRequestLoading] = useState(false);
@@ -122,7 +121,7 @@ export default function SuperAdminDashboard() {
       ] = await Promise.all([
         supabase.from('tenants').select('*'),
         supabase.from('orders').select('*').order('order_date', { ascending: false }).limit(200),
-        supabase.from('saas_users').select('*').eq('uid', auth?.currentUser?.uid).single(),
+        supabase.from('saas_users').select('*').eq('uid', currentAuthUser?.id).single(),
         supabase.from('audit_logs').select('*').order('timestamp', { ascending: false }).limit(40),
         supabase.from('employee_activity_logs').select('*').order('occurred_at', { ascending: false }).limit(40),
         supabase.from('plans').select('*')
@@ -169,8 +168,8 @@ export default function SuperAdminDashboard() {
       if (activityData) setActivityLogs(activityData as any);
       
       if (saasUserData) {
-        setUserName(saasUserData.name || auth?.currentUser?.email?.split('@')[0] || 'Super Admin');
-      } else if (auth?.currentUser?.email?.toLowerCase() === "nomansa2566512@gmail.com") {
+        setUserName(saasUserData.name || currentAuthUser?.email?.split('@')[0] || 'Super Admin');
+      } else if (currentAuthUser?.email?.toLowerCase() === "nomansa2566512@gmail.com") {
         setUserName('Noman Saed');
       }
 
@@ -347,7 +346,7 @@ export default function SuperAdminDashboard() {
       // Save an audit log of this event
       await supabase.from('audit_logs').insert({
         action: `Toggle status to ${newStatus}`,
-        performedByEmail: auth?.currentUser?.email || 'Super Admin',
+        performedByEmail: currentAuthUser?.email || 'Super Admin',
         details: `Merchant ${tenantId} status changed to ${newStatus}`,
         type: 'security',
         timestamp: new Date().toISOString()

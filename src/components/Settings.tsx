@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { formatSaudiPhone } from '../utils/phoneUtils';
 import { Store, MapPin, Phone, Globe, Bell, Shield, CreditCard, MessageSquare, CheckCircle2, AlertCircle, ChevronRight, ExternalLink, Zap, Upload, X as CloseIcon, Database, Trash2, ShieldCheck, Palette, FileText, HelpCircle, Layout, Mail, Printer } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
-import { handleError, OperationType, auth } from '../lib/firebase';
+import { handleError, OperationType } from '../lib/firebase';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
@@ -152,7 +152,8 @@ export default function Settings({ tenantId }: SettingsProps) {
       }
       try {
         // Try to load via backend API endpoint (bypasses direct database restrictions securely)
-        const idToken = await auth?.currentUser?.getIdToken();
+        const { data: { session } } = await supabase.auth.getSession();
+        const idToken = session?.access_token;
         const headers: HeadersInit = {};
         if (idToken) {
           headers['Authorization'] = `Bearer ${idToken}`;
@@ -269,7 +270,8 @@ export default function Settings({ tenantId }: SettingsProps) {
       // Try posting to backend API endpoint first
       let apiSuccess = false;
       try {
-        const idToken = await auth?.currentUser?.getIdToken();
+        const { data: { session } } = await supabase.auth.getSession();
+        const idToken = session?.access_token;
         const headers: HeadersInit = {
           'Content-Type': 'application/json'
         };

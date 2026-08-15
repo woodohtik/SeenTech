@@ -16,9 +16,6 @@ import {
 } from 'lucide-react';
 import { AdminIconInput } from './ui/AdminIconInput';
 import { AdminIconSelect } from './ui/AdminIconSelect';
-import { initializeApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
-import { finalConfig } from '../lib/firebase';
 import { SaasUser, SaasUserRole } from '../types/supabase';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -131,19 +128,21 @@ export default function SaaSTeamManagement() {
           return;
         }
 
-        // Initialize secondary Firebase App
-        const secondaryApp = initializeApp(finalConfig, "SecondaryApp");
-        const secondaryAuth = getAuth(secondaryApp);
-        
-        const userCredential = await createUserWithEmailAndPassword(
-          secondaryAuth,
-          formData.email,
-          formData.password
-        );
-        
-        await secondaryAuth.signOut();
+        // Create the Supabase Auth account server-side (requires the
+        // service-role key, which never reaches the browser).
+        const { data: { session } } = await supabase.auth.getSession();
+        const createRes = await fetch('/api/staff/create-account', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session?.access_token || ''}`
+          },
+          body: JSON.stringify({ email: formData.email.toLowerCase(), password: formData.password, name: formData.name })
+        });
+        const createResult = await createRes.json();
+        if (!createRes.ok) throw new Error(createResult.error || 'Failed to create team member account');
 
-        const uid = userCredential.user.uid;
+        const uid = createResult.uid;
 
         // Ensure user exists in the global users table first due to foreign key constraints
         const { error: userError } = await supabase.from('users').upsert({

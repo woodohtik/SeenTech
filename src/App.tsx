@@ -22,10 +22,8 @@ const TrackRoute = () => {
 const LandingRedirect = () => {
   return <LandingPage />;
 };
-import { onIdTokenChanged, User, signOut } from 'firebase/auth';
-import { auth } from './lib/firebase';
 import { logError } from './lib/logger';
-import { supabase, setSupabaseAuthToken } from './lib/supabase/client';
+import { supabase } from './lib/supabase/client';
 import { setGlobalCurrencySymbol } from './lib/utils';
 import Layout from './components/Layout';
 import LockScreen from './components/LockScreen';
@@ -52,6 +50,7 @@ const Suppliers = React.lazy(() => import('./components/Suppliers'));
 const InventoryManager = React.lazy(() => import('./components/Inventory/InventoryManager'));
 const Reports = React.lazy(() => import('./components/Reports'));
 const Onboarding = React.lazy(() => import('./components/Onboarding'));
+const ResetPassword = React.lazy(() => import('./components/ResetPassword'));
 const PublicInvoice = React.lazy(() => import('./pages/PublicInvoice'));
 
 import PinLogin from './components/PinLogin';
@@ -90,22 +89,14 @@ import { RolePermissionsSettings } from './components/RolePermissionsSettings';
 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-import { getDeviceSessionId } from './utils/session';
-
 function AppContent() {
   const { t, i18n } = useTranslation();
   const { dir, isRtl } = useDirection();
   const { currentStaff, setCurrentStaff } = useStaff();
-  const { impersonationTenantId } = useAuth();
-  const SUPER_ADMIN_EMAIL = "nomansa2566512@gmail.com";
-
-  const [conflictUser, setConflictUser] = useState<{
-    firebaseUser: User;
-    token: string;
-    uid: string;
-    email: string;
-    currentSessionId: string;
-  } | null>(null);
+  const {
+    user, isApproved, userRole, tenantId, onboardingStep, hasStaffWithPin, currentUserStaff,
+    loading, conflictUser, resolveConflict, rejectConflict, impersonationTenantId, logout, refreshDbUser,
+  } = useAuth();
 
   // Desktop/Mobile viewport sync mode
   const [isDesktopView, setIsDesktopView] = useState<boolean>(() => {
@@ -139,10 +130,6 @@ function AppContent() {
     }
   }, [isDesktopView]);
 
-  // State sync trigger for seamless boarding
-  const [syncTrigger, setSyncTrigger] = useState(0);
-
-// Noop edit just to satisfy tool call format, will review line 100 instead
   useEffect(() => {
     if (impersonationTenantId && !currentStaff) {
       setCurrentStaff({
@@ -167,37 +154,14 @@ function AppContent() {
     localStorage.setItem('pos_locked', isLocked ? 'true' : 'false');
   }, [isLocked]);
 
-  // Consolidated Auth State to prevent partial state flashes
-  const [authState, setAuthState] = useState<{
-    user: User | null;
-    isApproved: boolean;
-    userRole: UserRole | null;
-    tenantId: string | null;
-    onboardingStep: number;
-    hasStaffWithPin: boolean | null;
-    currentUserStaff: StaffType | null;
-    loading: boolean;
-  }>({
-    user: null,
-    isApproved: localStorage.getItem('setup_complete') === 'true',
-    userRole: localStorage.getItem('user_role') as UserRole || null,
-    tenantId: localStorage.getItem('tenant_id') && localStorage.getItem('tenant_id') !== 'null' ? localStorage.getItem('tenant_id') : null,
-    onboardingStep: 0,
-    hasStaffWithPin: null,
-    currentUserStaff: null,
-    loading: true
-  });
-
   // Auto-login if the authenticated user has no PIN
   useEffect(() => {
-    if (authState.currentUserStaff && !currentStaff) {
-      if (!authState.currentUserStaff.pin) {
-        setCurrentStaff(authState.currentUserStaff as any);
+    if (currentUserStaff && !currentStaff) {
+      if (!currentUserStaff.pin) {
+        setCurrentStaff(currentUserStaff as any);
       }
     }
-  }, [authState.currentUserStaff, currentStaff, setCurrentStaff]);
-
-  const { user, isApproved, userRole, tenantId, onboardingStep, hasStaffWithPin, currentUserStaff, loading } = authState;
+  }, [currentUserStaff, currentStaff, setCurrentStaff]);
 
   // Prefetch core modules to reduce page transition latency when the user has completed login/auth setup
   useEffect(() => {
@@ -213,88 +177,8 @@ function AppContent() {
     }
   }, [user, isApproved]);
 
-  // Periodic session validation (Device A logout detection)
-  useEffect(() => {
-    if (!user || !user.uid) return;
-    if (conflictUser) return;
-
-    const currentSessionId = getDeviceSessionId();
-
-    const checkSession = async () => {
-      try {
-        const { data: userRow } = await supabase
-          .from('users')
-          .select('photo_url')
-          .eq('id', user.uid)
-          .maybeSingle();
-
-        if (userRow && userRow.photo_url && userRow.photo_url !== currentSessionId) {
-          console.log("[SESSION] Device kicked out because of a newer session on another device.");
-          await signOut(auth);
-          localStorage.removeItem('setup_complete');
-          localStorage.removeItem('user_role');
-          localStorage.removeItem('tenant_id');
-          window.location.replace('/login?conflict=true');
-        }
-      } catch (err) {
-        console.warn("[SESSION] Periodic session check failed:", err);
-      }
-    };
-
-    const interval = setInterval(checkSession, 5000);
-
-    const handleFocus = () => {
-      checkSession();
-    };
-    window.addEventListener('focus', handleFocus);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, [user, conflictUser]);
-
-  const handleResolveConflict = async () => {
-    if (!conflictUser) return;
-    setAuthState(prev => ({ ...prev, loading: true }));
-    try {
-      await supabase
-        .from('users')
-        .update({ photo_url: conflictUser.currentSessionId })
-        .eq('id', conflictUser.uid);
-
-      setConflictUser(null);
-      setSyncTrigger(prev => prev + 1);
-    } catch (err) {
-      console.error("Failed to update session ID:", err);
-      setAuthState(prev => ({ ...prev, loading: false }));
-    }
-  };
-
-  const handleRejectConflict = async () => {
-    if (!conflictUser) return;
-    setAuthState(prev => ({ ...prev, loading: true }));
-    try {
-      await signOut(auth);
-      setConflictUser(null);
-      localStorage.removeItem('setup_complete');
-      localStorage.removeItem('user_role');
-      localStorage.removeItem('tenant_id');
-      setAuthState({
-        user: null,
-        isApproved: false,
-        userRole: null,
-        tenantId: null,
-        onboardingStep: 0,
-        hasStaffWithPin: null,
-        currentUserStaff: null,
-        loading: false
-      });
-    } catch (err) {
-      console.error("Failed to log out conflict:", err);
-      setAuthState(prev => ({ ...prev, loading: false }));
-    }
-  };
+  const handleResolveConflict = resolveConflict;
+  const handleRejectConflict = rejectConflict;
 
   useEffect(() => {
     const dir = i18n.language === 'en' ? 'ltr' : 'rtl';
@@ -323,263 +207,14 @@ function AppContent() {
     };
 
     fetchTenantSettings();
-  }, [tenantId, syncTrigger]);
+    // currentUserStaff gets a fresh reference every time AuthContext re-resolves
+    // identity (including via window.refreshAuthData()), so it doubles as the
+    // "re-fetch on auth refresh" trigger that a syncTrigger counter used to be.
+  }, [tenantId, currentUserStaff]);
 
-  useEffect(() => {
-    if (!auth) {
-      setAuthState(prev => ({ ...prev, loading: false }));
-      return;
-    }
-    const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
-      console.log("[DEBUG] Auth State/Token Changed:", firebaseUser?.email);
-      
-      if (localStorage.getItem('is_registering') === 'true') {
-        console.log("[DEBUG] Registration in progress, skipping auth update.");
-        return;
-      }
-      
-      if (!firebaseUser) {
-        setSupabaseAuthToken(null);
-        localStorage.removeItem('setup_complete');
-        localStorage.removeItem('user_role');
-        localStorage.removeItem('tenant_id');
-        setAuthState({
-          user: null,
-          isApproved: false,
-          userRole: null,
-          tenantId: null,
-          onboardingStep: 0,
-          hasStaffWithPin: null,
-          currentUserStaff: null,
-          loading: false
-        });
-        return;
-      }
-
-      try {
-        const token = await firebaseUser.getIdToken();
-        const email = firebaseUser.email?.toLowerCase().trim() || '';
-        const uid = firebaseUser.uid;
-        setSupabaseAuthToken(token);
-
-        const currentSessionId = getDeviceSessionId();
-        const { data: userRow } = await supabase
-          .from('users')
-          .select('photo_url')
-          .eq('id', uid)
-          .maybeSingle();
-
-        if (userRow && userRow.photo_url && userRow.photo_url !== currentSessionId) {
-          console.log("[SESSION] Conflict detected. DB:", userRow.photo_url, "Local:", currentSessionId);
-          setConflictUser({
-            firebaseUser,
-            token,
-            uid,
-            email,
-            currentSessionId
-          });
-          setAuthState(prev => ({ ...prev, loading: false }));
-          return;
-        }
-
-        if (userRow) {
-          await supabase
-            .from('users')
-            .update({ photo_url: currentSessionId })
-            .eq('id', uid);
-        }
-        
-        // 1. Super Admin Detection
-        if (email === SUPER_ADMIN_EMAIL.toLowerCase()) {
-          // Ensure user exists in the global users table first
-          await supabase.from('users').upsert({
-            id: uid,
-            email: email,
-            display_name: firebaseUser.displayName || 'Super Admin'
-          }, { onConflict: 'id' });
-
-          // Self-heal/provision Super Admin in Supabase saas_users to clear RLS blocks
-          supabase.from('saas_users').upsert({
-            uid,
-            email,
-            name: firebaseUser.displayName || 'Super Admin',
-            role: 'super_admin',
-            is_active: true
-          }, {
-            onConflict: 'uid'
-          }).then(({ error }) => {
-            if (error) {
-              console.error("[Supabase Auth Sync] Error auto-provisioning super admin:", error);
-            } else {
-              console.log("[Supabase Auth Sync] Super Admin auto-provisioned successfully in Supabase DB!");
-            }
-          });
-
-          const saState = {
-            user: firebaseUser,
-            isApproved: true,
-            userRole: 'super_admin' as UserRole,
-            tenantId: 'super_admin',
-            onboardingStep: 4,
-            hasStaffWithPin: true,
-            currentUserStaff: null,
-            loading: false
-          };
-          setAuthState(saState);
-          localStorage.setItem('user_role', 'super_admin');
-          localStorage.setItem('setup_complete', 'true');
-          return;
-        }
-
-        // 2. Resolve Profile
-        const [staffRes, requestRes] = await Promise.all([
-          supabase.from('staff').select('*, tenant:tenants(*)').eq('uid', uid).maybeSingle(),
-          supabase.from('tailor_requests').select('*').eq('uid', uid).maybeSingle()
-        ]);
-
-        let staffData = staffRes.data;
-        if (!staffData && email) {
-          const { data: staffByEmail } = await supabase.from('staff').select('*, tenant:tenants(*)').eq('email', email).maybeSingle();
-          staffData = staffByEmail;
-          if (staffData && !staffData.uid) {
-            await supabase.from('staff').update({ uid }).eq('id', staffData.id);
-          }
-        }
-
-        if (staffData) {
-          const role = staffData.role as UserRole;
-          const approved = staffData.tenant?.status === 'active' || staffData.tenant?.status === 'approved' || staffData.tenant?.status === 'onboarding';
-          const isPending = staffData.tenant?.status === 'pending';
-          
-          let staffPinCount = false;
-          try {
-            const { count } = await supabase
-              .from('staff')
-              .select('*', { count: 'exact', head: true })
-              .eq('tenant_id', staffData.tenant_id)
-              .not('pin_hash', 'is', null);
-            staffPinCount = !!count;
-          } catch (e) { console.error("Error checking staff pins:", e); }
-
-          const mappedStaff = {
-            ...staffData,
-            tenantId: staffData.tenant_id,
-            branchId: staffData.branch_id,
-            pin: staffData.pin_hash,
-            mustChangePin: staffData.must_change_pin
-          };
-
-          // If tenant and approved, let's see if onboarding is completed
-          let step = 4;
-          if (requestRes.data && (!requestRes.data.onboarding_step || requestRes.data.onboarding_step < 4)) {
-            step = requestRes.data.onboarding_step || 1;
-          } else if (staffData.tenant?.status === 'onboarding') {
-            step = requestRes.data?.onboarding_step || 1;
-          } else if (isPending && requestRes.data) {
-             step = requestRes.data.onboarding_step || 1;
-             // Temporarily mark as approved if request is approved so onboarding can proceed
-             if (requestRes.data.status === 'approved') {
-                 setAuthState({
-                   user: firebaseUser,
-                   isApproved: true,
-                   userRole: role,
-                   tenantId: staffData.tenant_id,
-                   onboardingStep: step,
-                   hasStaffWithPin: staffPinCount,
-                   currentUserStaff: mappedStaff as any,
-                   loading: false
-                 });
-                 localStorage.removeItem('tenant_id');
-                 return;
-             }
-          }
-
-          setAuthState({
-            user: firebaseUser,
-            isApproved: approved,
-            userRole: role,
-            tenantId: staffData.tenant_id,
-            onboardingStep: step,
-            hasStaffWithPin: staffPinCount,
-            currentUserStaff: mappedStaff as any,
-            loading: false
-          });
-
-          if (staffData.tenant_id && approved) {
-            localStorage.setItem('tenant_id', staffData.tenant_id);
-          } else {
-            localStorage.removeItem('tenant_id');
-          }
-          localStorage.setItem('user_role', role);
-          if (approved) localStorage.setItem('setup_complete', 'true');
-          return;
-        }
-
-        // 3. SaaS Staff
-        const { data: saasUser } = await supabase.from('saas_users').select('role').eq('uid', uid).maybeSingle();
-        if (saasUser) {
-          setAuthState({
-            user: firebaseUser,
-            isApproved: true,
-            userRole: saasUser.role as UserRole,
-            tenantId: 'saas',
-            onboardingStep: 4,
-            hasStaffWithPin: true,
-            currentUserStaff: null,
-            loading: false
-          });
-          localStorage.setItem('user_role', saasUser.role);
-          localStorage.setItem('setup_complete', 'true');
-          return;
-        }
-
-        // 4. Onboarding Request
-        let request = requestRes.data;
-        if (!request && email) {
-          const { data: reqByEmail } = await supabase.from('tailor_requests').select('*').eq('email', email).maybeSingle();
-          request = reqByEmail;
-          if (request && !request.uid) {
-            await supabase.from('tailor_requests').update({ uid }).eq('id', request.id);
-          }
-        }
-
-        if (request) {
-          const approved = request.status === 'approved';
-          setAuthState({
-            user: firebaseUser,
-            isApproved: approved,
-            userRole: 'owner',
-            tenantId: null,
-            onboardingStep: request.onboarding_step || 1,
-            hasStaffWithPin: false,
-            currentUserStaff: null,
-            loading: false
-          });
-          if (approved) localStorage.setItem('setup_complete', 'true');
-        } else {
-          setAuthState({
-            user: firebaseUser,
-            isApproved: false,
-            userRole: 'owner',
-            tenantId: null,
-            onboardingStep: 1,
-            hasStaffWithPin: false,
-            currentUserStaff: null,
-            loading: false
-          });
-        }
-      } catch (error) {
-        console.error('[CRITICAL] Auth verification failed:', error);
-        setAuthState(prev => ({ ...prev, loading: false }));
-      }
-    });
-    return () => unsubscribe();
-  }, [syncTrigger]);
-
-  useEffect(() => {
-    (window as any).refreshAuthData = () => setSyncTrigger(prev => prev + 1);
-    return () => { delete (window as any).refreshAuthData; };
-  }, []);
+  // Auth-state resolution (device-session conflict, role, tenant, onboarding
+  // step) is now entirely owned by AuthContext (see resolveIdentity there) —
+  // this used to be a second, duplicate Firebase onIdTokenChanged listener.
 
   const onboardingCompletedLocal = localStorage.getItem('onboarding_completed') === 'true';
   const needsOnboarding = (user && isApproved && userRole === 'owner' && onboardingStep > 0 && onboardingStep < 4);
@@ -596,7 +231,7 @@ function AppContent() {
   const is2FAVerified = true;
 
   // Trial & Subscription Expiry Checks
-  const tenant = (authState.currentUserStaff as any)?.tenant;
+  const tenant = (currentUserStaff as any)?.tenant;
   const tenantCreatedAt = tenant?.created_at;
   let isTrialExpired = false;
   let isSubscriptionExpired = false;
@@ -667,7 +302,7 @@ function AppContent() {
   }, [layoutModeKey]);
 
   // PIN Access Logic
-  const needsPinSetup = user && isApproved && !needsOnboarding && authState.userRole === 'owner' && authState.currentUserStaff?.mustChangePin === true && !isSaaSStaff && !!tenantId && tenantId !== 'null';
+  const needsPinSetup = user && isApproved && !needsOnboarding && userRole === 'owner' && currentUserStaff?.mustChangePin === true && !isSaaSStaff && !!tenantId && tenantId !== 'null';
   const showPinLogin = user && isApproved && !isSaaSStaff && !currentStaff && hasStaffWithPin && !needsPinSetup;
   const showForcePinSetup = false; // Retired in favor of automatic setup
 
@@ -744,7 +379,7 @@ function AppContent() {
           <div className="bg-slate-950/50 rounded-2xl p-5 border border-slate-800/65 mb-10 text-sm space-y-2.5">
             <div className="flex justify-between items-center text-slate-300">
               <span className="text-slate-400 font-medium">{t('billing.modal_bank_holder_label')}</span>
-              <span className="font-bold text-white">{(authState.currentUserStaff as any)?.tenant?.name || t('subscription.workspace_fallback_name')}</span>
+              <span className="font-bold text-white">{(currentUserStaff as any)?.tenant?.name || t('subscription.workspace_fallback_name')}</span>
             </div>
             <div className="flex justify-between items-center text-slate-300">
               <span className="text-slate-400 font-medium">{t('subscription.account_email_label')}</span>
@@ -766,17 +401,8 @@ function AppContent() {
               {t('subscription.request_activation_now')}
             </a>
             
-            <button 
-              onClick={async () => {
-                try {
-                  localStorage.clear();
-                  sessionStorage.clear();
-                  await signOut(auth);
-                } catch (e) {
-                  console.error(e);
-                }
-                window.location.replace('/login');
-              }}
+            <button
+              onClick={() => logout()}
               className="w-full bg-slate-850 hover:bg-slate-800 text-slate-200 py-4 rounded-2xl font-bold transition-all border border-slate-700/30 flex items-center justify-center gap-2"
             >
               <LogOut size={18} />
@@ -791,19 +417,19 @@ function AppContent() {
   // Intercept for PIN setups
   if (needsPinSetup) {
     return (
-      <ForcePinSetup 
-        tenantId={tenantId!} 
-        onSuccess={() => setAuthState(prev => ({ ...prev, hasStaffWithPin: true }))} 
+      <ForcePinSetup
+        tenantId={tenantId!}
+        onSuccess={() => refreshDbUser()}
       />
     );
   }
 
   if (showPinLogin) {
     return (
-      <PinLogin 
-        tenantId={tenantId!} 
-        currentUserStaff={authState.currentUserStaff as any}
-        onLogin={(staff) => setCurrentStaff(staff)} 
+      <PinLogin
+        tenantId={tenantId!}
+        currentUserStaff={currentUserStaff as any}
+        onLogin={(staff) => setCurrentStaff(staff)}
       />
     );
   }
@@ -823,6 +449,14 @@ function AppContent() {
             } 
           />
           <Route path="/track/:token" element={<TrackRoute />} />
+          <Route
+            path="/reset-password"
+            element={
+              <React.Suspense fallback={<MainSkeleton />}>
+                <ResetPassword />
+              </React.Suspense>
+            }
+          />
           {/* SaaS Admin Portal */}
           <Route 
             path="/admin/*" 
@@ -883,7 +517,7 @@ function AppContent() {
             element={
               needsOnboarding ? (
                 <React.Suspense fallback={<MainSkeleton />}>
-                  <Onboarding onComplete={() => setSyncTrigger(p => p + 1)} />
+                  <Onboarding onComplete={() => refreshDbUser()} />
                 </React.Suspense>
               ) : <Navigate to="/" />
             } 
@@ -891,8 +525,9 @@ function AppContent() {
 
           {/* Authentication */}
           <Route 
-            path="/login" 
+            path="/login"
             element={
+              localStorage.getItem('is_registering') === 'true' ? <Login /> : (
               (user && isApproved) ? <Navigate to="/" /> : (
                 needsOnboarding ? <Navigate to="/onboarding" /> : (
                   (user && !isApproved) ? (
@@ -924,17 +559,8 @@ function AppContent() {
                             {t('orders.update_status')}
                           </button>
                           
-                          <button 
-                            onClick={async () => {
-                              try {
-                                localStorage.clear();
-                                sessionStorage.clear();
-                                await signOut(auth);
-                              } catch (e) {
-                                console.error(e);
-                              }
-                              window.location.replace('/login');
-                            }}
+                          <button
+                            onClick={() => logout()}
                             className="w-full bg-gray-50 text-gray-600 py-4 rounded-2xl font-bold hover:bg-gray-100 transition-all border border-gray-100 flex items-center justify-center gap-2"
                           >
                             <LogOut size={18} />
@@ -945,8 +571,8 @@ function AppContent() {
                     </div>
                   ) : <Login />
                 )
-              )
-            } 
+              ))
+            }
           />
 
           {/* Root Route — Landing page for visitors, Dashboard for logged-in tenants */}

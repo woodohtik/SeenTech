@@ -1,26 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { formatSaudiPhone, validateSaudiPhone } from '../utils/phoneUtils';
-import { 
-  signInWithPopup, 
-  GoogleAuthProvider, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword,
-  sendPasswordResetEmail,
-  onAuthStateChanged,
-  signOut
-} from 'firebase/auth';
-import { auth } from '../lib/firebase';
-import { supabase, setSupabaseAuthToken } from '../lib/supabase/client';
-import { 
-  Scissors, 
-  Send, 
-  CheckCircle, 
-  Mail, 
-  Lock, 
-  Eye, 
-  EyeOff, 
-  Phone, 
-  User, 
+import { supabase } from '../lib/supabase/client';
+import { useAuth } from '../contexts/AuthContext';
+import {
+  Scissors,
+  Send,
+  CheckCircle,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  Phone,
+  User,
   ArrowRight,
   AlertCircle,
   Loader2,
@@ -40,10 +31,13 @@ import { getAuthErrorMessage } from '../utils/authErrorUtils';
 
 type ViewMode = 'login' | 'register' | 'pending' | 'forgot-password';
 
+const SUPER_ADMIN_EMAIL = 'nomansa2566512@gmail.com';
+
 export default function Login() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { user: authUser } = useAuth();
   const [view, setView] = useState<ViewMode>(() => {
     const mode = searchParams.get('view');
     if (mode === 'register') return 'register';
@@ -106,17 +100,6 @@ export default function Login() {
       localStorage.removeItem('is_registering');
       setGoogleUser(null);
     }
-
-    // Auto-redirect if already logged in (backup to App.tsx)
-    if (auth) {
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        if (user && user.email?.toLowerCase() === "nomansa2566512@gmail.com") {
-           console.log("[DEBUG] Login component detected Super Admin session - auto-redirecting to /");
-           // App.tsx handles the actual state, but we can nudge it
-        }
-      });
-      return () => unsubscribe();
-    }
   }, []);
 
   // Sync view state dynamically when searchParams changes
@@ -126,10 +109,87 @@ export default function Login() {
       setView('register');
     } else if (mode === 'forgot-password') {
       setView('forgot-password');
-    } else {
+    } else if (searchParams.get('oauth') !== 'google') {
       setView('login');
     }
   }, [searchParams]);
+
+  // Handles the return leg of the Google OAuth redirect flow (signInWithOAuth
+  // navigates away to Google and back to /login?oauth=google once Supabase's
+  // detectSessionInUrl has parsed the session). Mirrors what the old
+  // signInWithPopup-based flow used to do synchronously right after the popup
+  // resolved: detect whether this Google identity already has an account, and
+  // if not, drop them into the register form pre-filled from their profile.
+  useEffect(() => {
+    const isOAuthReturn = searchParams.get('oauth') === 'google';
+    if (!isOAuthReturn || !authUser) return;
+
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const uid = authUser.id;
+        const email = authUser.email || '';
+        const displayName = authUser.user_metadata?.full_name || authUser.user_metadata?.name || '';
+
+        if (email.toLowerCase() === SUPER_ADMIN_EMAIL) {
+          await supabase.from('users').upsert({
+            id: uid, email, display_name: displayName || 'Super Admin'
+          }, { onConflict: 'id' });
+          await supabase.from('saas_users').upsert({
+            uid, email, name: displayName || 'Super Admin', role: 'super_admin', is_active: true
+          }, { onConflict: 'uid' });
+
+          sessionStorage.setItem('saas_2fa_verified', 'true');
+          localStorage.removeItem('is_registering');
+          navigate('/admin/dashboard', { replace: true });
+          return;
+        }
+
+        const { error: gUserError } = await supabase.from('users').upsert({
+          id: uid,
+          email,
+          display_name: displayName || 'Owner',
+          phone: authUser.phone || ''
+        });
+
+        if (gUserError && (gUserError.message?.includes('row-level security') || gUserError.code === '42501')) {
+          throw new Error(t('login.errors.rls_permission_issue'));
+        }
+
+        const [tenantRes, requestRes, staffRes] = await Promise.all([
+          supabase.from('tenants').select('*').eq('owner_email', email).maybeSingle(),
+          supabase.from('tailor_requests').select('*').eq('uid', uid).maybeSingle(),
+          supabase.from('staff').select('*').or(`uid.eq.${uid},email.eq.${email}`).maybeSingle()
+        ]);
+
+        const hasAccount = tenantRes.data || requestRes.data || staffRes.data;
+
+        if (hasAccount) {
+          localStorage.removeItem('is_registering');
+          (window as any).refreshAuthData?.();
+          navigate('/', { replace: true });
+          return;
+        }
+
+        // No account exists yet: transfer to Register view and pre-fill fields.
+        // is_registering stays set until handleRegister finishes, so AuthContext
+        // doesn't try to route this (accountless) session anywhere meanwhile.
+        setGoogleUser(authUser);
+        setView('register');
+        setFullName(displayName);
+        setRegEmail(email);
+        setRegPhone(authUser.phone || '');
+        navigate('/login?view=register', { replace: true });
+      } catch (err: any) {
+        localStorage.removeItem('is_registering');
+        console.error('Google OAuth callback handling error:', err);
+        setError(getAuthErrorMessage(err));
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [searchParams, authUser, navigate, t]);
 
   // Phone Formatting Logic
   const validatePhone = (phone: string) => {
@@ -159,88 +219,24 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError(null);
-    const provider = new GoogleAuthProvider();
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      // Check Super Admin
-      if (user.email === "nomansa2566512@gmail.com") {
-        // Ensure Super Admin exists in 'users' and 'saas_users' to enable clean RLS and full capabilities
-        await supabase.from('users').upsert({
-          id: user.uid,
-          email: user.email,
-          display_name: user.displayName || 'Super Admin'
-        }, { onConflict: 'id' });
-
-        await supabase.from('saas_users').upsert({
-          uid: user.uid,
-          email: user.email,
-          name: user.displayName || 'Super Admin',
-          role: 'super_admin',
-          is_active: true
-        }, { onConflict: 'uid' });
-
-        sessionStorage.setItem('saas_2fa_verified', 'true');
-        setLoading(false);
-        navigate('/admin/dashboard');
-        return;
-      }
-      
-      // Ensure user exists in users table upon google sign-in
-      const { error: gUserError } = await supabase.from('users').upsert({
-        id: user.uid,
-        email: user.email,
-        display_name: user.displayName || 'Owner',
-        phone: user.phoneNumber || ''
-      });
-      
-      if (gUserError) {
-         if (gUserError.message?.includes('row-level security') || gUserError.code === '42501') {
-            throw new Error(t('login.errors.rls_permission_issue'));
-         }
-      }
-
-      // Check existing tenant, request, or staff record
-      const [tenantRes, requestRes, staffRes] = await Promise.all([
-        supabase.from('tenants').select('*').eq('owner_email', user.email).maybeSingle(),
-        supabase.from('tailor_requests').select('*').eq('uid', user.uid).maybeSingle(),
-        supabase.from('staff').select('*').or(`uid.eq.${user.uid},email.eq.${user.email}`).maybeSingle()
-      ]);
-
-      const hasAccount = tenantRes.data || requestRes.data || staffRes.data;
-
-      if (hasAccount) {
-        // Logged-in/already has account, App.tsx will automatically detect this Firebase user session and route them to dashboard/onboarding
-        setLoading(false);
-        return;
-      }
-
-      // No account exists, transfer to Register view and pre-fill fields
+      // Set before navigating away: by the time the browser returns from
+      // Google, this must already be in localStorage so AuthContext skips
+      // resolving identity until the effect above decides where to route.
       localStorage.setItem('is_registering', 'true');
-      setGoogleUser(user);
-      setView('register');
-      setFullName(user.displayName || '');
-      setRegEmail(user.email || '');
-      setRegPhone(user.phoneNumber || '');
-      setLoading(false);
-    } catch (err: any) {
-      if (err.code === 'auth/popup-closed-by-user') {
-        console.log('Google login popup was closed by the user.');
-        // No need to set error for intentional user cancellation
-      } else {
-        console.error('Google Login Error:', err);
-        if (err.code === 'auth/popup-blocked') {
-          setError(t('login.errors.popup_blocked'));
-        } else if (err.code === 'permission-denied') {
-          setError(t('login.errors.permission_denied'));
-        } else if (err.code === 'auth/network-request-failed') {
-          setError(t('login.errors.auth_network_failed'));
-        } else {
-          setError(t('common.error') + ': ' + (err.message || 'Unknown error'));
-        }
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/login?oauth=google` }
+      });
+      if (oauthError) {
+        localStorage.removeItem('is_registering');
+        throw oauthError;
       }
-    } finally {
+      // Browser is navigating to Google now; nothing else to do here.
+    } catch (err: any) {
+      localStorage.removeItem('is_registering');
+      console.error('Google Login Error:', err);
+      setError(getAuthErrorMessage(err));
       setLoading(false);
     }
   };
@@ -251,15 +247,13 @@ export default function Login() {
     setError(null);
     try {
       console.log("[DEBUG] Starting Login for:", loginId);
-      // 0. Super Admin Auto-Resolution
       let emailToUse = loginId;
-      if (loginId.toLowerCase() === "nomansa2566512@gmail.com") {
+      if (loginId.toLowerCase() === SUPER_ADMIN_EMAIL) {
         emailToUse = loginId;
-        console.log("[DEBUG] Super Admin Login Path - using email directly");
       } else if (!loginId.includes('@')) {
         const formattedPhone = formatSaudiPhone(loginId);
         console.log("[DEBUG] Phone login detected, formatting:", formattedPhone);
-        
+
         try {
           // Check requests first
           const { data: reqSnap } = await supabase
@@ -267,7 +261,7 @@ export default function Login() {
             .select('email')
             .eq('phone', formattedPhone)
             .maybeSingle();
-          
+
           if (reqSnap) {
             emailToUse = reqSnap.email;
           } else {
@@ -277,13 +271,13 @@ export default function Login() {
               .select('email')
               .eq('phone', formattedPhone)
               .maybeSingle();
-              
+
             if (staffSnap) {
               emailToUse = staffSnap.email;
             } else {
               // Check if it's the super admin phone (optional but good for recovery)
               if (loginId.includes('2566512')) { // Part of the email handle
-                 emailToUse = "nomansa2566512@gmail.com";
+                 emailToUse = SUPER_ADMIN_EMAIL;
               } else {
                  throw new Error(t('login.errors.phone_not_registered'));
               }
@@ -297,35 +291,15 @@ export default function Login() {
         }
       }
 
-      console.log("[DEBUG] Triggering signInWithEmailAndPassword...");
-      let isSuperAdminFallback = false;
-      if (!auth) {
-        throw new Error(t('login.errors.firebase_not_configured'));
-      }
-      try {
-        await signInWithEmailAndPassword(auth, emailToUse, password);
-      } catch (signInErr: any) {
-        if (emailToUse.toLowerCase() === "nomansa2566512@gmail.com" && 
-           (signInErr.code === 'auth/invalid-credential' || signInErr.code === 'auth/user-not-found')) {
-          console.log("[DEBUG] Super Admin account not found, attempting auto-creation...");
-          try {
-            await createUserWithEmailAndPassword(auth, emailToUse, password);
-            isSuperAdminFallback = true;
-          } catch (createErr: any) {
-            if (createErr.code === 'auth/email-already-in-use' || createErr.code === 'auth/credential-already-in-use') {
-              throw signInErr;
-            }
-            throw createErr;
-          }
-        } else {
-          throw signInErr;
-        }
-      }
-      console.log("[DEBUG] Firebase Auth Success - Redirecting via App.tsx state change");
-      if (emailToUse.toLowerCase() === "nomansa2566512@gmail.com") {
+      console.log("[DEBUG] Triggering signInWithPassword...");
+      const { error: signInErr } = await supabase.auth.signInWithPassword({ email: emailToUse, password });
+      if (signInErr) throw signInErr;
+
+      console.log("[DEBUG] Supabase Auth Success - Redirecting via App.tsx state change");
+      if (emailToUse.toLowerCase() === SUPER_ADMIN_EMAIL) {
         sessionStorage.setItem('saas_2fa_verified', 'true');
       }
-      
+
       if (rememberMe) {
         localStorage.setItem('rememberedUser', loginId);
       } else {
@@ -333,13 +307,13 @@ export default function Login() {
       }
     } catch (err: any) {
       console.error('Login Error:', err);
-      const isFetchError = 
+      const isFetchError =
         (err instanceof TypeError && (err.message?.includes('fetch') || err.message?.includes('Network'))) ||
         err.message?.includes('Failed to fetch') ||
         err.message?.includes('NetworkError');
 
       const isJwtError = err.message?.includes('suitable key') || err.message?.includes('PGRST301') || err.message?.includes('Expected 3 parts in JWT');
-      
+
       if (isJwtError) {
         setError(t('login.errors.jwt_link_missing'));
       } else if (isFetchError) {
@@ -383,7 +357,7 @@ export default function Login() {
         }
         throw checkErr;
       }
-      
+
       if (phoneSnap && phoneSnap.length > 0) {
         setError(t('login.errors.phone_exists'));
         setLoading(false);
@@ -396,29 +370,28 @@ export default function Login() {
         return;
       }
 
-      if (!auth) {
-        throw new Error(t('login.errors.firebase_api_key_missing'));
-      }
-      
-      // Lock the Firebase observer in App.tsx from taking over prematurely 
+      // Lock the auth listener in AuthContext from taking over prematurely
       localStorage.setItem('is_registering', 'true');
 
-      let user;
+      let user: { id: string };
       if (googleUser) {
         user = googleUser;
       } else {
-        let userCredential;
-        try {
-          userCredential = await createUserWithEmailAndPassword(auth, regEmail, regPassword);
-        } catch (authErr: any) {
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: regEmail,
+          password: regPassword,
+          options: { data: { full_name: fullName, phone: formattedPhone } }
+        });
+        if (signUpError) {
           localStorage.removeItem('is_registering');
-          throw authErr;
+          throw signUpError;
         }
-        user = userCredential.user;
+        if (!signUpData.session || !signUpData.user) {
+          localStorage.removeItem('is_registering');
+          throw new Error(t('login.errors.email_confirmation_required'));
+        }
+        user = signUpData.user;
       }
-      
-      const token = await user.getIdToken();
-      setSupabaseAuthToken(token);
 
       // Create Onboarding Request in Supabase
       try {
@@ -439,16 +412,14 @@ export default function Login() {
         const { error: userInsertError } = await supabase
           .from('users')
           .insert({
-            id: user.uid,
+            id: user.id,
             email: regEmail,
             display_name: fullName
           });
 
         if (userInsertError) {
           if (userInsertError.code === '23505' || userInsertError.message?.includes('users_email_key')) {
-            const friendlyErr = new Error(t('login.errors.email_exists'));
-            (friendlyErr as any).code = 'auth/email-already-in-use';
-            throw friendlyErr;
+            throw new Error(t('login.errors.email_exists'));
           }
           throw userInsertError;
         }
@@ -460,7 +431,7 @@ export default function Login() {
           .insert({
             name: fullName + ' Store',
             owner_email: regEmail,
-            owner_uid: user.uid,
+            owner_uid: user.id,
             phone: formattedPhone,
             status: 'active',
             plan_id: 'free',
@@ -494,7 +465,7 @@ export default function Login() {
           .from('staff')
           .insert({
             tenant_id: tenantId,
-            uid: user.uid,
+            uid: user.id,
             name: fullName,
             email: regEmail,
             phone: formattedPhone,
@@ -512,26 +483,24 @@ export default function Login() {
             name: fullName,
             phone: formattedPhone,
             email: regEmail,
-            uid: user.uid,
+            uid: user.id,
             tenant_id: tenantId,
             status: 'approved',
             created_at: new Date().toISOString(),
             onboarding_step: 1
           });
-        
+
         if (requestInsertError) throw requestInsertError;
 
       } catch (err: any) {
         console.error('Registration/Tenant Creation Error:', err);
         localStorage.removeItem('is_registering');
-        // If request creation fails, we should rollback the Firebase user unit if not a social login
-        if (!googleUser) {
-          try {
-            await user.delete();
-          } catch (delErr) {
-            console.error("Failed to delete user during registration failure rollback:", delErr);
-          }
-        }
+        // NOTE: unlike the old Firebase flow, there is no client-side "delete
+        // this auth user" call available here (that requires the service-role
+        // key, server-side only). A partial failure here leaves an orphaned,
+        // tenant-less Supabase Auth user — harmless (it just falls into the
+        // "no staff/tenant/request found -> onboarding step 1" resolution
+        // branch on next login) and can be swept up later by an admin task.
         if (err instanceof TypeError && err.message === 'Failed to fetch') {
            throw new Error(t('login.errors.db_unreachable_short', { url: import.meta.env.VITE_SUPABASE_URL || '' }));
         }
@@ -548,21 +517,10 @@ export default function Login() {
     } catch (err: any) {
       localStorage.removeItem('is_registering');
       console.error('Registration Error:', err);
-      if (err.code === 'auth/email-already-in-use' || err.code === '23505' || err.message?.includes('users_email_key')) {
+      if (err.code === '23505' || err.message?.includes('users_email_key')) {
         setError(t('login.errors.email_exists'));
-      } else if (err.code === 'auth/invalid-email') {
-        setError(t('login.errors.invalid_email'));
-      } else if (err.code === 'auth/weak-password') {
-        setError(t('login.errors.weak_password'));
-      } else if (err.code === 'auth/operation-not-allowed') {
-        setError(t('login.errors.operation_not_allowed'));
-      } else if (err.code === 'permission-denied') {
-        setError(t('login.errors.permission_denied'));
-      } else if (err.code === 'auth/network-request-failed') {
-        setError(t('login.errors.auth_network_failed'));
       } else {
-        console.error("Unknown error caught:", err);
-        const isFetchError = 
+        const isFetchError =
           (err instanceof TypeError && (err.message.includes('fetch') || err.message.includes('Network'))) ||
           err.message?.includes('Failed to fetch') ||
           err.message?.includes('NetworkError');
@@ -573,7 +531,7 @@ export default function Login() {
         } else if (isFetchError) {
           setError(t('login.errors.db_unreachable_adblocker', { url: import.meta.env.VITE_SUPABASE_URL || t('login.errors.no_url') }));
         } else {
-          setError(`${t('login.errors.unknown')}: ${err.message || 'No additional info'}`);
+          setError(getAuthErrorMessage(err));
         }
       }
     } finally {
@@ -585,7 +543,7 @@ export default function Login() {
     <div className="min-h-screen flex bg-surface-muted font-sans relative">
       {/* Top Bar: Back to Landing Page & Language Switcher */}
       <div className="absolute top-4 left-4 right-4 z-50 flex items-center justify-between pointer-events-none">
-        <button 
+        <button
           onClick={() => navigate('/')}
           title={t('login.back_to_landing')}
           aria-label={t('login.back_to_landing')}
@@ -595,7 +553,7 @@ export default function Login() {
         </button>
 
         <div className="pointer-events-auto relative">
-          <button 
+          <button
             onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
             className="flex items-center gap-2 bg-surface px-4 py-2 rounded-xl shadow-sm border border-border hover:bg-surface-muted transition-colors cursor-pointer"
           >
@@ -605,7 +563,7 @@ export default function Login() {
 
           <AnimatePresence>
             {isLangMenuOpen && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
@@ -636,9 +594,9 @@ export default function Login() {
           <div className="absolute top-0 left-0 w-96 h-96 bg-surface rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-brand/40 rounded-full translate-x-1/2 translate-y-1/2 blur-3xl" />
         </div>
-        
+
         <div className="relative z-10 text-white max-w-lg text-center">
-          <motion.div 
+          <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             className="inline-block p-6 bg-white/10 backdrop-blur-xl rounded-[2.5rem] mb-8"
@@ -654,7 +612,7 @@ export default function Login() {
 
       {/* Right Side - Forms */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 md:p-12">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           className="w-full max-w-md space-y-8"
@@ -664,19 +622,19 @@ export default function Login() {
               <Scissors size={32} />
             </div>
             <h2 className="text-3xl font-black text-content">
-              {view === 'login' ? t('login.welcome_back') : 
-               view === 'register' ? t('login.create_account') : 
+              {view === 'login' ? t('login.welcome_back') :
+               view === 'register' ? t('login.create_account') :
                view === 'forgot-password' ? t('login.forgot_password') : t('login.pending_review')}
             </h2>
             <p className="text-content-muted mt-2 font-medium">
-              {view === 'login' ? t('login.login_desc') : 
-               view === 'register' ? t('login.register_desc') : 
+              {view === 'login' ? t('login.login_desc') :
+               view === 'register' ? t('login.register_desc') :
                view === 'forgot-password' ? t('login.forgot_desc') : t('login.pending_desc')}
             </p>
           </div>
 
           {searchParams.get('conflict') === 'true' && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-amber-500/10 border border-amber-500/20 text-amber-700 p-4 rounded-2xl flex items-start gap-3 text-sm font-bold"
@@ -687,7 +645,7 @@ export default function Login() {
           )}
 
           {error && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-danger/10 border border-danger/20 text-danger p-4 rounded-2xl flex items-center gap-3 text-sm font-bold"
@@ -699,7 +657,7 @@ export default function Login() {
 
           <AnimatePresence mode="wait">
             {view === 'login' && (
-              <motion.form 
+              <motion.form
                 key="login"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -721,7 +679,7 @@ export default function Login() {
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center px-1">
                     <label className="text-xs font-black uppercase tracking-widest text-content-muted hover:text-content select-none">{t('login.password')}</label>
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setView('forgot-password')}
                       className="text-xs font-bold text-brand hover:underline"
@@ -738,7 +696,7 @@ export default function Login() {
                     startIcon={Lock}
                     wrapperClassName="h-11"
                     endIcon={
-                      <button 
+                      <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="text-content-muted hover:text-content flex items-center justify-center p-1 focus:outline-none"
@@ -750,17 +708,17 @@ export default function Login() {
                 </div>
 
                 <div className="flex items-center gap-2 px-1">
-                  <input 
-                    type="checkbox" 
-                    id="remember" 
+                  <input
+                    type="checkbox"
+                    id="remember"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-5 h-5 rounded-lg border-2 border-border text-brand focus:ring-brand" 
+                    className="w-5 h-5 rounded-lg border-2 border-border text-brand focus:ring-brand"
                   />
                   <label htmlFor="remember" className="text-sm font-bold text-content-muted cursor-pointer">{t('login.remember_me')}</label>
                 </div>
 
-                <button 
+                <button
                   disabled={loading}
                   type="submit"
                   className="w-full bg-brand text-white py-4 rounded-2xl font-bold text-lg hover:bg-brand/90 transition-all shadow-xl shadow-brand/10 flex items-center justify-center gap-2 disabled:opacity-70"
@@ -774,7 +732,7 @@ export default function Login() {
                   <div className="relative flex justify-center text-xs uppercase"><span className="bg-surface-muted px-2 text-content-muted font-bold">{t('login.or_with')}</span></div>
                 </div>
 
-                <button 
+                <button
                   type="button"
                   onClick={handleGoogleLogin}
                   className="w-full bg-surface border-2 border-border py-4 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-surface-muted transition-all text-content"
@@ -795,7 +753,7 @@ export default function Login() {
             )}
 
             {view === 'register' && (
-              <motion.form 
+              <motion.form
                 key="register"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -859,7 +817,7 @@ export default function Login() {
                       label={t('login.password')}
                       wrapperClassName="h-11"
                       endIcon={
-                        <button 
+                        <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
                           className="text-content-muted hover:text-content flex items-center justify-center p-1 focus:outline-none"
@@ -878,12 +836,12 @@ export default function Login() {
                       </div>
                       <div className="flex gap-1 h-1">
                         {[1, 2, 3, 4].map((i) => (
-                          <div 
-                            key={i} 
+                          <div
+                            key={i}
                             className={cn(
                               "flex-1 rounded-full transition-all duration-500",
                               strength >= i ? strengthColors[strength - 1] : "bg-surface-muted"
-                            )} 
+                            )}
                           />
                         ))}
                       </div>
@@ -891,7 +849,7 @@ export default function Login() {
                   </>
                 )}
 
-                <button 
+                <button
                   disabled={loading}
                   type="submit"
                   className="w-full bg-brand text-white py-4 rounded-2xl font-bold text-lg hover:bg-brand/90 transition-all shadow-xl shadow-brand/10 flex items-center justify-center gap-2 disabled:opacity-70 mt-4"
@@ -902,18 +860,18 @@ export default function Login() {
 
                 <p className="text-center text-content-muted font-medium">
                   {t('login.have_account')}{' '}
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={async () => {
                       localStorage.removeItem('is_registering');
                       setGoogleUser(null);
                       try {
-                        await signOut(auth);
+                        await supabase.auth.signOut();
                       } catch (e) {
                         console.error(e);
                       }
                       setView('login');
-                    }} 
+                    }}
                     className="text-brand font-bold hover:underline"
                   >
                     {t('login.login_button')}
@@ -923,7 +881,7 @@ export default function Login() {
             )}
 
             {view === 'pending' && (
-              <motion.div 
+              <motion.div
                 key="pending"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -936,12 +894,12 @@ export default function Login() {
                 <p className="text-content-muted font-medium leading-relaxed">
                   {t('login.pending_success_desc')}
                 </p>
-                <button 
+                <button
                   onClick={async () => {
                     try {
                       localStorage.clear();
                       sessionStorage.clear();
-                      await signOut(auth);
+                      await supabase.auth.signOut();
                     } catch (e) {
                       console.error(e);
                     }
@@ -956,7 +914,7 @@ export default function Login() {
             )}
 
             {view === 'forgot-password' && (
-              <motion.form 
+              <motion.form
                 key="forgot"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -965,7 +923,10 @@ export default function Login() {
                   e.preventDefault();
                   setLoading(true);
                   try {
-                    await sendPasswordResetEmail(auth, loginId);
+                    const { error: resetError } = await supabase.auth.resetPasswordForEmail(loginId, {
+                      redirectTo: `${window.location.origin}/reset-password`
+                    });
+                    if (resetError) throw resetError;
                     alert(t('login.reset_link_sent'));
                     setView('login');
                   } catch (err) {
@@ -983,7 +944,7 @@ export default function Login() {
                       "absolute top-1/2 -translate-y-1/2 text-content-muted group-focus-within:text-brand transition-colors",
                       i18n.language === 'en' ? "left-4" : "right-4"
                     )} size={20} />
-                    <input 
+                    <input
                       required
                       type="email"
                       value={loginId}
@@ -997,7 +958,7 @@ export default function Login() {
                   </div>
                 </div>
 
-                <button 
+                <button
                   disabled={loading}
                   type="submit"
                   className="w-full bg-brand text-white py-4 rounded-2xl font-bold text-lg hover:bg-brand/90 transition-all shadow-xl shadow-brand/10 flex items-center justify-center gap-2 disabled:opacity-70"
@@ -1006,9 +967,9 @@ export default function Login() {
                   <span>{t('login.send_reset_link')}</span>
                 </button>
 
-                <button 
-                  type="button" 
-                  onClick={() => setView('login')} 
+                <button
+                  type="button"
+                  onClick={() => setView('login')}
                   className="w-full text-content-muted font-bold hover:text-brand transition-colors"
                 >
                   {t('login.cancel_and_back')}

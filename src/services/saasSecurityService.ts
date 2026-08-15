@@ -1,5 +1,4 @@
 import { supabase } from '../lib/supabase/client';
-import { auth } from '../lib/firebase';
 
 export enum SaaSUserRole {
   SUPER_ADMIN = 'super_admin',
@@ -21,12 +20,13 @@ export const logSaaSSecurityEvent = async (action: string, details: string) => {
   try {
     const ipResponse = await fetch('https://api.ipify.org?format=json').catch(() => ({ json: () => Promise.resolve({ ip: 'unknown' }) }));
     const { ip } = await (ipResponse as any).json();
+    const { data: { user } } = await supabase.auth.getUser();
 
     const { error } = await supabase
       .from('saas_security_logs')
       .insert({
-        user_id: auth.currentUser?.uid,
-        user_email: auth.currentUser?.email,
+        user_id: user?.id,
+        user_email: user?.email,
         action,
         details,
         ip_address: ip,

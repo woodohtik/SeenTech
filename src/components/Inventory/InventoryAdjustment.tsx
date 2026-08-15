@@ -25,7 +25,6 @@ import {
   Copy,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase/client";
-import { auth } from "../../lib/firebase";
 import { useTranslation } from "react-i18next";
 import { useDirection } from "../../lib/direction";
 import { useStaff } from "../../contexts/StaffContext";
@@ -319,7 +318,8 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
   const fetchAdjustmentHistory = async () => {
     setHistoryLoading(true);
     try {
-      const token = await auth?.currentUser?.getIdToken();
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
       if (!token) throw new Error("No user authorization token found");
 
       const response = await fetch("/api/inventory-adjustments", {
@@ -366,7 +366,8 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
     setDetailsLoading(true);
     setHistoryItemDetails([]);
     try {
-      const token = await auth?.currentUser?.getIdToken();
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
       if (!token) throw new Error("No user authorization token found");
 
       const response = await fetch(`/api/inventory-adjustments/${adjustment.id}/items`, {
@@ -483,7 +484,8 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
       }
 
       // Send to server API proxy to execute safely bypassing RLS
-      const token = await auth?.currentUser?.getIdToken();
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
       if (!token) throw new Error("No user authorization token found");
 
       const response = await fetch("/api/inventory-adjustments", {

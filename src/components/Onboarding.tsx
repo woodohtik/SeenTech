@@ -25,9 +25,9 @@ const DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 import { useTranslation } from 'react-i18next';
 import { useToast } from '../contexts/ToastContext';
-import { auth } from '../lib/firebase';
+import { useAuth } from '../contexts/AuthContext';
 import { uploadImageToSupabase } from '../lib/supabase/storage';
-import { supabase, setSupabaseAuthToken } from '../lib/supabase/client';
+import { supabase } from '../lib/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { hashPin } from '../services/staffService';
 import { useForm } from 'react-hook-form';
@@ -96,6 +96,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   const { t, i18n } = useTranslation();
   const { dir } = useDirection();
   const { success: showSuccess, handleError: handleGlobalError, error: showError } = useToast();
+  const { user: authUser } = useAuth();
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -114,7 +115,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     defaultValues: {
       customerId: `SN-${Math.floor(100000 + Math.random() * 900000)}`,
       shopName: '',
-      phone: auth.currentUser?.phoneNumber || '',
+      phone: authUser?.phone || '',
       category: 'tailor' as const,
       taxNumber: '',
       taxStatus: 'registered' as const,
@@ -241,21 +242,17 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   const onSubmit = async (data: any) => {
     console.log("[Onboarding] Starting submission with data:", data);
     try {
-      const user = auth?.currentUser;
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) throw new Error("No authenticated user found. Please login again.");
-
-      // Force refresh token to ensure Supabase doesn't get a "JWT expired" error during the long process
-      console.log("[Onboarding] Refreshing token...");
-      const token = await user.getIdToken(true);
-      setSupabaseAuthToken(token);
 
       // Ensure user exists in users table to satisfy foreign key constraints
       console.log("[Onboarding] Ensuring user exists...");
       const { error: userError } = await supabase.from('users').upsert({
-        id: user.uid,
+        id: user.id,
         email: user.email,
-        display_name: user.displayName || 'Owner',
-        phone: user.phoneNumber || ''
+        display_name: user.user_metadata?.full_name || 'Owner',
+        phone: user.phone || ''
       });
 
       if (userError) {
@@ -270,7 +267,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       const { data: existingTenant, error: fetchTenantError } = await supabase
         .from('tenants')
         .select('id')
-        .eq('owner_uid', user.uid)
+        .eq('owner_uid', user.id)
         .single();
       
       if (fetchTenantError || !existingTenant) {
@@ -289,7 +286,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         tailoringTaxType: 'exclusive'
       };
 
-      const storePhone = data.phone ? formatSaudiPhone(data.phone) : (user.phoneNumber || '');
+      const storePhone = data.phone ? formatSaudiPhone(data.phone) : (user.phone || '');
 
       const { error: tenantError } = await supabase.from('tenants').update({
         name: data.shopName,
@@ -343,7 +340,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         name: data.shopName,
         branch_id: branchId,
         must_change_pin: true
-      }).eq('tenant_id', tenantId).eq('uid', user.uid);
+      }).eq('tenant_id', tenantId).eq('uid', user.id);
 
       if (staffError) throw new Error(`Failed to update staff: ${staffError.message}`);
       console.log("[Onboarding] Staff updated successfully.");
@@ -353,7 +350,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         await supabase
           .from('tailor_requests')
           .update({ onboarding_step: 4 })
-          .eq('uid', user.uid);
+          .eq('uid', user.id);
       } catch (err) {
         console.warn("Failed to update tailor_requests onboarding step:", err);
       }
@@ -368,7 +365,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
         logEmployeeAction(
           tenantId,
-          user.uid,
+          user.id,
           data.shopName,
           'security',
           t('onboarding.messages.audit_log', { shopName: data.shopName, customerId: data.customerId })

@@ -846,6 +846,7 @@
     "auth": {
       "email_already_in_use": "This email is already registered. Please sign in instead of creating a new account.",
       "email_already_registered": "This email is already registered. Please sign in.",
+      "email_not_confirmed": "Please confirm your email address before signing in.",
       "generic": "An error occurred during authentication.",
       "invalid_credentials": "Email or password is incorrect. Please check and try again.",
       "invalid_email": "Invalid email format. Enter a valid email address.",
@@ -1360,6 +1361,7 @@
       "db_unreachable_adblocker": "Could not connect to the database. Make sure the links work and that no ad blocker is blocking the connection. {{url}}",
       "db_unreachable_network": "Could not connect to the database. The problem may be your network settings (an ad blocker) or the Supabase links. {{url}}",
       "db_unreachable_short": "Could not connect to the database. {{url}}",
+      "email_confirmation_required": "Please check your email and confirm your account before continuing.",
       "email_exists": "Email already registered",
       "firebase_api_key_missing": "The account services (Firebase) are not configured. Please add the VITE_FIREBASE_API_KEY variables from the Secrets list.",
       "firebase_not_configured": "The account services (Firebase) are not configured. Please add them from the Secrets list.",

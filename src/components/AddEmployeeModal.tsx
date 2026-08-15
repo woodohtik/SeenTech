@@ -8,9 +8,7 @@ import { z } from 'zod';
 import { cn } from '../lib/utils';
 import { Role, Branch } from '../types';
 import { supabase } from '../lib/supabase/client';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
-import { initializeApp, deleteApp } from 'firebase/app';
-import { auth, finalConfig } from '../lib/firebase';
+import { useAuth } from '../contexts/AuthContext';
 import { generateSecurePin, hashPin } from '../services/staffService';
 import { Listbox, Transition } from '@headlessui/react';
 import { useDirection } from '../lib/direction';
@@ -190,6 +188,7 @@ export default function AddEmployeeModal({
   currentStaffEmail
 }: AddEmployeeModalProps) {
   const { t, dir } = useDirection();
+  const { user: currentAuthUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [enablePin, setEnablePin] = useState(false);
@@ -236,31 +235,29 @@ export default function AddEmployeeModal({
         }
       }
 
-      // 2. Create or find Auth User
+      // 2. Create or find Auth User via the server (service-role key never
+      // reaches the browser, so account creation must happen there).
       let uid = '';
-      let secondaryApp: any;
-      try {
-        // Try to create the user using a secondary app
-        secondaryApp = initializeApp(finalConfig, "SecondaryApp" + Date.now());
-        const secondaryAuth = getAuth(secondaryApp);
-        
-        const userCredential = await createUserWithEmailAndPassword(
-          secondaryAuth,
-          data.email.toLowerCase(),
-          data.password
-        );
-        
-        uid = userCredential.user.uid;
-        await secondaryAuth.signOut();
-      } catch (authErr: any) {
-        if (authErr.code === 'auth/email-already-in-use') {
+      const { data: { session } } = await supabase.auth.getSession();
+      const createRes = await fetch('/api/staff/create-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token || ''}`
+        },
+        body: JSON.stringify({ email: data.email.toLowerCase(), password: data.password, name: data.name })
+      });
+      const createResult = await createRes.json();
+
+      if (!createRes.ok) {
+        if (createRes.status === 409 || createResult.error === 'email_already_in_use_no_match') {
           if (existingStaff && existingStaff.length > 0) {
             const staffWithUid = existingStaff.find(s => s.uid);
             if (staffWithUid) {
               uid = staffWithUid.uid;
             }
           }
-          
+
           if (!uid) {
             // Fallback to query users table directly if not found in staff
             const { data: userRow } = await supabase.from('users').select('id').eq('email', data.email.toLowerCase()).maybeSingle();
@@ -273,12 +270,10 @@ export default function AddEmployeeModal({
              return;
           }
         } else {
-          throw authErr;
+          throw new Error(createResult.error || 'Failed to create staff account');
         }
-      } finally {
-        if (secondaryApp) {
-          try { await deleteApp(secondaryApp); } catch(e) {}
-        }
+      } else {
+        uid = createResult.uid;
       }
 
       // Ensure user exists in users table
@@ -326,7 +321,7 @@ export default function AddEmployeeModal({
       // Audit Log
       await supabase.from('audit_logs').insert({
         action: 'إضافة موظف',
-        performed_by: auth.currentUser?.uid || null,
+        performed_by: currentAuthUser?.id || null,
         performed_by_email: currentStaffEmail || 'unknown',
         target_tenant_id: tenantId,
         details: `تم إضافة الموظف ${data.name} بنجاح`,

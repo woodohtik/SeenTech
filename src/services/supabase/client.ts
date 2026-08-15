@@ -4,7 +4,7 @@ import { encodeOrderPayload, decodeOrderPayload, decodeOrderRow } from '../../ut
 
 let supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
 if (supabaseUrl?.endsWith('/')) {
-  supabaseUrl = supabaseUrl.slice(0, -1);
+    supabaseUrl = supabaseUrl.slice(0, -1);
 }
 let supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
 
@@ -16,45 +16,44 @@ if (isPlaceholder) {
     );
 }
 
-let currentAuthToken: string | null = null;
-
 export const supabase: SupabaseClient<any> =
     (globalThis as any).__supabase__ ??
     createClient<any>(
-        supabaseUrl || 'https://missing-supabase-url.local', 
-        supabaseAnonKey || 'missing-key', 
+        supabaseUrl || 'https://missing-supabase-url.local',
+        supabaseAnonKey || 'missing-key',
         {
             auth: {
-                persistSession: false,
-                autoRefreshToken: false,
-                detectSessionInUrl: false,
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true,
             },
             global: {
                 headers: { 'x-client-info': 'wdooh-web' },
                 fetch: async (url, options) => {
                     const headers = new Headers(options?.headers);
-                    if (currentAuthToken) {
-                        headers.set('Authorization', `Bearer ${currentAuthToken}`);
-                    }
 
                     // SECURITY: We intentionally do NOT send a client-controlled
                     // `x-tenant-id` header. Tenant isolation is derived server-side
                     // from the verified JWT (see app_current_tenant_id() in
                     // fix-rls.sql). Trusting a client header here previously allowed
                     // any user to impersonate any tenant by editing localStorage.
+                    //
+                    // The Authorization header itself is set by supabase-js from the
+                    // persisted session before this fetch override runs — no manual
+                    // token injection is needed here.
 
                     const urlStr = typeof url === 'string' ? url : (url && typeof url === 'object' && 'url' in url) ? (url as any).url : '';
                     const isOrdersRequest = urlStr.includes('/rest/v1/orders');
                     const isTenantsRequest = urlStr.includes('/rest/v1/tenants');
-                    
+
                     let modifiedOptions = options;
-                    
+
                     // Intercept writing requests (POST/PATCH/PUT) to encode raw 'history' into encoded string inside 'notes'
                     if (isOrdersRequest && options?.body && (options.method === 'POST' || options.method === 'PATCH' || options.method === 'PUT')) {
                         try {
                             const rawBody = typeof options.body === 'string' ? options.body : new TextDecoder().decode(options.body as any);
                             let parsedBody = JSON.parse(rawBody);
-                            
+
                             // If PATCH or PUT, dynamically retrieve existing order to merge virtual columns and prevent data loss
                             if (options.method === 'PATCH' || options.method === 'PUT') {
                                 let orderId = parsedBody.id;
@@ -64,7 +63,7 @@ export const supabase: SupabaseClient<any> =
                                         orderId = match[1];
                                     }
                                 }
-                                
+
                                 if (orderId) {
                                     const baseUrl = urlStr.split('?')[0];
                                     const fetchUrl = `${baseUrl}?id=eq.${orderId}`;
@@ -95,7 +94,7 @@ export const supabase: SupabaseClient<any> =
                                     }
                                 }
                             }
-                            
+
                             const encodedBody = encodeOrderPayload(parsedBody);
                             modifiedOptions = {
                                 ...options,
@@ -105,36 +104,9 @@ export const supabase: SupabaseClient<any> =
                             console.error('[Supabase Fetch Interceptor] Failed to encode orders request body:', err);
                         }
                     }
-                    
-                    const executeFetch = async (): Promise<Response> => {
-                        let res = await fetch(url, { ...modifiedOptions, headers });
-                        if (res.status === 401) {
-                            try {
-                                const clonedRes = res.clone();
-                                const text = await clonedRes.text();
-                                if (text.includes('JWT expired') || text.includes('PGRST303')) {
-                                    console.warn('[Supabase Fetch Interceptor] JWT expired. Attempting to refresh token...');
-                                    const { auth } = await import('../../lib/firebase');
-                                    if (auth && auth.currentUser) {
-                                        const newToken = await auth.currentUser.getIdToken(true);
-                                        currentAuthToken = newToken;
-                                        
-                                        const newHeaders = new Headers(modifiedOptions?.headers);
-                                        newHeaders.set('Authorization', `Bearer ${newToken}`);
-                                        
-                                        console.log('[Supabase Fetch Interceptor] Token refreshed successfully. Retrying request...');
-                                        res = await fetch(url, { ...modifiedOptions, headers: newHeaders });
-                                    }
-                                }
-                            } catch (refreshErr) {
-                                console.error('[Supabase Fetch Interceptor] Failed to auto-refresh token:', refreshErr);
-                            }
-                        }
-                        return res;
-                    };
 
-                    const responsePromise = executeFetch();
-                    
+                    const responsePromise = fetch(url, { ...modifiedOptions, headers });
+
                     // Intercept fetched requests to decode 'history' back from 'notes'
                     if (isOrdersRequest) {
                         return responsePromise.then(async (res) => {
@@ -167,7 +139,7 @@ export const supabase: SupabaseClient<any> =
                                     const text = await clonedRes.text();
                                     if (!text) return res;
                                     let parsed = JSON.parse(text);
-                                    
+
                                     const mapTenantRow = (row: any) => {
                                         if (row && row.legacy_id && row.legacy_id.startsWith('{')) {
                                             try {
@@ -201,7 +173,7 @@ export const supabase: SupabaseClient<any> =
                             return res;
                         });
                     }
-                    
+
                     return responsePromise;
                 }
             },
@@ -210,13 +182,4 @@ export const supabase: SupabaseClient<any> =
 
 if (import.meta.env.DEV) {
     globalThis.__supabase__ = supabase;
-}
-
-/**
- * Attaches a Firebase ID token to outgoing Supabase requests so RLS policies
- * can read custom claims (tenant_id, role). Call this from AuthContext after
- * every Firebase token refresh. Pass `null` to clear.
- */
-export function setSupabaseAuthToken(token: string | null): void {
-    currentAuthToken = token;
 }

@@ -324,6 +324,48 @@ app.post("/api/saas/complete-temp-password", authenticate, async (req: any, res)
   }
 });
 
+// Creates a Supabase Auth account for a new staff/team member. This must be
+// server-side: supabaseAdmin.auth.admin.createUser() requires the
+// service-role key, which must never reach the browser. Replaces the old
+// client-side "spin up a secondary Firebase app" trick used by
+// SaaSTeamManagement.tsx / AddEmployeeModal.tsx / Staff.tsx.
+app.post("/api/staff/create-account", authenticate, authorize(['super_admin', 'owner', 'admin', 'manager']), async (req: any, res) => {
+  try {
+    const { email, password, name } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'email and password are required' });
+    }
+
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+    const normalizedEmail = String(email).toLowerCase();
+
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
+      email: normalizedEmail,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: name || '' },
+    });
+
+    if (error) {
+      const alreadyRegistered = /already been registered|already registered/i.test(error.message || '');
+      if (alreadyRegistered) {
+        const { data: existing } = await supabaseAdmin.auth.admin.listUsers();
+        const match = existing?.users.find((u: any) => u.email?.toLowerCase() === normalizedEmail);
+        if (match) {
+          return res.json({ uid: match.id, alreadyExisted: true });
+        }
+        return res.status(409).json({ error: 'email_already_in_use_no_match' });
+      }
+      return res.status(400).json({ error: error.message });
+    }
+
+    res.json({ uid: data.user!.id, alreadyExisted: false });
+  } catch (err: any) {
+    console.error("Error creating staff account:", err);
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
+});
+
 // Example Protected Route: Only accessible by Super Admin
 app.get("/api/admin/stats", authenticate, authorize(['super_admin']), (req, res) => {
   res.json({

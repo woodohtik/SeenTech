@@ -44,7 +44,7 @@ import {
   Check
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
-import { auth, handleFirestoreError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
+import { handleFirestoreError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
 import { Order, Customer, OrderStatus, OrderHistory, InventoryItem, PaymentMethod, OrderItem, Staff, Tenant, Measurements } from '../types';
 import { cn, generateOrderNumber } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
@@ -58,6 +58,7 @@ import { usePermissions } from '../hooks/usePermissions';
 import { useTranslation } from 'react-i18next';
 import DateTimeDisplay from './DateTimeDisplay';
 import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { orderSchema, customerSchema } from '../lib/validations';
@@ -199,6 +200,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const [tenantStrategy, setTenantStrategy] = useState<'centralized' | 'decentralized'>('centralized');
   const [searchParams] = useSearchParams();
   const { currentStaff } = useStaff();
+  const { user: currentAuthUser } = useAuth();
   const { hasPermission, checkPermission } = usePermissions(currentStaff);
 
   const canCreate = hasPermission('orders.create');
@@ -921,7 +923,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       status: 'measurements_taken',
       updatedAt: new Date().toISOString(),
       updatedBy: currentStaff?.name || t('common.owner'),
-      updatedByUid: currentStaff?.id || auth.currentUser?.uid,
+      updatedByUid: currentStaff?.id || currentAuthUser?.id,
       notes: t('orders.order_created_note')
     };
 
@@ -1071,7 +1073,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         status,
         updatedAt: new Date().toISOString(),
         updatedBy: currentStaff?.name || t('common.roles.owner'),
-        updatedByUid: currentStaff?.id || auth.currentUser?.uid,
+        updatedByUid: currentStaff?.id || currentAuthUser?.id,
         notes: notes || t('orders.status_change_note', { status: t(STATUS_CONFIG[status].labelKey) })
       };
 
@@ -1111,7 +1113,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         status,
         updatedAt: new Date().toISOString(),
         updatedBy: currentStaff?.name || t('common.owner'),
-        updatedByUid: currentStaff?.id || auth.currentUser?.uid,
+        updatedByUid: currentStaff?.id || currentAuthUser?.id,
         notes: t('orders.order_delivered_closed_note')
       };
 
@@ -1285,7 +1287,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           status: order.status,
           updatedAt: new Date().toISOString(),
           updatedBy: currentStaff?.name || t('common.roles.owner'),
-          updatedByUid: currentStaff?.id || auth.currentUser?.uid,
+          updatedByUid: currentStaff?.id || currentAuthUser?.id,
           notes: t('orders.payment_note', { amount: payAmount, method: t(`common.payment_methods.${payMethod}`, payMethod) })
         };
 
@@ -1669,7 +1671,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           status: order.status,
           updatedAt: new Date().toISOString(),
           updatedBy: currentStaff?.name || t('common.roles.owner'),
-          updatedByUid: currentStaff?.id || auth.currentUser?.uid,
+          updatedByUid: currentStaff?.id || currentAuthUser?.id,
           notes: t('orders.payment_completed_note', { amount, method: t(`common.payment_methods.${method}`, method), remaining: newRemainingAmount })
         };
 
@@ -1690,7 +1692,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             status: pendingStatusUpdate.status,
             updatedAt: new Date().toISOString(),
             updatedBy: currentStaff?.name || t('common.owner'),
-            updatedByUid: currentStaff?.id || auth.currentUser?.uid,
+            updatedByUid: currentStaff?.id || currentAuthUser?.id,
             notes: t('orders.remaining_paid_delivered_note')
           };
 

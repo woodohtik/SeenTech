@@ -46,7 +46,8 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase/client";
-import { auth, handleFirestoreError, OperationType } from "../../lib/firebase";
+import { handleFirestoreError, OperationType } from "../../lib/firebase";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   InventoryItem,
   InventoryVariant,
@@ -2321,6 +2322,7 @@ const StockTransferModal = ({
   const router = useRouter();
   const { t } = useTranslation();
   const { error: toastError, success: toastSuccess, handleError } = useToast();
+  const { user: currentAuthUser } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     fromBranchId: "",
@@ -2370,8 +2372,8 @@ const StockTransferModal = ({
         from_branch_id: formData.fromBranchId,
         to_branch_id: formData.toBranchId,
         status: "pending",
-        requested_by: auth.currentUser?.uid || null,
-        requested_by_name: auth.currentUser?.displayName || "Staff",
+        requested_by: currentAuthUser?.id || null,
+        requested_by_name: currentAuthUser?.user_metadata?.full_name || "Staff",
         tenant_id: tenantId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

@@ -7,7 +7,7 @@ import { hashPin } from '../services/staffService';
 import { cn } from '../lib/utils';
 import { AuditLog } from '../types';
 import { logEmployeeAction } from '../services/employeeAuditService';
-import { auth as firebaseAuth } from '../lib/firebase';
+import { useAuth } from '../contexts/AuthContext';
 import { useDirection } from '../lib/direction';
 
 interface ForcePinSetupProps {
@@ -18,6 +18,7 @@ interface ForcePinSetupProps {
 export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProps) {
   const { t, dir } = useDirection();
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const [enablePin, setEnablePin] = useState(true);
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
@@ -61,14 +62,13 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
       
       if (tenantError) throw tenantError;
 
-      const currentUser = firebaseAuth.currentUser;
-      if (!currentUser) throw new Error("No authenticated user found in Firebase");
+      if (!currentUser) throw new Error("No authenticated user found");
 
       // Check if this user already has a staff record
       const { data: existingStaff, error: existingStaffError } = await supabase
         .from('staff')
         .select('*')
-        .eq('uid', currentUser.uid)
+        .eq('uid', currentUser.id)
         .maybeSingle();
 
       if (existingStaffError) throw existingStaffError;
@@ -108,10 +108,10 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
         const { data: newStaff, error: insertError } = await supabase
           .from('staff')
           .insert({
-            uid: currentUser.uid,
-            name: currentUser.displayName || tenantData?.name || 'موظف جديد',
+            uid: currentUser.id,
+            name: currentUser.user_metadata?.full_name || tenantData?.name || 'موظف جديد',
             email: currentUser.email || tenantData?.owner_email || '',
-            phone: currentUser.phoneNumber || tenantData?.phone || '',
+            phone: currentUser.phone || tenantData?.phone || '',
             role: role,
             status: 'active',
             pin_hash: hashedPin,

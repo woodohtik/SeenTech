@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase/client';
 import { deleteTestDataForTenant } from '../services/trialService';
-import { auth } from '../lib/firebase';
-import { 
+import { useAuth } from '../contexts/AuthContext';
+import {
   Settings, 
   Globe, 
   Database, 
@@ -29,6 +29,7 @@ import { isRtlLang } from '../lib/direction';
 export default function SaaSSystemSettings() {
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
+  const { user: currentAuthUser } = useAuth();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [selectedTenantId, setSelectedTenantId] = useState<string>('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -104,7 +105,7 @@ export default function SaaSSystemSettings() {
       const { data: saasUserData } = await supabase
         .from('saas_users')
         .select('*')
-        .eq('uid', auth?.currentUser?.uid)
+        .eq('uid', currentAuthUser?.id)
         .maybeSingle();
       
       if (saasUserData) {
@@ -118,8 +119,8 @@ export default function SaaSSystemSettings() {
     try {
       await supabase.from('saas_security_logs').insert({
         action,
-        user_id: auth?.currentUser?.uid,
-        user_email: auth?.currentUser?.email,
+        user_id: currentAuthUser?.id,
+        user_email: currentAuthUser?.email,
         target_tenant_id: targetTenantId,
         details,
         type: action.includes('wipe') ? 'deletion' : 'update',
@@ -139,11 +140,11 @@ export default function SaaSSystemSettings() {
           key: 'branding',
           value: brandingSettings,
           updated_at: new Date().toISOString(),
-          updated_by: auth?.currentUser?.uid
+          updated_by: currentAuthUser?.id
         }, { onConflict: 'key' });
-      
+
       if (error) throw error;
-      
+
       alert(t('saas.branding_saved_success'));
       await logAuditAction('update_branding', `Updated branding to ${brandingSettings.companyName}`);
     } catch (error) {
@@ -163,11 +164,11 @@ export default function SaaSSystemSettings() {
           key: 'platform',
           value: platformSettings,
           updated_at: new Date().toISOString(),
-          updated_by: auth?.currentUser?.uid
+          updated_by: currentAuthUser?.id
         }, { onConflict: 'key' });
-      
+
       if (error) throw error;
-      
+
       alert(t('saas.platform_settings_saved_success'));
       await logAuditAction('update_platform', `Updated platform settings. Trial: ${platformSettings.trialDays}`);
     } catch (error) {

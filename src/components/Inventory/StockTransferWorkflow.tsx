@@ -18,7 +18,8 @@ import {
   X
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase/client';
-import { auth, handleError, OperationType } from '../../lib/firebase';
+import { handleError, OperationType } from '../../lib/firebase';
+import { useAuth } from '../../contexts/AuthContext';
 import { StockTransfer, Branch, BranchInventory, StockLedger, InventoryItem } from '../../types';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
@@ -33,6 +34,7 @@ interface StockTransferWorkflowProps {
 
 const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId }) => {
   const { t } = useTranslation();
+  const { user: currentAuthUser } = useAuth();
   const [transfers, setTransfers] = useState<StockTransfer[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -167,7 +169,7 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
         .from('stock_transfers')
         .update({
           status: 'in_transit',
-          shipped_by: auth.currentUser?.uid,
+          shipped_by: currentAuthUser?.id,
           shipped_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -217,7 +219,7 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
         .from('stock_transfers')
         .update({
           status: 'completed',
-          received_by: auth.currentUser?.uid,
+          received_by: currentAuthUser?.id,
           received_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           remarks: remarks || null
