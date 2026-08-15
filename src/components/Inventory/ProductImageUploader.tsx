@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { uploadImageToSupabase } from '../../lib/supabase/storage';
+import { isAllowedImageFile } from '../../lib/imageValidation';
 import { cn } from '../../lib/utils';
 import { useTranslation } from 'react-i18next';
 
@@ -39,7 +40,7 @@ export default function ProductImageUploader({
     if (!file) return;
 
     // Validate type
-    if (!file.type.startsWith('image/')) {
+    if (!file.type.startsWith('image/') || !(await isAllowedImageFile(file))) {
       setError(t('inventory.select_valid_image'));
       return;
     }

@@ -18,8 +18,6 @@ import type { UserRole, Staff as StaffType } from '../types';
 type UserRow  = Database['public']['Tables']['users']['Row'];
 type StaffRow = Database['public']['Tables']['staff']['Row'];
 
-const SUPER_ADMIN_EMAIL = 'nomansa2566512@gmail.com';
-
 /**
  * The combined user record surfaced to the UI.
  * - Base fields come from `users` (Supabase Auth user id = users.id).
@@ -102,11 +100,11 @@ async function fetchDbUser(uid: string, email?: string): Promise<DbUser | null> 
 
     let actualRole = (staffRow as StaffRow)?.role ?? null;
 
-    // SaaS Role takes precedence over tenant staff roles
-    const checkEmail = email || userRow.email;
-    if (checkEmail?.toLowerCase().trim() === SUPER_ADMIN_EMAIL) {
-        actualRole = 'super_admin';
-    } else if (saasRow) {
+    // SaaS Role takes precedence over tenant staff roles. super_admin is
+    // resolved ONLY from an actual saas_users row — never from an email
+    // string match, which would let anyone who registers with that literal
+    // address self-grant platform-wide admin.
+    if (saasRow) {
         actualRole = saasRow.role;
     } else if (staffRow && (staffRow as StaffRow).role_id) {
         const { data: roleRow } = await supabase
@@ -180,7 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             const next = await fetchDbUser(uid, email);
             setDbUser(next);
-            const isSuperAdmin = next?.role === 'super_admin' || email === SUPER_ADMIN_EMAIL;
+            const isSuperAdmin = next?.role === 'super_admin';
             if (!isSuperAdmin) {
                 localStorage.removeItem('impersonatedTenantId');
                 setImpersonationTenantId(null);
@@ -206,39 +204,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 await supabase.from('users').update({ photo_url: currentSessionId }).eq('id', uid);
             }
 
-            // 1. Super Admin detection
-            if (email === SUPER_ADMIN_EMAIL) {
-                await supabase.from('users').upsert({
-                    id: uid,
-                    email,
-                    display_name: user.user_metadata?.full_name || 'Super Admin'
-                }, { onConflict: 'id' });
+            // Super admin is resolved below via the normal saas_users lookup
+            // (step 3) — never via an email-string match. A hardcoded-email
+            // auto-provisioning path used to live here, self-granting
+            // super_admin (and writing a saas_users row) to whoever merely
+            // registered with that literal address; removed as a critical
+            // privilege-escalation risk. The legitimate super admin account
+            // must already have (or be manually given) a saas_users row —
+            // see supabase/migrations for the one-time seed script.
 
-                supabase.from('saas_users').upsert({
-                    uid,
-                    email,
-                    name: user.user_metadata?.full_name || 'Super Admin',
-                    role: 'super_admin',
-                    is_active: true
-                }, { onConflict: 'uid' }).then(({ error }) => {
-                    if (error) console.error('[AuthContext] Error auto-provisioning super admin:', error);
-                });
-
-                setAppState({
-                    isApproved: true,
-                    userRole: 'super_admin' as UserRole,
-                    tenantId: 'super_admin',
-                    onboardingStep: 4,
-                    hasStaffWithPin: true,
-                    currentUserStaff: null,
-                });
-                localStorage.setItem('user_role', 'super_admin');
-                localStorage.setItem('setup_complete', 'true');
-                setLoading(false);
-                return;
-            }
-
-            // 2. Resolve profile: staff -> saas_users -> tailor_requests
+            // 1. Resolve profile: staff -> saas_users -> tailor_requests
             const [staffRes, requestRes] = await Promise.all([
                 supabase.from('staff').select('*, tenant:tenants(*)').eq('uid', uid).maybeSingle(),
                 supabase.from('tailor_requests').select('*').eq('uid', uid).maybeSingle()

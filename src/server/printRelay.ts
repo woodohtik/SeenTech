@@ -48,6 +48,7 @@
 import type { Express, Request, Response } from 'express';
 import crypto from 'crypto';
 import net from 'net';
+import { authenticate } from './middleware/authMiddleware.ts';
 
 /* ============================ الأنواع ============================ */
 
@@ -667,7 +668,18 @@ export function registerPrintRelay(app: Express): void {
      شبكة المتجر. نُبقيه لأنه أسرع مسار متاح في التشغيل المحلي.
      ====================================================================== */
 
-  app.post('/api/print/raw', async (req: Request, res: Response) => {
+  // Printer-only port range for the direct-TCP fallback below — these two
+  // routes open a raw socket to a caller-supplied private-network host/port
+  // with no print-relay pairing (that's the point: they're the "no relay
+  // agent installed, server itself is on the store's LAN" fallback), so they
+  // never had ANY authentication at all. Since the actual caller is always
+  // this app's own POS frontend, gate them behind the same `authenticate`
+  // middleware every other tenant-data route uses, rather than the
+  // relay-specific station/clientToken pairing (which legitimately doesn't
+  // exist yet for a station using this direct-TCP fallback).
+  const ALLOWED_RAW_PORTS = new Set([9100, 9101, 9102, 9103, 515, 631]);
+
+  app.post('/api/print/raw', authenticate, async (req: Request, res: Response) => {
     try {
       const { host, port, dataBase64 } = req.body || {};
 
@@ -682,7 +694,7 @@ export function registerPrintRelay(app: Express): void {
       }
 
       const tcpPort = Number(port) || 9100;
-      if (tcpPort < 1 || tcpPort > 65535) {
+      if (!ALLOWED_RAW_PORTS.has(tcpPort)) {
         return res.status(400).json({ ok: false, error: 'رقم المنفذ غير صالح.' });
       }
 
@@ -699,7 +711,7 @@ export function registerPrintRelay(app: Express): void {
     }
   });
 
-  app.post('/api/print/probe', (req: Request, res: Response) => {
+  app.post('/api/print/probe', authenticate, (req: Request, res: Response) => {
     const { host, port } = req.body || {};
 
     if (!isPrivateHost(host)) {
@@ -710,6 +722,9 @@ export function registerPrintRelay(app: Express): void {
     }
 
     const tcpPort = Number(port) || 9100;
+    if (!ALLOWED_RAW_PORTS.has(tcpPort)) {
+      return res.status(400).json({ ok: false, error: 'رقم المنفذ غير صالح.' });
+    }
     const socket = new net.Socket();
     let settled = false;
 

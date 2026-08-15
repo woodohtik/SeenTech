@@ -31,8 +31,6 @@ import { getAuthErrorMessage } from '../utils/authErrorUtils';
 
 type ViewMode = 'login' | 'register' | 'pending' | 'forgot-password';
 
-const SUPER_ADMIN_EMAIL = 'nomansa2566512@gmail.com';
-
 export default function Login() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -132,20 +130,9 @@ export default function Login() {
         const email = authUser.email || '';
         const displayName = authUser.user_metadata?.full_name || authUser.user_metadata?.name || '';
 
-        if (email.toLowerCase() === SUPER_ADMIN_EMAIL) {
-          await supabase.from('users').upsert({
-            id: uid, email, display_name: displayName || 'Super Admin'
-          }, { onConflict: 'id' });
-          await supabase.from('saas_users').upsert({
-            uid, email, name: displayName || 'Super Admin', role: 'super_admin', is_active: true
-          }, { onConflict: 'uid' });
-
-          sessionStorage.setItem('saas_2fa_verified', 'true');
-          localStorage.removeItem('is_registering');
-          navigate('/admin/dashboard', { replace: true });
-          return;
-        }
-
+        // SECURITY: super_admin/SaaS-staff status is never granted here from
+        // an email match — it's resolved below purely from existing
+        // saas_users/staff/tenant rows, exactly like any other account.
         const { error: gUserError } = await supabase.from('users').upsert({
           id: uid,
           email,
@@ -157,11 +144,19 @@ export default function Login() {
           throw new Error(t('login.errors.rls_permission_issue'));
         }
 
-        const [tenantRes, requestRes, staffRes] = await Promise.all([
+        const [tenantRes, requestRes, staffRes, saasRes] = await Promise.all([
           supabase.from('tenants').select('*').eq('owner_email', email).maybeSingle(),
           supabase.from('tailor_requests').select('*').eq('uid', uid).maybeSingle(),
-          supabase.from('staff').select('*').or(`uid.eq.${uid},email.eq.${email}`).maybeSingle()
+          supabase.from('staff').select('*').or(`uid.eq.${uid},email.eq.${email}`).maybeSingle(),
+          supabase.from('saas_users').select('role').eq('uid', uid).maybeSingle()
         ]);
+
+        if (saasRes.data) {
+          localStorage.removeItem('is_registering');
+          (window as any).refreshAuthData?.();
+          navigate('/admin/dashboard', { replace: true });
+          return;
+        }
 
         const hasAccount = tenantRes.data || requestRes.data || staffRes.data;
 
@@ -248,9 +243,7 @@ export default function Login() {
     try {
       console.log("[DEBUG] Starting Login for:", loginId);
       let emailToUse = loginId;
-      if (loginId.toLowerCase() === SUPER_ADMIN_EMAIL) {
-        emailToUse = loginId;
-      } else if (!loginId.includes('@')) {
+      if (!loginId.includes('@')) {
         const formattedPhone = formatSaudiPhone(loginId);
         console.log("[DEBUG] Phone login detected, formatting:", formattedPhone);
 
@@ -275,12 +268,7 @@ export default function Login() {
             if (staffSnap) {
               emailToUse = staffSnap.email;
             } else {
-              // Check if it's the super admin phone (optional but good for recovery)
-              if (loginId.includes('2566512')) { // Part of the email handle
-                 emailToUse = SUPER_ADMIN_EMAIL;
-              } else {
-                 throw new Error(t('login.errors.phone_not_registered'));
-              }
+              throw new Error(t('login.errors.phone_not_registered'));
             }
           }
         } catch (fetchErr: any) {
@@ -296,9 +284,6 @@ export default function Login() {
       if (signInErr) throw signInErr;
 
       console.log("[DEBUG] Supabase Auth Success - Redirecting via App.tsx state change");
-      if (emailToUse.toLowerCase() === SUPER_ADMIN_EMAIL) {
-        sessionStorage.setItem('saas_2fa_verified', 'true');
-      }
 
       if (rememberMe) {
         localStorage.setItem('rememberedUser', loginId);

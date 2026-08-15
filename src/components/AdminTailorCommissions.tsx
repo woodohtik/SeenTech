@@ -27,7 +27,9 @@ export default function AdminTailorCommissions({ tenantId }: AdminTailorCommissi
       setLoading(true);
       const { data, error } = await supabase
         .from('staff')
-        .select('*')
+        // pin_hash intentionally excluded — never expose bcrypt PIN hashes
+        // in a multi-row listing (see security note in Staff.tsx).
+        .select('id, name, email, phone, role, status, tenant_id, commission_type, commission_value, created_at')
         .eq('tenant_id', tenantId)
         .eq('role', 'tailor')
         .order('name');

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Lock, Delete, Shield, AlertCircle, Loader2 } from 'lucide-react';
 import { Staff } from '../types';
-import bcrypt from 'bcryptjs';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { useDirection } from '../lib/direction';
@@ -23,49 +22,6 @@ export default function LockScreen({ currentStaff, onUnlock, tenantId, onUnlockW
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [activeKey, setActiveKey] = useState<string | null>(null);
-  const [staffList, setStaffList] = useState<Staff[]>([]);
-
-  useEffect(() => {
-    if (!tenantId) return;
-    const fetchStaff = async () => {
-      try {
-        const [{ data: staffData }, { data: rolesData }] = await Promise.all([
-          supabase
-            .from('staff')
-            .select('*')
-            .eq('tenant_id', tenantId)
-            .eq('status', 'active'),
-          supabase
-            .from('roles')
-            .select('*')
-            .or(`tenant_id.is.null,tenant_id.eq.${tenantId}`)
-        ]);
-        
-        if (staffData) {
-          const rolesMap = new Map(rolesData?.map(r => [r.id, r.role_key]) || []);
-          const formattedStaff = staffData.map(d => {
-            const actualRole = d.role_id ? (rolesMap.get(d.role_id) || d.role) : d.role;
-            return {
-              ...d,
-              role: actualRole,
-              tenantId: d.tenant_id,
-              branchId: d.branch_id,
-              roleId: d.role_id,
-              pin: d.pin_hash,
-              mustChangePin: d.must_change_pin,
-              isTest: d.is_test,
-              createdAt: d.created_at,
-              updatedAt: d.updated_at
-            } as Staff;
-          });
-          setStaffList(formattedStaff);
-        }
-      } catch (err) {
-        console.error('[LockScreen] Error fetching staff list:', err);
-      }
-    };
-    fetchStaff();
-  }, [tenantId]);
 
   const handleNumberClick = (num: string) => {
     if (pin.length < 4) {
@@ -108,36 +64,20 @@ export default function LockScreen({ currentStaff, onUnlock, tenantId, onUnlockW
         setIsVerifying(true);
         setError(null);
         try {
-          let matchedStaff: Staff | null = null;
-          
-          // Always check currentStaff FIRST to avoid PIN collision with another staff (e.g. Owner)
-          if (currentStaff && currentStaff.pin) {
-            try {
-              const isMatch = await bcrypt.compare(pin, currentStaff.pin);
-              if (isMatch) {
-                matchedStaff = currentStaff as Staff;
-              }
-            } catch (e) {
-              // Ignore and proceed
-            }
-          }
-
-          if (!matchedStaff && staffList.length > 0) {
-            // Find possible matches in the rest of the staff
-            const checkPromises = staffList.map(async s => {
-              if (!s.pin) return null;
-              if (currentStaff && s.id === currentStaff.id) return null; // already checked
-              try {
-                const isMatch = await bcrypt.compare(pin, s.pin);
-                return isMatch ? s : null;
-              } catch (e) {
-                return null;
-              }
-            });
-
-            const checkResults = await Promise.all(checkPromises);
-            matchedStaff = checkResults.find(s => s !== null) as Staff | null;
-          }
+          // Verified server-side against every active staff member's bcrypt
+          // hash for this tenant — never fetched to the browser (see
+          // POST /api/staff/verify-pin).
+          const { data: { session } } = await supabase.auth.getSession();
+          const res = await fetch('/api/staff/verify-pin', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session?.access_token || ''}`,
+            },
+            body: JSON.stringify({ pin }),
+          });
+          const payload = await res.json().catch(() => null);
+          const matchedStaff: Staff | null = payload?.matched ? (payload.staff as Staff) : null;
 
           if (matchedStaff) {
             if (currentStaff && matchedStaff.id === currentStaff.id) {
@@ -177,7 +117,7 @@ export default function LockScreen({ currentStaff, onUnlock, tenantId, onUnlockW
       };
       verify();
     }
-  }, [pin, staffList, currentStaff, onUnlock, onUnlockWithStaff, tenantId, t]);
+  }, [pin, currentStaff, onUnlock, onUnlockWithStaff, tenantId, t]);
 
   return (
     <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/95 backdrop-blur-2xl text-white overflow-y-auto p-4 select-none" dir={dir}>

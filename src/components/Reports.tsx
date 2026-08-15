@@ -108,7 +108,9 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           supabase.from('orders').select('*').eq('tenant_id', tenantId).order('order_date', { ascending: false }),
           supabase.from('customers').select('*').eq('tenant_id', tenantId),
           supabase.from('inventory_items').select('*').eq('tenant_id', tenantId),
-          supabase.from('staff').select('*').eq('tenant_id', tenantId),
+          // pin_hash intentionally excluded — never expose bcrypt PIN hashes
+          // in a multi-row listing (see security note in Staff.tsx).
+          supabase.from('staff').select('id, tenant_id, uid, name, email, phone, role, role_id, branch_id, status, must_change_pin, is_test, commission_type, commission_value, has_seen_onboarding, created_at, updated_at').eq('tenant_id', tenantId),
           supabase.from('roles').select('*').or(`tenant_id.is.null,tenant_id.eq.${tenantId}`)
         ]);
         

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { UploadCloud, X, Loader2 } from 'lucide-react';
 import { compressImage } from '../lib/imageOptimization';
 import { uploadImageToSupabase } from '../lib/supabase/storage';
+import { isAllowedImageFile } from '../lib/imageValidation';
 
 interface ImageUploadProps {
   tenantId: string;
@@ -45,7 +46,7 @@ export default function ImageUpload({ tenantId, onImageUploaded, onImageRemoved,
   };
 
   const processAndUpload = async (file: File) => {
-    if (!file.type.startsWith('image/')) {
+    if (!file.type.startsWith('image/') || !(await isAllowedImageFile(file))) {
       setError(t('inventory.invalid_image_file'));
       return;
     }

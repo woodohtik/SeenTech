@@ -4,7 +4,6 @@ import { Shield, Delete, User, Users, Lock, AlertCircle, LogOut, CheckCircle2, L
 import { supabase } from '../lib/supabase/client';
 import { Staff } from '../types';
 import { cn } from '../lib/utils';
-import bcrypt from 'bcryptjs';
 import { hashPin } from '../services/staffService';
 import { useDirection } from '../lib/direction';
 import { logEmployeeAction } from '../services/employeeAuditService';
@@ -19,7 +18,6 @@ interface PinLoginProps {
 export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLoginProps) {
   const { t, dir } = useDirection();
   const [pin, setPin] = useState('');
-  const [staffList, setStaffList] = useState<Staff[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [mustChangePin, setMustChangePin] = useState<Staff | null>(null);
@@ -27,42 +25,6 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
   const [confirmPin, setConfirmPin] = useState('');
   const [isChanging, setIsChanging] = useState(false);
   const [activeKey, setActiveKey] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchStaff = async () => {
-      const [{ data: staffData }, { data: rolesData }] = await Promise.all([
-        supabase
-          .from('staff')
-          .select('*')
-          .eq('tenant_id', tenantId)
-          .eq('status', 'active'),
-        supabase
-          .from('roles')
-          .select('*')
-          .or(`tenant_id.is.null,tenant_id.eq.${tenantId}`)
-      ]);
-      
-      if (staffData) {
-        const rolesMap = new Map(rolesData?.map(r => [r.id, r.role_key]) || []);
-        setStaffList(staffData.map(d => {
-          const actualRole = d.role_id ? (rolesMap.get(d.role_id) || d.role) : d.role;
-          return {
-            ...d,
-            role: actualRole,
-            tenantId: d.tenant_id,
-            branchId: d.branch_id,
-            roleId: d.role_id,
-            pin: d.pin_hash,
-            mustChangePin: d.must_change_pin,
-            isTest: d.is_test,
-            createdAt: d.created_at,
-            updatedAt: d.updated_at
-          } as Staff;
-        }));
-      }
-    };
-    fetchStaff();
-  }, [tenantId]);
 
   const handleNumberClick = (num: string) => {
     if (pin.length < 4) {
@@ -107,37 +69,23 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
     setIsVerifying(true);
     setError(null);
     try {
-      let matchedStaff: Staff | null = null;
-      
-      // 1. Prioritize currentUserStaff (if logging in from own device)
-      if (currentUserStaff && currentUserStaff.pin) {
-        try {
-          const isMatch = await bcrypt.compare(pin, currentUserStaff.pin);
-          if (isMatch) {
-            matchedStaff = currentUserStaff as Staff;
-          }
-        } catch (e) {
-          // ignore
-        }
-      }
+      // The PIN is verified server-side against every active staff member's
+      // bcrypt hash for this tenant — never fetched to the browser, which
+      // used to let any staff member read a coworker's/owner's pin_hash from
+      // the network response and brute-force the tiny 4-digit keyspace
+      // offline.
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/staff/verify-pin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token || ''}`,
+        },
+        body: JSON.stringify({ pin }),
+      });
+      const payload = await res.json().catch(() => null);
+      const matchedStaff: Staff | null = payload?.matched ? (payload.staff as Staff) : null;
 
-      // 2. Check all staff if not matched yet
-      if (!matchedStaff) {
-        const checkPromises = staffList.map(async s => {
-          if (!s.pin) return null;
-          if (currentUserStaff && s.id === currentUserStaff.id) return null; // already checked
-          try {
-            const isMatch = await bcrypt.compare(pin, s.pin);
-            return isMatch ? s : null;
-          } catch (e) {
-            return null;
-          }
-        });
-
-        const checkResults = await Promise.all(checkPromises);
-        matchedStaff = checkResults.find(s => s !== null) as Staff | null;
-      }
-      
       if (matchedStaff) {
         if (matchedStaff.mustChangePin) {
           setMustChangePin(matchedStaff);
@@ -198,7 +146,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
         (window as any).refreshAuthData();
       }
 
-      onLogin({ ...mustChangePin, pin: hashedPin, mustChangePin: false });
+      onLogin({ ...mustChangePin, pin: undefined, mustChangePin: false });
     } catch (err) {
       setError(t('login.pin_update_failed'));
     } finally {

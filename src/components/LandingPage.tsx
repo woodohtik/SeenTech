@@ -1,13 +1,20 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import htmlContent from './LandingPage.html?raw';
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (event.data?.type === 'NAVIGATE') {
+      // SECURITY: only accept NAVIGATE messages from this exact iframe
+      // (srcDoc content shares the parent's origin, so an origin check alone
+      // wouldn't exclude other same-origin windows/iframes — pin to the
+      // specific source window too) and only ever to a relative in-app path.
+      if (event.origin !== window.location.origin) return;
+      if (event.source !== iframeRef.current?.contentWindow) return;
+      if (event.data?.type === 'NAVIGATE' && typeof event.data.path === 'string' && event.data.path.startsWith('/')) {
         navigate(event.data.path);
       }
     };
@@ -24,7 +31,7 @@ export default function LandingPage() {
           const href = link.getAttribute('href');
           if (href && href.startsWith('/')) {
             e.preventDefault();
-            window.parent.postMessage({ type: 'NAVIGATE', path: href }, '*');
+            window.parent.postMessage({ type: 'NAVIGATE', path: href }, window.location.origin);
           }
         }
       });
@@ -33,6 +40,7 @@ export default function LandingPage() {
 
   return (
     <iframe
+      ref={iframeRef}
       srcDoc={modifiedHtml}
       style={{ width: '100%', height: '100vh', border: 'none', display: 'block' }}
       title="Landing Page"

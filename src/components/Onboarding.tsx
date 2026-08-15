@@ -27,6 +27,7 @@ import { useTranslation } from 'react-i18next';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
 import { uploadImageToSupabase } from '../lib/supabase/storage';
+import { isAllowedImageFile } from '../lib/imageValidation';
 import { supabase } from '../lib/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { hashPin } from '../services/staffService';
@@ -182,6 +183,15 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     // Validate file size (2MB)
     if (file.size > 2 * 1024 * 1024) {
       showError(t('onboarding.messages.logo_size_error'));
+      return;
+    }
+
+    // Validate real file content (not the spoofable browser-reported MIME
+    // type) — rejects SVG and anything else that isn't a raster image, since
+    // an SVG can carry a <script> that would execute if its public storage
+    // URL is ever opened directly.
+    if (!(await isAllowedImageFile(file))) {
+      showError(t('onboarding.messages.logo_invalid_type'));
       return;
     }
 

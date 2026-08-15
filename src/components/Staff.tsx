@@ -383,19 +383,30 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       .subscribe();
 
     const fetchStaff = async () => {
+      // SECURITY: explicitly exclude pin_hash — this list is readable by any
+      // staff member of the tenant (RLS scopes by tenant only, not role),
+      // and a leaked bcrypt hash of a 4-digit PIN is trivially
+      // brute-forceable offline. Never select('*') on `staff` for a
+      // multi-row listing.
       const { data, error } = await supabase
         .from('staff')
-        .select('*')
+        .select('id, tenant_id, uid, name, email, phone, role, role_id, branch_id, status, must_change_pin, is_test, commission_type, commission_value, has_seen_onboarding, created_at, updated_at')
         .eq('tenant_id', tenantId);
       
       if (error) {
         handleFirestoreError(error, OperationType.LIST, 'staff');
       } else {
-        const { data: rolesData } = await supabase
-          .from('roles')
-          .select('*')
-          .or(`tenant_id.is.null,tenant_id.eq.${tenantId}`);
+        const [{ data: rolesData }, { data: pinRows }] = await Promise.all([
+          supabase
+            .from('roles')
+            .select('*')
+            .or(`tenant_id.is.null,tenant_id.eq.${tenantId}`),
+          // Presence-only check (never the hash itself) so the UI can show
+          // "PIN configured" without ever fetching pin_hash values.
+          supabase.from('staff').select('id').eq('tenant_id', tenantId).not('pin_hash', 'is', null),
+        ]);
         const rolesMap = new Map(rolesData?.map(r => [r.id, r.role_key]) || []);
+        const hasPinSet = new Set((pinRows || []).map((r: any) => r.id));
 
         setStaff(data.map(d => {
           const actualRole = d.role_id ? (rolesMap.get(d.role_id) || d.role) : d.role;
@@ -405,7 +416,13 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
             tenantId: d.tenant_id,
             branchId: d.branch_id,
             roleId: d.role_id,
-            pin: d.pin_hash,
+            // SECURITY: never expose another staff member's bcrypt pin_hash
+            // to the client — this list is fetched by any staff member of
+            // the tenant (RLS scopes by tenant only, not role), and the tiny
+            // 4-digit PIN keyspace makes an exposed hash trivially
+            // brute-forceable offline. Only a has-a-PIN-set marker is needed
+            // here (every read site only checks truthiness).
+            pin: hasPinSet.has(d.id) ? 'set' : undefined,
             mustChangePin: d.must_change_pin,
             isTest: d.is_test,
             createdAt: d.created_at,

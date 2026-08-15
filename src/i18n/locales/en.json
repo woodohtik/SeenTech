@@ -1551,6 +1551,7 @@
     "messages": {
       "audit_log": "Initial system setup for {{shopName}} with customer ID {{customerId}}",
       "error": "An error occurred during setup. Please try again.",
+      "logo_invalid_type": "Unsupported file format. Please upload a JPG, PNG, GIF, or WebP image only",
       "logo_size_error": "File size must be less than 2MB",
       "logo_upload_error": "Logo upload failed. Please try again.",
       "pending_review": "Request Under Review",

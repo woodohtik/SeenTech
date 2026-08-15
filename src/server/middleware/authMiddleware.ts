@@ -54,7 +54,10 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     const supabaseJwtSecret = process.env.SUPABASE_JWT_SECRET;
     if (supabaseJwtSecret) {
       try {
-        const payload = jwt.verify(idToken, supabaseJwtSecret) as { sub: string; email?: string };
+        const payload = jwt.verify(idToken, supabaseJwtSecret, {
+          algorithms: ['HS256'],
+          audience: 'authenticated',
+        }) as { sub: string; email?: string };
         decodedToken = { uid: payload.sub, email: payload.email };
       } catch {
         // Not a valid Supabase-issued token; fall through to the legacy path.
@@ -114,12 +117,12 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       return next();
     }
 
-    // 3. Check if it's the hardcoded super admin
-    if (decodedToken.email === "nomansa2566512@gmail.com") {
-      req.user.role = 'super_admin';
-      req.user.tenantId = 'saas_management';
-      return next();
-    }
+    // SECURITY: super_admin must come exclusively from an active saas_users
+    // row (tier 1 above). A hardcoded-email bypass used to live here —
+    // removed because it granted full platform admin to anyone who could
+    // register/authenticate with that literal email string, independent of
+    // any database row (a real risk once "Confirm email" is disabled, as
+    // this app's signup flow requires).
 
     // If no role found, they might be a new user or unauthorized
     await logSecurityEvent({

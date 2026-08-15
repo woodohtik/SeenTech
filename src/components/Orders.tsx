@@ -461,11 +461,13 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           .eq('category', 'fabric');
         setInventory(invData as InventoryItem[] || []);
 
+        // pin_hash intentionally excluded — never expose bcrypt PIN hashes
+        // in a multi-row listing (see security note in Staff.tsx).
         const { data: staffData } = await supabase
           .from('staff')
-          .select('*')
+          .select('id, tenant_id, uid, name, email, phone, role, role_id, branch_id, status, must_change_pin, is_test, commission_type, commission_value, has_seen_onboarding, created_at, updated_at')
           .eq('tenant_id', tenantId);
-        setStaff(staffData as Staff[] || []);
+        setStaff((staffData as unknown as Staff[]) || []);
 
         const { data: tenantData } = await supabase
           .from('tenants')

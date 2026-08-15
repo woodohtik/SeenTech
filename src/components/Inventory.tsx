@@ -202,10 +202,14 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
     };
 
     const fetchStaff = async () => {
+      // SECURITY: pin_hash intentionally excluded — never fetched here since
+      // it's unused, and any staff member of the tenant could otherwise read
+      // every coworker's bcrypt PIN hash (RLS scopes by tenant only, not
+      // role) and brute-force the tiny 4-digit keyspace offline.
       const [{ data: staffData, error }, { data: rolesData }] = await Promise.all([
         supabase
           .from('staff')
-          .select('*')
+          .select('id, tenant_id, uid, name, email, phone, role, role_id, branch_id, status, must_change_pin, is_test, commission_type, commission_value, has_seen_onboarding, created_at, updated_at')
           .eq('tenant_id', tenantId),
         supabase
           .from('roles')
@@ -222,7 +226,6 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
             tenantId: d.tenant_id,
             branchId: d.branch_id,
             roleId: d.role_id,
-            pin: d.pin_hash,
             mustChangePin: d.must_change_pin,
             isTest: d.is_test,
             createdAt: d.created_at,

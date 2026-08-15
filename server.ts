@@ -3,6 +3,7 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import fs from "fs";
 import dotenv from 'dotenv';
+import bcrypt from "bcryptjs";
 import { authenticate, authorize } from "./src/server/middleware/authMiddleware.ts";
 import { registerPrintRelay } from "./src/server/printRelay.ts";
 
@@ -223,6 +224,7 @@ app.post("/api/inventory-adjustments", authenticate, async (req: any, res) => {
                   quantity: update.quantity,
                   updated_at: new Date().toISOString(),
                 })
+                .eq("tenant_id", tenantId)
                 .eq("branch_id", update.branch_id)
                 .eq("item_id", update.item_id);
 
@@ -349,8 +351,16 @@ app.post("/api/staff/create-account", authenticate, authorize(['super_admin', 'o
     if (error) {
       const alreadyRegistered = /already been registered|already registered/i.test(error.message || '');
       if (alreadyRegistered) {
-        const { data: existing } = await supabaseAdmin.auth.admin.listUsers();
-        const match = existing?.users.find((u: any) => u.email?.toLowerCase() === normalizedEmail);
+        // SECURITY: do NOT use auth.admin.listUsers() here — it would let any
+        // manager/admin/owner enumerate every registered email on the whole
+        // platform (and learn other tenants'/SaaS staff's raw Auth UIDs).
+        // Only resolve via this app's own `users` mirror table, which is the
+        // same lookup the original client-side fallback used.
+        const { data: match } = await supabaseAdmin
+          .from('users')
+          .select('id')
+          .eq('email', normalizedEmail)
+          .maybeSingle();
         if (match) {
           return res.json({ uid: match.id, alreadyExisted: true });
         }
@@ -362,6 +372,78 @@ app.post("/api/staff/create-account", authenticate, authorize(['super_admin', 'o
     res.json({ uid: data.user!.id, alreadyExisted: false });
   } catch (err: any) {
     console.error("Error creating staff account:", err);
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
+});
+
+// Verifies a staff PIN server-side. This must not be done client-side:
+// the previous implementation fetched every active staff member's bcrypt
+// pin_hash to the browser (PinLogin.tsx) so it could compare locally — since
+// PINs are only 4 digits (10,000 combinations), any staff member could
+// capture a coworker's/owner's hash from the network response and brute
+// -force it offline in minutes, then log in as them. This endpoint compares
+// server-side and never returns any pin_hash to the client.
+app.post("/api/staff/verify-pin", authenticate, async (req: any, res) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      return res.status(401).json({ error: 'Unauthorized: No tenant ID found' });
+    }
+
+    const { pin, mode } = req.body;
+    if (!pin || typeof pin !== 'string') {
+      return res.status(400).json({ error: 'pin is required' });
+    }
+
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+
+    const [{ data: staffData }, { data: rolesData }] = await Promise.all([
+      supabaseAdmin.from('staff').select('*').eq('tenant_id', tenantId).eq('status', 'active'),
+      supabaseAdmin.from('roles').select('id, role_key').or(`tenant_id.is.null,tenant_id.eq.${tenantId}`),
+    ]);
+
+    const rolesMap = new Map((rolesData || []).map((r: any) => [r.id, r.role_key]));
+    let matched: any = null;
+    for (const s of staffData || []) {
+      if (!s.pin_hash) continue;
+      if (await bcrypt.compare(pin, s.pin_hash)) {
+        matched = s;
+        break;
+      }
+    }
+
+    if (mode === 'check-unique') {
+      return res.json({ isUnique: !matched });
+    }
+
+    if (!matched) {
+      return res.status(404).json({ matched: false });
+    }
+
+    const actualRole = matched.role_id ? (rolesMap.get(matched.role_id) || matched.role) : matched.role;
+    res.json({
+      matched: true,
+      staff: {
+        id: matched.id,
+        name: matched.name,
+        email: matched.email,
+        phone: matched.phone,
+        role: actualRole,
+        roleId: matched.role_id,
+        status: matched.status,
+        tenantId: matched.tenant_id,
+        branchId: matched.branch_id,
+        mustChangePin: matched.must_change_pin,
+        isTest: matched.is_test,
+        commission_type: matched.commission_type,
+        commission_value: matched.commission_value,
+        has_seen_onboarding: matched.has_seen_onboarding,
+        createdAt: matched.created_at,
+        updatedAt: matched.updated_at,
+      },
+    });
+  } catch (err: any) {
+    console.error("Error verifying staff PIN:", err);
     res.status(500).json({ error: err.message || 'Internal Server Error' });
   }
 });
