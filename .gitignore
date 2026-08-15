@@ -7,6 +7,11 @@ coverage/
 !.env.example
 firebase-applet-config.json
 firebase-blueprint.json
+firebase-credentials.json
+*service-account*.json
+*-credentials.json
+*.pem
+*.p12
 .vercel
 
 schema.sql
