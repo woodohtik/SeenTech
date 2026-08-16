@@ -4162,7 +4162,11 @@
     "title": "Open New Shift"
   },
   "setup_bar": {
+    "all_done": "Great, start working now",
     "cta": "Continue",
+    "later": "Later",
+    "next_step": "Next Step",
+    "step_done_title": "Nice work! Step completed",
     "title": "Finish setting up your account"
   },
   "staff": {

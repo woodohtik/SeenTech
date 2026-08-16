@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase/client';
 import { TOUR_CHECKLIST, type TourChecklistItem } from '../config/tourSteps';
+import { useRealtimeSync } from './useRealtimeSync';
 
 interface CompletionState {
   shop_profile: boolean;
@@ -63,6 +64,16 @@ export function useSetupChecklist(tenantId?: string | null, items: TourChecklist
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // Live-refresh whenever any of the tables the checklist depends on change,
+  // so completing a step elsewhere in the app (adding a product, a customer,
+  // a sale…) is reflected here without needing a page reload.
+  const realtimeTenantId = tenantId ?? undefined;
+  useRealtimeSync('tenants', realtimeTenantId, refresh);
+  useRealtimeSync('inventory_items', realtimeTenantId, refresh);
+  useRealtimeSync('customers', realtimeTenantId, refresh);
+  useRealtimeSync('orders', realtimeTenantId, refresh);
+  useRealtimeSync('tax_invoices', realtimeTenantId, refresh);
 
   const checklist = items;
 
