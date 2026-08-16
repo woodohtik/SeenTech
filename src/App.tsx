@@ -161,6 +161,20 @@ function AppContent() {
     loading, conflictUser, resolveConflict, rejectConflict, impersonationTenantId, logout, refreshDbUser,
   } = useAuth();
 
+  // "Not approved" briefly flashes true on some logins before a fresh
+  // resolveIdentity pass corrects it (session restore firing before a
+  // read-after-write is fully visible, a cold PostgREST embed, etc.) --
+  // AccountIssueScreen only earns its interruption once that state has
+  // actually stuck around for a moment, not on every such flash.
+  const [showAccountIssue, setShowAccountIssue] = useState(false);
+  useEffect(() => {
+    if (user && !isApproved && !loading) {
+      const timer = setTimeout(() => setShowAccountIssue(true), 1800);
+      return () => clearTimeout(timer);
+    }
+    setShowAccountIssue(false);
+  }, [user, isApproved, loading]);
+
   // Desktop/Mobile viewport sync mode
   const [isDesktopView, setIsDesktopView] = useState<boolean>(() => {
     const saved = localStorage.getItem('desktop_view');
@@ -594,13 +608,15 @@ function AppContent() {
               (user && isApproved) ? <Navigate to="/" /> : (
                 needsOnboarding ? <Navigate to="/onboarding" /> : (
                   (user && !isApproved) ? (
-                    <AccountIssueScreen
-                      variant={resolveError ? 'error' : hasNoProfile ? 'no_profile' : 'not_approved'}
-                      email={user.email}
-                      detail={resolveError}
-                      onRetry={refreshDbUser}
-                      onLogout={logout}
-                    />
+                    showAccountIssue ? (
+                      <AccountIssueScreen
+                        variant={resolveError ? 'error' : hasNoProfile ? 'no_profile' : 'not_approved'}
+                        email={user.email}
+                        detail={resolveError}
+                        onRetry={refreshDbUser}
+                        onLogout={logout}
+                      />
+                    ) : <MainSkeleton />
                   ) : <Login />
                 )
               ))
