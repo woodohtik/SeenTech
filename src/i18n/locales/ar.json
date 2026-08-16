@@ -1418,6 +1418,7 @@
     "register_desc": "انضم إلينا وابدأ في تنظيم أعمالك اليوم",
     "remember_me": "تذكرني",
     "reset_link_sent": "تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني",
+    "reset_link_sent_title": "تم إرسال رابط التحقق بنجاح",
     "reset_password_back_to_forgot": "طلب رابط جديد",
     "reset_password_button": "تحديث كلمة المرور",
     "reset_password_confirm_password": "تأكيد كلمة المرور الجديدة",

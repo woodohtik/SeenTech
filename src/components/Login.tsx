@@ -29,7 +29,7 @@ import Branding from './Branding';
 import { IconInput } from './ui/IconInput';
 import { getAuthErrorMessage } from '../utils/authErrorUtils';
 
-type ViewMode = 'login' | 'register' | 'forgot-password';
+type ViewMode = 'login' | 'register' | 'forgot-password' | 'reset-sent';
 
 export default function Login() {
   const { t, i18n } = useTranslation();
@@ -607,11 +607,13 @@ export default function Login() {
             <h2 className="text-3xl font-black text-content">
               {view === 'login' ? t('login.welcome_back') :
                view === 'register' ? t('login.create_account') :
+               view === 'reset-sent' ? t('login.reset_link_sent_title') :
                t('login.forgot_password')}
             </h2>
             <p className="text-content-muted mt-2 font-medium">
               {view === 'login' ? t('login.login_desc') :
                view === 'register' ? t('login.register_desc') :
+               view === 'reset-sent' ? t('login.reset_link_sent') :
                t('login.forgot_desc')}
             </p>
           </div>
@@ -877,8 +879,7 @@ export default function Login() {
                       redirectTo: `${window.location.origin}/reset-password`
                     });
                     if (resetError) throw resetError;
-                    alert(t('login.reset_link_sent'));
-                    setView('login');
+                    setView('reset-sent');
                   } catch (err) {
                     setError(t('login.errors.reset_failed'));
                   } finally {
@@ -887,26 +888,16 @@ export default function Login() {
                 }}
                 className="space-y-6"
               >
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-content mx-1">{t('login.email')}</label>
-                  <div className="relative group">
-                    <Mail className={cn(
-                      "absolute top-1/2 -translate-y-1/2 text-content-muted group-focus-within:text-brand transition-colors",
-                      i18n.language === 'en' ? "left-4" : "right-4"
-                    )} size={20} />
-                    <input
-                      required
-                      type="email"
-                      value={loginId}
-                      onChange={(e) => setLoginId(e.target.value)}
-                      placeholder="example@mail.com"
-                      className={cn(
-                        "w-full bg-surface border-2 border-border rounded-2xl py-4 focus:border-brand focus:ring-0 outline-none transition-all font-medium text-content",
-                        i18n.language === 'en' ? "pl-12 pr-4" : "pr-12 pl-4"
-                      )}
-                    />
-                  </div>
-                </div>
+                <IconInput
+                  required
+                  type="email"
+                  value={loginId}
+                  onChange={(e) => setLoginId(e.target.value)}
+                  placeholder="example@mail.com"
+                  startIcon={Mail}
+                  label={t('login.email')}
+                  wrapperClassName="h-11"
+                />
 
                 <button
                   disabled={loading}
@@ -925,6 +916,26 @@ export default function Login() {
                   {t('login.cancel_and_back')}
                 </button>
               </motion.form>
+            )}
+
+            {view === 'reset-sent' && (
+              <motion.div
+                key="reset-sent"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center space-y-6 py-4"
+              >
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-success/10 text-success rounded-full">
+                  <CheckCircle size={40} />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setView('login')}
+                  className="w-full bg-brand text-white py-4 rounded-2xl font-bold text-lg hover:bg-brand/90 transition-all shadow-xl shadow-brand/10 flex items-center justify-center gap-2"
+                >
+                  {t('login.login_button')}
+                </button>
+              </motion.div>
             )}
           </AnimatePresence>
         </motion.div>

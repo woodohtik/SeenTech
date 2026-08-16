@@ -1418,6 +1418,7 @@
     "register_desc": "Join us and start organizing your business today",
     "remember_me": "Remember Me",
     "reset_link_sent": "Password reset link sent to your email",
+    "reset_link_sent_title": "Verification link sent successfully",
     "reset_password_back_to_forgot": "Request a new link",
     "reset_password_button": "Update Password",
     "reset_password_confirm_password": "Confirm New Password",
