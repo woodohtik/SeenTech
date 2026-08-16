@@ -423,7 +423,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
  
             {/* Form Stepper */}
             <div className="flex items-center justify-between relative px-2">
-              <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-200 -translate-y-1/2 z-0" />
+              <div className="absolute top-1/2 left-7 right-7 sm:left-9 sm:right-9 h-0.5 bg-slate-200 -translate-y-1/2 z-0" />
               {steps.map((s, idx) => {
                 const Icon = s.icon;
                 const isActive = currentStep === s.id;
