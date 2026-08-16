@@ -34,6 +34,7 @@ export default function ResetPassword() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   const languages = [
     { code: 'ar', name: 'العربية' },
@@ -49,6 +50,22 @@ export default function ResetPassword() {
   };
 
   useEffect(() => {
+    // Supabase redirects failed verifications (expired/already-used link,
+    // rejected redirect_to, ...) back here with the real reason in the hash
+    // or query string instead of ever emitting PASSWORD_RECOVERY - surface it
+    // immediately instead of waiting out the full timeout on a generic guess.
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const searchParams = new URLSearchParams(window.location.search);
+    const errorCode = hashParams.get('error_code') || searchParams.get('error_code');
+    const errorDescription = hashParams.get('error_description') || searchParams.get('error_description');
+    if (errorCode || errorDescription) {
+      const detail = errorDescription ? errorDescription.replace(/\+/g, ' ') : errorCode;
+      console.error('[ResetPassword] Recovery link rejected by Supabase:', errorCode, errorDescription);
+      setLinkError(detail);
+      setStatus('invalid');
+      return;
+    }
+
     // detectSessionInUrl establishes a recovery session from the link's
     // tokens; PASSWORD_RECOVERY fires once that's done (a session may also
     // already be present by the time this effect runs).
@@ -226,6 +243,9 @@ export default function ResetPassword() {
                 <div>
                   <h3 className="text-xl font-black text-content">{t('login.reset_password_invalid_link')}</h3>
                   <p className="text-content-muted font-medium mt-2">{t('login.reset_password_invalid_link_desc')}</p>
+                  {linkError && (
+                    <p className="text-content-muted/60 text-xs font-mono mt-3 break-all">{linkError}</p>
+                  )}
                 </div>
                 <button
                   onClick={() => navigate('/login?view=forgot-password', { replace: true })}
