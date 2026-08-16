@@ -4171,6 +4171,10 @@
     "start_time": "Start Time:",
     "title": "Open New Shift"
   },
+  "setup_bar": {
+    "cta": "Continue",
+    "title": "Finish setting up your account"
+  },
   "staff": {
     "activate_account": "Activate Account",
     "audit_unlock_login": "Signed in to the system after unlocking (PIN)",

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React from 'react';
 import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import type { TourChecklistItem } from '../../config/tourSteps';
-import { supabase } from '../../lib/supabase/client';
+import { useSetupChecklist } from '../../hooks/useSetupChecklist';
 
 import { isRtlLang } from '../../lib/direction';
 
@@ -38,14 +38,6 @@ interface TourFinishModalProps {
   onRestart: () => void;
 }
 
-interface CompletionState {
-  shop_profile: boolean;
-  add_stock: boolean;
-  add_customer: boolean;
-  first_order: boolean;
-  first_sale: boolean;
-}
-
 export default function TourFinishModal({
   checklist,
   tenantId,
@@ -57,101 +49,9 @@ export default function TourFinishModal({
   const isRtl = isRtlLang(i18n.language);
   const Chevron = isRtl ? ChevronLeft : ChevronRight;
 
-  const [completion, setCompletion] = useState<CompletionState>({
-    shop_profile: false,
-    add_stock: false,
-    add_customer: false,
-    first_order: false,
-    first_sale: false,
-  });
-  const [loading, setLoading] = useState(true);
+  const { visibleItems, activeItem, completedCount, totalCount, loading } = useSetupChecklist(tenantId, checklist);
+  const activeItemId = activeItem?.id ?? null;
 
-  // Fetch actual data completion status from Supabase
-  useEffect(() => {
-    if (!tenantId) {
-      setLoading(false);
-      return;
-    }
-
-    async function checkStatuses() {
-      try {
-        const [
-          tenantRes,
-          inventoryRes,
-          customerRes,
-          ordersRes,
-          invoicesRes,
-        ] = await Promise.all([
-          supabase.from('tenants').select('address, phone, vat_number').eq('id', tenantId).maybeSingle(),
-          supabase.from('inventory_items').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
-          supabase.from('customers').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
-          supabase.from('orders').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
-          supabase.from('tax_invoices').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
-        ]);
-
-        const shop_profile = !!(tenantRes.data && (tenantRes.data.address || tenantRes.data.phone || tenantRes.data.vat_number));
-        const add_stock = !!(inventoryRes.count && inventoryRes.count > 0);
-        const add_customer = !!(customerRes.count && customerRes.count > 0);
-        const first_order = !!(ordersRes.count && ordersRes.count > 0);
-        const first_sale = !!(invoicesRes.count && invoicesRes.count > 0);
-
-        setCompletion({
-          shop_profile,
-          add_stock,
-          add_customer,
-          first_order,
-          first_sale,
-        });
-      } catch (err) {
-        console.error('Error fetching quick start completion statuses:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    checkStatuses();
-  }, [tenantId]);
-
-  // Determine which steps are visible and their status (unlocked progressively)
-  const visibleItems = useMemo(() => {
-    const items: (TourChecklistItem & { completed: boolean })[] = [];
-
-    for (let i = 0; i < checklist.length; i++) {
-      const item = checklist[i];
-      const isCompleted = completion[item.id as keyof CompletionState] || false;
-
-      // Always show the first item (Shop Profile)
-      if (i === 0) {
-        items.push({ ...item, completed: isCompleted });
-      } else {
-        // Show subsequent item only if the previous item in the sequence is completed
-        const prevItem = checklist[i - 1];
-        const isPrevCompleted = completion[prevItem.id as keyof CompletionState] || false;
-
-        if (isPrevCompleted) {
-          items.push({ ...item, completed: isCompleted });
-        } else {
-          // Break at the first incomplete item so no further items are shown
-          break;
-        }
-      }
-    }
-
-    return items;
-  }, [checklist, completion]);
-
-  // Find the current active (incomplete and unlocked) item
-  const activeItemId = useMemo(() => {
-    const lastItem = visibleItems[visibleItems.length - 1];
-    return lastItem && !lastItem.completed ? lastItem.id : null;
-  }, [visibleItems]);
-
-  // Total completed count of ALL items in the checklist
-  const completedCount = useMemo(() => {
-    return Object.values(completion).filter(Boolean).length;
-  }, [completion]);
-
-  const totalCount = checklist.length;
   const progressPercentage = Math.round((completedCount / totalCount) * 100);
 
   return (

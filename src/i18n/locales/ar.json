@@ -4171,6 +4171,10 @@
     "start_time": "وقت البدء:",
     "title": "فتح وردية جديدة"
   },
+  "setup_bar": {
+    "cta": "متابعة",
+    "title": "أكمل إعداد حسابك"
+  },
   "staff": {
     "activate_account": "تفعيل الحساب",
     "audit_unlock_login": "تسجيل الدخول للنظام بعد إلغاء القفل (PIN)",

@@ -53,6 +53,7 @@ import SupportConsentModal from './SupportConsentModal';
 import StaffTutorialModal from './StaffTutorialModal';
 import SeenAIFab from './SeenAIFab';
 import OnboardingTour from './OnboardingTour';
+import SetupChecklistBar from './SetupChecklistBar';
 
 
 
@@ -681,6 +682,10 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
         ready={!permissionsLoading && !isActingAsSaaS}
         hasSeenOnboardingDb={currentStaff?.has_seen_onboarding}
       />
+
+      {!isActingAsSaaS && !impersonationTenantId && currentStaff?.has_seen_onboarding && (
+        <SetupChecklistBar tenantId={tenantId} hasPermission={tourHasPermission} />
+      )}
 
       {tenantId && <SupportConsentModal tenantId={tenantId} />}
     </div>
