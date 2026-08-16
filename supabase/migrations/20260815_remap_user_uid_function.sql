@@ -28,8 +28,11 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
+DECLARE
+  old_row users%ROWTYPE;
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM users WHERE id = p_old_uid) THEN
+  SELECT * INTO old_row FROM users WHERE id = p_old_uid;
+  IF NOT FOUND THEN
     RETURN;
   END IF;
 
@@ -39,9 +42,13 @@ BEGIN
 
   -- 1. Parallel `users` row under the new id (so every FK below has
   -- something valid to point at before the old row is touched).
+  -- users.email is UNIQUE, so the old row (not deleted until step 3) would
+  -- collide with its own email on the new row otherwise -- park it under a
+  -- throwaway value first; the old row is gone by the end of this txn.
+  UPDATE users SET email = p_old_uid || '+remapped@invalid.local' WHERE id = p_old_uid;
+
   INSERT INTO users (id, email, display_name, phone, photo_url, email_verified, disabled, last_sign_in_at, created_at, updated_at)
-  SELECT p_new_uid, u.email, u.display_name, u.phone, u.photo_url, u.email_verified, u.disabled, u.last_sign_in_at, u.created_at, u.updated_at
-  FROM users u WHERE u.id = p_old_uid
+  VALUES (p_new_uid, old_row.email, old_row.display_name, old_row.phone, old_row.photo_url, old_row.email_verified, old_row.disabled, old_row.last_sign_in_at, old_row.created_at, old_row.updated_at)
   ON CONFLICT (id) DO NOTHING;
 
   -- 2. Repoint every referencing/soft-reference column.

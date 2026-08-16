@@ -44,6 +44,14 @@ interface ResolvedAppState {
     onboardingStep: number;
     hasStaffWithPin: boolean | null;
     currentUserStaff: StaffType | null;
+    /**
+     * True only when a logged-in user has no resolvable profile anywhere
+     * (no staff row, no saas_users row, no tailor_requests row) -- almost
+     * always a registration that failed partway through. Distinct from a
+     * merely-unapproved request, so the UI can explain what happened instead
+     * of silently signing the user back out.
+     */
+    hasNoProfile: boolean;
 }
 
 const INITIAL_APP_STATE: ResolvedAppState = {
@@ -53,6 +61,7 @@ const INITIAL_APP_STATE: ResolvedAppState = {
     onboardingStep: 0,
     hasStaffWithPin: null,
     currentUserStaff: null,
+    hasNoProfile: false,
 };
 
 interface AuthContextValue extends ResolvedAppState {
@@ -138,6 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         onboardingStep: 0,
         hasStaffWithPin: null,
         currentUserStaff: null,
+        hasNoProfile: false,
     }));
     const [impersonationTenantId, setImpersonationTenantId] = useState<string | null>(
         localStorage.getItem('impersonatedTenantId') !== 'null' ? localStorage.getItem('impersonatedTenantId') : null
@@ -266,6 +276,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                             onboardingStep: step,
                             hasStaffWithPin: staffPinCount,
                             currentUserStaff: mappedStaff as any,
+                            hasNoProfile: false,
                         });
                         localStorage.removeItem('tenant_id');
                         setLoading(false);
@@ -280,6 +291,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     onboardingStep: step,
                     hasStaffWithPin: staffPinCount,
                     currentUserStaff: mappedStaff as any,
+                    hasNoProfile: false,
                 });
 
                 if (staffData.tenant_id && approved) {
@@ -303,6 +315,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     onboardingStep: 4,
                     hasStaffWithPin: true,
                     currentUserStaff: null,
+                    hasNoProfile: false,
                 });
                 localStorage.setItem('user_role', saasUser.role);
                 localStorage.setItem('setup_complete', 'true');
@@ -329,9 +342,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     onboardingStep: request.onboarding_step || 1,
                     hasStaffWithPin: false,
                     currentUserStaff: null,
+                    hasNoProfile: false,
                 });
                 if (approved) localStorage.setItem('setup_complete', 'true');
             } else {
+                // No staff row, no saas_users row, no tailor_requests row --
+                // this session is authenticated but has no profile anywhere,
+                // almost always a registration that failed partway through
+                // (e.g. the tenant/staff insert step never completed). The
+                // caller must surface this explicitly instead of silently
+                // signing the user back out with no explanation.
                 setAppState({
                     isApproved: false,
                     userRole: 'owner' as UserRole,
@@ -339,6 +359,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     onboardingStep: 1,
                     hasStaffWithPin: false,
                     currentUserStaff: null,
+                    hasNoProfile: true,
                 });
             }
             setLoading(false);

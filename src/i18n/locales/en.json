@@ -1389,6 +1389,8 @@
     "google": "Google",
     "google_verified": "Verified via Google ✓",
     "have_account": "Already have an account?",
+    "incomplete_account_desc": "Your sign-up started but your shop was never fully created. You can retry, or sign out and register again.",
+    "incomplete_account_title": "Your account setup is incomplete",
     "login_button": "Login",
     "login_desc": "Sign in to access your dashboard",
     "main_area": "Main Area",

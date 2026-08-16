@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
-import { CheckCircle, LogOut, AlertCircle } from 'lucide-react';
+import { CheckCircle, LogOut, AlertCircle, RefreshCw } from 'lucide-react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -103,12 +103,59 @@ function StaleAccountRedirect({ onExpire }: { onExpire: () => void }) {
   return <MainSkeleton />;
 }
 
+/**
+ * hasNoProfile case: an authenticated session with no staff/saas_users/
+ * tailor_requests row anywhere -- almost always a registration that died
+ * partway through (see AuthContext's resolveIdentity). Shown instead of
+ * silently signing the user back out, since that taught them nothing about
+ * what happened and just replayed the same broken state on next login.
+ */
+function IncompleteAccountScreen({ email, onRetry, onLogout }: { email: string | null | undefined; onRetry: () => void; onLogout: () => void }) {
+  const { t } = useTranslation();
+  const { dir, isRtl } = useDirection();
+  return (
+    <div className={`min-h-screen flex items-center justify-center bg-gray-50 ${isRtl ? 'text-right' : 'text-left'} p-6 font-sans`} dir={dir}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl p-10 border border-amber-100 text-center relative overflow-hidden"
+      >
+        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-full blur-3xl opacity-50 -mr-16 -mt-16" />
+        <div className="w-20 h-20 bg-amber-50 text-amber-600 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-amber-100">
+          <AlertCircle size={40} />
+        </div>
+        <h2 className="text-2xl font-black text-gray-900 mb-3">{t('login.incomplete_account_title')}</h2>
+        <p className="text-gray-500 font-medium leading-relaxed mb-2 px-2 text-sm">
+          {t('login.incomplete_account_desc')}
+        </p>
+        {email && <p className="text-gray-400 font-mono text-xs mb-8">{email}</p>}
+        <div className="space-y-3 mt-6">
+          <button
+            onClick={onRetry}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-bold transition-all shadow-lg shadow-indigo-600/10 flex items-center justify-center gap-2"
+          >
+            <RefreshCw size={18} />
+            {t('common.retry')}
+          </button>
+          <button
+            onClick={onLogout}
+            className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2"
+          >
+            <LogOut size={18} />
+            {t('common.logout_from_account')}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 function AppContent() {
   const { t, i18n } = useTranslation();
   const { dir, isRtl } = useDirection();
   const { currentStaff, setCurrentStaff } = useStaff();
   const {
-    user, isApproved, userRole, tenantId, onboardingStep, hasStaffWithPin, currentUserStaff,
+    user, isApproved, userRole, tenantId, onboardingStep, hasStaffWithPin, currentUserStaff, hasNoProfile,
     loading, conflictUser, resolveConflict, rejectConflict, impersonationTenantId, logout, refreshDbUser,
   } = useAuth();
 
@@ -544,7 +591,11 @@ function AppContent() {
               localStorage.getItem('is_registering') === 'true' ? <Login /> : (
               (user && isApproved) ? <Navigate to="/" /> : (
                 needsOnboarding ? <Navigate to="/onboarding" /> : (
-                  (user && !isApproved) ? <StaleAccountRedirect onExpire={logout} /> : <Login />
+                  (user && !isApproved) ? (
+                    hasNoProfile
+                      ? <IncompleteAccountScreen email={user.email} onRetry={refreshDbUser} onLogout={logout} />
+                      : <StaleAccountRedirect onExpire={logout} />
+                  ) : <Login />
                 )
               ))
             }
