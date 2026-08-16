@@ -369,6 +369,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const currentSessionId = getDeviceSessionId();
 
         const checkSession = async () => {
+            // A password-recovery session isn't a real "logged in on this
+            // device" session - it must never be torn down by the
+            // multi-device conflict check while the user is mid-reset.
+            if (window.location.pathname === '/reset-password') return;
             try {
                 const { data: userRow } = await supabase.from('users').select('photo_url').eq('id', uid).maybeSingle();
                 if (userRow?.photo_url && userRow.photo_url !== currentSessionId) {
