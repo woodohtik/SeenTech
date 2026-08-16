@@ -879,7 +879,8 @@
     "system_generic": "A system error occurred. Please try again later.",
     "unauthorized_action": "You do not have permission to perform this action.",
     "unexpected": "An unexpected error occurred. Please try again.",
-    "unknown": "An unknown error occurred."
+    "unknown": "An unknown error occurred.",
+    "updating": "Updating..."
   },
   "inventory": {
     "action_bundle_fabric": "Bundle meters into bolts (meters ➜ bolts)",
@@ -1343,6 +1344,10 @@
     "walk_in_customer": "Guest Customer"
   },
   "login": {
+    "account_check_failed_desc": "Something went wrong while verifying your account. It may be a temporary database connection issue. Try again.",
+    "account_check_failed_title": "Couldn't verify your account",
+    "account_not_approved_desc": "Your account exists but isn't active right now. Try again, or contact support if this keeps happening.",
+    "account_not_approved_title": "Your account isn't active",
     "advanced_protection": "Advanced Protection",
     "back_to_landing": "Back to Landing Page",
     "cancel_and_back": "Cancel and Back",

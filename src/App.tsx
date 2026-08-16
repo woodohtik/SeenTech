@@ -89,30 +89,31 @@ import { RolePermissionsSettings } from './components/RolePermissionsSettings';
 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-/**
- * A logged-in account that never got a working tenant (e.g. registration
- * failed partway through) has no page to land on — Onboarding.tsx requires
- * an existing tenant row to update, it can't create one. Rather than strand
- * the user on a dead-end "pending approval" screen, sign them out and send
- * them back to Login/Register so they can try again.
- */
-function StaleAccountRedirect({ onExpire }: { onExpire: () => void }) {
-  React.useEffect(() => {
-    onExpire();
-  }, [onExpire]);
-  return <MainSkeleton />;
-}
+type AccountIssueVariant = 'no_profile' | 'not_approved' | 'error';
 
 /**
- * hasNoProfile case: an authenticated session with no staff/saas_users/
- * tailor_requests row anywhere -- almost always a registration that died
- * partway through (see AuthContext's resolveIdentity). Shown instead of
- * silently signing the user back out, since that taught them nothing about
- * what happened and just replayed the same broken state on next login.
+ * Every "authenticated but can't route you anywhere" case used to funnel
+ * into a silent sign-out (StaleAccountRedirect, now removed): the user saw
+ * a spinner, then landed back on /login with zero explanation. That made a
+ * transient network blip indistinguishable from "your account is broken"
+ * and a broken registration indistinguishable from "login doesn't work".
+ * This always shows *something* concrete instead, with a retry path that
+ * costs nothing when the cause was transient.
  */
-function IncompleteAccountScreen({ email, onRetry, onLogout }: { email: string | null | undefined; onRetry: () => void; onLogout: () => void }) {
+function AccountIssueScreen({ variant, email, detail, onRetry, onLogout }: {
+  variant: AccountIssueVariant;
+  email: string | null | undefined;
+  detail?: string | null;
+  onRetry: () => void;
+  onLogout: () => void;
+}) {
   const { t } = useTranslation();
   const { dir, isRtl } = useDirection();
+  const copy = {
+    no_profile: { title: t('login.incomplete_account_title'), desc: t('login.incomplete_account_desc') },
+    not_approved: { title: t('login.account_not_approved_title'), desc: t('login.account_not_approved_desc') },
+    error: { title: t('login.account_check_failed_title'), desc: t('login.account_check_failed_desc') },
+  }[variant];
   return (
     <div className={`min-h-screen flex items-center justify-center bg-gray-50 ${isRtl ? 'text-right' : 'text-left'} p-6 font-sans`} dir={dir}>
       <motion.div
@@ -124,12 +125,13 @@ function IncompleteAccountScreen({ email, onRetry, onLogout }: { email: string |
         <div className="w-20 h-20 bg-amber-50 text-amber-600 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-amber-100">
           <AlertCircle size={40} />
         </div>
-        <h2 className="text-2xl font-black text-gray-900 mb-3">{t('login.incomplete_account_title')}</h2>
+        <h2 className="text-2xl font-black text-gray-900 mb-3">{copy.title}</h2>
         <p className="text-gray-500 font-medium leading-relaxed mb-2 px-2 text-sm">
-          {t('login.incomplete_account_desc')}
+          {copy.desc}
         </p>
-        {email && <p className="text-gray-400 font-mono text-xs mb-8">{email}</p>}
-        <div className="space-y-3 mt-6">
+        {email && <p className="text-gray-400 font-mono text-xs mt-2">{email}</p>}
+        {detail && <p className="text-gray-300 font-mono text-[10px] mt-1 break-all" dir="ltr">{detail}</p>}
+        <div className="space-y-3 mt-8">
           <button
             onClick={onRetry}
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-bold transition-all shadow-lg shadow-indigo-600/10 flex items-center justify-center gap-2"
@@ -155,7 +157,7 @@ function AppContent() {
   const { dir, isRtl } = useDirection();
   const { currentStaff, setCurrentStaff } = useStaff();
   const {
-    user, isApproved, userRole, tenantId, onboardingStep, hasStaffWithPin, currentUserStaff, hasNoProfile,
+    user, isApproved, userRole, tenantId, onboardingStep, hasStaffWithPin, currentUserStaff, hasNoProfile, resolveError,
     loading, conflictUser, resolveConflict, rejectConflict, impersonationTenantId, logout, refreshDbUser,
   } = useAuth();
 
@@ -592,9 +594,13 @@ function AppContent() {
               (user && isApproved) ? <Navigate to="/" /> : (
                 needsOnboarding ? <Navigate to="/onboarding" /> : (
                   (user && !isApproved) ? (
-                    hasNoProfile
-                      ? <IncompleteAccountScreen email={user.email} onRetry={refreshDbUser} onLogout={logout} />
-                      : <StaleAccountRedirect onExpire={logout} />
+                    <AccountIssueScreen
+                      variant={resolveError ? 'error' : hasNoProfile ? 'no_profile' : 'not_approved'}
+                      email={user.email}
+                      detail={resolveError}
+                      onRetry={refreshDbUser}
+                      onLogout={logout}
+                    />
                   ) : <Login />
                 )
               ))

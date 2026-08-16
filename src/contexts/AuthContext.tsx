@@ -52,6 +52,13 @@ interface ResolvedAppState {
      * of silently signing the user back out.
      */
     hasNoProfile: boolean;
+    /**
+     * Set only when resolveIdentity itself threw (network blip, RLS/schema
+     * issue, etc.) instead of cleanly resolving a state. Lets the UI show
+     * "we couldn't verify your account, retry" rather than falling through
+     * to whatever appState happened to be left over from before the call.
+     */
+    resolveError: string | null;
 }
 
 const INITIAL_APP_STATE: ResolvedAppState = {
@@ -62,6 +69,7 @@ const INITIAL_APP_STATE: ResolvedAppState = {
     hasStaffWithPin: null,
     currentUserStaff: null,
     hasNoProfile: false,
+    resolveError: null,
 };
 
 interface AuthContextValue extends ResolvedAppState {
@@ -148,6 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         hasStaffWithPin: null,
         currentUserStaff: null,
         hasNoProfile: false,
+        resolveError: null,
     }));
     const [impersonationTenantId, setImpersonationTenantId] = useState<string | null>(
         localStorage.getItem('impersonatedTenantId') !== 'null' ? localStorage.getItem('impersonatedTenantId') : null
@@ -277,6 +286,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                             hasStaffWithPin: staffPinCount,
                             currentUserStaff: mappedStaff as any,
                             hasNoProfile: false,
+                            resolveError: null,
                         });
                         localStorage.removeItem('tenant_id');
                         setLoading(false);
@@ -292,6 +302,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     hasStaffWithPin: staffPinCount,
                     currentUserStaff: mappedStaff as any,
                     hasNoProfile: false,
+                    resolveError: null,
                 });
 
                 if (staffData.tenant_id && approved) {
@@ -316,6 +327,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     hasStaffWithPin: true,
                     currentUserStaff: null,
                     hasNoProfile: false,
+                    resolveError: null,
                 });
                 localStorage.setItem('user_role', saasUser.role);
                 localStorage.setItem('setup_complete', 'true');
@@ -343,6 +355,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     hasStaffWithPin: false,
                     currentUserStaff: null,
                     hasNoProfile: false,
+                    resolveError: null,
                 });
                 if (approved) localStorage.setItem('setup_complete', 'true');
             } else {
@@ -360,11 +373,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     hasStaffWithPin: false,
                     currentUserStaff: null,
                     hasNoProfile: true,
+                    resolveError: null,
                 });
             }
             setLoading(false);
-        } catch (error) {
+        } catch (error: any) {
             console.error('[CRITICAL] Auth verification failed:', error);
+            // Leaving appState untouched here used to mean the UI fell back
+            // on whatever was resolved before this call (often the
+            // logged-out default), which routed straight into
+            // StaleAccountRedirect's silent sign-out -- a transient network
+            // blip or RLS hiccup looked identical to "your account doesn't
+            // exist". Surface it explicitly instead.
+            setAppState(prev => ({
+                ...prev,
+                isApproved: false,
+                hasNoProfile: false,
+                resolveError: error?.message || String(error),
+            }));
             setLoading(false);
         }
     }, []);
@@ -382,9 +408,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return () => sub.subscription.unsubscribe();
     }, [resolveIdentity]);
 
-    // Periodic session validation (another device logged in / kicked this one out)
+    // Periodic session validation (another device logged in / kicked this one out).
+    // Routes through the same conflictUser modal the initial login check uses
+    // instead of signing out unilaterally -- a silent hard sign-out here was
+    // indistinguishable from "login is just broken", and any transient
+    // read hiccup on the photo_url check (a dropped request, a stale read
+    // right after a fresh device_session_id was generated) tore down a
+    // perfectly valid session with zero explanation.
     useEffect(() => {
         const uid = session?.user?.id;
+        const email = session?.user?.email || '';
         if (!uid || conflictUser) return;
 
         const currentSessionId = getDeviceSessionId();
@@ -397,12 +430,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             try {
                 const { data: userRow } = await supabase.from('users').select('photo_url').eq('id', uid).maybeSingle();
                 if (userRow?.photo_url && userRow.photo_url !== currentSessionId) {
-                    console.log('[SESSION] Device kicked out because of a newer session on another device.');
-                    await supabase.auth.signOut();
-                    localStorage.removeItem('setup_complete');
-                    localStorage.removeItem('user_role');
-                    localStorage.removeItem('tenant_id');
-                    window.location.replace('/login?conflict=true');
+                    console.log('[SESSION] Possible multi-device conflict detected, prompting user.');
+                    setConflictUser({ uid, email, currentSessionId });
                 }
             } catch (err) {
                 console.warn('[SESSION] Periodic session check failed:', err);
@@ -415,7 +444,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             clearInterval(interval);
             window.removeEventListener('focus', checkSession);
         };
-    }, [session?.user?.id, conflictUser]);
+    }, [session?.user?.id, session?.user?.email, conflictUser]);
 
     useEffect(() => {
         (window as any).refreshAuthData = () => resolveIdentity(session);

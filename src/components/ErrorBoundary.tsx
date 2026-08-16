@@ -13,6 +13,7 @@ interface ErrorBoundaryState {
   error: Error | null;
   errorInfo: ErrorInfo | null;
   eventId: string | null;
+  isLazyLoadError: boolean;
 }
 
 export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -21,6 +22,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
     error: null,
     errorInfo: null,
     eventId: null,
+    isLazyLoadError: false,
   };
 
   static getDerivedStateFromError(error: Error) {
@@ -58,7 +60,15 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
     );
     
     if (isLazyLoadError) {
+      // A stale build reference (e.g. this tab was open across a new
+      // deployment, so a lazy chunk's hashed filename no longer exists) --
+      // one reload against the live deployment resolves it. Log it so a
+      // spike is visible rather than invisible, and show a calm "updating"
+      // message instead of the full scary error card for the brief window
+      // before the reload actually takes effect.
       console.log('Detected lazy load error, auto-refreshing page...');
+      logError(error, { errorInfo, source: 'ErrorBoundary:lazy-load-reload' });
+      this.setState({ isLazyLoadError: true });
       window.location.reload();
       return;
     }
@@ -83,7 +93,19 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
   };
 
   render() {
-    const { hasError, error, eventId } = this.state;
+    const { hasError, error, eventId, isLazyLoadError } = this.state;
+
+    if (isLazyLoadError) {
+      return (
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4" dir={dirOf()}>
+          <div className="flex flex-col items-center gap-4 text-slate-400">
+            <RefreshCcw size={32} className="animate-spin" />
+            <p className="font-bold text-sm">{i18n.t('errors.updating')}</p>
+          </div>
+        </div>
+      );
+    }
+
     if (hasError) {
       let errorMessage = i18n.t('errors.unexpected');
       let isPermissionError = false;
