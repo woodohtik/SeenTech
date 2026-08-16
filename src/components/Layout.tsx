@@ -612,12 +612,22 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
           </header>
         )}
 
-        <main 
+        {/* Wraps the checklist bar + page content together so the fixed
+            mobile header's height is compensated for exactly once, whether
+            or not the checklist bar itself is currently shown. */}
+        <div className={cn(
+          "flex-1 flex flex-col overflow-x-hidden",
+          layoutMode === 'sidebar' ? "mt-20 lg:mt-0" : "" // Add margin for fixed mobile header only in sidebar mode
+        )}>
+        {!isActingAsSaaS && !impersonationTenantId && currentStaff?.has_seen_onboarding && (
+          <SetupChecklistBar tenantId={tenantId} hasPermission={tourHasPermission} />
+        )}
+
+        <main
           id="tour-dashboard-container"
           data-tour="dashboard-container"
           className={cn(
           "flex-1 overflow-x-hidden flex flex-col",
-          layoutMode === 'sidebar' ? "mt-20 lg:mt-0" : "", // Add margin for fixed mobile header only in sidebar mode
           layoutMode === 'grid' && location.pathname === '/' ? "p-4 md:p-8" : "p-4 md:p-8"
         )}>
           {layoutMode === 'grid' && location.pathname === '/' ? (
@@ -666,6 +676,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
 
 
         </main>
+        </div>
       </div>
 
       <SeenAIFab />
@@ -682,10 +693,6 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
         ready={!permissionsLoading && !isActingAsSaaS}
         hasSeenOnboardingDb={currentStaff?.has_seen_onboarding}
       />
-
-      {!isActingAsSaaS && !impersonationTenantId && currentStaff?.has_seen_onboarding && (
-        <SetupChecklistBar tenantId={tenantId} hasPermission={tourHasPermission} />
-      )}
 
       {tenantId && <SupportConsentModal tenantId={tenantId} />}
     </div>
