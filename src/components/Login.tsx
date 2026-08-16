@@ -29,7 +29,7 @@ import Branding from './Branding';
 import { IconInput } from './ui/IconInput';
 import { getAuthErrorMessage } from '../utils/authErrorUtils';
 
-type ViewMode = 'login' | 'register' | 'pending' | 'forgot-password';
+type ViewMode = 'login' | 'register' | 'forgot-password';
 
 export default function Login() {
   const { t, i18n } = useTranslation();
@@ -497,8 +497,6 @@ export default function Login() {
       if (typeof window !== 'undefined') {
         (window as any).refreshAuthData?.();
       }
-
-      // setView('pending'); // removed so that App.tsx can redirect cleanly to Onboarding
     } catch (err: any) {
       localStorage.removeItem('is_registering');
       console.error('Registration Error:', err);
@@ -609,12 +607,12 @@ export default function Login() {
             <h2 className="text-3xl font-black text-content">
               {view === 'login' ? t('login.welcome_back') :
                view === 'register' ? t('login.create_account') :
-               view === 'forgot-password' ? t('login.forgot_password') : t('login.pending_review')}
+               t('login.forgot_password')}
             </h2>
             <p className="text-content-muted mt-2 font-medium">
               {view === 'login' ? t('login.login_desc') :
                view === 'register' ? t('login.register_desc') :
-               view === 'forgot-password' ? t('login.forgot_desc') : t('login.pending_desc')}
+               t('login.forgot_desc')}
             </p>
           </div>
 
@@ -863,39 +861,6 @@ export default function Login() {
                   </button>
                 </p>
               </motion.form>
-            )}
-
-            {view === 'pending' && (
-              <motion.div
-                key="pending"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center space-y-6 py-8"
-              >
-                <div className="inline-flex items-center justify-center w-24 h-24 bg-success/10 text-success rounded-full mb-4">
-                  <CheckCircle size={48} />
-                </div>
-                <h2 className="text-2xl font-black text-content">{t('login.pending_success_title')}</h2>
-                <p className="text-content-muted font-medium leading-relaxed">
-                  {t('login.pending_success_desc')}
-                </p>
-                <button
-                  onClick={async () => {
-                    try {
-                      localStorage.clear();
-                      sessionStorage.clear();
-                      await supabase.auth.signOut();
-                    } catch (e) {
-                      console.error(e);
-                    }
-                    setView('login');
-                  }}
-                  className="flex items-center justify-center gap-2 text-brand font-bold hover:underline mx-auto"
-                >
-                  <ArrowRight size={18} className={cn(i18n.language === 'en' ? "rotate-180" : "")} />
-                  <span>{t('login.back_to_login')}</span>
-                </button>
-              </motion.div>
             )}
 
             {view === 'forgot-password' && (

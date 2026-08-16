@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
-import { CheckCircle, Clock as ClockIcon, RefreshCw, LogOut, AlertCircle } from 'lucide-react';
+import { CheckCircle, LogOut, AlertCircle } from 'lucide-react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -88,6 +88,20 @@ import TenantAnalyticsDashboard from './components/TenantAnalyticsDashboard';
 import { RolePermissionsSettings } from './components/RolePermissionsSettings';
 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+
+/**
+ * A logged-in account that never got a working tenant (e.g. registration
+ * failed partway through) has no page to land on — Onboarding.tsx requires
+ * an existing tenant row to update, it can't create one. Rather than strand
+ * the user on a dead-end "pending approval" screen, sign them out and send
+ * them back to Login/Register so they can try again.
+ */
+function StaleAccountRedirect({ onExpire }: { onExpire: () => void }) {
+  React.useEffect(() => {
+    onExpire();
+  }, [onExpire]);
+  return <MainSkeleton />;
+}
 
 function AppContent() {
   const { t, i18n } = useTranslation();
@@ -530,46 +544,7 @@ function AppContent() {
               localStorage.getItem('is_registering') === 'true' ? <Login /> : (
               (user && isApproved) ? <Navigate to="/" /> : (
                 needsOnboarding ? <Navigate to="/onboarding" /> : (
-                  (user && !isApproved) ? (
-                    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6" dir={dir}>
-                      <motion.div 
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="max-w-md w-full bg-white rounded-[3.5rem] shadow-2xl p-12 text-center border border-amber-100 relative overflow-hidden"
-                      >
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-full blur-3xl opacity-50 -mr-16 -mt-16" />
-                        <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-50 rounded-full blur-3xl opacity-50 -ml-16 -mb-16" />
-                        
-                        <div className="w-24 h-24 bg-amber-50 text-amber-600 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-sm border border-amber-100/50 rotate-3 animate-pulse">
-                          <ClockIcon size={48} strokeWidth={2.5} />
-                        </div>
-                        
-                        <h2 className="text-3xl font-black text-gray-900 mb-4 tracking-tight">{t('login.pending_review')}</h2>
-                        <p className="text-gray-500 font-medium leading-relaxed mb-10 px-2">
-                          {t('login.pending_review_desc')}{' '}
-                          <span className="block mt-2 font-bold text-amber-700">{t('login.pending_review_activation_note')}</span>
-                        </p>
-                        
-                        <div className="space-y-4">
-                          <button 
-                            onClick={() => window.location.reload()}
-                            className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center justify-center gap-3"
-                          >
-                            <RefreshCw size={20} />
-                            {t('orders.update_status')}
-                          </button>
-                          
-                          <button
-                            onClick={() => logout()}
-                            className="w-full bg-gray-50 text-gray-600 py-4 rounded-2xl font-bold hover:bg-gray-100 transition-all border border-gray-100 flex items-center justify-center gap-2"
-                          >
-                            <LogOut size={18} />
-                            {t('login.exit_account')}
-                          </button>
-                        </div>
-                      </motion.div>
-                    </div>
-                  ) : <Login />
+                  (user && !isApproved) ? <StaleAccountRedirect onExpire={logout} /> : <Login />
                 )
               ))
             }
