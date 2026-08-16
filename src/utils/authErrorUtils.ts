@@ -12,6 +12,7 @@ const SUPABASE_AUTH_MESSAGE_MAP: Array<[RegExp, string]> = [
   [/unable to validate email address/i, 'errors.auth.invalid_email'],
   [/email rate limit exceeded|too many requests/i, 'errors.auth.too_many_requests'],
   [/network/i, 'errors.auth.network_request_failed'],
+  [/new password should be different from the old password/i, 'errors.auth.same_password'],
 ];
 
 export const getAuthErrorMessage = (err: any): string => {
