@@ -75,13 +75,7 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
     }
   };
 
-  const handleShareWhatsApp = async () => {
-    try {
-      const { downloadInvoicePDF } = await import('../../utils/pdfGenerator');
-      await downloadInvoicePDF('print-area', `Invoice-${invoice.invoice_number}.pdf`);
-    } catch (e) {
-      console.error(e);
-    }
+  const handleShareWhatsApp = () => {
     setWhatsappModalOpen(true);
   };
 
@@ -279,8 +273,8 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
         onClose={() => setWhatsappModalOpen(false)}
         onConfirm={proceedToWhatsApp}
         defaultPhone={customerPhone || undefined}
-        title={t('z_report.pdf_ready', 'تم تجهيز ملف PDF!')}
-        description={t('z_report.whatsapp_save_instruction', 'تم حفظ التقرير بنجاح على جهازك. يرجى كتابة رقم واتساب المستلم بالأسفل ومن ثم إرساله.')}
+        title={t('printing.whatsapp_modal_title', 'إرسال الفاتورة عبر واتساب')}
+        description={t('printing.whatsapp_modal_desc', 'أدخل رقم جوال العميل لفتح واتساب مع تفاصيل الفاتورة جاهزة للإرسال.')}
       />
     )}
     </>

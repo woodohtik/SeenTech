@@ -84,13 +84,8 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
     });
   };
 
-  const handleShareWhatsApp = async () => {
+  const handleShareWhatsApp = () => {
     if (!selectedOrder) return;
-    try {
-      await downloadInvoicePDF('sales-record-print-area', `Invoice-${selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase()}.pdf`);
-    } catch (e) {
-      console.error(e);
-    }
     setWhatsappModalOpen(true);
   };
 
@@ -494,8 +489,8 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
           onClose={() => setWhatsappModalOpen(false)}
           onConfirm={proceedToWhatsApp}
           defaultPhone={selectedOrder.customerPhone}
-          title={t('z_report.pdf_ready', 'تم تجهيز ملف PDF!')}
-          description={t('z_report.whatsapp_save_instruction', 'تم حفظ التقرير بنجاح على جهازك. يرجى كتابة رقم واتساب المستلم بالأسفل ومن ثم إرساله.')}
+          title={t('sales_record.whatsapp_modal_title', 'إرسال الفاتورة عبر واتساب')}
+          description={t('sales_record.whatsapp_modal_desc', 'أدخل رقم جوال العميل لفتح واتساب مع تفاصيل الفاتورة جاهزة للإرسال.')}
         />
       )}
     </div>

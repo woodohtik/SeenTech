@@ -27,8 +27,6 @@ import DateTimeDisplay from './DateTimeDisplay';
 import PaymentVoucherModal from './PaymentVoucherModal';
 import { PriceDisplay } from './PriceDisplay';
 import { cn } from '../lib/utils';
-import { jsPDF } from 'jspdf';
-import { toPng } from 'html-to-image';
 import { useDirection } from '../lib/direction';
 import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
 
@@ -63,7 +61,6 @@ export default function SupplierLedger({
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [isVoucherOpen, setIsVoucherOpen] = useState(false);
-  const [exportingPdf, setExportingPdf] = useState(false);
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
 
   // Load Transactions
@@ -167,49 +164,8 @@ export default function SupplierLedger({
     window.print();
   };
 
-  const handleWhatsAppShare = async () => {
-    setExportingPdf(true);
-    try {
-      const element = document.getElementById('supplier-ledger-pdf-capture');
-      if (!element) {
-        throw new Error('Capture area not found');
-      }
-
-      const dataUrl = await toPng(element, {
-        backgroundColor: '#ffffff',
-        quality: 1.0,
-        pixelRatio: 2
-      });
-
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgWidth = 210;
-      const pageHeight = 295;
-      
-      const imgProps = pdf.getImageProperties(dataUrl);
-      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-      
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-
-      const fileName = t('procurement.ledger_pdf_filename', { name: supplier.name.replace(/\s+/g, '_') });
-      pdf.save(fileName);
-
-      setWhatsappModalOpen(true);
-    } catch (err) {
-      console.error('Failed to export ledger to PDF:', err);
-    } finally {
-      setExportingPdf(false);
-    }
+  const handleWhatsAppShare = () => {
+    setWhatsappModalOpen(true);
   };
 
   const proceedToWhatsApp = (phone: string) => {
@@ -251,15 +207,10 @@ export default function SupplierLedger({
         <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
           <button
             onClick={handleWhatsAppShare}
-            disabled={exportingPdf}
-            className="h-10 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-600/10 flex items-center justify-center gap-2 transition-all cursor-pointer"
+            className="h-10 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-600/10 flex items-center justify-center gap-2 transition-all cursor-pointer"
           >
-            {exportingPdf ? (
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <MessageCircle size={16} />
-            )}
-            <span>{exportingPdf ? t('procurement.creating_pdf', 'جاري إنشاء ملف PDF...') : t('procurement.send_whatsapp_pdf', 'إرسال كشف حساب PDF واتساب')}</span>
+            <MessageCircle size={16} />
+            <span>{t('procurement.send_whatsapp_pdf', 'إرسال كشف الحساب عبر واتساب')}</span>
           </button>
 
           <button
@@ -600,17 +551,8 @@ export default function SupplierLedger({
           onClose={() => setWhatsappModalOpen(false)}
           onConfirm={proceedToWhatsApp}
           defaultPhone={supplier.phone}
-          title={t('procurement.pdf_downloaded')}
-          description={
-            <>
-              {t('procurement.pdf_saved_as')} <br />
-              <span className="font-mono text-slate-900 bg-slate-100 px-2 py-1 rounded inline-block mt-1 font-bold">
-                {t('procurement.ledger_pdf_filename', { name: supplier.name.replace(/\s+/g, '_') })}
-              </span>
-              <br /><br />
-              {t('procurement.whatsapp_attach_instructions')}
-            </>
-          }
+          title={t('procurement.whatsapp_modal_title', 'إرسال كشف الحساب عبر واتساب')}
+          description={t('procurement.whatsapp_modal_desc', 'أدخل رقم جوال المورد لفتح واتساب مع كشف الحساب جاهزاً للإرسال.')}
         />
       )}
 
