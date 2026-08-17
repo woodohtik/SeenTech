@@ -5,7 +5,6 @@ import Branding from './Branding';
 import POS from './POS';
 import SalesRecord from './SalesRecord';
 import SalesReturns from './SalesReturns';
-import TaxInvoices from './TaxInvoices';
 import CreditNotes from './CreditNotes';
 import ShiftManager from './ShiftManager';
 import ShiftClosingModal from './ShiftClosingModal';
@@ -458,15 +457,6 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                 {t('sales.sales_record')}
               </button>
               <button
-                onClick={() => setActiveSubTab('tax_invoices')}
-                className={cn(
-                  "px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer",
-                  activeSubTab === 'tax_invoices' ? "bg-brand text-white shadow-sm" : "bg-surface text-content-muted border border-border hover:border-brand/40 hover:text-content"
-                )}
-              >
-                {t('sales.tax_invoices')}
-              </button>
-              <button
                 onClick={() => setActiveSubTab('credit_notes')}
                 className={cn(
                   "px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-black transition-all shrink-0 whitespace-nowrap cursor-pointer",
@@ -536,9 +526,6 @@ export default function Sales({ tenantId }: { tenantId: string }) {
         )}
         {activeTopTab === 'pos' && activeSubTab === 'sales_record' && (
           <SalesRecord tenantId={tenantId} />
-        )}
-        {activeTopTab === 'pos' && activeSubTab === 'tax_invoices' && (
-          <TaxInvoices tenantId={tenantId} />
         )}
         {activeTopTab === 'pos' && activeSubTab === 'credit_notes' && (
           <CreditNotes tenantId={tenantId} />

@@ -76,7 +76,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
     const statusText = getStatusBadge(order.status).label;
 
     return t('sales_record.whatsapp_invoice_message', {
-      invoiceNumber: order.orderNumber || order.id.slice(-6).toUpperCase(),
+      invoiceNumber: order.invoiceNumber || order.orderNumber || order.id.slice(-6).toUpperCase(),
       total: order.totalAmount,
       currency: getCurrencySymbol(),
       method: paymentMethodText,
@@ -100,7 +100,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
     setLoading(true);
     setError(null);
     try {
-      const [{ data: staffData }, { data: ordersData, error: fetchError }, { data: tenantData }] = await Promise.all([
+      const [{ data: staffData }, { data: ordersData, error: fetchError }, { data: tenantData }, { data: invoicesData }] = await Promise.all([
         supabase.from('staff').select('id, name'),
         (() => {
           let query = supabase.from('orders').select('*').eq('tenant_id', tenantId);
@@ -108,7 +108,10 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
           if (filterStatus) query = query.eq('status', filterStatus);
           return query.order('created_at', { ascending: false });
         })(),
-        supabase.from('tenants').select('name, vat_number, address, phone').eq('id', tenantId).maybeSingle()
+        supabase.from('tenants').select('name, vat_number, address, phone').eq('id', tenantId).maybeSingle(),
+        // Real ZATCA-sequential invoice numbers, keyed by order_id -- distinct
+        // from orderNumber (a friendly reference, not the legal invoice number).
+        supabase.from('tax_invoices').select('order_id, invoice_number').eq('tenant_id', tenantId)
       ]);
 
       if (fetchError) throw fetchError;
@@ -117,6 +120,13 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
       if (staffData) {
         staffData.forEach(s => {
           if (s.id && s.name) staffMap[s.id] = s.name;
+        });
+      }
+
+      const invoiceNumberMap: Record<string, string> = {};
+      if (invoicesData) {
+        invoicesData.forEach(inv => {
+          if (inv.order_id && inv.invoice_number) invoiceNumberMap[inv.order_id] = inv.invoice_number;
         });
       }
 
@@ -137,6 +147,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
         return {
           ...decoded,
           orderNumber: decoded.order_number || decoded.orderNumber,
+          invoiceNumber: invoiceNumberMap[decoded.id],
           customerId: decoded.customer_id || decoded.customerId,
           customerName: decoded.customer_name || decoded.customerName,
           customerPhone: decoded.customer_phone || decoded.customerPhone,
@@ -365,7 +376,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                 vatAmt.toFixed(2)
               );
 
-              const invNumber = String(selectedOrder.orderNumber || selectedOrder.id.slice(0, 8));
+              const invNumber = selectedOrder.invoiceNumber || String(selectedOrder.orderNumber || selectedOrder.id.slice(0, 8));
 
               return (
                 <div className="flex-1 overflow-auto p-4 sm:p-8 flex justify-center bg-gray-50 print:bg-white print:p-2 print:px-3 print:overflow-visible print:max-h-none" id="sales-record-print-area">

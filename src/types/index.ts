@@ -533,6 +533,8 @@ export interface Order {
   qrCode?: string;
   images?: string[];
   orderNumber?: number;
+  /** The ZATCA-compliant sequential invoice number from tax_invoices, e.g. "INV-2026-000123" -- distinct from orderNumber. */
+  invoiceNumber?: string;
   history: OrderHistory[];
   isTest?: boolean;
   updatedAt?: string;
