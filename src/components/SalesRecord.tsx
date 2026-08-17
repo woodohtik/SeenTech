@@ -232,6 +232,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
               <tr>
                 <th className="p-4 font-medium">{t('pos.invoice_no')}</th>
                 <th className="p-4 font-medium">{t('common.customer')}</th>
+                <th className="p-4 font-medium">{t('tax_invoices.invoice_type')}</th>
                 <th className="p-4 font-medium">{t('common.date')}</th>
                 <th className="p-4 font-medium">{t('pos.total')}</th>
                 <th className="p-4 font-medium">{t('common.status')}</th>
@@ -242,13 +243,14 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
               {orders.map(order => (
                 <tr key={order.id} className="hover:bg-surface-muted/50 transition-colors">
                   <td className="p-4 font-medium text-content">#{order.orderNumber || order.id.slice(-6).toUpperCase()}</td>
-                  <td className="p-4 text-content-muted">
-                    <div className="flex items-center gap-2">
-                      {order.customerName}
-                      {order.isB2B && (
-                         <span className="bg-brand/10 text-brand px-2 py-0.5 rounded-lg text-[10px] font-black uppercase">B2B</span>
-                      )}
-                    </div>
+                  <td className="p-4 text-content-muted">{order.customerName}</td>
+                  <td className="p-4">
+                    <span className={cn(
+                      "px-2 py-1 rounded-lg text-[10px] font-black whitespace-nowrap",
+                      order.isB2B ? "bg-brand/10 text-brand" : "bg-surface-muted text-content-muted"
+                    )}>
+                      {order.isB2B ? t('tax_invoices.b2b_label') : t('tax_invoices.b2c_label')}
+                    </span>
                   </td>
                   <td className="p-4 text-content-muted">
                     <DateTimeDisplay date={order.orderDate} showTime={true} />
@@ -297,9 +299,12 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                   )}>
                     {getStatusBadge(order.status).label}
                   </span>
-                  {order.isB2B && (
-                    <span className="bg-brand/10 text-brand px-2 py-0.5 rounded text-[10px] font-black uppercase">B2B</span>
-                  )}
+                  <span className={cn(
+                    "px-2 py-0.5 rounded text-[10px] font-black whitespace-nowrap",
+                    order.isB2B ? "bg-brand/10 text-brand" : "bg-surface-muted text-content-muted"
+                  )}>
+                    {order.isB2B ? t('tax_invoices.b2b_label') : t('tax_invoices.b2c_label')}
+                  </span>
                 </div>
                 <DateTimeDisplay date={order.orderDate} showTime={true} size="xs" />
               </div>

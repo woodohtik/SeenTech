@@ -33,7 +33,7 @@ export default function WhatsAppPhoneModal({ onClose, onConfirm, defaultPhone, t
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 print:hidden animate-fade-in" dir={dir}>
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[200] print:hidden animate-fade-in" dir={dir}>
       <div className="bg-white border border-slate-100 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-6">
         <div className="text-center space-y-2">
           <div className="mx-auto w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center">
