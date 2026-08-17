@@ -442,6 +442,25 @@ export default function PurchaseOrders({
     : inventory
   ).map(i => ({ value: i.id, label: t('procurement.item_option_label', { name: i.name, unit: i.unit, quantity: i.quantity }) }));
 
+  // What we actually paid this supplier for this item (weighted average
+  // across their received purchases) -- a return must credit back the real
+  // purchase price, not a price the staff member types in freehand.
+  const getSupplierItemPrice = (supplierId: string, itemId: string): number | null => {
+    let cost = 0;
+    let qty = 0;
+    purchaseOrders.forEach(po => {
+      const poType = po.orderType || (po as any).order_type || 'purchase';
+      const poSupplierId = po.supplierId || (po as any).supplier_id;
+      if (poType !== 'purchase' || poSupplierId !== supplierId || (po.status || 'draft') !== 'received') return;
+      (po.items || []).forEach(item => {
+        if (item.itemId !== itemId) return;
+        cost += Number(item.total || 0);
+        qty += Number(item.baseQuantity || item.quantity || 0);
+      });
+    });
+    return qty > 0 ? cost / qty : null;
+  };
+
   // Pre-fills the return modal from a specific received purchase order: same
   // supplier and the exact items/quantities that order brought in, so the
   // staff member is adjusting a real invoice instead of rebuilding one from
@@ -914,7 +933,15 @@ export default function PurchaseOrders({
                   <div className="md:col-span-2">
                     <SmartSelect
                       value={selectedItem}
-                      onChange={(val) => setSelectedItem(val)}
+                      onChange={(val) => {
+                        setSelectedItem(val);
+                        if (modalType === 'return' && selectedSupplier) {
+                          // A return must credit back what we actually paid --
+                          // not a price the staff member types in freehand.
+                          const knownPrice = getSupplierItemPrice(selectedSupplier, val);
+                          setPricePerUnit(knownPrice ?? 0);
+                        }
+                      }}
                       placeholder={t('procurement.select_inventory_item', 'اختر صنف المخزن...')}
                       options={itemSelectOptions}
                       disabled={modalType === 'return' && !selectedSupplier}
@@ -927,8 +954,8 @@ export default function PurchaseOrders({
                     )}
                   </div>
                   <div>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       placeholder={t('procurement.quantity', 'الكمية')}
                       value={quantity || ''}
                       onChange={(e) => setQuantity(Number(e.target.value))}
@@ -936,12 +963,17 @@ export default function PurchaseOrders({
                     />
                   </div>
                   <div>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       placeholder={t('procurement.price_per_unit_short', 'السعر / وحدة')}
                       value={pricePerUnit || ''}
                       onChange={(e) => setPricePerUnit(Number(e.target.value))}
-                      className="w-full px-4 py-2 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-content font-bold text-sm"
+                      readOnly={modalType === 'return'}
+                      title={modalType === 'return' ? t('procurement.return_price_locked', 'السعر مقفل على سعر الشراء الفعلي ولا يمكن تعديله') : undefined}
+                      className={cn(
+                        "w-full px-4 py-2 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-content font-bold text-sm",
+                        modalType === 'return' && "bg-surface-muted cursor-not-allowed opacity-80"
+                      )}
                     />
                   </div>
                 </div>

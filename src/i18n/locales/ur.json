@@ -2618,6 +2618,7 @@
     "return_draft_created": "خریداری کی واپسی ڈرافٹ کے طور پر بنا دی گئی",
     "return_from_po_note": "خریداری آرڈر نمبر {{number}} سے سامان کی واپسی",
     "return_goods": "مال کی واپسی",
+    "return_price_locked": "قیمت اصل خریداری کی قیمت پر مقفل ہے اور اسے تبدیل نہیں کیا جا سکتا",
     "return_to_supplier": "سپلائر کو مال کی واپسی",
     "return_value": "واپسی کی قیمت",
     "returns": "واپسی",
