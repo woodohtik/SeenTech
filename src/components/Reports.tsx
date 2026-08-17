@@ -210,17 +210,32 @@ export default function Reports({ tenantId }: { tenantId: string }) {
     });
   }, [orders, dateRange, selectedStaff, paymentStatus, searchTerm, excludeTestData]);
 
+  // A returned order is set to status 'cancelled' but its original
+  // totalAmount/paidAmount are left on the row for audit purposes -- so any
+  // revenue/sales figure built from filteredOrders directly would keep
+  // counting money that was actually refunded back to the customer. Every
+  // financial calculation below uses this non-cancelled subset instead;
+  // filteredOrders itself stays the "all orders matching filters" set for
+  // status breakdowns and counts that should still show cancelled orders.
+  const nonCancelledOrders = useMemo(
+    () => filteredOrders.filter(o => o.status !== 'cancelled'),
+    [filteredOrders]
+  );
+
   // Financial Calculations
   const financialStats = useMemo(() => {
-    const totalRevenue = filteredOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0);
-    const totalSales = filteredOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
-    const totalTax = filteredOrders.reduce((sum, o) => sum + (o.taxAmount || 0), 0);
+    const totalRevenue = nonCancelledOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0);
+    const totalSales = nonCancelledOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+    const totalTax = nonCancelledOrders.reduce((sum, o) => sum + (o.taxAmount || 0), 0);
     const netProfit = totalRevenue - totalTax; // Simplified profit calculation
+    const totalReturnsValue = filteredOrders
+      .filter(o => o.status === 'cancelled')
+      .reduce((sum, o) => sum + (o.totalAmount || 0), 0);
 
     // Sales by Payment Method
-    const paymentMethods = filteredOrders.reduce((acc: any, o) => {
-      const method = o.paymentMethod === 'cash' ? t('billing.modal_method_cash') : 
-                    o.paymentMethod === 'network' ? t('common.payment_methods.network') : 
+    const paymentMethods = nonCancelledOrders.reduce((acc: any, o) => {
+      const method = o.paymentMethod === 'cash' ? t('billing.modal_method_cash') :
+                    o.paymentMethod === 'network' ? t('common.payment_methods.network') :
                     o.paymentMethod === 'cash_on_delivery' ? t('orders.payment_on_delivery_short') : t('common.other');
       acc[method] = (acc[method] || 0) + (o.paidAmount || 0);
       return acc;
@@ -229,7 +244,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
     const paymentChartData = Object.entries(paymentMethods).map(([name, value]) => ({ name, value }));
 
     // Revenue Trend
-    const trendData = filteredOrders.reduce((acc: any, o) => {
+    const trendData = nonCancelledOrders.reduce((acc: any, o) => {
       const date = o.orderDate.split('T')[0];
       if (!acc[date]) acc[date] = { date, revenue: 0, sales: 0 };
       acc[date].revenue += (o.paidAmount || 0);
@@ -239,8 +254,8 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
     const trendChartData = Object.values(trendData).sort((a: any, b: any) => a.date.localeCompare(b.date));
 
-    return { totalRevenue, totalSales, totalTax, netProfit, paymentChartData, trendChartData };
-  }, [filteredOrders, t]);
+    return { totalRevenue, totalSales, totalTax, netProfit, totalReturnsValue, paymentChartData, trendChartData };
+  }, [nonCancelledOrders, filteredOrders, t]);
 
   // Order Stats
   const orderStats = useMemo(() => {
@@ -254,6 +269,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
       { name: t('reports.status_in_workshop'), value: (statusCounts['cutting'] || 0) + (statusCounts['sewing'] || 0), key: 'processing' },
       { name: t('dashboard.ready'), value: statusCounts['ready'] || 0, key: 'ready' },
       { name: t('common.delivered'), value: statusCounts['delivered'] || 0, key: 'delivered' },
+      { name: t('common.status_cancelled'), value: statusCounts['cancelled'] || 0, key: 'cancelled' },
     ];
 
     // Delayed Orders (Simplified: orders older than 7 days and not delivered)
@@ -296,10 +312,10 @@ export default function Reports({ tenantId }: { tenantId: string }) {
   // Staff Performance
   const staffStats = useMemo(() => {
     const performance = staff.map(s => {
-      const staffOrders = filteredOrders.filter(o => o.createdBy === s.id);
+      const staffOrders = nonCancelledOrders.filter(o => o.createdBy === s.id);
       const totalSales = staffOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
       const completedItems = staffOrders.filter(o => o.status === 'delivered').length;
-      
+
       return {
         name: s.name,
         sales: totalSales,
@@ -309,7 +325,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
     }).sort((a, b) => b.sales - a.sales);
 
     return { performance };
-  }, [staff, filteredOrders]);
+  }, [staff, nonCancelledOrders]);
 
   // Detailed Employee Performance
   const staffWithPerformance = useMemo(() => {
@@ -340,10 +356,10 @@ export default function Reports({ tenantId }: { tenantId: string }) {
   const customerStats = useMemo(() => {
     const filteredCustomers = customers.filter(c => !excludeTestData || !c.isTest);
     const customerPurchases = filteredCustomers.map(c => {
-      const customerOrders = filteredOrders.filter(o => o.customerId === c.id || o.customerPhone === c.phone);
+      const customerOrders = nonCancelledOrders.filter(o => o.customerId === c.id || o.customerPhone === c.phone);
       const totalSpent = customerOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
       const orderCount = customerOrders.length;
-      
+
       return {
         id: c.id,
         name: c.name,
@@ -365,7 +381,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
     ];
 
     return { topCustomers, retentionChartData, totalActiveCustomers: customerPurchases.length };
-  }, [customers, filteredOrders, excludeTestData, t]);
+  }, [customers, nonCancelledOrders, excludeTestData, t]);
 
   const fetchDailyZReport = async (date: string) => {
     setLoadingZ(true);
@@ -577,6 +593,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
             { id: 'inventory', label: t('inventory.reports'), icon: Package },
             { id: 'staff', label: t('reports.tab_staff_customers'), icon: Users },
             { id: 'zreports', label: t('reports.tab_zreports'), icon: Calculator },
+            { id: 'tailor_commissions', label: t('reports.tab_tailor_commissions'), icon: Scissors },
           ].map((tab) => (
             <button
               id={`tab-btn-${tab.id}`}
@@ -718,8 +735,8 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 </div>
               </div>
 
-              {/* Tax & Profit Cards */}
-              <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
+              {/* Tax, Profit & Returns Cards */}
+              <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
                 <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
                   <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.total_tax')}</p>
                   <h3 className="text-base sm:text-2xl font-black text-rose-600 mt-1 sm:mt-2"><PriceDisplay amount={financialStats.totalTax} /></h3>
@@ -730,12 +747,17 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                   <h3 className="text-base sm:text-2xl font-black text-emerald-600 mt-1 sm:mt-2"><PriceDisplay amount={financialStats.netProfit} /></h3>
                   <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('reports.after_tax_deduction')}</p>
                 </div>
-                <div className="col-span-2 md:col-span-1 bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
                   <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.avg_order_value')}</p>
                   <h3 className="text-base sm:text-2xl font-black text-brand mt-1 sm:mt-2">
-                    <PriceDisplay amount={filteredOrders.length > 0 ? financialStats.totalSales / filteredOrders.length : 0} />
+                    <PriceDisplay amount={nonCancelledOrders.length > 0 ? financialStats.totalSales / nonCancelledOrders.length : 0} />
                   </h3>
-                  <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('reports.based_on_orders', { n: filteredOrders.length })}</p>
+                  <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('reports.based_on_orders', { n: nonCancelledOrders.length })}</p>
+                </div>
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                  <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.total_returns_value')}</p>
+                  <h3 className="text-base sm:text-2xl font-black text-danger mt-1 sm:mt-2"><PriceDisplay amount={financialStats.totalReturnsValue} /></h3>
+                  <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('common.status_cancelled')}</p>
                 </div>
               </div>
             </div>
@@ -1142,6 +1164,10 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 </div>
               )}
             </div>
+          )}
+
+          {activeTab === 'tailor_commissions' && (
+            <TailorStatementReport tenantId={tenantId} />
           )}
         </motion.div>
       </AnimatePresence>

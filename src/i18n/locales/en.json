@@ -2815,10 +2815,12 @@
     "tab_general": "Overview",
     "tab_orders": "Order Reports",
     "tab_staff_customers": "Staff & Customers",
+    "tab_tailor_commissions": "Tailor Commissions",
     "tab_zreports": "Z Reports (End of Day)",
     "title": "Comprehensive Reports Center",
     "top_customers": "Top Customers (by Sales)",
     "total_purchases": "Total Purchases",
+    "total_returns_value": "Total Returns Value",
     "total_tax": "Total Tax",
     "view_staff_orders": "View Employee Orders"
   },

@@ -2815,10 +2815,12 @@
     "tab_general": "اللوحة العامة",
     "tab_orders": "تقارير الطلبات",
     "tab_staff_customers": "الموظفين والعملاء",
+    "tab_tailor_commissions": "عمولات الخياطين",
     "tab_zreports": "تقارير Z (إغلاق اليوم)",
     "title": "مركز التقارير الشامل",
     "top_customers": "أفضل العملاء (حسب المبيعات)",
     "total_purchases": "إجمالي المشتريات",
+    "total_returns_value": "قيمة المرتجعات",
     "total_tax": "إجمالي الضريبة",
     "view_staff_orders": "عرض طلبات الموظف"
   },

@@ -2815,10 +2815,12 @@
     "tab_general": "عمومی جائزہ",
     "tab_orders": "آرڈر رپورٹس",
     "tab_staff_customers": "اسٹاف اور کسٹمرز",
+    "tab_tailor_commissions": "درزی کمیشن",
     "tab_zreports": "زیڈ رپورٹس (دن کا اختتام)",
     "title": "جامع رپورٹس سینٹر",
     "top_customers": "بہترین کسٹمرز (فروخت کے لحاظ سے)",
     "total_purchases": "کل خریداری",
+    "total_returns_value": "مرتجعات کی مالیت",
     "total_tax": "کل ٹیکس",
     "view_staff_orders": "ملازم کے آرڈرز دیکھیں"
   },
