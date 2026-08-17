@@ -51,6 +51,11 @@ export default function Login() {
   // Form States
   const [loginId, setLoginId] = useState(''); // Email or Phone
   const [password, setPassword] = useState('');
+  // Keeps the login email/password inputs readOnly until the user actually
+  // focuses one of them, so the browser can't eagerly auto-populate them on
+  // page load. Once focused they behave normally, so clicking still shows
+  // (and can accept) the browser's saved-credential suggestion dropdown.
+  const [loginFieldsUnlocked, setLoginFieldsUnlocked] = useState(false);
   const [fullName, setFullName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPhone, setRegPhone] = useState('');
@@ -662,6 +667,9 @@ export default function Login() {
                 <IconInput
                   required
                   type="text"
+                  autoComplete="username"
+                  readOnly={!loginFieldsUnlocked}
+                  onFocus={() => setLoginFieldsUnlocked(true)}
                   value={loginId}
                   onChange={(e) => setLoginId(e.target.value)}
                   placeholder={t('login.email_or_phone_placeholder')}
@@ -684,6 +692,9 @@ export default function Login() {
                   <IconInput
                     required
                     type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    readOnly={!loginFieldsUnlocked}
+                    onFocus={() => setLoginFieldsUnlocked(true)}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
