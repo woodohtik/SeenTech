@@ -47,13 +47,14 @@ import { generateZatcaQR } from '../lib/zatca';
 import VisualMeasurements from './VisualMeasurements';
 import ThobeMeasurementSelector from './ThobeMeasurementSelector';
 import Branding from './Branding';
-import { downloadInvoicePDF, shareInvoiceAsPDFFile } from '../utils/pdfGenerator';
+import { downloadInvoicePDF } from '../utils/pdfGenerator';
 import { useBranding } from '../contexts/BrandingContext';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
 import { useRouter, useRefreshCounter } from '../hooks/useRouter';
 import { encodeOrderB2BNotes, encodeInvoiceExtendedNotes } from '../utils/b2bHelper';
 import { useTranslation } from 'react-i18next';
 import ScannerModal from './ScannerModal';
+import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
 
 import { isRtlLang } from '../lib/direction';
 
@@ -82,6 +83,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const [b2bData, setB2bData] = useState({ companyName: '', trn: '' });
   const [isB2bModalOpen, setIsB2bModalOpen] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<any>(null);
+  const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
   const [showCartOnMobile, setShowCartOnMobile] = useState(false);
   const { currentStaff } = useStaff();
   const { user: currentAuthUser } = useAuth();
@@ -1103,6 +1105,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
          taxAmount: taxAmount,
          discountAmount: calculatedDiscountAmount,
          customerName: orderData.customer_name,
+         customerPhone: selectedCustomer?.phone,
          customerVat: b2bTRN,
          items: cart.map(item => ({ name: item.name || item.garmentType || 'منتج مخصص', quantity: item.quantity, price: item.price })),
          qrCode: qrCodeBase64,
@@ -1462,9 +1465,40 @@ const invoiceData: InvoiceData | null = completedOrder ? {
   qrValue: completedOrder.qrCode,
   invoiceType: completedOrder.invoiceType
 } : null;
+
+  const proceedToWhatsApp = (phone: string) => {
+    const text = t('pos.whatsapp_invoice_text', {
+      store: brandingSettings?.storeName || t('pos.store_default'),
+      invoiceNumber: completedOrder.invoiceNumber,
+      total: completedOrder.total,
+    });
+    window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`, '_blank');
+    setWhatsappModalOpen(false);
+  };
+
+  const handleShareWhatsApp = () => {
+    if (!completedOrder) return;
+    // Known customer phone -> send straight to WhatsApp, no extra step.
+    // Only prompt for a number when there's none on file.
+    const knownPhone = completedOrder.customerPhone ? formatSaudiPhone(completedOrder.customerPhone).replace('+', '') : '';
+    if (knownPhone) {
+      proceedToWhatsApp(knownPhone);
+      return;
+    }
+    setWhatsappModalOpen(true);
+  };
+
   return (
     <div className="h-full flex flex-col lg:flex-row font-sans bg-background text-content overflow-hidden w-full" dir={isRtl ? 'rtl' : 'ltr'}>
       <ScannerModal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} onScan={handleScan} />
+      {whatsappModalOpen && completedOrder && (
+        <WhatsAppPhoneModal
+          onClose={() => setWhatsappModalOpen(false)}
+          onConfirm={proceedToWhatsApp}
+          title={t('printing.whatsapp_modal_title', 'إرسال الفاتورة عبر واتساب')}
+          description={t('printing.whatsapp_modal_desc', 'أدخل رقم جوال العميل لفتح واتساب مع تفاصيل الفاتورة جاهزة للإرسال.')}
+        />
+      )}
       {/* Main Pane (70% width on Desktop) */}
       <div className="w-full lg:w-[70%] flex flex-col gap-4 lg:gap-5 overflow-x-hidden transition-all duration-300 p-4 sm:p-6 overflow-y-auto h-auto lg:h-full flex-1">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
@@ -1796,20 +1830,9 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">📥</span>
                       <span className="text-sm font-bold">{t('pos.download_pdf')}</span>
                     </button>
-                    <button 
+                    <button
                        className="col-span-2 flex flex-col items-center justify-center p-4 rounded-2xl border border-success/20 hover:border-success hover:bg-success/5 transition-all text-success group"
-                       onClick={async () => {
-                         const text = t('pos.whatsapp_invoice_text', {
-                           store: brandingSettings?.storeName || t('pos.store_default'),
-                           invoiceNumber: completedOrder.invoiceNumber,
-                           total: completedOrder.total,
-                         });
-                         try {
-                           await shareInvoiceAsPDFFile('pos-invoice-print-area', `Invoice-${completedOrder.invoiceNumber}.pdf`, text);
-                         } catch (e) {
-                           console.error(e);
-                         }
-                       }}
+                       onClick={handleShareWhatsApp}
                     >
                       <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">📱</span>
                       <span className="text-sm font-bold">{t('pos.share_whatsapp')}</span>

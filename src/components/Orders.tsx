@@ -66,6 +66,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import * as XLSX from 'xlsx';
 import Branding from './Branding';
 import { buildWhatsAppMessage, getWhatsAppTemplate, sendWhatsAppMessage } from '../utils/whatsapp';
+import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
 import ScannerModal from './ScannerModal';
 import Select from './ui/Select';
 import { SmartSelect } from './ui/SmartSelect';
@@ -198,6 +199,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const [isConfirmDeliveryOpen, setIsConfirmDeliveryOpen] = useState(false);
   const [openStatusDropdownId, setOpenStatusDropdownId] = useState<string | null>(null);
   const [tenantStrategy, setTenantStrategy] = useState<'centralized' | 'decentralized'>('centralized');
+  const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
+  const [pendingWhatsAppOrder, setPendingWhatsAppOrder] = useState<Order | null>(null);
   const [searchParams] = useSearchParams();
   const { currentStaff } = useStaff();
   const { user: currentAuthUser } = useAuth();
@@ -1244,13 +1247,11 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     return matchesSearch && matchesStatus && matchesDate && matchesTab;
   });
 
-  const sendToWhatsApp = (order: Order) => {
-    const customer = customers.find(c => c.id === order.customerId);
-    const phone = customer?.phone || '';
+  const buildOrderWhatsAppMessage = (order: Order, phone: string) => {
     const orderNum = (order.orderNumber?.toString() || order.id).slice(-6).toUpperCase();
     const invoiceUrl = `${window.location.origin}/order/${order.id}`;
 
-    const message = buildWhatsAppMessage(getWhatsAppTemplate(), {
+    return buildWhatsAppMessage(getWhatsAppTemplate(), {
       customerName: order.customerName,
       orderId: `#${orderNum}`,
       totalAmount: order.totalAmount,
@@ -1258,8 +1259,26 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       invoiceUrl: invoiceUrl,
       storeName: branding.companyName || t('pos.store_default'),
     });
+  };
 
-    sendWhatsAppMessage(phone, message);
+  const proceedToWhatsApp = (phone: string) => {
+    if (!pendingWhatsAppOrder) return;
+    sendWhatsAppMessage(phone, buildOrderWhatsAppMessage(pendingWhatsAppOrder, phone));
+    setWhatsappModalOpen(false);
+    setPendingWhatsAppOrder(null);
+  };
+
+  const sendToWhatsApp = (order: Order) => {
+    const customer = customers.find(c => c.id === order.customerId);
+    const phone = customer?.phone || order.customerPhone || '';
+    // Known customer phone -> send straight to WhatsApp, no extra step.
+    // Only prompt for a number when there's none on file.
+    if (phone) {
+      sendWhatsAppMessage(phone, buildOrderWhatsAppMessage(order, phone));
+      return;
+    }
+    setPendingWhatsAppOrder(order);
+    setWhatsappModalOpen(true);
   };
 
   const OrderDetailsDrawer = ({ order }: { order: Order }) => {
@@ -1924,7 +1943,15 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
   return (
     <div className={cn("space-y-6", isRtlLang(i18n.language) ? "text-right" : "text-left")} dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}>
-      <Header 
+      {whatsappModalOpen && pendingWhatsAppOrder && (
+        <WhatsAppPhoneModal
+          onClose={() => { setWhatsappModalOpen(false); setPendingWhatsAppOrder(null); }}
+          onConfirm={proceedToWhatsApp}
+          title={t('printing.whatsapp_modal_title', 'إرسال الفاتورة عبر واتساب')}
+          description={t('printing.whatsapp_modal_desc', 'أدخل رقم جوال العميل لفتح واتساب مع تفاصيل الفاتورة جاهزة للإرسال.')}
+        />
+      )}
+      <Header
         tenantId={tenantId} 
         title={t('common.orders')} 
         subtitle={t('orders.subtitle')}
