@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { formatSaudiPhone } from '../utils/phoneUtils';
-import { FileText, Download, Printer, ShoppingBag, DollarSign, RotateCcw, CreditCard, Calculator, ArrowRightLeft, MessageCircle, ArrowLeft } from 'lucide-react';
+import { FileText, Download, Printer, ShoppingBag, DollarSign, RotateCcw, CreditCard, Calculator, ArrowRightLeft, MessageCircle, ArrowLeft, Package } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
 import { Shift, ShiftTotals } from '../types';
@@ -145,6 +145,15 @@ export default function ZReport({ data, onClose }: ZReportProps) {
       [t('z_report.net_sales'), totals.totalSales],
       [t('z_report.excel_total_vat'), totals.taxes],
       [],
+      [t('z_report.sales_details')],
+      [t('z_report.order_count'), totals.orderCount ?? t('z_report.data_unavailable')],
+      [t('z_report.items_sold_count'), totals.itemsSoldCount ?? t('z_report.data_unavailable')],
+      [],
+      ...(totals.productBreakdown && totals.productBreakdown.length > 0 ? [
+        [t('z_report.product_name'), t('z_report.quantity_sold'), t('pos.amount')],
+        ...totals.productBreakdown.map(p => [p.name, p.quantity, p.total]),
+        []
+      ] : []),
       [t('z_report.excel_payment_breakdown')],
       [t('z_report.excel_cash'), totals.cash],
       [t('z_report.card_lbl'), totals.card],
@@ -279,6 +288,51 @@ export default function ZReport({ data, onClose }: ZReportProps) {
               <span><PriceDisplay amount={totals.taxes} /></span>
             </div>
           </div>
+        </div>
+
+        {/* Order & Product Details */}
+        <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-10">
+          <h3 className="flex items-center gap-2 text-brand font-black text-xs sm:text-sm uppercase tracking-wider mb-2 sm:mb-4">
+            <Package size={16} className="sm:w-[18px] sm:h-[18px]" />
+            <span>{t('z_report.sales_details', 'تفاصيل الطلبات والمنتجات')}</span>
+          </h3>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
+            <div className="p-3 sm:p-4 border border-border rounded-xl sm:rounded-2xl bg-surface-muted/30">
+              <p className="text-[9px] sm:text-[10px] font-black text-content-muted mb-1 uppercase">{t('z_report.order_count', 'عدد الفواتير')}</p>
+              <p className="text-sm sm:text-xl font-black text-content">
+                {totals.orderCount ?? t('z_report.data_unavailable', 'غير متوفر')}
+              </p>
+            </div>
+            <div className="p-3 sm:p-4 border border-border rounded-xl sm:rounded-2xl bg-surface-muted/30">
+              <p className="text-[9px] sm:text-[10px] font-black text-content-muted mb-1 uppercase">{t('z_report.items_sold_count', 'عدد القطع المباعة')}</p>
+              <p className="text-sm sm:text-xl font-black text-content">
+                {totals.itemsSoldCount ?? t('z_report.data_unavailable', 'غير متوفر')}
+              </p>
+            </div>
+          </div>
+
+          {totals.productBreakdown && totals.productBreakdown.length > 0 && (
+            <div className="border border-border rounded-xl sm:rounded-2xl overflow-x-auto whitespace-nowrap scrollbar-hide">
+              <table className="w-full text-right text-xs sm:text-sm min-w-max">
+                <thead className="bg-surface-muted text-content-muted font-black text-[10px] uppercase">
+                  <tr>
+                    <th className="p-3 sm:p-4">{t('z_report.product_name', 'المنتج / الصنف')}</th>
+                    <th className="p-3 sm:p-4 text-left">{t('z_report.quantity_sold', 'الكمية المباعة')}</th>
+                    <th className="p-3 sm:p-4 text-left">{t('pos.amount', 'المبلغ')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {totals.productBreakdown.map((p, idx) => (
+                    <tr key={idx}>
+                      <td className="p-3 sm:p-4 font-bold text-content">{p.name}</td>
+                      <td className="p-3 sm:p-4 text-left font-black">{p.quantity}</td>
+                      <td className="p-3 sm:p-4 text-left font-black"><PriceDisplay amount={p.total} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* Payment Methods */}

@@ -67,6 +67,9 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
         let totalSales = 0;
         let grossSales = 0;
         let discounts = 0;
+        let orderCount = 0;
+        let itemsSoldCount = 0;
+        const productMap = new Map<string, { name: string; quantity: number; total: number }>();
 
         (orders || []).forEach(order => {
           if (order.status === 'cancelled') {
@@ -75,15 +78,28 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
             if (order.payment_method === 'cash') cashReturns += (order.paid_amount || 0);
           } else {
             totalSales += (order.total_amount || 0);
-            grossSales += (order.total_amount || 0); 
+            grossSales += (order.total_amount || 0);
             taxes += (order.tax_amount || 0);
-            
+
             if (order.payment_method === 'cash') cash += (order.paid_amount || 0);
             else if (order.payment_method === 'network') card += (order.paid_amount || 0);
             else if (order.payment_method === 'bank_transfer') bank_transfer += (order.paid_amount || 0);
             else credit += (order.paid_amount || 0);
+
+            orderCount++;
+            (order.items || []).forEach((item: any) => {
+              const qty = Number(item.quantity || 0);
+              itemsSoldCount += qty;
+              const key = item.type === 'custom' ? (item.garmentType || t('orders.custom_thobe')) : (item.name || t('orders.ready_made'));
+              const entry = productMap.get(key) || { name: key, quantity: 0, total: 0 };
+              entry.quantity += qty;
+              entry.total += Number(item.price || 0) * qty;
+              productMap.set(key, entry);
+            });
           }
         });
+
+        const productBreakdown = Array.from(productMap.values()).sort((a, b) => b.quantity - a.quantity);
 
         const { data: entries, error: entriesErr } = await supabase
           .from('shift_entries')
@@ -122,7 +138,10 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
           taxes,
           totalSales,
           grossSales,
-          discounts
+          discounts,
+          orderCount,
+          itemsSoldCount,
+          productBreakdown
         });
       } catch (error) {
         handleError(error as any, OperationType.GET, 'orders');

@@ -623,6 +623,28 @@ export default function Reports({ tenantId }: { tenantId: string }) {
       const startTimes = shifts.map(s => new Date(s.start_time).getTime());
       const endTimes = shifts.map(s => new Date(s.end_time!).getTime());
 
+      // Order count / items sold / product breakdown are computed fresh
+      // from the already-loaded orders for this date rather than summed
+      // from each shift's stored totals -- those totals may predate this
+      // field on older shifts, which would silently understate a
+      // multi-shift day instead of reflecting what was actually sold.
+      const dayOrders = orders.filter(o => o.orderDate?.startsWith(date) && o.status !== 'cancelled');
+      const orderCount = dayOrders.length;
+      let itemsSoldCount = 0;
+      const productMap = new Map<string, { name: string; quantity: number; total: number }>();
+      dayOrders.forEach(o => {
+        (o.items || []).forEach((item: any) => {
+          const qty = Number(item.quantity || 0);
+          itemsSoldCount += qty;
+          const key = item.type === 'custom' ? (item.garmentType || t('orders.custom_thobe')) : (item.name || t('orders.ready_made'));
+          const entry = productMap.get(key) || { name: key, quantity: 0, total: 0 };
+          entry.quantity += qty;
+          entry.total += Number(item.price || 0) * qty;
+          productMap.set(key, entry);
+        });
+      });
+      const productBreakdown = Array.from(productMap.values()).sort((a, b) => b.quantity - a.quantity);
+
       setDailyZData({
         id: `EOD-${date}`,
         tenantId,
@@ -633,7 +655,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
         actualCash: shifts.reduce((sum, s) => sum + (s.actual_cash || 0), 0),
         expectedCash: shifts.reduce((sum, s) => sum + (s.expected_cash || 0), 0),
         discrepancy: shifts.reduce((sum, s) => sum + (s.discrepancy || 0), 0),
-        totals: consolidatedTotals,
+        totals: { ...consolidatedTotals, orderCount, itemsSoldCount, productBreakdown },
         type: 'daily'
       });
       

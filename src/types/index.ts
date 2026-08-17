@@ -136,6 +136,12 @@ export interface ShiftDeposit {
   time: string;
 }
 
+export interface ShiftProductBreakdownEntry {
+  name: string;
+  quantity: number;
+  total: number;
+}
+
 export interface ShiftTotals {
   cash: number;
   card: number;
@@ -150,6 +156,11 @@ export interface ShiftTotals {
   totalSales: number;
   grossSales: number;
   discounts: number;
+  // Optional: absent on shifts closed before this field existed -- ZReport
+  // must treat a missing value as "unknown", not silently show 0.
+  orderCount?: number;
+  itemsSoldCount?: number;
+  productBreakdown?: ShiftProductBreakdownEntry[];
 }
 
 export interface Shift {
