@@ -72,7 +72,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                           selectedOrder.paymentMethod === 'network' ? t('pos.card') : 
                           selectedOrder.paymentMethod === 'partial' ? t('pos.partial') : 
                           selectedOrder.paymentMethod === 'bank_transfer' ? t('pos.bank_transfer') : t('pos.other');
-    const statusText = selectedOrder.status === 'delivered' ? t('pos.delivered') : t('pos.pending');
+    const statusText = getStatusBadge(selectedOrder.status).label;
     
     const text = t('sales_record.whatsapp_invoice_message', {
       invoiceNumber: selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase(),
@@ -170,6 +170,15 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
     fetchOrders();
   }, [tenantId, shiftId, filterStatus]);
 
+  const getStatusBadge = (status?: string) => {
+    if (status === 'delivered') return { label: t('pos.delivered'), className: 'bg-success/10 text-success' };
+    // A returned order is set to 'cancelled' -- falling through to the
+    // generic "pending" bucket below made every returned invoice in the
+    // Returns Record list misleadingly show as still awaiting processing.
+    if (status === 'cancelled') return { label: t('common.status_cancelled'), className: 'bg-danger/10 text-danger' };
+    return { label: t('pos.pending'), className: 'bg-brand/10 text-brand' };
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -229,9 +238,9 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                   <td className="p-4">
                     <span className={cn(
                       "px-2 py-1 rounded-md text-xs font-bold",
-                      order.status === 'delivered' ? "bg-success/10 text-success" : "bg-brand/10 text-brand"
+                      getStatusBadge(order.status).className
                     )}>
-                      {order.status === 'delivered' ? t('pos.delivered') : t('pos.pending')}
+                      {getStatusBadge(order.status).label}
                     </span>
                   </td>
                   <td className="p-4 text-left">
@@ -265,9 +274,9 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                 <div className="flex gap-2">
                   <span className={cn(
                     "px-2 py-0.5 rounded text-[10px] font-bold",
-                    order.status === 'delivered' ? "bg-success/10 text-success" : "bg-brand/10 text-brand"
+                    getStatusBadge(order.status).className
                   )}>
-                    {order.status === 'delivered' ? t('pos.delivered') : t('pos.pending')}
+                    {getStatusBadge(order.status).label}
                   </span>
                   {order.isB2B && (
                     <span className="bg-brand/10 text-brand px-2 py-0.5 rounded text-[10px] font-black uppercase">B2B</span>
