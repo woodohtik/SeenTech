@@ -29,6 +29,7 @@ import { PriceDisplay } from './PriceDisplay';
 import { cn } from '../lib/utils';
 import { useDirection } from '../lib/direction';
 import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
+import { downloadInvoicePDFSilently, shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
 import { formatSaudiPhone } from '../utils/phoneUtils';
 
 interface SupplierLedgerProps {
@@ -165,7 +166,7 @@ export default function SupplierLedger({
     window.print();
   };
 
-  const proceedToWhatsApp = (phone: string) => {
+  const buildLedgerWhatsAppMessage = () => {
     const today = new Date().toLocaleDateString('ar-EG-u-nu-latn', { year: 'numeric', month: 'long', day: 'numeric' });
 
     let message = `*${t('procurement.ledger_of_supplier_at', 'كشف حساب المورد لدى')} ${tenantName}*\n`;
@@ -173,21 +174,35 @@ export default function SupplierLedger({
     message += `*${t('procurement.date_lbl', 'التاريخ')}:* ${today}\n`;
     message += `*${t('procurement.total_balance_due_desc')}:* ${supplier.balance.toFixed(2)}\n\n`;
     message += `${t('procurement.whatsapp_ledger_thanks', 'وشكراً جزيلاً لكم.')}`;
+    return message;
+  };
 
-    const encodedText = encodeURIComponent(message);
+  const proceedToWhatsApp = (phone: string) => {
+    const encodedText = encodeURIComponent(buildLedgerWhatsAppMessage());
     const whatsappUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodedText}`;
     window.open(whatsappUrl, '_blank');
     setWhatsappModalOpen(false);
   };
 
-  const handleWhatsAppShare = () => {
+  const handleWhatsAppShare = async () => {
+    const filename = t('procurement.ledger_pdf_filename', { name: supplier.name.replace(/\s+/g, '_') });
     // Known supplier phone -> send straight to WhatsApp, no extra step.
     // Only prompt for a number when there's none on file.
     const knownPhone = supplier.phone ? formatSaudiPhone(supplier.phone).replace('+', '') : '';
     if (knownPhone) {
+      // WhatsApp's link format can only carry text, never a file, so the
+      // PDF is downloaded alongside (best-effort, never blocking) to be
+      // attached manually in the chat that just opened.
+      downloadInvoicePDFSilently('supplier-ledger-pdf-capture', filename);
       proceedToWhatsApp(knownPhone);
       return;
     }
+
+    // No number on file: let native share (when supported) hand the PDF
+    // straight into WhatsApp with the recipient picked inside the app,
+    // instead of asking for a number ourselves.
+    const result = await shareOrDownloadInvoicePDF('supplier-ledger-pdf-capture', filename, buildLedgerWhatsAppMessage());
+    if (result === 'shared') return;
     setWhatsappModalOpen(true);
   };
 

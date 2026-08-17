@@ -67,6 +67,7 @@ import * as XLSX from 'xlsx';
 import Branding from './Branding';
 import { buildWhatsAppMessage, getWhatsAppTemplate, sendWhatsAppMessage } from '../utils/whatsapp';
 import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
+import { downloadInvoicePDFSilently, shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
 import ScannerModal from './ScannerModal';
 import Select from './ui/Select';
 import { SmartSelect } from './ui/SmartSelect';
@@ -1281,6 +1282,31 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     setWhatsappModalOpen(true);
   };
 
+  // Same as sendToWhatsApp, but used from inside the open InvoiceModal
+  // (where #order-invoice-print-area is actually rendered) so the invoice
+  // can go out as an attached PDF -- WhatsApp's link format only ever
+  // carries text, never a file, so a known number still opens the chat
+  // directly with the PDF downloaded alongside to attach manually.
+  const handleInvoiceModalWhatsApp = async (order: Order) => {
+    const customer = customers.find(c => c.id === order.customerId);
+    const phone = customer?.phone || order.customerPhone || '';
+    const filename = `Invoice-${order.orderNumber || order.id.slice(-6).toUpperCase()}.pdf`;
+
+    if (phone) {
+      downloadInvoicePDFSilently('order-invoice-print-area', filename);
+      sendWhatsAppMessage(phone, buildOrderWhatsAppMessage(order, phone));
+      return;
+    }
+
+    // No number on file: let native share (when supported) hand the PDF
+    // straight into WhatsApp with the recipient picked inside the app,
+    // instead of asking for a number ourselves.
+    const result = await shareOrDownloadInvoicePDF('order-invoice-print-area', filename, buildOrderWhatsAppMessage(order, ''));
+    if (result === 'shared') return;
+    setPendingWhatsAppOrder(order);
+    setWhatsappModalOpen(true);
+  };
+
   const OrderDetailsDrawer = ({ order }: { order: Order }) => {
     const [isPaying, setIsPaying] = useState(false);
     const [payAmount, setPayAmount] = useState(order.remainingAmount || 0);
@@ -1844,6 +1870,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             </button>
           </div>
 
+          <div id="order-invoice-print-area" className="space-y-6 bg-surface">
           <div className="text-center space-y-1">
             <h2 className="text-2xl font-black text-content">{t('orders.invoice')}</h2>
             <p className="text-content-muted font-medium">{t('common.order')}: #{order.orderNumber || order.id.slice(-6).toUpperCase()}</p>
@@ -1918,14 +1945,15 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
             <Branding className="opacity-40 py-0" />
           </div>
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
             <button className="flex items-center justify-center gap-2 bg-brand text-white py-4 rounded-2xl font-bold hover:bg-brand/90 transition-all shadow-lg shadow-brand/10">
               <Printer size={20} />
               <span>{t('orders.print')}</span>
             </button>
-            <button 
-              onClick={() => sendToWhatsApp(order)}
+            <button
+              onClick={() => handleInvoiceModalWhatsApp(order)}
               className="flex items-center justify-center gap-2 bg-success text-white py-4 rounded-2xl font-bold hover:bg-success/90 transition-all shadow-lg shadow-success/10"
             >
               <MessageSquare size={20} />

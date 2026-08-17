@@ -9,6 +9,7 @@ import { Customer, TaxInvoice } from '../../types/supabase';
 import { PriceDisplay } from '../PriceDisplay';
 import WhatsAppPhoneModal from '../ui/WhatsAppPhoneModal';
 import { formatSaudiPhone } from '../../utils/phoneUtils';
+import { downloadInvoicePDF, downloadInvoicePDFSilently, shareOrDownloadInvoicePDF } from '../../utils/pdfGenerator';
 
 interface InvoiceModalProps {
   isOpen: boolean;
@@ -69,7 +70,6 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
 
   const handleDownloadPDF = async () => {
     try {
-      const { downloadInvoicePDF } = await import('../../utils/pdfGenerator');
       await downloadInvoicePDF('print-area', `Invoice-${invoice.invoice_number}.pdf`);
     } catch (e) {
       console.error(e);
@@ -86,14 +86,32 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
     setWhatsappModalOpen(false);
   };
 
-  const handleShareWhatsApp = () => {
+  const handleShareWhatsApp = async () => {
+    const filename = `Invoice-${invoice.invoice_number}.pdf`;
     // Known customer phone -> send straight to WhatsApp, no extra step.
     // Only prompt for a number when there's none on file.
     const knownPhone = customerPhone ? formatSaudiPhone(customerPhone).replace('+', '') : '';
     if (knownPhone) {
+      // WhatsApp's link format can only carry text, never a file, so the
+      // PDF is downloaded alongside (best-effort, never blocking) to be
+      // attached manually in the chat that just opened. Fired without
+      // awaiting so window.open below stays inside the click's user
+      // gesture instead of racing a popup blocker.
+      downloadInvoicePDFSilently('print-area', filename);
       proceedToWhatsApp(knownPhone);
       return;
     }
+
+    // No number on file: let native share (when supported) hand the PDF
+    // straight into WhatsApp with the recipient picked inside the app,
+    // instead of asking for a number ourselves.
+    const text = t('printing.invoice_share_text', {
+      tenant: tenantName,
+      number: invoice.invoice_number,
+      total: invoice.total_amount,
+    });
+    const result = await shareOrDownloadInvoicePDF('print-area', filename, text);
+    if (result === 'shared') return;
     setWhatsappModalOpen(true);
   };
 

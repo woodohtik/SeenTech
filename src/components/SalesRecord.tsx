@@ -8,7 +8,7 @@ import { decodeOrderRow } from '../utils/orderHistoryHelper';
 import { PriceDisplay } from './PriceDisplay';
 import { FileText, Eye, X, Download, Package, Scissors, User, Calendar, CreditCard, ShoppingBag, Clock, Printer, Share2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { downloadInvoicePDF } from '../utils/pdfGenerator';
+import { downloadInvoicePDF, downloadInvoicePDFSilently, shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
 import SimplifiedTaxInvoice from './printing/SimplifiedTaxInvoice';
 import TaxInvoice from './printing/TaxInvoice';
 import DateTimeDisplay from './DateTimeDisplay';
@@ -85,15 +85,27 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
     });
   };
 
-  const handleShareWhatsApp = () => {
+  const handleShareWhatsApp = async () => {
     if (!selectedOrder) return;
-    // Known customer phone -> send straight to WhatsApp, no extra step.
-    // Only prompt for a number when the order has none on file.
+    const filename = `Invoice-${selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase()}.pdf`;
     const knownPhone = selectedOrder.customerPhone ? formatSaudiPhone(selectedOrder.customerPhone).replace('+', '') : '';
+
     if (knownPhone) {
+      // Known number: go straight to the correct chat, no extra step.
+      // WhatsApp's link format can only carry text, never a file, so the
+      // PDF is downloaded alongside (best-effort, never blocking) to be
+      // attached manually in the chat that just opened.
+      downloadInvoicePDFSilently('sales-record-print-area', filename);
       proceedToWhatsApp(knownPhone);
       return;
     }
+
+    // No number on file: let native share (when supported) hand the PDF
+    // straight into WhatsApp with the recipient picked inside the app,
+    // instead of asking for a number ourselves.
+    const text = buildWhatsAppInvoiceText(selectedOrder);
+    const result = await shareOrDownloadInvoicePDF('sales-record-print-area', filename, text);
+    if (result === 'shared') return;
     setWhatsappModalOpen(true);
   };
 
@@ -108,7 +120,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
     setLoading(true);
     setError(null);
     try {
-      const [{ data: staffData }, { data: ordersData, error: fetchError }, { data: tenantData }, { data: invoicesData }] = await Promise.all([
+      const [{ data: staffData }, { data: ordersData, error: fetchError }, { data: tenantData }, { data: invoicesData }, { data: customersData }] = await Promise.all([
         supabase.from('staff').select('id, name'),
         (() => {
           let query = supabase.from('orders').select('*').eq('tenant_id', tenantId);
@@ -119,7 +131,10 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
         supabase.from('tenants').select('name, vat_number, address, phone').eq('id', tenantId).maybeSingle(),
         // Real ZATCA-sequential invoice numbers, keyed by order_id -- distinct
         // from orderNumber (a friendly reference, not the legal invoice number).
-        supabase.from('tax_invoices').select('order_id, invoice_number').eq('tenant_id', tenantId)
+        supabase.from('tax_invoices').select('order_id, invoice_number').eq('tenant_id', tenantId),
+        // orders.customer_phone is never actually written at checkout -- the
+        // real phone lives on the customer record, looked up by customer_id.
+        supabase.from('customers').select('id, phone').eq('tenant_id', tenantId)
       ]);
 
       if (fetchError) throw fetchError;
@@ -135,6 +150,13 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
       if (invoicesData) {
         invoicesData.forEach(inv => {
           if (inv.order_id && inv.invoice_number) invoiceNumberMap[inv.order_id] = inv.invoice_number;
+        });
+      }
+
+      const customerPhoneMap: Record<string, string> = {};
+      if (customersData) {
+        customersData.forEach(c => {
+          if (c.id && c.phone) customerPhoneMap[c.id] = c.phone;
         });
       }
 
@@ -158,7 +180,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
           invoiceNumber: invoiceNumberMap[decoded.id],
           customerId: decoded.customer_id || decoded.customerId,
           customerName: decoded.customer_name || decoded.customerName,
-          customerPhone: decoded.customer_phone || decoded.customerPhone,
+          customerPhone: (decoded.customer_id && customerPhoneMap[decoded.customer_id]) || decoded.customer_phone || decoded.customerPhone,
           tenantId: decoded.tenant_id || decoded.tenantId,
           shiftId: decoded.shift_id || decoded.shiftId,
           subtotalAmount: decoded.subtotal_amount || decoded.subtotalAmount,

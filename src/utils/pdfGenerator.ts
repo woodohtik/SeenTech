@@ -65,11 +65,37 @@ export const downloadInvoicePDF = async (elementId: string, filename: string) =>
   }
 };
 
+/**
+ * Same as downloadInvoicePDF, but never alerts or falls back to
+ * window.print() on failure -- for callers firing this as a best-effort
+ * side effect (e.g. alongside opening a WhatsApp chat directly) where a
+ * capture hiccup must not interrupt or block the primary action.
+ */
+export const downloadInvoicePDFSilently = async (elementId: string, filename: string): Promise<boolean> => {
+  try {
+    const blob = await generateInvoicePDF(elementId, filename);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      if (a.parentNode) a.parentNode.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+    return true;
+  } catch (error) {
+    console.error('PDF generation failed:', error);
+    return false;
+  }
+};
+
 export const shareInvoiceAsPDFFile = async (elementId: string, filename: string, text: string) => {
   try {
     const blob = await generateInvoicePDF(elementId, filename);
     const file = new File([blob], filename, { type: 'application/pdf' });
-    
+
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({
         title: i18n.t('settings_page.invoice.tax'),
@@ -86,5 +112,64 @@ export const shareInvoiceAsPDFFile = async (elementId: string, filename: string,
     console.error("Share failed:", error);
     // Fallback
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  }
+};
+
+export type ShareAttachmentResult = 'shared' | 'downloaded' | 'failed';
+
+/**
+ * Attempts to hand the invoice/statement PDF off to the OS share sheet
+ * (with `text` as the caption) so the user can pick WhatsApp and a contact
+ * with the file already attached -- this is the only way a web app can get
+ * a file INTO a WhatsApp chat; wa.me/api.whatsapp.com links only ever
+ * accept a text parameter, never a file, by WhatsApp's own design.
+ *
+ * When native file sharing isn't available (most desktop browsers), the
+ * PDF is downloaded instead so it's ready to attach manually in the
+ * WhatsApp chat the caller opens next via api.whatsapp.com/send. Never
+ * throws and never uses alert()/window.print() as a fallback -- a failure
+ * here must not block the caller from still sending the text message.
+ */
+export const shareOrDownloadInvoicePDF = async (
+  elementId: string,
+  filename: string,
+  text: string
+): Promise<ShareAttachmentResult> => {
+  let blob: Blob;
+  try {
+    blob = await generateInvoicePDF(elementId, filename);
+  } catch (error) {
+    console.error('PDF generation failed:', error);
+    return 'failed';
+  }
+
+  const file = new File([blob], filename, { type: 'application/pdf' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ text, files: [file] });
+      return 'shared';
+    } catch (error) {
+      // AbortError just means the user closed the share sheet -- treat it
+      // as handled rather than falling through to a redundant download.
+      if ((error as any)?.name === 'AbortError') return 'shared';
+      console.error('Native share failed:', error);
+    }
+  }
+
+  try {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      if (a.parentNode) a.parentNode.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+    return 'downloaded';
+  } catch (error) {
+    console.error('PDF download failed:', error);
+    return 'failed';
   }
 };

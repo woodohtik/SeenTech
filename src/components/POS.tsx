@@ -47,7 +47,7 @@ import { generateZatcaQR } from '../lib/zatca';
 import VisualMeasurements from './VisualMeasurements';
 import ThobeMeasurementSelector from './ThobeMeasurementSelector';
 import Branding from './Branding';
-import { downloadInvoicePDF } from '../utils/pdfGenerator';
+import { downloadInvoicePDF, downloadInvoicePDFSilently, shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
 import { useBranding } from '../contexts/BrandingContext';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
 import { useRouter, useRefreshCounter } from '../hooks/useRouter';
@@ -1476,15 +1476,31 @@ const invoiceData: InvoiceData | null = completedOrder ? {
     setWhatsappModalOpen(false);
   };
 
-  const handleShareWhatsApp = () => {
+  const handleShareWhatsApp = async () => {
     if (!completedOrder) return;
+    const filename = `Invoice-${completedOrder.invoiceNumber}.pdf`;
     // Known customer phone -> send straight to WhatsApp, no extra step.
     // Only prompt for a number when there's none on file.
     const knownPhone = completedOrder.customerPhone ? formatSaudiPhone(completedOrder.customerPhone).replace('+', '') : '';
     if (knownPhone) {
+      // WhatsApp's link format can only carry text, never a file, so the
+      // PDF is downloaded alongside (best-effort, never blocking) to be
+      // attached manually in the chat that just opened.
+      downloadInvoicePDFSilently('pos-invoice-print-area', filename);
       proceedToWhatsApp(knownPhone);
       return;
     }
+
+    // No number on file: let native share (when supported) hand the PDF
+    // straight into WhatsApp with the recipient picked inside the app,
+    // instead of asking for a number ourselves.
+    const text = t('pos.whatsapp_invoice_text', {
+      store: brandingSettings?.storeName || t('pos.store_default'),
+      invoiceNumber: completedOrder.invoiceNumber,
+      total: completedOrder.total,
+    });
+    const result = await shareOrDownloadInvoicePDF('pos-invoice-print-area', filename, text);
+    if (result === 'shared') return;
     setWhatsappModalOpen(true);
   };
 
