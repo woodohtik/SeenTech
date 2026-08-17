@@ -108,7 +108,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
     }
   );
 
-  const [activeTab, setActiveTab] = useState<'suppliers' | 'purchase_orders' | 'returns'>('suppliers');
+  const [activeTab, setActiveTab] = useState<'suppliers' | 'purchase_orders'>('suppliers');
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [purchaseReturns, setPurchaseReturns] = useState<PurchaseReturn[]>([]);
@@ -401,16 +401,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
             activeTab === 'purchase_orders' ? "border-brand text-brand" : "border-transparent text-content-muted hover:text-content"
           )}
         >
-          {t('procurement.purchase_orders', 'أوامر الشراء')}
-        </button>
-        <button
-          onClick={() => setActiveTab('returns')}
-          className={cn(
-            "px-6 py-3 font-bold text-sm transition-colors whitespace-nowrap border-b-2",
-            activeTab === 'returns' ? "border-brand text-brand" : "border-transparent text-content-muted hover:text-content"
-          )}
-        >
-          {t('procurement.returns', 'المرتجعات')}
+          {t('procurement.purchase_orders_and_returns', 'المشتريات والمرتجعات')}
         </button>
       </div>
 
@@ -527,23 +518,12 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
       )}
 
       {activeTab === 'purchase_orders' && (
-        <PurchaseOrders 
+        <PurchaseOrders
           tenantId={tenantId}
           suppliers={suppliers}
           purchaseOrders={purchaseOrders}
           inventory={inventory}
-          defaultTypeFilter="purchase"
-          onRefresh={() => setSupplierReloadTrigger(prev => prev + 1)}
-        />
-      )}
-
-      {activeTab === 'returns' && (
-        <PurchaseOrders 
-          tenantId={tenantId}
-          suppliers={suppliers}
-          purchaseOrders={purchaseOrders}
-          inventory={inventory}
-          defaultTypeFilter="return"
+          defaultTypeFilter="all"
           onRefresh={() => setSupplierReloadTrigger(prev => prev + 1)}
         />
       )}

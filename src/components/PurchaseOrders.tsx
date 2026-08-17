@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Package, CheckCircle2, Clock, Trash2, X, Search, Eye, Filter, ArrowLeftRight, Check, AlertCircle } from 'lucide-react';
+import { Plus, Package, CheckCircle2, Clock, Trash2, X, Search, Eye, Filter, ArrowLeftRight, Check, AlertCircle, RotateCcw } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { Supplier, PurchaseOrder, InventoryItem, PurchaseOrderItem } from '../types';
 import { cn } from '../lib/utils';
@@ -416,6 +416,44 @@ export default function PurchaseOrders({
     }
   };
 
+  // Item IDs actually received from a given supplier -- used to restrict the
+  // return modal's item picker to products that supplier really sold us,
+  // instead of the entire inventory catalog.
+  const getSupplierPurchasedItemIds = (supplierId: string) => {
+    const ids = new Set<string>();
+    purchaseOrders.forEach(po => {
+      const poType = po.orderType || (po as any).order_type || 'purchase';
+      const poSupplierId = po.supplierId || (po as any).supplier_id;
+      if (poType !== 'purchase' || poSupplierId !== supplierId) return;
+      if ((po.status || 'draft') !== 'received') return;
+      (po.items || []).forEach(item => {
+        if (item.itemId) ids.add(item.itemId);
+      });
+    });
+    return ids;
+  };
+
+  const supplierPurchasedItemIds = modalType === 'return' && selectedSupplier
+    ? getSupplierPurchasedItemIds(selectedSupplier)
+    : null;
+
+  const itemSelectOptions = (supplierPurchasedItemIds
+    ? inventory.filter(i => supplierPurchasedItemIds.has(i.id))
+    : inventory
+  ).map(i => ({ value: i.id, label: t('procurement.item_option_label', { name: i.name, unit: i.unit, quantity: i.quantity }) }));
+
+  // Pre-fills the return modal from a specific received purchase order: same
+  // supplier and the exact items/quantities that order brought in, so the
+  // staff member is adjusting a real invoice instead of rebuilding one from
+  // scratch and risking a mismatched supplier/item combination.
+  const handleStartReturnFromOrder = (po: PurchaseOrder) => {
+    setModalType('return');
+    setSelectedSupplier(po.supplierId || (po as any).supplier_id || '');
+    setItems((po.items || []).map(item => ({ ...item })));
+    setNotes(t('procurement.return_from_po_note', { number: po.poNumber || (po as any).po_number || po.id.slice(0, 8) }));
+    setIsModalOpen(true);
+  };
+
   // Filter purchase orders
   const filteredOrders = purchaseOrders.filter(po => {
     // 1. Search filter
@@ -597,13 +635,24 @@ export default function PurchaseOrders({
                       )}
                     </td>
                     <td className="px-6 py-4 text-left">
-                      <button
-                        onClick={() => setSelectedOrder(po)}
-                        className="p-2 bg-brand/10 text-brand hover:bg-brand hover:text-white rounded-xl transition-all flex items-center justify-center cursor-pointer"
-                        title={t('procurement.po_detail_title', 'عرض التفاصيل')}
-                      >
-                        <Eye size={16} />
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        {poType === 'purchase' && poStatus === 'received' && (
+                          <button
+                            onClick={() => handleStartReturnFromOrder(po)}
+                            className="p-2 bg-danger/10 text-danger hover:bg-danger hover:text-white rounded-xl transition-all flex items-center justify-center cursor-pointer"
+                            title={t('procurement.return_goods', 'إرجاع بضاعة')}
+                          >
+                            <RotateCcw size={16} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setSelectedOrder(po)}
+                          className="p-2 bg-brand/10 text-brand hover:bg-brand hover:text-white rounded-xl transition-all flex items-center justify-center cursor-pointer"
+                          title={t('procurement.po_detail_title', 'عرض التفاصيل')}
+                        >
+                          <Eye size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -670,13 +719,24 @@ export default function PurchaseOrders({
                     )}
                   </div>
 
-                  <button
-                    onClick={() => setSelectedOrder(po)}
-                    className="flex items-center justify-center gap-1.5 bg-brand/10 text-brand px-3 py-1.5 rounded-xl text-[10px] font-black hover:bg-brand hover:text-white transition-all cursor-pointer min-h-[38px]"
-                  >
-                    <Eye size={13} />
-                    <span>{t('procurement.po_detail_title', 'عرض التفاصيل')}</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {poType === 'purchase' && poStatus === 'received' && (
+                      <button
+                        onClick={() => handleStartReturnFromOrder(po)}
+                        className="flex items-center justify-center gap-1.5 bg-danger/10 text-danger px-3 py-1.5 rounded-xl text-[10px] font-black hover:bg-danger hover:text-white transition-all cursor-pointer min-h-[38px]"
+                      >
+                        <RotateCcw size={13} />
+                        <span>{t('procurement.return_goods', 'إرجاع بضاعة')}</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setSelectedOrder(po)}
+                      className="flex items-center justify-center gap-1.5 bg-brand/10 text-brand px-3 py-1.5 rounded-xl text-[10px] font-black hover:bg-brand hover:text-white transition-all cursor-pointer min-h-[38px]"
+                    >
+                      <Eye size={13} />
+                      <span>{t('procurement.po_detail_title', 'عرض التفاصيل')}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -782,7 +842,7 @@ export default function PurchaseOrders({
                   {t('procurement.close_detail_modal', 'إغلاق نافذة التفاصيل')}
                 </button>
                 {selectedOrder.status === 'draft' && (
-                  <button 
+                  <button
                     onClick={() => handleConfirmOrder(selectedOrder)}
                     disabled={isConfirming}
                     className="flex-1 sm:flex-initial bg-success text-white px-8 py-3 rounded-xl font-black text-xs flex items-center justify-center gap-2 hover:bg-success/90 transition-all shadow-lg active:scale-95 disabled:opacity-50"
@@ -795,6 +855,18 @@ export default function PurchaseOrders({
                         <span>{t('procurement.confirm_process_sync', 'تأكيد العملية (ترحيل ومزامنة)')}</span>
                       </>
                     )}
+                  </button>
+                )}
+                {(selectedOrder.orderType || (selectedOrder as any).order_type) === 'purchase' && selectedOrder.status === 'received' && (
+                  <button
+                    onClick={() => {
+                      handleStartReturnFromOrder(selectedOrder);
+                      setSelectedOrder(null);
+                    }}
+                    className="flex-1 sm:flex-initial bg-danger text-white px-8 py-3 rounded-xl font-black text-xs flex items-center justify-center gap-2 hover:bg-danger/90 transition-all shadow-lg active:scale-95"
+                  >
+                    <RotateCcw size={16} />
+                    <span>{t('procurement.return_goods', 'إرجاع بضاعة')}</span>
                   </button>
                 )}
               </div>
@@ -840,12 +912,19 @@ export default function PurchaseOrders({
                 <h3 className="font-bold text-sm text-content">{t('procurement.add_items_to_invoice', 'إضافة أصناف لقائمة الفاتورة')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="md:col-span-2">
-                    <SmartSelect 
+                    <SmartSelect
                       value={selectedItem}
                       onChange={(val) => setSelectedItem(val)}
                       placeholder={t('procurement.select_inventory_item', 'اختر صنف المخزن...')}
-                      options={inventory.map(i => ({ value: i.id, label: t('procurement.item_option_label', { name: i.name, unit: i.unit, quantity: i.quantity }) }))}
+                      options={itemSelectOptions}
+                      disabled={modalType === 'return' && !selectedSupplier}
                     />
+                    {modalType === 'return' && !selectedSupplier && (
+                      <p className="text-[10px] font-bold text-content-muted mt-1.5 px-1">{t('procurement.select_supplier_first', 'اختر المورد أولاً لعرض الأصناف المشتراة منه')}</p>
+                    )}
+                    {modalType === 'return' && selectedSupplier && itemSelectOptions.length === 0 && (
+                      <p className="text-[10px] font-bold text-danger mt-1.5 px-1">{t('procurement.no_purchased_items_from_supplier', 'لا توجد أصناف تم شراؤها من هذا المورد بعد')}</p>
+                    )}
                   </div>
                   <div>
                     <input 
