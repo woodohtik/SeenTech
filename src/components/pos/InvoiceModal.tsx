@@ -8,6 +8,7 @@ import { formatCurrency } from '../../lib/utils';
 import { Customer, TaxInvoice } from '../../types/supabase';
 import { PriceDisplay } from '../PriceDisplay';
 import WhatsAppPhoneModal from '../ui/WhatsAppPhoneModal';
+import { formatSaudiPhone } from '../../utils/phoneUtils';
 
 interface InvoiceModalProps {
   isOpen: boolean;
@@ -75,10 +76,6 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
     }
   };
 
-  const handleShareWhatsApp = () => {
-    setWhatsappModalOpen(true);
-  };
-
   const proceedToWhatsApp = (phone: string) => {
     const text = t('printing.invoice_share_text', {
       tenant: tenantName,
@@ -87,6 +84,17 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
     });
     window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`, '_blank');
     setWhatsappModalOpen(false);
+  };
+
+  const handleShareWhatsApp = () => {
+    // Known customer phone -> send straight to WhatsApp, no extra step.
+    // Only prompt for a number when there's none on file.
+    const knownPhone = customerPhone ? formatSaudiPhone(customerPhone).replace('+', '') : '';
+    if (knownPhone) {
+      proceedToWhatsApp(knownPhone);
+      return;
+    }
+    setWhatsappModalOpen(true);
   };
 
   return (

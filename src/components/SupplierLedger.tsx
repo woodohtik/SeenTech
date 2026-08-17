@@ -29,6 +29,7 @@ import { PriceDisplay } from './PriceDisplay';
 import { cn } from '../lib/utils';
 import { useDirection } from '../lib/direction';
 import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
+import { formatSaudiPhone } from '../utils/phoneUtils';
 
 interface SupplierLedgerProps {
   supplier: {
@@ -164,23 +165,30 @@ export default function SupplierLedger({
     window.print();
   };
 
-  const handleWhatsAppShare = () => {
-    setWhatsappModalOpen(true);
-  };
-
   const proceedToWhatsApp = (phone: string) => {
     const today = new Date().toLocaleDateString('ar-EG-u-nu-latn', { year: 'numeric', month: 'long', day: 'numeric' });
 
     let message = `*${t('procurement.ledger_of_supplier_at', 'كشف حساب المورد لدى')} ${tenantName}*\n`;
     message += `*${t('procurement.supplier_name', 'المورد')}:* ${supplier.name}\n`;
-    message += `*${t('procurement.date_lbl', 'التاريخ')}:* ${today}\n\n`;
-    message += `${t('procurement.whatsapp_ledger_message', 'يرجى الاطلاع على ملف كشف الحساب المرفق بصيغة PDF.')}\n\n`;
+    message += `*${t('procurement.date_lbl', 'التاريخ')}:* ${today}\n`;
+    message += `*${t('procurement.total_balance_due_desc')}:* ${supplier.balance.toFixed(2)}\n\n`;
     message += `${t('procurement.whatsapp_ledger_thanks', 'وشكراً جزيلاً لكم.')}`;
 
     const encodedText = encodeURIComponent(message);
     const whatsappUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodedText}`;
     window.open(whatsappUrl, '_blank');
     setWhatsappModalOpen(false);
+  };
+
+  const handleWhatsAppShare = () => {
+    // Known supplier phone -> send straight to WhatsApp, no extra step.
+    // Only prompt for a number when there's none on file.
+    const knownPhone = supplier.phone ? formatSaudiPhone(supplier.phone).replace('+', '') : '';
+    if (knownPhone) {
+      proceedToWhatsApp(knownPhone);
+      return;
+    }
+    setWhatsappModalOpen(true);
   };
 
   return (

@@ -15,6 +15,7 @@ import DateTimeDisplay from './DateTimeDisplay';
 import { generateZatcaQR } from '../services/zatcaService';
 import { useToast } from '../contexts/ToastContext';
 import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
+import { formatSaudiPhone } from '../utils/phoneUtils';
 
 import { isRtlLang } from '../lib/direction';
 
@@ -86,6 +87,13 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
 
   const handleShareWhatsApp = () => {
     if (!selectedOrder) return;
+    // Known customer phone -> send straight to WhatsApp, no extra step.
+    // Only prompt for a number when the order has none on file.
+    const knownPhone = selectedOrder.customerPhone ? formatSaudiPhone(selectedOrder.customerPhone).replace('+', '') : '';
+    if (knownPhone) {
+      proceedToWhatsApp(knownPhone);
+      return;
+    }
     setWhatsappModalOpen(true);
   };
 
