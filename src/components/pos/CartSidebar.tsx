@@ -399,6 +399,7 @@ export default function CartSidebar({
         tenantName={tenantInfo.name}
         tenantVatNumber={tenantInfo.vat}
         items={invoiceItems}
+        customerPhone={selectedCustomer?.phone}
       />
     </div>
   );

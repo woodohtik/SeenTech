@@ -8,12 +8,13 @@ import { decodeOrderRow } from '../utils/orderHistoryHelper';
 import { PriceDisplay } from './PriceDisplay';
 import { FileText, Eye, X, Download, Package, Scissors, User, Calendar, CreditCard, ShoppingBag, Clock, Printer, Share2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { downloadInvoicePDF, shareInvoiceAsPDFFile } from '../utils/pdfGenerator';
+import { downloadInvoicePDF } from '../utils/pdfGenerator';
 import SimplifiedTaxInvoice from './printing/SimplifiedTaxInvoice';
 import TaxInvoice from './printing/TaxInvoice';
 import DateTimeDisplay from './DateTimeDisplay';
 import { generateZatcaQR } from '../services/zatcaService';
 import { useToast } from '../contexts/ToastContext';
+import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
 
 import { isRtlLang } from '../lib/direction';
 
@@ -27,6 +28,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
   const [error, setError] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [tenantInfo, setTenantInfo] = useState<{ name: string; vat_number: string; address?: string; phone?: string } | null>(null);
+  const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
 
   const handleDownloadPDF = async () => {
     if (!selectedOrder) return;
@@ -66,27 +68,37 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
     }
   };
 
-  const handleShareWhatsApp = async () => {
-    if (!selectedOrder) return;
-    const paymentMethodText = selectedOrder.paymentMethod === 'cash' ? t('pos.cash') :
-                          selectedOrder.paymentMethod === 'network' ? t('pos.card') : 
-                          selectedOrder.paymentMethod === 'partial' ? t('pos.partial') : 
-                          selectedOrder.paymentMethod === 'bank_transfer' ? t('pos.bank_transfer') : t('pos.other');
-    const statusText = getStatusBadge(selectedOrder.status).label;
-    
-    const text = t('sales_record.whatsapp_invoice_message', {
-      invoiceNumber: selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase(),
-      total: selectedOrder.totalAmount,
+  const buildWhatsAppInvoiceText = (order: Order) => {
+    const paymentMethodText = order.paymentMethod === 'cash' ? t('pos.cash') :
+                          order.paymentMethod === 'network' ? t('pos.card') :
+                          order.paymentMethod === 'partial' ? t('pos.partial') :
+                          order.paymentMethod === 'bank_transfer' ? t('pos.bank_transfer') : t('pos.other');
+    const statusText = getStatusBadge(order.status).label;
+
+    return t('sales_record.whatsapp_invoice_message', {
+      invoiceNumber: order.orderNumber || order.id.slice(-6).toUpperCase(),
+      total: order.totalAmount,
       currency: getCurrencySymbol(),
       method: paymentMethodText,
       status: statusText
     });
-    
+  };
+
+  const handleShareWhatsApp = async () => {
+    if (!selectedOrder) return;
     try {
-      await shareInvoiceAsPDFFile('sales-record-print-area', `Invoice-${selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase()}.pdf`, text);
+      await downloadInvoicePDF('sales-record-print-area', `Invoice-${selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase()}.pdf`);
     } catch (e) {
-      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+      console.error(e);
     }
+    setWhatsappModalOpen(true);
+  };
+
+  const proceedToWhatsApp = (phone: string) => {
+    if (!selectedOrder) return;
+    const text = buildWhatsAppInvoiceText(selectedOrder);
+    window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`, '_blank');
+    setWhatsappModalOpen(false);
   };
 
   const fetchOrders = async () => {
@@ -132,6 +144,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
           orderNumber: decoded.order_number || decoded.orderNumber,
           customerId: decoded.customer_id || decoded.customerId,
           customerName: decoded.customer_name || decoded.customerName,
+          customerPhone: decoded.customer_phone || decoded.customerPhone,
           tenantId: decoded.tenant_id || decoded.tenantId,
           shiftId: decoded.shift_id || decoded.shiftId,
           subtotalAmount: decoded.subtotal_amount || decoded.subtotalAmount,
@@ -474,6 +487,16 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
             `}} />
           </div>
         </div>
+      )}
+
+      {whatsappModalOpen && selectedOrder && (
+        <WhatsAppPhoneModal
+          onClose={() => setWhatsappModalOpen(false)}
+          onConfirm={proceedToWhatsApp}
+          defaultPhone={selectedOrder.customerPhone}
+          title={t('z_report.pdf_ready', 'تم تجهيز ملف PDF!')}
+          description={t('z_report.whatsapp_save_instruction', 'تم حفظ التقرير بنجاح على جهازك. يرجى كتابة رقم واتساب المستلم بالأسفل ومن ثم إرساله.')}
+        />
       )}
     </div>
   );

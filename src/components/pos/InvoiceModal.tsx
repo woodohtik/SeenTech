@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Printer, Download, Share2, FileText, CheckCircle2, X } from 'lucide-react';
 import { Fragment } from 'react';
@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../lib/utils';
 import { Customer, TaxInvoice } from '../../types/supabase';
 import { PriceDisplay } from '../PriceDisplay';
+import WhatsAppPhoneModal from '../ui/WhatsAppPhoneModal';
 
 interface InvoiceModalProps {
   isOpen: boolean;
@@ -15,10 +16,12 @@ interface InvoiceModalProps {
   tenantName: string;
   tenantVatNumber: string;
   items: { name: string; quantity: number; price: number }[];
+  customerPhone?: string | null;
 }
 
-export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNumber, items }: InvoiceModalProps) {
+export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNumber, items, customerPhone }: InvoiceModalProps) {
   const { t } = useTranslation();
+  const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
   /*
    * تُعرَّف دالة الطباعة قبل الـ useEffect عن قصد: الـ effect يسجّل مستمع
    * Ctrl+P، ولو كانت الدالة معرّفة بعد `if (!invoice) return null` لصار
@@ -73,20 +76,27 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
   };
 
   const handleShareWhatsApp = async () => {
+    try {
+      const { downloadInvoicePDF } = await import('../../utils/pdfGenerator');
+      await downloadInvoicePDF('print-area', `Invoice-${invoice.invoice_number}.pdf`);
+    } catch (e) {
+      console.error(e);
+    }
+    setWhatsappModalOpen(true);
+  };
+
+  const proceedToWhatsApp = (phone: string) => {
     const text = t('printing.invoice_share_text', {
       tenant: tenantName,
       number: invoice.invoice_number,
       total: invoice.total_amount,
     });
-    try {
-      const { shareInvoiceAsPDFFile } = await import('../../utils/pdfGenerator');
-      await shareInvoiceAsPDFFile('print-area', `Invoice-${invoice.invoice_number}.pdf`, text);
-    } catch (e) {
-      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-    }
+    window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`, '_blank');
+    setWhatsappModalOpen(false);
   };
 
   return (
+    <>
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
         <Transition.Child
@@ -263,5 +273,16 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
         </div>
       </Dialog>
     </Transition>
+
+    {whatsappModalOpen && (
+      <WhatsAppPhoneModal
+        onClose={() => setWhatsappModalOpen(false)}
+        onConfirm={proceedToWhatsApp}
+        defaultPhone={customerPhone || undefined}
+        title={t('z_report.pdf_ready', 'تم تجهيز ملف PDF!')}
+        description={t('z_report.whatsapp_save_instruction', 'تم حفظ التقرير بنجاح على جهازك. يرجى كتابة رقم واتساب المستلم بالأسفل ومن ثم إرساله.')}
+      />
+    )}
+    </>
   );
 }

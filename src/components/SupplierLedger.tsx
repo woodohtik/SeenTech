@@ -30,6 +30,7 @@ import { cn } from '../lib/utils';
 import { jsPDF } from 'jspdf';
 import { toPng } from 'html-to-image';
 import { useDirection } from '../lib/direction';
+import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
 
 interface SupplierLedgerProps {
   supplier: {
@@ -211,17 +212,9 @@ export default function SupplierLedger({
     }
   };
 
-  const proceedToWhatsApp = () => {
-    let phone = supplier.phone || '';
-    phone = phone.replace(/\D/g, '');
-    if (phone.startsWith('05')) {
-      phone = '966' + phone.substring(1);
-    } else if (phone.startsWith('5')) {
-      phone = '966' + phone;
-    }
-
+  const proceedToWhatsApp = (phone: string) => {
     const today = new Date().toLocaleDateString('ar-EG-u-nu-latn', { year: 'numeric', month: 'long', day: 'numeric' });
-    
+
     let message = `*${t('procurement.ledger_of_supplier_at', 'كشف حساب المورد لدى')} ${tenantName}*\n`;
     message += `*${t('procurement.supplier_name', 'المورد')}:* ${supplier.name}\n`;
     message += `*${t('procurement.date_lbl', 'التاريخ')}:* ${today}\n\n`;
@@ -603,39 +596,22 @@ export default function SupplierLedger({
 
       {/* WhatsApp Modal Dialog with instructions */}
       {whatsappModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 print:hidden animate-fade-in" dir={dir}>
-          <div className="bg-white border border-slate-100 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-6">
-            <div className="text-center space-y-2">
-              <div className="mx-auto w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center">
-                <MessageCircle size={24} />
-              </div>
-              <h3 className="text-lg font-black text-slate-900">{t('procurement.pdf_downloaded')}</h3>
-              <p className="text-xs font-bold text-slate-500 leading-relaxed">
-                {t('procurement.pdf_saved_as')} <br />
-                <span className="font-mono text-slate-900 bg-slate-100 px-2 py-1 rounded inline-block mt-1 font-bold">
-                  {t('procurement.ledger_pdf_filename', { name: supplier.name.replace(/\s+/g, '_') })}
-                </span>
-                <br /><br />
-                {t('procurement.whatsapp_attach_instructions')}
-              </p>
-            </div>
-            <div className="flex gap-2 font-black">
-              <button
-                onClick={proceedToWhatsApp}
-                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-600/15 flex items-center justify-center gap-2 transition-all cursor-pointer"
-              >
-                <span>{t('procurement.open_whatsapp_now')}</span>
-                <ArrowLeft size={14} className="rotate-180" />
-              </button>
-              <button
-                onClick={() => setWhatsappModalOpen(false)}
-                className="px-4 py-3 bg-slate-150 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black transition-colors cursor-pointer"
-              >
-                {t('common.cancel')}
-              </button>
-            </div>
-          </div>
-        </div>
+        <WhatsAppPhoneModal
+          onClose={() => setWhatsappModalOpen(false)}
+          onConfirm={proceedToWhatsApp}
+          defaultPhone={supplier.phone}
+          title={t('procurement.pdf_downloaded')}
+          description={
+            <>
+              {t('procurement.pdf_saved_as')} <br />
+              <span className="font-mono text-slate-900 bg-slate-100 px-2 py-1 rounded inline-block mt-1 font-bold">
+                {t('procurement.ledger_pdf_filename', { name: supplier.name.replace(/\s+/g, '_') })}
+              </span>
+              <br /><br />
+              {t('procurement.whatsapp_attach_instructions')}
+            </>
+          }
+        />
       )}
 
       {/* Hidden container specifically styled for PDF captures */}
