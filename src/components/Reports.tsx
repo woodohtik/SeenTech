@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
-import { Order, Customer, InventoryItem, Staff, Shift, Role } from '../types';
+import { Order, Customer, InventoryItem, Staff, Shift, Role, PurchaseOrder, Supplier } from '../types';
 import { 
   BarChart, 
   Bar, 
@@ -39,7 +39,9 @@ import {
   User,
   X,
   Calculator,
-  Scissors
+  Scissors,
+  Truck,
+  Landmark
 } from 'lucide-react';
 import { PriceDisplay } from './PriceDisplay';
 import { cn } from '../lib/utils';
@@ -59,7 +61,7 @@ import { useDirection } from '../lib/direction';
 
 const COLORS = ['#1C8FFF', '#22C55E', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
 
-type ReportTab = 'general' | 'financial' | 'orders' | 'inventory' | 'staff' | 'zreports' | 'tailor_commissions';
+type ReportTab = 'general' | 'financial' | 'orders' | 'inventory' | 'staff' | 'zreports' | 'tailor_commissions' | 'profit_loss' | 'suppliers_purchases' | 'vat';
 
 interface DrillDownData {
   title: string;
@@ -82,6 +84,9 @@ export default function Reports({ tenantId }: { tenantId: string }) {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [shiftPayouts, setShiftPayouts] = useState<{ amount: number; occurred_at: string; reason: string }[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Filters
@@ -104,16 +109,19 @@ export default function Reports({ tenantId }: { tenantId: string }) {
       if (!tenantId) return;
       setLoading(true);
       try {
-        const [ordersRes, customersRes, inventoryRes, staffRes, rolesRes] = await Promise.all([
+        const [ordersRes, customersRes, inventoryRes, staffRes, rolesRes, purchaseOrdersRes, suppliersRes, shiftEntriesRes] = await Promise.all([
           supabase.from('orders').select('*').eq('tenant_id', tenantId).order('order_date', { ascending: false }),
           supabase.from('customers').select('*').eq('tenant_id', tenantId),
           supabase.from('inventory_items').select('*').eq('tenant_id', tenantId),
           // pin_hash intentionally excluded — never expose bcrypt PIN hashes
           // in a multi-row listing (see security note in Staff.tsx).
           supabase.from('staff').select('id, tenant_id, uid, name, email, phone, role, role_id, branch_id, status, must_change_pin, is_test, commission_type, commission_value, has_seen_onboarding, created_at, updated_at').eq('tenant_id', tenantId),
-          supabase.from('roles').select('*').or(`tenant_id.is.null,tenant_id.eq.${tenantId}`)
+          supabase.from('roles').select('*').or(`tenant_id.is.null,tenant_id.eq.${tenantId}`),
+          supabase.from('purchase_orders').select('*, purchase_order_items(*)').eq('tenant_id', tenantId),
+          supabase.from('suppliers').select('*').eq('tenant_id', tenantId),
+          supabase.from('shift_entries').select('amount, occurred_at, reason').eq('tenant_id', tenantId).eq('entry_type', 'payout')
         ]);
-        
+
         if (ordersRes.error) throw ordersRes.error;
         if (customersRes.error) throw customersRes.error;
         if (inventoryRes.error) throw inventoryRes.error;
@@ -121,6 +129,53 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
         if (rolesRes.data) {
           setRoles(rolesRes.data);
+        }
+
+        const supplierNameMap = new Map<string, string>();
+        (suppliersRes.data || []).forEach((s: any) => {
+          if (s.id && s.name) supplierNameMap.set(s.id, s.name);
+        });
+
+        if (purchaseOrdersRes.data) {
+          setPurchaseOrders(purchaseOrdersRes.data.map((d: any) => ({
+            ...d,
+            supplierId: d.supplier_id,
+            supplierName: supplierNameMap.get(d.supplier_id) || t('common.unknown_supplier'),
+            poNumber: d.po_number,
+            tenantId: d.tenant_id,
+            branchId: d.branch_id,
+            totalAmount: d.total_amount,
+            paidAmount: d.paid_amount,
+            remainingAmount: d.remaining_amount,
+            orderDate: d.order_date,
+            orderType: d.po_number?.startsWith('RET') ? 'return' : 'purchase',
+            createdBy: d.created_by,
+            createdAt: d.created_at,
+            updatedAt: d.updated_at,
+            items: (d.purchase_order_items || []).map((item: any) => ({
+              itemId: item.item_id,
+              name: item.name,
+              quantity: Number(item.quantity),
+              unit: item.unit,
+              conversionRate: Number(item.conversion_rate || 1),
+              baseQuantity: Number(item.base_quantity || item.quantity),
+              pricePerUnit: Number(item.price_per_unit || 0),
+              total: Number(item.total || 0)
+            }))
+          })) as unknown as PurchaseOrder[]);
+        }
+
+        if (suppliersRes.data) {
+          setSuppliers(suppliersRes.data.map((s: any) => ({
+            ...s,
+            tenantId: s.tenant_id,
+            isTest: s.is_test,
+            createdAt: s.created_at
+          })) as unknown as Supplier[]);
+        }
+
+        if (shiftEntriesRes.data) {
+          setShiftPayouts(shiftEntriesRes.data);
         }
 
         // Map snake_case to camelCase for the UI
@@ -256,6 +311,147 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
     return { totalRevenue, totalSales, totalTax, netProfit, totalReturnsValue, paymentChartData, trendChartData };
   }, [nonCancelledOrders, filteredOrders, t]);
+
+  // Purchase orders within the selected date range (the staff/payment-status
+  // filters only make sense for sales orders, so purchases only respect the
+  // date range and search term).
+  const filteredPurchaseOrders = useMemo(() => {
+    return purchaseOrders.filter(po => {
+      const dateMatch = (!dateRange.start || po.orderDate >= dateRange.start) &&
+                        (!dateRange.end || po.orderDate <= dateRange.end);
+      const searchMatch = !searchTerm ||
+                         po.supplierName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (po.poNumber || (po as any).po_number || '').toLowerCase().includes(searchTerm.toLowerCase());
+      return dateMatch && searchMatch;
+    });
+  }, [purchaseOrders, dateRange, searchTerm]);
+
+  // Weighted-average cost per inventory item, built from every received
+  // purchase (all-time, not date-filtered -- a stable baseline cost rather
+  // than one that swings with whatever happened to be purchased in the
+  // selected range). This is the only real cost data the system has, so
+  // COGS below is a weighted-average estimate, not a FIFO/lot-tracked one.
+  const avgCostByItemId = useMemo(() => {
+    const totals = new Map<string, { cost: number; qty: number }>();
+    purchaseOrders.forEach(po => {
+      const poType = po.orderType || (po as any).order_type || 'purchase';
+      if (poType !== 'purchase' || (po.status || 'draft') !== 'received') return;
+      (po.items || []).forEach(item => {
+        if (!item.itemId) return;
+        const entry = totals.get(item.itemId) || { cost: 0, qty: 0 };
+        entry.cost += Number(item.total || 0);
+        entry.qty += Number(item.baseQuantity || item.quantity || 0);
+        totals.set(item.itemId, entry);
+      });
+    });
+    const map = new Map<string, number>();
+    totals.forEach((v, itemId) => { if (v.qty > 0) map.set(itemId, v.cost / v.qty); });
+    return map;
+  }, [purchaseOrders]);
+
+  // Operating expenses: cash payouts logged against shifts (deliveries,
+  // small purchases, etc.) -- the only tenant-wide expense ledger this
+  // system tracks outside of supplier purchases.
+  const filteredShiftPayouts = useMemo(() => {
+    return shiftPayouts.filter(e => {
+      const d = e.occurred_at?.split('T')[0];
+      return (!dateRange.start || d >= dateRange.start) && (!dateRange.end || d <= dateRange.end);
+    });
+  }, [shiftPayouts, dateRange]);
+
+  // Profit & Loss: unlike the "simplified" netProfit above (revenue minus
+  // tax only), this estimates real cost of goods sold from the weighted
+  // average purchase cost of what was actually sold -- ready-made items by
+  // itemId/quantity, custom garments by fabricId/consumedMeters -- then
+  // subtracts logged cash-drawer expenses too.
+  const profitLossStats = useMemo(() => {
+    let cogs = 0;
+    nonCancelledOrders.forEach(o => {
+      (o.items || []).forEach((item: any) => {
+        if (item.type === 'ready_made' && item.itemId) {
+          cogs += (avgCostByItemId.get(item.itemId) || 0) * Number(item.quantity || 0);
+        } else if (item.type === 'custom' && item.fabricId) {
+          cogs += (avgCostByItemId.get(item.fabricId) || 0) * Number(item.consumedMeters || item.quantity || 0);
+        }
+      });
+    });
+
+    const netSalesExclVat = financialStats.totalSales - financialStats.totalTax;
+    const grossProfit = netSalesExclVat - cogs;
+    const grossMargin = netSalesExclVat > 0 ? (grossProfit / netSalesExclVat) * 100 : 0;
+
+    const operatingExpenses = filteredShiftPayouts.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+    const netProfit = grossProfit - operatingExpenses;
+    const netMargin = netSalesExclVat > 0 ? (netProfit / netSalesExclVat) * 100 : 0;
+
+    const chartData = [
+      { name: t('reports.pl_net_sales'), value: netSalesExclVat },
+      { name: t('reports.pl_cogs'), value: cogs },
+      { name: t('reports.pl_expenses'), value: operatingExpenses },
+      { name: t('reports.pl_net_profit'), value: netProfit },
+    ];
+
+    return { netSalesExclVat, cogs, grossProfit, grossMargin, operatingExpenses, netProfit, netMargin, chartData };
+  }, [nonCancelledOrders, avgCostByItemId, financialStats, filteredShiftPayouts, t]);
+
+  // Suppliers & Purchases
+  const supplierStats = useMemo(() => {
+    const purchasesOnly = filteredPurchaseOrders.filter(po =>
+      (po.orderType || (po as any).order_type || 'purchase') === 'purchase' && po.status === 'received'
+    );
+    const returnsOnly = filteredPurchaseOrders.filter(po =>
+      (po.orderType || (po as any).order_type) === 'return' && po.status === 'returned'
+    );
+
+    const totalPurchases = purchasesOnly.reduce((sum, po) => sum + (po.totalAmount || 0), 0);
+    const totalPurchaseReturns = returnsOnly.reduce((sum, po) => sum + (po.totalAmount || 0), 0);
+
+    const bySupplier = new Map<string, { id: string; name: string; purchases: number; returns: number }>();
+    purchasesOnly.forEach(po => {
+      const id = po.supplierId || (po as any).supplier_id;
+      const entry = bySupplier.get(id) || { id, name: po.supplierName, purchases: 0, returns: 0 };
+      entry.purchases += po.totalAmount || 0;
+      bySupplier.set(id, entry);
+    });
+    returnsOnly.forEach(po => {
+      const id = po.supplierId || (po as any).supplier_id;
+      const entry = bySupplier.get(id) || { id, name: po.supplierName, purchases: 0, returns: 0 };
+      entry.returns += po.totalAmount || 0;
+      bySupplier.set(id, entry);
+    });
+
+    const supplierBreakdown = Array.from(bySupplier.values())
+      .map(v => ({ ...v, net: v.purchases - v.returns }))
+      .sort((a, b) => b.net - a.net);
+
+    const totalOutstandingBalance = suppliers
+      .filter(s => !excludeTestData || !s.isTest)
+      .reduce((sum, s) => sum + (s.balance || 0), 0);
+
+    const trendMap: Record<string, number> = {};
+    purchasesOnly.forEach(po => {
+      const d = po.orderDate.split('T')[0];
+      trendMap[d] = (trendMap[d] || 0) + (po.totalAmount || 0);
+    });
+    const purchasesTrend = Object.entries(trendMap)
+      .map(([date, total]) => ({ date, total }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    return { totalPurchases, totalPurchaseReturns, supplierBreakdown, totalOutstandingBalance, purchasesTrend, purchasesOnly, returnsOnly };
+  }, [filteredPurchaseOrders, suppliers, excludeTestData]);
+
+  // VAT: purchase totals aren't tracked with a separate tax line, so input
+  // VAT is estimated the same way the rest of the app treats order totals --
+  // VAT-inclusive at 15% (see SalesRecord.tsx's subtotal/VAT split).
+  const vatStats = useMemo(() => {
+    const outputVat = financialStats.totalTax;
+    const inputVatOnPurchases = supplierStats.totalPurchases - (supplierStats.totalPurchases / 1.15);
+    const inputVatOnReturns = supplierStats.totalPurchaseReturns - (supplierStats.totalPurchaseReturns / 1.15);
+    const netInputVat = inputVatOnPurchases - inputVatOnReturns;
+    const netVatDue = outputVat - netInputVat;
+
+    return { outputVat, inputVat: netInputVat, netVatDue };
+  }, [financialStats, supplierStats]);
 
   // Order Stats
   const orderStats = useMemo(() => {
@@ -589,9 +785,12 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           {[
             { id: 'general', label: t('reports.tab_general'), icon: TrendingUp },
             { id: 'financial', label: t('dashboard.grid.finance'), icon: DollarSign },
+            { id: 'profit_loss', label: t('reports.tab_profit_loss'), icon: TrendingUp },
             { id: 'orders', label: t('reports.tab_orders'), icon: ShoppingBag },
             { id: 'inventory', label: t('inventory.reports'), icon: Package },
             { id: 'staff', label: t('reports.tab_staff_customers'), icon: Users },
+            { id: 'suppliers_purchases', label: t('reports.tab_suppliers_purchases'), icon: Truck },
+            { id: 'vat', label: t('reports.tab_vat'), icon: Landmark },
             { id: 'zreports', label: t('reports.tab_zreports'), icon: Calculator },
             { id: 'tailor_commissions', label: t('reports.tab_tailor_commissions'), icon: Scissors },
           ].map((tab) => (
@@ -758,6 +957,54 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                   <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.total_returns_value')}</p>
                   <h3 className="text-base sm:text-2xl font-black text-danger mt-1 sm:mt-2"><PriceDisplay amount={financialStats.totalReturnsValue} /></h3>
                   <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('common.status_cancelled')}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'profit_loss' && (
+            <div className="space-y-4 sm:space-y-8">
+              <div className="bg-amber-500/5 border border-amber-500/15 text-amber-700 dark:text-amber-400 rounded-2xl p-4 text-xs sm:text-sm font-bold flex items-start gap-3">
+                <AlertTriangle size={18} className="shrink-0 mt-0.5" />
+                <span>{t('reports.pl_estimate_disclaimer')}</span>
+              </div>
+
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-6">
+                {[
+                  { label: t('reports.pl_net_sales'), value: profitLossStats.netSalesExclVat, color: 'text-brand', bg: 'bg-brand/10' },
+                  { label: t('reports.pl_cogs'), value: profitLossStats.cogs, color: 'text-amber-600', bg: 'bg-amber-500/10' },
+                  { label: t('reports.pl_gross_profit'), value: profitLossStats.grossProfit, color: 'text-emerald-600', bg: 'bg-emerald-500/10', sub: t('reports.pl_margin', { n: profitLossStats.grossMargin.toFixed(1) }) },
+                  { label: t('reports.pl_expenses'), value: profitLossStats.operatingExpenses, color: 'text-rose-600', bg: 'bg-rose-500/10' },
+                  { label: t('reports.pl_net_profit'), value: profitLossStats.netProfit, color: profitLossStats.netProfit >= 0 ? 'text-emerald-600' : 'text-danger', bg: profitLossStats.netProfit >= 0 ? 'bg-emerald-500/10' : 'bg-danger/10', sub: t('reports.pl_margin', { n: profitLossStats.netMargin.toFixed(1) }) },
+                ].map((card, i) => (
+                  <div key={i} className="bg-surface p-3 sm:p-6 rounded-xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                    <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest truncate">{card.label}</p>
+                    <h3 className={cn("text-sm sm:text-xl font-black mt-1 sm:mt-2 truncate", card.color)}><PriceDisplay amount={card.value} /></h3>
+                    {card.sub && <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{card.sub}</p>}
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.pl_breakdown_title')}</h3>
+                <div className="h-64 sm:h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={profitLossStats.chartData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-border" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
+                      <Tooltip
+                        cursor={{ fill: 'var(--color-surface-muted)' }}
+                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
+                        formatter={(value: number) => <PriceDisplay amount={value} />}
+                      />
+                      <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                        {profitLossStats.chartData.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
             </div>
@@ -1109,6 +1356,132 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'suppliers_purchases' && (
+            <div className="space-y-4 sm:space-y-8">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+                {[
+                  { label: t('reports.sp_total_purchases'), value: supplierStats.totalPurchases, color: 'text-brand', bg: 'bg-brand/10' },
+                  { label: t('reports.sp_total_returns'), value: supplierStats.totalPurchaseReturns, color: 'text-danger', bg: 'bg-danger/10' },
+                  { label: t('reports.sp_net_purchases'), value: supplierStats.totalPurchases - supplierStats.totalPurchaseReturns, color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
+                  { label: t('reports.sp_outstanding_balance'), value: supplierStats.totalOutstandingBalance, color: 'text-amber-600', bg: 'bg-amber-500/10' },
+                ].map((stat, i) => (
+                  <div key={i} className="bg-surface p-3 sm:p-6 rounded-xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                    <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest truncate">{stat.label}</p>
+                    <h3 className={cn("text-sm sm:text-xl font-black mt-1 sm:mt-2 truncate", stat.color)}><PriceDisplay amount={stat.value} /></h3>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.sp_purchases_trend')}</h3>
+                <div className="h-64 sm:h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={supplierStats.purchasesTrend}>
+                      <defs>
+                        <linearGradient id="colorPurchases" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#1C8FFF" stopOpacity={0.35}/>
+                          <stop offset="100%" stopColor="#1C8FFF" stopOpacity={0.0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="var(--border)" opacity={0.5} />
+                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'var(--content-muted)' }} dy={6} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'var(--content-muted)' }} />
+                      <Tooltip
+                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
+                        formatter={(value: number) => <PriceDisplay amount={value} />}
+                      />
+                      <Area type="monotone" dataKey="total" stroke="#1C8FFF" strokeWidth={3} fillOpacity={1} fill="url(#colorPurchases)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.sp_supplier_breakdown')}</h3>
+                <div className="overflow-x-auto whitespace-nowrap -mx-4 sm:-mx-8 px-4 sm:px-8">
+                  <div className="rounded-2xl border border-border overflow-hidden min-w-max">
+                    <table className="w-full text-right min-w-max">
+                      <thead>
+                        <tr className="bg-surface-muted border-b border-border">
+                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('procurement.po_supplier', 'المورد')}</th>
+                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.sp_total_purchases')}</th>
+                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.sp_total_returns')}</th>
+                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.sp_net_purchases')}</th>
+                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('common.details')}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {supplierStats.supplierBreakdown.map((s) => (
+                          <tr key={s.id} className="hover:bg-surface-muted/50 transition-colors">
+                            <td className="px-6 py-4 font-bold text-content">{s.name}</td>
+                            <td className="px-6 py-4 font-black text-brand"><PriceDisplay amount={s.purchases} /></td>
+                            <td className="px-6 py-4 font-black text-danger"><PriceDisplay amount={s.returns} /></td>
+                            <td className="px-6 py-4 font-black text-emerald-600"><PriceDisplay amount={s.net} /></td>
+                            <td className="px-6 py-4">
+                              <button
+                                onClick={() => setDrillDown({
+                                  title: t('reports.sp_supplier_orders_title', { name: s.name }),
+                                  data: [...supplierStats.purchasesOnly, ...supplierStats.returnsOnly].filter(po => (po.supplierId || (po as any).supplier_id) === s.id),
+                                  columns: [
+                                    { key: 'poNumber', label: t('procurement.po_number', 'رقم السند') },
+                                    { key: 'orderDate', label: t('common.date'), type: 'date' },
+                                    { key: 'totalAmount', label: t('common.amount'), type: 'currency' },
+                                    { key: 'status', label: t('common.status'), type: 'status' }
+                                  ]
+                                })}
+                                className="px-3 py-1.5 bg-brand/10 text-brand hover:bg-brand/20 rounded-xl text-xs font-black transition-all cursor-pointer"
+                              >
+                                {t('common.details')}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        {supplierStats.supplierBreakdown.length === 0 && (
+                          <tr>
+                            <td colSpan={5} className="text-center py-8 text-content-muted font-bold text-xs sm:text-sm">
+                              {t('reports.sp_no_purchases')}
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'vat' && (
+            <div className="space-y-4 sm:space-y-8">
+              <div className="bg-amber-500/5 border border-amber-500/15 text-amber-700 dark:text-amber-400 rounded-2xl p-4 text-xs sm:text-sm font-bold flex items-start gap-3">
+                <AlertTriangle size={18} className="shrink-0 mt-0.5" />
+                <span>{t('reports.vat_estimate_disclaimer')}</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6">
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                  <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.vat_output')}</p>
+                  <h3 className="text-base sm:text-2xl font-black text-brand mt-1 sm:mt-2"><PriceDisplay amount={vatStats.outputVat} /></h3>
+                  <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('reports.vat_output_desc')}</p>
+                </div>
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                  <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.vat_input')}</p>
+                  <h3 className="text-base sm:text-2xl font-black text-amber-600 mt-1 sm:mt-2"><PriceDisplay amount={vatStats.inputVat} /></h3>
+                  <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('reports.vat_input_desc')}</p>
+                </div>
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                  <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.vat_net_due')}</p>
+                  <h3 className={cn("text-base sm:text-2xl font-black mt-1 sm:mt-2", vatStats.netVatDue >= 0 ? 'text-danger' : 'text-emerald-600')}>
+                    <PriceDisplay amount={Math.abs(vatStats.netVatDue)} />
+                  </h3>
+                  <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">
+                    {vatStats.netVatDue >= 0 ? t('reports.vat_payable') : t('reports.vat_refundable')}
+                  </p>
                 </div>
               </div>
             </div>
