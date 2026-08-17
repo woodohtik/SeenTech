@@ -176,7 +176,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // source of truth that used to be split between AuthContext (dbUser) and
     // App.tsx's own onIdTokenChanged listener (authState) under Firebase.
     const resolveIdentity = useCallback(async (nextSession: Session | null) => {
-        if (localStorage.getItem('is_registering') === 'true') return;
+        if (localStorage.getItem('is_registering') === 'true') {
+            // This flag is set right before an in-progress registration/Google
+            // OAuth round-trip so this listener doesn't route the session
+            // prematurely. It's only meant to live for a few seconds -- if the
+            // tab was closed mid-flow, the redirect back lost its query param,
+            // or any other interruption skipped the cleanup that normally
+            // clears it, it would otherwise stay 'true' in localStorage forever
+            // and permanently trap the whole app behind the loading skeleton
+            // (App.tsx gates every route on `loading`, which never gets set to
+            // false while this early-returns). Treat it as stale past a
+            // generous window and resolve identity normally instead.
+            const setAt = Number(localStorage.getItem('is_registering_at') || 0);
+            const isStale = !setAt || Date.now() - setAt > 60_000;
+            if (!isStale) return;
+            localStorage.removeItem('is_registering');
+            localStorage.removeItem('is_registering_at');
+        }
 
         const user = nextSession?.user ?? null;
 

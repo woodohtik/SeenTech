@@ -218,7 +218,12 @@ export default function Login() {
       // Set before navigating away: by the time the browser returns from
       // Google, this must already be in localStorage so AuthContext skips
       // resolving identity until the effect above decides where to route.
+      // The timestamp lets AuthContext treat this as stale (and route
+      // normally) if the round-trip gets interrupted and this never gets
+      // cleared -- otherwise the whole app stays stuck on the loading
+      // skeleton forever.
       localStorage.setItem('is_registering', 'true');
+      localStorage.setItem('is_registering_at', String(Date.now()));
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: `${window.location.origin}/login?oauth=google` }
@@ -355,8 +360,12 @@ export default function Login() {
         return;
       }
 
-      // Lock the auth listener in AuthContext from taking over prematurely
+      // Lock the auth listener in AuthContext from taking over prematurely.
+      // Timestamped so AuthContext can treat it as stale and unblock itself
+      // if this tab gets closed/interrupted mid-registration and the normal
+      // cleanup below never runs.
       localStorage.setItem('is_registering', 'true');
+      localStorage.setItem('is_registering_at', String(Date.now()));
 
       let user: { id: string };
       if (googleUser) {
