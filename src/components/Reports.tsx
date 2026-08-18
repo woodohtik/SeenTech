@@ -704,6 +704,20 @@ export default function Reports({ tenantId }: { tenantId: string }) {
     );
   }
 
+  const reportTabs = [
+    { id: 'general', label: t('reports.tab_general'), icon: TrendingUp },
+    { id: 'financial', label: t('dashboard.grid.finance'), icon: DollarSign },
+    { id: 'profit_loss', label: t('reports.tab_profit_loss'), icon: TrendingUp },
+    { id: 'orders', label: t('reports.tab_orders'), icon: ShoppingBag },
+    { id: 'inventory', label: t('inventory.reports'), icon: Package },
+    { id: 'staff', label: t('reports.tab_staff_customers'), icon: Users },
+    { id: 'suppliers_purchases', label: t('reports.tab_suppliers_purchases'), icon: Truck },
+    { id: 'vat', label: t('reports.tab_vat'), icon: Landmark },
+    { id: 'zreports', label: t('reports.tab_zreports'), icon: Calculator },
+    { id: 'tailor_commissions', label: t('reports.tab_tailor_commissions'), icon: Scissors },
+  ];
+  const activeTabLabel = reportTabs.find(tab => tab.id === activeTab)?.label || '';
+
   return (
     <div className="space-y-4 sm:space-y-8 text-right pb-20 px-2 sm:px-0" dir={dir}>
       <Header 
@@ -852,18 +866,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
       {/* Tabs Navigation */}
       <div id="reports-tabs-nav-container" className="w-full overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <div className="flex items-center gap-1.5 sm:gap-2 bg-surface p-1.5 sm:p-2 rounded-xl sm:rounded-[2rem] border border-border shadow-sm w-max">
-          {[
-            { id: 'general', label: t('reports.tab_general'), icon: TrendingUp },
-            { id: 'financial', label: t('dashboard.grid.finance'), icon: DollarSign },
-            { id: 'profit_loss', label: t('reports.tab_profit_loss'), icon: TrendingUp },
-            { id: 'orders', label: t('reports.tab_orders'), icon: ShoppingBag },
-            { id: 'inventory', label: t('inventory.reports'), icon: Package },
-            { id: 'staff', label: t('reports.tab_staff_customers'), icon: Users },
-            { id: 'suppliers_purchases', label: t('reports.tab_suppliers_purchases'), icon: Truck },
-            { id: 'vat', label: t('reports.tab_vat'), icon: Landmark },
-            { id: 'zreports', label: t('reports.tab_zreports'), icon: Calculator },
-            { id: 'tailor_commissions', label: t('reports.tab_tailor_commissions'), icon: Scissors },
-          ].map((tab) => (
+          {reportTabs.map((tab) => (
             <button
               id={`tab-btn-${tab.id}`}
               key={tab.id}
@@ -892,6 +895,25 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           exit={{ opacity: 0, y: -20 }}
           className="space-y-4 sm:space-y-8"
         >
+          {/* Print-only report header -- invisible on screen, shown only in the
+              exported PDF/printout so it reads as a document rather than a raw
+              dump of the live dashboard UI. */}
+          <div className="hidden print:block mb-6 pb-4 border-b-2 border-black">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-black">{t('reports.title')} — {activeTabLabel}</h1>
+                {(dateRange.start || dateRange.end) && (
+                  <p className="text-sm font-bold mt-1">
+                    {dateRange.start || '...'} {t('common.to', 'إلى')} {dateRange.end || '...'}
+                  </p>
+                )}
+              </div>
+              <p className="text-xs font-bold">
+                {t('z_report.excel_date', 'التاريخ')}: {new Date().toLocaleDateString(locale)}
+              </p>
+            </div>
+          </div>
+
           {activeTab === 'general' && (
             <div id="reports-general-grid" className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
               {[
