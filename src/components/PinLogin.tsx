@@ -164,19 +164,48 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
     setPasswordError(null);
     setPasswordSubmitting(true);
     try {
-      // Staff accounts already have real Supabase email/password credentials
-      // (created alongside the PIN when they're added) -- signing in here
-      // simply replaces the shared-device session with the staff member's
-      // own, and AuthContext's onAuthStateChange listener re-resolves
-      // currentUserStaff from it, which App.tsx then promotes to
-      // currentStaff -- unmounting this screen without a full page redirect.
-      const { error: signInErr } = await supabase.auth.signInWithPassword({
-        email: passwordEmail.trim(),
+      const normalizedEmail = passwordEmail.trim().toLowerCase();
+      const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
         password: passwordValue,
       });
       if (signInErr) throw signInErr;
+
+      const uid = signInData.user?.id;
+      if (!uid) throw new Error('no_session');
+
+      // Re-authenticating with an account that was already signed in on this
+      // device doesn't reliably fire a fresh SIGNED_IN event for
+      // AuthContext's listener to pick up, which used to leave this screen
+      // stuck on "loading" forever waiting for App.tsx to promote
+      // currentUserStaff. Resolve this account's own staff row directly and
+      // hand it off, the same way a matched PIN does.
+      let { data: staffRow, error: staffErr } = await supabase
+        .from('staff')
+        .select('*')
+        .eq('uid', uid)
+        .maybeSingle();
+      if (staffErr) throw staffErr;
+      if (!staffRow) {
+        const byEmail = await supabase.from('staff').select('*').eq('email', normalizedEmail).maybeSingle();
+        if (byEmail.error) throw byEmail.error;
+        staffRow = byEmail.data;
+      }
+      if (!staffRow) throw new Error('no_staff_match');
+
+      if ((window as any).refreshAuthData) {
+        (window as any).refreshAuthData();
+      }
+
+      onLogin({
+        ...staffRow,
+        tenantId: staffRow.tenant_id,
+        branchId: staffRow.branch_id,
+        pin: staffRow.pin_hash,
+        mustChangePin: staffRow.must_change_pin,
+      } as Staff);
     } catch (err: any) {
-      setPasswordError(getAuthErrorMessage(err));
+      setPasswordError(err?.message === 'no_staff_match' ? t('login.no_staff_match') : getAuthErrorMessage(err));
       setPasswordSubmitting(false);
     }
   };

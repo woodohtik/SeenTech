@@ -1407,6 +1407,7 @@
     "multi_device_title": "Multiple Sign-in Alert",
     "new_pin": "New PIN",
     "no_account": "Don't have an account?",
+    "no_staff_match": "No employee account was found matching this login",
     "or_with": "Or with",
     "password": "Password",
     "password_login_desc": "Enter your account email and password",
