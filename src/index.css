@@ -239,13 +239,15 @@ option {
   #print-area, #print-area *,
   #sales-record-print-area, #sales-record-print-area *,
   #receipt-printable-content, #receipt-printable-content *,
+  #reports-printable-area, #reports-printable-area *,
   .print-area, .print-area *,
   .printable-area, .printable-area * {
     visibility: visible !important;
   }
 
   #pos-invoice-print-area, #print-area, #sales-record-print-area,
-  #receipt-printable-content, .print-area, .printable-area {
+  #receipt-printable-content, #reports-printable-area,
+  .print-area, .printable-area {
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;

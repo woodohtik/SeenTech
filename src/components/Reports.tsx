@@ -885,6 +885,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
       {/* Tab Content */}
       <AnimatePresence mode="wait">
         <motion.div
+          id="reports-printable-area"
           key={activeTab}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
