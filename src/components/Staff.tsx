@@ -106,6 +106,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
   const [selectedRoleForPermissions, setSelectedRoleForPermissions] = useState<Role | null>(null);
   const [selectedStaffForPermissions, setSelectedStaffForPermissions] = useState<StaffMember | null>(null);
   const [overrides, setOverrides] = useState<Record<string, Partial<PermissionsMap>>>({});
+  const [staffPins, setStaffPins] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (initialViewMode) {
@@ -354,13 +355,34 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       .from('user_permission_overrides')
       .select('*')
       .eq('tenant_id', tenantId);
-    
+
     if (data) {
       const overridesData: Record<string, Partial<PermissionsMap>> = {};
       data.forEach(item => {
         overridesData[item.staff_id] = item.overrides;
       });
       setOverrides(overridesData);
+    }
+  };
+
+  // Fetched through a dedicated admin-only server route, never via a direct
+  // client query against `staff` -- its RLS scopes SELECT by tenant only
+  // (not by role), so a plain client-side select('pin_hash') would let any
+  // staff member, down to a cashier, read every coworker's login PIN.
+  const fetchStaffPins = async () => {
+    if (!tenantId) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/staff/pins', {
+        headers: { Authorization: `Bearer ${session?.access_token || ''}` },
+      });
+      if (!res.ok) return;
+      const payload = await res.json().catch(() => null);
+      const map: Record<string, string> = {};
+      (payload?.pins || []).forEach((p: { id: string; pin: string }) => { map[p.id] = p.pin; });
+      setStaffPins(map);
+    } catch {
+      // Non-critical display data -- leave whatever was already loaded.
     }
   };
 
@@ -372,6 +394,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       .channel('staff-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'staff', filter: `tenant_id=eq.${tenantId}` }, () => {
         fetchStaff();
+        fetchStaffPins();
       })
       .subscribe();
 
@@ -478,6 +501,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
     };
 
     fetchStaff();
+    fetchStaffPins();
     fetchOrders();
     fetchRoles();
     fetchBranches();
@@ -725,6 +749,11 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       // freshly opened edit form) showing the old state while waiting on
       // the realtime round-trip to refetch staff.
       setStaff(prev => prev.map(s => s.id === member.id ? { ...s, pin: undefined, mustChangePin: false } : s));
+      setStaffPins(prev => {
+        const next = { ...prev };
+        delete next[member.id];
+        return next;
+      });
 
       setToast({ message: t('settings_page.staff.pin_disabled_success'), type: 'success' });
       setPinDisableTarget(null);
@@ -781,6 +810,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       // Optimistic local update -- don't leave the dropdown label stale
       // while waiting on the realtime round-trip to refetch staff.
       setStaff(prev => prev.map(s => s.id === member.id ? { ...s, pin: 'set', mustChangePin: false } : s));
+      setStaffPins(prev => ({ ...prev, [member.id]: pin }));
 
       setToast({ message: t('settings_page.staff.pin_enabled_success_manual', { name: member.name }), type: 'success' });
       setPinModalTarget(null);
@@ -1308,6 +1338,12 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                           {branches.find(b => b.id === member.branchId)?.name || t('orders.not_specified')}
                         </span>
                       </div>
+                      {staffPins[member.id] && (
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <Key size={13} className="text-content-muted shrink-0" />
+                          <span className="font-black tracking-widest ltr">{staffPins[member.id]}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

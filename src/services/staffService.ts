@@ -1,4 +1,3 @@
-import bcrypt from 'bcryptjs';
 import { supabase } from '../lib/supabase/client';
 
 /**
@@ -38,7 +37,13 @@ export async function isPinUnique(tenantId: string, pin: string): Promise<boolea
   }
 }
 
-/** Hashes a PIN with bcrypt (client-side — only the resulting hash is ever sent to the server). */
+/**
+ * Stored and compared as a plain 4-digit string, not bcrypt-hashed — per
+ * explicit product decision, so an admin can look a staff member's PIN back
+ * up (GET /api/staff/pins) to hand it out or resolve a "PIN doesn't work"
+ * report. Kept as an async function so every call site set up for the old
+ * hashing step didn't need to change.
+ */
 export async function hashPin(pin: string): Promise<string> {
-  return bcrypt.hash(pin, 10);
+  return pin.trim();
 }

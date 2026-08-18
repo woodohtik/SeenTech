@@ -204,8 +204,8 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
     const fetchStaff = async () => {
       // SECURITY: pin_hash intentionally excluded — never fetched here since
       // it's unused, and any staff member of the tenant could otherwise read
-      // every coworker's bcrypt PIN hash (RLS scopes by tenant only, not
-      // role) and brute-force the tiny 4-digit keyspace offline.
+      // every coworker's plain-text login PIN directly (RLS scopes by
+      // tenant only, not role).
       const [{ data: staffData, error }, { data: rolesData }] = await Promise.all([
         supabase
           .from('staff')

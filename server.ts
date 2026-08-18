@@ -3,7 +3,6 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import fs from "fs";
 import dotenv from 'dotenv';
-import bcrypt from "bcryptjs";
 import { authenticate, authorize } from "./src/server/middleware/authMiddleware.ts";
 import { registerPrintRelay } from "./src/server/printRelay.ts";
 
@@ -377,12 +376,18 @@ app.post("/api/staff/create-account", authenticate, authorize(['super_admin', 'o
 });
 
 // Verifies a staff PIN server-side. This must not be done client-side:
-// the previous implementation fetched every active staff member's bcrypt
+// the previous implementation fetched every active staff member's
 // pin_hash to the browser (PinLogin.tsx) so it could compare locally — since
 // PINs are only 4 digits (10,000 combinations), any staff member could
-// capture a coworker's/owner's hash from the network response and brute
-// -force it offline in minutes, then log in as them. This endpoint compares
-// server-side and never returns any pin_hash to the client.
+// capture a coworker's/owner's code from the network response and log in as
+// them directly. This endpoint compares server-side and never returns any
+// pin_hash to the client.
+//
+// PINs are intentionally stored and compared as plain 4-digit strings (not
+// bcrypt-hashed) per explicit product decision -- the admin needs to be able
+// to look a staff member's PIN back up (see GET /api/staff/pins) to hand it
+// out or resolve a "my PIN doesn't work" report, which an irreversible hash
+// can never support.
 app.post("/api/staff/verify-pin", authenticate, async (req: any, res) => {
   try {
     const tenantId = req.user?.tenantId;
@@ -406,7 +411,7 @@ app.post("/api/staff/verify-pin", authenticate, async (req: any, res) => {
     let matched: any = null;
     for (const s of staffData || []) {
       if (!s.pin_hash) continue;
-      if (await bcrypt.compare(pin, s.pin_hash)) {
+      if (s.pin_hash === pin) {
         matched = s;
         break;
       }
@@ -444,6 +449,36 @@ app.post("/api/staff/verify-pin", authenticate, async (req: any, res) => {
     });
   } catch (err: any) {
     console.error("Error verifying staff PIN:", err);
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
+});
+
+// Returns every active staff member's plain-text PIN for this tenant, so an
+// admin/owner can look one up to hand out or resolve a "PIN doesn't work"
+// report. Restricted to admin-level roles server-side: the `staff` table's
+// RLS only scopes SELECT by tenant, not by role, so a plain client-side
+// query (or any staff member with devtools) would otherwise let any staff
+// member -- down to a cashier -- read every coworker's, and the owner's,
+// login PIN directly.
+app.get("/api/staff/pins", authenticate, authorize(['super_admin', 'owner', 'admin', 'manager']), async (req: any, res) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      return res.status(401).json({ error: 'Unauthorized: No tenant ID found' });
+    }
+
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+    const { data, error } = await supabaseAdmin
+      .from('staff')
+      .select('id, pin_hash')
+      .eq('tenant_id', tenantId)
+      .not('pin_hash', 'is', null);
+
+    if (error) throw error;
+
+    res.json({ pins: (data || []).map((s: any) => ({ id: s.id, pin: s.pin_hash })) });
+  } catch (err: any) {
+    console.error("Error fetching staff pins:", err);
     res.status(500).json({ error: err.message || 'Internal Server Error' });
   }
 });
