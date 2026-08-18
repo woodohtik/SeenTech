@@ -417,6 +417,22 @@ app.post("/api/staff/verify-pin", authenticate, async (req: any, res) => {
       }
     }
 
+    // TEMP DIAGNOSTIC — never logs the PIN or pin_hash values themselves,
+    // only shape/lengths, to track down a "correct PIN rejected" report.
+    if (mode !== 'check-unique' && !matched) {
+      console.log('[verify-pin] no match', {
+        tenantId,
+        typedPinLength: pin.length,
+        activeStaffCount: (staffData || []).length,
+        candidates: (staffData || []).map((s: any) => ({
+          id: s.id,
+          status: s.status,
+          hasPinHash: !!s.pin_hash,
+          pinHashLength: s.pin_hash ? s.pin_hash.length : 0,
+        })),
+      });
+    }
+
     if (mode === 'check-unique') {
       return res.json({ isUnique: !matched });
     }
