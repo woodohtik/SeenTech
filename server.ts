@@ -422,7 +422,14 @@ app.post("/api/staff/verify-pin", authenticate, async (req: any, res) => {
     }
 
     if (!matched) {
-      return res.status(404).json({ matched: false });
+      // A PIN activated before PINs switched from bcrypt hashes to plain
+      // text is still sitting there as an old hash, which can never equal
+      // anything typed in (hashing is one-way -- the original PIN can't be
+      // recovered from it). That looks identical to a wrong PIN from the
+      // client's side unless it's told to point at "needs reactivating"
+      // instead of "you mistyped it".
+      const hasLegacyHash = (staffData || []).some((s: any) => s.pin_hash && /^\$2[aby]\$/.test(s.pin_hash));
+      return res.status(404).json({ matched: false, hasLegacyPins: hasLegacyHash });
     }
 
     const actualRole = matched.role_id ? (rolesMap.get(matched.role_id) || matched.role) : matched.role;
@@ -476,7 +483,16 @@ app.get("/api/staff/pins", authenticate, authorize(['super_admin', 'owner', 'adm
 
     if (error) throw error;
 
-    res.json({ pins: (data || []).map((s: any) => ({ id: s.id, pin: s.pin_hash })) });
+    // A PIN activated before PINs switched from bcrypt hashes to plain text
+    // still has its old hash sitting in this column -- surface that as
+    // `legacy: true` instead of dumping the raw hash string into the PIN
+    // display column.
+    res.json({
+      pins: (data || []).map((s: any) => {
+        const isLegacy = /^\$2[aby]\$/.test(s.pin_hash || '');
+        return { id: s.id, pin: isLegacy ? null : s.pin_hash, legacy: isLegacy };
+      }),
+    });
   } catch (err: any) {
     console.error("Error fetching staff pins:", err);
     res.status(500).json({ error: err.message || 'Internal Server Error' });

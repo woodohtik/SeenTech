@@ -379,7 +379,9 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       if (!res.ok) return;
       const payload = await res.json().catch(() => null);
       const map: Record<string, string> = {};
-      (payload?.pins || []).forEach((p: { id: string; pin: string }) => { map[p.id] = p.pin; });
+      (payload?.pins || []).forEach((p: { id: string; pin: string | null; legacy?: boolean }) => {
+        map[p.id] = p.legacy ? 'legacy' : (p.pin || '');
+      });
       setStaffPins(map);
     } catch {
       // Non-critical display data -- leave whatever was already loaded.
@@ -1338,12 +1340,17 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                           {branches.find(b => b.id === member.branchId)?.name || t('orders.not_specified')}
                         </span>
                       </div>
-                      {staffPins[member.id] && (
+                      {staffPins[member.id] === 'legacy' ? (
+                        <div className="flex items-center gap-1.5 shrink-0" title={t('settings_page.staff.pin_needs_reactivation', 'يحتاج الرمز لإعادة التفعيل')}>
+                          <AlertTriangle size={13} className="text-warning shrink-0" />
+                          <span className="font-black text-warning">{t('settings_page.staff.pin_needs_reactivation', 'يحتاج الرمز لإعادة التفعيل')}</span>
+                        </div>
+                      ) : staffPins[member.id] ? (
                         <div className="flex items-center gap-1.5 shrink-0">
                           <Key size={13} className="text-content-muted shrink-0" />
                           <span className="font-black tracking-widest ltr">{staffPins[member.id]}</span>
                         </div>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 </div>

@@ -136,7 +136,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
           // Note: we don't necessarily need setIsVerifying(false) here if unmounting
         }
       } else {
-        setError(t('login.pin_incorrect'));
+        setError(payload?.hasLegacyPins ? t('login.pin_needs_reactivation') : t('login.pin_incorrect'));
         setPin('');
         setIsVerifying(false);
       }

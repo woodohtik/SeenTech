@@ -123,7 +123,7 @@ export default function LockScreen({ currentStaff, onUnlock, tenantId, onUnlockW
               onUnlock();
               return;
             }
-            setError(t('common.invalid_pin'));
+            setError(payload?.hasLegacyPins ? t('login.pin_needs_reactivation') : t('common.invalid_pin'));
             setPin('');
           }
         } catch (err) {
