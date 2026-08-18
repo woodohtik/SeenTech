@@ -9,9 +9,11 @@ interface DatePickerProps {
   onChange: (value: string) => void;
   id?: string;
   className?: string;
+  /** Shown on the trigger button when no date is selected yet, e.g. "من" / "إلى". */
+  placeholder?: string;
 }
 
-export function DatePicker({ value, onChange, id, className }: DatePickerProps) {
+export function DatePicker({ value, onChange, id, className, placeholder }: DatePickerProps) {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'ar';
   const [isOpen, setIsOpen] = useState(false);
@@ -54,7 +56,7 @@ export function DatePicker({ value, onChange, id, className }: DatePickerProps) 
 
   // Format selected date for display button
   const formatDisplayDate = (dateStr: string) => {
-    if (!dateStr) return isRtl ? 'اختر التاريخ' : 'Select Date';
+    if (!dateStr) return placeholder || (isRtl ? 'اختر التاريخ' : 'Select Date');
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) return dateStr;
     

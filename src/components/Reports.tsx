@@ -19,10 +19,9 @@ import {
   AreaChart,
   Area
 } from 'recharts';
-import { 
-  Download, 
-  Calendar as CalendarIcon, 
-  TrendingUp, 
+import {
+  Download,
+  TrendingUp,
   Users, 
   ShoppingBag, 
   DollarSign,
@@ -44,6 +43,7 @@ import {
   Landmark
 } from 'lucide-react';
 import { PriceDisplay } from './PriceDisplay';
+import DateTimeDisplay from './DateTimeDisplay';
 import { cn } from '../lib/utils';
 import Header from './Header';
 import TailorStatementReport from './TailorStatementReport';
@@ -94,6 +94,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
   const [selectedStaff, setSelectedStaff] = useState('all');
   const [paymentStatus, setPaymentStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [excludeTestData, setExcludeTestData] = useState(true);
 
   // Drill-down
@@ -257,13 +258,21 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                           (paymentStatus === 'paid' && order.remainingAmount === 0) ||
                           (paymentStatus === 'partial' && order.remainingAmount > 0 && order.paidAmount > 0) ||
                           (paymentStatus === 'unpaid' && order.paidAmount === 0);
-      const searchMatch = !searchTerm || 
+      const searchMatch = !searchTerm ||
                          order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         String(order.orderNumber ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          order.id.toLowerCase().includes(searchTerm.toLowerCase());
       
       return isTestMatch && dateMatch && staffMatch && paymentMatch && searchMatch;
     });
   }, [orders, dateRange, selectedStaff, paymentStatus, searchTerm, excludeTestData]);
+
+  // Live dropdown preview while typing in the search box -- capped so it
+  // stays a quick-glance list rather than duplicating a full table.
+  const searchSuggestions = useMemo(() => {
+    if (!searchTerm.trim()) return [];
+    return filteredOrders.slice(0, 8);
+  }, [filteredOrders, searchTerm]);
 
   // A returned order is set to status 'cancelled' but its original
   // totalAmount/paidAmount are left on the row for audit purposes -- so any
@@ -730,47 +739,86 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
       {/* Filters Bar */}
       <div id="reports-filters-bar" className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm flex flex-col lg:flex-row lg:items-center gap-4 sm:gap-6">
-        <div className="w-full lg:flex-1 flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface rounded-2xl px-4 h-12 transition-all shadow-inner shadow-black/5">
-          <Search className="text-content-muted shrink-0" size={18} />
-          <input 
-            id="reports-search-input"
-            type="text" 
-            placeholder={t('dashboard.cashier.search_placeholder')}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-transparent border-none p-0 focus:ring-0 font-bold text-sm text-content outline-none"
-          />
+        <div className="relative w-full lg:flex-1">
+          <div className="flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface rounded-2xl px-4 h-12 transition-all shadow-inner shadow-black/5">
+            <Search className="text-content-muted shrink-0" size={18} />
+            <input
+              id="reports-search-input"
+              type="text"
+              placeholder={t('dashboard.cashier.search_placeholder')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setTimeout(() => setIsSearchFocused(false), 150)}
+              className="w-full bg-transparent border-none p-0 focus:ring-0 font-bold text-sm text-content outline-none"
+              autoComplete="off"
+            />
+          </div>
+
+          {/* Live search results dropdown */}
+          {isSearchFocused && searchTerm.trim() && (
+            <div className="absolute z-30 top-[calc(100%+6px)] inset-x-0 bg-surface border border-border rounded-2xl shadow-xl overflow-hidden max-h-80 overflow-y-auto">
+              {searchSuggestions.length > 0 ? (
+                searchSuggestions.map(order => (
+                  <button
+                    key={order.id}
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setIsSearchFocused(false);
+                      setDrillDown({
+                        title: t('reports.drilldown_orders_title', { name: order.customerName }),
+                        data: [order],
+                        columns: [
+                          { key: 'id', label: t('dashboard.cashier.col_order_number') },
+                          { key: 'customerName', label: t('common.customer') },
+                          { key: 'totalAmount', label: t('common.amount'), type: 'currency' },
+                          { key: 'orderDate', label: t('common.date'), type: 'date' },
+                          { key: 'status', label: t('common.status'), type: 'status' }
+                        ]
+                      });
+                    }}
+                    className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-surface-muted/60 transition-colors text-right border-b border-border last:border-0"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-xs font-black text-content truncate">
+                        {order.customerName} <span className="text-content-muted font-bold">#{order.orderNumber ?? order.id.slice(-6).toUpperCase()}</span>
+                      </p>
+                      <p className="text-[10px] text-content-muted font-bold mt-0.5">
+                        <DateTimeDisplay date={order.orderDate} showTime={false} />
+                      </p>
+                    </div>
+                    <span className="text-xs font-black text-brand shrink-0"><PriceDisplay amount={order.totalAmount} /></span>
+                  </button>
+                ))
+              ) : (
+                <div className="px-4 py-6 text-center text-xs font-bold text-content-muted">
+                  {t('pos.no_orders')}
+                </div>
+              )}
+            </div>
+          )}
         </div>
-        
+
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
           {/* Start Date */}
-          <div className="flex-1 sm:flex-none flex items-center gap-2 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface rounded-2xl px-4 h-12 transition-all shadow-inner shadow-black/5 min-w-[130px] lg:min-w-[150px]">
-            <CalendarIcon size={16} className="text-content-muted shrink-0" />
-            <div className="flex flex-col flex-1">
-              <span className="text-[9px] text-content-muted font-black leading-none uppercase tracking-wider">{t('common.from', 'من')}</span>
-              <input 
-                id="reports-date-start"
-                type="date" 
-                value={dateRange.start}
-                onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                className="bg-transparent border-none p-0 focus:ring-0 text-[11px] font-black text-content w-full cursor-pointer outline-none mt-0.5 leading-none"
-              />
-            </div>
+          <div className="flex-1 sm:flex-none min-w-[130px] lg:min-w-[150px]">
+            <DatePicker
+              id="reports-date-start"
+              value={dateRange.start}
+              onChange={(val) => setDateRange({ ...dateRange, start: val })}
+              placeholder={t('common.from', 'من')}
+            />
           </div>
 
           {/* End Date */}
-          <div className="flex-1 sm:flex-none flex items-center gap-2 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface rounded-2xl px-4 h-12 transition-all shadow-inner shadow-black/5 min-w-[130px] lg:min-w-[150px]">
-            <CalendarIcon size={16} className="text-content-muted shrink-0" />
-            <div className="flex flex-col flex-1">
-              <span className="text-[9px] text-content-muted font-black leading-none uppercase tracking-wider">{t('common.to', 'إلى')}</span>
-              <input 
-                id="reports-date-end"
-                type="date" 
-                value={dateRange.end}
-                onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                className="bg-transparent border-none p-0 focus:ring-0 text-[11px] font-black text-content w-full cursor-pointer outline-none mt-0.5 leading-none"
-              />
-            </div>
+          <div className="flex-1 sm:flex-none min-w-[130px] lg:min-w-[150px]">
+            <DatePicker
+              id="reports-date-end"
+              value={dateRange.end}
+              onChange={(val) => setDateRange({ ...dateRange, end: val })}
+              placeholder={t('common.to', 'إلى')}
+            />
           </div>
 
           <div className="flex-1 sm:flex-none sm:min-w-[160px]">
