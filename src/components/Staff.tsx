@@ -25,7 +25,8 @@ import {
   Info,
   Lock,
   Key,
-  Settings
+  Settings,
+  AlertTriangle
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { handleFirestoreError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
@@ -233,6 +234,8 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
   const [pinModalValue, setPinModalValue] = useState('');
   const [pinModalError, setPinModalError] = useState<string | null>(null);
   const [pinModalSubmitting, setPinModalSubmitting] = useState(false);
+  const [pinDisableTarget, setPinDisableTarget] = useState<StaffMember | null>(null);
+  const [pinDisableSubmitting, setPinDisableSubmitting] = useState(false);
 
   useEffect(() => {
     // Expand all categories by default
@@ -676,49 +679,60 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
     }
   };
 
-  const togglePin = async (member: StaffMember) => {
+  const togglePin = (member: StaffMember) => {
     if (member.pin) {
-      // Disable PIN
-      try {
-        // .select() so a row RLS silently refused to touch (error: null,
-        // 0 rows affected) is detectable instead of quietly reporting
-        // success on a write that never actually happened.
-        const { data, error } = await supabase.from('staff').update({
-          pin_hash: null,
-          must_change_pin: false,
-          updated_at: new Date().toISOString()
-        }).eq('id', member.id).select('id').maybeSingle();
-
-        if (error) throw error;
-        if (!data) throw new Error(t('settings_page.staff.pin_update_no_permission', 'لم يتم الحفظ — قد لا تملك صلاحية تعديل هذا الموظف.'));
-
-        // Audit log for security
-        await supabase.from('audit_logs').insert({
-          action: 'إلغاء رمز الدخول',
-          performed_by: currentAuthUser?.id || null,
-          performed_by_email: currentAuthUser?.email || 'unknown',
-          target_tenant_id: tenantId,
-          details: `تم إلغاء رمز الدخول للموظف ${member.name}`,
-          occurred_at: new Date().toISOString(),
-          type: 'security'
-        });
-
-        // Optimistic local update -- don't leave the dropdown label (or a
-        // freshly opened edit form) showing the old state while waiting on
-        // the realtime round-trip to refetch staff.
-        setStaff(prev => prev.map(s => s.id === member.id ? { ...s, pin: undefined, mustChangePin: false } : s));
-
-        setToast({ message: t('settings_page.staff.pin_disabled_success'), type: 'success' });
-      } catch (error: any) {
-        console.error('Error toggling staff pin:', error);
-        setToast({ message: t('settings_page.staff.pin_update_failed', { message: error?.message || t('errors.unknown') }), type: 'error' });
-      }
+      // Disable PIN -- confirm first, this locks the employee out of the
+      // POS/PIN login immediately with no undo.
+      setPinDisableTarget(member);
     } else {
       // Enable PIN -- ask the admin which code to activate instead of
       // silently picking a random one they'd have to relay to the employee.
       setPinModalValue('');
       setPinModalError(null);
       setPinModalTarget(member);
+    }
+  };
+
+  const confirmDisablePin = async () => {
+    if (!pinDisableTarget) return;
+    const member = pinDisableTarget;
+    setPinDisableSubmitting(true);
+    try {
+      // .select() so a row RLS silently refused to touch (error: null,
+      // 0 rows affected) is detectable instead of quietly reporting
+      // success on a write that never actually happened.
+      const { data, error } = await supabase.from('staff').update({
+        pin_hash: null,
+        must_change_pin: false,
+        updated_at: new Date().toISOString()
+      }).eq('id', member.id).select('id').maybeSingle();
+
+      if (error) throw error;
+      if (!data) throw new Error(t('settings_page.staff.pin_update_no_permission', 'لم يتم الحفظ — قد لا تملك صلاحية تعديل هذا الموظف.'));
+
+      // Audit log for security
+      await supabase.from('audit_logs').insert({
+        action: 'إلغاء رمز الدخول',
+        performed_by: currentAuthUser?.id || null,
+        performed_by_email: currentAuthUser?.email || 'unknown',
+        target_tenant_id: tenantId,
+        details: `تم إلغاء رمز الدخول للموظف ${member.name}`,
+        occurred_at: new Date().toISOString(),
+        type: 'security'
+      });
+
+      // Optimistic local update -- don't leave the dropdown label (or a
+      // freshly opened edit form) showing the old state while waiting on
+      // the realtime round-trip to refetch staff.
+      setStaff(prev => prev.map(s => s.id === member.id ? { ...s, pin: undefined, mustChangePin: false } : s));
+
+      setToast({ message: t('settings_page.staff.pin_disabled_success'), type: 'success' });
+      setPinDisableTarget(null);
+    } catch (error: any) {
+      console.error('Error disabling staff pin:', error);
+      setToast({ message: t('settings_page.staff.pin_update_failed', { message: error?.message || t('errors.unknown') }), type: 'error' });
+    } finally {
+      setPinDisableSubmitting(false);
     }
   };
 
@@ -1049,6 +1063,46 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
             role={showPermissionsModal}
             onClose={() => setShowPermissionsModal(null)}
           />
+        )}
+
+        {pinDisableTarget && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-surface rounded-3xl shadow-2xl w-full max-w-sm border border-border p-6 space-y-5 text-center"
+            >
+              <div className="w-14 h-14 mx-auto rounded-full bg-danger/10 text-danger flex items-center justify-center">
+                <AlertTriangle size={26} />
+              </div>
+              <div>
+                <h3 className="font-black text-content">{t('settings_page.staff.confirm_disable_pin_title', 'إلغاء رمز الموظف؟')}</h3>
+                <p className="text-xs text-content-muted font-bold mt-1.5 leading-relaxed">
+                  {t('settings_page.staff.confirm_disable_pin_desc', { name: pinDisableTarget.name })}
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={confirmDisablePin}
+                  disabled={pinDisableSubmitting}
+                  className="flex-1 bg-danger text-white py-3 rounded-2xl font-black text-sm hover:bg-danger/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {pinDisableSubmitting ? (
+                    <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    t('settings_page.staff.confirm_disable_pin_confirm', 'إلغاء الرمز')
+                  )}
+                </button>
+                <button
+                  onClick={() => setPinDisableTarget(null)}
+                  className="px-5 py-3 bg-surface-muted text-content-muted rounded-2xl font-black text-sm hover:bg-surface-muted/70 transition-all"
+                >
+                  {t('common.cancel')}
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
 
         {pinModalTarget && (

@@ -3609,6 +3609,9 @@
         "title": "عمولات الخياطين"
       },
       "confirm_delete_employee": "هل أنت متأكد من حذف هذا الموظف؟",
+      "confirm_disable_pin_confirm": "إلغاء الرمز",
+      "confirm_disable_pin_desc": "سيتم إلغاء رمز الدخول للموظف {{name}} فورًا، ولن يتمكن من تسجيل الدخول برمزه حتى يتم تفعيل رمز جديد له.",
+      "confirm_disable_pin_title": "إلغاء رمز الموظف؟",
       "delete_failed": "فشل حذف الموظف: {{message}}",
       "delete_success": "تم حذف الموظف بنجاح",
       "duplicate_data": "هناك بيانات مكررة مسجلة لموظف آخر بالفعل.",

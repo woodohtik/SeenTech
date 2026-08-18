@@ -3609,6 +3609,9 @@
         "title": "درزی کمیشن"
       },
       "confirm_delete_employee": "کیا آپ واقعی اس ملازم کو حذف کرنا چاہتے ہیں؟",
+      "confirm_disable_pin_confirm": "پن غیر فعال کریں",
+      "confirm_disable_pin_desc": "{{name}} کا لاگ ان پن فوری طور پر غیر فعال ہو جائے گا -- نیا پن فعال ہونے تک وہ اس سے لاگ ان نہیں کر سکیں گے۔",
+      "confirm_disable_pin_title": "کیا ملازم کا پن غیر فعال کریں؟",
       "delete_failed": "ملازم حذف کرنے میں ناکامی: {{message}}",
       "delete_success": "ملازم کامیابی سے حذف کر دیا گیا",
       "duplicate_data": "یہ ڈیٹا پہلے ہی کسی دوسرے ملازم کے لیے درج ہے۔",
