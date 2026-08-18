@@ -372,11 +372,25 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
   const fetchStaffPins = async () => {
     if (!tenantId) return;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch('/api/staff/pins', {
-        headers: { Authorization: `Bearer ${session?.access_token || ''}` },
-      });
+      const attempt = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        return fetch('/api/staff/pins', {
+          headers: { Authorization: `Bearer ${session?.access_token || ''}` },
+        });
+      };
+
+      let res = await attempt();
+      // A freshly (re)mounted screen can call this before the just-restored
+      // session has a valid access token attached yet, which the server
+      // rejects with 401 -- that used to just silently leave the PIN column
+      // empty until something else happened to trigger a refetch. Refresh
+      // once and retry before giving up.
+      if (res.status === 401) {
+        await supabase.auth.refreshSession();
+        res = await attempt();
+      }
       if (!res.ok) return;
+
       const payload = await res.json().catch(() => null);
       const map: Record<string, string> = {};
       (payload?.pins || []).forEach((p: { id: string; pin: string | null; legacy?: boolean }) => {
