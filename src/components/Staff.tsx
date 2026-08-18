@@ -680,13 +680,17 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
     if (member.pin) {
       // Disable PIN
       try {
-        const { error } = await supabase.from('staff').update({
+        // .select() so a row RLS silently refused to touch (error: null,
+        // 0 rows affected) is detectable instead of quietly reporting
+        // success on a write that never actually happened.
+        const { data, error } = await supabase.from('staff').update({
           pin_hash: null,
           must_change_pin: false,
           updated_at: new Date().toISOString()
-        }).eq('id', member.id);
+        }).eq('id', member.id).select('id').maybeSingle();
 
         if (error) throw error;
+        if (!data) throw new Error(t('settings_page.staff.pin_update_no_permission', 'لم يتم الحفظ — قد لا تملك صلاحية تعديل هذا الموظف.'));
 
         // Audit log for security
         await supabase.from('audit_logs').insert({
@@ -698,6 +702,11 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
           occurred_at: new Date().toISOString(),
           type: 'security'
         });
+
+        // Optimistic local update -- don't leave the dropdown label (or a
+        // freshly opened edit form) showing the old state while waiting on
+        // the realtime round-trip to refetch staff.
+        setStaff(prev => prev.map(s => s.id === member.id ? { ...s, pin: undefined, mustChangePin: false } : s));
 
         setToast({ message: t('settings_page.staff.pin_disabled_success'), type: 'success' });
       } catch (error: any) {
@@ -732,13 +741,17 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       const pinHash = await hashPin(pin);
       const member = pinModalTarget;
 
-      const { error } = await supabase.from('staff').update({
+      // .select() so a row RLS silently refused to touch (error: null,
+      // 0 rows affected) is detectable instead of quietly reporting
+      // success on a write that never actually happened.
+      const { data, error } = await supabase.from('staff').update({
         pin_hash: pinHash,
         must_change_pin: false,
         updated_at: new Date().toISOString()
-      }).eq('id', member.id);
+      }).eq('id', member.id).select('id').maybeSingle();
 
       if (error) throw error;
+      if (!data) throw new Error(t('settings_page.staff.pin_update_no_permission', 'لم يتم الحفظ — قد لا تملك صلاحية تعديل هذا الموظف.'));
 
       // Audit log for security -- never log the PIN itself
       await supabase.from('audit_logs').insert({

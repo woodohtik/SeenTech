@@ -4062,6 +4062,7 @@
       "pin_taken": "This PIN is already used by another employee -- choose a different one",
       "pin_unique_failed": "Couldn't generate a unique PIN, please try again",
       "pin_update_failed": "Failed to update employee PIN: {{message}}",
+      "pin_update_no_permission": "Nothing was saved -- you may not have permission to edit this employee.",
       "save_failed": "Save failed: {{message}}",
       "search_placeholder": "Search staff members...",
       "seed_default_roles": "Seed Default Roles",

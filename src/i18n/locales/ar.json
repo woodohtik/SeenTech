@@ -4062,6 +4062,7 @@
       "pin_taken": "هذا الرمز مستخدم من قبل موظف آخر، اختر رمزاً غير مكرر",
       "pin_unique_failed": "تعذر إنشاء رمز دخول فريد، يرجى المحاولة مرة أخرى",
       "pin_update_failed": "فشل تعديل الرمز للموظف: {{message}}",
+      "pin_update_no_permission": "لم يتم الحفظ — قد لا تملك صلاحية تعديل هذا الموظف.",
       "save_failed": "فشل الحفظ: {{message}}",
       "search_placeholder": "بحث في الموظفين...",
       "seed_default_roles": "إضافة المهن الافتراضية",
