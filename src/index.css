@@ -306,6 +306,16 @@ option {
     border-collapse: collapse !important;
   }
 
+  /* Charts render as bare SVG shapes on paper with no readable data behind
+     them -- the export should be a data report, not graphics. Every chart
+     is hidden here; the underlying figures are shown as a table instead
+     (either one that already exists on screen, or a print-only one added
+     next to the hidden chart). */
+  #reports-printable-area .recharts-wrapper,
+  #reports-printable-area .recharts-responsive-container {
+    display: none !important;
+  }
+
   #reports-printable-area th,
   #reports-printable-area td {
     border: 1px solid #ddd !important;

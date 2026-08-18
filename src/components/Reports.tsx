@@ -996,6 +996,15 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
+                {/* Print-only: the chart above is hidden on paper, this table carries the same data */}
+                <table className="hidden print:table w-full text-xs">
+                  <thead><tr><th className="text-right p-1 border-b border-black">{t('common.date')}</th><th className="text-right p-1 border-b border-black">{t('common.sales')}</th><th className="text-right p-1 border-b border-black">{t('reports.revenue')}</th></tr></thead>
+                  <tbody>
+                    {(financialStats.trendChartData as any[]).map((row, i) => (
+                      <tr key={i}><td className="p-1">{row.date}</td><td className="p-1"><PriceDisplay amount={row.sales} /></td><td className="p-1"><PriceDisplay amount={row.revenue} /></td></tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
 
               {/* Payment Methods */}
@@ -1025,6 +1034,14 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
+                <table className="hidden print:table w-full text-xs">
+                  <thead><tr><th className="text-right p-1 border-b border-black">{t('z_report.payment_method', 'طريقة الدفع')}</th><th className="text-right p-1 border-b border-black">{t('common.amount')}</th></tr></thead>
+                  <tbody>
+                    {financialStats.paymentChartData.map((row: any, i) => (
+                      <tr key={i}><td className="p-1">{row.name}</td><td className="p-1"><PriceDisplay amount={row.value} /></td></tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
 
               {/* Tax, Profit & Returns Cards */}
@@ -1140,6 +1157,14 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
+                <table className="hidden print:table w-full text-xs">
+                  <thead><tr><th className="text-right p-1 border-b border-black">{t('common.status')}</th><th className="text-right p-1 border-b border-black">{t('common.total')}</th></tr></thead>
+                  <tbody>
+                    {orderStats.statusChartData.map((row: any, i) => (
+                      <tr key={i}><td className="p-1">{row.name}</td><td className="p-1">{row.value}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
 
               {/* KPIs */}
@@ -1239,6 +1264,14 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
+                <table className="hidden print:table w-full text-xs">
+                  <thead><tr><th className="text-right p-1 border-b border-black">{t('inventory.item')}</th><th className="text-right p-1 border-b border-black">{t('common.quantity')}</th></tr></thead>
+                  <tbody>
+                    {inventoryStats.topItems.map((item, i) => (
+                      <tr key={i}><td className="p-1">{item.name}</td><td className="p-1">{item.quantity} {item.unit}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
@@ -1449,6 +1482,13 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
+                  <table className="hidden print:table w-full text-xs">
+                    <tbody>
+                      {customerStats.retentionChartData.map((row: any, i) => (
+                        <tr key={i}><td className="p-1">{row.name}</td><td className="p-1">{row.value}</td></tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
@@ -1492,6 +1532,14 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
+                <table className="hidden print:table w-full text-xs">
+                  <thead><tr><th className="text-right p-1 border-b border-black">{t('common.date')}</th><th className="text-right p-1 border-b border-black">{t('common.total')}</th></tr></thead>
+                  <tbody>
+                    {supplierStats.purchasesTrend.map((row, i) => (
+                      <tr key={i}><td className="p-1">{row.date}</td><td className="p-1"><PriceDisplay amount={row.total} /></td></tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
 
               <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
