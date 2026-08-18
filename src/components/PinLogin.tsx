@@ -139,6 +139,17 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
     }
   };
 
+  const exitToPasswordLogin = async () => {
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error("Error signing out from PIN screen:", err);
+    }
+    window.location.replace('/login');
+  };
+
   const handlePinChange = async () => {
     if (!mustChangePin) return;
     if (newPin.length !== 4) {
@@ -305,6 +316,13 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                   )}
                 </AnimatePresence>
 
+                <button
+                  onClick={exitToPasswordLogin}
+                  className="text-brand hover:text-brand/80 text-sm font-bold mb-8 transition-colors"
+                >
+                  {t('login.forgot_pin')}
+                </button>
+
                 {/* Numpad */}
                 <div className="grid grid-cols-3 gap-5 w-full">
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
@@ -350,17 +368,8 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                 </div>
 
                 <div className="mt-10 pt-8 border-t border-border w-full">
-                  <button 
-                    onClick={async () => {
-                      try {
-                        localStorage.clear();
-                        sessionStorage.clear();
-                        await supabase.auth.signOut();
-                      } catch (err) {
-                        console.error("Error signing out from PIN screen:", err);
-                      }
-                      window.location.replace('/login');
-                    }}
+                  <button
+                    onClick={exitToPasswordLogin}
                     className="w-full flex items-center justify-center gap-3 text-content-muted hover:text-content font-black transition-colors py-2"
                   >
                     <LogOut size={20} />

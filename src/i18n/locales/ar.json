@@ -1390,6 +1390,7 @@
     "forgot_desc": "أدخل بريدك الإلكتروني لإرسال رابط الاستعادة",
     "forgot_password": "استعادة كلمة المرور",
     "forgot_password_link": "نسيت كلمة المرور؟",
+    "forgot_pin": "نسيت رمز الدخول؟ سجّل الدخول بكلمة المرور",
     "full_name": "الاسم الكامل",
     "google": "جوجل",
     "google_verified": "متحقق عبر Google ✓",
