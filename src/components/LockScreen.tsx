@@ -67,15 +67,34 @@ export default function LockScreen({ currentStaff, onUnlock, tenantId, onUnlockW
           // Verified server-side against every active staff member's bcrypt
           // hash for this tenant — never fetched to the browser (see
           // POST /api/staff/verify-pin).
-          const { data: { session } } = await supabase.auth.getSession();
-          const res = await fetch('/api/staff/verify-pin', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${session?.access_token || ''}`,
-            },
-            body: JSON.stringify({ pin }),
-          });
+          const attemptVerify = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            return fetch('/api/staff/verify-pin', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${session?.access_token || ''}`,
+              },
+              body: JSON.stringify({ pin }),
+            });
+          };
+
+          let res = await attemptVerify();
+
+          // A missing/expired session access token is rejected with the same
+          // shape as a wrong PIN -- refresh once and retry before blaming a
+          // correctly-typed PIN for a stale token.
+          if (res.status === 401) {
+            await supabase.auth.refreshSession();
+            res = await attemptVerify();
+          }
+
+          if (res.status !== 404 && !res.ok) {
+            setError(t('login.pin_session_expired', 'انتهت صلاحية الجلسة. يرجى تحديث الصفحة والمحاولة مرة أخرى.'));
+            setPin('');
+            return;
+          }
+
           const payload = await res.json().catch(() => null);
           const matchedStaff: Staff | null = payload?.matched ? (payload.staff as Staff) : null;
 

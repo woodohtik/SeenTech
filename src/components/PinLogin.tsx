@@ -74,15 +74,37 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
       // used to let any staff member read a coworker's/owner's pin_hash from
       // the network response and brute-force the tiny 4-digit keyspace
       // offline.
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch('/api/staff/verify-pin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token || ''}`,
-        },
-        body: JSON.stringify({ pin }),
-      });
+      const attemptVerify = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        return fetch('/api/staff/verify-pin', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session?.access_token || ''}`,
+          },
+          body: JSON.stringify({ pin }),
+        });
+      };
+
+      let res = await attemptVerify();
+
+      // A missing/expired session access token gets rejected by the server
+      // with the same shape as a genuinely wrong PIN (no `matched` field) --
+      // that used to show "incorrect PIN" for a correctly-typed one whenever
+      // the token had simply gone stale. Refresh the session once and retry
+      // before concluding the PIN itself was wrong.
+      if (res.status === 401) {
+        await supabase.auth.refreshSession();
+        res = await attemptVerify();
+      }
+
+      if (res.status !== 404 && !res.ok) {
+        setError(t('login.pin_session_expired', 'انتهت صلاحية الجلسة. يرجى تحديث الصفحة والمحاولة مرة أخرى.'));
+        setPin('');
+        setIsVerifying(false);
+        return;
+      }
+
       const payload = await res.json().catch(() => null);
       const matchedStaff: Staff | null = payload?.matched ? (payload.staff as Staff) : null;
 

@@ -1412,6 +1412,7 @@
     "pin_incorrect": "Incorrect PIN",
     "pin_mismatch": "PINs do not match",
     "pin_must_be_4_digits": "New PIN must be 4 digits",
+    "pin_session_expired": "Session expired. Please refresh the page and try again.",
     "pin_update_failed": "Failed to update PIN",
     "pin_verify_error": "An error occurred during verification",
     "plan_basic_f1": "Customer management",
