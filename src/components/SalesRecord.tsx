@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
 import { Order } from '../types';
@@ -16,6 +16,7 @@ import { generateZatcaQR } from '../services/zatcaService';
 import { useToast } from '../contexts/ToastContext';
 import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
 import { formatSaudiPhone } from '../utils/phoneUtils';
+import { DatePicker } from './ui/DatePicker';
 
 import { isRtlLang } from '../lib/direction';
 
@@ -30,6 +31,15 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [tenantInfo, setTenantInfo] = useState<{ name: string; vat_number: string; address?: string; phone?: string } | null>(null);
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
+  const [dateRange, setDateRange] = useState({ start: '', end: '' });
+
+  const filteredOrders = useMemo(() => {
+    return orders.filter(order => {
+      const orderDay = order.orderDate?.split('T')[0] || '';
+      return (!dateRange.start || orderDay >= dateRange.start) &&
+             (!dateRange.end || orderDay <= dateRange.end);
+    });
+  }, [orders, dateRange]);
 
   const handleDownloadPDF = async () => {
     if (!selectedOrder) return;
@@ -254,6 +264,23 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
 
   return (
     <div className="p-4 sm:p-6 font-sans">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4">
+        <div className="flex-1 sm:flex-none sm:min-w-[150px]">
+          <DatePicker
+            value={dateRange.start}
+            onChange={(val) => setDateRange(prev => ({ ...prev, start: val }))}
+            placeholder={t('common.from', 'من')}
+          />
+        </div>
+        <div className="flex-1 sm:flex-none sm:min-w-[150px]">
+          <DatePicker
+            value={dateRange.end}
+            onChange={(val) => setDateRange(prev => ({ ...prev, end: val }))}
+            placeholder={t('common.to', 'إلى')}
+          />
+        </div>
+      </div>
+
       <div className="bg-surface rounded-2xl md:rounded-[2rem] border border-border shadow-sm overflow-hidden">
         {/* Desktop View Table */}
         <div className="hidden md:block overflow-x-auto whitespace-nowrap scrollbar-hide">
@@ -270,7 +297,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {orders.map(order => (
+              {filteredOrders.map(order => (
                 <tr key={order.id} className="hover:bg-surface-muted/50 transition-colors">
                   <td className="p-4 font-medium text-content">#{order.orderNumber || order.id.slice(-6).toUpperCase()}</td>
                   <td className="p-4 text-content-muted">{order.customerName}</td>
@@ -310,7 +337,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
 
         {/* Mobile View Cards */}
         <div className="md:hidden divide-y divide-border">
-          {orders.map(order => (
+          {filteredOrders.map(order => (
             <div key={order.id} className="p-4 active:bg-surface-muted/50" onClick={() => setSelectedOrder(order)}>
               <div className="flex justify-between items-start mb-2">
                 <div>
@@ -340,7 +367,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
               </div>
             </div>
           ))}
-          {orders.length === 0 && (
+          {filteredOrders.length === 0 && (
             <div className="p-12 text-center text-content-muted">
               <FileText className="mx-auto mb-4 opacity-20" size={48} />
               <p>{t('pos.no_orders')}</p>
