@@ -54,6 +54,8 @@ import { useToast } from '../contexts/ToastContext';
 import { motion, AnimatePresence } from 'motion/react';
 import * as XLSX from 'xlsx';
 import ZReport from './ZReport';
+import ReportPrintDocument, { ReportKpiItem, ReportTableSection } from './ReportPrintDocument';
+import { downloadInvoicePDF } from '../utils/pdfGenerator';
 
 import { useStaff } from '../contexts/StaffContext';
 import { usePermissions } from '../hooks/usePermissions';
@@ -718,6 +720,134 @@ export default function Reports({ tenantId }: { tenantId: string }) {
   ];
   const activeTabLabel = reportTabs.find(tab => tab.id === activeTab)?.label || '';
 
+  const printDateRangeLabel = (dateRange.start || dateRange.end)
+    ? `${dateRange.start || '...'} ${t('common.to', 'إلى')} ${dateRange.end || '...'}`
+    : undefined;
+
+  // Data behind the active tab's export, shaped for the plain document
+  // layout in ReportPrintDocument instead of the live dashboard's cards
+  // and charts. Kept in one place so every tab's PDF export goes through
+  // the exact same simple, dependable render-to-canvas pipeline used for
+  // invoices and the Z-Report, rather than the browser's print dialog.
+  let printKpis: ReportKpiItem[] = [];
+  let printTables: ReportTableSection[] = [];
+
+  if (activeTab === 'general') {
+    printKpis = [
+      { label: t('dashboard.total_revenue'), value: financialStats.totalRevenue, isCurrency: true },
+      { label: t('dashboard.admin.total_sales'), value: financialStats.totalSales, isCurrency: true },
+      { label: t('dashboard.orders_count'), value: filteredOrders.length },
+      { label: t('reports.delayed_orders'), value: orderStats.delayedCount },
+    ];
+  } else if (activeTab === 'financial') {
+    printKpis = [
+      { label: t('reports.total_tax'), value: financialStats.totalTax, isCurrency: true },
+      { label: t('reports.net_profit'), value: financialStats.netProfit, isCurrency: true },
+      { label: t('reports.avg_order_value'), value: nonCancelledOrders.length > 0 ? financialStats.totalSales / nonCancelledOrders.length : 0, isCurrency: true },
+      { label: t('reports.total_returns_value'), value: financialStats.totalReturnsValue, isCurrency: true },
+    ];
+    printTables = [
+      {
+        title: t('reports.revenue_vs_sales'),
+        columns: [t('common.date'), t('common.sales'), t('reports.revenue')],
+        rows: (financialStats.trendChartData as any[]).map(r => [r.date, r.sales, r.revenue]),
+        currencyColumns: [1, 2],
+      },
+      {
+        title: t('reports.sales_by_payment_method'),
+        columns: [t('z_report.payment_method', 'طريقة الدفع'), t('common.amount')],
+        rows: financialStats.paymentChartData.map((r: any) => [r.name, r.value]),
+        currencyColumns: [1],
+      },
+    ];
+  } else if (activeTab === 'profit_loss') {
+    printKpis = [
+      { label: t('reports.pl_net_sales'), value: profitLossStats.netSalesExclVat, isCurrency: true },
+      { label: t('reports.pl_cogs'), value: profitLossStats.cogs, isCurrency: true },
+      { label: t('reports.pl_gross_profit'), value: profitLossStats.grossProfit, isCurrency: true },
+      { label: t('reports.pl_expenses'), value: profitLossStats.operatingExpenses, isCurrency: true },
+      { label: t('reports.pl_net_profit'), value: profitLossStats.netProfit, isCurrency: true },
+    ];
+  } else if (activeTab === 'orders') {
+    printKpis = [
+      { label: t('reports.completion_time'), value: t('reports.days_value', { n: orderStats.avgTime }) },
+      { label: t('reports.delayed_orders'), value: orderStats.delayedCount },
+    ];
+    printTables = [{
+      title: t('reports.current_order_statuses'),
+      columns: [t('common.status'), t('common.total')],
+      rows: orderStats.statusChartData.map((r: any) => [r.name, r.value]),
+    }];
+  } else if (activeTab === 'inventory') {
+    printTables = [
+      {
+        title: t('reports.low_stock_alerts'),
+        columns: [t('inventory.item'), t('reports.current_quantity'), t('common.unit', 'الوحدة')],
+        rows: inventoryStats.lowStockItems.map(i => [i.name, i.quantity, i.unit]),
+      },
+      {
+        title: t('reports.most_available_items'),
+        columns: [t('inventory.item'), t('common.quantity')],
+        rows: inventoryStats.topItems.map(i => [i.name, `${i.quantity} ${i.unit}`]),
+      },
+    ];
+  } else if (activeTab === 'staff') {
+    printKpis = [
+      { label: t('reports.new_customers'), value: customerStats.retentionChartData[0]?.value ?? 0 },
+      { label: t('reports.returning_customers'), value: customerStats.retentionChartData[1]?.value ?? 0 },
+    ];
+    printTables = [
+      {
+        title: t('reports.staff_performance_title'),
+        columns: [t('common.employee'), t('common.role'), t('staff.total_tasks'), t('staff.completed_tasks'), t('reports.completion_rate')],
+        rows: staffWithPerformance.map(s => [s.name, s.roleName, s.totalHandled, s.completed, `${s.rate}%`]),
+      },
+      {
+        title: t('reports.top_customers'),
+        columns: [t('common.customer'), t('dashboard.orders_count'), t('reports.total_purchases')],
+        rows: customerStats.topCustomers.map(c => [c.name, c.orderCount, c.totalSpent]),
+        currencyColumns: [2],
+      },
+    ];
+  } else if (activeTab === 'suppliers_purchases') {
+    printKpis = [
+      { label: t('reports.sp_total_purchases'), value: supplierStats.totalPurchases, isCurrency: true },
+      { label: t('reports.sp_total_returns'), value: supplierStats.totalPurchaseReturns, isCurrency: true },
+      { label: t('reports.sp_net_purchases'), value: supplierStats.totalPurchases - supplierStats.totalPurchaseReturns, isCurrency: true },
+      { label: t('reports.sp_outstanding_balance'), value: supplierStats.totalOutstandingBalance, isCurrency: true },
+    ];
+    printTables = [{
+      title: t('reports.sp_supplier_breakdown'),
+      columns: [t('procurement.po_supplier', 'المورد'), t('reports.sp_total_purchases'), t('reports.sp_total_returns'), t('reports.sp_net_purchases')],
+      rows: supplierStats.supplierBreakdown.map(s => [s.name, s.purchases, s.returns, s.net]),
+      currencyColumns: [1, 2, 3],
+    }];
+  } else if (activeTab === 'vat') {
+    printKpis = [
+      { label: t('reports.vat_output'), value: vatStats.outputVat, isCurrency: true },
+      { label: t('reports.vat_input'), value: vatStats.inputVat, isCurrency: true },
+      { label: t('reports.vat_net_due'), value: Math.abs(vatStats.netVatDue), isCurrency: true },
+    ];
+  } else if (activeTab === 'zreports') {
+    if (dailyZData) {
+      const totals = dailyZData.totals;
+      printKpis = [
+        { label: t('z_report.gross_sales', 'إجمالي المبيعات (Gross)'), value: totals.grossSales || totals.totalSales, isCurrency: true },
+        { label: t('z_report.net_sales', 'صافي المبيعات (Net)'), value: totals.totalSales, isCurrency: true },
+        { label: t('z_report.excel_total_vat', 'إجمالي الضريبة'), value: totals.taxes, isCurrency: true },
+        { label: t('z_report.order_count', 'عدد الفواتير'), value: totals.orderCount ?? t('z_report.data_unavailable', 'غير متوفر') },
+      ];
+      if (totals.productBreakdown?.length) {
+        printTables = [{
+          title: t('z_report.sales_details', 'تفاصيل الطلبات والمنتجات'),
+          columns: [t('z_report.product_name', 'المنتج / الصنف'), t('z_report.quantity_sold', 'الكمية المباعة'), t('pos.amount', 'المبلغ')],
+          rows: totals.productBreakdown.map((p: any) => [p.name, p.quantity, p.total]),
+          currencyColumns: [2],
+        }];
+      }
+    }
+  }
+
   return (
     <div className="space-y-4 sm:space-y-8 text-right pb-20 px-2 sm:px-0" dir={dir}>
       <Header 
@@ -737,8 +867,8 @@ export default function Reports({ tenantId }: { tenantId: string }) {
             <FileSpreadsheet size={16} className="text-emerald-600 sm:w-5 sm:h-5" />
             <span>{t('dashboard.export_excel')}</span>
           </button>
-          <button 
-            onClick={() => canExportReports && window.print()}
+          <button
+            onClick={() => canExportReports && downloadInvoicePDF('reports-printable-area', `${activeTabLabel}.pdf`)}
             disabled={!canExportReports}
             className={cn(
               "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-brand text-white rounded-xl sm:rounded-2xl hover:bg-brand/90 font-black text-xs sm:text-sm transition-all shadow-lg shadow-brand/10",
@@ -750,6 +880,14 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           </button>
         </div>
       </Header>
+
+      <ReportPrintDocument
+        id="reports-printable-area"
+        reportTitle={`${t('reports.title')} — ${activeTabLabel}`}
+        dateRangeLabel={printDateRangeLabel}
+        kpis={printKpis}
+        tables={printTables}
+      />
 
       {/* Filters Bar */}
       <div id="reports-filters-bar" className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm flex flex-col lg:flex-row lg:items-center gap-4 sm:gap-6">
@@ -888,32 +1026,12 @@ export default function Reports({ tenantId }: { tenantId: string }) {
       {/* Tab Content */}
       <AnimatePresence mode="wait">
         <motion.div
-          id="reports-printable-area"
           key={activeTab}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           className="space-y-4 sm:space-y-8"
         >
-          {/* Print-only report header -- invisible on screen, shown only in the
-              exported PDF/printout so it reads as a document rather than a raw
-              dump of the live dashboard UI. */}
-          <div className="hidden print:block mb-6 pb-4 border-b-2 border-black">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-xl font-black">{t('reports.title')} — {activeTabLabel}</h1>
-                {(dateRange.start || dateRange.end) && (
-                  <p className="text-sm font-bold mt-1">
-                    {dateRange.start || '...'} {t('common.to', 'إلى')} {dateRange.end || '...'}
-                  </p>
-                )}
-              </div>
-              <p className="text-xs font-bold">
-                {t('z_report.excel_date', 'التاريخ')}: {new Date().toLocaleDateString(locale)}
-              </p>
-            </div>
-          </div>
-
           {activeTab === 'general' && (
             <div id="reports-general-grid" className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
               {[
@@ -996,15 +1114,6 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
-                {/* Print-only: the chart above is hidden on paper, this table carries the same data */}
-                <table className="hidden print:table w-full text-xs">
-                  <thead><tr><th className="text-right p-1 border-b border-black">{t('common.date')}</th><th className="text-right p-1 border-b border-black">{t('common.sales')}</th><th className="text-right p-1 border-b border-black">{t('reports.revenue')}</th></tr></thead>
-                  <tbody>
-                    {(financialStats.trendChartData as any[]).map((row, i) => (
-                      <tr key={i}><td className="p-1">{row.date}</td><td className="p-1"><PriceDisplay amount={row.sales} /></td><td className="p-1"><PriceDisplay amount={row.revenue} /></td></tr>
-                    ))}
-                  </tbody>
-                </table>
               </div>
 
               {/* Payment Methods */}
@@ -1034,14 +1143,6 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <table className="hidden print:table w-full text-xs">
-                  <thead><tr><th className="text-right p-1 border-b border-black">{t('z_report.payment_method', 'طريقة الدفع')}</th><th className="text-right p-1 border-b border-black">{t('common.amount')}</th></tr></thead>
-                  <tbody>
-                    {financialStats.paymentChartData.map((row: any, i) => (
-                      <tr key={i}><td className="p-1">{row.name}</td><td className="p-1"><PriceDisplay amount={row.value} /></td></tr>
-                    ))}
-                  </tbody>
-                </table>
               </div>
 
               {/* Tax, Profit & Returns Cards */}
@@ -1157,14 +1258,6 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-                <table className="hidden print:table w-full text-xs">
-                  <thead><tr><th className="text-right p-1 border-b border-black">{t('common.status')}</th><th className="text-right p-1 border-b border-black">{t('common.total')}</th></tr></thead>
-                  <tbody>
-                    {orderStats.statusChartData.map((row: any, i) => (
-                      <tr key={i}><td className="p-1">{row.name}</td><td className="p-1">{row.value}</td></tr>
-                    ))}
-                  </tbody>
-                </table>
               </div>
 
               {/* KPIs */}
@@ -1264,14 +1357,6 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-                <table className="hidden print:table w-full text-xs">
-                  <thead><tr><th className="text-right p-1 border-b border-black">{t('inventory.item')}</th><th className="text-right p-1 border-b border-black">{t('common.quantity')}</th></tr></thead>
-                  <tbody>
-                    {inventoryStats.topItems.map((item, i) => (
-                      <tr key={i}><td className="p-1">{item.name}</td><td className="p-1">{item.quantity} {item.unit}</td></tr>
-                    ))}
-                  </tbody>
-                </table>
               </div>
             </div>
           )}
@@ -1482,13 +1567,6 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                  <table className="hidden print:table w-full text-xs">
-                    <tbody>
-                      {customerStats.retentionChartData.map((row: any, i) => (
-                        <tr key={i}><td className="p-1">{row.name}</td><td className="p-1">{row.value}</td></tr>
-                      ))}
-                    </tbody>
-                  </table>
                 </div>
               </div>
             </div>
@@ -1532,14 +1610,6 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
-                <table className="hidden print:table w-full text-xs">
-                  <thead><tr><th className="text-right p-1 border-b border-black">{t('common.date')}</th><th className="text-right p-1 border-b border-black">{t('common.total')}</th></tr></thead>
-                  <tbody>
-                    {supplierStats.purchasesTrend.map((row, i) => (
-                      <tr key={i}><td className="p-1">{row.date}</td><td className="p-1"><PriceDisplay amount={row.total} /></td></tr>
-                    ))}
-                  </tbody>
-                </table>
               </div>
 
               <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">

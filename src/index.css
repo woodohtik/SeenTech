@@ -268,57 +268,15 @@ option {
   }
 
   /*
-   * The Reports tab prints its live dashboard UI as-is (cards, chart
-   * containers, KPI tiles) rather than a purpose-built print layout.
-   * Left completely alone, most browsers strip background colors/tints
-   * on print by default, and the screen-oriented rounded/shadowed cards
-   * plus 3-4 column grids don't read as a document on paper -- it comes
-   * out as a scatter of colorless bordered boxes. These overrides force
-   * the same colors and section boundaries to actually print and lay
-   * out in a page-appropriate column count instead.
+   * The Reports tab's PDF export button now renders ReportPrintDocument (a
+   * plain document layout) to a canvas via the same downloadInvoicePDF
+   * pipeline used for invoices/the Z-Report, so it no longer depends on
+   * this print stylesheet at all. This whitelist entry stays only so a
+   * manual browser print (Ctrl+P) reveals that same clean document instead
+   * of the live dashboard.
    */
-  #reports-printable-area, #reports-printable-area * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    color-adjust: exact !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-  }
-
   #reports-printable-area {
     padding: 8mm !important;
-  }
-
-  #reports-printable-area [class*="rounded-"] {
-    border-radius: 8px !important;
-  }
-
-  #reports-printable-area [class*="grid-cols-"] {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-
-  #reports-printable-area > div > div,
-  #reports-printable-area table tr {
-    break-inside: avoid;
-  }
-
-  #reports-printable-area table {
-    border-collapse: collapse !important;
-  }
-
-  /* Charts render as bare SVG shapes on paper with no readable data behind
-     them -- the export should be a data report, not graphics. Every chart
-     is hidden here; the underlying figures are shown as a table instead
-     (either one that already exists on screen, or a print-only one added
-     next to the hidden chart). */
-  #reports-printable-area .recharts-wrapper,
-  #reports-printable-area .recharts-responsive-container {
-    display: none !important;
-  }
-
-  #reports-printable-area th,
-  #reports-printable-area td {
-    border: 1px solid #ddd !important;
   }
 }
 
