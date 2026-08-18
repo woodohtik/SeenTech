@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Shield, Delete, User, Users, Lock, AlertCircle, LogOut, CheckCircle2, Loader2 } from 'lucide-react';
+import { Shield, Delete, User, Users, Lock, AlertCircle, LogOut, CheckCircle2, Loader2, Mail, Eye, EyeOff, KeyRound, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { Staff } from '../types';
 import { cn } from '../lib/utils';
 import { hashPin } from '../services/staffService';
 import { useDirection } from '../lib/direction';
 import { logEmployeeAction } from '../services/employeeAuditService';
+import { getAuthErrorMessage } from '../utils/authErrorUtils';
+import { IconInput } from './ui/IconInput';
 import Branding from './Branding';
 
 interface PinLoginProps {
@@ -25,6 +27,12 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
   const [confirmPin, setConfirmPin] = useState('');
   const [isChanging, setIsChanging] = useState(false);
   const [activeKey, setActiveKey] = useState<string | null>(null);
+  const [showPasswordLogin, setShowPasswordLogin] = useState(false);
+  const [passwordEmail, setPasswordEmail] = useState('');
+  const [passwordValue, setPasswordValue] = useState('');
+  const [showPasswordValue, setShowPasswordValue] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSubmitting, setPasswordSubmitting] = useState(false);
 
   const handleNumberClick = (num: string) => {
     if (pin.length < 4) {
@@ -139,7 +147,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
     }
   };
 
-  const exitToPasswordLogin = async () => {
+  const handleExitSystem = async () => {
     try {
       localStorage.clear();
       sessionStorage.clear();
@@ -148,6 +156,29 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
       console.error("Error signing out from PIN screen:", err);
     }
     window.location.replace('/login');
+  };
+
+  const handlePasswordLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordSubmitting) return;
+    setPasswordError(null);
+    setPasswordSubmitting(true);
+    try {
+      // Staff accounts already have real Supabase email/password credentials
+      // (created alongside the PIN when they're added) -- signing in here
+      // simply replaces the shared-device session with the staff member's
+      // own, and AuthContext's onAuthStateChange listener re-resolves
+      // currentUserStaff from it, which App.tsx then promotes to
+      // currentStaff -- unmounting this screen without a full page redirect.
+      const { error: signInErr } = await supabase.auth.signInWithPassword({
+        email: passwordEmail.trim(),
+        password: passwordValue,
+      });
+      if (signInErr) throw signInErr;
+    } catch (err: any) {
+      setPasswordError(getAuthErrorMessage(err));
+      setPasswordSubmitting(false);
+    }
   };
 
   const handlePinChange = async () => {
@@ -193,7 +224,85 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
         {/* Right Side: PIN Login Form */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-surface-muted/50">
           <AnimatePresence mode="wait">
-            {mustChangePin ? (
+            {showPasswordLogin ? (
+              <motion.form
+                key="password-login"
+                onSubmit={handlePasswordLogin}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="w-full max-w-md bg-surface rounded-[3rem] shadow-xl border border-border p-10 relative z-10 flex flex-col items-center"
+              >
+                <div className="w-20 h-20 bg-brand/5 rounded-3xl flex items-center justify-center text-brand mb-6 shadow-inner">
+                  <KeyRound size={40} />
+                </div>
+                <h2 className="text-3xl font-black text-content mb-2 text-center">{t('login.password_login_title')}</h2>
+                <p className="text-content-muted text-sm mb-8 text-center font-medium">{t('login.password_login_desc')}</p>
+
+                <div className="w-full space-y-4">
+                  <IconInput
+                    required
+                    autoFocus
+                    type="email"
+                    autoComplete="username"
+                    value={passwordEmail}
+                    onChange={(e) => setPasswordEmail(e.target.value)}
+                    placeholder={t('login.email_or_phone_placeholder')}
+                    startIcon={Mail}
+                    label={t('login.email_or_phone')}
+                    wrapperClassName="h-11"
+                  />
+                  <IconInput
+                    required
+                    type={showPasswordValue ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    value={passwordValue}
+                    onChange={(e) => setPasswordValue(e.target.value)}
+                    placeholder="••••••••"
+                    startIcon={Lock}
+                    label={t('login.password')}
+                    wrapperClassName="h-11"
+                    endIcon={
+                      <button
+                        type="button"
+                        onClick={() => setShowPasswordValue(!showPasswordValue)}
+                        className="text-content-muted hover:text-content flex items-center justify-center p-1 focus:outline-none"
+                      >
+                        {showPasswordValue ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    }
+                  />
+
+                  {passwordError && (
+                    <div className="flex items-center gap-2 text-danger text-xs font-bold bg-danger/10 px-4 py-2 rounded-xl border border-danger/20">
+                      <AlertCircle size={14} />
+                      <span>{passwordError}</span>
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={passwordSubmitting}
+                    className="w-full bg-brand text-white py-4 rounded-2xl font-black hover:bg-brand/90 shadow-xl shadow-brand/10 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {passwordSubmitting ? t('common.loading') : t('login.login_button')}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPasswordLogin(false);
+                      setPasswordError(null);
+                      setPasswordValue('');
+                    }}
+                    className="w-full flex items-center justify-center gap-2 text-content-muted font-bold py-2 hover:text-content transition-colors"
+                  >
+                    <ArrowRight size={16} className={dir === 'rtl' ? '' : 'rotate-180'} />
+                    <span>{t('login.back_to_pin')}</span>
+                  </button>
+                </div>
+              </motion.form>
+            ) : mustChangePin ? (
               <motion.div 
                 key="change-pin"
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -317,7 +426,11 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                 </AnimatePresence>
 
                 <button
-                  onClick={exitToPasswordLogin}
+                  onClick={() => {
+                    setShowPasswordLogin(true);
+                    setError(null);
+                    setPin('');
+                  }}
                   className="text-brand hover:text-brand/80 text-sm font-bold mb-8 transition-colors"
                 >
                   {t('login.forgot_pin')}
@@ -369,7 +482,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
 
                 <div className="mt-10 pt-8 border-t border-border w-full">
                   <button
-                    onClick={exitToPasswordLogin}
+                    onClick={handleExitSystem}
                     className="w-full flex items-center justify-center gap-3 text-content-muted hover:text-content font-black transition-colors py-2"
                   >
                     <LogOut size={20} />
