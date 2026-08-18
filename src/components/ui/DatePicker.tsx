@@ -154,7 +154,7 @@ export function DatePicker({ value, onChange, id, className, placeholder }: Date
           }
         }}
         className={cn(
-          "flex items-center gap-3 w-full bg-surface border-2 border-transparent focus:border-brand/40 hover:bg-surface-muted/30 rounded-2xl px-4 h-12 text-sm font-bold text-content transition-all shadow-inner shadow-black/5 outline-none cursor-pointer text-right justify-between",
+          "flex items-center gap-2.5 w-full bg-surface-muted/50 hover:bg-surface-muted/80 border border-border rounded-2xl px-4 h-12 text-sm font-bold text-content transition-all shadow-inner shadow-black/5 outline-none cursor-pointer text-right justify-between",
           isOpen && "border-brand/40 bg-surface"
         )}
       >
@@ -162,9 +162,32 @@ export function DatePicker({ value, onChange, id, className, placeholder }: Date
           <CalendarIcon size={18} className="text-content-muted shrink-0" />
           <span className="truncate">{formatDisplayDate(value)}</span>
         </div>
-        <span className="text-[10px] text-brand bg-brand/10 hover:bg-brand/20 transition-all rounded-lg px-2 py-0.5 shrink-0">
-          {isRtl ? 'تغيير' : 'Change'}
-        </span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {value && (
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                e.stopPropagation();
+                onChange('');
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onChange('');
+                }
+              }}
+              title={isRtl ? 'مسح التاريخ' : 'Clear date'}
+              className="p-1 text-content-muted hover:text-danger hover:bg-danger/10 rounded-full transition-all cursor-pointer"
+            >
+              <X size={14} />
+            </span>
+          )}
+          <span className="text-[10px] text-brand bg-brand/10 hover:bg-brand/20 transition-all rounded-lg px-2 py-0.5">
+            {isRtl ? 'تغيير' : 'Change'}
+          </span>
+        </div>
       </button>
 
       {/* Popover Calendar Grid */}
