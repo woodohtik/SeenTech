@@ -229,6 +229,10 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
   const canDelete = hasPermission('staff.delete');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [pinModalTarget, setPinModalTarget] = useState<StaffMember | null>(null);
+  const [pinModalValue, setPinModalValue] = useState('');
+  const [pinModalError, setPinModalError] = useState<string | null>(null);
+  const [pinModalSubmitting, setPinModalSubmitting] = useState(false);
 
   useEffect(() => {
     // Expand all categories by default
@@ -673,17 +677,17 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
   };
 
   const togglePin = async (member: StaffMember) => {
-    try {
-      if (member.pin) {
-        // Disable PIN
+    if (member.pin) {
+      // Disable PIN
+      try {
         const { error } = await supabase.from('staff').update({
           pin_hash: null,
           must_change_pin: false,
           updated_at: new Date().toISOString()
         }).eq('id', member.id);
-        
+
         if (error) throw error;
-        
+
         // Audit log for security
         await supabase.from('audit_logs').insert({
           action: 'إلغاء رمز الدخول',
@@ -696,50 +700,68 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
         });
 
         setToast({ message: t('settings_page.staff.pin_disabled_success'), type: 'success' });
-      } else {
-        // Enable PIN - Auto generate
-        let uniquePin = '';
-        let attempts = 0;
-        while (attempts < 10) {
-          const candidate = generateSecurePin(4);
-          if (await isPinUnique(tenantId!, candidate)) {
-            uniquePin = candidate;
-            break;
-          }
-          attempts++;
-        }
-        
-        if (!uniquePin) throw new Error(t('settings_page.staff.pin_unique_failed'));
-        
-        const pinHash = await hashPin(uniquePin);
-        
-        const { error } = await supabase.from('staff').update({
-          pin_hash: pinHash,
-          must_change_pin: true,
-          updated_at: new Date().toISOString()
-        }).eq('id', member.id);
-        
-        if (error) throw error;
-
-        // Audit log for security
-        await supabase.from('audit_logs').insert({
-          action: 'تفعيل رمز الدخول التلقائي',
-          performed_by: currentAuthUser?.id || null,
-          performed_by_email: currentAuthUser?.email || 'unknown',
-          target_tenant_id: tenantId,
-          details: `تم تفعيل وتوليد رمز دخول للموظف ${member.name}`,
-          occurred_at: new Date().toISOString(),
-          type: 'security'
-        });
-
-        setToast({ 
-          message: t('settings_page.staff.pin_enabled_success', { name: member.name, pin: uniquePin }), 
-          type: 'success' 
-        });
+      } catch (error: any) {
+        console.error('Error toggling staff pin:', error);
+        setToast({ message: t('settings_page.staff.pin_update_failed', { message: error?.message || t('errors.unknown') }), type: 'error' });
       }
+    } else {
+      // Enable PIN -- ask the admin which code to activate instead of
+      // silently picking a random one they'd have to relay to the employee.
+      setPinModalValue('');
+      setPinModalError(null);
+      setPinModalTarget(member);
+    }
+  };
+
+  const confirmActivatePin = async () => {
+    if (!pinModalTarget) return;
+    const pin = pinModalValue.trim();
+    if (!/^\d{4}$/.test(pin)) {
+      setPinModalError(t('settings_page.staff.pin_must_be_4_digits', 'يجب أن يتكون الرمز من 4 أرقام'));
+      return;
+    }
+
+    setPinModalSubmitting(true);
+    setPinModalError(null);
+    try {
+      if (!(await isPinUnique(tenantId!, pin))) {
+        setPinModalError(t('settings_page.staff.pin_taken', 'هذا الرمز مستخدم من قبل موظف آخر، اختر رمزاً غير مكرر'));
+        return;
+      }
+
+      const pinHash = await hashPin(pin);
+      const member = pinModalTarget;
+
+      const { error } = await supabase.from('staff').update({
+        pin_hash: pinHash,
+        must_change_pin: false,
+        updated_at: new Date().toISOString()
+      }).eq('id', member.id);
+
+      if (error) throw error;
+
+      // Audit log for security -- never log the PIN itself
+      await supabase.from('audit_logs').insert({
+        action: 'تفعيل رمز الدخول',
+        performed_by: currentAuthUser?.id || null,
+        performed_by_email: currentAuthUser?.email || 'unknown',
+        target_tenant_id: tenantId,
+        details: `تم تفعيل رمز الدخول للموظف ${member.name}`,
+        occurred_at: new Date().toISOString(),
+        type: 'security'
+      });
+
+      // Optimistic local update -- don't leave the dropdown label stale
+      // while waiting on the realtime round-trip to refetch staff.
+      setStaff(prev => prev.map(s => s.id === member.id ? { ...s, pin: 'set', mustChangePin: false } : s));
+
+      setToast({ message: t('settings_page.staff.pin_enabled_success_manual', { name: member.name }), type: 'success' });
+      setPinModalTarget(null);
     } catch (error: any) {
-      console.error('Error toggling staff pin:', error);
-      setToast({ message: t('settings_page.staff.pin_update_failed', { message: error?.message || t('errors.unknown') }), type: 'error' });
+      console.error('Error activating staff pin:', error);
+      setPinModalError(error?.message || t('errors.unknown'));
+    } finally {
+      setPinModalSubmitting(false);
     }
   };
 
@@ -1014,6 +1036,79 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
             role={showPermissionsModal}
             onClose={() => setShowPermissionsModal(null)}
           />
+        )}
+
+        {pinModalTarget && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-surface rounded-3xl shadow-2xl w-full max-w-sm border border-border p-6 space-y-5"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-brand/10 text-brand rounded-2xl">
+                    <Key size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-content">{t('settings_page.staff.activate_pin_title', 'تفعيل رمز الموظف')}</h3>
+                    <p className="text-xs text-content-muted font-bold">{pinModalTarget.name}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setPinModalTarget(null)}
+                  className="p-2 hover:bg-surface-muted rounded-full text-content-muted transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-content-muted uppercase tracking-widest px-1">
+                  {t('settings_page.staff.pin_code_label', 'رمز الدخول (4 أرقام)')}
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={4}
+                  autoFocus
+                  value={pinModalValue}
+                  onChange={(e) => {
+                    setPinModalValue(e.target.value.replace(/\D/g, '').slice(0, 4));
+                    setPinModalError(null);
+                  }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') confirmActivatePin(); }}
+                  placeholder="••••"
+                  dir="ltr"
+                  className="w-full px-4 py-3 bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl outline-none font-black text-2xl text-center tracking-[0.5em] text-content transition-all"
+                />
+                {pinModalError && (
+                  <p className="text-xs font-bold text-danger px-1">{pinModalError}</p>
+                )}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={confirmActivatePin}
+                  disabled={pinModalSubmitting || pinModalValue.length !== 4}
+                  className="flex-1 bg-brand text-white py-3 rounded-2xl font-black text-sm hover:bg-brand/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {pinModalSubmitting ? (
+                    <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    t('settings_page.staff.activate_pin_confirm', 'تفعيل الرمز')
+                  )}
+                </button>
+                <button
+                  onClick={() => setPinModalTarget(null)}
+                  className="px-5 py-3 bg-surface-muted text-content-muted rounded-2xl font-black text-sm hover:bg-surface-muted/70 transition-all"
+                >
+                  {t('common.cancel')}
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
 
         {toast && (

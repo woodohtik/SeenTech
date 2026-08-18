@@ -3567,6 +3567,8 @@
       "store_name": "اسم المنشأة التجاري"
     },
     "staff": {
+      "activate_pin_confirm": "تفعيل الرمز",
+      "activate_pin_title": "تفعيل رمز الموظف",
       "activity": {
         "action": "العملية",
         "add_supplier": "إضافة مورد",
@@ -4052,8 +4054,12 @@
         "view_employee_exceptions": "عرض وتعديل استثناءات صلاحيات هذا الموظف"
       },
       "phone_duplicate": "رقم الهاتف مستخدم بالفعل لموظف آخر.",
+      "pin_code_label": "رمز الدخول (4 أرقام)",
       "pin_disabled_success": "تم إلغاء رمز الدخول للموظف بنجاح",
       "pin_enabled_success": "تم تفعيل الرمز بنجاح. رمز الدخول الجديد للموظف {{name}} هو: {{pin}}",
+      "pin_enabled_success_manual": "تم تفعيل رمز الدخول للموظف {{name}} بنجاح",
+      "pin_must_be_4_digits": "يجب أن يتكون الرمز من 4 أرقام",
+      "pin_taken": "هذا الرمز مستخدم من قبل موظف آخر، اختر رمزاً غير مكرر",
       "pin_unique_failed": "تعذر إنشاء رمز دخول فريد، يرجى المحاولة مرة أخرى",
       "pin_update_failed": "فشل تعديل الرمز للموظف: {{message}}",
       "save_failed": "فشل الحفظ: {{message}}",
