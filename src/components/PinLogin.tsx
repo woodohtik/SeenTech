@@ -237,23 +237,19 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                   <KeyRound size={40} />
                 </div>
                 <h2 className="text-3xl font-black text-content mb-2 text-center">{t('login.password_login_title')}</h2>
-                <p className="text-content-muted text-sm mb-8 text-center font-medium">{t('login.password_login_desc')}</p>
+                <p className="text-content-muted text-sm mb-6 text-center font-medium">{t('login.password_login_desc')}</p>
+
+                {passwordEmail && (
+                  <div className="flex items-center gap-2 text-content-muted text-sm font-bold mb-6 bg-surface-muted px-4 py-2.5 rounded-xl border border-border">
+                    <Mail size={16} />
+                    <span dir="ltr">{passwordEmail}</span>
+                  </div>
+                )}
 
                 <div className="w-full space-y-4">
                   <IconInput
                     required
                     autoFocus
-                    type="email"
-                    autoComplete="username"
-                    value={passwordEmail}
-                    onChange={(e) => setPasswordEmail(e.target.value)}
-                    placeholder={t('login.email_or_phone_placeholder')}
-                    startIcon={Mail}
-                    label={t('login.email_or_phone')}
-                    wrapperClassName="h-11"
-                  />
-                  <IconInput
-                    required
                     type={showPasswordValue ? 'text' : 'password'}
                     autoComplete="current-password"
                     value={passwordValue}
@@ -426,7 +422,9 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                 </AnimatePresence>
 
                 <button
-                  onClick={() => {
+                  onClick={async () => {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    setPasswordEmail(session?.user?.email || '');
                     setShowPasswordLogin(true);
                     setError(null);
                     setPin('');
