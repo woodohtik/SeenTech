@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
 import { EmployeeActivityLog } from '../types';
-import { Search, Calendar } from 'lucide-react';
+import { Search } from 'lucide-react';
 import DateTimeDisplay from './DateTimeDisplay';
+import { DatePicker } from './ui/DatePicker';
 
 export default function EmployeeActivityLogTab({ tenantId }: { tenantId: string }) {
   const { t } = useTranslation();
@@ -101,14 +102,8 @@ export default function EmployeeActivityLogTab({ tenantId }: { tenantId: string 
             className="w-full bg-transparent font-bold outline-none text-content border-none p-0 focus:ring-0 text-sm"
           />
         </div>
-        <div className="flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface rounded-2xl px-4 h-12 transition-all w-full shadow-inner shadow-black/5">
-          <Calendar className="text-content-muted shrink-0" size={18} />
-          <input 
-            type="date"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            className="w-full bg-transparent font-bold outline-none text-content border-none p-0 focus:ring-0 text-sm"
-          />
+        <div className="w-full">
+          <DatePicker value={dateFilter} onChange={setDateFilter} />
         </div>
       </div>
 

@@ -6,6 +6,7 @@ import { logEmployeeAction } from '../services/employeeAuditService';
 import { useStaff } from '../contexts/StaffContext';
 import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
+import { DatePicker } from './ui/DatePicker';
 import { useDirection } from '../lib/direction';
 
 interface PaymentVoucherModalProps {
@@ -234,13 +235,7 @@ export default function PaymentVoucherModal({
                   <Calendar size={13} />
                   <span>{t('procurement.pv_voucher_date')}</span>
                 </label>
-                <input
-                  type="date"
-                  required
-                  value={voucherDate}
-                  onChange={(e) => setVoucherDate(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl outline-none font-bold text-xs text-slate-700"
-                />
+                <DatePicker value={voucherDate} onChange={setVoucherDate} />
               </div>
             </div>
 

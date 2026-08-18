@@ -165,19 +165,6 @@ select:focus {
   transform: translateY(-1px);
 }
 
-/* Fix date picker indicator overlapping text in WebKit/Blink browsers */
-input[type="date"]::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  border-radius: 4px;
-  padding: 2px;
-  opacity: 0.6;
-  transition: opacity 0.2s ease;
-}
-
-input[type="date"]::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
-}
-
 /* Styled option groups and options */
 optgroup {
   font-weight: 700;

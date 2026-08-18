@@ -29,6 +29,7 @@ import { PriceDisplay } from './PriceDisplay';
 import { cn } from '../lib/utils';
 import { useDirection } from '../lib/direction';
 import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
+import { DatePicker } from './ui/DatePicker';
 import { downloadInvoicePDFSilently, shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
 import { formatSaudiPhone } from '../utils/phoneUtils';
 
@@ -369,24 +370,12 @@ export default function SupplierLedger({
 
         {/* Date Filters row */}
         <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-slate-100 text-xs font-bold text-slate-500">
-          <div className="flex items-center gap-2">
-            <span className="shrink-0 text-slate-400">{t('procurement.filter_date_start', 'تصفية التاريخ:')}</span>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg outline-none font-semibold text-xs text-slate-700 focus:border-slate-900"
-            />
+          <div className="min-w-[150px]">
+            <DatePicker value={startDate} onChange={setStartDate} placeholder={t('procurement.filter_date_start', 'تصفية التاريخ:')} />
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="shrink-0 text-slate-400">{t('procurement.to_date', 'إلى تاريخ:')}</span>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg outline-none font-semibold text-xs text-slate-700 focus:border-slate-900"
-            />
+          <div className="min-w-[150px]">
+            <DatePicker value={endDate} onChange={setEndDate} placeholder={t('procurement.to_date', 'إلى تاريخ:')} />
           </div>
 
           {(startDate || endDate || searchTerm || typeFilter !== 'all') && (

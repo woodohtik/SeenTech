@@ -34,6 +34,7 @@ import { PriceDisplay } from './PriceDisplay';
 import { CurrencySymbol } from './CurrencySymbol';
 import { motion, AnimatePresence } from 'motion/react';
 import { SmartSelect } from './ui/SmartSelect';
+import { DatePicker } from './ui/DatePicker';
 import Header from './Header';
 import { useStaff } from '../contexts/StaffContext';
 import { usePermissions } from '../hooks/usePermissions';
@@ -1679,28 +1680,20 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             </span>
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="flex items-center gap-2 flex-1 sm:flex-none">
-              <span className="text-xs font-bold text-content-muted">
-                {t('common.from_label')}
-              </span>
-              <input
-                type="date"
+            <div className="flex-1 sm:flex-none sm:min-w-[150px]">
+              <DatePicker
                 id="custom-start-date"
                 value={customStartDate}
-                onChange={(e) => setCustomStartDate(e.target.value)}
-                className="w-full bg-surface-muted border border-border rounded-xl px-3.5 py-2 text-xs font-bold text-content focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
+                onChange={setCustomStartDate}
+                placeholder={t('common.from_label')}
               />
             </div>
-            <div className="flex items-center gap-2 flex-1 sm:flex-none">
-              <span className="text-xs font-bold text-content-muted">
-                {t('common.to_label')}
-              </span>
-              <input
-                type="date"
+            <div className="flex-1 sm:flex-none sm:min-w-[150px]">
+              <DatePicker
                 id="custom-end-date"
                 value={customEndDate}
-                onChange={(e) => setCustomEndDate(e.target.value)}
-                className="w-full bg-surface-muted border border-border rounded-xl px-3.5 py-2 text-xs font-bold text-content focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
+                onChange={setCustomEndDate}
+                placeholder={t('common.to_label')}
               />
             </div>
           </div>

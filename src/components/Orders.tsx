@@ -71,6 +71,7 @@ import { downloadInvoicePDFSilently, shareOrDownloadInvoicePDF } from '../utils/
 import ScannerModal from './ScannerModal';
 import Select from './ui/Select';
 import { SmartSelect } from './ui/SmartSelect';
+import { DatePicker } from './ui/DatePicker';
 import { checkStockAvailability, deductStock } from '../services/inventoryService';
 import { useStaff } from '../contexts/StaffContext';
 import { useBranding } from '../contexts/BrandingContext';
@@ -2076,21 +2077,12 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           </div>
 
           <div className="flex items-center gap-2">
-            <Calendar size={18} className="text-content-muted" />
-            <div className="flex items-center gap-1">
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="bg-surface-muted border-none rounded-xl px-3 py-2 text-[10px] font-bold text-content focus:ring-2 focus:ring-brand"
-              />
-              <span className="text-content-muted text-xs">{t('orders.to')}</span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="bg-surface-muted border-none rounded-xl px-3 py-2 text-[10px] font-bold text-content focus:ring-2 focus:ring-brand"
-              />
+            <div className="min-w-[140px]">
+              <DatePicker value={startDate} onChange={setStartDate} placeholder={t('common.from', 'من')} />
+            </div>
+            <span className="text-content-muted text-xs">{t('orders.to')}</span>
+            <div className="min-w-[140px]">
+              <DatePicker value={endDate} onChange={setEndDate} placeholder={t('common.to', 'إلى')} />
             </div>
           </div>
 
@@ -2922,17 +2914,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   <div className="space-y-6">
                     <div className="space-y-2">
                       <label className="text-sm font-black text-content-muted uppercase tracking-widest">{t('orders.expected_delivery_date')}</label>
-                      <div className="relative">
-                        <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 text-content-muted" size={20} />
-                        <input 
-                          type="date" 
-                          {...register('deliveryDate')} 
-                          className={cn(
-                            "w-full bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl p-4 pr-12 font-bold transition-all outline-none text-content",
-                            errors.deliveryDate && "border-danger"
-                          )} 
-                        />
-                      </div>
+                      <DatePicker
+                        value={watch('deliveryDate') || ''}
+                        onChange={(val) => setValue('deliveryDate', val, { shouldValidate: true, shouldDirty: true })}
+                      />
                       {errors.deliveryDate && <p className="text-xs text-danger font-bold mt-1">{String(errors.deliveryDate.message)}</p>}
                     </div>
 
