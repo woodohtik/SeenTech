@@ -1,5 +1,4 @@
 import express from "express";
-import { createServer as createViteServer } from "vite";
 import path from "path";
 import fs from "fs";
 import dotenv from 'dotenv';
@@ -417,22 +416,6 @@ app.post("/api/staff/verify-pin", authenticate, async (req: any, res) => {
       }
     }
 
-    // TEMP DIAGNOSTIC — never logs the PIN or pin_hash values themselves,
-    // only shape/lengths, to track down a "correct PIN rejected" report.
-    if (mode !== 'check-unique' && !matched) {
-      console.log('[verify-pin] no match', {
-        tenantId,
-        typedPinLength: pin.length,
-        activeStaffCount: (staffData || []).length,
-        candidates: (staffData || []).map((s: any) => ({
-          id: s.id,
-          status: s.status,
-          hasPinHash: !!s.pin_hash,
-          pinHashLength: s.pin_hash ? s.pin_hash.length : 0,
-        })),
-      });
-    }
-
     if (mode === 'check-unique') {
       return res.json({ isUnique: !matched });
     }
@@ -651,6 +634,11 @@ async function setupServer() {
   // Public marketing landing page served at the site root "/" for visitors.
   // The SPA (app) keeps handling /login, /dashboard, /orders, ... as usual.
   if (process.env.NODE_ENV !== "production") {
+    // Loaded lazily -- this branch never runs under Vercel's serverless
+    // Function (see the VERCEL !== '1' guard below), and a static import of
+    // the whole Vite dev-server toolchain has no business being pulled into
+    // that function's production bundle.
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
