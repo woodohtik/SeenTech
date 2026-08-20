@@ -410,7 +410,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                 <p className="text-content-muted text-sm mb-10 text-center font-medium">{t('login.staff_login_desc')}</p>
 
                 {/* PIN Display */}
-                <div className="flex gap-4 mb-10 relative">
+                <div className="flex gap-4 mb-8 relative">
                   {[0, 1, 2, 3].map((i) => (
                     <motion.div
                       key={i}
@@ -428,15 +428,21 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                       )}
                     </motion.div>
                   ))}
-                  
-                  {isVerifying && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-surface/50 backdrop-blur-[1px] rounded-2xl">
-                      <Loader2 size={32} className="text-brand animate-spin" />
-                    </div>
-                  )}
                 </div>
 
                 <AnimatePresence mode="wait">
+                  {isVerifying && (
+                    <motion.div
+                      key="verifying"
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="flex items-center gap-2 text-brand text-sm font-bold mb-6"
+                    >
+                      <Loader2 size={16} className="animate-spin" />
+                      {t('login.verifying_pin')}
+                    </motion.div>
+                  )}
                   {error && (
                     <motion.div 
                       initial={{ opacity: 0, y: -10 }}
