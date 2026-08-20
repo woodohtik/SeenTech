@@ -22,6 +22,7 @@ import { cn } from '../../lib/utils';
 import { SmartSelect } from '../ui/SmartSelect';
 import Branding from '../Branding';
 import StockTransferWorkflow from './StockTransferWorkflow';
+import { useToast } from '../../contexts/ToastContext';
 
 interface WarehouseManagementProps {
   tenantId: string;
@@ -210,6 +211,8 @@ const WarehouseManagement: React.FC<WarehouseManagementProps> = ({ tenantId }) =
 
 const BranchModal = ({ onClose, onSave, initialData }: any) => {
   const { t } = useTranslation();
+  const { error: toastError } = useToast();
+  const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
   const [formData, setFormData] = useState(initialData ? {
     name: initialData.name || '',
     location: initialData.location || '',
@@ -256,14 +259,40 @@ const BranchModal = ({ onClose, onSave, initialData }: any) => {
           </button>
         </div>
 
-        <form onSubmit={(e) => { e.preventDefault(); onSave(formData); }} className="p-5 sm:p-8 space-y-5 sm:space-y-6">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const missing: string[] = [];
+            const errors: Record<string, boolean> = {};
+            if (!formData.name.trim()) { errors.name = true; missing.push(t('branches.name')); }
+            if (!formData.phone.trim()) { errors.phone = true; missing.push(t('branches.phone')); }
+            if (!formData.location.trim()) { errors.location = true; missing.push(t('branches.location')); }
+            setFieldErrors(errors);
+            if (missing.length > 0) {
+              toastError(t('branches.missing_fields_prompt', { fields: missing.join(t('common.list_separator')) }));
+              setTimeout(() => {
+                document.querySelector('.ring-danger, [aria-invalid="true"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 50);
+              return;
+            }
+            onSave(formData);
+          }}
+          className="p-5 sm:p-8 space-y-5 sm:space-y-6"
+        >
           <div className="space-y-2">
             <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">{t('branches.name')}</label>
-            <input 
+            <input
               required
+              aria-invalid={fieldErrors.name}
               value={formData.name}
-              onChange={e => setFormData({...formData, name: e.target.value})}
-              className="w-full px-5 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content"
+              onChange={e => {
+                setFormData({...formData, name: e.target.value});
+                if (fieldErrors.name) setFieldErrors({ ...fieldErrors, name: false });
+              }}
+              className={cn(
+                "w-full px-5 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content",
+                fieldErrors.name && "ring-2 ring-danger"
+              )}
             />
           </div>
 
@@ -282,22 +311,36 @@ const BranchModal = ({ onClose, onSave, initialData }: any) => {
             </div>
             <div className="space-y-2">
               <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">{t('branches.phone')}</label>
-              <input 
+              <input
                 required
+                aria-invalid={fieldErrors.phone}
                 value={formData.phone}
-                onChange={e => setFormData({...formData, phone: e.target.value})}
-                className="w-full px-5 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content"
+                onChange={e => {
+                  setFormData({...formData, phone: e.target.value});
+                  if (fieldErrors.phone) setFieldErrors({ ...fieldErrors, phone: false });
+                }}
+                className={cn(
+                  "w-full px-5 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content",
+                  fieldErrors.phone && "ring-2 ring-danger"
+                )}
               />
             </div>
           </div>
 
           <div className="space-y-2">
             <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">{t('branches.location')}</label>
-            <input 
+            <input
               required
+              aria-invalid={fieldErrors.location}
               value={formData.location}
-              onChange={e => setFormData({...formData, location: e.target.value})}
-              className="w-full px-5 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content"
+              onChange={e => {
+                setFormData({...formData, location: e.target.value});
+                if (fieldErrors.location) setFieldErrors({ ...fieldErrors, location: false });
+              }}
+              className={cn(
+                "w-full px-5 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content",
+                fieldErrors.location && "ring-2 ring-danger"
+              )}
             />
           </div>
 

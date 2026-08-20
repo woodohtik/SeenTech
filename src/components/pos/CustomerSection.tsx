@@ -7,6 +7,7 @@ import { Combobox, Transition, Dialog } from '@headlessui/react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { useDirection } from '../../lib/direction';
+import { useToast } from '../../contexts/ToastContext';
 
 interface CustomerSectionProps {
   tenantId: string;
@@ -24,10 +25,12 @@ export default function CustomerSection({
   onCustomerAdded
 }: CustomerSectionProps) {
   const { t, dir } = useDirection();
+  const { error: toastError } = useToast();
   const [query, setQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isWorking, setIsWorking] = useState(false);
-  
+  const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
+
   // New Customer Form
   const [newName, setNewName] = useState('');
   const [newPhone, setNewPhone] = useState('');
@@ -46,11 +49,22 @@ export default function CustomerSection({
       });
 
   const handleSaveCustomer = async () => {
-    if (!newName || !newPhone) {
-      alert(t('pos.customer_name_phone_required'));
+    const missing: string[] = [];
+    const errors: Record<string, boolean> = {};
+    if (!newName.trim()) {
+      errors.name = true;
+      missing.push(t('pos.customer_name'));
+    }
+    if (!newPhone.trim()) {
+      errors.phone = true;
+      missing.push(t('login.phone'));
+    }
+    setFieldErrors(errors);
+    if (missing.length > 0) {
+      toastError(t('pos.missing_fields_prompt', { fields: missing.join(t('common.list_separator')) }));
       return;
     }
-    
+
     setIsWorking(true);
     try {
       const newCustomer = {
@@ -85,7 +99,8 @@ export default function CustomerSection({
       setShoulder('');
       setChest('');
       setSleeve('');
-      
+      setFieldErrors({});
+
       onCustomerAdded();
       if (data) setSelectedCustomer(data as Customer);
       
@@ -232,21 +247,36 @@ export default function CustomerSection({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5 md:col-span-2">
                       <label className="text-sm font-bold text-content">{t('pos.customer_name')} <span className="text-danger">*</span></label>
-                      <input 
-                        type="text" 
-                        value={newName} onChange={e => setNewName(e.target.value)}
-                        className="w-full p-3 rounded-xl border border-border bg-surface-muted focus:bg-surface focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all text-content" 
+                      <input
+                        type="text"
+                        aria-invalid={fieldErrors.name}
+                        value={newName}
+                        onChange={e => {
+                          setNewName(e.target.value);
+                          if (fieldErrors.name) setFieldErrors({ ...fieldErrors, name: false });
+                        }}
+                        className={cn(
+                          "w-full p-3 rounded-xl border border-border bg-surface-muted focus:bg-surface focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all text-content",
+                          fieldErrors.name && "ring-2 ring-danger border-danger"
+                        )}
                         placeholder={t('pos.enter_name_placeholder')}
                       />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-sm font-bold text-content">{t('login.phone')} <span className="text-danger">*</span></label>
-                      <input 
-                        type="text" 
-                        value={newPhone} 
-                        onChange={e => setNewPhone(formatSaudiPhone(e.target.value))}
+                      <input
+                        type="text"
+                        aria-invalid={fieldErrors.phone}
+                        value={newPhone}
+                        onChange={e => {
+                          setNewPhone(formatSaudiPhone(e.target.value));
+                          if (fieldErrors.phone) setFieldErrors({ ...fieldErrors, phone: false });
+                        }}
                         onBlur={e => setNewPhone(formatSaudiPhone(e.target.value))}
-                        className="w-full p-3 rounded-xl border border-border bg-surface-muted focus:bg-surface focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all text-content" 
+                        className={cn(
+                          "w-full p-3 rounded-xl border border-border bg-surface-muted focus:bg-surface focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all text-content",
+                          fieldErrors.phone && "ring-2 ring-danger border-danger"
+                        )}
                         placeholder="05xxxxxxxx"
                       />
                     </div>

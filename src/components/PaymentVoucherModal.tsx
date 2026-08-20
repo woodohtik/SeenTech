@@ -8,6 +8,7 @@ import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
 import { DatePicker } from './ui/DatePicker';
 import { useDirection } from '../lib/direction';
+import { useToast } from '../contexts/ToastContext';
 
 interface PaymentVoucherModalProps {
   supplier: {
@@ -32,7 +33,9 @@ export default function PaymentVoucherModal({
 }: PaymentVoucherModalProps) {
   const { t, dir, isRtl, locale } = useDirection();
   const { currentStaff } = useStaff();
+  const { error: toastError } = useToast();
   const [amount, setAmount] = useState('');
+  const [amountInvalid, setAmountInvalid] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank_transfer'>('cash');
   const [voucherDate, setVoucherDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
@@ -42,7 +45,12 @@ export default function PaymentVoucherModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const payAmt = Number(amount);
-    if (!payAmt || payAmt <= 0) return;
+    if (!payAmt || payAmt <= 0) {
+      setAmountInvalid(true);
+      toastError(t('procurement.pv_amount_invalid'));
+      return;
+    }
+    setAmountInvalid(false);
 
     setIsSubmitting(true);
     try {
@@ -170,10 +178,17 @@ export default function PaymentVoucherModal({
                   min="0.01"
                   step="0.01"
                   max={supplier.balance > 0 ? supplier.balance : undefined}
+                  aria-invalid={amountInvalid}
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={(e) => {
+                    setAmount(e.target.value);
+                    if (amountInvalid) setAmountInvalid(false);
+                  }}
                   style={{ paddingLeft: '6.5rem', paddingRight: '1rem', textAlign: 'right' }}
-                  className="w-full h-12 bg-slate-50 hover:bg-slate-100/50 focus:bg-white border border-slate-200 focus:border-red-500 rounded-xl outline-none transition-all font-black text-base focus:ring-4 focus:ring-red-100 text-slate-800"
+                  className={cn(
+                    "w-full h-12 bg-slate-50 hover:bg-slate-100/50 focus:bg-white border border-slate-200 focus:border-red-500 rounded-xl outline-none transition-all font-black text-base focus:ring-4 focus:ring-red-100 text-slate-800",
+                    amountInvalid && "ring-4 ring-danger border-danger"
+                  )}
                   placeholder="0.00"
                   autoFocus
                 />

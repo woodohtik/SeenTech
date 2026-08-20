@@ -8,6 +8,7 @@ import { handleError, OperationType } from '../lib/firebase';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import { useTranslation } from 'react-i18next';
 import DateTimeDisplay from './DateTimeDisplay';
+import { useToast } from '../contexts/ToastContext';
 
 import { isRtlLang } from '../lib/direction';
 
@@ -29,10 +30,12 @@ interface ShiftEntry {
 export default function CashOperationsModal({ shift, tenantId, onClose }: CashOperationsModalProps) {
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
+  const { error: toastError } = useToast();
 
   const [operationType, setOperationType] = useState<'deposit' | 'withdrawal'>('withdrawal');
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [recentEntries, setRecentEntries] = useState<ShiftEntry[]>([]);
   const [isLoadingEntries, setIsLoadingEntries] = useState(false);
@@ -63,7 +66,22 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!amount || !reason) return;
+
+    const missing: string[] = [];
+    const errors: Record<string, boolean> = {};
+    if (!amount || Number(amount) <= 0) {
+      errors.amount = true;
+      missing.push(t('cash_operations.amount', 'المبلغ المطلوب'));
+    }
+    if (!reason.trim()) {
+      errors.reason = true;
+      missing.push(t('cash_operations.reason', 'السبب والبيان التفصيلي'));
+    }
+    setFieldErrors(errors);
+    if (missing.length > 0) {
+      toastError(t('cash_operations.missing_fields_prompt', { fields: missing.join(t('common.list_separator')) }));
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -301,15 +319,22 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
                   </div>
 
                   {/* Input field with h-16 (to bypass default css) and precise paddings to prevent overlap */}
-                  <input 
+                  <input
                     type="number"
                     required
                     min="0.01"
                     step="0.01"
+                    aria-invalid={fieldErrors.amount}
                     value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
+                    onChange={(e) => {
+                      setAmount(e.target.value);
+                      if (fieldErrors.amount) setFieldErrors({ ...fieldErrors, amount: false });
+                    }}
                     style={{ paddingRight: '4.5rem', paddingLeft: '8rem' }}
-                    className="w-full h-16 bg-slate-50 hover:bg-slate-100/50 focus:bg-white border-2 border-slate-200 rounded-2xl text-2xl font-black font-mono transition-all outline-none text-right tracking-tight shadow-sm z-0 focus:border-brand focus:ring-4 focus:ring-brand/10 text-slate-800"
+                    className={cn(
+                      "w-full h-16 bg-slate-50 hover:bg-slate-100/50 focus:bg-white border-2 border-slate-200 rounded-2xl text-2xl font-black font-mono transition-all outline-none text-right tracking-tight shadow-sm z-0 focus:border-brand focus:ring-4 focus:ring-brand/10 text-slate-800",
+                      fieldErrors.amount && "ring-2 ring-danger border-danger"
+                    )}
                     placeholder={t('cash_operations.amount_placeholder', '0.00')}
                     autoFocus
                   />
@@ -369,12 +394,19 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
                   {t('cash_operations.reason', 'السبب والبيان التفصيلي')}
                 </label>
 
-                <textarea 
+                <textarea
                   required
+                  aria-invalid={fieldErrors.reason}
                   value={reason}
-                  onChange={(e) => setReason(e.target.value)}
+                  onChange={(e) => {
+                    setReason(e.target.value);
+                    if (fieldErrors.reason) setFieldErrors({ ...fieldErrors, reason: false });
+                  }}
                   rows={2}
-                  className="w-full pr-4 pl-4 py-3 bg-slate-50 hover:bg-slate-100/50 focus:bg-white border-2 border-slate-150 focus:border-brand focus:ring-4 focus:ring-brand/10 rounded-2xl font-bold h-20 transition-all outline-none text-slate-800 text-sm leading-relaxed shadow-sm"
+                  className={cn(
+                    "w-full pr-4 pl-4 py-3 bg-slate-50 hover:bg-slate-100/50 focus:bg-white border-2 border-slate-150 focus:border-brand focus:ring-4 focus:ring-brand/10 rounded-2xl font-bold h-20 transition-all outline-none text-slate-800 text-sm leading-relaxed shadow-sm",
+                    fieldErrors.reason && "ring-2 ring-danger border-danger"
+                  )}
                   placeholder={t('cash_operations.reason_placeholder', 'أدخل سبباً تفصيلياً للعملية...')}
                 />
 
