@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { formatSaudiPhone } from '../utils/phoneUtils';
-import { Store, MapPin, Phone, Globe, Bell, Shield, CreditCard, MessageSquare, CheckCircle2, AlertCircle, ChevronRight, ExternalLink, Zap, Upload, X as CloseIcon, Database, Trash2, ShieldCheck, Palette, FileText, HelpCircle, Layout, Mail, Printer } from 'lucide-react';
+import { Store, MapPin, Phone, Globe, Bell, Shield, CreditCard, MessageSquare, CheckCircle2, AlertCircle, AlertTriangle, ChevronRight, ExternalLink, Zap, Upload, X as CloseIcon, Database, Trash2, ShieldCheck, Palette, FileText, HelpCircle, Layout, Mail, Printer } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
 import { motion, AnimatePresence } from 'motion/react';
@@ -49,6 +49,7 @@ export default function Settings({ tenantId }: SettingsProps) {
   };
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isDeletingTestData, setIsDeletingTestData] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showAuditModal, setShowAuditModal] = useState(false);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
@@ -348,7 +349,7 @@ export default function Settings({ tenantId }: SettingsProps) {
 
   const handleDeleteTestData = async () => {
     if (!tenantId) return;
-    if (!confirm(t('settings_page.data.delete_test_confirm'))) return;
+    setShowResetConfirm(false);
 
     setIsDeletingTestData(true);
     try {
@@ -957,7 +958,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                         </p>
                         <div className="pt-2 flex justify-center sm:justify-start">
                           <button
-                            onClick={handleDeleteTestData}
+                            onClick={() => setShowResetConfirm(true)}
                             disabled={isDeletingTestData}
                             className="flex items-center justify-center gap-2 sm:gap-3 bg-danger text-white w-full sm:w-auto px-5 sm:px-6 py-3.5 sm:py-4 rounded-xl sm:rounded-[1.5rem] font-black hover:bg-danger/90 transition-all shadow-xl shadow-danger/20 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
                           >
@@ -1010,15 +1011,62 @@ export default function Settings({ tenantId }: SettingsProps) {
           </motion.div>
         )}
 
+        {showResetConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            dir={isRtl ? "rtl" : "ltr"}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-surface rounded-3xl shadow-2xl w-full max-w-sm border border-border p-6 space-y-5 text-center"
+            >
+              <div className="w-14 h-14 mx-auto rounded-full bg-danger/10 text-danger flex items-center justify-center">
+                <AlertTriangle size={26} />
+              </div>
+              <div>
+                <h3 className="font-black text-content">{t('settings_page.data.reset_confirm_title', 'تصفير النظام؟')}</h3>
+                <p className="text-xs text-content-muted font-bold mt-1.5 leading-relaxed">
+                  {t('settings_page.data.delete_test_confirm')}
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleDeleteTestData}
+                  disabled={isDeletingTestData}
+                  className="flex-1 bg-danger text-white py-3 rounded-2xl font-black text-sm hover:bg-danger/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isDeletingTestData ? (
+                    <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    t('settings_page.data.reset_confirm_action', 'تصفير وحذف')
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowResetConfirm(false)}
+                  disabled={isDeletingTestData}
+                  className="px-5 py-3 bg-surface-muted text-content-muted rounded-2xl font-black text-sm hover:bg-surface-muted/70 transition-all disabled:opacity-50"
+                >
+                  {t('common.cancel')}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
         {showAuditModal && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
             dir={isRtl ? "rtl" : "ltr"}
           >
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 20 }}

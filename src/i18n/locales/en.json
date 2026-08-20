@@ -3367,6 +3367,8 @@
       "no_logs": "No audit logs yet",
       "no_logs_desc": "Logs appear here as soon as staff perform save or edit operations.",
       "refresh_logs": "Refresh Log",
+      "reset_confirm_action": "Reset & delete",
+      "reset_confirm_title": "Reset the system?",
       "reset_system": "Reset System & Delete Test Data",
       "save_success": "Settings saved successfully",
       "search_placeholder": "Search by staff name, operation, or details...",
