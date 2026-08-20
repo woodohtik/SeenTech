@@ -21,6 +21,7 @@ import Branding from './Branding';
 import { ThermalInvoice, StandardInvoice, InvoiceData, InvoiceLayoutSettingsType } from './printing/InvoiceReceipt';
 
 import { isRtlLang } from '../lib/direction';
+import { useToast } from '../contexts/ToastContext';
 
 interface InvoiceLayoutSettingsProps {
   tenantId: string;
@@ -28,6 +29,7 @@ interface InvoiceLayoutSettingsProps {
 
 export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSettingsProps) {
   const { t, i18n } = useTranslation();
+  const { error: toastError } = useToast();
   const isRtl = isRtlLang(i18n.language);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -142,7 +144,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 1024 * 1024) {
-        alert(t('settings_page.invoice.logo_too_large_error'));
+        toastError(t('settings_page.invoice.logo_too_large_error'));
         return;
       }
       const reader = new FileReader();

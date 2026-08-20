@@ -6,6 +6,7 @@ import Barcode from 'react-barcode';
 import { CurrencySymbol } from '../CurrencySymbol';
 import SimplifiedTaxInvoice from './SimplifiedTaxInvoice';
 import StandardTaxInvoice from './TaxInvoice';
+import { useToast } from '../../contexts/ToastContext';
 
 export type PrintSize = '58mm' | '80mm' | 'A5' | 'A4';
 
@@ -261,6 +262,7 @@ export default function InvoiceReceipt({
   defaultSize?: PrintSize;
 }) {
   const { t } = useTranslation();
+  const { error: toastError } = useToast();
   const [printSize, setPrintSize] = useState<PrintSize>(defaultSize);
 
   // Use provided data or fallback to mock data
@@ -275,7 +277,7 @@ export default function InvoiceReceipt({
       });
       if (!res.ok) {
         console.error('[InvoiceReceipt] فشل الطباعة:', res.message);
-        alert(t('printing.print_failed_with_reason', { message: res.message }));
+        toastError(t('printing.print_failed_with_reason', { message: res.message }));
       }
     } catch (e) {
       console.error('[InvoiceReceipt] خطأ الطباعة:', e);

@@ -33,6 +33,7 @@ import { logEmployeeAction } from '../services/employeeAuditService';
 import { useStaff } from '../contexts/StaffContext';
 import { cn } from '../lib/utils';
 import { useToast } from '../contexts/ToastContext';
+import { useConfirm } from '../contexts/ConfirmContext';
 import { useSafeMutation } from '../hooks/useSafeMutation';
 import Branding from './Branding';
 import { PriceDisplay } from './PriceDisplay';
@@ -45,6 +46,7 @@ import { useTranslation } from 'react-i18next';
 
 export default function Suppliers({ tenantId }: { tenantId: string }) {
   const { t } = useTranslation();
+  const { confirm } = useConfirm();
   const { currentStaff } = useStaff();
 
   // Centralized Mutations for Suppliers (Strict Persistence)
@@ -316,7 +318,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm(t('procurement.confirm_delete'))) return;
+    if (!(await confirm({ description: t('procurement.confirm_delete'), danger: true }))) return;
     try {
       const supplier = suppliers.find(s => s.id === id);
       await deleteSupplierMutation.mutateAsync(id);

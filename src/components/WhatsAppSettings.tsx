@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '../lib/utils';
 import { MessageSquare, Zap, CheckCircle2, RotateCcw, Send, Sparkles, Copy, Info } from 'lucide-react';
 import { isRtlLang } from '../lib/direction';
+import { useConfirm } from '../contexts/ConfirmContext';
 
 import { 
   DEFAULT_WHATSAPP_TEMPLATE, 
@@ -17,6 +18,7 @@ import {
 
 export default function WhatsAppSettings() {
   const { t, i18n } = useTranslation();
+  const { confirm } = useConfirm();
   const isRtl = isRtlLang(i18n.language);
   const [enabled, setEnabled] = useState<boolean>(true);
   const [template, setTemplate] = useState<string>(DEFAULT_WHATSAPP_TEMPLATE);
@@ -51,8 +53,8 @@ export default function WhatsAppSettings() {
     setTimeout(() => setSavedSuccess(false), 3000);
   };
 
-  const handleReset = () => {
-    if (window.confirm(t('settings_page.whatsapp.reset_confirm'))) {
+  const handleReset = async () => {
+    if (await confirm(t('settings_page.whatsapp.reset_confirm'))) {
       setTemplate(DEFAULT_WHATSAPP_TEMPLATE);
       saveWhatsAppTemplate(DEFAULT_WHATSAPP_TEMPLATE);
       showToast(t('settings_page.whatsapp.reset_toast'));
@@ -105,7 +107,7 @@ export default function WhatsAppSettings() {
 
   const handleSendTest = () => {
     if (!testPhone.trim()) {
-      alert(t('settings_page.whatsapp.enter_phone_test'));
+      showToast(t('settings_page.whatsapp.enter_phone_test'));
       return;
     }
     sendWhatsAppMessage(testPhone, sampleMessage);

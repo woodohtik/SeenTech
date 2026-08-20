@@ -31,6 +31,7 @@ import { SYSTEM_PERMISSIONS } from '../constants/permissions';
 import { DEFAULT_ROLES, updateRolePermissions, createCustomRole, isMerchantRole, isSaaSRole } from '../services/permissionService';
 import { cn } from '../lib/utils';
 import { useToast } from '../contexts/ToastContext';
+import { useConfirm } from '../contexts/ConfirmContext';
 import { useTranslation } from 'react-i18next';
 import { useDirection } from '../lib/direction';
 import { useAuth } from '../contexts/AuthContext';
@@ -60,6 +61,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
   const [newRoleDesc, setNewRoleDesc] = useState('');
 
   const { success, error, info } = useToast();
+  const { confirm } = useConfirm();
   const { t } = useTranslation();
   const { dir } = useDirection();
   const { user: currentAuthUser } = useAuth();
@@ -216,9 +218,9 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
 
   const isReadOnlyRole = Boolean(selectedRole?.roleKey === 'owner' || (!isSuperAdmin && isSelectedRoleDefault));
 
-  const handleSelectRole = (role: Role) => {
+  const handleSelectRole = async (role: Role) => {
     if (hasChanges) {
-      if (!window.confirm(t('permissions.unsaved_changes_confirm'))) {
+      if (!(await confirm(t('permissions.unsaved_changes_confirm')))) {
         return;
       }
     }

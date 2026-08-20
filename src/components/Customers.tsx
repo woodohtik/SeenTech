@@ -60,6 +60,7 @@ import { useStaff } from '../contexts/StaffContext';
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { useToast } from '../contexts/ToastContext';
+import { useConfirm } from '../contexts/ConfirmContext';
 import { useSafeMutation } from '../hooks/useSafeMutation';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import { PermissionKey } from '../types';
@@ -76,6 +77,7 @@ export default function Customers({ tenantId }: CustomersProps) {
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
   const { error: toastError, success: toastSuccess, handleError } = useToast();
+  const { confirm } = useConfirm();
   const [isLoading, setIsLoading] = useState(true);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [search, setSearch] = useState('');
@@ -379,7 +381,7 @@ export default function Customers({ tenantId }: CustomersProps) {
     const allowed = await checkPermission('customers.delete', t('customers.manage_customers'));
     if (!allowed) return;
 
-    if (window.confirm(t('customers.delete_confirm'))) {
+    if (await confirm({ description: t('customers.delete_confirm'), danger: true })) {
       try {
         await deleteCustomerMutation.mutateAsync(id);
       } catch (error) {

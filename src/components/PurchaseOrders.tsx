@@ -9,6 +9,7 @@ import { PriceDisplay } from './PriceDisplay';
 import { useTranslation } from 'react-i18next';
 import { useDirection } from '../lib/direction';
 import { useToast } from '../contexts/ToastContext';
+import { useConfirm } from '../contexts/ConfirmContext';
 
 export default function PurchaseOrders({ 
   tenantId, 
@@ -28,6 +29,7 @@ export default function PurchaseOrders({
   const { t } = useTranslation();
   const { dir, isRtl } = useDirection();
   const { error: toastError, success: toastSuccess } = useToast();
+  const { confirm } = useConfirm();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'purchase' | 'return'>('purchase');
@@ -213,7 +215,7 @@ export default function PurchaseOrders({
     }
 
     if (!skipConfirmationAlert) {
-      if (!confirm(t('procurement.confirm_process_warning'))) return;
+      if (!(await confirm(t('procurement.confirm_process_warning')))) return;
     }
     setIsConfirming(true);
     try {

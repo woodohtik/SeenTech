@@ -49,6 +49,7 @@ import AddEmployeeModal from './AddEmployeeModal';
 import AdminTailorCommissions from './AdminTailorCommissions';
 
 import { isRtlLang } from '../lib/direction';
+import { useConfirm } from '../contexts/ConfirmContext';
 
 /** Permission `categoryKey` -> the stable slug used by the settings_page.* translation keys. */
 const getCategoryKey = (cat: string): string => {
@@ -230,6 +231,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
   const canEdit = hasPermission('staff.edit');
   const canDelete = hasPermission('staff.delete');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const { confirm } = useConfirm();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [pinModalTarget, setPinModalTarget] = useState<StaffMember | null>(null);
   const [pinModalValue, setPinModalValue] = useState('');
@@ -694,7 +696,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm(t('settings_page.staff.confirm_delete_employee'))) return;
+    if (!(await confirm({ description: t('settings_page.staff.confirm_delete_employee'), danger: true }))) return;
     try {
       const { error } = await supabase.from('staff').delete().eq('id', id);
       if (error) throw error;
@@ -910,7 +912,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
   };
 
   const handleResetOverrides = async (staffId: string) => {
-    if (!window.confirm(t('settings_page.staff.permissions.confirm_reset_overrides'))) return;
+    if (!(await confirm(t('settings_page.staff.permissions.confirm_reset_overrides')))) return;
 
     setIsSavingPermissions(true);
     try {

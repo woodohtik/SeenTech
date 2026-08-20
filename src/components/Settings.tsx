@@ -31,6 +31,7 @@ import Branding from './Branding';
 import { deleteTestDataForTenant } from '../services/trialService';
 
 import { isRtlLang, localeOf } from '../lib/direction';
+import { useToast } from '../contexts/ToastContext';
 
 interface SettingsProps {
   tenantId: string;
@@ -40,6 +41,7 @@ type TabType = 'profile' | 'appearance' | 'invoice' | 'printer' | 'tax' | 'branc
 
 export default function Settings({ tenantId }: SettingsProps) {
   const { t, i18n } = useTranslation();
+  const { error: toastError } = useToast();
   const isRtl = isRtlLang(i18n.language);
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -252,7 +254,7 @@ export default function Settings({ tenantId }: SettingsProps) {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 1024 * 1024) { // 1MB limit for base64
-        alert(t('settings_page.invoice.logo_too_large_error'));
+        toastError(t('settings_page.invoice.logo_too_large_error'));
         return;
       }
       const reader = new FileReader();

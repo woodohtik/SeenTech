@@ -58,6 +58,7 @@ import { usePermissions } from '../hooks/usePermissions';
 import { useTranslation } from 'react-i18next';
 import DateTimeDisplay from './DateTimeDisplay';
 import { useToast } from '../contexts/ToastContext';
+import { useConfirm } from '../contexts/ConfirmContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -174,6 +175,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const refreshCounter = useRefreshCounter();
   const { settings: branding } = useBranding();
   const { error: toastError, success: toastSuccess, warning: toastWarning, handleError } = useToast();
+  const { confirm } = useConfirm();
   const [isLoading, setIsLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -972,7 +974,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       );
 
       if (!available) {
-        if (!confirm(t('orders.stock_shortage_confirm', { items: missingItems.join(', ') }))) {
+        if (!(await confirm(t('orders.stock_shortage_confirm', { items: missingItems.join(', ') })))) {
           toastWarning(t('orders.order_cancelled_low_stock'));
           return;
         }
@@ -1043,7 +1045,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
     // Prevent any changes if order is already delivered (locked)
     if (order.status === 'delivered') {
-      alert(t('orders.cannot_edit_delivered'));
+      toastError(t('orders.cannot_edit_delivered'));
       return;
     }
 
@@ -1051,7 +1053,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     if (status === 'delivered') {
       const remaining = Number(order.remainingAmount || 0);
       if (remaining > 0) {
-        alert(t('orders.cannot_deliver_unpaid'));
+        toastError(t('orders.cannot_deliver_unpaid'));
         setPendingStatusUpdate({ id, status });
         setSelectedOrder(order);
         setIsPaymentModalOpen(true);
@@ -1071,7 +1073,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           await deductStock(order, currentStaff!, tenantStrategy);
         } catch (err) {
           console.error('Stock deduction error:', err);
-          alert(t('inventory.stock_deduction_error') + (err instanceof Error ? err.message : t('orders.unknown_error')));
+          toastError(t('inventory.stock_deduction_error') + (err instanceof Error ? err.message : t('orders.unknown_error')));
           return;
         }
       }
@@ -1161,7 +1163,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     const allowed = await checkPermission('orders.delete', t('orders.manage_orders'));
     if (!allowed) return;
 
-    if (window.confirm(t('orders.confirm_delete_order'))) {
+    if (await confirm({ description: t('orders.confirm_delete_order'), danger: true })) {
       try {
         const { error } = await supabase
           .from('orders')

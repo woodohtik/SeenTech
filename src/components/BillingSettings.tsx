@@ -29,6 +29,7 @@ import {
 import { supabase } from '../lib/supabase/client';
 import { PriceDisplay } from './PriceDisplay';
 import { createSubscriptionRequest, fetchSubscriptionRequests, SubscriptionRequest } from '../services/subscriptionRequestService';
+import { useToast } from '../contexts/ToastContext';
 
 import { isRtlLang } from '../lib/direction';
 
@@ -39,6 +40,7 @@ interface BillingSettingsProps {
 export default function BillingSettings({ tenantId }: BillingSettingsProps) {
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
+  const { error: toastError } = useToast();
 
   const [loading, setLoading] = useState(true);
   const [tenant, setTenant] = useState<any>(null);
@@ -183,7 +185,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        alert(t('billing.file_too_large'));
+        toastError(t('billing.file_too_large'));
         return;
       }
       setProofFile(file);
@@ -202,7 +204,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
     const targetPlan = PLANS.find(p => p.id === selectedPlanId) || PLANS[0];
 
     if (targetPlan.price > 0 && !proofPreview && !referenceNo.trim()) {
-      alert(t('billing.proof_required_alert'));
+      toastError(t('billing.proof_required_alert'));
       return;
     }
 
@@ -230,7 +232,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
       setNotes('');
       await fetchRealBillingData();
     } catch (err: any) {
-      alert(t('billing.request_submit_error', { error: err.message || err }));
+      toastError(t('billing.request_submit_error', { error: err.message || err }));
     } finally {
       setSubmitting(false);
     }

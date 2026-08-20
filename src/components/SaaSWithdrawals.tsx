@@ -10,12 +10,14 @@ import { listPendingWithdrawals, processWithdrawal, type Withdrawal } from '../s
 import { useTranslation } from 'react-i18next';
 
 import { isRtlLang } from '../lib/direction';
+import { useConfirm } from '../contexts/ConfirmContext';
 
 const INK = '#0E2A42', CTA = '#0BA06B', GRAY = '#6B7280', LINE = '#E5EAF1', SURF = '#F5F7FA';
 
 export default function SaaSWithdrawals() {
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
+  const { promptText } = useConfirm();
 
   const [rows, setRows] = useState<Withdrawal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,17 +36,17 @@ export default function SaaSWithdrawals() {
   useEffect(() => { load(); }, []);
 
   async function act(id: string, approve: boolean) {
-    const note = approve 
-      ? t('saas.success') 
-      : (window.prompt(t('saas.rejection_reason_prompt')) || t('saas.rejection_reason_default'));
+    const note = approve
+      ? t('saas.success')
+      : ((await promptText({ description: t('saas.rejection_reason_prompt') })) || t('saas.rejection_reason_default'));
     setBusyId(id);
-    try { 
-      await processWithdrawal(id, approve, note); 
-      await load(); 
-    } catch (e: any) { 
-      alert(e?.message || t('saas.failed')); 
-    } finally { 
-      setBusyId(''); 
+    try {
+      await processWithdrawal(id, approve, note);
+      await load();
+    } catch (e: any) {
+      showToast(e?.message || t('saas.failed'), 'error');
+    } finally {
+      setBusyId('');
     }
   }
 

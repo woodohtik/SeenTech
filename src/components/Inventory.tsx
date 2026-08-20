@@ -45,12 +45,14 @@ import { useTranslation } from 'react-i18next';
 import { useDirection } from '../lib/direction';
 
 import { useSearchParams } from 'react-router-dom';
+import { useConfirm } from '../contexts/ConfirmContext';
 
 const isUuid = (val: string | undefined | null) => 
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val || '');
 
 export default function Inventory({ tenantId }: { tenantId: string }) {
   const { t } = useTranslation();
+  const { confirm } = useConfirm();
   const { dir } = useDirection();
   const [searchParams] = useSearchParams();
   const [items, setItems] = useState<InventoryItem[]>([]);
@@ -515,7 +517,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm(t('inventory.delete_confirm', 'هل أنت متأكد من حذف هذا الصنف؟'))) return;
+    if (!(await confirm({ description: t('inventory.delete_confirm', 'هل أنت متأكد من حذف هذا الصنف؟'), danger: true }))) return;
     try {
       // Delete referencing stock_ledger rows first
       await supabase
@@ -549,7 +551,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
   };
 
   const handleDeleteSupplier = async (id: string) => {
-    if (!confirm(t('suppliers.delete_confirm', 'هل أنت متأكد من حذف هذا المورد؟'))) return;
+    if (!(await confirm({ description: t('suppliers.delete_confirm', 'هل أنت متأكد من حذف هذا المورد؟'), danger: true }))) return;
     try {
       const { error } = await supabase
         .from('suppliers')

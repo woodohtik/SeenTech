@@ -41,6 +41,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useStaff } from '../contexts/StaffContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+import { useConfirm } from '../contexts/ConfirmContext';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import { adjustStock } from '../services/inventoryService';
 import { generateZatcaQR } from '../lib/zatca';
@@ -62,6 +63,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const router = useRouter();
   const refreshCounter = useRefreshCounter();
   const { error: toastError, success: toastSuccess, handleError } = useToast();
+  const { confirm } = useConfirm();
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
   const [searchQuery, setSearchQuery] = useState('');
@@ -465,7 +467,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   loadingRef.current = loading;
 
   React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
       // 1. Show Keyboard Shortcuts with F1 or Ctrl+/
       if (e.key === 'F1' || (e.ctrlKey && e.key === '/')) {
         e.preventDefault();
@@ -551,7 +553,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       if (e.key === 'F4' && !isPaymentModalOpenRef.current && !completedOrderRef.current) {
         e.preventDefault();
         if (cartRef.current.length > 0) {
-          if (confirm(t('pos.confirm_clear_cart'))) {
+          if (await confirm(t('pos.confirm_clear_cart'))) {
             setCart([]);
           }
         }

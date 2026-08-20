@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn, generateOrderNumber } from '../../lib/utils';
 import { InvoiceModal } from './InvoiceModal';
 import { decodeInventoryDescription, calculateItemTax, encodeInvoiceExtendedNotes } from '../../utils/b2bHelper';
+import { useToast } from '../../contexts/ToastContext';
 
 export interface CartItem {
   id: string;
@@ -34,6 +35,7 @@ export default function CartSidebar({
   onCheckoutSuccess
 }: CartSidebarProps) {
   const { t } = useTranslation();
+  const { error: toastError } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('fixed');
   const [discountValue, setDiscountValue] = useState<number>(0);
@@ -76,7 +78,7 @@ export default function CartSidebar({
 
   const handleCheckout = async () => {
     if (cartItems.length === 0) {
-      alert(t('pos.cart_empty_alert'));
+      toastError(t('pos.cart_empty_alert'));
       return;
     }
     
@@ -218,7 +220,7 @@ export default function CartSidebar({
       
     } catch (error: any) {
       console.error('Checkout error:', error);
-      alert(t('pos.checkout_failed_msg', { error: error.message }));
+      toastError(t('pos.checkout_failed_msg', { error: error.message }));
     } finally {
       setIsProcessing(false);
     }

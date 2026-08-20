@@ -67,6 +67,7 @@ import { StaffProvider, useStaff } from './contexts/StaffContext';
 import { BrandingProvider } from './contexts/BrandingContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { ConfirmProvider } from './contexts/ConfirmContext';
 import { analytics, AnalyticsEvent } from './services/analyticsService';
 import { useTranslation } from 'react-i18next';
 import { useDirection, localeOf } from './lib/direction';
@@ -828,17 +829,19 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
         <ToastProvider>
-          <ThemeProvider>
-            <Router>
-              <AuthProvider>
-                <BrandingProvider>
-                  <StaffProvider>
-                    <AppContent />
-                  </StaffProvider>
-                </BrandingProvider>
-              </AuthProvider>
-            </Router>
-          </ThemeProvider>
+          <ConfirmProvider>
+            <ThemeProvider>
+              <Router>
+                <AuthProvider>
+                  <BrandingProvider>
+                    <StaffProvider>
+                      <AppContent />
+                    </StaffProvider>
+                  </BrandingProvider>
+                </AuthProvider>
+              </Router>
+            </ThemeProvider>
+          </ConfirmProvider>
         </ToastProvider>
       </ErrorBoundary>
     </QueryClientProvider>

@@ -10,6 +10,7 @@ import { PriceDisplay } from '../PriceDisplay';
 import WhatsAppPhoneModal from '../ui/WhatsAppPhoneModal';
 import { formatSaudiPhone } from '../../utils/phoneUtils';
 import { downloadInvoicePDF, downloadInvoicePDFSilently, shareOrDownloadInvoicePDF } from '../../utils/pdfGenerator';
+import { useToast } from '../../contexts/ToastContext';
 
 interface InvoiceModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ interface InvoiceModalProps {
 
 export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNumber, items, customerPhone }: InvoiceModalProps) {
   const { t } = useTranslation();
+  const { error: toastError } = useToast();
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
   /*
    * تُعرَّف دالة الطباعة قبل الـ useEffect عن قصد: الـ effect يسجّل مستمع
@@ -39,7 +41,7 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
       });
       if (!res.ok) {
         console.error('[InvoiceModal] فشل الطباعة:', res.message);
-        alert(t('printing.print_failed', { message: res.message }));
+        toastError(t('printing.print_failed', { message: res.message }));
       }
     } catch (e) {
       console.error('[InvoiceModal] خطأ الطباعة:', e);

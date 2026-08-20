@@ -11,6 +11,7 @@ import ZReport from './ZReport';
 import { useTranslation } from 'react-i18next';
 
 import { isRtlLang } from '../lib/direction';
+import { useToast } from '../contexts/ToastContext';
 
 interface ShiftClosingModalProps {
   shift: Shift;
@@ -21,6 +22,7 @@ interface ShiftClosingModalProps {
 
 export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }: ShiftClosingModalProps) {
   const { t, i18n } = useTranslation();
+  const { error: toastError } = useToast();
   const isRtl = isRtlLang(i18n.language);
 
   const [actualCash, setActualCash] = useState('');
@@ -161,7 +163,7 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
     e.preventDefault();
     if (!actualCash) return;
     if (hasDiscrepancy && !reason) {
-      alert(t('shift_closing.reason_required'));
+      toastError(t('shift_closing.reason_required'));
       return;
     }
 

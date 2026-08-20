@@ -20,6 +20,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { seedGlobalRoles, DEFAULT_ROLES, isSaaSRole, isMerchantRole } from '../services/permissionService';
 import { SYSTEM_PERMISSIONS } from '../constants/permissions';
 import { useTranslation } from 'react-i18next';
+import { useConfirm } from '../contexts/ConfirmContext';
+import { useToast } from '../contexts/ToastContext';
 
 const ALL_PERMISSIONS: { key: PermissionKey; labelKey: string; categoryKey: string }[] = SYSTEM_PERMISSIONS.map(p => ({
   key: p.id as PermissionKey,
@@ -31,6 +33,8 @@ const CATEGORIES = Array.from(new Set(ALL_PERMISSIONS.map(p => p.categoryKey)));
 
 export default function GlobalRoleManager() {
   const { t } = useTranslation();
+  const { confirm } = useConfirm();
+  const { success: toastSuccess } = useToast();
 
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
@@ -229,10 +233,10 @@ export default function GlobalRoleManager() {
         <div className="flex items-center gap-3">
           <button
             onClick={async () => {
-              if (window.confirm(t('saas.global_roles.confirm_seed'))) {
+              if (await confirm(t('saas.global_roles.confirm_seed'))) {
                 const seeded = await seedGlobalRoles();
-                if (seeded) alert(t('saas.global_roles.seed_success'));
-                else alert(t('saas.global_roles.seed_already_exists'));
+                if (seeded) toastSuccess(t('saas.global_roles.seed_success'));
+                else toastSuccess(t('saas.global_roles.seed_already_exists'));
               }
             }}
             className="flex items-center gap-2 px-6 py-3 bg-indigo-50 text-indigo-600 rounded-2xl font-black hover:bg-indigo-100 transition-all"

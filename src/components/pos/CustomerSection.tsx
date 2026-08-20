@@ -106,7 +106,7 @@ export default function CustomerSection({
       
     } catch (error: any) {
       console.error('Error saving customer:', error);
-      alert(t('pos.save_customer_failed', { error: error.message }));
+      toastError(t('pos.save_customer_failed', { error: error.message }));
     } finally {
       setIsWorking(false);
     }

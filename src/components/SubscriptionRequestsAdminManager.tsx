@@ -25,9 +25,11 @@ import {
   SubscriptionRequest 
 } from '../services/subscriptionRequestService';
 import { useDirection } from '../lib/direction';
+import { useConfirm } from '../contexts/ConfirmContext';
 
 export default function SubscriptionRequestsAdminManager() {
   const { t, locale } = useDirection();
+  const { confirm } = useConfirm();
   const [requests, setRequests] = useState<SubscriptionRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
@@ -67,7 +69,7 @@ export default function SubscriptionRequestsAdminManager() {
   };
 
   const handleApprove = async (req: SubscriptionRequest) => {
-    if (!confirm(t('subscription.requests.approve_confirm', { plan: req.plan_name, tenant: req.tenant_name || req.tenant_id }))) {
+    if (!(await confirm(t('subscription.requests.approve_confirm', { plan: req.plan_name, tenant: req.tenant_name || req.tenant_id })))) {
       return;
     }
     setProcessingId(req.id);
@@ -76,7 +78,7 @@ export default function SubscriptionRequestsAdminManager() {
       showToast(t('subscription.requests.approve_success', { plan: req.plan_name }));
       await loadRequests();
     } catch (err: any) {
-      alert(t('subscription.requests.approve_error', { error: err.message || err }));
+      showToast(t('subscription.requests.approve_error', { error: err.message || err }));
     } finally {
       setProcessingId(null);
     }
@@ -92,7 +94,7 @@ export default function SubscriptionRequestsAdminManager() {
       setRejectionReason('');
       await loadRequests();
     } catch (err: any) {
-      alert(t('subscription.requests.reject_error', { error: err.message || err }));
+      showToast(t('subscription.requests.reject_error', { error: err.message || err }));
     } finally {
       setProcessingId(null);
     }

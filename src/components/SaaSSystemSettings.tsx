@@ -25,9 +25,11 @@ import { useTranslation } from 'react-i18next';
 import GlobalRoleManager from './GlobalRoleManager';
 
 import { isRtlLang } from '../lib/direction';
+import { useToast } from '../contexts/ToastContext';
 
 export default function SaaSSystemSettings() {
   const { t, i18n } = useTranslation();
+  const { success: toastSuccess, error: toastError } = useToast();
   const isRtl = isRtlLang(i18n.language);
   const { user: currentAuthUser } = useAuth();
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -145,11 +147,11 @@ export default function SaaSSystemSettings() {
 
       if (error) throw error;
 
-      alert(t('saas.branding_saved_success'));
+      toastSuccess(t('saas.branding_saved_success'));
       await logAuditAction('update_branding', `Updated branding to ${brandingSettings.companyName}`);
     } catch (error) {
       console.error('Error saving branding settings:', error);
-      alert(t('saas.settings_save_error'));
+      toastError(t('saas.settings_save_error'));
     } finally {
       setIsSavingBranding(false);
     }
@@ -169,11 +171,11 @@ export default function SaaSSystemSettings() {
 
       if (error) throw error;
 
-      alert(t('saas.platform_settings_saved_success'));
+      toastSuccess(t('saas.platform_settings_saved_success'));
       await logAuditAction('update_platform', `Updated platform settings. Trial: ${platformSettings.trialDays}`);
     } catch (error) {
       console.error('Error saving platform settings:', error);
-      alert(t('saas.settings_save_error'));
+      toastError(t('saas.settings_save_error'));
     } finally {
       setIsSavingPlatform(false);
     }
@@ -182,7 +184,7 @@ export default function SaaSSystemSettings() {
   const confirmWipeData = async () => {
     const { tenantId, tenantName, inputValue } = confirmModal;
     if (inputValue !== tenantName) {
-      alert(t('saas.name_mismatch_cancelled'));
+      toastError(t('saas.name_mismatch_cancelled'));
       return;
     }
 
@@ -216,10 +218,10 @@ export default function SaaSSystemSettings() {
       }
 
       await logAuditAction('wipe_tenant_data', `Full data wipe performed for tenant ${tenantId} (${tenantName}). Total records deleted: ${totalDeleted}`, tenantId);
-      alert(t('saas.tenant_data_wiped_success', { count: totalDeleted }));
+      toastSuccess(t('saas.tenant_data_wiped_success', { count: totalDeleted }));
     } catch (error) {
       console.error('Error wiping tenant data:', error);
-      alert(t('saas.tenant_data_wipe_error'));
+      toastError(t('saas.tenant_data_wipe_error'));
     } finally {
       setIsDeleting(false);
     }
@@ -233,13 +235,13 @@ export default function SaaSSystemSettings() {
       const result = await deleteTestDataForTenant(tenantId);
       await logAuditAction('delete_test_data', `Deleted test records for tenant ${tenantId}`, tenantId);
       if (result.success) {
-        alert(t('saas.test_data_deleted_success', { count: result.deletedCount }));
+        toastSuccess(t('saas.test_data_deleted_success', { count: result.deletedCount }));
       } else {
-        alert(t('saas.test_data_delete_error_with_message', { error: result.error || '' }));
+        toastError(t('saas.test_data_delete_error_with_message', { error: result.error || '' }));
       }
     } catch (error) {
       console.error('Error deleting test data:', error);
-      alert(t('saas.test_data_delete_error'));
+      toastError(t('saas.test_data_delete_error'));
     } finally {
       setIsDeleting(false);
     }
