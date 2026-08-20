@@ -1081,6 +1081,7 @@
     "manual_split_unroll": "فك وتحويل الأقمشة يدوياً",
     "master_catalog": "دليل المنتجات",
     "min_threshold": "الحد الأدنى للطلب",
+    "missing_fields_prompt": "يرجى إكمال الحقول التالية: {{fields}}",
     "needs_order": "تحتاج طلب!",
     "negative_stock_error": "لا يمكن أن يصبح المخزون بالسالب",
     "new_total_stock": "المخزون الفعلي",

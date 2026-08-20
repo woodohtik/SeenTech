@@ -1081,6 +1081,7 @@
     "manual_split_unroll": "Manually unroll and convert fabric",
     "master_catalog": "Master Catalog",
     "min_threshold": "Reorder Level",
+    "missing_fields_prompt": "Please complete the following fields: {{fields}}",
     "needs_order": "Reorder needed!",
     "negative_stock_error": "Stock cannot go negative",
     "new_total_stock": "Actual Stock",

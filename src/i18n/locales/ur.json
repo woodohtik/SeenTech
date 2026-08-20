@@ -1081,6 +1081,7 @@
     "manual_split_unroll": "کپڑا دستی طور پر کھولیں اور تبدیل کریں",
     "master_catalog": "مصنوعات کی ڈائرکٹری",
     "min_threshold": "آرڈر کی کم از کم حد",
+    "missing_fields_prompt": "براہ کرم درج ذیل خانے مکمل کریں: {{fields}}",
     "needs_order": "دوبارہ آرڈر درکار!",
     "negative_stock_error": "اسٹاک منفی نہیں ہو سکتا",
     "new_total_stock": "اصل اسٹاک",

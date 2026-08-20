@@ -1680,6 +1680,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
   const { error: toastError, success: toastSuccess, handleError } = useToast();
   const [suppliersList, setSuppliersList] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
   const isAddItem = true;
   const [formData, setFormData] = useState({
     name: "",
@@ -1771,6 +1772,35 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (submitting) return;
+
+    const missing: string[] = [];
+    const errors: Record<string, boolean> = {};
+    if (!formData.name.trim()) {
+      errors.name = true;
+      missing.push(t("inventory.item_name"));
+    }
+    if (!formData.pricePerUnit || formData.pricePerUnit <= 0) {
+      errors.pricePerUnit = true;
+      missing.push(t("inventory.selling_price_label"));
+    }
+    if (!formData.costPrice || formData.costPrice <= 0) {
+      errors.costPrice = true;
+      missing.push(t("inventory.cost_price_label"));
+    }
+    if (!formData.conversionRate || formData.conversionRate <= 0) {
+      errors.conversionRate = true;
+      missing.push(t("inventory.conversion_rate"));
+    }
+    setFieldErrors(errors);
+    if (missing.length > 0) {
+      toastError(t("inventory.missing_fields_prompt", { fields: missing.join(t("common.list_separator")) }));
+      setTimeout(() => {
+        const errorTarget = document.querySelector(".ring-danger, [aria-invalid='true']");
+        errorTarget?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 50);
+      return;
+    }
+
     setSubmitting(true);
     try {
       const defaultQty = formData.initialStock || formData.openingBalance || 0;
@@ -1914,12 +1944,17 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                 </label>
                 <input
                   required
+                  aria-invalid={fieldErrors.name}
                   value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setFormData({ ...formData, name: e.target.value });
+                    if (fieldErrors.name) setFieldErrors({ ...fieldErrors, name: false });
+                  }}
                   placeholder={t("inventory.item_name_placeholder")}
-                  className="w-full px-5 py-3 bg-surface border border-transparent hover:border-brand/40 rounded-2xl focus:ring-2 focus:ring-brand focus:border-brand outline-none font-bold text-content text-right transition-all hover:bg-surface-muted/20"
+                  className={cn(
+                    "w-full px-5 py-3 bg-surface border border-transparent hover:border-brand/40 rounded-2xl focus:ring-2 focus:ring-brand focus:border-brand outline-none font-bold text-content text-right transition-all hover:bg-surface-muted/20",
+                    fieldErrors.name && "ring-2 ring-danger"
+                  )}
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-6 text-right">
@@ -2086,14 +2121,19 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                   type="number"
                   step="0.01"
                   required
+                  aria-invalid={fieldErrors.conversionRate}
                   value={formData.conversionRate}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setFormData({
                       ...formData,
                       conversionRate: Number(e.target.value),
-                    })
-                  }
-                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
+                    });
+                    if (fieldErrors.conversionRate) setFieldErrors({ ...fieldErrors, conversionRate: false });
+                  }}
+                  className={cn(
+                    "w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right",
+                    fieldErrors.conversionRate && "ring-2 ring-danger"
+                  )}
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-4 text-right">
@@ -2126,15 +2166,20 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                   type="number"
                   step="0.01"
                   required
+                  aria-invalid={fieldErrors.costPrice}
                   value={formData.costPrice || ""}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setFormData({
                       ...formData,
                       costPrice: e.target.value === "" ? 0 : Number(e.target.value),
-                    })
-                  }
+                    });
+                    if (fieldErrors.costPrice) setFieldErrors({ ...fieldErrors, costPrice: false });
+                  }}
                   placeholder="0.00"
-                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content text-right"
+                  className={cn(
+                    "w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content text-right",
+                    fieldErrors.costPrice && "ring-2 ring-danger"
+                  )}
                 />
               </div>
 
@@ -2146,15 +2191,20 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                   type="number"
                   step="0.01"
                   required
+                  aria-invalid={fieldErrors.pricePerUnit}
                   value={formData.pricePerUnit || ""}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setFormData({
                       ...formData,
                       pricePerUnit: e.target.value === "" ? 0 : Number(e.target.value),
-                    })
-                  }
+                    });
+                    if (fieldErrors.pricePerUnit) setFieldErrors({ ...fieldErrors, pricePerUnit: false });
+                  }}
                   placeholder="0.00"
-                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content text-right"
+                  className={cn(
+                    "w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content text-right",
+                    fieldErrors.pricePerUnit && "ring-2 ring-danger"
+                  )}
                 />
               </div>
 
@@ -3666,6 +3716,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
   const { error: toastError, success: toastSuccess, handleError } = useToast();
   const [suppliersList, setSuppliersList] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
   const isEditItem = true;
   const [formData, setFormData] = useState({
     name: item.name || "",
@@ -3709,6 +3760,35 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (submitting) return;
+
+    const missing: string[] = [];
+    const errors: Record<string, boolean> = {};
+    if (!formData.name.trim()) {
+      errors.name = true;
+      missing.push(t("inventory.item_name"));
+    }
+    if (!formData.pricePerUnit || formData.pricePerUnit <= 0) {
+      errors.pricePerUnit = true;
+      missing.push(t("inventory.selling_price_label"));
+    }
+    if (!formData.costPrice || formData.costPrice <= 0) {
+      errors.costPrice = true;
+      missing.push(t("inventory.cost_price_label"));
+    }
+    if (!formData.conversionRate || formData.conversionRate <= 0) {
+      errors.conversionRate = true;
+      missing.push(t("inventory.conversion_rate"));
+    }
+    setFieldErrors(errors);
+    if (missing.length > 0) {
+      toastError(t("inventory.missing_fields_prompt", { fields: missing.join(t("common.list_separator")) }));
+      setTimeout(() => {
+        const errorTarget = document.querySelector(".ring-danger, [aria-invalid='true']");
+        errorTarget?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 50);
+      return;
+    }
+
     setSubmitting(true);
     try {
       const updateData: any = {
@@ -3809,12 +3889,17 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                 </label>
                 <input
                   required
+                  aria-invalid={fieldErrors.name}
                   value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setFormData({ ...formData, name: e.target.value });
+                    if (fieldErrors.name) setFieldErrors({ ...fieldErrors, name: false });
+                  }}
                   placeholder={t("inventory.item_name_placeholder")}
-                  className="w-full px-5 py-3 bg-surface border border-transparent hover:border-brand/40 rounded-2xl focus:ring-2 focus:ring-brand focus:border-brand outline-none font-bold text-content text-right transition-all hover:bg-surface-muted/20"
+                  className={cn(
+                    "w-full px-5 py-3 bg-surface border border-transparent hover:border-brand/40 rounded-2xl focus:ring-2 focus:ring-brand focus:border-brand outline-none font-bold text-content text-right transition-all hover:bg-surface-muted/20",
+                    fieldErrors.name && "ring-2 ring-danger"
+                  )}
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-6 text-right">
@@ -3981,14 +4066,19 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                   type="number"
                   step="0.01"
                   required
+                  aria-invalid={fieldErrors.conversionRate}
                   value={formData.conversionRate}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setFormData({
                       ...formData,
                       conversionRate: Number(e.target.value),
-                    })
-                  }
-                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
+                    });
+                    if (fieldErrors.conversionRate) setFieldErrors({ ...fieldErrors, conversionRate: false });
+                  }}
+                  className={cn(
+                    "w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right",
+                    fieldErrors.conversionRate && "ring-2 ring-danger"
+                  )}
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-4 text-right">
@@ -4021,15 +4111,20 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                   type="number"
                   step="0.01"
                   required
+                  aria-invalid={fieldErrors.costPrice}
                   value={formData.costPrice || ""}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setFormData({
                       ...formData,
                       costPrice: e.target.value === "" ? 0 : Number(e.target.value),
-                    })
-                  }
+                    });
+                    if (fieldErrors.costPrice) setFieldErrors({ ...fieldErrors, costPrice: false });
+                  }}
                   placeholder="0.00"
-                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content text-right"
+                  className={cn(
+                    "w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content text-right",
+                    fieldErrors.costPrice && "ring-2 ring-danger"
+                  )}
                 />
               </div>
 
@@ -4041,15 +4136,20 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                   type="number"
                   step="0.01"
                   required
+                  aria-invalid={fieldErrors.pricePerUnit}
                   value={formData.pricePerUnit || ""}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setFormData({
                       ...formData,
                       pricePerUnit: e.target.value === "" ? 0 : Number(e.target.value),
-                    })
-                  }
+                    });
+                    if (fieldErrors.pricePerUnit) setFieldErrors({ ...fieldErrors, pricePerUnit: false });
+                  }}
                   placeholder="0.00"
-                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content text-right"
+                  className={cn(
+                    "w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content text-right",
+                    fieldErrors.pricePerUnit && "ring-2 ring-danger"
+                  )}
                 />
               </div>
 
