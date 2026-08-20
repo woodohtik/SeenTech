@@ -4038,7 +4038,7 @@
         "override_success": "Permission exception updated successfully",
         "owner_note": "Note: The \"Owner\" role always has all permissions and cannot be modified to ensure uninterrupted access to the system.",
         "primary_role": "Primary Role: {{role}}",
-        "protected_role_msg": "Protected default role. Editing default roles is only available to Super Admin.",
+        "protected_role_msg": "Protected default role. Editing default roles is not available — you can create a custom role instead.",
         "reset_failed": "Failed to restore permissions",
         "reset_success": "Default permissions restored successfully",
         "restore_defaults": "Restore Default",
