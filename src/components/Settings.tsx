@@ -49,7 +49,6 @@ export default function Settings({ tenantId }: SettingsProps) {
   };
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isDeletingTestData, setIsDeletingTestData] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
   const [showAuditModal, setShowAuditModal] = useState(false);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
@@ -365,61 +364,6 @@ export default function Settings({ tenantId }: SettingsProps) {
       alert(t('settings_page.data.delete_test_failed'));
     } finally {
       setIsDeletingTestData(false);
-    }
-  };
-
-  const handleExportData = async () => {
-    if (!tenantId) return;
-    setIsExporting(true);
-    try {
-      const tables = ['tenants', 'customers', 'orders', 'staff', 'branches', 'products', 'inventory'];
-      const exportedData: Record<string, any> = {};
-
-      for (const table of tables) {
-        try {
-          const { data, error } = await supabase
-            .from(table)
-            .select('*')
-            .eq(table === 'tenants' ? 'id' : 'tenant_id', tenantId);
-          
-          if (!error && data) {
-            exportedData[table] = data;
-          } else {
-            exportedData[table] = [];
-          }
-        } catch (tableErr) {
-          console.warn(`Could not export table ${table}:`, tableErr);
-          exportedData[table] = [];
-        }
-      }
-
-      try {
-        const { data: auditLogsData } = await supabase
-          .from('employee_activity_logs')
-          .select('*')
-          .eq('tenant_id', tenantId)
-          .order('occurred_at', { ascending: false })
-          .limit(100);
-        exportedData['employee_activity_logs'] = auditLogsData || [];
-      } catch (auditErr) {
-        exportedData['employee_activity_logs'] = [];
-      }
-
-      const jsonStr = JSON.stringify(exportedData, null, 2);
-      const blob = new Blob([jsonStr], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `backup_data_${tenantId}_${new Date().toISOString().slice(0, 10)}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Export error:', err);
-      alert(t('settings_page.data.export_error'));
-    } finally {
-      setIsExporting(false);
     }
   };
 
@@ -1027,36 +971,21 @@ export default function Settings({ tenantId }: SettingsProps) {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-1">
-                        <button 
-                          onClick={handleExportData}
-                          disabled={isExporting}
-                          className="flex flex-col items-center justify-center p-6 sm:p-10 bg-surface rounded-2xl sm:rounded-[2.5rem] border-2 border-border border-dashed hover:border-brand/40 hover:bg-brand/5 transition-all group text-center cursor-pointer disabled:opacity-50"
-                        >
-                          <div className="p-4 bg-surface-muted rounded-2xl mb-4 group-hover:scale-110 transition-transform">
-                             {isExporting ? (
-                               <div className="w-8 h-8 border-4 border-brand/30 border-t-brand rounded-full animate-spin" />
-                             ) : (
-                               <Database size={32} className="text-brand" />
-                             )}
-                          </div>
-                          <p className="font-black text-content">{t('settings_page.data.export_db', 'تصدير قاعدة البيانات (JSON)')}</p>
-                          <p className="text-[10px] text-content-muted font-bold mt-2 uppercase">
-                            {isExporting ? t('settings_page.data.exporting', 'جاري تصدير الملف...') : t('settings_page.data.click_export', 'اضغط للتصدير والتحميل فوراً')}
-                          </p>
-                        </button>
-                        
-                        <button 
-                          onClick={() => setShowAuditModal(true)}
-                          className="flex flex-col items-center justify-center p-6 sm:p-10 bg-surface rounded-2xl sm:rounded-[2.5rem] border-2 border-border border-dashed hover:border-success/40 hover:bg-success/5 transition-all group text-center cursor-pointer"
-                        >
-                          <div className="p-4 bg-surface-muted rounded-2xl mb-4 group-hover:scale-110 transition-transform">
-                             <FileText size={32} className="text-success" />
-                          </div>
+                      <button
+                        onClick={() => setShowAuditModal(true)}
+                        className={cn(
+                          "w-full flex items-center gap-5 p-5 sm:p-8 bg-surface rounded-2xl sm:rounded-[2.5rem] border-2 border-border border-dashed hover:border-success/40 hover:bg-success/5 transition-all group cursor-pointer",
+                          isRtl ? "text-right" : "text-left"
+                        )}
+                      >
+                        <div className="p-4 bg-surface-muted rounded-2xl shrink-0 group-hover:scale-110 transition-transform">
+                          <FileText size={28} className="text-success" />
+                        </div>
+                        <div className="min-w-0">
                           <p className="font-black text-content">{t('settings_page.data.audit_title', 'سجلات تدقيق العمليات (Audit)')}</p>
-                          <p className="text-[10px] text-content-muted font-bold mt-2 uppercase">{t('settings_page.data.audit_desc', 'اضغط لفتح وعرض سجلات الموظفين والعمليات الحساسة')}</p>
-                        </button>
-                      </div>
+                          <p className="text-xs text-content-muted font-bold mt-1">{t('settings_page.data.audit_desc', 'اضغط لفتح وعرض سجلات الموظفين والعمليات الحساسة')}</p>
+                        </div>
+                      </button>
                     </div>
                 </div>
               )}
