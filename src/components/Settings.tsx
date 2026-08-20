@@ -50,6 +50,7 @@ export default function Settings({ tenantId }: SettingsProps) {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isDeletingTestData, setIsDeletingTestData] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resetResult, setResetResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [showAuditModal, setShowAuditModal] = useState(false);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
@@ -355,14 +356,14 @@ export default function Settings({ tenantId }: SettingsProps) {
     try {
       const result = await deleteTestDataForTenant(tenantId);
       if (result.success) {
-        alert(t('settings_page.data.delete_test_success', { records: result.deletedCount }));
+        setResetResult({ type: 'success', message: t('settings_page.data.delete_test_success', { records: result.deletedCount }) });
         window.dispatchEvent(new CustomEvent('data_cleared'));
       } else {
-        alert(t('settings_page.data.delete_test_error', { error: result.error || '' }));
+        setResetResult({ type: 'error', message: t('settings_page.data.delete_test_error', { error: result.error || '' }) });
       }
     } catch (error) {
       handleError(error, OperationType.DELETE, 'test_data');
-      alert(t('settings_page.data.delete_test_failed'));
+      setResetResult({ type: 'error', message: t('settings_page.data.delete_test_failed') });
     } finally {
       setIsDeletingTestData(false);
     }
@@ -1054,6 +1055,44 @@ export default function Settings({ tenantId }: SettingsProps) {
                   {t('common.cancel')}
                 </button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {resetResult && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            dir={isRtl ? "rtl" : "ltr"}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-surface rounded-3xl shadow-2xl w-full max-w-sm border border-border p-6 space-y-5 text-center"
+            >
+              <div
+                className={cn(
+                  "w-14 h-14 mx-auto rounded-full flex items-center justify-center",
+                  resetResult.type === 'success' ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
+                )}
+              >
+                {resetResult.type === 'success' ? <CheckCircle2 size={26} /> : <AlertCircle size={26} />}
+              </div>
+              <div>
+                <h3 className="font-black text-content">
+                  {resetResult.type === 'success' ? t('settings_page.data.reset_result_success_title', 'تم بنجاح') : t('settings_page.data.reset_result_error_title', 'حدث خطأ')}
+                </h3>
+                <p className="text-xs text-content-muted font-bold mt-1.5 leading-relaxed">{resetResult.message}</p>
+              </div>
+              <button
+                onClick={() => setResetResult(null)}
+                className="w-full bg-brand text-white py-3 rounded-2xl font-black text-sm hover:bg-brand/90 transition-all"
+              >
+                {t('common.close')}
+              </button>
             </motion.div>
           </motion.div>
         )}

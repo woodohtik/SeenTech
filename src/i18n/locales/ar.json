@@ -3369,6 +3369,8 @@
       "refresh_logs": "تحديث السجل",
       "reset_confirm_action": "تصفير وحذف",
       "reset_confirm_title": "تصفير النظام؟",
+      "reset_result_error_title": "حدث خطأ",
+      "reset_result_success_title": "تم بنجاح",
       "reset_system": "تصفير النظام وحذف البيانات التجريبية",
       "save_success": "تم حفظ الإعدادات بنجاح",
       "search_placeholder": "ابحث باسم الموظف، العملية، أو التفاصيل...",

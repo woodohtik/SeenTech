@@ -3369,6 +3369,8 @@
       "refresh_logs": "لاگ کو تازہ کریں",
       "reset_confirm_action": "ری سیٹ اور حذف کریں",
       "reset_confirm_title": "سسٹم ری سیٹ کریں؟",
+      "reset_result_error_title": "خرابی پیش آئی",
+      "reset_result_success_title": "کامیابی",
       "reset_system": "سسٹم کو دوبارہ ترتیب دیں اور ٹیسٹ ڈیٹا حذف کریں",
       "save_success": "ترتیبات کامیابی سے محفوظ ہو گئیں",
       "search_placeholder": "عملے کا نام، آپریشن، یا تفصیلات سے تلاش کریں...",

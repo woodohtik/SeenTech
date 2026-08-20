@@ -3369,6 +3369,8 @@
       "refresh_logs": "Refresh Log",
       "reset_confirm_action": "Reset & delete",
       "reset_confirm_title": "Reset the system?",
+      "reset_result_error_title": "Something went wrong",
+      "reset_result_success_title": "Success",
       "reset_system": "Reset System & Delete Test Data",
       "save_success": "Settings saved successfully",
       "search_placeholder": "Search by staff name, operation, or details...",
