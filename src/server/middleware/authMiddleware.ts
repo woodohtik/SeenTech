@@ -1,8 +1,20 @@
 import type { Request, Response, NextFunction } from 'express';
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { adminAuth } from '../firebase-admin.ts';
 import { supabaseAdmin } from '../supabase-admin.ts';
+
+// This project's Supabase auth now signs access tokens with an asymmetric
+// ES256 key (not the legacy shared HS256 secret) -- verify against its public
+// JWKS instead. `createRemoteJWKSet` caches the key set and handles rotation.
+let supabaseUrlForJwks = (process.env.VITE_SUPABASE_URL || '').trim();
+if (supabaseUrlForJwks && supabaseUrlForJwks.endsWith('/')) {
+  supabaseUrlForJwks = supabaseUrlForJwks.slice(0, -1);
+}
+const supabaseJwks = supabaseUrlForJwks
+  ? createRemoteJWKSet(new URL(`${supabaseUrlForJwks}/auth/v1/.well-known/jwks.json`))
+  : null;
 
 export interface AuthRequest extends Request {
   user?: {
@@ -51,8 +63,21 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
   try {
     let decodedToken: { uid: string; email?: string } | null = null;
 
+    if (supabaseJwks) {
+      try {
+        const { payload } = await jwtVerify(idToken, supabaseJwks, { audience: 'authenticated' });
+        decodedToken = { uid: payload.sub as string, email: payload.email as string | undefined };
+      } catch {
+        // Not a valid Supabase-issued token (or one signed before the
+        // project's asymmetric-key migration); fall through.
+      }
+    }
+
+    // Legacy fallback for tokens signed with the old shared HS256 secret,
+    // in case any are still floating around from before the project moved
+    // to asymmetric JWT signing keys.
     const supabaseJwtSecret = process.env.SUPABASE_JWT_SECRET;
-    if (supabaseJwtSecret) {
+    if (!decodedToken && supabaseJwtSecret) {
       try {
         const payload = jwt.verify(idToken, supabaseJwtSecret, {
           algorithms: ['HS256'],
@@ -60,7 +85,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
         }) as { sub: string; email?: string };
         decodedToken = { uid: payload.sub, email: payload.email };
       } catch {
-        // Not a valid Supabase-issued token; fall through to the legacy path.
+        // Not a valid legacy token either; fall through to the Firebase path.
       }
     }
 
