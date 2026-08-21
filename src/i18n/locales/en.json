@@ -1396,6 +1396,7 @@
     "forgot_pin": "Forgot employee PIN",
     "full_name": "Full Name",
     "google": "Google",
+    "google_unconfigured": "Google Sign-In is not configured yet.",
     "google_verified": "Verified via Google ✓",
     "have_account": "Already have an account?",
     "incomplete_account_desc": "Your sign-up started but your shop was never fully created. You can retry, or sign out and register again.",

@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { formatSaudiPhone, validateSaudiPhone } from '../utils/phoneUtils';
 import { supabase } from '../lib/supabase/client';
-import { useAuth } from '../contexts/AuthContext';
 import {
   Scissors,
   Send,
@@ -35,7 +34,6 @@ export default function Login() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user: authUser } = useAuth();
   const [view, setView] = useState<ViewMode>(() => {
     const mode = searchParams.get('view');
     if (mode === 'register') return 'register';
@@ -112,84 +110,161 @@ export default function Login() {
       setView('register');
     } else if (mode === 'forgot-password') {
       setView('forgot-password');
-    } else if (searchParams.get('oauth') !== 'google') {
+    } else {
       setView('login');
     }
   }, [searchParams]);
 
-  // Handles the return leg of the Google OAuth redirect flow (signInWithOAuth
-  // navigates away to Google and back to /login?oauth=google once Supabase's
-  // detectSessionInUrl has parsed the session). Mirrors what the old
-  // signInWithPopup-based flow used to do synchronously right after the popup
-  // resolved: detect whether this Google identity already has an account, and
-  // if not, drop them into the register form pre-filled from their profile.
-  useEffect(() => {
-    const isOAuthReturn = searchParams.get('oauth') === 'google';
-    if (!isOAuthReturn || !authUser) return;
+  // Shared by the Google Identity Services callback below: detect whether
+  // this Google identity already has an account, and if not, drop the user
+  // into the register form pre-filled from their profile. Previously this
+  // ran in a useEffect gated on a `?oauth=google` redirect-return URL param
+  // (signInWithOAuth navigated away to Google and back) -- switched to a
+  // client-side credential flow (see below) that never leaves the page, so
+  // this now just runs directly once a credential comes back.
+  const handleGoogleAuthedUser = useCallback(async (nextUser: any) => {
+    try {
+      const uid = nextUser.id;
+      const email = nextUser.email || '';
+      const displayName = nextUser.user_metadata?.full_name || nextUser.user_metadata?.name || '';
 
-    (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const uid = authUser.id;
-        const email = authUser.email || '';
-        const displayName = authUser.user_metadata?.full_name || authUser.user_metadata?.name || '';
+      // SECURITY: super_admin/SaaS-staff status is never granted here from
+      // an email match — it's resolved below purely from existing
+      // saas_users/staff/tenant rows, exactly like any other account.
+      const { error: gUserError } = await supabase.from('users').upsert({
+        id: uid,
+        email,
+        display_name: displayName || 'Owner',
+        phone: nextUser.phone || ''
+      });
 
-        // SECURITY: super_admin/SaaS-staff status is never granted here from
-        // an email match — it's resolved below purely from existing
-        // saas_users/staff/tenant rows, exactly like any other account.
-        const { error: gUserError } = await supabase.from('users').upsert({
-          id: uid,
-          email,
-          display_name: displayName || 'Owner',
-          phone: authUser.phone || ''
-        });
-
-        if (gUserError && (gUserError.message?.includes('row-level security') || gUserError.code === '42501')) {
-          throw new Error(t('login.errors.rls_permission_issue'));
-        }
-
-        const [tenantRes, requestRes, staffRes, saasRes] = await Promise.all([
-          supabase.from('tenants').select('*').eq('owner_email', email).maybeSingle(),
-          supabase.from('tailor_requests').select('*').eq('uid', uid).maybeSingle(),
-          supabase.from('staff').select('*').or(`uid.eq.${uid},email.eq.${email}`).maybeSingle(),
-          supabase.from('saas_users').select('role').eq('uid', uid).maybeSingle()
-        ]);
-
-        if (saasRes.data) {
-          localStorage.removeItem('is_registering');
-          (window as any).refreshAuthData?.();
-          navigate('/admin/dashboard', { replace: true });
-          return;
-        }
-
-        const hasAccount = tenantRes.data || requestRes.data || staffRes.data;
-
-        if (hasAccount) {
-          localStorage.removeItem('is_registering');
-          (window as any).refreshAuthData?.();
-          navigate('/', { replace: true });
-          return;
-        }
-
-        // No account exists yet: transfer to Register view and pre-fill fields.
-        // is_registering stays set until handleRegister finishes, so AuthContext
-        // doesn't try to route this (accountless) session anywhere meanwhile.
-        setGoogleUser(authUser);
-        setView('register');
-        setFullName(displayName);
-        setRegEmail(email);
-        setRegPhone(authUser.phone || '');
-        navigate('/login?view=register', { replace: true });
-      } catch (err: any) {
-        localStorage.removeItem('is_registering');
-        console.error('Google OAuth callback handling error:', err);
-        setError(getAuthErrorMessage(err));
-      } finally {
-        setLoading(false);
+      if (gUserError && (gUserError.message?.includes('row-level security') || gUserError.code === '42501')) {
+        throw new Error(t('login.errors.rls_permission_issue'));
       }
-    })();
-  }, [searchParams, authUser, navigate, t]);
+
+      const [tenantRes, requestRes, staffRes, saasRes] = await Promise.all([
+        supabase.from('tenants').select('*').eq('owner_email', email).maybeSingle(),
+        supabase.from('tailor_requests').select('*').eq('uid', uid).maybeSingle(),
+        supabase.from('staff').select('*').or(`uid.eq.${uid},email.eq.${email}`).maybeSingle(),
+        supabase.from('saas_users').select('role').eq('uid', uid).maybeSingle()
+      ]);
+
+      if (saasRes.data) {
+        localStorage.removeItem('is_registering');
+        (window as any).refreshAuthData?.();
+        navigate('/admin/dashboard', { replace: true });
+        return;
+      }
+
+      const hasAccount = tenantRes.data || requestRes.data || staffRes.data;
+
+      if (hasAccount) {
+        localStorage.removeItem('is_registering');
+        (window as any).refreshAuthData?.();
+        navigate('/', { replace: true });
+        return;
+      }
+
+      // No account exists yet: transfer to Register view and pre-fill fields.
+      // is_registering stays set until handleRegister finishes, so AuthContext
+      // doesn't try to route this (accountless) session anywhere meanwhile.
+      setGoogleUser(nextUser);
+      setView('register');
+      setFullName(displayName);
+      setRegEmail(email);
+      setRegPhone(nextUser.phone || '');
+      navigate('/login?view=register', { replace: true });
+    } catch (err: any) {
+      localStorage.removeItem('is_registering');
+      console.error('Google auth handling error:', err);
+      setError(getAuthErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  }, [navigate, t]);
+
+  // Google Identity Services delivers a credential (ID token) directly to
+  // this callback, without ever navigating away from the page -- unlike
+  // supabase.auth.signInWithOAuth's redirect flow, whose account-chooser
+  // screen always showed the raw Supabase project URL ("continue to
+  // yodvqhdjzjyhvrlhguzf.supabase.co") because the redirect_uri Google saw
+  // was Supabase's own domain. Here the request originates from this page's
+  // own origin (registered as an Authorized JavaScript origin on the Google
+  // Cloud OAuth client), so Google shows the app's own branding instead.
+  const handleGoogleCredentialResponse = useCallback(async (response: { credential: string }) => {
+    setLoading(true);
+    setError(null);
+    localStorage.setItem('is_registering', 'true');
+    localStorage.setItem('is_registering_at', String(Date.now()));
+    try {
+      const { data, error: signInError } = await supabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: response.credential,
+      });
+      if (signInError) throw signInError;
+      if (!data.user) throw new Error('no_session');
+      await handleGoogleAuthedUser(data.user);
+    } catch (err: any) {
+      localStorage.removeItem('is_registering');
+      console.error('Google Sign-In error:', err);
+      setError(getAuthErrorMessage(err));
+      setLoading(false);
+    }
+  }, [handleGoogleAuthedUser]);
+
+  const googleButtonRef = useRef<HTMLDivElement>(null);
+
+  // Loads Google Identity Services and renders its own "Sign in with Google"
+  // button into googleButtonRef. Has to be Google's real button (not a
+  // custom-styled trigger) -- GIS renders it inside a cross-origin iframe,
+  // which can't be clicked programmatically from our own button for
+  // security reasons.
+  useEffect(() => {
+    if (view !== 'login') return;
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId) return;
+
+    let cancelled = false;
+    const renderGoogleButton = () => {
+      if (cancelled) return;
+      const google = (window as any).google;
+      if (!google?.accounts?.id || !googleButtonRef.current) return;
+      google.accounts.id.initialize({
+        client_id: clientId,
+        callback: handleGoogleCredentialResponse,
+      });
+      googleButtonRef.current.innerHTML = '';
+      google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: 'outline',
+        size: 'large',
+        width: 336,
+        shape: 'pill',
+        text: 'continue_with',
+        logo_alignment: 'center',
+      });
+    };
+
+    if ((window as any).google?.accounts?.id) {
+      renderGoogleButton();
+      return () => { cancelled = true; };
+    }
+
+    const existing = document.getElementById('google-identity-script') as HTMLScriptElement | null;
+    if (existing) {
+      existing.addEventListener('load', renderGoogleButton, { once: true });
+      return () => { cancelled = true; };
+    }
+
+    const script = document.createElement('script');
+    script.id = 'google-identity-script';
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = renderGoogleButton;
+    document.body.appendChild(script);
+
+    return () => { cancelled = true; };
+  }, [view, handleGoogleCredentialResponse]);
 
   // Phone Formatting Logic
   const validatePhone = (phone: string) => {
@@ -215,36 +290,6 @@ export default function Login() {
     t('login.strength.strong')
   ];
   const strengthColors = ['bg-danger', 'bg-warning', 'bg-brand', 'bg-success'];
-
-  const handleGoogleLogin = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Set before navigating away: by the time the browser returns from
-      // Google, this must already be in localStorage so AuthContext skips
-      // resolving identity until the effect above decides where to route.
-      // The timestamp lets AuthContext treat this as stale (and route
-      // normally) if the round-trip gets interrupted and this never gets
-      // cleared -- otherwise the whole app stays stuck on the loading
-      // skeleton forever.
-      localStorage.setItem('is_registering', 'true');
-      localStorage.setItem('is_registering_at', String(Date.now()));
-      const { error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: `${window.location.origin}/login?oauth=google` }
-      });
-      if (oauthError) {
-        localStorage.removeItem('is_registering');
-        throw oauthError;
-      }
-      // Browser is navigating to Google now; nothing else to do here.
-    } catch (err: any) {
-      localStorage.removeItem('is_registering');
-      console.error('Google Login Error:', err);
-      setError(getAuthErrorMessage(err));
-      setLoading(false);
-    }
-  };
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -737,14 +782,10 @@ export default function Login() {
                   <div className="relative flex justify-center text-xs uppercase"><span className="bg-surface-muted px-2 text-content-muted font-bold">{t('login.or_with')}</span></div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleGoogleLogin}
-                  className="w-full bg-surface border-2 border-border py-4 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-surface-muted transition-all text-content"
-                >
-                  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-6 h-6" />
-                  <span>{t('login.google')}</span>
-                </button>
+                <div ref={googleButtonRef} className="w-full flex justify-center" />
+                {!import.meta.env.VITE_GOOGLE_CLIENT_ID && (
+                  <p className="text-xs text-danger font-bold text-center">{t('login.google_unconfigured')}</p>
+                )}
 
                 <p className="text-center text-content-muted font-medium">
                   {t('login.no_account')}{' '}
