@@ -2,12 +2,34 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import dotenv from 'dotenv';
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import { authenticate, authorize } from "./src/server/middleware/authMiddleware.ts";
 import { registerPrintRelay } from "./src/server/printRelay.ts";
 
 dotenv.config();
 
 const app = express();
+
+// E-2 (security-fix-tasklist.md): baseline HTTP security headers and a
+// general per-IP rate limit, on top of the endpoint-specific limiter added
+// for /api/staff/verify-pin (E-1) and the pre-existing pairAttempts one in
+// printRelay.ts. CSP is left disabled for now -- this app pulls in Google
+// OAuth/Identity Services, Moyasar (payments), and web fonts, all of which
+// need to be allowlisted deliberately and tested before turning on a strict
+// CSP; shipping a default-restrictive CSP without that pass would silently
+// break login/payment for real users.
+//
+// crossOriginOpenerPolicy is explicitly relaxed to same-origin-allow-popups
+// (Google's own recommendation for Identity Services): helmet's default
+// same-origin COOP isolates the Google Sign-In popup from window.opener,
+// breaking the postMessage-based credential handoff Login.tsx relies on.
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+}));
+app.use(rateLimit({ windowMs: 60_000, max: 120 }));
+
 // حجم كبير لأن بيانات الرسم النقطي للفاتورة قد تصل لعدة ميغابايت
 app.use(express.json({ limit: '25mb' }));
 
@@ -391,6 +413,25 @@ app.post("/api/staff/create-account", authenticate, authorize(['super_admin', 'o
 // them directly. This endpoint compares server-side and never returns any
 // pin_hash to the client.
 //
+// E-1 (security-fix-tasklist.md): /api/staff/verify-pin had no attempt
+// limiting at all -- a 4-digit PIN is only 10,000 combinations, so without
+// this an authenticated attacker (any staff member's own session, since the
+// endpoint only requires being logged in as *someone* on the tenant) could
+// brute-force another staff member's PIN via straightforward scripted
+// requests. In-memory counter keyed by tenant+caller, same pattern as
+// pairAttempts in src/server/printRelay.ts: 5 failed attempts locks out for
+// an escalating window (1, 2, 4, 8, capped at 15 minutes), reset entirely on
+// a successful match.
+const verifyPinAttempts = new Map<string, { failCount: number; lockUntil: number; lockMinutes: number }>();
+const VERIFY_PIN_MAX_ATTEMPTS = 5;
+const VERIFY_PIN_MAX_LOCK_MINUTES = 15;
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, rec] of verifyPinAttempts) {
+    if (now > rec.lockUntil && rec.failCount === 0) verifyPinAttempts.delete(key);
+  }
+}, 5 * 60_000);
+
 // PINs are intentionally stored and compared as plain 4-digit strings (not
 // bcrypt-hashed) per explicit product decision -- the admin needs to be able
 // to look a staff member's PIN back up (see GET /api/staff/pins) to hand it
@@ -406,6 +447,20 @@ app.post("/api/staff/verify-pin", authenticate, async (req: any, res) => {
     const { pin, mode } = req.body;
     if (!pin || typeof pin !== 'string') {
       return res.status(400).json({ error: 'pin is required' });
+    }
+
+    // check-unique (used while an admin sets someone else's PIN, not a
+    // login attempt) is exempt from this limiter -- it's not a path an
+    // attacker could use to brute-force their way into another account.
+    const attemptKey = mode === 'check-unique' ? null : `${tenantId}:${req.user?.uid}`;
+    if (attemptKey) {
+      const rec = verifyPinAttempts.get(attemptKey);
+      if (rec && Date.now() < rec.lockUntil) {
+        return res.status(429).json({
+          error: 'محاولات كثيرة جداً. يرجى الانتظار قبل إعادة المحاولة.',
+          retryAfterSeconds: Math.ceil((rec.lockUntil - Date.now()) / 1000),
+        });
+      }
     }
 
     const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
@@ -430,6 +485,17 @@ app.post("/api/staff/verify-pin", authenticate, async (req: any, res) => {
     }
 
     if (!matched) {
+      if (attemptKey) {
+        const rec = verifyPinAttempts.get(attemptKey) || { failCount: 0, lockUntil: 0, lockMinutes: 1 };
+        rec.failCount += 1;
+        if (rec.failCount >= VERIFY_PIN_MAX_ATTEMPTS) {
+          rec.lockUntil = Date.now() + rec.lockMinutes * 60_000;
+          rec.lockMinutes = Math.min(rec.lockMinutes * 2, VERIFY_PIN_MAX_LOCK_MINUTES);
+          rec.failCount = 0;
+        }
+        verifyPinAttempts.set(attemptKey, rec);
+      }
+
       // A PIN activated before PINs switched from bcrypt hashes to plain
       // text is still sitting there as an old hash, which can never equal
       // anything typed in (hashing is one-way -- the original PIN can't be
@@ -439,6 +505,8 @@ app.post("/api/staff/verify-pin", authenticate, async (req: any, res) => {
       const hasLegacyHash = (staffData || []).some((s: any) => s.pin_hash && /^\$2[aby]\$/.test(s.pin_hash));
       return res.status(404).json({ matched: false, hasLegacyPins: hasLegacyHash });
     }
+
+    if (attemptKey) verifyPinAttempts.delete(attemptKey);
 
     const actualRole = matched.role_id ? (rolesMap.get(matched.role_id) || matched.role) : matched.role;
     res.json({
