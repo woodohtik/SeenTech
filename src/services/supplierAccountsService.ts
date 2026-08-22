@@ -186,8 +186,11 @@ CREATE INDEX IF NOT EXISTS idx_supplier_transactions_supplier ON public.supplier
 CREATE INDEX IF NOT EXISTS idx_supplier_transactions_tenant ON public.supplier_transactions(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_supplier_transactions_date ON public.supplier_transactions(date DESC);
 
--- 3. تفعيل RLS والسماح بالوصول الكامل
+-- 3. تفعيل RLS وعزل الوصول حسب المستأجر (tenant_id)
 ALTER TABLE public.supplier_transactions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY allow_all ON public.supplier_transactions FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY supplier_transactions_tenant_isolation ON public.supplier_transactions
+    FOR ALL TO authenticated
+    USING (app_is_super_admin() OR tenant_id = app_current_tenant_id())
+    WITH CHECK (app_is_super_admin() OR tenant_id = app_current_tenant_id());
 `;
 }
