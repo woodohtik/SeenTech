@@ -142,6 +142,7 @@
     "location": "پتہ / تفصیل",
     "location_details": "مقام کی تفصیلات اور پتہ",
     "master": "بنیادی شاخ",
+    "missing_fields_prompt": "براہ کرم درج ذیل خانے مکمل کریں: {{fields}}",
     "name": "شاخ / گودام کا نام",
     "phone": "شاخ کا فون نمبر",
     "set_as_master": "بنیادی شاخ کے طور پر مقرر کریں (Master)",

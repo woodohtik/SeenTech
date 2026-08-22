@@ -142,6 +142,7 @@
     "location": "Address / Description",
     "location_details": "Location Details & National Address",
     "master": "Main Branch",
+    "missing_fields_prompt": "Please complete the following fields: {{fields}}",
     "name": "Branch / Warehouse Name",
     "phone": "Branch Phone Number",
     "set_as_master": "Set as Main Branch (Master)",
