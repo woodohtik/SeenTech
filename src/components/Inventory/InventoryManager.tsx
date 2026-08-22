@@ -1943,7 +1943,6 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                   {t("inventory.item_name")}
                 </label>
                 <input
-                  required
                   aria-invalid={fieldErrors.name}
                   value={formData.name}
                   onChange={(e) => {
@@ -2120,7 +2119,6 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                 <input
                   type="number"
                   step="0.01"
-                  required
                   aria-invalid={fieldErrors.conversionRate}
                   value={formData.conversionRate}
                   onChange={(e) => {
@@ -2165,7 +2163,6 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                 <input
                   type="number"
                   step="0.01"
-                  required
                   aria-invalid={fieldErrors.costPrice}
                   value={formData.costPrice || ""}
                   onChange={(e) => {
@@ -2190,7 +2187,6 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                 <input
                   type="number"
                   step="0.01"
-                  required
                   aria-invalid={fieldErrors.pricePerUnit}
                   value={formData.pricePerUnit || ""}
                   onChange={(e) => {
@@ -3888,7 +3884,6 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                   {t("inventory.item_name")}
                 </label>
                 <input
-                  required
                   aria-invalid={fieldErrors.name}
                   value={formData.name}
                   onChange={(e) => {
@@ -4065,7 +4060,6 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                 <input
                   type="number"
                   step="0.01"
-                  required
                   aria-invalid={fieldErrors.conversionRate}
                   value={formData.conversionRate}
                   onChange={(e) => {
@@ -4110,7 +4104,6 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                 <input
                   type="number"
                   step="0.01"
-                  required
                   aria-invalid={fieldErrors.costPrice}
                   value={formData.costPrice || ""}
                   onChange={(e) => {
@@ -4135,7 +4128,6 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                 <input
                   type="number"
                   step="0.01"
-                  required
                   aria-invalid={fieldErrors.pricePerUnit}
                   value={formData.pricePerUnit || ""}
                   onChange={(e) => {

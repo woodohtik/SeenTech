@@ -174,8 +174,6 @@ export default function PaymentVoucherModal({
                 </div>
                 <input
                   type="number"
-                  required
-                  min="0.01"
                   step="0.01"
                   max={supplier.balance > 0 ? supplier.balance : undefined}
                   aria-invalid={amountInvalid}

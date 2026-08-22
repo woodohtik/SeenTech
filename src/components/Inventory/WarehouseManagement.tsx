@@ -282,7 +282,6 @@ const BranchModal = ({ onClose, onSave, initialData }: any) => {
           <div className="space-y-2">
             <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">{t('branches.name')}</label>
             <input
-              required
               aria-invalid={fieldErrors.name}
               value={formData.name}
               onChange={e => {
@@ -312,7 +311,6 @@ const BranchModal = ({ onClose, onSave, initialData }: any) => {
             <div className="space-y-2">
               <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">{t('branches.phone')}</label>
               <input
-                required
                 aria-invalid={fieldErrors.phone}
                 value={formData.phone}
                 onChange={e => {
@@ -330,7 +328,6 @@ const BranchModal = ({ onClose, onSave, initialData }: any) => {
           <div className="space-y-2">
             <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">{t('branches.location')}</label>
             <input
-              required
               aria-invalid={fieldErrors.location}
               value={formData.location}
               onChange={e => {

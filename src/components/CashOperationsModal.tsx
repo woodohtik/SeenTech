@@ -321,8 +321,6 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
                   {/* Input field with h-16 (to bypass default css) and precise paddings to prevent overlap */}
                   <input
                     type="number"
-                    required
-                    min="0.01"
                     step="0.01"
                     aria-invalid={fieldErrors.amount}
                     value={amount}
@@ -395,7 +393,6 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
                 </label>
 
                 <textarea
-                  required
                   aria-invalid={fieldErrors.reason}
                   value={reason}
                   onChange={(e) => {
