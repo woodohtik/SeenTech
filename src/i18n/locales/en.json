@@ -2450,6 +2450,7 @@
     "company_name": "Company/Supplier Name",
     "confirm_delete": "Are you sure you want to delete this supplier?",
     "confirm_doc_failed": "Failed to fully confirm and sync the document.",
+    "delete_success": "Supplier deleted successfully",
     "confirm_process_sync": "Confirm Transaction (Post & Sync)",
     "confirm_process_warning": "Are you sure you want to confirm this operation? Inventory and the supplier account balance will be updated automatically.",
     "confirm_return": "Confirm Return",
