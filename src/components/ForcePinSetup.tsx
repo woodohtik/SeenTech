@@ -93,37 +93,54 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
         if (updateError) throw updateError;
         staffData = updatedStaff;
       } else {
-        // Check if any staff members already exist for this tenant to determine role
-        const { count, error: countError } = await supabase
-          .from('staff')
-          .select('*', { count: 'exact', head: true })
-          .eq('tenant_id', tenantId);
-        
-        if (countError) throw countError;
+        // "First user of a tenant becomes owner" used to be a client-side
+        // SELECT count(*) check followed by a separate .insert() -- two
+        // round trips with nothing atomic tying them together, and the RLS
+        // policy on staff only checked uid = app_current_uid(), so any
+        // authenticated user could insert role:'owner' for ANY tenant_id
+        // directly, regardless of whether that tenant already had staff.
+        // bootstrap_tenant_owner() does the "tenant has zero staff" check
+        // and the insert in one atomic SECURITY DEFINER call; the raw
+        // INSERT policy now rejects role IN ('owner','admin') outright, so
+        // this RPC is the only path to becoming the first owner.
+        const { error: bootstrapError } = await supabase.rpc('bootstrap_tenant_owner', { p_tenant_id: tenantId });
 
-        // Logic: First user is owner, subsequent are cashier
-        const role = (count === 0) ? 'owner' : 'cashier';
-        usedRole = role;
+        if (!bootstrapError) {
+          usedRole = 'owner';
+          const { data: ownerStaff, error: pinUpdateError } = await supabase
+            .from('staff')
+            .update({ pin_hash: hashedPin, must_change_pin: false })
+            .eq('uid', currentUser.id)
+            .eq('tenant_id', tenantId)
+            .select()
+            .single();
+          if (pinUpdateError) throw pinUpdateError;
+          staffData = ownerStaff;
+        } else {
+          // Not the first user for this tenant (or the RPC rejected it for
+          // another reason) -- fall back to a normal self-registering
+          // cashier row, still gated by the updated INSERT policy.
+          usedRole = 'cashier';
+          const { data: newStaff, error: insertError } = await supabase
+            .from('staff')
+            .insert({
+              uid: currentUser.id,
+              name: currentUser.user_metadata?.full_name || tenantData?.name || 'موظف جديد',
+              email: currentUser.email || tenantData?.owner_email || '',
+              phone: currentUser.phone || tenantData?.phone || '',
+              role: 'cashier',
+              status: 'active',
+              pin_hash: hashedPin,
+              must_change_pin: false,
+              tenant_id: tenantId,
+              created_at: new Date().toISOString()
+            })
+            .select()
+            .single();
 
-        const { data: newStaff, error: insertError } = await supabase
-          .from('staff')
-          .insert({
-            uid: currentUser.id,
-            name: currentUser.user_metadata?.full_name || tenantData?.name || 'موظف جديد',
-            email: currentUser.email || tenantData?.owner_email || '',
-            phone: currentUser.phone || tenantData?.phone || '',
-            role: role,
-            status: 'active',
-            pin_hash: hashedPin,
-            must_change_pin: false,
-            tenant_id: tenantId,
-            created_at: new Date().toISOString()
-          })
-          .select()
-          .single();
-        
-        if (insertError) throw insertError;
-        staffData = newStaff;
+          if (insertError) throw insertError;
+          staffData = newStaff;
+        }
       }
 
       setSuccess(true);
