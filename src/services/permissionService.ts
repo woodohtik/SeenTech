@@ -343,7 +343,14 @@ export const getEffectivePermissions = async (staff: Staff): Promise<Permissions
       }
     }
   } catch (err) {
+    // A stale localStorage cache (set above, before this query ran) must
+    // never survive a failed permissions lookup -- if a super_admin just
+    // revoked this role's permissions and this query happens to fail
+    // transiently, keeping the old cached value would silently grant
+    // whatever was cached, possibly over-privileged. Fall back to the
+    // built-in per-role defaults instead of trusting localStorage alone.
     console.warn('Error querying roles_permissions:', err);
+    permissions = DEFAULT_ROLES[staff.role]?.permissions ?? ({} as PermissionsMap);
   }
 
   // 2. Get User Overrides
