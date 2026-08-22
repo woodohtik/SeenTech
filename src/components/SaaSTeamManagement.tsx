@@ -103,6 +103,16 @@ export default function SaaSTeamManagement() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (userRole !== 'super_admin') {
+      setToast({ message: t('saas.unauthorized_action'), type: 'error' });
+      return;
+    }
+    if (editingUser && editingUser.uid === dbUser?.id) {
+      setToast({ message: t('saas.cannot_edit_own_role'), type: 'error' });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {

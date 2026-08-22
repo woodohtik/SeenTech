@@ -444,6 +444,10 @@ export default function AdminTailors() {
   };
 
   const handleUpdateTenantPlan = (tenantId: string, newPlanId: string) => {
+    if (dbUser?.role !== 'super_admin') {
+      showToast(t('saas.unauthorized_action'), 'error');
+      return;
+    }
     setConfirmDialog({
       title: t('saas.tenants.confirm_change_plan'),
       onConfirm: async () => {
@@ -467,6 +471,10 @@ export default function AdminTailors() {
   };
 
   const handleExtendTrial = (tenantId: string) => {
+    if (dbUser?.role !== 'super_admin') {
+      showToast(t('saas.unauthorized_action'), 'error');
+      return;
+    }
     setConfirmDialog({
       title: t('saas.tenants.confirm_extend_trial'),
       onConfirm: async () => {
@@ -490,6 +498,10 @@ export default function AdminTailors() {
   };
 
   const handleToggleStatus = async (tenant: Tenant) => {
+    if (dbUser?.role !== 'super_admin') {
+      showToast(t('saas.unauthorized_action'), 'error');
+      return;
+    }
     const isActive = tenant.status === 'active' || tenant.status === 'onboarding';
     const newStatus = isActive ? 'inactive' : 'active';
     const msg = isActive 
@@ -548,6 +560,10 @@ export default function AdminTailors() {
   };
 
   const handleRenewSubscription = (tenant: Tenant) => {
+    if (dbUser?.role !== 'super_admin') {
+      showToast(t('saas.unauthorized_action'), 'error');
+      return;
+    }
     setConfirmDialog({
       title: t('saas.tenants.confirm_renew_subscription', { name: tenant.name }),
       onConfirm: async () => {
@@ -593,6 +609,10 @@ export default function AdminTailors() {
   };
 
   const handleActivateSubscription = (tenant: Tenant) => {
+    if (dbUser?.role !== 'super_admin') {
+      showToast(t('saas.unauthorized_action'), 'error');
+      return;
+    }
     setConfirmDialog({
       title: t('saas.tenants.confirm_activate_account', { name: tenant.name }),
       onConfirm: async () => {

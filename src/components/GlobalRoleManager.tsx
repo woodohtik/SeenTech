@@ -22,6 +22,7 @@ import { SYSTEM_PERMISSIONS } from '../constants/permissions';
 import { useTranslation } from 'react-i18next';
 import { useConfirm } from '../contexts/ConfirmContext';
 import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const ALL_PERMISSIONS: { key: PermissionKey; labelKey: string; categoryKey: string }[] = SYSTEM_PERMISSIONS.map(p => ({
   key: p.id as PermissionKey,
@@ -33,6 +34,7 @@ const CATEGORIES = Array.from(new Set(ALL_PERMISSIONS.map(p => p.categoryKey)));
 
 export default function GlobalRoleManager() {
   const { t } = useTranslation();
+  const { dbUser } = useAuth();
   const { confirm } = useConfirm();
   const { success: toastSuccess } = useToast();
 
@@ -134,6 +136,10 @@ export default function GlobalRoleManager() {
   };
 
   const handleSaveRole = async () => {
+    if (dbUser?.role !== 'super_admin') {
+      setToast({ message: t('saas.unauthorized_action'), type: 'error' });
+      return;
+    }
     const roleToSave = editingRole || newRole;
     if (!roleToSave.name || isSaving) return;
 
@@ -195,6 +201,10 @@ export default function GlobalRoleManager() {
   };
 
   const executeDeleteRole = async () => {
+    if (dbUser?.role !== 'super_admin') {
+      setToast({ message: t('saas.unauthorized_action'), type: 'error' });
+      return;
+    }
     if (!roleToDelete || isSaving) return;
 
     setIsSaving(true);

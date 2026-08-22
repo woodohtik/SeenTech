@@ -31,7 +31,7 @@ export default function SaaSSystemSettings() {
   const { t, i18n } = useTranslation();
   const { success: toastSuccess, error: toastError } = useToast();
   const isRtl = isRtlLang(i18n.language);
-  const { user: currentAuthUser } = useAuth();
+  const { user: currentAuthUser, dbUser } = useAuth();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [selectedTenantId, setSelectedTenantId] = useState<string>('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -182,6 +182,10 @@ export default function SaaSSystemSettings() {
   };
 
   const confirmWipeData = async () => {
+    if (dbUser?.role !== 'super_admin') {
+      toastError(t('saas.unauthorized_action'));
+      return;
+    }
     const { tenantId, tenantName, inputValue } = confirmModal;
     if (inputValue !== tenantName) {
       toastError(t('saas.name_mismatch_cancelled'));
@@ -228,6 +232,10 @@ export default function SaaSSystemSettings() {
   };
 
   const confirmDeleteTestData = async () => {
+    if (dbUser?.role !== 'super_admin') {
+      toastError(t('saas.unauthorized_action'));
+      return;
+    }
     const { tenantId, tenantName } = confirmModal;
     setIsDeleting(true);
     setConfirmModal(prev => ({ ...prev, isOpen: false }));

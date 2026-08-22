@@ -59,7 +59,7 @@ type TabType = 'overview' | 'tenants' | 'financials' | 'performance' | 'security
 export default function SuperAdminDashboard() {
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
-  const { success: toastSuccess, handleError: toastHandleError } = useToast();
+  const { success: toastSuccess, error: toastError, handleError: toastHandleError } = useToast();
 
   const { setImpersonationTenantId, dbUser, user: currentAuthUser } = useAuth();
   const userRole = dbUser?.role;
@@ -330,6 +330,10 @@ export default function SuperAdminDashboard() {
 
   // Action: Toggle tenant status with database update
   const handleToggleStatus = async (tenantId: string, currentStatus: string) => {
+    if (userRole !== 'super_admin') {
+      toastError(t('saas.unauthorized_action'));
+      return;
+    }
     setUpdatingTenantId(tenantId);
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
     try {
@@ -372,6 +376,12 @@ export default function SuperAdminDashboard() {
   };
 
   const handleStealthSupportLogin = async (tenantId: string) => {
+    const canStealthLogin = userRole === 'super_admin' || userRole === 'owner' as any
+      || (dbUser as any)?.can_stealth_login === true || (dbUser as any)?.stealth_login_enabled === true;
+    if (!canStealthLogin) {
+      toastError(t('saas.tenants.stealth_login_permission_required'));
+      return;
+    }
     try {
       try {
         const { error } = await supabase.from('support_sessions').insert({
