@@ -139,10 +139,10 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
   };
 
   useEffect(() => {
-    if (roles.length === 0 && currentStaff?.email === "nomansa2566512@gmail.com" && !loading && !isSeeding) {
+    if (roles.length === 0 && isSuperAdmin && !loading && !isSeeding) {
       handleSeedRoles();
     }
-  }, [roles, currentStaff, loading, isSeeding]);
+  }, [roles, isSuperAdmin, loading, isSeeding]);
 
   const activeRoles = roles.reduce((acc, role) => {
     const existing = acc.find(r => r.roleKey === role.roleKey);
@@ -1082,7 +1082,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
           )}
           {viewMode === 'permissions' && (
             <div className="flex items-center gap-2">
-              {currentStaff?.email === "nomansa2566512@gmail.com" && roles.length === 0 && (
+              {isSuperAdmin && roles.length === 0 && (
                 <button 
                   onClick={handleSeedRoles}
                   disabled={isSeeding}

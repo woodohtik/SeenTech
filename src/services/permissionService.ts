@@ -241,11 +241,6 @@ export const checkSaasRole = async (uid: string, allowedRoles: string[]): Promis
       .eq('uid', uid)
       .single();
       
-    // Always grant full access to primary super admin email
-    if (saasUser?.email?.toLowerCase() === 'nomansa2566512@gmail.com') {
-      return true;
-    }
-      
     if (error || !saasUser || !saasUser.is_active) {
       return false;
     }
@@ -275,11 +270,6 @@ export const getEffectivePermissions = async (staff: Staff): Promise<Permissions
       .select('email, role, is_active')
       .eq('uid', staff.id)
       .single();
-
-    // Always grant full access to primary super admin email
-    if (saasUser?.email?.toLowerCase() === 'nomansa2566512@gmail.com') {
-      return DEFAULT_ROLES.owner.permissions;
-    }
 
     if (saasUser && saasUser.is_active) {
       if (saasUser.role === 'super_admin' || saasUser.role === 'owner' as any) return DEFAULT_ROLES.owner.permissions;
