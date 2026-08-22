@@ -29,55 +29,64 @@ registerPrintRelay(app);
 
 // API Routes
 
+// C-1 (security-fix-tasklist.md): this endpoint is intentionally
+// unauthenticated (a public invoice link), so it must never return more
+// than PublicInvoice.tsx actually renders. The previous version spread the
+// full `orders`/`tenants`/`customers` rows into the response, leaking
+// customer phone/measurements, tenant owner_email/owner_uid/commercial_register,
+// and internal order fields (notes, images, created_by, branch_id) to anyone
+// who guessed or was handed an invoice id.
+//
+// Also fixed a functional bug found while verifying this against the live
+// schema: `orders` has no `items` or `store_name`/`vat_amount` columns --
+// items live in a separate `order_items` table, the tenant's display name
+// column is `name`, and the tax column is `tax_amount`. The old code was
+// silently sending `items: undefined` and `storeName: undefined` for every
+// public invoice.
 app.get("/api/public/invoices/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Lazy import to ensure supabaseAdmin is initialized
     const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
-    
+
     const { data: orderData, error: orderError } = await supabaseAdmin
       .from('orders')
-      .select('*')
+      .select('order_number, order_date, total_amount, tax_amount, tenant_id, customer_id')
       .eq('id', id)
       .maybeSingle();
-      
+
     if (orderError || !orderData) {
       return res.status(404).json({ error: 'Invoice not found' });
     }
-    
-    const { data: tenantData } = await supabaseAdmin
-      .from('tenants')
-      .select('*')
-      .eq('id', orderData.tenant_id)
-      .maybeSingle();
-      
-    const { data: customerData } = await supabaseAdmin
-      .from('customers')
-      .select('*')
-      .eq('id', orderData.customer_id)
-      .maybeSingle();
+
+    const [{ data: tenantData }, { data: customerData }, { data: itemsData }] = await Promise.all([
+      supabaseAdmin
+        .from('tenants')
+        .select('name, vat_number, phone, logo_url')
+        .eq('id', orderData.tenant_id)
+        .maybeSingle(),
+      orderData.customer_id
+        ? supabaseAdmin.from('customers').select('name').eq('id', orderData.customer_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      supabaseAdmin.from('order_items').select('name, quantity, price').eq('order_id', id),
+    ]);
 
     res.json({
       order: {
-        ...orderData,
         orderNumber: orderData.order_number,
         orderDate: orderData.order_date,
         totalAmount: orderData.total_amount,
-        paidAmount: orderData.paid_amount,
-        vatAmount: orderData.vat_amount,
-        paymentMethod: orderData.payment_method,
-        tenantId: orderData.tenant_id,
+        vatAmount: orderData.tax_amount,
+        items: itemsData || [],
       },
       tenant: tenantData ? {
-        ...tenantData,
-        storeName: tenantData.store_name,
-        storeNameEn: tenantData.store_name_en,
+        storeName: tenantData.name,
         vatNumber: tenantData.vat_number,
-        address: tenantData.address,
-        logoUrl: tenantData.logo_url
+        phone: tenantData.phone,
+        logoUrl: tenantData.logo_url,
       } : null,
-      customer: customerData || null
+      customer: customerData ? { name: customerData.name } : null,
     });
   } catch (err) {
     console.error("Error fetching invoice:", err);
