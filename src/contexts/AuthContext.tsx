@@ -98,7 +98,7 @@ async function fetchDbUser(uid: string, email?: string): Promise<DbUser | null> 
         supabase.from('users').select('*').eq('id', uid).maybeSingle(),
         supabase
             .from('staff')
-            .select('*')
+            .select('id, uid, name, email, phone, role, role_id, branch_id, status, must_change_pin, is_test, tenant_id, created_at, updated_at, commission_type, commission_value, has_seen_onboarding, commission_balance')
             .eq('uid', uid)
             .eq('status', 'active')
             .limit(1)
@@ -115,7 +115,7 @@ async function fetchDbUser(uid: string, email?: string): Promise<DbUser | null> 
     if (saasErr) throw saasErr;
     if (!userRow) return null;
 
-    let actualRole = (staffRow as StaffRow)?.role ?? null;
+    let actualRole = (staffRow as any)?.role ?? null;
 
     // SaaS Role takes precedence over tenant staff roles. super_admin is
     // resolved ONLY from an actual saas_users row — never from an email
@@ -123,11 +123,11 @@ async function fetchDbUser(uid: string, email?: string): Promise<DbUser | null> 
     // address self-grant platform-wide admin.
     if (saasRow) {
         actualRole = saasRow.role;
-    } else if (staffRow && (staffRow as StaffRow).role_id) {
+    } else if (staffRow && (staffRow as any).role_id) {
         const { data: roleRow } = await supabase
             .from('roles')
             .select('role_key')
-            .eq('id', (staffRow as StaffRow).role_id)
+            .eq('id', (staffRow as any).role_id)
             .single();
         if (roleRow) {
             actualRole = roleRow.role_key;
@@ -137,8 +137,8 @@ async function fetchDbUser(uid: string, email?: string): Promise<DbUser | null> 
     return {
         ...(userRow as UserRow),
         role:      actualRole,
-        tenant_id: (staffRow as StaffRow)?.tenant_id ?? null,
-        staff_id:  (staffRow as StaffRow)?.id        ?? null,
+        tenant_id: (staffRow as any)?.tenant_id ?? null,
+        staff_id:  (staffRow as any)?.id        ?? null,
     };
 }
 
@@ -250,13 +250,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             // 1. Resolve profile: staff -> saas_users -> tailor_requests
             const [staffRes, requestRes] = await Promise.all([
-                supabase.from('staff').select('*, tenant:tenants(*)').eq('uid', uid).maybeSingle(),
+                supabase.from('staff').select('id, uid, name, email, phone, role, role_id, branch_id, status, must_change_pin, is_test, tenant_id, created_at, updated_at, commission_type, commission_value, has_seen_onboarding, commission_balance, has_pin, tenant:tenants(*)').eq('uid', uid).maybeSingle(),
                 supabase.from('tailor_requests').select('*').eq('uid', uid).maybeSingle()
             ]);
 
-            let staffData = staffRes.data;
+            let staffData: any = staffRes.data;
             if (!staffData && email) {
-                const { data: staffByEmail } = await supabase.from('staff').select('*, tenant:tenants(*)').eq('email', email).maybeSingle();
+                const { data: staffByEmail } = await supabase.from('staff').select('id, uid, name, email, phone, role, role_id, branch_id, status, must_change_pin, is_test, tenant_id, created_at, updated_at, commission_type, commission_value, has_seen_onboarding, commission_balance, has_pin, tenant:tenants(*)').eq('email', email).maybeSingle();
                 staffData = staffByEmail;
                 if (staffData && !staffData.uid) {
                     await supabase.from('staff').update({ uid }).eq('id', staffData.id);
@@ -282,7 +282,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     ...staffData,
                     tenantId: staffData.tenant_id,
                     branchId: staffData.branch_id,
-                    pin: staffData.pin_hash,
+                    pin: staffData.has_pin,
                     mustChangePin: staffData.must_change_pin
                 };
 

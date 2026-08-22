@@ -180,14 +180,15 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
       // stuck on "loading" forever waiting for App.tsx to promote
       // currentUserStaff. Resolve this account's own staff row directly and
       // hand it off, the same way a matched PIN does.
+      const staffColumns = 'id, uid, name, email, phone, role, role_id, branch_id, status, must_change_pin, is_test, tenant_id, created_at, updated_at, commission_type, commission_value, has_seen_onboarding, commission_balance, has_pin';
       let { data: staffRow, error: staffErr } = await supabase
         .from('staff')
-        .select('*')
+        .select(staffColumns)
         .eq('uid', uid)
         .maybeSingle();
       if (staffErr) throw staffErr;
       if (!staffRow) {
-        const byEmail = await supabase.from('staff').select('*').eq('email', normalizedEmail).maybeSingle();
+        const byEmail = await supabase.from('staff').select(staffColumns).eq('email', normalizedEmail).maybeSingle();
         if (byEmail.error) throw byEmail.error;
         staffRow = byEmail.data;
       }
@@ -201,9 +202,9 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
         ...staffRow,
         tenantId: staffRow.tenant_id,
         branchId: staffRow.branch_id,
-        pin: staffRow.pin_hash,
+        pin: staffRow.has_pin,
         mustChangePin: staffRow.must_change_pin,
-      } as Staff);
+      } as unknown as Staff);
     } catch (err: any) {
       setPasswordError(err?.message === 'no_staff_match' ? t('login.no_staff_match') : getAuthErrorMessage(err));
       setPasswordSubmitting(false);

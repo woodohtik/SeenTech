@@ -67,7 +67,7 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
       // Check if this user already has a staff record
       const { data: existingStaff, error: existingStaffError } = await supabase
         .from('staff')
-        .select('*')
+        .select('id, role')
         .eq('uid', currentUser.id)
         .maybeSingle();
 
@@ -87,7 +87,7 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
             updated_at: new Date().toISOString()
           })
           .eq('id', existingStaff.id)
-          .select()
+          .select('id, name')
           .single();
         
         if (updateError) throw updateError;
@@ -112,7 +112,7 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
             .update({ pin_hash: hashedPin, must_change_pin: false })
             .eq('uid', currentUser.id)
             .eq('tenant_id', tenantId)
-            .select()
+            .select('id, name')
             .single();
           if (pinUpdateError) throw pinUpdateError;
           staffData = ownerStaff;
@@ -135,7 +135,7 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
               tenant_id: tenantId,
               created_at: new Date().toISOString()
             })
-            .select()
+            .select('id, name')
             .single();
 
           if (insertError) throw insertError;

@@ -1,0 +1,11 @@
+-- D-5 (security-fix-tasklist.md): AuthContext.tsx and PinLogin.tsx both
+-- fetched `pin_hash` via select('*') (or an explicit column) purely to
+-- compute a boolean "does this staff member have a PIN yet" (mapped into
+-- Staff.pin, checked only as `!currentUserStaff.pin` in App.tsx -- never
+-- compared against a raw value anywhere in the client, confirmed via
+-- `grep -rn "\.pin ===" src/`). There's no reason for the actual hash
+-- string to ever appear in a network response for that.
+--
+-- Adds a generated boolean column so the client can select has_pin instead
+-- of pin_hash and get the exact same behavior with zero raw hash exposure.
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS has_pin boolean GENERATED ALWAYS AS (pin_hash IS NOT NULL) STORED;
