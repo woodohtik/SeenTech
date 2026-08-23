@@ -109,8 +109,9 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const [isSavingCustomer, setIsSavingCustomer] = useState(false);
   
   // Settings
+  // الطباعة التلقائية بعد إصدار الفاتورة مفعّلة افتراضياً (ما لم يعطّلها المستخدم صراحةً من الإعدادات).
   const [isAutoPrintEnabled, setIsAutoPrintEnabled] = useState(() => {
-    return localStorage.getItem('pos_auto_print') === 'true';
+    return localStorage.getItem('pos_auto_print') !== 'false';
   });
 
   // Cash Drawer State

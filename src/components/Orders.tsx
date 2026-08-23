@@ -1310,6 +1310,31 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     setWhatsappModalOpen(true);
   };
 
+  /**
+   * طباعة فاتورة الطلب من أي مكان (زر الطباعة السريعة في القائمة، بطاقة
+   * الطلب، أو مربع حوار الفاتورة). تفتح InvoiceModal إن لم تكن مفتوحة
+   * حتى يُركَّب #order-invoice-print-area في الـ DOM، ثم تطبع فوراً بلا
+   * أي ضغطة إضافية من المستخدم.
+   */
+  const handlePrintOrder = async (order: Order) => {
+    setSelectedOrder(order);
+    setIsInvoiceOpen(true);
+    try {
+      const { printElementDetailed, getConfiguredPaperSize } = await import('../utils/printManager');
+      const res = await printElementDetailed('order-invoice-print-area', {
+        paperSize: getConfiguredPaperSize('80mm'),
+        title: t('printing.invoice_document_title', { number: order.orderNumber || order.id.slice(-6).toUpperCase() }),
+      });
+      if (!res.ok) {
+        console.error('[Orders] فشل الطباعة:', res.message);
+        toastError(t('printing.print_failed'), res.message);
+      }
+    } catch (e) {
+      console.error('[Orders] خطأ الطباعة:', e);
+      window.print();
+    }
+  };
+
   const OrderDetailsDrawer = ({ order }: { order: Order }) => {
     const [isPaying, setIsPaying] = useState(false);
     const [payAmount, setPayAmount] = useState(order.remainingAmount || 0);
@@ -1660,7 +1685,13 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           </div>
 
           <div className="p-6 bg-surface-muted border-t border-border grid grid-cols-2 gap-3">
-            <button className="flex items-center justify-center gap-2 bg-surface text-content py-4 rounded-2xl font-bold border border-border hover:bg-surface-muted transition-all text-sm">
+            <button
+              onClick={() => {
+                setIsDetailsOpen(false);
+                void handlePrintOrder(order);
+              }}
+              className="flex items-center justify-center gap-2 bg-surface text-content py-4 rounded-2xl font-bold border border-border hover:bg-surface-muted transition-all text-sm"
+            >
               <Printer size={18} />
               <span>{t('orders.print')}</span>
             </button>
@@ -1951,7 +1982,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <button className="flex items-center justify-center gap-2 bg-brand text-white py-4 rounded-2xl font-bold hover:bg-brand/90 transition-all shadow-lg shadow-brand/10">
+            <button
+              onClick={() => void handlePrintOrder(order)}
+              className="flex items-center justify-center gap-2 bg-brand text-white py-4 rounded-2xl font-bold hover:bg-brand/90 transition-all shadow-lg shadow-brand/10"
+            >
               <Printer size={20} />
               <span>{t('orders.print')}</span>
             </button>
@@ -2323,11 +2357,11 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         <span>{t('orders.invoice')}</span>
                       </button>
 
-                      <button 
+                      <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedOrder(order);
+                          void handlePrintOrder(order);
                         }}
                         className="p-1.5 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all border border-border/40"
                         title={t('orders.quick_print')}
@@ -2447,10 +2481,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         <span>{t('orders.invoice')}</span>
                       </button>
 
-                      <button 
-                        onClick={() => {
-                          setSelectedOrder(order);
-                        }}
+                      <button
+                        onClick={() => void handlePrintOrder(order)}
                         className="p-2 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all"
                         title={t('orders.quick_print')}
                       >
