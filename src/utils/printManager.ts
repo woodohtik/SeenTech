@@ -733,12 +733,28 @@ export const getConfiguredPaperSize = (fallback: PrintPaperSize = '80mm'): Print
 /**
  * تحويل عنصر HTML إلى صورة نقطية بعرض الطابعة الحرارية.
  * يتم العمل على نسخة معزولة خارج الشاشة — لا نلمس DOM الحقيقي لـ React.
+ *
+ * ⚠️ `pixelWidth` هنا هو عرض **نقاط الطباعة** الفعلي (عادة 203dpi)، وليس
+ * عرض تخطيط CSS. كان الكود القديم يُخطِّط المحتوى مباشرة داخل صندوق بعرض
+ * `pixelWidth` بكسل CSS (96dpi) — أي أوسع بنحو الضعف من العرض الفعلي
+ * (576px CSS ≈ 152مم، بينما 576 نقطة عند 203dpi ≈ 72مم فقط). النتيجة:
+ * الخط والحشو المضبوطان لعرض 80مم يُخطَّطان داخل مساحة أعرض بكثير فيبدوان
+ * صغيرين، ثم تُنقَل تلك الصورة (بمحتواها الصغير المُحاط بفراغ) حرفياً نقطة
+ * بنقطة إلى الطابعة — فتخرج الفاتورة مضغوطة وصغيرة جداً.
+ *
+ * الإصلاح: نُخطِّط المحتوى بعرض CSS الصحيح لعرض الورق (نفس عرض مسار مربع
+ * الحوار تماماً، `layoutPxFor`) حتى تُطبَّق نفس النسب المضبوطة أصلاً، ثم
+ * نُكبِّر الصورة الناتجة إلى عرض نقاط الطباعة الفعلي عبر Canvas — فيخرج
+ * الشكل مطابقاً لما يظهر في المعاينة وفي مربع الحوار، بلا أي فراغ زائد.
  */
 export const rasterizeElement = async (
   element: HTMLElement,
-  pixelWidth: number
+  pixelWidth: number,
+  paperSize: PrintPaperSize = '80mm'
 ): Promise<HTMLCanvasElement> => {
   const { toCanvas } = await import('html-to-image');
+
+  const layoutPx = layoutPxFor(getPaperGeometry(paperSize));
 
   const holder = document.createElement('div');
   holder.setAttribute('data-seen-print-holder', 'true');
@@ -746,7 +762,7 @@ export const rasterizeElement = async (
     'position:fixed',
     'left:-20000px',
     'top:0',
-    `width:${pixelWidth}px`,
+    `width:${layoutPx}px`,
     'padding:0',
     'margin:0',
     'background:#ffffff',
@@ -773,17 +789,32 @@ export const rasterizeElement = async (
   try {
     await waitForDocumentReady(document, window);
 
-    const height = Math.max(holder.scrollHeight, clone.scrollHeight);
-    if (height < 4) throw new Error(i18n.t('printing.errors.empty_invoice_content'));
+    const layoutHeight = Math.max(holder.scrollHeight, clone.scrollHeight);
+    if (layoutHeight < 4) throw new Error(i18n.t('printing.errors.empty_invoice_content'));
 
-    return await toCanvas(clone, {
+    const rendered = await toCanvas(clone, {
       backgroundColor: '#ffffff',
       pixelRatio: 1,
-      width: pixelWidth,
-      canvasWidth: pixelWidth,
-      height,
-      canvasHeight: height,
+      width: layoutPx,
+      canvasWidth: layoutPx,
+      height: layoutHeight,
+      canvasHeight: layoutHeight,
     });
+
+    if (rendered.width === pixelWidth) return rendered;
+
+    // تكبير من عرض تخطيط CSS إلى عرض نقاط الطابعة الفعلي.
+    const scaled = document.createElement('canvas');
+    scaled.width = pixelWidth;
+    scaled.height = Math.max(1, Math.round((rendered.height * pixelWidth) / rendered.width));
+    const ctx = scaled.getContext('2d');
+    if (!ctx) return rendered;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, scaled.width, scaled.height);
+    ctx.drawImage(rendered, 0, 0, rendered.width, rendered.height, 0, 0, scaled.width, scaled.height);
+    return scaled;
   } finally {
     holder.remove();
   }
@@ -894,7 +925,7 @@ export const printElementViaRawDevice = async (
 
   try {
     discovery = await import('./printerDiscovery');
-    const canvas = await rasterizeElement(element, pixelWidth);
+    const canvas = await rasterizeElement(element, pixelWidth, paperSize);
     bytes = discovery.canvasToEscPosRaster(canvas);
   } catch (e: any) {
     console.warn('[printManager] فشل تحويل الفاتورة إلى صورة للطباعة:', e);

@@ -670,7 +670,7 @@ export default function PrinterSettings() {
         try {
           const el = document.getElementById('print-area');
           if (!el) throw new Error(t('settings_page.printer.test_template_missing'));
-          const canvas = await rasterizeElement(el, printer.size === '58mm' ? 384 : 576);
+          const canvas = await rasterizeElement(el, printer.size === '58mm' ? 384 : 576, printer.size === '58mm' ? '58mm' : '80mm');
           await printViaRelay(canvasToEscPosRaster(canvas), {
             target: 'spooler',
             printer: name,
@@ -726,7 +726,7 @@ export default function PrinterSettings() {
         try {
           const el = document.getElementById('print-area');
           if (!el) throw new Error(t('settings_page.printer.test_template_missing'));
-          const canvas = await rasterizeElement(el, printer.size === '58mm' ? 384 : 576);
+          const canvas = await rasterizeElement(el, printer.size === '58mm' ? 384 : 576, printer.size === '58mm' ? '58mm' : '80mm');
           await sendRawToAgent(name, canvasToEscPosRaster(canvas), 'SEEN POS Test Invoice');
         } catch (rasterErr: any) {
           arabicOk = false;
@@ -773,7 +773,7 @@ export default function PrinterSettings() {
         try {
           const el = document.getElementById('print-area');
           if (!el) throw new Error(t('settings_page.printer.test_template_missing'));
-          const canvas = await rasterizeElement(el, printer.size === '58mm' ? 384 : 576);
+          const canvas = await rasterizeElement(el, printer.size === '58mm' ? 384 : 576, printer.size === '58mm' ? '58mm' : '80mm');
           await sendRawToPrinter(printer.id, printer.type, canvasToEscPosRaster(canvas), conn);
         } catch (rasterErr: any) {
           arabicOk = false;
