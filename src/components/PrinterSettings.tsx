@@ -18,6 +18,7 @@ import {
   Monitor,
   Loader2,
   Info,
+  Link2,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { isRtlLang } from '../lib/direction';
@@ -925,6 +926,111 @@ export default function PrinterSettings() {
           </div>
         </div>
       )}
+
+      {/* الطباعة الصامتة عبر وسيط سين (الاقتران) — المسار الأساسي الموصى به */}
+      <div className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border-2 border-brand/30 shadow-xs space-y-4">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Zap size={20} className="text-brand" />
+            <h3 className="text-base font-black text-content">{t('settings_page.printer.relay_card_title')}</h3>
+          </div>
+          {paired && (
+            <button
+              type="button"
+              onClick={() => void refreshRelay(true)}
+              disabled={relayBusy}
+              className="p-2 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all disabled:opacity-50"
+              title={t('settings_page.printer.refresh')}
+            >
+              <RefreshCw size={16} className={relayBusy ? 'animate-spin' : ''} />
+            </button>
+          )}
+        </div>
+
+        <p className="text-xs text-content-muted font-medium leading-relaxed">
+          {t('settings_page.printer.relay_card_hint')}
+        </p>
+
+        {!paired ? (
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              type="text"
+              value={pairCodeInput}
+              onChange={(e) => setPairCodeInput(e.target.value.toUpperCase())}
+              placeholder={t('settings_page.printer.pair_code_placeholder')}
+              maxLength={8}
+              className="flex-1 px-4 py-3 bg-surface-hover border border-border rounded-xl text-sm font-black tracking-[0.3em] text-center focus:outline-none focus:border-brand"
+            />
+            <button
+              type="button"
+              onClick={() => void handlePair()}
+              disabled={relayBusy || !pairCodeInput.trim()}
+              className="px-5 py-3 bg-brand text-white rounded-xl text-sm font-black transition-all disabled:opacity-50 flex items-center justify-center gap-2 shrink-0"
+            >
+              {relayBusy ? <Loader2 size={16} className="animate-spin" /> : <Link2 size={16} />}
+              <span>{t('settings_page.printer.pair_button')}</span>
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3 bg-surface-hover p-4 rounded-2xl border border-border">
+              <div className="min-w-0">
+                <p className="font-black text-sm text-content truncate">
+                  {station?.hostname || getRelayBinding()?.hostname || t('settings_page.printer.cashier_device')}
+                </p>
+                <span
+                  className={cn(
+                    'text-[11px] font-black px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5 mt-1',
+                    station?.online ? 'bg-emerald-600/15 text-emerald-700 dark:text-emerald-400' : 'bg-amber-600/15 text-amber-700 dark:text-amber-400'
+                  )}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                  {station?.online ? t('settings_page.printer.status_connected') : t('settings_page.printer.status_offline')}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleUnpair}
+                className="px-3.5 py-2 text-danger hover:bg-danger/10 border border-danger/20 rounded-xl text-xs font-black transition-all shrink-0"
+              >
+                {t('settings_page.printer.unpair_button')}
+              </button>
+            </div>
+
+            {station && station.printers.length > 0 ? (
+              <div className="space-y-2">
+                <p className="text-[11px] font-black text-content-muted uppercase tracking-widest">
+                  {t('settings_page.printer.station_printers_heading')}
+                </p>
+                {station.printers.map((p) => (
+                  <div key={p.name} className="flex items-center justify-between gap-3 p-3 bg-surface rounded-xl border border-border">
+                    <span className="text-xs font-bold text-content truncate">
+                      {p.name}
+                      {p.isDefault ? ' ⭐' : ''}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleLinkRelayPrinter(p)}
+                      className="px-3 py-1.5 bg-brand/10 text-brand hover:bg-brand hover:text-white rounded-lg text-[11px] font-black transition-all shrink-0"
+                    >
+                      {t('settings_page.printer.link_button')}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-content-muted font-medium">{t('settings_page.printer.no_station_printers')}</p>
+            )}
+          </div>
+        )}
+
+        {relayError && (
+          <p className="text-xs text-danger font-bold flex items-start gap-1.5">
+            <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+            <span>{relayError}</span>
+          </p>
+        )}
+      </div>
 
       {/* أزرار الربط الحقيقي */}
       <div className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-border shadow-xs space-y-4">
