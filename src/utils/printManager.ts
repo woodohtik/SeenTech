@@ -282,36 +282,23 @@ const buildPrintableClone = (element: HTMLElement): HTMLElement => {
 };
 
 /**
- * بناء مستند HTML كامل ومستقل للطباعة.
- *
- * كل الأبعاد مُثبّتة بالمليمتر حتى تخرج الفاتورة بنفس الشكل تماماً على
- * ويندوز والأندرويد والتابلت. لا يوجد أي عرض يعتمد على حجم الشاشة.
+ * تجاوزات CSS الخاصة بمستند الطباعة — تصفّر حشو/هوامش أغلفة العرض داخل
+ * التطبيق (p-4 / md:p-8 وغيرها، مضبوطة للعرض الشاشي لا للطباعة) وتضبط
+ * عرض/حشو منطقة الطباعة بدقة. مُستخرجة كدالة مستقلة لأنها تُستخدم في
+ * مسارين: مستند iframe/popup الكامل (`buildPrintDocument`) **وأيضاً** في
+ * `rasterizeElement` للطباعة الصامتة — بدونها كانت نسخة الطباعة الصامتة
+ * تُطبع بنفس حشو/هوامش المعاينة الشاشية الكبيرة بدل حشو الطباعة المضبوط.
  */
-const buildPrintDocument = (bodyHtml: string, options: PrintOptions): string => {
-  const paperSize = options.paperSize || '80mm';
+const buildPrintCss = (paperSize: PrintPaperSize): string => {
   const geo = getPaperGeometry(paperSize);
   const contentWidth = `${geo.contentMm}mm`;
-  const layoutPx = layoutPxFor(geo);
-  const { css, links } = collectAppCss();
 
-  return `<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>${(options.title || i18n.t('printing.document_title_invoice')).replace(/[<>&"]/g, '')}</title>
-${links.map((h) => `<link rel="stylesheet" href="${h}">`).join('\n')}
-<style>
-/* ===== تنسيقات التطبيق المنسوخة ===== */
-${css}
-</style>
-<style>
-/* ===== تجاوزات خاصة بمستند الطباعة (تأتي بعد تنسيقات التطبيق) ===== */
+  return `
 /*
- * ⚠️ !important مقصود: تنسيقات التطبيق المنسوخة أعلاه تحتوي قواعد @page
- * خاصة بها (margin: 0 / size: auto) وكذلك قواعد @page داخل قوالب الفواتير.
- * بدون !important هنا قد تفوز إحداها فتُصفَّر هوامش الورق العادي (A4/A5)
- * ويتولّى المتصفح إضافة هوامشه الافتراضية الكبيرة أعلى وأسفل الفاتورة.
+ * ⚠️ !important مقصود: تنسيقات التطبيق المنسوخة (في buildPrintDocument)
+ * تحتوي قواعد @page خاصة بها (margin: 0 / size: auto) وكذلك قواعد @page
+ * داخل قوالب الفواتير. بدون !important هنا قد تفوز إحداها فتُصفَّر هوامش
+ * الورق العادي (A4/A5) ويتولّى المتصفح إضافة هوامشه الافتراضية الكبيرة.
  */
 @page { size: ${geo.pageSize} !important; margin: ${geo.marginMm}mm !important; }
 
@@ -482,7 +469,33 @@ ${
        #seen-print-root h3 { font-size: 7pt !important; line-height: 1.2 !important; }
        #simplified-invoice-container { font-size: 7.5pt !important; line-height: 1.25 !important; padding: 1.5mm 2.5mm !important; }`
     : ''
-}
+}`;
+};
+
+/**
+ * بناء مستند HTML كامل ومستقل للطباعة.
+ *
+ * كل الأبعاد مُثبّتة بالمليمتر حتى تخرج الفاتورة بنفس الشكل تماماً على
+ * ويندوز والأندرويد والتابلت. لا يوجد أي عرض يعتمد على حجم الشاشة.
+ */
+const buildPrintDocument = (bodyHtml: string, options: PrintOptions): string => {
+  const paperSize = options.paperSize || '80mm';
+  const { css, links } = collectAppCss();
+
+  return `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>${(options.title || i18n.t('printing.document_title_invoice')).replace(/[<>&"]/g, '')}</title>
+${links.map((h) => `<link rel="stylesheet" href="${h}">`).join('\n')}
+<style>
+/* ===== تنسيقات التطبيق المنسوخة ===== */
+${css}
+</style>
+<style>
+/* ===== تجاوزات خاصة بمستند الطباعة (تأتي بعد تنسيقات التطبيق) ===== */
+${buildPrintCss(paperSize)}
 </style>
 </head>
 <body>
@@ -775,24 +788,34 @@ export const rasterizeElement = async (
     'overflow:visible',
   ].join(';');
 
+  /*
+   * نُطبّق **نفس** تجاوزات CSS التي يطبّقها مسار مربع الحوار (buildPrintCss)
+   * بنفس التركيب (#seen-print-root يحتوي العنصر الأصلي بمعرّفه الأصلي مثل
+   * #pos-invoice-print-area) — بدونها كانت نسخة الطباعة الصامتة تحتفظ بحشو
+   * ومقاسات المعاينة الشاشية (p-4 / md:p-8 وغيرها) بدل حشو الطباعة الفعلي،
+   * فتخرج بهوامش كبيرة غير مقصودة.
+   */
+  const styleEl = document.createElement('style');
+  styleEl.textContent = buildPrintCss(paperSize);
+  holder.appendChild(styleEl);
+
+  const root = document.createElement('div');
+  root.id = 'seen-print-root';
+  root.className = 'printable-area';
+  root.dir = 'rtl';
+
   const clone = buildPrintableClone(element);
-  clone.style.width = '100%';
-  clone.style.maxWidth = '100%';
-  clone.style.background = '#ffffff';
-  clone.style.color = '#000000';
-  clone.style.fontSize = '8.5pt';
-  clone.style.lineHeight = '1.25';
-  clone.style.fontWeight = '600';
-  holder.appendChild(clone);
+  root.appendChild(clone);
+  holder.appendChild(root);
   document.body.appendChild(holder);
 
   try {
     await waitForDocumentReady(document, window);
 
-    const layoutHeight = Math.max(holder.scrollHeight, clone.scrollHeight);
+    const layoutHeight = Math.max(holder.scrollHeight, root.scrollHeight);
     if (layoutHeight < 4) throw new Error(i18n.t('printing.errors.empty_invoice_content'));
 
-    const rendered = await toCanvas(clone, {
+    const rendered = await toCanvas(root, {
       backgroundColor: '#ffffff',
       pixelRatio: 1,
       width: layoutPx,
