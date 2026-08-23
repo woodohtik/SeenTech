@@ -143,7 +143,7 @@ export default function SimplifiedTaxInvoice({
   // RIGHT edge of the paper. Keeping the auto side margins is what actually
   // centres the receipt on the roll.
   return (
-    <div className="w-full max-w-[80mm] mx-auto bg-white p-1 font-sans text-right print:px-3 print:py-1.5" dir="rtl">
+    <div className="w-full max-w-[80mm] mx-auto bg-white font-sans text-right print:px-3 print:py-1.5" dir="rtl">
       
       {/* Print Controls (Hidden in Print Mode) */}
       {!hidePrintButton && (
@@ -175,7 +175,7 @@ export default function SimplifiedTaxInvoice({
             <img
               src={seller.logoUrl}
               alt="Seller Logo"
-              className="w-16 h-16 object-contain rounded-xl border border-slate-200 p-1 mx-auto mb-1"
+              className="w-24 h-24 object-contain rounded-xl border border-slate-200 p-1 mx-auto mb-1"
               referrerPolicy="no-referrer"
               crossOrigin="anonymous"
             />
@@ -353,7 +353,7 @@ export default function SimplifiedTaxInvoice({
         {/* Separator line between Payment Method and QR Code */}
         {/* ZATCA Compliant QR Code */}
         <div className="flex flex-col items-center justify-center py-1 mb-1">
-          <div className="bg-slate-50 p-1 rounded-xl border border-slate-200 shadow-inner">
+          <div className="p-1">
             <QRCodeSVG value={finalQr} size={95} level="M" />
           </div>
         </div>

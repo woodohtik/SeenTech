@@ -115,14 +115,14 @@ interface PaperGeometry {
 const getPaperGeometry = (size: PrintPaperSize): PaperGeometry => {
   switch (size) {
     case '58mm':
-      return { pageSize: '58mm auto', marginMm: 1, contentMm: 56, rootPadding: '1mm 1.2mm', thermal: true };
+      return { pageSize: '58mm auto', marginMm: 0.5, contentMm: 57, rootPadding: '0.5mm 0.6mm', thermal: true };
     case 'A5':
       return { pageSize: 'A5', marginMm: 5, contentMm: 138, rootPadding: '3mm 5mm', thermal: false };
     case 'A4':
       return { pageSize: 'A4', marginMm: 6, contentMm: 198, rootPadding: '4mm 6mm', thermal: false };
     case '80mm':
     default:
-      return { pageSize: '80mm auto', marginMm: 1, contentMm: 78, rootPadding: '1mm 1.5mm', thermal: true };
+      return { pageSize: '80mm auto', marginMm: 0.5, contentMm: 79, rootPadding: '0.5mm 0.8mm', thermal: true };
   }
 };
 
@@ -474,7 +474,7 @@ ${
         * النسبة دفعة واحدة، ويتجاوز zoom:100% الافتراضي الذي يضبطه القالب
         * نفسه لأن !important هنا خارجي بينما ذاك تنسيق مضمّن غير !important.
         */
-       #simplified-invoice-container { zoom: 125% !important; padding: 1.5mm 2.5mm !important; }
+       #simplified-invoice-container { zoom: 125% !important; padding: 0.5mm 1mm !important; }
        /* الفواصل الرمادية الفاتحة (border-slate-200/300 وغيرها) تختفي تقريباً
           عند تحويل الفاتورة لصورة أحادية اللون (أبيض/أسود) للطباعة الحرارية
           — نجعلها أسود صريحاً هنا فقط، بلا أثر على شكلها الشاشي العادي. */
