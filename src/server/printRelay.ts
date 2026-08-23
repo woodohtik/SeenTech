@@ -25,30 +25,45 @@
  *  الحل
  *  ----
  *  نقلب اتجاه الاتصال. الوسيط على جهاز الكاشير هو الذي **يتصل خارجاً**
- *  بهذا السيرفر ويظل ينتظر مهام الطباعة (long-poll). المتصفح — على أي
+ *  بهذا السيرفر ويظل يستقصي (poll) عن مهام الطباعة. المتصفح — على أي
  *  جهاز، ويندوز أو أندرويد أو آيباد — يرسل المهمة إلى السيرفر فقط.
  *
- *      [متصفح أي جهاز]  ──POST──►  [السيرفر]  ◄──long-poll──  [وسيط الكاشير]
- *                                                                    │
- *                                                                    ▼
- *                                                        سبولر ويندوز / TCP 9100
+ *      [متصفح أي جهاز]  ──POST──►  [السيرفر]  ◄──poll──  [وسيط الكاشير]
+ *                                       │                        │
+ *                                       ▼                        ▼
+ *                                  Supabase           سبولر ويندوز / TCP 9100
  *
  *  لا يوجد أي اتصال بـ localhost ⇒ لا mixed content، لا CORS، لا
  *  Local Network Access، ولا حاجة لفتح أي منفذ في جدار الحماية.
  *
- *  ملاحظة نشر مهمة
- *  ----------------
- *  المخزن هنا في الذاكرة (Map)، وهو مناسب لسيرفر Express واحد طويل العمر
- *  (وهو نمط تشغيل هذا المشروع: `npm start` ← app.listen).
- *  إذا نُشر النظام على بيئة serverless متعددة النسخ (Vercel Functions مثلاً)
- *  فيجب استبدال `store` بجدول في Supabase — الواجهة معزولة لهذا الغرض.
- * ============================================================================
+ *  ============================================================================
+ *  ⚠️ لماذا Supabase وليس Map في الذاكرة؟ (درس مكلف)
+ *  ----------------------------------------------------------------------------
+ *  الإصدار الأول من هذا الملف خزّن المحطات والمهام في `Map` داخل عملية
+ *  Node واحدة — يعمل ممتازاً على سيرفر Express طويل العمر (`npm start`).
+ *  لكن هذا المشروع منشور على **Vercel Functions** (انظر `api/index.js`):
+ *  كل طلب قد يصل إلى **نسخة (instance) مختلفة تماماً** من الدالة، ولا ذاكرة
+ *  مشتركة بينها إطلاقاً. النتيجة كانت خللاً حقيقياً وصامتاً: الوسيط يسجّل
+ *  نفسه فتصل نسخة "hello" فيُنشئ رمز الاقتران في ذاكرة نسخة A، ثم يضغط
+ *  المستخدم "اقتران" في المتصفح فتصل نسخة "pair" إلى نسخة B التي لا تعرف
+ *  عن هذا الرمز شيئاً ⇒ «رمز اقتران غير صحيح» رغم أن الرمز صحيح تماماً.
+ *
+ *  ثبتّ هذا فعلياً: تسجيل 8 محطات وهمية بالتوازي ثم محاولة الاقتران بكل
+ *  الرموز الثمانية بالتوازي أنجح واحداً فقط من ثمانية — نفس الخطأ الذي
+ *  رآه المستخدم تماماً. الحل: كل الحالة هنا الآن في Supabase (جداول
+ *  `print_stations` / `print_jobs` / `print_pair_attempts`، مشتركة بين كل
+ *  نسخ الدالة). الـ long-poll نفسه تحوّل لاستقصاء قصير متكرر (~1.2 ثانية)
+ *  داخل نفس طلب HTTP الواحد بدل التسليم الفوري عبر callback في الذاكرة —
+ *  فيبقى الشكل الخارجي (poll يعلّق حتى 25 ثانية، 204 عند عدم وجود مهمة)
+ *  مطابقاً تماماً، فلا حاجة لتغيير أي كود في الوسيط أو المتصفح.
+ *  ============================================================================
  */
 
 import type { Express, Request, Response } from 'express';
 import crypto from 'crypto';
 import net from 'net';
 import { authenticate } from './middleware/authMiddleware.ts';
+import { supabaseAdmin } from './supabase-admin.ts';
 
 /* ============================ الأنواع ============================ */
 
@@ -83,21 +98,36 @@ export interface PrintJob {
   updatedAt: number;
 }
 
-interface Station {
+/** صف جدول print_stations كما يُخزَّن في Supabase. */
+interface StationRow {
   id: string;
-  agentToken: string;
-  clientToken: string;
-  pairCode: string;
+  agent_token: string;
+  client_token: string;
+  pair_code: string;
   hostname: string;
   platform: string;
-  agentVersion: string;
+  agent_version: string;
   printers: RelayPrinter[];
-  lastSeenAt: number;
-  createdAt: number;
-  /** المهام المنتظرة بالترتيب */
-  queue: PrintJob[];
-  /** المستمعون المعلّقون (long-poll) في انتظار مهمة */
-  waiters: Array<(job: PrintJob | null) => void>;
+  last_seen_at: string;
+  created_at: string;
+}
+
+/** صف جدول print_jobs كما يُخزَّن في Supabase. */
+interface JobRow {
+  id: string;
+  station_id: string;
+  target: PrintTargetKind;
+  printer: string | null;
+  host: string | null;
+  port: number | null;
+  data_base64: string;
+  doc_name: string;
+  copies: number;
+  status: 'queued' | 'sent' | 'done' | 'failed';
+  error: string | null;
+  bytes: number | null;
+  created_at: string;
+  updated_at: string;
 }
 
 /* ============================ الإعدادات ============================ */
@@ -105,8 +135,10 @@ interface Station {
 const CONFIG = {
   /** بعد هذه المدة بدون أي اتصال تُعتبر المحطة غير متصلة */
   offlineAfterMs: 45_000,
-  /** أقصى مدة يبقى فيها طلب long-poll معلّقاً قبل إرجاع 204 */
+  /** أقصى مدة يبقى فيها طلب poll معلّقاً قبل إرجاع 204 */
   maxPollWaitMs: 25_000,
+  /** الفاصل بين كل محاولة استقصاء عن مهمة جديدة أثناء الانتظار */
+  pollIntervalMs: 1_200,
   /** أقصى عدد مهام في الطابور لكل محطة */
   maxQueuePerStation: 40,
   /** مدة الاحتفاظ بسجل المهمة بعد انتهائها (لقراءة الحالة من المتصفح) */
@@ -119,18 +151,10 @@ const CONFIG = {
   pairAttemptsPerMinute: 10,
 };
 
-/* ============================ المخزن ============================ */
-
-const stations = new Map<string, Station>();
-const jobs = new Map<string, PrintJob>();
-/** ربط رمز الاقتران بمعرّف المحطة — رموز قصيرة يقرأها المستخدم */
-const pairCodeIndex = new Map<string, string>();
-/** عدّاد محاولات الاقتران لمكافحة التخمين */
-const pairAttempts = new Map<string, { count: number; resetAt: number }>();
-
 /* ============================ أدوات ============================ */
 
 const nowMs = () => Date.now();
+const nowIso = () => new Date().toISOString();
 
 const newId = () => crypto.randomBytes(16).toString('hex');
 const newToken = () => crypto.randomBytes(32).toString('base64url');
@@ -140,15 +164,11 @@ const newToken = () => crypto.randomBytes(32).toString('base64url');
  * حتى لا يخطئ المستخدم في قراءته عن الشاشة.
  */
 const PAIR_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
-const newPairCode = (): string => {
-  for (let attempt = 0; attempt < 50; attempt++) {
-    let code = '';
-    const bytes = crypto.randomBytes(6);
-    for (let i = 0; i < 6; i++) code += PAIR_ALPHABET[bytes[i] % PAIR_ALPHABET.length];
-    if (!pairCodeIndex.has(code)) return code;
-  }
-  // احتمال بعيد جداً — نضيف عشوائية إضافية
-  return crypto.randomBytes(4).toString('hex').toUpperCase();
+const randomPairCode = (): string => {
+  let code = '';
+  const bytes = crypto.randomBytes(6);
+  for (let i = 0; i < 6; i++) code += PAIR_ALPHABET[bytes[i] % PAIR_ALPHABET.length];
+  return code;
 };
 
 /** مقارنة رموز بزمن ثابت — تمنع استنتاج الرمز من فروق التوقيت. */
@@ -160,7 +180,8 @@ const safeEqual = (a: unknown, b: unknown): boolean => {
   return crypto.timingSafeEqual(ba, bb);
 };
 
-const isOnline = (s: Station) => nowMs() - s.lastSeenAt < CONFIG.offlineAfterMs;
+const isOnline = (s: Pick<StationRow, 'last_seen_at'>) =>
+  nowMs() - new Date(s.last_seen_at).getTime() < CONFIG.offlineAfterMs;
 
 const clientIp = (req: Request): string =>
   String(
@@ -175,64 +196,81 @@ const bearer = (req: Request): string => {
   return m ? m[1].trim() : String(req.headers['x-seen-agent-token'] || '');
 };
 
+const rowToJob = (r: JobRow): PrintJob => ({
+  id: r.id,
+  stationId: r.station_id,
+  target: r.target,
+  printer: r.printer ?? undefined,
+  host: r.host ?? undefined,
+  port: r.port ?? undefined,
+  dataBase64: r.data_base64,
+  docName: r.doc_name,
+  copies: r.copies,
+  status: r.status,
+  error: r.error ?? undefined,
+  bytes: r.bytes ?? undefined,
+  createdAt: new Date(r.created_at).getTime(),
+  updatedAt: new Date(r.updated_at).getTime(),
+});
+
+const queuedCountFor = async (stationId: string): Promise<number> => {
+  const { count } = await supabaseAdmin
+    .from('print_jobs')
+    .select('id', { count: 'exact', head: true })
+    .eq('station_id', stationId)
+    .eq('status', 'queued');
+  return count || 0;
+};
+
 /** إخراج آمن لبيانات المحطة — بدون أي رموز سرية. */
-const publicStation = (s: Station) => ({
+const publicStation = async (s: StationRow) => ({
   stationId: s.id,
   hostname: s.hostname,
   platform: s.platform,
-  agentVersion: s.agentVersion,
+  agentVersion: s.agent_version,
   online: isOnline(s),
-  lastSeenAt: s.lastSeenAt,
+  lastSeenAt: new Date(s.last_seen_at).getTime(),
   printers: s.printers,
-  queued: s.queue.length,
+  queued: await queuedCountFor(s.id),
 });
 
-/* ==================== تنظيف دوري للذاكرة ==================== */
-
-let sweeper: NodeJS.Timeout | null = null;
-
-const sweep = () => {
-  const t = nowMs();
-
-  // حذف المهام المنتهية القديمة
-  for (const [id, job] of jobs) {
-    const finished = job.status === 'done' || job.status === 'failed';
-    if (finished && t - job.updatedAt > CONFIG.jobRetentionMs) jobs.delete(id);
-    // مهمة عُلِّقت في "sent" لأكثر من دقيقتين → الوسيط سقط أثناء الطباعة
-    if (job.status === 'sent' && t - job.updatedAt > 120_000) {
-      job.status = 'failed';
-      job.error = 'انقطع الاتصال بوسيط الطباعة قبل تأكيد الطباعة.';
-      job.updatedAt = t;
-    }
-  }
-
-  // حذف المحطات المهجورة
-  for (const [id, s] of stations) {
-    if (t - s.lastSeenAt > CONFIG.stationTtlMs) {
-      pairCodeIndex.delete(s.pairCode);
-      stations.delete(id);
-    }
-  }
-
-  // تصفير عدّادات الاقتران
-  for (const [ip, rec] of pairAttempts) {
-    if (t > rec.resetAt) pairAttempts.delete(ip);
-  }
+const fetchStationById = async (id: string): Promise<StationRow | null> => {
+  if (!id) return null;
+  const { data } = await supabaseAdmin.from('print_stations').select('*').eq('id', id).maybeSingle();
+  return (data as StationRow) || null;
 };
 
-/* ==================== توزيع المهام على المستمعين ==================== */
-
-/**
- * تسليم المهمة التالية لأول مستمع معلّق إن وُجد.
- * إن لم يوجد مستمع تبقى المهمة في الطابور حتى يعود الوسيط.
+/* ==================== تنظيف دوري (أفضل جهد) ==================== */
+/*
+ * على Vercel Functions لا يوجد ضمان أن تبقى نسخة الدالة حيّة طويلاً كفاية
+ * ليعمل setInterval بانتظام — هذا تنظيف "أفضل جهد" فقط، غير حرج للصحة
+ * الوظيفية (poll يتجاهل أصلاً المحطات غير المتصلة بناءً على last_seen_at،
+ * والصفوف المنتهية تبقى مجرد سجلات قديمة غير مؤذية حتى تُحذف).
  */
-const dispatch = (station: Station) => {
-  while (station.waiters.length && station.queue.length) {
-    const waiter = station.waiters.shift()!;
-    const job = station.queue.shift()!;
-    job.status = 'sent';
-    job.updatedAt = nowMs();
-    waiter(job);
+let sweeper: NodeJS.Timeout | null = null;
+
+const sweep = async () => {
+  try {
+    const jobCutoff = new Date(nowMs() - CONFIG.jobRetentionMs).toISOString();
+    await supabaseAdmin.from('print_jobs').delete().in('status', ['done', 'failed']).lt('updated_at', jobCutoff);
+
+    const stuckCutoff = new Date(nowMs() - 120_000).toISOString();
+    await supabaseAdmin
+      .from('print_jobs')
+      .update({
+        status: 'failed',
+        error: 'انقطع الاتصال بوسيط الطباعة قبل تأكيد الطباعة.',
+        updated_at: nowIso(),
+      })
+      .eq('status', 'sent')
+      .lt('updated_at', stuckCutoff);
+
+    const stationCutoff = new Date(nowMs() - CONFIG.stationTtlMs).toISOString();
+    await supabaseAdmin.from('print_stations').delete().lt('last_seen_at', stationCutoff);
+
+    await supabaseAdmin.from('print_pair_attempts').delete().lt('reset_at', nowIso());
+  } catch (e: any) {
+    console.warn('[print-relay] فشل التنظيف الدوري:', e?.message || e);
   }
 };
 
@@ -302,7 +340,7 @@ export const sendRawToTcpPrinter = (
 
 export function registerPrintRelay(app: Express): void {
   if (!sweeper) {
-    sweeper = setInterval(sweep, 30_000);
+    sweeper = setInterval(() => void sweep(), 30_000);
     // لا نمنع إيقاف العملية بسبب هذا المؤقّت
     if (typeof sweeper.unref === 'function') sweeper.unref();
   }
@@ -322,80 +360,96 @@ export function registerPrintRelay(app: Express): void {
    * إذا أرسل الوسيط stationId + agentToken صحيحين نحتفظ بنفس رمز الاقتران
    * حتى لا يحتاج المستخدم لإعادة الاقتران بعد كل إعادة تشغيل.
    */
-  app.post('/api/print/agent/hello', (req: Request, res: Response) => {
-    const body = req.body || {};
-    const hostname = String(body.hostname || 'unknown').slice(0, 120);
-    const platform = String(body.platform || 'unknown').slice(0, 40);
-    const agentVersion = String(body.agentVersion || '0').slice(0, 20);
+  app.post('/api/print/agent/hello', async (req: Request, res: Response) => {
+    try {
+      const body = req.body || {};
+      const hostname = String(body.hostname || 'unknown').slice(0, 120);
+      const platform = String(body.platform || 'unknown').slice(0, 40);
+      const agentVersion = String(body.agentVersion || '0').slice(0, 20);
 
-    const printers: RelayPrinter[] = Array.isArray(body.printers)
-      ? body.printers
-          .filter((p: any) => p && typeof p.name === 'string' && p.name.trim())
-          .slice(0, 60)
-          .map((p: any) => ({
-            name: String(p.name).slice(0, 200),
-            isDefault: !!p.isDefault,
-            isVirtual: !!p.isVirtual,
-            driver: String(p.driver || '').slice(0, 200),
-            port: String(p.port || '').slice(0, 80),
-            status: String(p.status || '').slice(0, 60),
-          }))
-      : [];
+      const printers: RelayPrinter[] = Array.isArray(body.printers)
+        ? body.printers
+            .filter((p: any) => p && typeof p.name === 'string' && p.name.trim())
+            .slice(0, 60)
+            .map((p: any) => ({
+              name: String(p.name).slice(0, 200),
+              isDefault: !!p.isDefault,
+              isVirtual: !!p.isVirtual,
+              driver: String(p.driver || '').slice(0, 200),
+              port: String(p.port || '').slice(0, 80),
+              status: String(p.status || '').slice(0, 60),
+            }))
+        : [];
 
-    const wantedId = typeof body.stationId === 'string' ? body.stationId : '';
-    const existing = wantedId ? stations.get(wantedId) : undefined;
+      const wantedId = typeof body.stationId === 'string' ? body.stationId : '';
+      const existing = wantedId ? await fetchStationById(wantedId) : null;
 
-    // استئناف محطة قائمة — يشترط رمز الوسيط الصحيح
-    if (existing && safeEqual(body.agentToken, existing.agentToken)) {
-      existing.hostname = hostname;
-      existing.platform = platform;
-      existing.agentVersion = agentVersion;
-      existing.printers = printers;
-      existing.lastSeenAt = nowMs();
+      // استئناف محطة قائمة — يشترط رمز الوسيط الصحيح
+      if (existing && safeEqual(body.agentToken, existing.agent_token)) {
+        const { error } = await supabaseAdmin
+          .from('print_stations')
+          .update({ hostname, platform, agent_version: agentVersion, printers, last_seen_at: nowIso() })
+          .eq('id', existing.id);
+        if (error) throw error;
 
-      return res.json({
+        return res.json({
+          ok: true,
+          stationId: existing.id,
+          agentToken: existing.agent_token,
+          clientToken: existing.client_token,
+          pairCode: existing.pair_code,
+          pollWaitMs: CONFIG.maxPollWaitMs,
+          resumed: true,
+        });
+      }
+
+      // محطة جديدة — نحاول عدة مرات عند تصادم نادر في رمز الاقتران (فريد في الجدول)
+      const id = newId();
+      const agentToken = newToken();
+      const clientToken = newToken();
+
+      let insertError: any = null;
+      let pairCode = '';
+      for (let attempt = 0; attempt < 5; attempt++) {
+        pairCode = randomPairCode();
+        const { error } = await supabaseAdmin.from('print_stations').insert({
+          id,
+          agent_token: agentToken,
+          client_token: clientToken,
+          pair_code: pairCode,
+          hostname,
+          platform,
+          agent_version: agentVersion,
+          printers,
+          last_seen_at: nowIso(),
+        });
+        if (!error) {
+          insertError = null;
+          break;
+        }
+        insertError = error;
+        // 23505 = unique_violation — تصادم في pair_code فقط (id عشوائي 128-بت)
+        if (error.code !== '23505') break;
+      }
+      if (insertError) throw insertError;
+
+      console.log(
+        `[print-relay] محطة جديدة "${hostname}" (${platform}) — رمز الاقتران ${pairCode} — ${printers.length} طابعة`
+      );
+
+      res.json({
         ok: true,
-        stationId: existing.id,
-        agentToken: existing.agentToken,
-        clientToken: existing.clientToken,
-        pairCode: existing.pairCode,
+        stationId: id,
+        agentToken,
+        clientToken,
+        pairCode,
         pollWaitMs: CONFIG.maxPollWaitMs,
-        resumed: true,
+        resumed: false,
       });
+    } catch (e: any) {
+      console.error('[print-relay] /agent/hello:', e?.message || e);
+      res.status(500).json({ ok: false, error: 'تعذر تسجيل المحطة. حاول مرة أخرى.' });
     }
-
-    // محطة جديدة
-    const station: Station = {
-      id: newId(),
-      agentToken: newToken(),
-      clientToken: newToken(),
-      pairCode: newPairCode(),
-      hostname,
-      platform,
-      agentVersion,
-      printers,
-      lastSeenAt: nowMs(),
-      createdAt: nowMs(),
-      queue: [],
-      waiters: [],
-    };
-
-    stations.set(station.id, station);
-    pairCodeIndex.set(station.pairCode, station.id);
-
-    console.log(
-      `[print-relay] محطة جديدة "${hostname}" (${platform}) — رمز الاقتران ${station.pairCode} — ${printers.length} طابعة`
-    );
-
-    res.json({
-      ok: true,
-      stationId: station.id,
-      agentToken: station.agentToken,
-      clientToken: station.clientToken,
-      pairCode: station.pairCode,
-      pollWaitMs: CONFIG.maxPollWaitMs,
-      resumed: false,
-    });
   });
 
   /**
@@ -404,52 +458,67 @@ export function registerPrintRelay(app: Express): void {
    *
    * يبقى الطلب معلّقاً حتى تصل مهمة (200 + المهمة) أو تنتهي المهلة (204).
    * هذا الطلب هو أيضاً نبضة الحياة التي تُبقي المحطة «متصلة».
+   *
+   * التنفيذ: استقصاء قصير متكرر عن `print_jobs` طوال مدة الطلب الواحد —
+   * لا اعتماد على أي حالة في ذاكرة العملية بين طلبين مختلفين.
    */
-  app.get('/api/print/agent/poll', (req: Request, res: Response) => {
-    const stationId = String(req.query.stationId || '');
-    const station = stations.get(stationId);
+  app.get('/api/print/agent/poll', async (req: Request, res: Response) => {
+    try {
+      const stationId = String(req.query.stationId || '');
+      const station = await fetchStationById(stationId);
 
-    if (!station || !safeEqual(bearer(req), station.agentToken)) {
-      // 409 وليس 401: نُشير للوسيط أن عليه إعادة التسجيل من الصفر
-      return res.status(409).json({ ok: false, error: 'المحطة غير مسجّلة. أعد التسجيل عبر /hello.' });
+      if (!station || !safeEqual(bearer(req), station.agent_token)) {
+        // 409 وليس 401: نُشير للوسيط أن عليه إعادة التسجيل من الصفر
+        return res.status(409).json({ ok: false, error: 'المحطة غير مسجّلة. أعد التسجيل عبر /hello.' });
+      }
+
+      await supabaseAdmin.from('print_stations').update({ last_seen_at: nowIso() }).eq('id', stationId);
+
+      let clientGone = false;
+      req.on('close', () => {
+        clientGone = true;
+      });
+
+      const deadline = nowMs() + CONFIG.maxPollWaitMs;
+
+      for (;;) {
+        if (clientGone || res.writableEnded) return;
+
+        const { data: candidate } = await supabaseAdmin
+          .from('print_jobs')
+          .select('*')
+          .eq('station_id', stationId)
+          .eq('status', 'queued')
+          .order('created_at', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        if (candidate) {
+          // مطالبة ذرّية: لا نسلّم المهمة إلا إذا فزنا بسباق التحديث (لا يزال 'queued')
+          const { data: claimed } = await supabaseAdmin
+            .from('print_jobs')
+            .update({ status: 'sent', updated_at: nowIso() })
+            .eq('id', candidate.id)
+            .eq('status', 'queued')
+            .select('*')
+            .maybeSingle();
+
+          if (claimed) {
+            return res.json({ ok: true, job: rowToJob(claimed as JobRow) });
+          }
+          // خسرنا السباق لنسخة أخرى — نعيد المحاولة فوراً دون انتظار
+          continue;
+        }
+
+        if (nowMs() >= deadline) break;
+        await new Promise((r) => setTimeout(r, CONFIG.pollIntervalMs));
+      }
+
+      if (!clientGone && !res.writableEnded) res.status(204).end();
+    } catch (e: any) {
+      console.error('[print-relay] /agent/poll:', e?.message || e);
+      if (!res.writableEnded) res.status(500).json({ ok: false, error: 'خطأ في السيرفر أثناء انتظار المهام.' });
     }
-
-    station.lastSeenAt = nowMs();
-
-    // مهمة جاهزة الآن؟ سلّمها فوراً
-    if (station.queue.length) {
-      const job = station.queue.shift()!;
-      job.status = 'sent';
-      job.updatedAt = nowMs();
-      return res.json({ ok: true, job });
-    }
-
-    // لا شيء الآن → نُعلّق الطلب
-    let settled = false;
-
-    const finish = (job: PrintJob | null) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      const idx = station.waiters.indexOf(finish);
-      if (idx >= 0) station.waiters.splice(idx, 1);
-      if (job) res.json({ ok: true, job });
-      else res.status(204).end();
-    };
-
-    const timer = setTimeout(() => finish(null), CONFIG.maxPollWaitMs);
-    if (typeof timer.unref === 'function') timer.unref();
-
-    station.waiters.push(finish);
-
-    // إن قطع الوسيط الاتصال (إغلاق النافذة/انقطاع الشبكة) نُزيله من القائمة
-    req.on('close', () => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      const idx = station.waiters.indexOf(finish);
-      if (idx >= 0) station.waiters.splice(idx, 1);
-    });
   });
 
   /**
@@ -457,29 +526,45 @@ export function registerPrintRelay(app: Express): void {
    * Authorization: Bearer <agentToken>
    * الطلب: { stationId, jobId, ok, error?, bytes? }
    */
-  app.post('/api/print/agent/result', (req: Request, res: Response) => {
-    const body = req.body || {};
-    const station = stations.get(String(body.stationId || ''));
+  app.post('/api/print/agent/result', async (req: Request, res: Response) => {
+    try {
+      const body = req.body || {};
+      const stationId = String(body.stationId || '');
+      const station = await fetchStationById(stationId);
 
-    if (!station || !safeEqual(bearer(req), station.agentToken)) {
-      return res.status(409).json({ ok: false, error: 'المحطة غير مسجّلة.' });
+      if (!station || !safeEqual(bearer(req), station.agent_token)) {
+        return res.status(409).json({ ok: false, error: 'المحطة غير مسجّلة.' });
+      }
+
+      await supabaseAdmin.from('print_stations').update({ last_seen_at: nowIso() }).eq('id', stationId);
+
+      const jobId = String(body.jobId || '');
+      const { data: job } = await supabaseAdmin
+        .from('print_jobs')
+        .select('id, station_id, bytes')
+        .eq('id', jobId)
+        .maybeSingle();
+
+      if (!job || job.station_id !== stationId) {
+        return res.status(404).json({ ok: false, error: 'المهمة غير موجودة.' });
+      }
+
+      const ok = !!body.ok;
+      const error = ok ? null : String(body.error || 'فشل غير محدد في الوسيط.').slice(0, 600);
+      const bytes = Number(body.bytes) || job.bytes || null;
+
+      await supabaseAdmin
+        .from('print_jobs')
+        .update({ status: ok ? 'done' : 'failed', error, bytes, updated_at: nowIso() })
+        .eq('id', jobId);
+
+      if (!ok) console.warn(`[print-relay] فشلت المهمة ${jobId}: ${error}`);
+
+      res.json({ ok: true });
+    } catch (e: any) {
+      console.error('[print-relay] /agent/result:', e?.message || e);
+      res.status(500).json({ ok: false, error: 'تعذر تسجيل نتيجة المهمة.' });
     }
-
-    station.lastSeenAt = nowMs();
-
-    const job = jobs.get(String(body.jobId || ''));
-    if (!job || job.stationId !== station.id) {
-      return res.status(404).json({ ok: false, error: 'المهمة غير موجودة.' });
-    }
-
-    job.status = body.ok ? 'done' : 'failed';
-    job.error = body.ok ? undefined : String(body.error || 'فشل غير محدد في الوسيط.').slice(0, 600);
-    job.bytes = Number(body.bytes) || job.bytes;
-    job.updatedAt = nowMs();
-
-    if (!body.ok) console.warn(`[print-relay] فشلت المهمة ${job.id}: ${job.error}`);
-
-    res.json({ ok: true });
   });
 
   /* ======================================================================
@@ -493,60 +578,76 @@ export function registerPrintRelay(app: Express): void {
    *
    * يُدخل المستخدم رمز الاقتران الظاهر في نافذة الوسيط مرة واحدة فقط.
    */
-  app.post('/api/print/pair', (req: Request, res: Response) => {
-    const ip = clientIp(req);
-    const t = nowMs();
-    const rec = pairAttempts.get(ip);
+  app.post('/api/print/pair', async (req: Request, res: Response) => {
+    try {
+      const ip = clientIp(req);
+      const { data: rec } = await supabaseAdmin.from('print_pair_attempts').select('*').eq('ip', ip).maybeSingle();
+      const recActive = rec && new Date(rec.reset_at).getTime() > nowMs();
 
-    if (rec && t < rec.resetAt && rec.count >= CONFIG.pairAttemptsPerMinute) {
-      return res.status(429).json({
-        ok: false,
-        error: 'محاولات كثيرة جداً. انتظر دقيقة ثم أعد المحاولة.',
+      if (recActive && rec.count >= CONFIG.pairAttemptsPerMinute) {
+        return res.status(429).json({
+          ok: false,
+          error: 'محاولات كثيرة جداً. انتظر دقيقة ثم أعد المحاولة.',
+        });
+      }
+
+      const code = String((req.body || {}).pairCode || '')
+        .toUpperCase()
+        .replace(/[^0-9A-Z]/g, '');
+
+      const { data: station } = await supabaseAdmin
+        .from('print_stations')
+        .select('*')
+        .eq('pair_code', code)
+        .maybeSingle();
+
+      if (!station) {
+        await supabaseAdmin.from('print_pair_attempts').upsert({
+          ip,
+          count: recActive ? rec!.count + 1 : 1,
+          reset_at: recActive ? rec!.reset_at : new Date(nowMs() + 60_000).toISOString(),
+        });
+        return res.status(404).json({
+          ok: false,
+          error: 'رمز اقتران غير صحيح، أو أن وسيط الطباعة غير مُشغَّل. تأكد من الرمز الظاهر في نافذة الوسيط.',
+        });
+      }
+
+      await supabaseAdmin.from('print_pair_attempts').delete().eq('ip', ip);
+
+      res.json({
+        ok: true,
+        stationId: station.id,
+        clientToken: station.client_token,
+        station: await publicStation(station as StationRow),
       });
+    } catch (e: any) {
+      console.error('[print-relay] /pair:', e?.message || e);
+      res.status(500).json({ ok: false, error: 'تعذر إتمام الاقتران. حاول مرة أخرى.' });
     }
-
-    const code = String((req.body || {}).pairCode || '')
-      .toUpperCase()
-      .replace(/[^0-9A-Z]/g, '');
-
-    const stationId = pairCodeIndex.get(code);
-    const station = stationId ? stations.get(stationId) : undefined;
-
-    if (!station) {
-      const next = rec && t < rec.resetAt ? { count: rec.count + 1, resetAt: rec.resetAt } : { count: 1, resetAt: t + 60_000 };
-      pairAttempts.set(ip, next);
-      return res.status(404).json({
-        ok: false,
-        error: 'رمز اقتران غير صحيح، أو أن وسيط الطباعة غير مُشغَّل. تأكد من الرمز الظاهر في نافذة الوسيط.',
-      });
-    }
-
-    pairAttempts.delete(ip);
-
-    res.json({
-      ok: true,
-      stationId: station.id,
-      clientToken: station.clientToken,
-      station: publicStation(station),
-    });
   });
 
   /**
    * GET /api/print/station/:stationId?clientToken=...
    * حالة المحطة وقائمة طابعاتها — للعرض في إعدادات الطابعة.
    */
-  app.get('/api/print/station/:stationId', (req: Request, res: Response) => {
-    const station = stations.get(String(req.params.stationId || ''));
-    const token = String(req.query.clientToken || req.headers['x-seen-client-token'] || '');
+  app.get('/api/print/station/:stationId', async (req: Request, res: Response) => {
+    try {
+      const station = await fetchStationById(String(req.params.stationId || ''));
+      const token = String(req.query.clientToken || req.headers['x-seen-client-token'] || '');
 
-    if (!station || !safeEqual(token, station.clientToken)) {
-      return res.status(404).json({
-        ok: false,
-        error: 'المحطة غير معروفة للسيرفر. أعد الاقتران بالرمز الظاهر في نافذة الوسيط.',
-      });
+      if (!station || !safeEqual(token, station.client_token)) {
+        return res.status(404).json({
+          ok: false,
+          error: 'المحطة غير معروفة للسيرفر. أعد الاقتران بالرمز الظاهر في نافذة الوسيط.',
+        });
+      }
+
+      res.json({ ok: true, station: await publicStation(station) });
+    } catch (e: any) {
+      console.error('[print-relay] /station/:id:', e?.message || e);
+      res.status(500).json({ ok: false, error: 'تعذر قراءة حالة المحطة.' });
     }
-
-    res.json({ ok: true, station: publicStation(station) });
   });
 
   /**
@@ -562,103 +663,116 @@ export function registerPrintRelay(app: Express): void {
    * يُرجع فوراً بعد إضافة المهمة للطابور. المتصفح يتابع الحالة عبر
    * GET /api/print/job/:jobId — فلا تتعلق واجهة الكاشير في الانتظار.
    */
-  app.post('/api/print/job', (req: Request, res: Response) => {
-    const body = req.body || {};
-    const station = stations.get(String(body.stationId || ''));
+  app.post('/api/print/job', async (req: Request, res: Response) => {
+    try {
+      const body = req.body || {};
+      const station = await fetchStationById(String(body.stationId || ''));
 
-    if (!station || !safeEqual(body.clientToken, station.clientToken)) {
-      return res.status(404).json({
-        ok: false,
-        error: 'المحطة غير معروفة أو انتهت صلاحية الاقتران. أعد الاقتران من إعدادات الطابعة.',
+      if (!station || !safeEqual(body.clientToken, station.client_token)) {
+        return res.status(404).json({
+          ok: false,
+          error: 'المحطة غير معروفة أو انتهت صلاحية الاقتران. أعد الاقتران من إعدادات الطابعة.',
+        });
+      }
+
+      if (!isOnline(station)) {
+        return res.status(503).json({
+          ok: false,
+          error: `وسيط الطباعة على "${station.hostname}" غير متصل حالياً. تأكد أن نافذة الوسيط مفتوحة على جهاز الكاشير وأن الجهاز متصل بالإنترنت.`,
+        });
+      }
+
+      const queued = await queuedCountFor(station.id);
+      if (queued >= CONFIG.maxQueuePerStation) {
+        return res.status(429).json({
+          ok: false,
+          error: 'طابور الطباعة ممتلئ. تحقّق من الطابعة (ورق/غطاء) ثم أعد المحاولة.',
+        });
+      }
+
+      const dataBase64 = String(body.dataBase64 || '');
+      if (!dataBase64) {
+        return res.status(400).json({ ok: false, error: 'لا توجد بيانات للطباعة.' });
+      }
+      if (dataBase64.length > CONFIG.maxJobBytes) {
+        return res.status(413).json({
+          ok: false,
+          error: 'حجم الفاتورة كبير جداً للطباعة. قلّل عدد الأصناف أو اختر حجم ورق أصغر.',
+        });
+      }
+
+      const target: PrintTargetKind = body.target === 'tcp' ? 'tcp' : 'spooler';
+
+      if (target === 'spooler' && !String(body.printer || '').trim()) {
+        return res.status(400).json({ ok: false, error: 'لم يتم تحديد اسم الطابعة.' });
+      }
+      if (target === 'tcp' && !isPrivateHost(body.host)) {
+        return res.status(400).json({
+          ok: false,
+          error: 'عنوان طابعة الشبكة غير صالح. يُسمح فقط بعناوين الشبكة المحلية (مثل 192.168.1.50).',
+        });
+      }
+
+      const jobId = newId();
+      const { error } = await supabaseAdmin.from('print_jobs').insert({
+        id: jobId,
+        station_id: station.id,
+        target,
+        printer: target === 'spooler' ? String(body.printer).trim().slice(0, 200) : null,
+        host: target === 'tcp' ? String(body.host).trim() : null,
+        port: target === 'tcp' ? Number(body.port) || 9100 : null,
+        data_base64: dataBase64,
+        doc_name: String(body.docName || 'SEEN POS Receipt').slice(0, 120),
+        copies: Math.min(Math.max(1, Number(body.copies) || 1), 5),
+        status: 'queued',
       });
+      if (error) throw error;
+
+      res.json({ ok: true, jobId });
+    } catch (e: any) {
+      console.error('[print-relay] /job:', e?.message || e);
+      res.status(500).json({ ok: false, error: 'تعذرت إضافة مهمة الطباعة.' });
     }
-
-    if (!isOnline(station)) {
-      return res.status(503).json({
-        ok: false,
-        error: `وسيط الطباعة على "${station.hostname}" غير متصل حالياً. تأكد أن نافذة الوسيط مفتوحة على جهاز الكاشير وأن الجهاز متصل بالإنترنت.`,
-      });
-    }
-
-    if (station.queue.length >= CONFIG.maxQueuePerStation) {
-      return res.status(429).json({
-        ok: false,
-        error: 'طابور الطباعة ممتلئ. تحقّق من الطابعة (ورق/غطاء) ثم أعد المحاولة.',
-      });
-    }
-
-    const dataBase64 = String(body.dataBase64 || '');
-    if (!dataBase64) {
-      return res.status(400).json({ ok: false, error: 'لا توجد بيانات للطباعة.' });
-    }
-    if (dataBase64.length > CONFIG.maxJobBytes) {
-      return res.status(413).json({
-        ok: false,
-        error: 'حجم الفاتورة كبير جداً للطباعة. قلّل عدد الأصناف أو اختر حجم ورق أصغر.',
-      });
-    }
-
-    const target: PrintTargetKind = body.target === 'tcp' ? 'tcp' : 'spooler';
-
-    if (target === 'spooler' && !String(body.printer || '').trim()) {
-      return res.status(400).json({ ok: false, error: 'لم يتم تحديد اسم الطابعة.' });
-    }
-    if (target === 'tcp' && !isPrivateHost(body.host)) {
-      return res.status(400).json({
-        ok: false,
-        error: 'عنوان طابعة الشبكة غير صالح. يُسمح فقط بعناوين الشبكة المحلية (مثل 192.168.1.50).',
-      });
-    }
-
-    const job: PrintJob = {
-      id: newId(),
-      stationId: station.id,
-      target,
-      printer: target === 'spooler' ? String(body.printer).trim().slice(0, 200) : undefined,
-      host: target === 'tcp' ? String(body.host).trim() : undefined,
-      port: target === 'tcp' ? Number(body.port) || 9100 : undefined,
-      dataBase64,
-      docName: String(body.docName || 'SEEN POS Receipt').slice(0, 120),
-      copies: Math.min(Math.max(1, Number(body.copies) || 1), 5),
-      status: 'queued',
-      createdAt: nowMs(),
-      updatedAt: nowMs(),
-    };
-
-    jobs.set(job.id, job);
-    station.queue.push(job);
-    dispatch(station);
-
-    res.json({ ok: true, jobId: job.id });
   });
 
   /**
    * GET /api/print/job/:jobId?clientToken=...
    * متابعة حالة المهمة من المتصفح.
    */
-  app.get('/api/print/job/:jobId', (req: Request, res: Response) => {
-    const job = jobs.get(String(req.params.jobId || ''));
-    if (!job) {
-      return res.status(404).json({ ok: false, error: 'المهمة غير موجودة أو انتهت مدة الاحتفاظ بها.' });
-    }
+  app.get('/api/print/job/:jobId', async (req: Request, res: Response) => {
+    try {
+      const { data: job } = await supabaseAdmin
+        .from('print_jobs')
+        .select('*')
+        .eq('id', String(req.params.jobId || ''))
+        .maybeSingle();
 
-    const station = stations.get(job.stationId);
-    const token = String(req.query.clientToken || req.headers['x-seen-client-token'] || '');
-    if (!station || !safeEqual(token, station.clientToken)) {
-      return res.status(403).json({ ok: false, error: 'غير مصرّح بقراءة حالة هذه المهمة.' });
-    }
+      if (!job) {
+        return res.status(404).json({ ok: false, error: 'المهمة غير موجودة أو انتهت مدة الاحتفاظ بها.' });
+      }
 
-    res.json({
-      ok: true,
-      job: {
-        id: job.id,
-        status: job.status,
-        error: job.error,
-        bytes: job.bytes,
-        createdAt: job.createdAt,
-        updatedAt: job.updatedAt,
-      },
-    });
+      const station = await fetchStationById((job as JobRow).station_id);
+      const token = String(req.query.clientToken || req.headers['x-seen-client-token'] || '');
+      if (!station || !safeEqual(token, station.client_token)) {
+        return res.status(403).json({ ok: false, error: 'غير مصرّح بقراءة حالة هذه المهمة.' });
+      }
+
+      const j = rowToJob(job as JobRow);
+      res.json({
+        ok: true,
+        job: {
+          id: j.id,
+          status: j.status,
+          error: j.error,
+          bytes: j.bytes,
+          createdAt: j.createdAt,
+          updatedAt: j.updatedAt,
+        },
+      });
+    } catch (e: any) {
+      console.error('[print-relay] /job/:id:', e?.message || e);
+      res.status(500).json({ ok: false, error: 'تعذرت قراءة حالة المهمة.' });
+    }
   });
 
   /* ======================================================================
