@@ -19,6 +19,7 @@ import {
   Loader2,
   Info,
   Link2,
+  Download,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { isRtlLang } from '../lib/direction';
@@ -952,24 +953,46 @@ export default function PrinterSettings() {
         </p>
 
         {!paired ? (
-          <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              value={pairCodeInput}
-              onChange={(e) => setPairCodeInput(e.target.value.toUpperCase())}
-              placeholder={t('settings_page.printer.pair_code_placeholder')}
-              maxLength={8}
-              className="flex-1 px-4 py-3 bg-surface-hover border border-border rounded-xl text-sm font-black tracking-[0.3em] text-center focus:outline-none focus:border-brand"
-            />
-            <button
-              type="button"
-              onClick={() => void handlePair()}
-              disabled={relayBusy || !pairCodeInput.trim()}
-              className="px-5 py-3 bg-brand text-white rounded-xl text-sm font-black transition-all disabled:opacity-50 flex items-center justify-center gap-2 shrink-0"
-            >
-              {relayBusy ? <Loader2 size={16} className="animate-spin" /> : <Link2 size={16} />}
-              <span>{t('settings_page.printer.pair_button')}</span>
-            </button>
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-brand/5 p-4 rounded-2xl border border-brand/20">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center font-black text-xs shrink-0">1</div>
+                <p className="text-xs font-bold text-content">{t('settings_page.printer.relay_download_step')}</p>
+              </div>
+              <a
+                href="/downloads/seen-print-agent.zip"
+                download
+                className="px-4 py-2.5 bg-brand text-white rounded-xl text-xs font-black transition-all hover:bg-brand/90 flex items-center justify-center gap-2 shrink-0"
+              >
+                <Download size={14} />
+                <span>{t('settings_page.printer.relay_download_button')}</span>
+              </a>
+            </div>
+
+            <div className="flex items-center gap-3 px-1">
+              <div className="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center font-black text-xs shrink-0">2</div>
+              <p className="text-xs font-bold text-content">{t('settings_page.printer.relay_pair_step')}</p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="text"
+                value={pairCodeInput}
+                onChange={(e) => setPairCodeInput(e.target.value.toUpperCase())}
+                placeholder={t('settings_page.printer.pair_code_placeholder')}
+                maxLength={8}
+                className="flex-1 px-4 py-3 bg-surface-hover border border-border rounded-xl text-sm font-black tracking-[0.3em] text-center focus:outline-none focus:border-brand"
+              />
+              <button
+                type="button"
+                onClick={() => void handlePair()}
+                disabled={relayBusy || !pairCodeInput.trim()}
+                className="px-5 py-3 bg-brand text-white rounded-xl text-sm font-black transition-all disabled:opacity-50 flex items-center justify-center gap-2 shrink-0"
+              >
+                {relayBusy ? <Loader2 size={16} className="animate-spin" /> : <Link2 size={16} />}
+                <span>{t('settings_page.printer.pair_button')}</span>
+              </button>
+            </div>
           </div>
         ) : (
           <div className="space-y-3">

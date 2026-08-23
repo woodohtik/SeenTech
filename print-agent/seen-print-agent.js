@@ -29,13 +29,20 @@
  *  التي لا تحتاج Node.js إطلاقاً (انظر build-exe.ps1).
  *  البديل بدون أي تنصيب: seen-print-agent.ps1 (PowerShell — موجود في كل ويندوز).
  *
- *  التشغيل:
- *      node seen-print-agent.js --server=https://app.example.com
+ *  الإصدار 2.1: صفر إعداد يدوي. رابط السيرفر مضبوط افتراضياً على النسخة
+ *  السحابية الموحّدة (لا حاجة لسؤال العميل عنه)، وبعد أول اقتران ناجح يسجّل
+ *  الوسيط نفسه تلقائياً كمهمة تعمل مع كل تشغيل لويندوز بنافذة مخفية — نقرة
+ *  مزدوجة واحدة على الملف، للأبد. لا ملف تنصيب منفصل، لا PowerShell يدوي.
+ *
+ *  التشغيل (أول مرة فقط — بعدها نقرة مزدوجة على الملف تكفي):
+ *      node seen-print-agent.js
  *
  *  الخيارات:
- *      --server=<url>       رابط نظام سين (إلزامي أول مرة، ثم يُحفظ)
+ *      --server=<url>       رابط سين المخصص (نادراً ما يُحتاج — بيئة تجريبية فقط)
  *      --printer="الاسم"     الطابعة الافتراضية للوسيط
  *      --log                إظهار تفاصيل كل مهمة
+ *      --quiet               بدون طباعة على الشاشة (تُستخدم داخلياً عند التشغيل التلقائي)
+ *      --uninstall            إلغاء التشغيل التلقائي مع ويندوز
  * ============================================================================
  */
 
@@ -48,8 +55,16 @@ const path = require('path');
 const crypto = require('crypto');
 const { execFile } = require('child_process');
 
-const VERSION = '2.0.0';
+const VERSION = '2.1.0';
 const PLATFORM = process.platform; // 'win32' | 'darwin' | 'linux'
+const TASK_NAME = 'SeenPrintAgent';
+
+/*
+ * الرابط الافتراضي لنظام سين. أغلب المتاجر تستخدم النسخة السحابية الموحّدة،
+ * فلا حاجة لسؤال كل عميل عن رابط لا يعرفه أصلاً. `--server=` يبقى متاحاً
+ * لتجاوزه (بيئة تجريبية / staging) عند الحاجة.
+ */
+const DEFAULT_SERVER_URL = 'https://www.seentech.io';
 
 /* ============================ الخيارات والإعدادات ============================ */
 
@@ -64,17 +79,36 @@ const CONFIG_DIR = path.join(
   'SeenPrintAgent'
 );
 const CONFIG_PATH = path.join(CONFIG_DIR, 'config.json');
+const LOG_PATH = path.join(CONFIG_DIR, 'agent.log');
 
 const VERBOSE = argOf('log', false) === true;
+const QUIET = argOf('quiet', false) === true;
+const UNINSTALL = argOf('uninstall', false) === true;
 
-const log = (...a) => console.log(`[${new Date().toLocaleTimeString('ar-SA-u-nu-latn')}]`, ...a);
+const writeLogFile = (line) => {
+  try {
+    fs.mkdirSync(CONFIG_DIR, { recursive: true });
+    if (fs.existsSync(LOG_PATH) && fs.statSync(LOG_PATH).size > 1024 * 1024) {
+      fs.renameSync(LOG_PATH, `${LOG_PATH}.old`);
+    }
+    fs.appendFileSync(LOG_PATH, `${line}\n`, 'utf8');
+  } catch {
+    /* تجاهل — قد يكون المجلد غير قابل للكتابة */
+  }
+};
+
+const log = (...a) => {
+  const line = `[${new Date().toLocaleTimeString('ar-SA-u-nu-latn')}] ${a.join(' ')}`;
+  writeLogFile(line);
+  if (!QUIET) console.log(line);
+};
 const vlog = (...a) => VERBOSE && log(...a);
 
 const loadConfig = () => {
   try {
     return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
   } catch {
-    return { serverUrl: '', stationId: '', agentToken: '', defaultPrinter: '' };
+    return { serverUrl: '', stationId: '', agentToken: '', defaultPrinter: '', autoStartInstalled: false };
   }
 };
 
@@ -97,6 +131,8 @@ const config = loadConfig();
   const cliPrinter = argOf('printer', null);
   if (typeof cliPrinter === 'string' && cliPrinter) config.defaultPrinter = cliPrinter;
 }
+
+if (!config.serverUrl) config.serverUrl = DEFAULT_SERVER_URL;
 
 if (config.serverUrl && !/^https?:\/\//i.test(config.serverUrl)) {
   config.serverUrl = `https://${config.serverUrl}`;
@@ -547,10 +583,76 @@ const registerStation = async () => {
 };
 
 /* ============================================================================
+   التنصيب التلقائي (مهمة مجدولة تعمل مع تشغيل ويندوز، بنافذة مخفية)
+   ----------------------------------------------------------------------------
+   لا نطلب من العميل تشغيل ملف "تنصيب" منفصل ولا كتابة رابط السيرفر — تُسجَّل
+   المهمة تلقائياً بعد أول اقتران ناجح، فتكفي نقرة مزدوجة واحدة على الملف
+   للأبد. الوسيط هو من يقرر مساره التنفيذي بنفسه (node.exe + سكربت، أو ملف
+   EXE مستقل مبني بميزة SEA) فلا فرق على العميل أي نسخة يستخدم.
+   ============================================================================ */
+
+const isSeaBinary = () => {
+  try {
+    // node:sea متاح منذ Node 21 — يخبرنا إن كنا نعمل داخل ملف EXE مستقل
+    return require('node:sea').isSea();
+  } catch {
+    return false;
+  }
+};
+
+/** أمر التشغيل الحالي كسطر أوامر واحد (exe فقط، أو node.exe + مسار السكربت). */
+const currentLaunchCommand = () => {
+  const exe = process.execPath;
+  if (isSeaBinary()) return `& '${exe.replace(/'/g, "''")}' --quiet`;
+  const script = require.main?.filename || __filename;
+  return `& '${exe.replace(/'/g, "''")}' '${script.replace(/'/g, "''")}' --quiet`;
+};
+
+const ensureAutoStart = async () => {
+  if (PLATFORM !== 'win32' || config.autoStartInstalled) return;
+
+  try {
+    // نفس أسلوب seen-print-agent.ps1 -Install تماماً: مهمة مجدولة تشغّل
+    // powershell.exe بنافذة مخفية، وهو بدوره يستدعي الوسيط عبر `&` — الابن
+    // يرث وحدة تحكم الأب المخفية فلا تظهر أي نافذة على الإطلاق. تظهر
+    // النافذة فقط في هذا التشغيل اليدوي الأول (لعرض رمز الاقتران).
+    const tr = `powershell.exe -NoProfile -WindowStyle Hidden -Command "${currentLaunchCommand().replace(/"/g, '`"')}"`;
+    await run('schtasks.exe', [
+      '/Create',
+      '/TN',
+      TASK_NAME,
+      '/SC',
+      'ONLOGON',
+      '/RL',
+      'LIMITED',
+      '/F',
+      '/TR',
+      tr,
+    ]);
+    config.autoStartInstalled = true;
+    saveConfig(config);
+    log('✅ تم تفعيل التشغيل التلقائي مع ويندوز (بنافذة مخفية).');
+  } catch (e) {
+    log('⚠️  تعذر تفعيل التشغيل التلقائي مع ويندوز:', e.message);
+    log('   بديل: أنشئ اختصاراً لهذا الملف داخل المجلد الذي يفتحه  shell:startup  (اكتبه في مربع "تشغيل" بويندوز).');
+  }
+};
+
+const uninstallAutoStart = async () => {
+  try {
+    await run('schtasks.exe', ['/Delete', '/TN', TASK_NAME, '/F']);
+    console.log('  ✅ تم إلغاء التشغيل التلقائي.');
+  } catch {
+    console.log('  ⚠️  لم يكن الوسيط منصّباً للتشغيل التلقائي.');
+  }
+};
+
+/* ============================================================================
    الإقلاع والحلقة الرئيسية
    ============================================================================ */
 
-const banner = (pairCode, printers) => {
+const banner = (pairCode, printers, justInstalled) => {
+  if (QUIET) return;
   console.log('');
   console.log('  ╔══════════════════════════════════════════════════════════╗');
   console.log('  ║           وسيط سين للطباعة  —  SEEN Print Agent          ║');
@@ -582,19 +684,19 @@ const banner = (pairCode, printers) => {
   console.log('  └────────────────────────────────────────────────────────┘');
   console.log('');
   console.log('  ✅ الوسيط متصل وينتظر مهام الطباعة.');
-  console.log('     اترك هذه النافذة مفتوحة أثناء العمل.  (Ctrl+C للإيقاف)');
+  if (justInstalled) {
+    console.log('  ✅ تم تفعيله للعمل التلقائي مع كل تشغيل لويندوز — لا حاجة لأي خطوة أخرى.');
+    console.log('     يمكنك إغلاق هذه النافذة الآن.');
+  } else {
+    console.log('     اترك هذه النافذة مفتوحة أثناء العمل.  (Ctrl+C للإيقاف)');
+  }
   console.log('');
 };
 
 const main = async () => {
-  if (!config.serverUrl) {
-    console.error('');
-    console.error('  ❌ لم يتم تحديد رابط السيرفر.');
-    console.error('     شغّل الوسيط مرة واحدة بهذه الصيغة (يُحفظ الرابط بعدها):');
-    console.error('');
-    console.error('       node seen-print-agent.js --server=https://app.example.com');
-    console.error('');
-    process.exit(1);
+  if (UNINSTALL) {
+    await uninstallAutoStart();
+    return;
   }
 
   if (typeof fetch !== 'function') {
@@ -617,7 +719,9 @@ const main = async () => {
     }
   }
 
-  banner(reg.pairCode, reg.printers);
+  const wasInstalled = config.autoStartInstalled;
+  await ensureAutoStart();
+  banner(reg.pairCode, reg.printers, !wasInstalled && config.autoStartInstalled);
 
   let failStreak = 0;
   let lastPrinterNames = reg.printers.map((p) => p.name).join('|');

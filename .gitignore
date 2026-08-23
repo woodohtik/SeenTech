@@ -16,3 +16,7 @@ firebase-credentials.json
 
 schema.sql
 supabase/.temp/
+
+# ملف EXE مبني محلياً بـ build-exe.ps1 (~90 ميغابايت) — لا يُرفع للمستودع.
+# يُبنى عند الحاجة فقط، ويُستضاف خارج git إن أردنا توزيعه كملف واحد.
+print-agent/dist/

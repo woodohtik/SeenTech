@@ -1,4 +1,4 @@
-<#
+﻿<#
 =============================================================================
   وسيط سين للطباعة  —  SEEN POS Print Agent  (PowerShell / بدون تنصيب)
 =============================================================================
@@ -31,15 +31,20 @@
   • لا يحتاج Node.js ولا أي تنصيب ولا صلاحيات مسؤول.
   • الطابعة مثبّتة في ويندوز وتطبع صفحة اختبار من إعدادات ويندوز.
 
-  التشغيل
-  -------
-      .\seen-print-agent.ps1 -ServerUrl https://app.example.com
+  الإصدار 2.1: صفر إعداد يدوي. الرابط مضبوط افتراضياً على النسخة السحابية
+  الموحّدة، وبعد أول اقتران ناجح يُنصّب الوسيط نفسه تلقائياً للعمل مع كل
+  تشغيل لويندوز (مهمة مجدولة بنافذة مخفية). نقرة مزدوجة واحدة، للأبد —
+  لا حاجة لتشغيل -Install يدوياً ولا لمعرفة رابط السيرفر.
+
+  التشغيل (أول مرة فقط — بعدها نقرة مزدوجة على الملف تكفي)
+  -----------------------------------------------------------
+      .\seen-print-agent.ps1
 
   الخيارات
   --------
-      -ServerUrl <url>     رابط نظام سين (إلزامي في أول تشغيل، ثم يُحفظ)
+      -ServerUrl <url>     رابط سين مخصص (نادراً ما يُحتاج — بيئة تجريبية فقط)
       -Printer <name>      الطابعة الافتراضية للوسيط
-      -Install             تنصيب الوسيط كمهمة تعمل تلقائياً مع تشغيل ويندوز
+      -Install             تنصيب يدوي فوري (بلا انتظار أول اقتران)
       -Uninstall           إزالة التشغيل التلقائي
       -Verbose             إظهار تفاصيل كل مهمة
 
@@ -59,11 +64,15 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$AGENT_VERSION = '2.0.0'
+$AGENT_VERSION = '2.1.0'
 $CONFIG_DIR    = Join-Path $env:LOCALAPPDATA 'SeenPrintAgent'
 $CONFIG_PATH   = Join-Path $CONFIG_DIR 'config.json'
 $LOG_PATH      = Join-Path $CONFIG_DIR 'agent.log'
 $TASK_NAME     = 'SeenPrintAgent'
+
+# نفس الرابط الافتراضي المضبوط في seen-print-agent.js — أغلب المتاجر على
+# النسخة السحابية الموحّدة، فلا داعي لسؤال كل عميل عن رابط لا يعرفه.
+$DEFAULT_SERVER_URL = 'https://www.seentech.io'
 
 # TLS 1.2 — ويندوز 7/8 و PowerShell 5.1 يستخدمان افتراضياً بروتوكولات
 # قديمة ترفضها السيرفرات الحديثة، فنفرض 1.2 صراحةً.
@@ -118,25 +127,27 @@ function Write-Log {
 function Get-Config {
     if (-not (Test-Path $CONFIG_PATH)) {
         return [ordered]@{
-            serverUrl      = ''
-            stationId      = ''
-            agentToken     = ''
-            defaultPrinter = ''
+            serverUrl          = ''
+            stationId          = ''
+            agentToken         = ''
+            defaultPrinter     = ''
+            autoStartInstalled = $false
         }
     }
     try {
         $raw = Get-Content $CONFIG_PATH -Raw -Encoding UTF8
         $obj = $raw | ConvertFrom-Json
         return [ordered]@{
-            serverUrl      = [string]$obj.serverUrl
-            stationId      = [string]$obj.stationId
-            agentToken     = [string]$obj.agentToken
-            defaultPrinter = [string]$obj.defaultPrinter
+            serverUrl          = [string]$obj.serverUrl
+            stationId          = [string]$obj.stationId
+            agentToken         = [string]$obj.agentToken
+            defaultPrinter     = [string]$obj.defaultPrinter
+            autoStartInstalled = [bool]$obj.autoStartInstalled
         }
     } catch {
         Write-Log "ملف الإعدادات تالف، سيتم إنشاء ملف جديد." 'warn'
         return [ordered]@{
-            serverUrl = ''; stationId = ''; agentToken = ''; defaultPrinter = ''
+            serverUrl = ''; stationId = ''; agentToken = ''; defaultPrinter = ''; autoStartInstalled = $false
         }
     }
 }
@@ -480,7 +491,7 @@ function Register-Station {
 #==============================================================================
 
 function Install-AutoStart {
-    param([string] $Url)
+    param([string] $Url, [switch] $Silent)
 
     $scriptPath = $PSCommandPath
     $arguments  = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$scriptPath`" -Quiet"
@@ -488,26 +499,42 @@ function Install-AutoStart {
 
     try {
         # schtasks متاح في كل نسخ ويندوز — أوثق من Register-ScheduledTask
-        # الذي لا يوجد في PowerShell 2.0/ويندوز 7
+        # الذي لا يوجد في PowerShell 2.0/ويندوز 7.
+        # ⚠️ فشل برنامج خارجي لا يُطلق استثناءً في PowerShell تلقائياً — لولا
+        # فحص $LASTEXITCODE هنا صراحةً لظننا التنصيب نجح دائماً حتى لو رفض
+        # schtasks الطلب (مثال: "Access is denied").
         & schtasks.exe /Create /TN $TASK_NAME /SC ONLOGON /RL LIMITED /F `
             /TR "powershell.exe $arguments" | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            throw "schtasks.exe أعاد رمز الخروج $LASTEXITCODE"
+        }
 
-        Write-Host ''
-        Write-Host '  ✅ تم تنصيب الوسيط للتشغيل التلقائي مع ويندوز.' -ForegroundColor Green
-        Write-Host "     اسم المهمة: $TASK_NAME" -ForegroundColor Gray
-        Write-Host '     للإزالة:  .\seen-print-agent.ps1 -Uninstall' -ForegroundColor Gray
-        Write-Host ''
+        if (-not $Silent) {
+            Write-Host ''
+            Write-Host '  ✅ تم تنصيب الوسيط للتشغيل التلقائي مع ويندوز.' -ForegroundColor Green
+            Write-Host "     اسم المهمة: $TASK_NAME" -ForegroundColor Gray
+            Write-Host '     للإزالة:  .\seen-print-agent.ps1 -Uninstall' -ForegroundColor Gray
+            Write-Host ''
+        }
+        return $true
     } catch {
-        Write-Host ''
-        Write-Host "  ❌ فشل التنصيب: $($_.Exception.Message)" -ForegroundColor Red
-        Write-Host '     بديل: انسخ اختصاراً للملف إلى المجلد الذي يفتحه  shell:startup' -ForegroundColor Yellow
-        Write-Host ''
+        if (-not $Silent) {
+            Write-Host ''
+            Write-Host "  ❌ فشل التنصيب: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host '     بديل: انسخ اختصاراً للملف إلى المجلد الذي يفتحه  shell:startup' -ForegroundColor Yellow
+            Write-Host ''
+        } else {
+            Write-Log "تعذر تفعيل التشغيل التلقائي مع ويندوز: $($_.Exception.Message)" 'warn'
+            Write-Log '  بديل: انسخ اختصاراً لهذا الملف إلى المجلد الذي يفتحه  shell:startup' 'warn'
+        }
+        return $false
     }
 }
 
 function Uninstall-AutoStart {
     try {
         & schtasks.exe /Delete /TN $TASK_NAME /F | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw "schtasks.exe أعاد رمز الخروج $LASTEXITCODE" }
         Write-Host '  ✅ تم إلغاء التشغيل التلقائي.' -ForegroundColor Green
     } catch {
         Write-Host '  ⚠️  لم يكن الوسيط منصّباً للتشغيل التلقائي.' -ForegroundColor Yellow
@@ -520,26 +547,18 @@ function Uninstall-AutoStart {
 
 $config = Get-Config
 
-if ($Uninstall) { Uninstall-AutoStart; return }
+if ($Uninstall) {
+    Uninstall-AutoStart
+    $config.autoStartInstalled = $false
+    Save-Config $config
+    return
+}
 
-# رابط السيرفر: من الوسيط الحالي، أو المحفوظ، أو نسأل المستخدم
+# رابط السيرفر: من الوسيط الحالي، أو المحفوظ، أو الرابط الافتراضي (لا نسأل العميل)
 if ($ServerUrl) { $config.serverUrl = $ServerUrl.TrimEnd('/') }
 if ($Printer)   { $config.defaultPrinter = $Printer }
 
-if (-not $config.serverUrl) {
-    if ($Quiet) {
-        Write-Log 'لا يوجد رابط سيرفر محفوظ. شغّل الوسيط مرة واحدة بـ -ServerUrl.' 'error'
-        return
-    }
-    Write-Host ''
-    Write-Host '  أدخل رابط نظام سين (مثال: https://app.seen.sa)' -ForegroundColor Cyan
-    $entered = Read-Host '  الرابط'
-    $config.serverUrl = $entered.Trim().TrimEnd('/')
-    if (-not $config.serverUrl) {
-        Write-Host '  ❌ لا يمكن المتابعة بدون رابط السيرفر.' -ForegroundColor Red
-        return
-    }
-}
+if (-not $config.serverUrl) { $config.serverUrl = $DEFAULT_SERVER_URL }
 
 if ($config.serverUrl -notmatch '^https?://') {
     $config.serverUrl = "https://$($config.serverUrl)"
@@ -547,7 +566,13 @@ if ($config.serverUrl -notmatch '^https?://') {
 
 Save-Config $config
 
-if ($Install) { Install-AutoStart -Url $config.serverUrl; return }
+if ($Install) {
+    if (Install-AutoStart -Url $config.serverUrl) {
+        $config.autoStartInstalled = $true
+        Save-Config $config
+    }
+    return
+}
 
 #------------------------------------------------------------------------------
 #  الترويسة
@@ -583,6 +608,16 @@ while ($null -eq $registration) {
     }
 }
 
+# تنصيب تلقائي بعد أول اقتران ناجح — لا نطلب من العميل تشغيل -Install يدوياً
+$justInstalled = $false
+if (-not $config.autoStartInstalled) {
+    if (Install-AutoStart -Url $config.serverUrl -Silent) {
+        $config.autoStartInstalled = $true
+        Save-Config $config
+        $justInstalled = $true
+    }
+}
+
 if (-not $Quiet) {
     $printers = $registration.printers
     if ($printers.Count -eq 0) {
@@ -607,9 +642,12 @@ if (-not $Quiet) {
     Write-Host '  └────────────────────────────────────────────────────────┘' -ForegroundColor Green
     Write-Host ''
     Write-Host '  ✅ الوسيط متصل وينتظر مهام الطباعة.' -ForegroundColor Green
-    Write-Host '     اترك هذه النافذة مفتوحة أثناء العمل.  (Ctrl+C للإيقاف)' -ForegroundColor Gray
-    Write-Host ''
-    Write-Host '     للتشغيل التلقائي مع ويندوز:  .\seen-print-agent.ps1 -Install' -ForegroundColor DarkGray
+    if ($justInstalled) {
+        Write-Host '  ✅ تم تفعيله للعمل التلقائي مع كل تشغيل لويندوز — لا حاجة لأي خطوة أخرى.' -ForegroundColor Green
+        Write-Host '     يمكنك إغلاق هذه النافذة الآن.' -ForegroundColor Gray
+    } else {
+        Write-Host '     اترك هذه النافذة مفتوحة أثناء العمل.  (Ctrl+C للإيقاف)' -ForegroundColor Gray
+    }
     Write-Host ''
 }
 
