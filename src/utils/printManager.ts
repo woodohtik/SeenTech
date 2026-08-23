@@ -115,14 +115,14 @@ interface PaperGeometry {
 const getPaperGeometry = (size: PrintPaperSize): PaperGeometry => {
   switch (size) {
     case '58mm':
-      return { pageSize: '58mm auto', marginMm: 2, contentMm: 54, rootPadding: '1.5mm 2.5mm', thermal: true };
+      return { pageSize: '58mm auto', marginMm: 1, contentMm: 56, rootPadding: '1mm 1.2mm', thermal: true };
     case 'A5':
       return { pageSize: 'A5', marginMm: 5, contentMm: 138, rootPadding: '3mm 5mm', thermal: false };
     case 'A4':
       return { pageSize: 'A4', marginMm: 6, contentMm: 198, rootPadding: '4mm 6mm', thermal: false };
     case '80mm':
     default:
-      return { pageSize: '80mm auto', marginMm: 2, contentMm: 76, rootPadding: '2mm 3.5mm', thermal: true };
+      return { pageSize: '80mm auto', marginMm: 1, contentMm: 78, rootPadding: '1mm 1.5mm', thermal: true };
   }
 };
 
@@ -467,7 +467,18 @@ ${
        #seen-print-root h1 { font-size: 9.5pt !important; line-height: 1.2 !important; }
        #seen-print-root h2 { font-size: 9pt !important; line-height: 1.2 !important; }
        #seen-print-root h3 { font-size: 7pt !important; line-height: 1.2 !important; }
-       #simplified-invoice-container { font-size: 7.5pt !important; line-height: 1.25 !important; padding: 1.5mm 2.5mm !important; }`
+       /*
+        * zoom (وليس font-size) لأن القالب يضبط أحجام خطوطه الداخلية بوحدات
+        * px ثابتة (text-[9px] وغيرها) على كل عنصر على حدة — تجاوز كل واحدة
+        * بمفردها هش وناقص. zoom يكبّر كل شيء معاً (خط + حشو + تباعد) بنفس
+        * النسبة دفعة واحدة، ويتجاوز zoom:100% الافتراضي الذي يضبطه القالب
+        * نفسه لأن !important هنا خارجي بينما ذاك تنسيق مضمّن غير !important.
+        */
+       #simplified-invoice-container { zoom: 125% !important; padding: 1.5mm 2.5mm !important; }
+       /* الفواصل الرمادية الفاتحة (border-slate-200/300 وغيرها) تختفي تقريباً
+          عند تحويل الفاتورة لصورة أحادية اللون (أبيض/أسود) للطباعة الحرارية
+          — نجعلها أسود صريحاً هنا فقط، بلا أثر على شكلها الشاشي العادي. */
+       #seen-print-root [class*="border-"] { border-color: #000000 !important; }`
     : ''
 }`;
 };
