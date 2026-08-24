@@ -3530,7 +3530,7 @@
       "relay_card_hint": "Link the cashier device once so the system prints invoices instantly with no print window at all — works from Windows and Android alike, no Node.js or any other software required.",
       "relay_card_title": "Silent Printing (No Print Dialog)",
       "relay_download_button": "Download Agent",
-      "relay_download_step": "Download \"Seen Print Agent\" and run it on the cashier device (unzip, then double-click \"تشغيل-وسيط-الطباعة\").",
+      "relay_download_step": "Download \"Seen Print Agent\" and double-click it on the cashier device (single file, no unzipping needed). Windows may show an \"Unknown app\" warning — click \"More info\" then \"Run anyway\".",
       "relay_pair_step": "A window will show a 6-character pairing code — enter it here and press \"Pair\".",
       "relay_connected": "The print agent on \"{{hostname}}\" is connected ✓ — {{count}} printers available.",
       "relay_offline": "The agent on \"{{hostname}}\" is currently offline. Make sure the agent window is open on the cashier device and that the device is online.",

@@ -960,7 +960,7 @@ export default function PrinterSettings() {
                 <p className="text-xs font-bold text-content">{t('settings_page.printer.relay_download_step')}</p>
               </div>
               <a
-                href="/downloads/seen-print-agent.zip"
+                href="/downloads/seen-print-agent.exe"
                 download
                 className="px-4 py-2.5 bg-brand text-white rounded-xl text-xs font-black transition-all hover:bg-brand/90 flex items-center justify-center gap-2 shrink-0"
               >
