@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Coins, Globe, MapPin, Store, Phone, ArrowLeft, ArrowRight, Loader2, Navigation, Upload, ShieldCheck, CheckCircle, ChevronDown, CheckCircle2, Image as ImageIcon, Check } from 'lucide-react';
+import { Coins, Globe, MapPin, Store, Phone, ArrowLeft, ArrowRight, Loader2, Navigation, Upload, ShieldCheck, CheckCircle, ChevronDown, CheckCircle2, Image as ImageIcon, Check, LogOut } from 'lucide-react';
 import { Controller } from 'react-hook-form';
 import { SmartSelect } from './ui/SmartSelect';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
@@ -97,7 +97,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   const { t, i18n } = useTranslation();
   const { dir } = useDirection();
   const { success: showSuccess, handleError: handleGlobalError, error: showError } = useToast();
-  const { user: authUser } = useAuth();
+  const { user: authUser, logout } = useAuth();
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -488,8 +488,20 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-3 sm:p-6 md:p-8 font-sans" dir={dir}>
       {/* Container Expansion */}
-      <div className="w-full max-w-6xl">
-        
+      <div className="w-full max-w-6xl relative">
+
+        <button
+          type="button"
+          onClick={() => logout()}
+          className={cn(
+            "absolute top-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all",
+            dir === 'rtl' ? "left-0" : "right-0"
+          )}
+        >
+          <LogOut size={15} />
+          {t('common.logout_from_account')}
+        </button>
+
         <div className="mb-14 sm:mb-16">
             {/* Logo/Branding Header */}
             <div className="flex items-center justify-center gap-3 mb-8 sm:mb-10">
@@ -498,7 +510,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               </div>
               <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Seen System</h1>
             </div>
- 
+
             {/* Form Stepper */}
             <div className="flex items-center justify-between relative px-2">
               <div className="absolute top-1/2 left-7 right-7 sm:left-9 sm:right-9 h-0.5 bg-slate-200 -translate-y-1/2 z-0" />
