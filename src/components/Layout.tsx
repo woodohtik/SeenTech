@@ -323,26 +323,16 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
           "p-4 flex items-center border-b border-border min-h-[5.5rem] relative",
           isCollapsed && !isMobileMenuOpen ? "justify-center" : "justify-center w-full"
         )}>
-          {tenantLogo ? (
-            <div className="flex items-center justify-center gap-3 w-full">
-              <img src={tenantLogo} alt="Logo" className={cn(
-                "rounded-xl object-cover shrink-0 shadow-sm transition-all duration-300",
-                (isCollapsed && !isMobileMenuOpen) ? "w-10 h-10" : "w-[120px] h-[80px]"
-              )} />
-              {(!isCollapsed || isMobileMenuOpen) && <h1 className="text-xl font-bold text-content truncate hidden">{tenantName}</h1>}
-            </div>
-          ) : (
-            <div className="flex justify-center items-center py-1 w-full overflow-hidden">
-              <img 
-                src="/Logo.svg" 
-                alt="Seen Logo" 
-                className={cn(
-                  "object-contain shrink-0 transition-all duration-300",
-                  (isCollapsed && !isMobileMenuOpen) ? "h-5 max-w-[24px] w-auto" : "w-[120px] h-[80px]"
-                )} 
-              />
-            </div>
-          )}
+          <div className="flex justify-center items-center py-1 w-full overflow-hidden">
+            <img
+              src="/Logo.svg"
+              alt="Seen Logo"
+              className={cn(
+                "object-contain shrink-0 transition-all duration-300",
+                (isCollapsed && !isMobileMenuOpen) ? "h-5 max-w-[24px] w-auto" : "w-[120px] h-[80px]"
+              )}
+            />
+          </div>
           
           {/* Close button for mobile */}
           <button 
@@ -364,6 +354,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
             <UserPreferencesMenu
               currentStaff={currentStaff}
               role={effectiveRole || null}
+              tenantLogo={tenantLogo}
               onLock={() => {
                 if (onLock) onLock();
               }}

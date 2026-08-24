@@ -26,6 +26,7 @@ import { isRtlLang, changeAppLanguage } from '../lib/direction';
 interface UserPreferencesMenuProps {
   currentStaff?: Staff | null;
   role?: string | null;
+  tenantLogo?: string | null;
   onLock?: () => void;
   onLogout?: () => void;
   layoutMode?: 'sidebar' | 'grid';
@@ -39,6 +40,7 @@ interface UserPreferencesMenuProps {
 export default function UserPreferencesMenu({
   currentStaff = null,
   role = null,
+  tenantLogo = null,
   onLock = () => {},
   onLogout = () => {},
   layoutMode = 'sidebar',
@@ -116,8 +118,12 @@ export default function UserPreferencesMenu({
           isCollapsed ? "justify-center p-2" : "p-3"
         )}
       >
-        <div className="w-10 h-10 rounded-xl bg-surface shadow-sm flex items-center justify-center text-brand shrink-0 border border-brand/10">
-          <UserCircle size={24} />
+        <div className="w-10 h-10 rounded-xl bg-surface shadow-sm flex items-center justify-center text-brand shrink-0 border border-brand/10 overflow-hidden">
+          {tenantLogo ? (
+            <img src={tenantLogo} alt="Logo" className="w-full h-full object-cover" />
+          ) : (
+            <UserCircle size={24} />
+          )}
         </div>
         
         {!isCollapsed && (
