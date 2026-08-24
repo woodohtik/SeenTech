@@ -274,16 +274,94 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
       // 1. Get Existing Tenant
       console.log("[Onboarding] Fetching existing tenant...");
-      const { data: existingTenant, error: fetchTenantError } = await supabase
+      const { data: existingTenant } = await supabase
         .from('tenants')
         .select('id')
         .eq('owner_uid', user.id)
-        .single();
-      
-      if (fetchTenantError || !existingTenant) {
-        throw new Error(t('onboarding.messages.tenant_not_found'));
+        .maybeSingle();
+
+      let tenantId = existingTenant?.id;
+
+      /*
+       * لا متجر مرتبط بهذا الحساب على الإطلاق — يحدث لحسابات سُجِّلت في وقت
+       * كانت فيه صلاحية إنشاء المتجر الذاتي (tenants_onboarding_insert)
+       * مفقودة، فوصل التسجيل لصفحة التهيئة بلا أي متجر خلفه، وكانت هذه
+       * الصفحة تتوقف هنا برسالة "لم يتم العثور على المتجر" بعد أن يملأ
+       * المستخدم النموذج كاملاً. الآن، بدل رفض المستخدم في اللحظة الأخيرة،
+       * نُنشئ المتجر والفرع وسجل الموظف من الصفر هنا مباشرة — بنفس ما كان
+       * يُفترض أن يحدث أصلاً عند التسجيل — ثم نُكمل بقية الحفظ كالمعتاد.
+       */
+      if (!tenantId) {
+        console.log("[Onboarding] No tenant found for this account — creating one now.");
+        const { data: newTenant, error: createTenantError } = await supabase
+          .from('tenants')
+          .insert({
+            name: (data.shopName || user.user_metadata?.full_name || 'متجري') + ' Store',
+            owner_email: user.email,
+            owner_uid: user.id,
+            phone: user.phone || '',
+            status: 'active',
+            plan_id: 'free',
+            inventory_strategy: data.inventoryStrategy || 'centralized',
+          })
+          .select('id')
+          .single();
+
+        if (createTenantError || !newTenant) {
+          throw new Error(t('onboarding.messages.tenant_not_found'));
+        }
+        tenantId = newTenant.id;
+
+        const { data: newBranch, error: createBranchError } = await supabase
+          .from('branches')
+          .insert({
+            tenant_id: tenantId,
+            name: t('common.branches.main_branch'),
+            location: data.address || '',
+            phone: user.phone || '',
+            type: 'store',
+            is_main: true,
+          })
+          .select('id')
+          .single();
+        if (createBranchError) throw new Error(`Failed to create branch: ${createBranchError.message}`);
+
+        // لا قيد UNIQUE حقيقياً على staff.uid / tailor_requests.uid في قاعدة
+        // البيانات (upsert بـ onConflict يفشل بدونه) — نتحقق من الوجود يدوياً
+        // بدلاً من ذلك، تحسّباً لحالة جزئية نادرة (staff موجود بلا tenant مثلاً).
+        const { data: existingStaff } = await supabase.from('staff').select('id').eq('uid', user.id).maybeSingle();
+        if (!existingStaff) {
+          const { error: createStaffError } = await supabase.from('staff').insert({
+            tenant_id: tenantId,
+            uid: user.id,
+            name: user.user_metadata?.full_name || 'Owner',
+            email: user.email,
+            phone: user.phone || '',
+            role: 'owner',
+            status: 'active',
+            branch_id: newBranch.id,
+            must_change_pin: true,
+          });
+          if (createStaffError) throw new Error(`Failed to create staff: ${createStaffError.message}`);
+        }
+
+        try {
+          const { data: existingRequest } = await supabase.from('tailor_requests').select('id').eq('uid', user.id).maybeSingle();
+          if (!existingRequest) {
+            await supabase.from('tailor_requests').insert({
+              name: user.user_metadata?.full_name || 'Owner',
+              phone: user.phone || '',
+              email: user.email,
+              uid: user.id,
+              tenant_id: tenantId,
+              status: 'approved',
+              onboarding_step: 1,
+            });
+          }
+        } catch (err) {
+          console.warn('[Onboarding] Failed to create tailor_requests row:', err);
+        }
       }
-      const tenantId = existingTenant.id;
 
       // 2. Update Tenant
       console.log("[Onboarding] Updating tenant...");
