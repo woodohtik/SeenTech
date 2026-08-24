@@ -679,6 +679,23 @@ if (-not $config.autoStartInstalled) {
     }
 }
 
+<#
+  نسخة خلفية مخفية تعمل من الآن فوراً، لا تنتظر تسجيل الدخول القادم.
+  بدون هذا: لو أغلق الكاشير هذه النافذة (متوقّع تماماً — لا سبب يجعله
+  يتركها مفتوحة طوال اليوم) تتوقف الطباعة فوراً حتى إعادة التشغيل القادمة،
+  رغم أن "التشغيل التلقائي" مُفعَّل لتشغيل لاحق فقط.
+#>
+$spawnedHidden = $false
+if (-not $Quiet) {
+    try {
+        $bgArgs = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$PSCommandPath`" -Quiet"
+        Start-Process -FilePath 'powershell.exe' -ArgumentList $bgArgs -WindowStyle Hidden | Out-Null
+        $spawnedHidden = $true
+    } catch {
+        Write-Log "تعذر تشغيل نسخة خلفية فورية: $($_.Exception.Message)" 'warn'
+    }
+}
+
 if (-not $Quiet) {
     $printers = $registration.printers
     if ($printers.Count -eq 0) {
@@ -704,8 +721,11 @@ if (-not $Quiet) {
     Write-Host ''
     Write-Host '  ✅ الوسيط متصل وينتظر مهام الطباعة.' -ForegroundColor Green
     if ($justInstalled) {
-        Write-Host '  ✅ تم تفعيله للعمل التلقائي مع كل تشغيل لويندوز — لا حاجة لأي خطوة أخرى.' -ForegroundColor Green
-        Write-Host '     يمكنك إغلاق هذه النافذة الآن.' -ForegroundColor Gray
+        Write-Host '  ✅ تم تفعيله للعمل التلقائي مع كل تشغيل لويندوز.' -ForegroundColor Green
+    }
+    if ($spawnedHidden) {
+        Write-Host '  ✅ يعمل الآن أيضاً كعملية خلفية مخفية — أغلق هذه النافذة متى شئت،' -ForegroundColor Green
+        Write-Host '     الطباعة ستستمر بلا انقطاع.' -ForegroundColor Gray
     } else {
         Write-Host '     اترك هذه النافذة مفتوحة أثناء العمل.  (Ctrl+C للإيقاف)' -ForegroundColor Gray
     }

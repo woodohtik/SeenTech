@@ -686,6 +686,40 @@ const ensureAutoStart = async () => {
   }
 };
 
+/**
+ * استنساخ الوسيط فوراً كعملية خلفية مخفية منفصلة (بلا انتظار تسجيل دخول
+ * تالٍ لويندوز)، ثم إنهاء العملية المرئية الحالية.
+ *
+ * لماذا هذا ضروري رغم وجود ensureAutoStart أعلاه؟
+ * -------------------------------------------------
+ * تسجيل مهمة/اختصار "شغّل عند تسجيل الدخول التالي" لا يبدأ فوراً — يبقى
+ * الوسيط المرئي الحالي هو الوحيد الذي يعمل حتى إعادة تشغيل الجهاز. لو
+ * أغلق الكاشير هذه النافذة (وهذا متوقّع تماماً — لا يوجد سبب يجعله يتركها
+ * مفتوحة طوال اليوم) تتوقف الطباعة فوراً حتى إعادة التشغيل القادمة، رغم
+ * أن "التشغيل التلقائي" مُفعَّل. الحل: بمجرد ظهور رمز الاقتران، نُطلق نسخة
+ * خلفية مخفية **الآن فوراً** (لا ننتظر شيئاً)، فتستمر الطباعة تعمل بصرف
+ * النظر متى أغلق الكاشير هذه النافذة — حتى لو أغلقها بعد ثانية واحدة.
+ */
+const relaunchHiddenAndDetach = () => {
+  if (PLATFORM !== 'win32') return false;
+  try {
+    const { spawn } = require('child_process');
+    const isSea = isSeaBinary();
+    const exe = process.execPath;
+    const args = isSea ? ['--quiet'] : [require.main?.filename || __filename, '--quiet'];
+    const child = spawn(exe, args, {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
+    });
+    child.unref();
+    return true;
+  } catch (e) {
+    log('⚠️  تعذر تشغيل نسخة خلفية فورية:', e.message);
+    return false;
+  }
+};
+
 const uninstallAutoStart = async () => {
   let didSomething = false;
   try {
@@ -706,7 +740,7 @@ const uninstallAutoStart = async () => {
    الإقلاع والحلقة الرئيسية
    ============================================================================ */
 
-const banner = (pairCode, printers, justInstalled) => {
+const banner = (pairCode, printers, justInstalled, spawnedHidden) => {
   if (QUIET) return;
   console.log('');
   console.log('  ╔══════════════════════════════════════════════════════════╗');
@@ -740,8 +774,11 @@ const banner = (pairCode, printers, justInstalled) => {
   console.log('');
   console.log('  ✅ الوسيط متصل وينتظر مهام الطباعة.');
   if (justInstalled) {
-    console.log('  ✅ تم تفعيله للعمل التلقائي مع كل تشغيل لويندوز — لا حاجة لأي خطوة أخرى.');
-    console.log('     يمكنك إغلاق هذه النافذة الآن.');
+    console.log('  ✅ تم تفعيله للعمل التلقائي مع كل تشغيل لويندوز.');
+  }
+  if (spawnedHidden) {
+    console.log('  ✅ يعمل الآن أيضاً كعملية خلفية مخفية — أغلق هذه النافذة متى شئت،');
+    console.log('     الطباعة ستستمر بلا انقطاع.');
   } else {
     console.log('     اترك هذه النافذة مفتوحة أثناء العمل.  (Ctrl+C للإيقاف)');
   }
@@ -776,7 +813,12 @@ const main = async () => {
 
   const wasInstalled = config.autoStartInstalled;
   await ensureAutoStart();
-  banner(reg.pairCode, reg.printers, !wasInstalled && config.autoStartInstalled);
+
+  // نسخة خلفية مخفية تعمل من الآن فوراً — لا ننتظر تسجيل الدخول القادم،
+  // فيبقى الوسيط يعمل حتى لو أغلق الكاشير هذه النافذة بعد لحظات.
+  const spawnedHidden = !QUIET ? relaunchHiddenAndDetach() : false;
+
+  banner(reg.pairCode, reg.printers, !wasInstalled && config.autoStartInstalled, spawnedHidden);
 
   let failStreak = 0;
   let lastPrinterNames = reg.printers.map((p) => p.name).join('|');
