@@ -295,7 +295,15 @@ function AppContent() {
   // this used to be a second, duplicate Firebase onIdTokenChanged listener.
 
   const onboardingCompletedLocal = localStorage.getItem('onboarding_completed') === 'true';
-  const needsOnboarding = (user && isApproved && userRole === 'owner' && onboardingStep > 0 && onboardingStep < 4);
+  /*
+   * hasNoProfile (لا صف staff/saas_users/tailor_requests بعد إعادة محاولات
+   * AuthContext) يعني أغلب الأحيان تسجيلاً ناجحاً لكن إعداد المتجر لم
+   * يكتمل بعد — نُوجّه مباشرة لصفحة التهيئة بدل عرض شاشة "تعذّر التحقق"
+   * (AccountIssueScreen، متغيّر no_profile) التي كانت تتطلّب من المستخدم
+   * الضغط على "إعادة المحاولة" أو "تسجيل الخروج" يدوياً بلا داعٍ.
+   */
+  const needsOnboarding = (user && isApproved && userRole === 'owner' && onboardingStep > 0 && onboardingStep < 4)
+    || (user && hasNoProfile);
   const isTenantOwner = userRole === 'owner' || userRole === 'admin';
   
   // Security Checks

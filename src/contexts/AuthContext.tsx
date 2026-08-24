@@ -375,22 +375,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 });
                 if (approved) localStorage.setItem('setup_complete', 'true');
             } else {
-                // No staff row, no saas_users row, no tailor_requests row --
-                // this session is authenticated but has no profile anywhere,
-                // almost always a registration that failed partway through
-                // (e.g. the tenant/staff insert step never completed). The
-                // caller must surface this explicitly instead of silently
-                // signing the user back out with no explanation.
-                setAppState({
-                    isApproved: false,
-                    userRole: 'owner' as UserRole,
-                    tenantId: null,
-                    onboardingStep: 1,
-                    hasStaffWithPin: false,
-                    currentUserStaff: null,
-                    hasNoProfile: true,
-                    resolveError: null,
-                });
+                /*
+                 * لا صف staff، لا saas_users، لا tailor_requests -- لكن هذا
+                 * يحدث فعلياً بعد تسجيل جديد ناجح تماماً: Login.tsx يُنشئ صف
+                 * tailor_requests هذا مباشرة قبل استدعاء resolveIdentity،
+                 * وأحياناً لا يكون مرئياً فوراً لاستعلام PostgREST التالي
+                 * (قد يمر عبر اتصال Postgres مُجمَّع pooled مختلف عن الذي
+                 * نفّذ الإدراج). كانت هذه الحالة تظهر خطأً "لم يكتمل إعداد
+                 * المتجر" لكل تسجيل جديد تقريباً رغم نجاحه فعلياً. نعيد
+                 * المحاولة بضع مرات قصيرة أولاً — بلا أي نافذة ظاهرة، مجرد
+                 * استعلام إضافي صامت أثناء شاشة التحميل — قبل الاستنتاج أن
+                 * التسجيل فشل فعلاً.
+                 */
+                let foundOnRetry: any = null;
+                for (let attempt = 0; attempt < 3 && !foundOnRetry; attempt++) {
+                    await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+                    const { data: retryRequest } = await supabase
+                        .from('tailor_requests')
+                        .select('*')
+                        .eq('uid', uid)
+                        .maybeSingle();
+                    foundOnRetry = retryRequest;
+                }
+
+                if (foundOnRetry) {
+                    const approved = foundOnRetry.status === 'approved';
+                    setAppState({
+                        isApproved: approved,
+                        userRole: 'owner' as UserRole,
+                        tenantId: null,
+                        onboardingStep: foundOnRetry.onboarding_step || 1,
+                        hasStaffWithPin: false,
+                        currentUserStaff: null,
+                        hasNoProfile: false,
+                        resolveError: null,
+                    });
+                    if (approved) localStorage.setItem('setup_complete', 'true');
+                } else {
+                    // حقاً لا يوجد أي ملف تعريف حتى بعد المحاولات -- على
+                    // الأرجح تسجيل فشل فعلاً في منتصف الطريق. نُظهر هذا
+                    // صراحةً بدل تسجيل خروج صامت.
+                    setAppState({
+                        isApproved: false,
+                        userRole: 'owner' as UserRole,
+                        tenantId: null,
+                        onboardingStep: 1,
+                        hasStaffWithPin: false,
+                        currentUserStaff: null,
+                        hasNoProfile: true,
+                        resolveError: null,
+                    });
+                }
             }
             setLoading(false);
         } catch (error: any) {
