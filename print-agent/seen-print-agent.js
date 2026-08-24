@@ -55,7 +55,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { execFile } = require('child_process');
 
-const VERSION = '2.1.0';
+const VERSION = '2.2.0';
 const PLATFORM = process.platform; // 'win32' | 'darwin' | 'linux'
 const TASK_NAME = 'SeenPrintAgent';
 
@@ -608,14 +608,54 @@ const currentLaunchCommand = () => {
   return `& '${exe.replace(/'/g, "''")}' '${script.replace(/'/g, "''")}' --quiet`;
 };
 
+const STARTUP_VBS_NAME = 'SeenPrintAgent.vbs';
+
+/** مجلد بدء التشغيل لحساب المستخدم الحالي — لا يحتاج أي صلاحية خاصة. */
+const startupDir = () => {
+  const appData = process.env.APPDATA;
+  return appData ? path.join(appData, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup') : null;
+};
+
+/**
+ * تنصيب احتياطي عبر مجلد بدء التشغيل (shell:startup) بدل مهمة مجدولة.
+ *
+ * بعض الأجهزة تمنع إنشاء مهام مجدولة بسياسة Group Policy (نفس الجهاز الذي
+ * فشلت فيه schtasks.exe بـ "Access is denied" هنا)، لكن الكتابة في مجلد
+ * بدء التشغيل الخاص بحساب المستخدم عملية ملفات عادية لا تحتاج أي صلاحية
+ * إضافية. نستخدم VBScript (‎wscript.exe‎ موجود في كل نسخ ويندوز) بدل ملف
+ * .bat أو اختصار عادي لأنه الوحيد الذي يُشغّل الأمر بنافذة مخفية تماماً
+ * (المعامل الثالث `0` في ‎Run‎) دون إظهار حتى وميض نافذة عند كل تسجيل دخول.
+ */
+const installViaStartupFolder = () => {
+  const dir = startupDir();
+  if (!dir) throw new Error('متغيّر البيئة APPDATA غير موجود.');
+  fs.mkdirSync(dir, { recursive: true });
+
+  const isSea = isSeaBinary();
+  const exe = process.execPath.replace(/"/g, '""');
+  const command = isSea
+    ? `"${exe}" --quiet`
+    : `"${exe}" "${(require.main?.filename || __filename).replace(/"/g, '""')}" --quiet`;
+
+  const vbs = `Set WshShell = CreateObject("WScript.Shell")\r\nWshShell.Run "${command.replace(/"/g, '""')}", 0, False\r\n`;
+  fs.writeFileSync(path.join(dir, STARTUP_VBS_NAME), vbs, 'utf8');
+};
+
+const uninstallStartupFolder = () => {
+  const dir = startupDir();
+  if (!dir) return;
+  const p = path.join(dir, STARTUP_VBS_NAME);
+  if (fs.existsSync(p)) fs.unlinkSync(p);
+};
+
 const ensureAutoStart = async () => {
   if (PLATFORM !== 'win32' || config.autoStartInstalled) return;
 
   try {
-    // نفس أسلوب seen-print-agent.ps1 -Install تماماً: مهمة مجدولة تشغّل
-    // powershell.exe بنافذة مخفية، وهو بدوره يستدعي الوسيط عبر `&` — الابن
-    // يرث وحدة تحكم الأب المخفية فلا تظهر أي نافذة على الإطلاق. تظهر
-    // النافذة فقط في هذا التشغيل اليدوي الأول (لعرض رمز الاقتران).
+    // المحاولة الأولى: مهمة مجدولة تشغّل powershell.exe بنافذة مخفية، وهو
+    // بدوره يستدعي الوسيط عبر `&` — الابن يرث وحدة تحكم الأب المخفية فلا
+    // تظهر أي نافذة على الإطلاق. تظهر النافذة فقط في هذا التشغيل اليدوي
+    // الأول (لعرض رمز الاقتران).
     const tr = `powershell.exe -NoProfile -WindowStyle Hidden -Command "${currentLaunchCommand().replace(/"/g, '`"')}"`;
     await run('schtasks.exe', [
       '/Create',
@@ -631,20 +671,35 @@ const ensureAutoStart = async () => {
     ]);
     config.autoStartInstalled = true;
     saveConfig(config);
-    log('✅ تم تفعيل التشغيل التلقائي مع ويندوز (بنافذة مخفية).');
+    log('✅ تم تفعيل التشغيل التلقائي مع ويندوز (مهمة مجدولة، بنافذة مخفية).');
   } catch (e) {
-    log('⚠️  تعذر تفعيل التشغيل التلقائي مع ويندوز:', e.message);
-    log('   بديل: أنشئ اختصاراً لهذا الملف داخل المجلد الذي يفتحه  shell:startup  (اكتبه في مربع "تشغيل" بويندوز).');
+    log(`⚠️  تعذر إنشاء مهمة مجدولة (${e.message}) — تجربة مجلد بدء التشغيل بديلاً...`);
+    try {
+      installViaStartupFolder();
+      config.autoStartInstalled = true;
+      saveConfig(config);
+      log('✅ تم تفعيل التشغيل التلقائي مع ويندوز (مجلد بدء التشغيل، بنافذة مخفية).');
+    } catch (e2) {
+      log('⚠️  تعذر تفعيل التشغيل التلقائي مع ويندوز:', e2.message);
+      log('   بديل يدوي: أنشئ اختصاراً لهذا الملف داخل المجلد الذي يفتحه  shell:startup  (اكتبه في مربع "تشغيل" بويندوز).');
+    }
   }
 };
 
 const uninstallAutoStart = async () => {
+  let didSomething = false;
   try {
     await run('schtasks.exe', ['/Delete', '/TN', TASK_NAME, '/F']);
-    console.log('  ✅ تم إلغاء التشغيل التلقائي.');
+    didSomething = true;
   } catch {
-    console.log('  ⚠️  لم يكن الوسيط منصّباً للتشغيل التلقائي.');
+    /* لم تكن مهمة مجدولة منصّبة */
   }
+  try {
+    uninstallStartupFolder();
+  } catch {
+    /* تجاهل */
+  }
+  console.log(didSomething ? '  ✅ تم إلغاء التشغيل التلقائي.' : '  ⚠️  لم يكن الوسيط منصّباً للتشغيل التلقائي.');
 };
 
 /* ============================================================================

@@ -64,7 +64,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$AGENT_VERSION = '2.1.0'
+$AGENT_VERSION = '2.2.0'
 $CONFIG_DIR    = Join-Path $env:LOCALAPPDATA 'SeenPrintAgent'
 $CONFIG_PATH   = Join-Path $CONFIG_DIR 'config.json'
 $LOG_PATH      = Join-Path $CONFIG_DIR 'agent.log'
@@ -490,6 +490,46 @@ function Register-Station {
 #  التنصيب / الإزالة  (مهمة مجدولة تعمل مع تشغيل ويندوز)
 #==============================================================================
 
+$STARTUP_VBS_NAME = 'SeenPrintAgent.vbs'
+
+function Get-StartupDir {
+    if (-not $env:APPDATA) { return $null }
+    Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Startup'
+}
+
+<#
+  تنصيب احتياطي عبر مجلد بدء التشغيل (shell:startup) بدل مهمة مجدولة.
+  بعض الأجهزة تمنع إنشاء مهام مجدولة بسياسة Group Policy، لكن الكتابة في
+  مجلد بدء التشغيل الخاص بحساب المستخدم عملية ملفات عادية لا تحتاج أي
+  صلاحية إضافية. VBScript (wscript.exe موجود في كل نسخ ويندوز) هو الوحيد
+  الذي يُشغّل الأمر بنافذة مخفية تماماً (المعامل الثالث 0 في Run) دون
+  إظهار حتى وميض نافذة عند كل تسجيل دخول.
+#>
+function Install-StartupFolder {
+    param([string] $Url)
+
+    $dir = Get-StartupDir
+    if (-not $dir) { throw 'متغيّر البيئة APPDATA غير موجود.' }
+    New-Item -ItemType Directory -Path $dir -Force | Out-Null
+
+    $arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$PSCommandPath`" -Quiet"
+    if ($Url) { $arguments += " -ServerUrl `"$Url`"" }
+    $command = "powershell.exe $arguments".Replace('"', '""')
+
+    $vbsPath = Join-Path $dir $STARTUP_VBS_NAME
+    @"
+Set WshShell = CreateObject("WScript.Shell")
+WshShell.Run "$command", 0, False
+"@ | Set-Content -Path $vbsPath -Encoding ASCII
+}
+
+function Uninstall-StartupFolder {
+    $dir = Get-StartupDir
+    if (-not $dir) { return }
+    $vbsPath = Join-Path $dir $STARTUP_VBS_NAME
+    if (Test-Path $vbsPath) { Remove-Item $vbsPath -Force -ErrorAction SilentlyContinue }
+}
+
 function Install-AutoStart {
     param([string] $Url, [switch] $Silent)
 
@@ -511,32 +551,53 @@ function Install-AutoStart {
 
         if (-not $Silent) {
             Write-Host ''
-            Write-Host '  ✅ تم تنصيب الوسيط للتشغيل التلقائي مع ويندوز.' -ForegroundColor Green
+            Write-Host '  ✅ تم تنصيب الوسيط للتشغيل التلقائي مع ويندوز (مهمة مجدولة).' -ForegroundColor Green
             Write-Host "     اسم المهمة: $TASK_NAME" -ForegroundColor Gray
             Write-Host '     للإزالة:  .\seen-print-agent.ps1 -Uninstall' -ForegroundColor Gray
             Write-Host ''
         }
         return $true
     } catch {
-        if (-not $Silent) {
-            Write-Host ''
-            Write-Host "  ❌ فشل التنصيب: $($_.Exception.Message)" -ForegroundColor Red
-            Write-Host '     بديل: انسخ اختصاراً للملف إلى المجلد الذي يفتحه  shell:startup' -ForegroundColor Yellow
-            Write-Host ''
-        } else {
-            Write-Log "تعذر تفعيل التشغيل التلقائي مع ويندوز: $($_.Exception.Message)" 'warn'
-            Write-Log '  بديل: انسخ اختصاراً لهذا الملف إلى المجلد الذي يفتحه  shell:startup' 'warn'
+        $schtasksError = $_.Exception.Message
+        try {
+            Install-StartupFolder -Url $Url
+            if (-not $Silent) {
+                Write-Host ''
+                Write-Host '  ✅ تم تنصيب الوسيط للتشغيل التلقائي مع ويندوز (مجلد بدء التشغيل).' -ForegroundColor Green
+                Write-Host "     (تعذّرت المهمة المجدولة: $schtasksError)" -ForegroundColor Gray
+                Write-Host ''
+            } else {
+                Write-Log "تعذرت المهمة المجدولة ($schtasksError) — استُخدم مجلد بدء التشغيل بديلاً." 'warn'
+            }
+            return $true
+        } catch {
+            if (-not $Silent) {
+                Write-Host ''
+                Write-Host "  ❌ فشل التنصيب: $($_.Exception.Message)" -ForegroundColor Red
+                Write-Host '     بديل يدوي: انسخ اختصاراً للملف إلى المجلد الذي يفتحه  shell:startup' -ForegroundColor Yellow
+                Write-Host ''
+            } else {
+                Write-Log "تعذر تفعيل التشغيل التلقائي مع ويندوز: $($_.Exception.Message)" 'warn'
+                Write-Log '  بديل يدوي: انسخ اختصاراً لهذا الملف إلى المجلد الذي يفتحه  shell:startup' 'warn'
+            }
+            return $false
         }
-        return $false
     }
 }
 
 function Uninstall-AutoStart {
+    $didSomething = $false
     try {
         & schtasks.exe /Delete /TN $TASK_NAME /F | Out-Null
         if ($LASTEXITCODE -ne 0) { throw "schtasks.exe أعاد رمز الخروج $LASTEXITCODE" }
-        Write-Host '  ✅ تم إلغاء التشغيل التلقائي.' -ForegroundColor Green
+        $didSomething = $true
     } catch {
+        # لم تكن مهمة مجدولة منصّبة
+    }
+    Uninstall-StartupFolder
+    if ($didSomething) {
+        Write-Host '  ✅ تم إلغاء التشغيل التلقائي.' -ForegroundColor Green
+    } else {
         Write-Host '  ⚠️  لم يكن الوسيط منصّباً للتشغيل التلقائي.' -ForegroundColor Yellow
     }
 }
