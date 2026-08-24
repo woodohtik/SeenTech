@@ -29,8 +29,9 @@ import { useTranslation } from "react-i18next";
 import { useDirection } from "../../lib/direction";
 import { useStaff } from "../../contexts/StaffContext";
 import { useToast } from "../../contexts/ToastContext";
+import { usePermissions } from "../../hooks/usePermissions";
 import { cn } from "../../lib/utils";
-import { Branch, InventoryItem, BranchInventory, UserRole } from "../../types";
+import { Branch, InventoryItem, BranchInventory } from "../../types";
 import { motion, AnimatePresence } from "motion/react";
 
 // Dynamic types representing the database schemas for proper TypeScript validation
@@ -82,6 +83,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
   const { t } = useTranslation();
   const { isRtl } = useDirection();
   const { currentStaff } = useStaff();
+  const { hasPermission } = usePermissions(currentStaff);
   const { error: toastError, success: toastSuccess, handleError } = useToast();
 
   // Active sub-section within the reconciliation module
@@ -112,13 +114,17 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
   const [historyItemDetails, setHistoryItemDetails] = useState<any[]>([]);
   const [detailsLoading, setDetailsLoading] = useState(false);
 
-  // Generate unique Reference Number for the reconciliation operation
+  // Generate unique Reference Number for the reconciliation operation.
+  // Depends only on the branch, not on touchedItems -- that state changes on
+  // every keystroke while counting, which used to regenerate this number
+  // (and the on-screen "auto reference") on every quantity edit instead of
+  // once per session.
   const computedReferenceNumber = useMemo(() => {
     const timestamp = Date.now().toString().slice(-6);
     const random = Math.floor(1000 + Math.random() * 9000);
     const prefix = "ADJ";
     return `${prefix}-${timestamp}-${random}`;
-  }, [selectedBranchId, touchedItems]);
+  }, [selectedBranchId]);
 
   // Schema liveness check for inventory_adjustments table
   useEffect(() => {
@@ -143,14 +149,11 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
     checkTableSchema();
   }, [tenantId]);
 
-  // Check RBAC Permissions
-  // Admins, Owners, Tenant Admins, Managers and Warehouse Managers can Approve
-  // Cashiers and Tailors can only save as Draft
-  const hasApprovePermission = useMemo(() => {
-    if (!currentStaff) return false;
-    const adminRoles: UserRole[] = ["super_admin", "tenant_admin", "owner", "admin", "manager", "warehouse_manager"];
-    return adminRoles.includes(currentStaff.role);
-  }, [currentStaff]);
+  // Check RBAC Permissions via the same effective-permissions system (role
+  // defaults + per-staff overrides) the rest of the app uses -- this used to
+  // be a hardcoded role list here, which ignored any tenant-configured
+  // per-staff permission overrides for 'inventory.reconcile'.
+  const hasApprovePermission = hasPermission("inventory.reconcile");
 
   // Categories list
   const categories = useMemo(() => {
@@ -412,6 +415,14 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
 
     if (itemsToAdjust.length === 0) {
       toastError(t("inventory.no_items_adjusted", "يرجى تعديل كمية مادة واحدة على الأقل قبل حفظ المستند."));
+      return;
+    }
+
+    // stock_ledger.staff_id is a UUID column -- without this guard a
+    // missing currentStaff.id would fall through to the "unknown" string
+    // fallback below and fail the write with a raw Postgres type error.
+    if (!currentStaff?.id) {
+      toastError(t("inventory.no_staff_session", "تعذر تحديد هوية الموظف الحالي. يرجى إعادة تسجيل الدخول والمحاولة مجدداً."));
       return;
     }
 

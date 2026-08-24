@@ -1093,6 +1093,7 @@
     "no_history_records": "No stock count documents recorded yet",
     "no_history_records_desc": "All stock count movements and drafts will appear here once created.",
     "no_items_adjusted": "Adjust the quantity of at least one item before saving the document.",
+    "no_staff_session": "Could not identify the current staff member. Please sign in again and retry.",
     "no_results_filters": "No results match the selected filters",
     "no_results_filters_desc": "Try clearing your search terms or changing the current filter category.",
     "no_supplier": "No Supplier",

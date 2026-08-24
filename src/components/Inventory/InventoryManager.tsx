@@ -496,9 +496,6 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
           )}
         >
           <span>{t("inventory.stock_take", "جرد المخزون")}</span>
-          <span className="bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 text-[10px] px-1.5 py-0.5 rounded-md font-black">
-            قريباً
-          </span>
         </button>
         <button
           onClick={() => setActiveTab("fabric_uom")}
@@ -1481,20 +1478,13 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
       )}
 
       {activeTab === "stock_take" && (
-        <div className="bg-surface rounded-[2rem] border border-border shadow-sm p-8 sm:p-12 text-center flex flex-col items-center justify-center min-h-[350px]">
-          <div className="p-4 bg-brand/10 text-brand rounded-full mb-4">
-            <ClipboardList size={40} className="sm:size-[48px] animate-pulse" />
-          </div>
-          <h3 className="text-lg sm:text-xl font-bold text-content mb-2">
-            ميزة جرد المخزون (تسوية المخزون)
-          </h3>
-          <p className="text-content-muted text-xs sm:text-sm max-w-md leading-relaxed mb-6">
-            ستتمكن قريباً من إجراء عمليات الجرد الدوري والتسويات المخزنية ومعالجة الفروقات والكميات التالفة بشكل متكامل مع النظام المحاسبي.
-          </p>
-          <span className="bg-brand/10 text-brand px-4 py-1.5 rounded-full text-xs font-black">
-            قريباً جداً
-          </span>
-        </div>
+        <InventoryAdjustment
+          tenantId={tenantId}
+          items={items}
+          branches={branches}
+          branchStock={branchStock}
+          onRefresh={() => router.refresh()}
+        />
       )}
 
       {activeTab === "fabric_uom" && (
