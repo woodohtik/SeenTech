@@ -59,6 +59,33 @@ import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
 
 import { isRtlLang } from '../lib/direction';
 
+// Body measurements live on the Customer record (not per order item), so a
+// custom-garment item's printed measurement table is the selected
+// customer's own measurements at checkout time -- only for 'custom' items,
+// and only the fields that are actually filled in.
+function buildInvoiceMeasurements(
+  item: { type?: string },
+  customer: Customer | null,
+  t: (key: string) => string
+): { label: string; value: string | number }[] | undefined {
+  if (item.type !== 'custom' || !customer?.measurements) return undefined;
+  const m = customer.measurements;
+  const fields: Array<[string, keyof typeof m]> = [
+    ['length', 'length'],
+    ['shoulder', 'shoulder'],
+    ['chest', 'chest'],
+    ['waist', 'waist'],
+    ['hips', 'hips'],
+    ['sleeve', 'sleeve'],
+    ['neck', 'neck'],
+    ['bottomWidth', 'bottomWidth'],
+  ];
+  const list = fields
+    .filter(([, key]) => m[key] !== undefined && m[key] !== null && m[key] !== ('' as any))
+    .map(([labelKey, key]) => ({ label: t(`measurements.${labelKey}`), value: m[key] as any }));
+  return list.length > 0 ? list : undefined;
+}
+
 export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?: string }) {
   const router = useRouter();
   const refreshCounter = useRefreshCounter();
@@ -1110,7 +1137,12 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
          customerName: orderData.customer_name,
          customerPhone: selectedCustomer?.phone,
          customerVat: b2bTRN,
-         items: cart.map(item => ({ name: item.name || item.garmentType || 'منتج مخصص', quantity: item.quantity, price: item.price })),
+         items: cart.map(item => ({
+           name: item.name || item.garmentType || 'منتج مخصص',
+           quantity: item.quantity,
+           price: item.price,
+           measurements: buildInvoiceMeasurements(item, selectedCustomer, t)
+         })),
          qrCode: qrCodeBase64,
          issuedAt: timestamp
       });

@@ -48,12 +48,14 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
         address: '',
         taxId: '',
         alignment: 'center' as 'right' | 'left' | 'center',
+        logoBorder: true,
       },
       columns: {
         showUnitPrice: true,
         showDiscount: true,
         showMeasurements: false,
         showBarcode: true,
+        showCustomerName: true,
       },
       footer: {
         returnPolicy: '',
@@ -234,7 +236,13 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
         id: 'item-1',
         name: t('settings_page.invoice.preview_item_name'),
         quantity: 1,
-        unitPrice: 350.00
+        unitPrice: 350.00,
+        measurements: [
+          { label: t('measurements.length'), value: 145 },
+          { label: t('measurements.chest'), value: 52 },
+          { label: t('measurements.shoulder'), value: 46 },
+          { label: t('measurements.sleeve'), value: 62 },
+        ]
       }
     ],
     subtotal: 350.00,
@@ -470,6 +478,18 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                     ))}
                   </div>
                 </div>
+                <label className="flex items-center justify-between p-3 bg-white rounded-xl border border-border/50 cursor-pointer hover:border-brand/30 shadow-sm transition-all gap-3">
+                  <span className="text-xs font-bold text-content">{t('settings_page.invoice.logo_border')}</span>
+                  <div className="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={settings.header.logoBorder}
+                      onChange={(e) => setSettings(s => ({ ...s, header: { ...s.header, logoBorder: e.target.checked } }))}
+                    />
+                    <div className="w-12 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand"></div>
+                  </div>
+                </label>
               </div>
             </div>
 
@@ -525,6 +545,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                 { id: 'showDiscount', label: t('settings_page.invoice.col_discount') },
                 { id: 'showMeasurements', label: t('settings_page.invoice.col_measurements') },
                 { id: 'showBarcode', label: t('settings_page.invoice.col_barcode') },
+                { id: 'showCustomerName', label: t('settings_page.invoice.col_customer_name') },
               ].map(col => (
                 <label key={col.id} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-border/50 cursor-pointer hover:border-brand/30 hover:bg-brand/5 shadow-sm transition-all group">
                   <span className="text-sm font-bold text-content group-hover:text-brand">{col.label}</span>

@@ -31,6 +31,7 @@ export interface InvoiceData {
     name: string;
     quantity: number;
     unitPrice: number;
+    measurements?: { label: string; value: string | number }[];
   }>;
   subtotal: number;
   vatAmount: number;
@@ -62,12 +63,14 @@ export interface InvoiceLayoutSettingsType {
     address?: string;
     contactNumbers?: string;
     alignment?: 'right' | 'center' | 'left';
+    logoBorder?: boolean;
   };
   columns?: {
     showUnitPrice?: boolean;
     showDiscount?: boolean;
     showMeasurements?: boolean;
     showBarcode?: boolean;
+    showCustomerName?: boolean;
   };
   footer?: {
     returnPolicy?: string;
@@ -155,9 +158,14 @@ export const ThermalInvoice = ({
     name: item.name,
     quantity: item.quantity,
     unitPrice: item.unitPrice,
+    measurements: item.measurements,
   }));
 
   const payLabels = formatPaymentMethodLabels(data.paymentMethod);
+
+  const showCustomerName = settings?.columns?.showCustomerName !== false;
+  const logoBorder = settings?.header?.logoBorder !== false;
+  const showMeasurements = settings?.columns?.showMeasurements === true;
 
   return (
     <SimplifiedTaxInvoice
@@ -173,6 +181,9 @@ export const ThermalInvoice = ({
       hidePrintButton={true}
       branchName={data.branchName || 'الفرع الرئيسي'}
       sellerName={data.sellerName || 'النظام'}
+      showCustomerName={showCustomerName}
+      logoBorder={logoBorder}
+      showMeasurements={showMeasurements}
     />
   );
 };
@@ -230,9 +241,14 @@ export const StandardInvoice = ({
     name: item.name,
     quantity: item.quantity,
     unitPrice: item.unitPrice,
+    measurements: item.measurements,
   }));
 
   const payLabels = formatPaymentMethodLabels(data.paymentMethod);
+
+  const showCustomerName = settings?.columns?.showCustomerName !== false;
+  const logoBorder = settings?.header?.logoBorder !== false;
+  const showMeasurements = settings?.columns?.showMeasurements === true;
 
   return (
     <StandardTaxInvoice
@@ -250,6 +266,9 @@ export const StandardInvoice = ({
       totals={totals}
       qrCodeBase64={data.qrValue}
       hidePrintButton={true}
+      showCustomerName={showCustomerName}
+      logoBorder={logoBorder}
+      showMeasurements={showMeasurements}
     />
   );
 };

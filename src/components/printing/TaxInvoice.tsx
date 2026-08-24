@@ -13,6 +13,7 @@ export interface InvoiceItem {
   unitPrice: number; // VAT-inclusive unit price
   vatAmount?: number;
   total?: number;
+  measurements?: { label: string; value: string | number }[];
 }
 
 export interface SellerInfo {
@@ -58,6 +59,9 @@ export interface TaxInvoiceProps {
   orderId?: string;
   onPrint?: () => void;
   hidePrintButton?: boolean;
+  showCustomerName?: boolean;
+  logoBorder?: boolean;
+  showMeasurements?: boolean;
 }
 
 export default function TaxInvoice({
@@ -74,6 +78,9 @@ export default function TaxInvoice({
   orderId,
   onPrint,
   hidePrintButton = false,
+  showCustomerName = true,
+  logoBorder = true,
+  showMeasurements = false,
 }: TaxInvoiceProps) {
   const { t } = useTranslation();
   const [layoutSettings] = React.useState(() => {
@@ -162,7 +169,7 @@ export default function TaxInvoice({
               <img
                 src={seller.logoUrl}
                 alt="Seller Logo"
-                className="w-20 h-20 object-contain rounded-xl border border-slate-100 p-1"
+                className={`w-20 h-20 object-contain rounded-xl p-1 ${logoBorder ? 'border border-slate-100' : ''}`}
                 referrerPolicy="no-referrer"
                 crossOrigin="anonymous"
               />
@@ -256,46 +263,48 @@ export default function TaxInvoice({
         </div>
 
         {/* Client details section (Critical for standard B2B) */}
-        <div className="mb-8 border border-slate-200 rounded-2xl overflow-hidden">
-          <div className="bg-slate-900 px-5 py-3 text-white flex justify-between items-center">
-            <span className="text-sm font-black">بيانات العميل (المشتري)</span>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Buyer (Customer) Details</span>
-          </div>
-          <div className="p-6 bg-white grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-            <div className="space-y-3">
-              <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                <span className="text-slate-500 font-medium">اسم العميل / Customer Name:</span>
-                <span className="font-black text-slate-800">{buyer.name} {buyer.nameEn ? `/ ${buyer.nameEn}` : ''}</span>
+        {showCustomerName && (
+          <div className="mb-8 border border-slate-200 rounded-2xl overflow-hidden">
+            <div className="bg-slate-900 px-5 py-3 text-white flex justify-between items-center">
+              <span className="text-sm font-black">بيانات العميل (المشتري)</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Buyer (Customer) Details</span>
+            </div>
+            <div className="p-6 bg-white grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+              <div className="space-y-3">
+                <div className="flex justify-between border-b border-slate-100 pb-1.5">
+                  <span className="text-slate-500 font-medium">اسم العميل / Customer Name:</span>
+                  <span className="font-black text-slate-800">{buyer.name} {buyer.nameEn ? `/ ${buyer.nameEn}` : ''}</span>
+                </div>
+                {buyer.vatNumber ? (
+                  <div className="flex justify-between border-b border-slate-100 pb-1.5">
+                    <span className="text-slate-500 font-medium">الرقم الضريبي / Tax ID (VAT):</span>
+                    <span className="font-mono font-bold text-slate-800">{buyer.vatNumber}</span>
+                  </div>
+                ) : (
+                  <div className="flex justify-between border-b border-slate-100 pb-1.5">
+                    <span className="text-slate-500 font-medium font-sans">الرقم الضريبي للعميل / Customer VAT:</span>
+                    <span className="text-slate-400 font-medium font-sans italic">غير متوفر / Not Provided</span>
+                  </div>
+                )}
               </div>
-              {buyer.vatNumber ? (
-                <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                  <span className="text-slate-500 font-medium">الرقم الضريبي / Tax ID (VAT):</span>
-                  <span className="font-mono font-bold text-slate-800">{buyer.vatNumber}</span>
-                </div>
-              ) : (
-                <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                  <span className="text-slate-500 font-medium font-sans">الرقم الضريبي للعميل / Customer VAT:</span>
-                  <span className="text-slate-400 font-medium font-sans italic">غير متوفر / Not Provided</span>
-                </div>
-              )}
-            </div>
 
-            <div className="space-y-3">
-              {buyer.address && (
-                <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                  <span className="text-slate-500 font-medium">العنوان / Address:</span>
-                  <span className="font-bold text-slate-700">{buyer.address} {buyer.addressEn ? `/ ${buyer.addressEn}` : ''}</span>
-                </div>
-              )}
-              {buyer.phone && (
-                <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                  <span className="text-slate-500 font-medium font-sans">الهاتف / Phone:</span>
-                  <span className="font-mono font-bold text-slate-700" dir="ltr">{buyer.phone}</span>
-                </div>
-              )}
+              <div className="space-y-3">
+                {buyer.address && (
+                  <div className="flex justify-between border-b border-slate-100 pb-1.5">
+                    <span className="text-slate-500 font-medium">العنوان / Address:</span>
+                    <span className="font-bold text-slate-700">{buyer.address} {buyer.addressEn ? `/ ${buyer.addressEn}` : ''}</span>
+                  </div>
+                )}
+                {buyer.phone && (
+                  <div className="flex justify-between border-b border-slate-100 pb-1.5">
+                    <span className="text-slate-500 font-medium font-sans">الهاتف / Phone:</span>
+                    <span className="font-mono font-bold text-slate-700" dir="ltr">{buyer.phone}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Detailed Items Table */}
         <div className="mb-8 border border-slate-200 rounded-2xl overflow-hidden">
@@ -320,24 +329,41 @@ export default function TaxInvoice({
                 const itemVat = itemTotalInc - itemTotalExc;
 
                 return (
-                  <tr key={index} className="hover:bg-slate-50 transition-colors text-slate-700">
-                    <td className="p-2.5 font-mono text-[10px] text-slate-400 text-center">{index + 1}</td>
-                    <td className="p-2.5">
-                      {/*
-                        No "N ×" prefix on this template, unlike the thermal
-                        receipt: a full B2B tax invoice must carry quantity as
-                        its own ZATCA field, and that column is right here, so
-                        prefixing the name would print the quantity twice.
-                      */}
-                      <p className="font-extrabold text-slate-900 leading-snug">{item.name}</p>
-                    </td>
-                    <td className="p-2.5 text-center font-bold font-mono text-slate-800">{item.quantity}</td>
-                    <td className="p-2.5 font-mono text-slate-600">{itemUnitExc.toFixed(2)}</td>
-                    <td className="p-2.5 font-mono text-slate-600">{itemTotalExc.toFixed(2)}</td>
-                    <td className="p-2.5 text-center font-bold text-slate-500 font-mono text-[10px]">15%</td>
-                    <td className="p-2.5 font-mono text-slate-600">{itemVat.toFixed(2)}</td>
-                    <td className="p-2.5 font-mono font-black text-slate-900 bg-slate-50/50">{itemTotalInc.toFixed(2)}</td>
-                  </tr>
+                  <React.Fragment key={index}>
+                    <tr className="hover:bg-slate-50 transition-colors text-slate-700">
+                      <td className="p-2.5 font-mono text-[10px] text-slate-400 text-center">{index + 1}</td>
+                      <td className="p-2.5">
+                        {/*
+                          No "N ×" prefix on this template, unlike the thermal
+                          receipt: a full B2B tax invoice must carry quantity as
+                          its own ZATCA field, and that column is right here, so
+                          prefixing the name would print the quantity twice.
+                        */}
+                        <p className="font-extrabold text-slate-900 leading-snug">{item.name}</p>
+                      </td>
+                      <td className="p-2.5 text-center font-bold font-mono text-slate-800">{item.quantity}</td>
+                      <td className="p-2.5 font-mono text-slate-600">{itemUnitExc.toFixed(2)}</td>
+                      <td className="p-2.5 font-mono text-slate-600">{itemTotalExc.toFixed(2)}</td>
+                      <td className="p-2.5 text-center font-bold text-slate-500 font-mono text-[10px]">15%</td>
+                      <td className="p-2.5 font-mono text-slate-600">{itemVat.toFixed(2)}</td>
+                      <td className="p-2.5 font-mono font-black text-slate-900 bg-slate-50/50">{itemTotalInc.toFixed(2)}</td>
+                    </tr>
+                    {showMeasurements && item.measurements && item.measurements.length > 0 && (
+                      <tr className="bg-slate-50/40">
+                        <td className="p-0" />
+                        <td colSpan={7} className="px-2.5 pb-2.5">
+                          <div className="grid grid-cols-4 gap-x-4 gap-y-1 border-t border-dashed border-slate-200 pt-2">
+                            {item.measurements.map((m, mi) => (
+                              <div key={mi} className="flex justify-between gap-1 text-[10px] text-slate-500 font-bold">
+                                <span>{m.label}:</span>
+                                <span className="font-mono text-slate-800">{m.value}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </tbody>

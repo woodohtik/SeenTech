@@ -13,6 +13,7 @@ export interface SimplifiedInvoiceItem {
   unitPrice: number; // VAT-inclusive unit price
   vatAmount?: number;
   total?: number;
+  measurements?: { label: string; value: string | number }[];
 }
 
 export interface SimplifiedSellerInfo {
@@ -48,6 +49,9 @@ export interface SimplifiedTaxInvoiceProps {
   hidePrintButton?: boolean;
   branchName?: string;
   sellerName?: string;
+  showCustomerName?: boolean;
+  logoBorder?: boolean;
+  showMeasurements?: boolean;
 }
 
 export default function SimplifiedTaxInvoice({
@@ -65,6 +69,9 @@ export default function SimplifiedTaxInvoice({
   hidePrintButton = false,
   branchName = 'الفرع الرئيسي',
   sellerName = 'النظام',
+  showCustomerName = true,
+  logoBorder = true,
+  showMeasurements = false,
 }: SimplifiedTaxInvoiceProps) {
   const { t } = useTranslation();
   const [fontSizeScale, setFontSizeScale] = React.useState<number>(100);
@@ -175,7 +182,7 @@ export default function SimplifiedTaxInvoice({
             <img
               src={seller.logoUrl}
               alt="Seller Logo"
-              className="w-24 h-24 object-contain rounded-xl border border-slate-200 p-1 mx-auto mb-1"
+              className={`w-24 h-24 object-contain rounded-xl p-1 mx-auto mb-1 ${logoBorder ? 'border border-slate-200' : ''}`}
               referrerPolicy="no-referrer"
               crossOrigin="anonymous"
             />
@@ -251,6 +258,17 @@ export default function SimplifiedTaxInvoice({
             </div>
             <span className="text-slate-500 font-sans text-[7.5px] font-bold shrink-0 ps-1 whitespace-nowrap">Seller</span>
           </div>
+
+          {/* Customer / Buyer Name (optional) */}
+          {showCustomerName && customerName && (
+            <div className="flex justify-between items-center py-0.5">
+              <div className="text-right font-bold text-slate-900 min-w-0 break-words">
+                <span className="text-slate-600 font-bold">العميل: </span>
+                <span>{customerName}</span>
+              </div>
+              <span className="text-slate-500 font-sans text-[7.5px] font-bold shrink-0 ps-1 whitespace-nowrap">Customer</span>
+            </div>
+          )}
         </div>
 
         {/* Separator line between Seller info and Tax Invoice Title */}
@@ -276,17 +294,31 @@ export default function SimplifiedTaxInvoice({
           {items.map((item, idx) => {
             const itemTotalInc = item.unitPrice * item.quantity;
             return (
-              <div key={idx} className="flex justify-between items-start text-[9px] py-0.5 text-slate-900 border-b border-solid border-slate-100 last:border-0 gap-1">
-                <div className="flex-1 min-w-0 text-right font-bold text-slate-900 leading-tight break-words">
-                  <span className="font-mono text-slate-800 font-bold" dir="ltr">× {item.quantity}</span>{' '}
-                  {item.name}
+              <div key={idx} className="py-0.5 border-b border-solid border-slate-100 last:border-0">
+                <div className="flex justify-between items-start text-[9px] text-slate-900 gap-1">
+                  <div className="flex-1 min-w-0 text-right font-bold text-slate-900 leading-tight break-words">
+                    <span className="font-mono text-slate-800 font-bold" dir="ltr">× {item.quantity}</span>{' '}
+                    {item.name}
+                  </div>
+                  <span className="w-12 shrink-0 text-center font-mono font-bold text-slate-800 inline-flex items-center justify-center gap-0.5 whitespace-nowrap">
+                    {item.unitPrice.toFixed(2)}<CurrencySymbol className="h-[1em] w-auto shrink-0" />
+                  </span>
+                  <span className="w-14 shrink-0 text-left font-mono font-black text-slate-900 inline-flex items-center justify-end gap-0.5 whitespace-nowrap">
+                    {itemTotalInc.toFixed(2)}<CurrencySymbol className="h-[1em] w-auto shrink-0" />
+                  </span>
                 </div>
-                <span className="w-12 shrink-0 text-center font-mono font-bold text-slate-800 inline-flex items-center justify-center gap-0.5 whitespace-nowrap">
-                  {item.unitPrice.toFixed(2)}<CurrencySymbol className="h-[1em] w-auto shrink-0" />
-                </span>
-                <span className="w-14 shrink-0 text-left font-mono font-black text-slate-900 inline-flex items-center justify-end gap-0.5 whitespace-nowrap">
-                  {itemTotalInc.toFixed(2)}<CurrencySymbol className="h-[1em] w-auto shrink-0" />
-                </span>
+
+                {/* Measurement Details (optional) */}
+                {showMeasurements && item.measurements && item.measurements.length > 0 && (
+                  <div className="mt-0.5 pt-0.5 border-t border-dashed border-slate-200 grid grid-cols-3 gap-x-1.5 gap-y-0.5">
+                    {item.measurements.map((m, mi) => (
+                      <div key={mi} className="flex justify-between gap-0.5 text-[7.5px] text-slate-600 font-bold">
+                        <span className="truncate">{m.label}:</span>
+                        <span className="font-mono text-slate-800 shrink-0">{m.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
