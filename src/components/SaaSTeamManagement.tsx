@@ -245,7 +245,6 @@ export default function SaaSTeamManagement() {
               placeholder={t('saas.search_members_placeholder', 'ابحث بالاسم أو البريد...')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-surface border-none shadow-sm rounded-2xl"
             />
           </div>
           <button

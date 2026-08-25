@@ -128,7 +128,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                     if (e.key === 'Enter') close(promptValue);
                     if (e.key === 'Escape') close(null);
                   }}
-                  className="w-full px-4 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand outline-none font-bold text-content text-center"
+                  className="w-full px-4 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-bold text-content text-center"
                 />
               )}
 
