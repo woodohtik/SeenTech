@@ -11,7 +11,7 @@ import {
   Download
 } from 'lucide-react';
 import { AdminIconInput } from './ui/AdminIconInput';
-import { AdminIconSelect } from './ui/AdminIconSelect';
+import { SmartSelect } from './ui/SmartSelect';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -142,18 +142,19 @@ export default function SaaSAuditLogs() {
           />
         </div>
         <div className="flex gap-2 w-full md:w-56">
-          <AdminIconSelect 
+          <SmartSelect
             value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
+            onChange={setFilterType}
             startIcon={Filter}
             className="w-full"
-          >
-            <option value="all">{t('saas.filter_type_all')}</option>
-            <option value="login">{t('saas.filter_type_login')}</option>
-            <option value="deletion">{t('saas.filter_type_deletion')}</option>
-            <option value="update">{t('saas.filter_type_update')}</option>
-            <option value="security_alert">{t('saas.filter_type_security_alert')}</option>
-          </AdminIconSelect>
+            options={[
+              { value: 'all', label: t('saas.filter_type_all') },
+              { value: 'login', label: t('saas.filter_type_login') },
+              { value: 'deletion', label: t('saas.filter_type_deletion') },
+              { value: 'update', label: t('saas.filter_type_update') },
+              { value: 'security_alert', label: t('saas.filter_type_security_alert') },
+            ]}
+          />
         </div>
       </div>
 

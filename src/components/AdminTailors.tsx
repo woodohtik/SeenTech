@@ -40,7 +40,7 @@ import { PriceDisplay } from './PriceDisplay';
 import { cn } from '../lib/utils';
 import { autoSeed } from '../services/seedService';
 import { AdminIconInput } from './ui/AdminIconInput';
-import { AdminIconSelect } from './ui/AdminIconSelect';
+import { SmartSelect } from './ui/SmartSelect';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useDirection } from '../lib/direction';
@@ -838,16 +838,17 @@ export default function AdminTailors() {
                   className="rounded-2xl"
                 />
               </div>
-              <AdminIconSelect 
+              <SmartSelect
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={setStatusFilter}
                 startIcon={Filter}
-                className="w-auto"
-              >
-                <option value="all">{t('saas.tenants.all_statuses')}</option>
-                <option value="active">{t('common.active')}</option>
-                <option value="inactive">{t('settings_page.staff.permissions.disabled')}</option>
-              </AdminIconSelect>
+                className="w-auto min-w-[160px] rounded-2xl"
+                options={[
+                  { value: 'all', label: t('saas.tenants.all_statuses') },
+                  { value: 'active', label: t('common.active') },
+                  { value: 'inactive', label: t('settings_page.staff.permissions.disabled') },
+                ]}
+              />
             </div>
             
             <div className="flex gap-2">
@@ -1068,15 +1069,16 @@ export default function AdminTailors() {
 
                           <td className="px-8 py-6 text-center">
                             <div className="w-48 mx-auto">
-                              <AdminIconSelect
+                              <SmartSelect
                                 startIcon={Crown}
                                 value={tenant.planId || 'free'}
-                                onChange={(e) => handleUpdateTenantPlan(tenant.id, e.target.value)}
-                                className="w-full bg-surface-muted border-none rounded-xl text-xs font-black min-h-[38px]"
-                              >
-                                <option value="free">{t('saas.tenants.plan_option_free')}</option>
-                                <option value="basic">{t('saas.tenants.plan_option_basic')}</option>
-                              </AdminIconSelect>
+                                onChange={(v) => handleUpdateTenantPlan(tenant.id, v)}
+                                className="w-full rounded-xl text-xs"
+                                options={[
+                                  { value: 'free', label: t('saas.tenants.plan_option_free') },
+                                  { value: 'basic', label: t('saas.tenants.plan_option_basic') },
+                                ]}
+                              />
                             </div>
                           </td>
 

@@ -47,6 +47,7 @@ import {
   Pie
 } from 'recharts';
 import { cn } from '../lib/utils';
+import { SmartSelect } from './ui/SmartSelect';
 import { PriceDisplay } from './PriceDisplay';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
@@ -901,16 +902,15 @@ export default function SuperAdminDashboard() {
                   </button>
                 </div>
 
-                <select
+                <SmartSelect
                   value={planFilter}
-                  onChange={(e) => setPlanFilter(e.target.value)}
-                  className="bg-surface-muted px-4 py-2.5 rounded-xl border border-border text-xs font-black focus:outline-none focus:ring-2 focus:ring-brand"
-                >
-                  <option value="all">{t('saas.all_plans')}</option>
-                  {plansList.map(plan => (
-                    <option key={plan.id} value={plan.id}>{plan.name}</option>
-                  ))}
-                </select>
+                  onChange={(v) => setPlanFilter(v)}
+                  className="w-auto min-w-[160px] rounded-xl px-4 py-2.5 text-xs"
+                  options={[
+                    { value: 'all', label: t('saas.all_plans') },
+                    ...plansList.map(plan => ({ value: plan.id, label: plan.name })),
+                  ]}
+                />
               </div>
             </div>
 
@@ -1356,16 +1356,17 @@ export default function SuperAdminDashboard() {
                     />
                   </div>
 
-                  <select
+                  <SmartSelect
                     value={auditTypeFilter}
-                    onChange={(e) => setAuditTypeFilter(e.target.value)}
-                    className="bg-surface-muted px-3 py-2 rounded-xl border border-border text-xs font-black focus:outline-none"
-                  >
-                    <option value="all">{t('saas.audit_filter_all_types')}</option>
-                    <option value="security">{t('saas.audit_filter_security')}</option>
-                    <option value="deletion">{t('common.delete')}</option>
-                    <option value="system">{t('saas.audit_filter_system')}</option>
-                  </select>
+                    onChange={(v) => setAuditTypeFilter(v)}
+                    className="w-auto min-w-[160px] rounded-xl px-3 py-2 text-xs"
+                    options={[
+                      { value: 'all', label: t('saas.audit_filter_all_types') },
+                      { value: 'security', label: t('saas.audit_filter_security') },
+                      { value: 'deletion', label: t('common.delete') },
+                      { value: 'system', label: t('saas.audit_filter_system') },
+                    ]}
+                  />
                 </div>
               </div>
 

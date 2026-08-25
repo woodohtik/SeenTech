@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { useStaff } from '../../contexts/StaffContext';
+import { SmartSelect } from '../ui/SmartSelect';
 import { 
   DEFAULT_FABRIC_UNITS, 
   safeRound, 
@@ -560,19 +561,16 @@ const FabricUomConversion: React.FC<FabricUomConversionProps> = ({ tenantId }) =
                     <label className="text-xs font-black text-content-muted uppercase tracking-wider block mx-1">
                       {t('inventory.select_fabric_item', 'اختر قماشاً')}
                     </label>
-                    <select
+                    <SmartSelect
                       value={selectedItemId}
-                      onChange={(e) => setSelectedItemId(e.target.value)}
-                      required
-                      className="w-full px-4 py-3 bg-surface-muted rounded-2xl border-none focus:ring-2 focus:ring-brand font-bold text-sm text-right"
-                    >
-                      <option value="">{t('inventory.select_fabric_placeholder', 'اختر قماشاً...')}</option>
-                      {items.map(item => (
-                        <option key={item.id} value={item.id}>
-                          {item.name} (1 {getUnitLabel(item.unit)} = {item.conversionRate} متر)
-                        </option>
-                      ))}
-                    </select>
+                      onChange={setSelectedItemId}
+                      className="rounded-2xl px-4 py-3 text-sm"
+                      placeholder={t('inventory.select_fabric_placeholder', 'اختر قماشاً...')}
+                      options={items.map(item => ({
+                        value: item.id,
+                        label: `${item.name} (1 ${getUnitLabel(item.unit)} = ${item.conversionRate} متر)`,
+                      }))}
+                    />
                   </div>
 
                   {/* Select Branch */}
@@ -580,17 +578,13 @@ const FabricUomConversion: React.FC<FabricUomConversionProps> = ({ tenantId }) =
                     <label className="text-xs font-black text-content-muted uppercase tracking-wider block mx-1">
                       {t('inventory.select_branch', 'الفرع / المخزن المستهدف')}
                     </label>
-                    <select
+                    <SmartSelect
                       value={selectedBranchId}
-                      onChange={(e) => setSelectedBranchId(e.target.value)}
-                      required
-                      className="w-full px-4 py-3 bg-surface-muted rounded-2xl border-none focus:ring-2 focus:ring-brand font-bold text-sm text-right"
-                    >
-                      <option value="">{t('inventory.select_branch_placeholder', 'اختر الفرع للعملية...')}</option>
-                      {branches.map(b => (
-                        <option key={b.id} value={b.id}>{b.name}</option>
-                      ))}
-                    </select>
+                      onChange={setSelectedBranchId}
+                      className="rounded-2xl px-4 py-3 text-sm"
+                      placeholder={t('inventory.select_branch_placeholder', 'اختر الفرع للعملية...')}
+                      options={branches.map(b => ({ value: b.id, label: b.name }))}
+                    />
                   </div>
 
                   {/* Action Mode */}
@@ -804,15 +798,12 @@ const FabricUomConversion: React.FC<FabricUomConversionProps> = ({ tenantId }) =
                           </td>
                           <td className="px-6 py-4">
                             {isEditing ? (
-                              <select
+                              <SmartSelect
                                 value={settingBaseUnit}
-                                onChange={(e) => setSettingBaseUnit(e.target.value)}
-                                className="px-2 py-1.5 bg-surface border border-border rounded-xl font-bold text-xs text-right"
-                              >
-                                {DEFAULT_FABRIC_UNITS.filter(u => u.isBase).map(u => (
-                                  <option key={u.id} value={u.id}>{u.name}</option>
-                                ))}
-                              </select>
+                                onChange={setSettingBaseUnit}
+                                className="w-32 rounded-xl px-2 py-1.5 text-xs"
+                                options={DEFAULT_FABRIC_UNITS.filter(u => u.isBase).map(u => ({ value: u.id, label: u.name }))}
+                              />
                             ) : (
                               <span className="px-2.5 py-1 bg-surface-muted text-content-muted rounded-full text-xs font-bold">
                                 {getUnitLabel(item.baseUnit)}
@@ -821,15 +812,12 @@ const FabricUomConversion: React.FC<FabricUomConversionProps> = ({ tenantId }) =
                           </td>
                           <td className="px-6 py-4">
                             {isEditing ? (
-                              <select
+                              <SmartSelect
                                 value={settingLargeUnit}
-                                onChange={(e) => setSettingLargeUnit(e.target.value)}
-                                className="px-2 py-1.5 bg-surface border border-border rounded-xl font-bold text-xs text-right"
-                              >
-                                {DEFAULT_FABRIC_UNITS.filter(u => !u.isBase).map(u => (
-                                  <option key={u.id} value={u.id}>{u.name}</option>
-                                ))}
-                              </select>
+                                onChange={setSettingLargeUnit}
+                                className="w-32 rounded-xl px-2 py-1.5 text-xs"
+                                options={DEFAULT_FABRIC_UNITS.filter(u => !u.isBase).map(u => ({ value: u.id, label: u.name }))}
+                              />
                             ) : (
                               <span className="px-2.5 py-1 bg-surface-muted text-content-muted rounded-full text-xs font-bold">
                                 {getUnitLabel(item.unit)}

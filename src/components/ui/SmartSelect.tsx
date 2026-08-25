@@ -1,6 +1,6 @@
 import React, { Fragment, useState } from 'react';
 import { Combobox, Listbox, Transition } from '@headlessui/react';
-import { Check, ChevronDown, Search } from 'lucide-react';
+import { Check, ChevronDown, LucideIcon, Search } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useDirection } from '../../lib/direction';
 
@@ -20,6 +20,8 @@ interface SmartSelectProps {
   searchPlaceholder?: string;
   disabled?: boolean;
   error?: boolean;
+  /** Fixed leading icon shown before the control's own value/placeholder text (distinct from a per-option icon). */
+  startIcon?: LucideIcon;
 }
 
 export function SmartSelect({
@@ -32,6 +34,7 @@ export function SmartSelect({
   searchPlaceholder,
   disabled = false,
   error = false,
+  startIcon: StartIcon,
 }: SmartSelectProps) {
   const { t, dir } = useDirection();
   const [query, setQuery] = useState('');
@@ -95,9 +98,15 @@ export function SmartSelect({
              onChange(opt.value);
           }
         }} disabled={disabled} name={name}>
-          <div className="relative">
+          <div className="relative flex items-center">
+            {StartIcon && (
+              <StartIcon className={cn(
+                "absolute h-4 w-4 text-content-muted pointer-events-none z-10",
+                dir === 'rtl' ? "right-4" : "left-4"
+              )} aria-hidden="true" />
+            )}
             <Combobox.Input
-              className={buttonClasses}
+              className={cn(buttonClasses, StartIcon && (dir === 'rtl' ? 'pr-10' : 'pl-10'))}
               displayValue={(opt: SelectOption) => opt?.label || ''}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={resolvedPlaceholder}
@@ -173,7 +182,13 @@ export function SmartSelect({
     <div className={containerClasses} dir={dir}>
       <Listbox value={value} onChange={onChange} disabled={disabled} name={name}>
         <div className="relative group">
-          <Listbox.Button className={buttonClasses}>
+          <Listbox.Button className={cn(buttonClasses, StartIcon && (dir === 'rtl' ? 'pr-10' : 'pl-10'))}>
+            {StartIcon && (
+              <StartIcon className={cn(
+                "absolute h-4 w-4 text-content-muted pointer-events-none group-hover:text-brand transition-colors",
+                dir === 'rtl' ? "right-4" : "left-4"
+              )} aria-hidden="true" />
+            )}
             <span className={cn('block truncate flex items-center gap-3', !hasTextSize && 'text-sm', !selectedOption && 'text-gray-400')}>
               {selectedOption?.icon && (
                 <span className="w-4 h-4 flex items-center justify-center flex-shrink-0 text-gray-400 group-hover:text-brand transition-colors [&>svg]:w-4 [&>svg]:h-4">

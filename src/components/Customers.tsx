@@ -729,16 +729,17 @@ export default function Customers({ tenantId }: CustomersProps) {
             </button>
 
             {/* Sort Select Dropdown */}
-            <select
+            <SmartSelect
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="bg-surface text-content border border-border px-4 py-3 rounded-2xl font-bold text-xs sm:text-sm outline-none cursor-pointer hover:bg-surface-muted shadow-sm"
-            >
-              <option value="date">{t('customers.sort_recent')}</option>
-              <option value="date_asc">{t('customers.sort_oldest')}</option>
-              <option value="name">{t('customers.sort_name')}</option>
-              <option value="balance_desc">{t('customers.sort_highest_debt')}</option>
-            </select>
+              onChange={(v) => setSortBy(v as any)}
+              className="w-auto min-w-[180px] rounded-2xl px-4 py-3 text-xs sm:text-sm"
+              options={[
+                { value: 'date', label: t('customers.sort_recent') },
+                { value: 'date_asc', label: t('customers.sort_oldest') },
+                { value: 'name', label: t('customers.sort_name') },
+                { value: 'balance_desc', label: t('customers.sort_highest_debt') },
+              ]}
+            />
           </div>
         </div>
 

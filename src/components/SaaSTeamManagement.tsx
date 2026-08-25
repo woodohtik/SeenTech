@@ -15,7 +15,7 @@ import {
   Clock
 } from 'lucide-react';
 import { AdminIconInput } from './ui/AdminIconInput';
-import { AdminIconSelect } from './ui/AdminIconSelect';
+import { SmartSelect } from './ui/SmartSelect';
 import { SaasUser, SaasUserRole } from '../types/supabase';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -409,17 +409,17 @@ export default function SaaSTeamManagement() {
 
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-content-muted">{t('common.role', 'الدور الوظيفي')}</label>
-                  <AdminIconSelect
+                  <SmartSelect
                     startIcon={Shield}
                     value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value as SaasUserRole })}
-                    className="bg-surface-muted"
-                  >
-                    <option value="super_admin">{t('saas.role_super_admin', 'مدير عام (Super Admin)')}</option>
-                    <option value="support_tech">{t('saas.role_support_tech', 'دعم فني (Support)')}</option>
-                    <option value="sales">{t('saas.role_sales', 'مبيعات (Sales)')}</option>
-                    <option value="billing_admin">{t('saas.role_billing_admin', 'محاسبة (Billing)')}</option>
-                  </AdminIconSelect>
+                    onChange={(v) => setFormData({ ...formData, role: v as SaasUserRole })}
+                    options={[
+                      { value: 'super_admin', label: t('saas.role_super_admin', 'مدير عام') },
+                      { value: 'support_tech', label: t('saas.role_support_tech', 'دعم فني') },
+                      { value: 'sales', label: t('saas.role_sales', 'مبيعات') },
+                      { value: 'billing_admin', label: t('saas.role_billing_admin', 'محاسبة') },
+                    ]}
+                  />
                 </div>
 
                 <div className="pt-4 border-t border-border flex items-center justify-between">

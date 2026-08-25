@@ -30,6 +30,7 @@ import { cn } from '../lib/utils';
 import { useDirection } from '../lib/direction';
 import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
 import { DatePicker } from './ui/DatePicker';
+import { SmartSelect } from './ui/SmartSelect';
 import { downloadInvoicePDFSilently, shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
 import { formatSaudiPhone } from '../utils/phoneUtils';
 
@@ -347,25 +348,18 @@ export default function SupplierLedger({
           </div>
 
           {/* Type drop down */}
-          <div className="group w-full md:w-56 flex items-center bg-slate-50 hover:bg-slate-100/30 border border-slate-200 focus-within:border-slate-900 focus-within:bg-white rounded-xl transition-all overflow-hidden h-10">
-            <div className="flex items-center justify-center px-3.5 border-e border-slate-200/60 text-slate-400 group-focus-within:text-slate-900 h-full shrink-0 font-bold">
-              <Filter size={12} />
-            </div>
-            <select
-              value={typeFilter}
-              onChange={(e: any) => setTypeFilter(e.target.value)}
-              style={{ backgroundImage: 'none' }}
-              className="flex-1 min-w-0 bg-transparent border-none py-2 px-3 pe-8 text-xs text-slate-700 outline-none ring-0 font-semibold appearance-none cursor-pointer focus:outline-none"
-            >
-              <option value="all">{t('procurement.filter_all_tx', 'كل الحركات المالية (دائن وملف)')}</option>
-              <option value="purchase">{t('procurement.filter_purchases', 'عمليات المشتريات (متأخرات في فواتير)')}</option>
-              <option value="payment">{t('procurement.filter_payments', 'سندات الصرف والمدفوعات')}</option>
-              <option value="adjustment">{t('procurement.filter_adjustments', 'تسويات الأرصدة والافتتاحي')}</option>
-            </select>
-            <div className="flex items-center justify-center px-2.5 text-slate-400 pointer-events-none">
-              <ChevronDown size={14} />
-            </div>
-          </div>
+          <SmartSelect
+            value={typeFilter}
+            onChange={(v) => setTypeFilter(v as typeof typeFilter)}
+            startIcon={Filter}
+            className="w-full md:w-56 h-10 rounded-xl text-xs"
+            options={[
+              { value: 'all', label: t('procurement.filter_all_tx', 'كل الحركات المالية (دائن وملف)') },
+              { value: 'purchase', label: t('procurement.filter_purchases', 'عمليات المشتريات (متأخرات في فواتير)') },
+              { value: 'payment', label: t('procurement.filter_payments', 'سندات الصرف والمدفوعات') },
+              { value: 'adjustment', label: t('procurement.filter_adjustments', 'تسويات الأرصدة والافتتاحي') },
+            ]}
+          />
         </div>
 
         {/* Date Filters row */}

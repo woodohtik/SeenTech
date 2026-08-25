@@ -31,6 +31,7 @@ import { useStaff } from "../../contexts/StaffContext";
 import { useToast } from "../../contexts/ToastContext";
 import { usePermissions } from "../../hooks/usePermissions";
 import { cn } from "../../lib/utils";
+import { SmartSelect } from "../ui/SmartSelect";
 import { Branch, InventoryItem, BranchInventory } from "../../types";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -540,6 +541,21 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
     }
   };
 
+  // Adjustment type values are stored as the literal English enum text
+  // ("Physical Count", "Damage", ...) -- this maps them to their translated
+  // label instead of showing that raw value directly (the old
+  // `inventory_adj_type.${value}` lookup had no matching translation keys
+  // at all, so it always fell back to the raw English text).
+  const adjustmentTypeLabel = (value: string) => {
+    const map: Record<string, string> = {
+      "Physical Count": t("inventory.adjustment_type_count", "جرد فعلي دوري"),
+      "Damage": t("inventory.adjustment_type_damage", "شطب وإتلاف مخزون تالف"),
+      "Loss": t("inventory.adjustment_type_loss", "تسجيل فقدان وعجز"),
+      "Internal Use": t("inventory.adjustment_type_internal", "استهلاك واستخدام داخلي"),
+    };
+    return map[value] || value;
+  };
+
   // Format currencies beautifully
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat(isRtl ? "ar-SA" : "en-US", {
@@ -658,27 +674,16 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                 <label className="block text-xs font-bold text-content-muted uppercase tracking-wider">
                   {t("inventory.select_branch_label", "1. حدد فرع الجرد المستهدف")}
                 </label>
-                <div className="relative">
-                  <select
-                    value={selectedBranchId}
-                    onChange={(e) => handleBranchChange(e.target.value)}
-                    className="w-full bg-surface-muted text-content border border-border/80 px-3.5 py-2.5 rounded-xl font-bold text-sm focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand appearance-none cursor-pointer transition-all"
-                  >
-                    <option value="">{t("inventory.choose_branch_option", "اختر مستودع أو فرع للتسوية...")}</option>
-                    {branches.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name} ({b.type === "warehouse" ? t("inventory.type_warehouse", "مستودع") : t("inventory.type_store", "معرض")})
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown
-                    size={16}
-                    className={cn(
-                      "absolute top-1/2 -translate-y-1/2 text-content-muted pointer-events-none",
-                      isRtl ? "left-3.5" : "right-3.5"
-                    )}
-                  />
-                </div>
+                <SmartSelect
+                  value={selectedBranchId}
+                  onChange={handleBranchChange}
+                  className="rounded-xl px-3.5 py-2.5 text-sm"
+                  placeholder={t("inventory.choose_branch_option", "اختر مستودع أو فرع للتسوية...")}
+                  options={branches.map((b) => ({
+                    value: b.id,
+                    label: `${b.name} (${b.type === "warehouse" ? t("inventory.type_warehouse", "مستودع") : t("inventory.type_store", "معرض")})`,
+                  }))}
+                />
               </div>
 
               {/* Adjustment Reason Type */}
@@ -686,25 +691,17 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                 <label className="block text-xs font-bold text-content-muted uppercase tracking-wider">
                   {t("inventory.adjustment_type_label", "2. غرض التسوية والجرد")}
                 </label>
-                <div className="relative">
-                  <select
-                    value={adjustmentType}
-                    onChange={(e) => setAdjustmentType(e.target.value as any)}
-                    className="w-full bg-surface-muted text-content border border-border/80 px-3.5 py-2.5 rounded-xl font-bold text-sm focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand appearance-none cursor-pointer transition-all"
-                  >
-                    <option value="Physical Count">{t("inventory.adjustment_type_count", "جرد فعلي دوري - Physical Count")}</option>
-                    <option value="Damage">{t("inventory.adjustment_type_damage", "شطب وإتلاف مخزون تالف - Damage")}</option>
-                    <option value="Loss">{t("inventory.adjustment_type_loss", "تسجيل فقدان وعجز - Loss")}</option>
-                    <option value="Internal Use">{t("inventory.adjustment_type_internal", "استهلاك واستخدام داخلي - Internal Use")}</option>
-                  </select>
-                  <ChevronDown
-                    size={16}
-                    className={cn(
-                      "absolute top-1/2 -translate-y-1/2 text-content-muted pointer-events-none",
-                      isRtl ? "left-3.5" : "right-3.5"
-                    )}
-                  />
-                </div>
+                <SmartSelect
+                  value={adjustmentType}
+                  onChange={(v) => setAdjustmentType(v as any)}
+                  className="rounded-xl px-3.5 py-2.5 text-sm"
+                  options={[
+                    { value: "Physical Count", label: t("inventory.adjustment_type_count", "جرد فعلي دوري") },
+                    { value: "Damage", label: t("inventory.adjustment_type_damage", "شطب وإتلاف مخزون تالف") },
+                    { value: "Loss", label: t("inventory.adjustment_type_loss", "تسجيل فقدان وعجز") },
+                    { value: "Internal Use", label: t("inventory.adjustment_type_internal", "استهلاك واستخدام داخلي") },
+                  ]}
+                />
               </div>
 
               {/* Unique Reference Number Display */}
@@ -823,25 +820,15 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                   </div>
 
                   {/* Category select filter */}
-                  <div className="relative w-full sm:w-44">
-                    <select
+                  <div className="w-full sm:w-44">
+                    <SmartSelect
                       value={selectedCategory}
-                      onChange={(e) => setSelectedCategory(e.target.value)}
-                      className="w-full bg-surface-muted text-content border border-border px-3 py-2 rounded-xl font-bold text-xs sm:text-sm appearance-none focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand cursor-pointer transition-all"
-                    >
-                      <option value="all">{t("inventory.all_categories", "كل الفئات")}</option>
-                      {categories.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown
-                      size={14}
-                      className={cn(
-                        "absolute top-1/2 -translate-y-1/2 text-content-muted pointer-events-none",
-                        isRtl ? "left-3" : "right-3"
-                      )}
+                      onChange={setSelectedCategory}
+                      className="rounded-xl px-3 py-2 text-xs sm:text-sm"
+                      options={[
+                        { value: "all", label: t("inventory.all_categories", "كل الفئات") },
+                        ...categories.map((cat) => ({ value: cat, label: cat })),
+                      ]}
                     />
                   </div>
                 </div>
@@ -1204,7 +1191,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                             {branch?.name || t("common.unknown")}
                           </td>
                           <td className="px-4 py-3 text-start text-xs font-medium text-content-muted">
-                            {String(t(`inventory_adj_type.${record.adjustment_type}`, record.adjustment_type))}
+                            {adjustmentTypeLabel(record.adjustment_type)}
                           </td>
                           <td className="px-4 py-3 text-center">
                             <span
@@ -1416,7 +1403,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                 <div className="flex justify-between items-center">
                   <span className="text-content-muted">{t("inventory.confirm_type", "نوع الحركة:")}</span>
                   <span className="font-bold text-content">
-                    {String(t(`inventory_adj_type.${adjustmentType}`, adjustmentType))}
+                    {adjustmentTypeLabel(adjustmentType)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">

@@ -20,7 +20,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { Tenant } from '../types';
 import { AdminIconInput } from './ui/AdminIconInput';
-import { AdminIconSelect } from './ui/AdminIconSelect';
+import { SmartSelect } from './ui/SmartSelect';
 import { useTranslation } from 'react-i18next';
 import GlobalRoleManager from './GlobalRoleManager';
 
@@ -425,16 +425,16 @@ export default function SaaSSystemSettings() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-4">
             <label className="block text-sm font-black text-content-muted">{t('common.select_tenant_management')}</label>
-            <AdminIconSelect
+            <SmartSelect
               startIcon={Database}
               value={selectedTenantId}
-              onChange={(e) => setSelectedTenantId(e.target.value)}
-            >
-              <option value="" disabled hidden>{t('common.select_tenant')}</option>
-              {tenants.map(t => (
-                <option key={t.id} value={t.id}>{t.name} ({t.ownerEmail})</option>
-              ))}
-            </AdminIconSelect>
+              onChange={setSelectedTenantId}
+              placeholder={t('common.select_tenant')}
+              options={tenants.map(tenant => ({
+                value: tenant.id,
+                label: `${tenant.name} (${tenant.ownerEmail})`,
+              }))}
+            />
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 items-end">

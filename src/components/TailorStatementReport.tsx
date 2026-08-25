@@ -6,6 +6,7 @@ import { useToast } from '../contexts/ToastContext';
 import { useTranslation } from 'react-i18next';
 import { useDirection } from '../lib/direction';
 import { PriceDisplay } from './PriceDisplay';
+import { SmartSelect } from './ui/SmartSelect';
 import {
   BarChart,
   Bar,
@@ -141,16 +142,15 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
         </div>
 
         <div className="flex items-center gap-4">
-          <select
+          <SmartSelect
             value={selectedTailor}
-            onChange={(e) => setSelectedTailor(e.target.value)}
-            className="px-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-bold"
-          >
-            <option value="all">{t('tailors.statement.all_tailors')}</option>
-            {tailors.map(t => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </select>
+            onChange={(v) => setSelectedTailor(v)}
+            className="w-auto min-w-[200px] rounded-xl px-4 py-2"
+            options={[
+              { value: 'all', label: t('tailors.statement.all_tailors') },
+              ...tailors.map(tailor => ({ value: tailor.id, label: tailor.name })),
+            ]}
+          />
         </div>
       </div>
 

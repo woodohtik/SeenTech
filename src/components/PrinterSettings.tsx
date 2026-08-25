@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { isRtlLang } from '../lib/direction';
+import { SmartSelect } from './ui/SmartSelect';
 
 import {
   getSupportInfo,
@@ -1257,15 +1258,16 @@ export default function PrinterSettings() {
               </div>
 
               <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                <select
+                <SmartSelect
                   value={p.size}
-                  onChange={(e) => handleChangeSize(p.id, e.target.value as '80mm' | '58mm' | 'A4')}
-                  className="px-3 py-2 bg-surface-hover border border-border rounded-xl text-xs font-black text-content focus:outline-none focus:border-brand"
-                >
-                  <option value="80mm">80mm</option>
-                  <option value="58mm">58mm</option>
-                  <option value="A4">A4</option>
-                </select>
+                  onChange={(v) => handleChangeSize(p.id, v as '80mm' | '58mm' | 'A4')}
+                  className="w-auto min-w-[100px] rounded-xl px-3 py-2 text-xs"
+                  options={[
+                    { value: '80mm', label: '80mm' },
+                    { value: '58mm', label: '58mm' },
+                    { value: 'A4', label: 'A4' },
+                  ]}
+                />
 
                 {!p.isDefault && (
                   <button

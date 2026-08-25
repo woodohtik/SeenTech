@@ -1448,22 +1448,15 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="relative">
-                    <select
-                      value={order.status}
-                      onChange={(e) => updateStatus(order.id, e.target.value as OrderStatus)}
-                      className="w-full bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl p-4 pr-10 text-sm font-bold focus:ring-2 focus:ring-brand text-content appearance-none cursor-pointer"
-                    >
-                      {(Object.keys(STATUS_CONFIG) as OrderStatus[]).map((status) => (
-                        <option key={status} value={status}>
-                          {t(STATUS_CONFIG[status].labelKey)}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-content-muted">
-                      <ChevronDown size={18} />
-                    </div>
-                  </div>
+                  <SmartSelect
+                    value={order.status}
+                    onChange={(v) => updateStatus(order.id, v as OrderStatus)}
+                    className="rounded-2xl p-4 text-sm"
+                    options={(Object.keys(STATUS_CONFIG) as OrderStatus[]).map((status) => ({
+                      value: status,
+                      label: t(STATUS_CONFIG[status].labelKey),
+                    }))}
+                  />
                 </div>
               )}
             </section>
