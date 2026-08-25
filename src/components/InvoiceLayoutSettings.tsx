@@ -453,7 +453,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                     type="text" 
                     value={settings.header.contactNumbers}
                     onChange={e => setSettings(s => ({ ...s, header: { ...s.header, contactNumbers: e.target.value } }))}
-                    className="w-full bg-white border border-border/50 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-brand outline-none shadow-sm"
+                    className="w-full bg-white border border-border rounded-xl p-3 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand shadow-sm"
                     placeholder="9665XXXXXXXX"
                   />
                 </div>
@@ -501,7 +501,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                   value={settings.header.facilityName}
                   onChange={e => setSettings(s => ({ ...s, header: { ...s.header, facilityName: e.target.value } }))}
                   placeholder={t('settings_page.invoice.facility_name_placeholder')}
-                  className="w-full bg-white border border-border/50 rounded-xl p-3.5 text-sm font-bold focus:ring-2 focus:ring-brand outline-none shadow-sm"
+                  className="w-full bg-white border border-border rounded-xl p-3.5 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand shadow-sm"
                 />
               </div>
 
@@ -513,7 +513,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                     value={settings.header.address}
                     onChange={e => setSettings(s => ({ ...s, header: { ...s.header, address: e.target.value } }))}
                     placeholder={t('settings_page.invoice.custom_address_placeholder')}
-                    className="w-full bg-white border border-border/50 rounded-xl p-3.5 text-sm font-bold focus:ring-2 focus:ring-brand outline-none shadow-sm"
+                    className="w-full bg-white border border-border rounded-xl p-3.5 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand shadow-sm"
                   />
                   <p className="text-[11px] text-content-muted px-1">{t('settings_page.invoice.custom_address_help')}</p>
                 </div>
@@ -523,7 +523,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                     type="text" 
                     value={settings.header.taxId}
                     onChange={e => setSettings(s => ({ ...s, header: { ...s.header, taxId: e.target.value } }))}
-                    className="w-full bg-white border border-border/50 rounded-xl p-3.5 text-sm font-black focus:ring-2 focus:ring-brand outline-none shadow-sm text-left tracking-widest"
+                    className="w-full bg-white border border-border rounded-xl p-3.5 text-sm font-black outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand shadow-sm text-left tracking-widest"
                     dir="ltr"
                   />
                 </div>
@@ -578,7 +578,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                 rows={4}
                 value={settings.footer.returnPolicy}
                 onChange={e => setSettings(s => ({ ...s, footer: { ...s.footer, returnPolicy: e.target.value } }))}
-                className="w-full bg-white border border-border/50 rounded-2xl p-4 sm:p-6 text-xs font-medium focus:ring-2 focus:ring-brand outline-none resize-none leading-relaxed shadow-inner"
+                className="w-full bg-white border border-border rounded-2xl p-4 sm:p-6 text-xs font-medium outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand resize-none leading-relaxed shadow-inner"
                 placeholder={t('settings_page.invoice.return_policy_placeholder')}
               />
             </div>
@@ -589,7 +589,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                 type="text" 
                 value={settings.footer.thankYouMessage}
                 onChange={e => setSettings(s => ({ ...s, footer: { ...s.footer, thankYouMessage: e.target.value } }))}
-                className="w-full bg-white border border-border/50 rounded-xl p-3.5 text-sm font-bold focus:ring-2 focus:ring-brand outline-none shadow-sm"
+                className="w-full bg-white border border-border rounded-xl p-3.5 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand shadow-sm"
               />
             </div>
 

@@ -1629,8 +1629,8 @@ export default function Customers({ tenantId }: CustomersProps) {
                     <input 
                       {...register('name')} 
                       className={cn(
-                        "w-full bg-surface-muted border-none rounded-xl p-3 focus:ring-2 focus:ring-brand text-content",
-                        errors.name && "ring-2 ring-danger",
+                        "w-full bg-surface border border-border rounded-xl p-3 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content",
+                        errors.name && "ring-2 ring-danger border-danger",
                         isRtl ? "text-right" : "text-left"
                       )} 
                     />
@@ -1649,8 +1649,8 @@ export default function Customers({ tenantId }: CustomersProps) {
                         setValue('phone', formatted);
                       }}
                       className={cn(
-                        "w-full bg-surface-muted border-none rounded-xl p-3 focus:ring-2 focus:ring-brand text-content",
-                        errors.phone && "ring-2 ring-danger",
+                        "w-full bg-surface border border-border rounded-xl p-3 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content",
+                        errors.phone && "ring-2 ring-danger border-danger",
                         isRtl ? "text-right" : "text-left"
                       )} 
                     />
@@ -1670,8 +1670,8 @@ export default function Customers({ tenantId }: CustomersProps) {
                       type="text"
                       {...register('companyName' as any)} 
                       className={cn(
-                        "w-full bg-surface-muted border-none rounded-xl p-3 focus:ring-2 focus:ring-brand text-content",
-                        errors.companyName && "ring-2 ring-danger",
+                        "w-full bg-surface border border-border rounded-xl p-3 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content",
+                        errors.companyName && "ring-2 ring-danger border-danger",
                         isRtl ? "text-right" : "text-left"
                       )} 
                       placeholder={t('customers.b2b_invoice_note')}
@@ -1689,8 +1689,8 @@ export default function Customers({ tenantId }: CustomersProps) {
                         setValue('trn' as any, val, { shouldValidate: true });
                       }}
                       className={cn(
-                        "w-full bg-surface-muted border-none rounded-xl p-3 focus:ring-2 focus:ring-brand text-content",
-                        errors.trn && "ring-2 ring-danger"
+                        "w-full bg-surface border border-border rounded-xl p-3 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content",
+                        errors.trn && "ring-2 ring-danger border-danger"
                       )} 
                       dir="ltr"
                       placeholder="300000000000003"
@@ -1728,7 +1728,7 @@ export default function Customers({ tenantId }: CustomersProps) {
 
                 <div className="space-y-2 mb-8 mt-8 pt-8 border-t border-border">
                   <label className="text-sm font-bold text-content-muted">{t('customers.additional_notes')}</label>
-                  <textarea {...register('notes')} className={cn("w-full bg-surface-muted border-none rounded-xl p-3 focus:ring-2 focus:ring-brand h-24 text-content", isRtl ? "text-right" : "text-left")} />
+                  <textarea {...register('notes')} className={cn("w-full bg-surface border border-border rounded-xl p-3 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold h-24 text-content", isRtl ? "text-right" : "text-left")} />
                 </div>
 
                 {/* isTest Flag */}
@@ -2400,7 +2400,7 @@ const CustomerStatementModal = ({
                                                 max={order.remainingAmount}
                                                 value={payAmount === 0 ? '' : payAmount}
                                                 onChange={(e) => setPayAmount(e.target.value === '' ? 0 : Math.min(order.remainingAmount, Math.max(0, Number(e.target.value))))}
-                                                className="w-full bg-surface-muted border-none rounded-xl p-2.5 text-xs font-bold focus:ring-2 focus:ring-brand text-content"
+                                                className="w-full bg-surface border border-border rounded-xl p-2.5 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-xs font-bold text-content"
                                               />
                                             </div>
 

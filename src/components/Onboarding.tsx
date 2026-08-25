@@ -761,7 +761,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                           {...register('city')}
                           placeholder={t('onboarding.fields.city_placeholder')}
                           className={cn(
-                            "w-full bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-xl py-2.5 sm:py-3 px-3.5 text-sm sm:text-base font-bold outline-none transition-all shadow-sm",
+                            "w-full bg-white border border-slate-200 outline-none transition-all shadow-sm focus:ring-2 focus:ring-brand/20 focus:border-brand rounded-xl py-2.5 sm:py-3 px-3.5 text-sm sm:text-base font-bold",
                             errors.city && "border-rose-500 bg-rose-50/30"
                           )}
                         />
@@ -774,7 +774,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                           {...register('country')}
                           placeholder={t('onboarding.fields.country_placeholder')}
                           className={cn(
-                            "w-full bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-xl py-2.5 sm:py-3 px-3.5 text-sm sm:text-base font-bold outline-none transition-all shadow-sm",
+                            "w-full bg-white border border-slate-200 outline-none transition-all shadow-sm focus:ring-2 focus:ring-brand/20 focus:border-brand rounded-xl py-2.5 sm:py-3 px-3.5 text-sm sm:text-base font-bold",
                             errors.country && "border-rose-500 bg-rose-50/30"
                           )}
                         />
@@ -869,7 +869,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                            {...register('invoiceDefaults')}
                            placeholder={t('onboarding.fields.invoice_terms_placeholder')}
                            rows={3}
-                           className="w-full bg-white border border-slate-200 focus-within:border-brand rounded-xl py-2.5 sm:py-3 px-3.5 text-sm sm:text-base font-bold outline-none transition-all shadow-sm resize-none"
+                           className="w-full bg-white border border-slate-200 outline-none transition-all shadow-sm focus:ring-2 focus:ring-brand/20 focus:border-brand rounded-xl py-2.5 sm:py-3 px-3.5 text-sm sm:text-base font-bold resize-none"
                          />
                       </div>
 

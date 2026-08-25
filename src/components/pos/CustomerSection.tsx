@@ -256,7 +256,7 @@ export default function CustomerSection({
                           if (fieldErrors.name) setFieldErrors({ ...fieldErrors, name: false });
                         }}
                         className={cn(
-                          "w-full p-3 rounded-xl border border-border bg-surface-muted focus:bg-surface focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all text-content",
+                          "w-full p-3 rounded-xl border border-border bg-surface outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content",
                           fieldErrors.name && "ring-2 ring-danger border-danger"
                         )}
                         placeholder={t('pos.enter_name_placeholder')}
@@ -274,7 +274,7 @@ export default function CustomerSection({
                         }}
                         onBlur={e => setNewPhone(formatSaudiPhone(e.target.value))}
                         className={cn(
-                          "w-full p-3 rounded-xl border border-border bg-surface-muted focus:bg-surface focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all text-content",
+                          "w-full p-3 rounded-xl border border-border bg-surface outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content",
                           fieldErrors.phone && "ring-2 ring-danger border-danger"
                         )}
                         placeholder="05xxxxxxxx"
@@ -285,7 +285,7 @@ export default function CustomerSection({
                       <input 
                         type="text" 
                         value={newVat} onChange={e => setNewVat(e.target.value)}
-                        className="w-full p-3 rounded-xl border border-border bg-surface-muted focus:bg-surface focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all text-content" 
+                        className="w-full p-3 rounded-xl border border-border bg-surface outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content"
                         placeholder={t('pos.vat_number_placeholder')}
                       />
                     </div>
@@ -299,19 +299,19 @@ export default function CustomerSection({
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <div className="space-y-1">
                         <label className="text-xs font-bold text-content-muted">{t('measurements.length')}</label>
-                        <input type="number" value={length} onChange={e => setLength(e.target.value)} placeholder="0" className="w-full p-2.5 text-center rounded-lg border border-border bg-surface focus:border-brand outline-none text-content" />
+                        <input type="number" value={length} onChange={e => setLength(e.target.value)} placeholder="0" className="w-full p-2.5 text-center rounded-lg border border-border bg-surface outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content" />
                       </div>
                       <div className="space-y-1">
                         <label className="text-xs font-bold text-content-muted">{t('measurements.shoulder')}</label>
-                        <input type="number" value={shoulder} onChange={e => setShoulder(e.target.value)} placeholder="0" className="w-full p-2.5 text-center rounded-lg border border-border bg-surface focus:border-brand outline-none text-content" />
+                        <input type="number" value={shoulder} onChange={e => setShoulder(e.target.value)} placeholder="0" className="w-full p-2.5 text-center rounded-lg border border-border bg-surface outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content" />
                       </div>
                       <div className="space-y-1">
                         <label className="text-xs font-bold text-content-muted">{t('measurements.chest')}</label>
-                        <input type="number" value={chest} onChange={e => setChest(e.target.value)} placeholder="0" className="w-full p-2.5 text-center rounded-lg border border-border bg-surface focus:border-brand outline-none text-content" />
+                        <input type="number" value={chest} onChange={e => setChest(e.target.value)} placeholder="0" className="w-full p-2.5 text-center rounded-lg border border-border bg-surface outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content" />
                       </div>
                       <div className="space-y-1">
                         <label className="text-xs font-bold text-content-muted">{t('measurements.sleeve')}</label>
-                        <input type="number" value={sleeve} onChange={e => setSleeve(e.target.value)} placeholder="0" className="w-full p-2.5 text-center rounded-lg border border-border bg-surface focus:border-brand outline-none text-content" />
+                        <input type="number" value={sleeve} onChange={e => setSleeve(e.target.value)} placeholder="0" className="w-full p-2.5 text-center rounded-lg border border-border bg-surface outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content" />
                       </div>
                     </div>
                   </div>
