@@ -289,8 +289,8 @@ const BranchModal = ({ onClose, onSave, initialData }: any) => {
                 if (fieldErrors.name) setFieldErrors({ ...fieldErrors, name: false });
               }}
               className={cn(
-                "w-full px-5 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content",
-                fieldErrors.name && "ring-2 ring-danger"
+                "w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content",
+                fieldErrors.name && "ring-2 ring-danger border-danger"
               )}
             />
           </div>
@@ -305,7 +305,7 @@ const BranchModal = ({ onClose, onSave, initialData }: any) => {
                   { value: 'store', label: t('inventory.type_store') },
                   { value: 'warehouse', label: t('inventory.type_warehouse') }
                 ]}
-                className="w-full px-5 py-3 h-auto min-h-[50px] bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content"
+                className="w-full"
               />
             </div>
             <div className="space-y-2">
@@ -318,8 +318,8 @@ const BranchModal = ({ onClose, onSave, initialData }: any) => {
                   if (fieldErrors.phone) setFieldErrors({ ...fieldErrors, phone: false });
                 }}
                 className={cn(
-                  "w-full px-5 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content",
-                  fieldErrors.phone && "ring-2 ring-danger"
+                  "w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content",
+                  fieldErrors.phone && "ring-2 ring-danger border-danger"
                 )}
               />
             </div>
@@ -335,8 +335,8 @@ const BranchModal = ({ onClose, onSave, initialData }: any) => {
                 if (fieldErrors.location) setFieldErrors({ ...fieldErrors, location: false });
               }}
               className={cn(
-                "w-full px-5 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content",
-                fieldErrors.location && "ring-2 ring-danger"
+                "w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content",
+                fieldErrors.location && "ring-2 ring-danger border-danger"
               )}
             />
           </div>

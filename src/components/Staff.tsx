@@ -1196,7 +1196,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                   onKeyDown={(e) => { if (e.key === 'Enter') confirmActivatePin(); }}
                   placeholder="••••"
                   dir="ltr"
-                  className="w-full px-4 py-3 bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl outline-none font-black text-2xl text-center tracking-[0.5em] text-content transition-all"
+                  className="w-full px-4 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-black text-2xl text-center tracking-[0.5em] text-content"
                 />
                 {pinModalError && (
                   <p className="text-xs font-bold text-danger px-1">{pinModalError}</p>
@@ -2140,7 +2140,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                         type="text"
                         value={newRoleName}
                         onChange={(e) => setNewRoleName(e.target.value)}
-                        className="w-full bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl p-4 font-bold outline-none transition-all text-content"
+                        className="w-full bg-surface border border-border rounded-xl p-4 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content"
                         placeholder={t('settings_page.staff.permissions.role_name_example')}
                         required
                       />
@@ -2151,7 +2151,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                       <textarea 
                         value={newRoleDesc}
                         onChange={(e) => setNewRoleDesc(e.target.value)}
-                        className="w-full bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl p-4 font-bold outline-none transition-all h-24 resize-none text-content"
+                        className="w-full bg-surface border border-border rounded-xl p-4 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold h-24 resize-none text-content"
                         placeholder={t('settings_page.staff.permissions.role_desc_placeholder')}
                       />
                     </div>
@@ -2352,8 +2352,8 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                     <input 
                       {...register('name')}
                       className={cn(
-                        "w-full bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl py-4 pl-4 pr-12 font-bold transition-all outline-none text-content",
-                        errors.name && "border-red-500"
+                        "w-full bg-surface border border-border rounded-xl py-4 pl-4 pr-12 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content",
+                        errors.name && "ring-2 ring-danger border-danger"
                       )}
                     />
                   </div>
@@ -2398,8 +2398,8 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                     <input 
                       {...register('email')}
                       className={cn(
-                        "w-full bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl py-4 pr-4 pl-12 font-bold transition-all outline-none text-content text-left",
-                        errors.email && "border-red-500"
+                        "w-full bg-surface border border-border rounded-xl py-4 pr-4 pl-12 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content text-left",
+                        errors.email && "ring-2 ring-danger border-danger"
                       )}
                       dir="ltr"
                     />
@@ -2413,8 +2413,8 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                     <input 
                       {...register('phone')}
                       className={cn(
-                        "w-full bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl py-4 pr-4 pl-12 font-bold transition-all outline-none text-content text-left",
-                        errors.phone && "border-red-500"
+                        "w-full bg-surface border border-border rounded-xl py-4 pr-4 pl-12 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content text-left",
+                        errors.phone && "ring-2 ring-danger border-danger"
                       )}
                       dir="ltr"
                     />
@@ -2448,8 +2448,8 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                         maxLength={4}
                         placeholder="****"
                         className={cn(
-                          "w-full bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl py-4 px-12 font-bold transition-all outline-none text-center tracking-[0.5em] text-content",
-                          errors.pin && "border-red-500"
+                          "w-full bg-surface border border-border rounded-xl py-4 px-12 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-center tracking-[0.5em] text-content",
+                          errors.pin && "ring-2 ring-danger border-danger"
                         )}
                       />
                     </div>

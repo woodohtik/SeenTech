@@ -2003,7 +2003,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                              setDiscountValue(val);
                           }}
                           placeholder="0"
-                          className="w-full bg-surface-muted border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-brand text-left tabular-nums font-bold text-lg"
+                          className="w-full bg-surface border border-border rounded-xl py-3 px-4 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-left tabular-nums font-semibold text-lg"
                           dir="ltr"
                         />
                       </div>
@@ -2049,7 +2049,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                         type="number"
                         value={paidAmount === 0 ? '' : paidAmount}
                         onChange={(e) => setPaidAmount(e.target.value === '' ? 0 : Number(e.target.value))}
-                        className="w-full p-4 bg-surface-muted border-none rounded-xl focus:ring-2 focus:ring-brand font-black text-2xl text-center tabular-nums"
+                        className="w-full p-4 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-black text-2xl text-center tabular-nums"
                         dir="ltr"
                         min="0"
                         max={totalAmount}
@@ -2402,7 +2402,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       type="text" 
                       value={customItemForm.garmentType}
                       onChange={(e) => setCustomItemForm({...customItemForm, garmentType: e.target.value})}
-                      className="w-full p-2.5 sm:p-3 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand focus:border-brand text-sm sm:text-base text-content" 
+                      className="w-full p-2.5 sm:p-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-sm sm:text-base font-semibold text-content"
                     />
                   </div>
                   <div>
@@ -2411,7 +2411,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       type="number" 
                       value={customItemForm.price || ''}
                       onChange={(e) => setCustomItemForm({...customItemForm, price: e.target.value === '' ? 0 : Number(e.target.value)})}
-                      className="w-full p-2.5 sm:p-3 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand focus:border-brand text-sm sm:text-base text-content" 
+                      className="w-full p-2.5 sm:p-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-sm sm:text-base font-semibold text-content"
                     />
                   </div>
                   <div>
@@ -2440,7 +2440,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       type="number" 
                       value={customItemForm.quantity || ''}
                       onChange={(e) => setCustomItemForm({...customItemForm, quantity: e.target.value === '' ? 0 : Number(e.target.value)})}
-                      className="w-full p-2.5 sm:p-3 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand focus:border-brand text-sm sm:text-base text-content" 
+                      className="w-full p-2.5 sm:p-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-sm sm:text-base font-semibold text-content"
                       min="1"
                     />
                   </div>
@@ -2554,7 +2554,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                         type="text" 
                         value={newCustomerName}
                         onChange={(e) => setNewCustomerName(e.target.value)}
-                        className="w-full p-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand focus:border-brand" 
+                        className="w-full p-2.5 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold"
                         placeholder={t('pos.customer_name_placeholder')}
                       />
                     </div>
@@ -2565,7 +2565,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                         value={newCustomerPhone}
                         onChange={(e) => setNewCustomerPhone(formatSaudiPhone(e.target.value))}
                         onBlur={(e) => setNewCustomerPhone(formatSaudiPhone(e.target.value))}
-                        className="w-full p-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand focus:border-brand text-right" 
+                        className="w-full p-2.5 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-right"
                         placeholder="05XXXXXXXX"
                         dir="ltr"
                       />
@@ -2576,7 +2576,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                         type="text" 
                         value={newCustomerVat}
                         onChange={(e) => setNewCustomerVat(e.target.value)}
-                        className="w-full p-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand focus:border-brand" 
+                        className="w-full p-2.5 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold" 
                         placeholder={t('pos.optional_b2b_desc')}
                       />
                     </div>
@@ -2652,7 +2652,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   placeholder={t('pos.company_name_placeholder')}
                   value={b2bData.companyName}
                   onChange={e => setB2bData({...b2bData, companyName: e.target.value})}
-                  className="w-full p-3 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand"
+                  className="w-full p-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold"
                 />
               </div>
               <div>
@@ -2662,7 +2662,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   placeholder="300000000000003"
                   value={b2bData.trn}
                   onChange={e => setB2bData({...b2bData, trn: e.target.value})}
-                  className="w-full p-3 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand"
+                  className="w-full p-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold"
                 />
               </div>
             </div>
