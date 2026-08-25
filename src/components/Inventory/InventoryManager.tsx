@@ -592,7 +592,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                 placeholder={t("inventory.search_placeholder")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 sm:pl-12 pr-4 py-2.5 sm:py-3 bg-surface-muted border-none rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-brand font-bold text-xs sm:text-sm text-content text-right"
+                className="w-full pl-10 sm:pl-12 pr-4 py-2.5 sm:py-3 bg-transparent border-none outline-none focus:ring-0 font-semibold text-xs sm:text-sm text-content text-right"
               />
             </div>
             <div className="flex items-center gap-2 w-full sm:min-w-[200px] sm:w-auto">
@@ -1925,8 +1925,8 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                   }}
                   placeholder={t("inventory.item_name_placeholder")}
                   className={cn(
-                    "w-full px-5 py-3 bg-surface border border-transparent hover:border-brand/40 rounded-2xl focus:ring-2 focus:ring-brand focus:border-brand outline-none font-bold text-content text-right transition-all hover:bg-surface-muted/20",
-                    fieldErrors.name && "ring-2 ring-danger"
+                    "w-full px-5 py-3 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none font-semibold text-content text-right transition-all",
+                    fieldErrors.name && "ring-2 ring-danger border-danger"
                   )}
                 />
               </div>
@@ -1951,7 +1951,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                     { value: "accessories", label: t("inventory.category_accessories") },
                     { value: "other", label: t("inventory.category_other") },
                   ]}
-                  className="bg-surface border-none text-right"
+                  className="text-right"
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-12 text-right">
@@ -1964,7 +1964,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                     setFormData({ ...formData, description: e.target.value })
                   }
                   placeholder={t("inventory.description_placeholder")}
-                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content resize-none h-16 text-right"
+                  className="w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-[#1C8FFF]/20 focus:border-[#1C8FFF] font-semibold text-content resize-none h-16 text-right"
                 />
               </div>
             </div>
@@ -2001,7 +2001,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                           { value: "saudi", label: t("inventory.collar_saudi") },
                           { value: "marini", label: t("inventory.collar_marini") },
                         ]}
-                        className="bg-surface border-none text-right"
+                        className="text-right"
                       />
                     </div>
                     <div className="space-y-2 col-span-1 md:col-span-6 text-right">
@@ -2019,7 +2019,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                           { value: "double", label: t("inventory.cuff_double") },
                           { value: "french", label: t("inventory.cuff_french") },
                         ]}
-                        className="bg-surface border-none text-right"
+                        className="text-right"
                       />
                     </div>
                     <div className="space-y-2 col-span-1 md:col-span-6 text-right">
@@ -2037,7 +2037,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                           { value: "visible", label: t("inventory.pocket_visible") },
                           { value: "none", label: t("inventory.pocket_none") },
                         ]}
-                        className="bg-surface border-none text-right"
+                        className="text-right"
                       />
                     </div>
                     <div className="space-y-2 col-span-1 md:col-span-6 text-right">
@@ -2055,7 +2055,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                           { value: "pleated", label: t("inventory.chest_pleated") },
                           { value: "embroided", label: t("inventory.chest_embroided") },
                         ]}
-                        className="bg-surface border-none text-right"
+                        className="text-right"
                       />
                     </div>
                   </div>
@@ -2083,7 +2083,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                     { value: "piece", label: t("inventory.unit_piece") },
                     { value: "box", label: t("inventory.unit_box") },
                   ]}
-                  className="bg-surface border-none text-right"
+                  className="text-right"
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-4 text-right">
@@ -2103,8 +2103,8 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                     if (fieldErrors.conversionRate) setFieldErrors({ ...fieldErrors, conversionRate: false });
                   }}
                   className={cn(
-                    "w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right",
-                    fieldErrors.conversionRate && "ring-2 ring-danger"
+                    "w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content text-right",
+                    fieldErrors.conversionRate && "ring-2 ring-danger border-danger"
                   )}
                 />
               </div>
@@ -2122,7 +2122,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                       minThreshold: Number(e.target.value),
                     })
                   }
-                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
+                  className="w-full px-5 py-3 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                 />
               </div>
             </div>
@@ -2148,8 +2148,8 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                   }}
                   placeholder="0.00"
                   className={cn(
-                    "w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content text-right",
-                    fieldErrors.costPrice && "ring-2 ring-danger"
+                    "w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-[#1C8FFF]/20 focus:border-[#1C8FFF] font-semibold text-content text-right",
+                    fieldErrors.costPrice && "ring-2 ring-danger border-danger"
                   )}
                 />
               </div>
@@ -2172,8 +2172,8 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                   }}
                   placeholder="0.00"
                   className={cn(
-                    "w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content text-right",
-                    fieldErrors.pricePerUnit && "ring-2 ring-danger"
+                    "w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-[#1C8FFF]/20 focus:border-[#1C8FFF] font-semibold text-content text-right",
+                    fieldErrors.pricePerUnit && "ring-2 ring-danger border-danger"
                   )}
                 />
               </div>
@@ -2231,7 +2231,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                     { value: "", label: t("inventory.select_supplier") },
                     ...suppliersList.map((s: any) => ({ value: s.id, label: s.name }))
                   ]}
-                  className="bg-surface border-none text-right"
+                  className="text-right"
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-6">
@@ -2247,7 +2247,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                     const val = e.target.value === "" ? 0 : Number(e.target.value);
                     setFormData({ ...formData, openingBalance: val, initialStock: val });
                   }}
-                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
+                  className="w-full px-5 py-3 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                 />
               </div>
             </div>
@@ -2265,7 +2265,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                   onChange={(e) =>
                     setFormData({ ...formData, sku: e.target.value.replace(/\D/g, "") })
                   }
-                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
+                  className="w-full px-5 py-3 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-6">
@@ -2278,7 +2278,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                   onChange={(e) =>
                     setFormData({ ...formData, barcode: e.target.value })
                   }
-                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
+                  className="w-full px-5 py-3 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                 />
               </div>
             </div>
@@ -2492,7 +2492,7 @@ const StockTransferModal = ({
                     label: `${b.name} (${t(`inventory.type_${b.type}`)})`,
                   })),
                 ]}
-                className="bg-surface-muted border-none text-content"
+                className=""
               />
             </div>
             <div className="space-y-2">
@@ -2512,7 +2512,7 @@ const StockTransferModal = ({
                     label: `${b.name} (${t(`inventory.type_${b.type}`)})`,
                   })),
                 ]}
-                className="bg-surface-muted border-none text-content"
+                className=""
               />
             </div>
           </div>
@@ -2568,7 +2568,7 @@ const StockTransferModal = ({
                         };
                       }),
                     ]}
-                    className="bg-surface border-none text-content"
+                    className=""
                   />
                 </div>
                 <div className="col-span-2 space-y-1">
@@ -2586,7 +2586,7 @@ const StockTransferModal = ({
                       setFormData({ ...formData, items: newItems });
                     }}
                     disabled={submitting}
-                    className="w-full px-3 py-2 bg-surface border-none rounded-xl focus:ring-2 focus:ring-brand font-bold text-sm text-content"
+                    className="w-full px-3 py-2 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-sm text-content"
                   />
                 </div>
                 <div className="col-span-1 flex justify-center pb-2">
@@ -2805,7 +2805,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
                 autoFocus
                 value={addQuantity}
                 onChange={(e) => setAddQuantity(Number(e.target.value))}
-                className="w-full px-4 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 font-black text-xl text-content"
+                className="w-full px-4 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-black text-xl text-content"
               />
             </div>
           ) : (
@@ -2820,7 +2820,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
                 autoFocus
                 value={newQuantity}
                 onChange={(e) => setNewQuantity(Number(e.target.value))}
-                className="w-full px-4 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-black text-xl text-content"
+                className="w-full px-4 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-black text-xl text-content"
               />
             </div>
           )}
@@ -2833,7 +2833,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g. Damaged stock, Correction..."
-              className="w-full px-4 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-sm text-content min-h-[100px]"
+              className="w-full px-4 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-sm text-content min-h-[100px]"
             />
           </div>
 
@@ -3022,7 +3022,7 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch }: any) => {
               value={qty}
               onChange={(e) => setQty(e.target.value ? Number(e.target.value) : "")}
               placeholder={conversionAction === "unroll" ? t("inventory.example_unroll_qty") : t("inventory.example_bundle_qty")}
-              className="w-full px-4 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-sm text-content"
+              className="w-full px-4 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-sm text-content"
             />
           </div>
 
@@ -3062,7 +3062,7 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch }: any) => {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder={t("inventory.example_conversion_note")}
-              className="w-full px-4 py-3 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-sm text-content min-h-[80px]"
+              className="w-full px-4 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-sm text-content min-h-[80px]"
             />
           </div>
 
@@ -3248,7 +3248,7 @@ const OpeningBalanceModal = ({ onClose, tenantId, branches, items }: any) => {
                   { value: "", label: t("common.select") },
                   ...branches.map((b: any) => ({ value: b.id, label: b.name })),
                 ]}
-                className="bg-surface-muted border-none"
+                className=""
               />
             </div>
             <div className="space-y-2">
@@ -3866,8 +3866,8 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                   }}
                   placeholder={t("inventory.item_name_placeholder")}
                   className={cn(
-                    "w-full px-5 py-3 bg-surface border border-transparent hover:border-brand/40 rounded-2xl focus:ring-2 focus:ring-brand focus:border-brand outline-none font-bold text-content text-right transition-all hover:bg-surface-muted/20",
-                    fieldErrors.name && "ring-2 ring-danger"
+                    "w-full px-5 py-3 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none font-semibold text-content text-right transition-all",
+                    fieldErrors.name && "ring-2 ring-danger border-danger"
                   )}
                 />
               </div>
@@ -3892,7 +3892,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                     { value: "accessories", label: t("inventory.category_accessories") },
                     { value: "other", label: t("inventory.category_other") },
                   ]}
-                  className="bg-surface border-none text-right"
+                  className="text-right"
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-12 text-right">
@@ -3905,7 +3905,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                     setFormData({ ...formData, description: e.target.value })
                   }
                   placeholder={t("inventory.description_placeholder")}
-                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content resize-none h-16 text-right"
+                  className="w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-[#1C8FFF]/20 focus:border-[#1C8FFF] font-semibold text-content resize-none h-16 text-right"
                 />
               </div>
             </div>
@@ -3942,7 +3942,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                           { value: "saudi", label: t("inventory.collar_saudi") },
                           { value: "marini", label: t("inventory.collar_marini") },
                         ]}
-                        className="bg-surface border-none text-right"
+                        className="text-right"
                       />
                     </div>
                     <div className="space-y-2 col-span-1 md:col-span-6 text-right">
@@ -3960,7 +3960,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                           { value: "double", label: t("inventory.cuff_double") },
                           { value: "french", label: t("inventory.cuff_french") },
                         ]}
-                        className="bg-surface border-none text-right"
+                        className="text-right"
                       />
                     </div>
                     <div className="space-y-2 col-span-1 md:col-span-6 text-right">
@@ -3978,7 +3978,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                           { value: "visible", label: t("inventory.pocket_visible") },
                           { value: "none", label: t("inventory.pocket_none") },
                         ]}
-                        className="bg-surface border-none text-right"
+                        className="text-right"
                       />
                     </div>
                     <div className="space-y-2 col-span-1 md:col-span-6 text-right">
@@ -3996,7 +3996,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                           { value: "pleated", label: t("inventory.chest_pleated") },
                           { value: "embroided", label: t("inventory.chest_embroided") },
                         ]}
-                        className="bg-surface border-none text-right"
+                        className="text-right"
                       />
                     </div>
                   </div>
@@ -4024,7 +4024,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                     { value: "piece", label: t("inventory.unit_piece") },
                     { value: "box", label: t("inventory.unit_box") },
                   ]}
-                  className="bg-surface border-none text-right"
+                  className="text-right"
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-4 text-right">
@@ -4044,8 +4044,8 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                     if (fieldErrors.conversionRate) setFieldErrors({ ...fieldErrors, conversionRate: false });
                   }}
                   className={cn(
-                    "w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right",
-                    fieldErrors.conversionRate && "ring-2 ring-danger"
+                    "w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content text-right",
+                    fieldErrors.conversionRate && "ring-2 ring-danger border-danger"
                   )}
                 />
               </div>
@@ -4063,7 +4063,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                       minThreshold: Number(e.target.value),
                     })
                   }
-                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
+                  className="w-full px-5 py-3 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                 />
               </div>
             </div>
@@ -4089,8 +4089,8 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                   }}
                   placeholder="0.00"
                   className={cn(
-                    "w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content text-right",
-                    fieldErrors.costPrice && "ring-2 ring-danger"
+                    "w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-[#1C8FFF]/20 focus:border-[#1C8FFF] font-semibold text-content text-right",
+                    fieldErrors.costPrice && "ring-2 ring-danger border-danger"
                   )}
                 />
               </div>
@@ -4113,8 +4113,8 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                   }}
                   placeholder="0.00"
                   className={cn(
-                    "w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-[#1C8FFF] font-bold text-content text-right",
-                    fieldErrors.pricePerUnit && "ring-2 ring-danger"
+                    "w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-[#1C8FFF]/20 focus:border-[#1C8FFF] font-semibold text-content text-right",
+                    fieldErrors.pricePerUnit && "ring-2 ring-danger border-danger"
                   )}
                 />
               </div>
@@ -4172,7 +4172,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                     { value: "", label: t("inventory.select_supplier") },
                     ...suppliersList.map((s: any) => ({ value: s.id, label: s.name }))
                   ]}
-                  className="bg-surface border-none text-right"
+                  className="text-right"
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-6">
@@ -4184,7 +4184,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                   placeholder="0.00"
                   value={formData.openingBalance || ""}
                   onChange={(e) => setFormData({ ...formData, openingBalance: e.target.value === "" ? 0 : Number(e.target.value) })}
-                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
+                  className="w-full px-5 py-3 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                 />
               </div>
             </div>
@@ -4202,7 +4202,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                   onChange={(e) =>
                     setFormData({ ...formData, sku: e.target.value.replace(/\D/g, "") })
                   }
-                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
+                  className="w-full px-5 py-3 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-6">
@@ -4214,7 +4214,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                   onChange={(e) =>
                     setFormData({ ...formData, barcode: e.target.value })
                   }
-                  className="w-full px-5 py-3 bg-surface border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-content text-right"
+                  className="w-full px-5 py-3 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                 />
               </div>
             </div>
