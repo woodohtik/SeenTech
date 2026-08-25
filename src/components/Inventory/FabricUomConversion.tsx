@@ -122,7 +122,7 @@ const FabricUomConversion: React.FC<FabricUomConversionProps> = ({ tenantId }) =
         // Fetch Fabrics only (category = 'fabric')
         const { data: rawItems, error: itemsError } = await supabase
           .from('inventory_items')
-          .select('id, name, sku, unit, conversion_rate, category, min_threshold')
+          .select('id, name, sku, unit, base_unit, conversion_rate, category, min_threshold')
           .eq('tenant_id', tenantId)
           .eq('category', 'fabric');
 
@@ -133,7 +133,7 @@ const FabricUomConversion: React.FC<FabricUomConversionProps> = ({ tenantId }) =
           name: item.name,
           sku: item.sku || '',
           unit: item.unit || 'roll',
-          baseUnit: item.unit || 'meter',
+          baseUnit: item.base_unit || 'meter',
           conversionRate: Number(item.conversion_rate) || 1,
           category: item.category,
           minThreshold: Number(item.min_threshold) || 0,
@@ -288,6 +288,14 @@ const FabricUomConversion: React.FC<FabricUomConversionProps> = ({ tenantId }) =
       return;
     }
 
+    // A zero/negative rate here used to pass silently and get treated as 1
+    // downstream ("فك 4 طاقات" = 4 أمتار instead of 100) -- reject it here,
+    // matching the same guard record_uom_conversion enforces server-side.
+    if (!settingRate || settingRate <= 0) {
+      setErrorMessage(t('inventory.invalid_conversion_rate', 'معامل التحويل يجب أن يكون رقماً أكبر من صفر.'));
+      return;
+    }
+
     try {
       setProcessing(true);
       
@@ -296,6 +304,7 @@ const FabricUomConversion: React.FC<FabricUomConversionProps> = ({ tenantId }) =
         .from('inventory_items')
         .update({
           unit: settingLargeUnit,
+          base_unit: settingBaseUnit,
           conversion_rate: settingRate,
           updated_at: new Date().toISOString()
         })
@@ -834,6 +843,7 @@ const FabricUomConversion: React.FC<FabricUomConversionProps> = ({ tenantId }) =
                                 <input
                                   type="number"
                                   step="0.01"
+                                  min="0.01"
                                   value={settingRate}
                                   onChange={(e) => setSettingRate(Number(e.target.value))}
                                   className="w-20 px-2 py-1 bg-surface border border-border rounded-lg text-xs font-bold text-center"

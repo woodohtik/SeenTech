@@ -1061,6 +1061,7 @@
     "input_qty": "Quantity to unroll / convert",
     "insufficient_stock_error": "The requested quantity is not available in stock (stock cannot go negative).",
     "insufficient_stock_for": "Insufficient stock for",
+    "invalid_conversion_rate": "The conversion rate must be a number greater than zero.",
     "invalid_image_file": "Please upload a valid image file",
     "item": "Item",
     "item_name": "Item Name",
