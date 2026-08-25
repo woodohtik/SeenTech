@@ -3164,27 +3164,27 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         {isTaxEnabled ? (
                           <>
                             <div className="flex justify-between items-center text-sm border-b border-white/10 pb-2">
-                              <span className="text-brand-content/70 font-medium">{t('orders.subtotal')}</span>
+                              <span className="text-white/70 font-medium">{t('orders.subtotal')}</span>
                               <span className="font-bold text-white"><PriceDisplay amount={roundedSubtotal} /></span>
                             </div>
                             <div className="flex justify-between items-center text-sm border-b border-white/10 pb-2">
-                              <span className="text-brand-content/70 font-medium">{t('orders.vat_label')} ({vatRatePercentage}%)</span>
+                              <span className="text-white/70 font-medium">{t('orders.vat_label')} ({vatRatePercentage}%)</span>
                               <span className="font-bold text-white"><PriceDisplay amount={roundedVat} /></span>
                             </div>
                             <div className="flex justify-between items-center">
-                              <span className="text-brand-content/90 font-black text-sm uppercase tracking-widest">{t('orders.grand_total')}</span>
+                              <span className="text-white/90 font-black text-sm uppercase tracking-widest">{t('orders.grand_total')}</span>
                               <span className="text-3xl font-black text-white"><PriceDisplay amount={roundedGrandTotal} /></span>
                             </div>
                           </>
                         ) : (
                           <div className="flex justify-between items-center">
-                            <span className="text-brand-content/80 font-bold text-sm uppercase tracking-widest">{t('orders.grand_total')}</span>
+                            <span className="text-white/80 font-bold text-sm uppercase tracking-widest">{t('orders.grand_total')}</span>
                             <span className="text-3xl font-black text-white"><PriceDisplay amount={roundedGrandTotal} /></span>
                           </div>
                         )}
                         
                         <div className="space-y-3 mt-6">
-                          <label className="text-xs font-bold text-brand-content/60 uppercase tracking-widest">{t('orders.payment_method_label')}</label>
+                          <label className="text-xs font-bold text-white/60 uppercase tracking-widest">{t('orders.payment_method_label')}</label>
                           <div className="grid grid-cols-2 gap-2">
                             {PAYMENT_METHODS.map((method) => (
                               <button
@@ -3204,7 +3204,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         </div>
 
                         <div className="space-y-3 pt-6 border-t border-white/10 mt-6">
-                          <label className="text-xs font-bold text-brand-content/60 uppercase tracking-widest">{t('orders.amount_paid')}</label>
+                          <label className="text-xs font-bold text-white/60 uppercase tracking-widest">{t('orders.amount_paid')}</label>
                           <div className="relative">
                             <CreditCard className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40" size={20} />
                             <input 
@@ -3214,7 +3214,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                             />
                           </div>
                           <div className="flex justify-between text-xs font-bold pt-2">
-                            <span className="text-brand-content/80">{t('orders.remaining_label')}</span>
+                            <span className="text-white/80">{t('orders.remaining_label')}</span>
                             <span className="text-white bg-danger px-2 py-0.5 rounded-lg"><PriceDisplay amount={Number(roundedGrandTotal) - Number(watch('paidAmount') || 0)} /></span>
                           </div>
                         </div>

@@ -458,7 +458,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
           className={cn(
             "px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold transition-all whitespace-nowrap text-xs sm:text-sm flex-1 sm:flex-none text-center",
             activeTab === "inventory"
-              ? "bg-brand text-brand-content shadow-lg shadow-brand/10"
+              ? "bg-brand text-white shadow-lg shadow-brand/10"
               : "text-content-muted hover:bg-surface-muted",
           )}
         >
@@ -469,7 +469,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
           className={cn(
             "px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold transition-all whitespace-nowrap text-xs sm:text-sm flex-1 sm:flex-none text-center",
             activeTab === "transfers"
-              ? "bg-brand text-brand-content shadow-lg shadow-brand/10"
+              ? "bg-brand text-white shadow-lg shadow-brand/10"
               : "text-content-muted hover:bg-surface-muted",
           )}
         >
@@ -480,7 +480,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
           className={cn(
             "px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold transition-all whitespace-nowrap text-xs sm:text-sm flex-1 sm:flex-none text-center",
             activeTab === "reports"
-              ? "bg-brand text-brand-content shadow-lg shadow-brand/10"
+              ? "bg-brand text-white shadow-lg shadow-brand/10"
               : "text-content-muted hover:bg-surface-muted",
           )}
         >
@@ -491,7 +491,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
           className={cn(
             "px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold transition-all whitespace-nowrap text-xs sm:text-sm flex-1 sm:flex-none text-center flex items-center justify-center gap-1.5",
             activeTab === "stock_take"
-              ? "bg-brand text-brand-content shadow-lg shadow-brand/10"
+              ? "bg-brand text-white shadow-lg shadow-brand/10"
               : "text-content-muted hover:bg-surface-muted",
           )}
         >
@@ -502,7 +502,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
           className={cn(
             "px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold transition-all whitespace-nowrap text-xs sm:text-sm flex-1 sm:flex-none text-center flex items-center justify-center gap-1.5",
             activeTab === "fabric_uom"
-              ? "bg-brand text-brand-content shadow-lg shadow-brand/10"
+              ? "bg-brand text-white shadow-lg shadow-brand/10"
               : "text-content-muted hover:bg-surface-muted",
           )}
         >
@@ -2310,7 +2310,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
             type="submit"
             disabled={submitting}
             className={cn(
-              "w-full text-brand-content py-4 rounded-2xl font-black text-lg shadow-xl transition-all mt-4 flex items-center justify-center gap-2",
+              "w-full text-white py-4 rounded-2xl font-black text-lg shadow-xl transition-all mt-4 flex items-center justify-center gap-2",
               submitting ? "bg-brand/50 cursor-not-allowed shadow-none" : "bg-brand shadow-brand/10 hover:bg-brand/90 active:scale-[0.98]"
             )}
           >
@@ -2840,7 +2840,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-brand text-brand-content py-4 rounded-2xl font-black text-lg shadow-xl shadow-brand/10 hover:bg-brand/90 transition-all disabled:opacity-50"
+            className="w-full bg-brand text-white py-4 rounded-2xl font-black text-lg shadow-xl shadow-brand/10 hover:bg-brand/90 transition-all disabled:opacity-50"
           >
             {loading ? t("common.saving") : t("common.save")}
           </button>
@@ -3069,7 +3069,7 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch }: any) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-brand text-brand-content py-4 rounded-2xl font-black text-lg shadow-xl shadow-brand/10 hover:bg-brand/90 transition-all disabled:opacity-50"
+            className="w-full bg-brand text-white py-4 rounded-2xl font-black text-lg shadow-xl shadow-brand/10 hover:bg-brand/90 transition-all disabled:opacity-50"
           >
             {loading ? t("common.processing", "جاري التحويل...") : t("inventory.execute_conversion", "تنفيذ التحويل")}
           </button>
