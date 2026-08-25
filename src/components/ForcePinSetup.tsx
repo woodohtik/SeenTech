@@ -301,7 +301,7 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
                           setError(null);
                         }}
                         className={cn(
-                          "w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-xl p-3 text-center text-xl font-bold tracking-[0.5em] outline-none transition-all",
+                          "w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-center text-xl font-bold tracking-[0.5em] outline-none transition-all focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white",
                           error && "border-red-300 bg-red-50/30"
                         )}
                         placeholder="••••"
@@ -324,7 +324,7 @@ export default function ForcePinSetup({ tenantId, onSuccess }: ForcePinSetupProp
                           setError(null);
                         }}
                         className={cn(
-                          "w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-xl p-3 text-center text-xl font-bold tracking-[0.5em] outline-none transition-all",
+                          "w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-center text-xl font-bold tracking-[0.5em] outline-none transition-all focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white",
                           error && "border-red-300 bg-red-50/30"
                         )}
                         placeholder="••••"

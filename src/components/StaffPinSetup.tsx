@@ -154,7 +154,7 @@ export default function StaffPinSetup({ staff, onSuccess }: StaffPinSetupProps) 
               value={pin}
               onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
               className={cn(
-                "w-full bg-gray-50 border border-gray-200 focus:border-indigo-500 rounded-xl p-3 text-center text-xl font-bold tracking-[0.5em] outline-none transition-all",
+                "w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-center text-xl font-bold tracking-[0.5em] outline-none transition-all focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500",
                 error && "border-red-300 bg-red-50"
               )}
               placeholder="****"
@@ -173,7 +173,7 @@ export default function StaffPinSetup({ staff, onSuccess }: StaffPinSetupProps) 
               value={confirmPin}
               onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
               className={cn(
-                "w-full bg-gray-50 border border-gray-200 focus:border-indigo-500 rounded-xl p-3 text-center text-xl font-bold tracking-[0.5em] outline-none transition-all",
+                "w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-center text-xl font-bold tracking-[0.5em] outline-none transition-all focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500",
                 error && "border-red-300 bg-red-50"
               )}
               placeholder="****"

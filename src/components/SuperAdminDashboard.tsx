@@ -876,7 +876,7 @@ export default function SuperAdminDashboard() {
                   placeholder={t('saas.tenants.search_by_name_email_id')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 bg-surface-muted rounded-xl border border-border text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand"
+                  className="w-full pl-11 pr-4 py-3 bg-surface rounded-xl border border-border text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                 />
               </div>
 
@@ -1352,7 +1352,7 @@ export default function SuperAdminDashboard() {
                       placeholder={t('saas.search_audit_placeholder')}
                       value={auditSearch}
                       onChange={(e) => setAuditSearch(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 bg-surface-muted rounded-xl border border-border text-xs font-bold focus:outline-none focus:ring-2 focus:ring-brand"
+                      className="w-full pl-9 pr-3 py-2 bg-surface rounded-xl border border-border text-xs font-bold outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                     />
                   </div>
 

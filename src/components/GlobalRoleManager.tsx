@@ -421,7 +421,7 @@ export default function GlobalRoleManager() {
                         : setNewRole({ ...newRole, name: e.target.value })
                       }
                       placeholder={t('saas.global_roles.role_name_placeholder')}
-                      className="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 font-bold"
+                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-bold"
                     />
                   </div>
                   <div className="space-y-3">
@@ -434,7 +434,7 @@ export default function GlobalRoleManager() {
                         : setNewRole({ ...newRole, description: e.target.value })
                       }
                       placeholder={t('saas.global_roles.role_desc_placeholder')}
-                      className="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 font-bold"
+                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-bold"
                     />
                   </div>
                 </div>

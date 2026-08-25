@@ -296,7 +296,7 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
                 step="0.01"
                 value={actualCash}
                 onChange={(e) => setActualCash(e.target.value)}
-                className="w-full px-4 py-2.5 bg-surface-muted border-none rounded-2xl focus:ring-2 focus:ring-brand font-bold text-base sm:text-lg text-center text-content"
+                className="w-full px-4 py-2.5 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-bold text-base sm:text-lg text-center text-content"
                 placeholder="0.00"
               />
             </div>
@@ -329,7 +329,7 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
                     required
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
-                    className="w-full p-3 bg-surface border-none rounded-xl focus:ring-2 focus:ring-danger font-bold text-xs sm:text-sm resize-none text-content"
+                    className="w-full p-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-danger/20 focus:border-danger font-bold text-xs sm:text-sm resize-none text-content"
                     placeholder={t('shift_closing.reason_placeholder')}
                     rows={2}
                   />

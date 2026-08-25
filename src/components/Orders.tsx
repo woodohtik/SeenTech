@@ -871,7 +871,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
             <div className="space-y-2 pt-8 border-t border-border">
               <label className="text-sm font-bold text-content-muted">{t('orders.extra_notes')}</label>
-              <textarea {...regCust('notes')} className="w-full bg-surface-muted border-none rounded-xl p-3 focus:ring-2 focus:ring-brand h-24 text-content" />
+              <textarea {...regCust('notes')} className="w-full bg-surface border border-border rounded-xl p-3 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold h-24 text-content" />
             </div>
 
             {/* isTest Flag */}
@@ -2763,7 +2763,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                     ...customers.map(c => ({ value: c.id, label: c.name }))
                                   ]}
                                   error={!!errors.customerId}
-                                  className="bg-surface-muted border-none"
+                                  className=""
                                 />
                               )}
                             />
@@ -2953,7 +2953,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                       <textarea 
                         {...register('notes')} 
                         placeholder={t('orders.additional_instructions')}
-                        className="w-full bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl p-4 font-bold transition-all outline-none h-32 resize-none text-content" 
+                        className="w-full bg-surface border border-border rounded-xl p-4 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold h-32 resize-none text-content"
                       />
                     </div>
                   </div>

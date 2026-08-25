@@ -428,7 +428,7 @@ const TransferDetailsModal = ({ transfer, onClose, onReceive, getBranchName }: a
                           type="number"
                           value={receivedQuantities[item.itemId]}
                           onChange={e => setReceivedQuantities({...receivedQuantities, [item.itemId]: Number(e.target.value)})}
-                          className="w-20 px-3 py-1.5 bg-brand/10 border-none rounded-xl focus:ring-2 focus:ring-brand font-black text-center text-brand"
+                          className="w-20 px-3 py-1.5 bg-brand/10 border border-brand/20 rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-black text-center text-brand"
                         />
                       </div>
                     ) : (
@@ -471,7 +471,7 @@ const TransferDetailsModal = ({ transfer, onClose, onReceive, getBranchName }: a
                   value={remarks}
                   onChange={(e) => setRemarks(e.target.value)}
                   placeholder={t('inventory.receiving_notes_placeholder')}
-                  className="w-full p-4 bg-surface-muted border border-border rounded-2xl focus:ring-2 focus:ring-brand focus:border-brand text-sm font-medium resize-none h-24"
+                  className="w-full p-4 bg-surface border border-border rounded-2xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-sm font-medium resize-none h-24"
                 />
               </div>
             </div>

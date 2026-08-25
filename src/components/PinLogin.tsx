@@ -350,7 +350,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                       maxLength={4}
                       value={newPin}
                       onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
-                      className="w-full bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl p-4 text-center text-2xl font-black tracking-[1em] outline-none transition-all text-content"
+                      className="w-full bg-surface border border-border rounded-xl p-4 text-center text-2xl font-black tracking-[1em] outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content"
                       placeholder="****"
                     />
                   </div>
@@ -361,7 +361,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                       maxLength={4}
                       value={confirmPin}
                       onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
-                      className="w-full bg-surface-muted border-2 border-transparent focus:border-brand rounded-2xl p-4 text-center text-2xl font-black tracking-[1em] outline-none transition-all text-content"
+                      className="w-full bg-surface border border-border rounded-xl p-4 text-center text-2xl font-black tracking-[1em] outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content"
                       placeholder="****"
                     />
                   </div>

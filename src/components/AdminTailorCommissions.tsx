@@ -183,7 +183,7 @@ function TailorCommissionRow({
             step="0.01"
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            className="w-full pl-4 pr-10 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-bold text-gray-900 text-left"
+            className="w-full pl-4 pr-10 py-2.5 bg-white border border-gray-200 rounded-xl outline-none transition-all focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-bold text-gray-900 text-left"
             dir="ltr"
           />
         </div>
