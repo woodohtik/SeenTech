@@ -793,7 +793,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1">
                 <label className="text-xs font-bold text-content-muted">{t('login.full_name')}</label>
-                <input {...regCust('name')} className="w-full bg-surface-muted border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand text-content" />
+                <input {...regCust('name')} className="w-full bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand" />
                 {custErrors.name && <p className="text-[10px] text-danger font-bold">{custErrors.name.message}</p>}
               </div>
               <div className="space-y-1">
@@ -808,7 +808,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                     const formatted = formatSaudiPhone(e.target.value);
                     setCustValue('phone', formatted);
                   }}
-                  className="w-full bg-surface-muted border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand text-content" 
+                  className="w-full bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand" 
                 />
                 {custErrors.phone && <p className="text-[10px] text-danger font-bold">{custErrors.phone.message}</p>}
               </div>
@@ -825,7 +825,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 <input 
                   type="text"
                   {...regCust('companyName')} 
-                  className="w-full bg-surface-muted border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand text-content"
+                  className="w-full bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   placeholder={t('orders.company_name_placeholder')}
                 />
                 {custErrors.companyName && <p className="text-xs text-danger font-bold">{custErrors.companyName.message}</p>}
@@ -835,7 +835,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 <input 
                   type="text"
                   {...regCust('trn')} 
-                  className="w-full bg-surface-muted border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand text-content"
+                  className="w-full bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   dir="ltr"
                   placeholder="300000000000003"
                 />
@@ -1509,7 +1509,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                       type="number" 
                       value={payAmount}
                       onChange={(e) => setPayAmount(Number(e.target.value))}
-                      className="w-full bg-surface-muted border-none rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-brand text-content"
+                      className="w-full bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -3125,7 +3125,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                 <input 
                                   {...register(`items.${index}.additions` as any)}
                                   placeholder={t('orders.other_additions_placeholder')}
-                                  className="w-full bg-surface border-none rounded-xl p-3 text-xs font-bold shadow-sm text-content"
+                                  className="w-full bg-surface border border-border rounded-xl p-3 text-xs font-bold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                                 />
                               </div>
 
@@ -3134,7 +3134,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                 <input 
                                   {...register(`items.${index}.embroidery` as any)}
                                   placeholder={t('orders.embroidery_placeholder')}
-                                  className="w-full bg-surface border-none rounded-xl p-3 text-xs font-bold shadow-sm text-content"
+                                  className="w-full bg-surface border border-border rounded-xl p-3 text-xs font-bold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                                 />
                               </div>
                             </div>
