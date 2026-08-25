@@ -83,6 +83,7 @@ const AdminTailors = React.lazy(() => import('./components/AdminTailors'));
 const SaaSReports = React.lazy(() => import('./components/SaaSReports'));
 const SaaSAuditLogs = React.lazy(() => import('./components/SaaSAuditLogs'));
 const SaaSSystemSettings = React.lazy(() => import('./components/SaaSSystemSettings'));
+const SaaSAssistantSettings = React.lazy(() => import('./components/SaaSAssistantSettings'));
 const SaaSWithdrawals = React.lazy(() => import('./components/SaaSWithdrawals'));
 import SaaSTeamManagement from './components/SaaSTeamManagement';
 import TenantAnalyticsDashboard from './components/TenantAnalyticsDashboard';
@@ -581,6 +582,11 @@ function AppContent() {
                       <Route path="/system" element={
                         <RoleGuard allowedRoles={['super_admin']}>
                           <SaaSSystemSettings />
+                        </RoleGuard>
+                      } />
+                      <Route path="/assistant-settings" element={
+                        <RoleGuard allowedRoles={['super_admin']}>
+                          <SaaSAssistantSettings />
                         </RoleGuard>
                       } />
                       <Route path="/team" element={

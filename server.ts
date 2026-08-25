@@ -707,6 +707,261 @@ app.post("/api/tenant/settings", authenticate, authorize(['owner', 'admin']), as
   }
 });
 
+/* ================================================================
+   مساعد سين الذكي — Smart Assistant
+   ----------------------------------------------------------------
+   إعدادات عامة (صف واحد assistant_settings.id='global') يديرها السوبر
+   أدمن فقط عبر /api/super-admin/assistant-settings، ويقرأها /api/chat
+   في كل طلب (لا قيم ثابتة بالكود) حتى يعمل التفعيل/التعطيل وتغيير
+   المزوّد فوراً بلا إعادة نشر. مفتاح الـ API مشفّر في القاعدة
+   (src/server/assistantCrypto.ts) ولا يُعاد كاملاً لأي استجابة.
+   ================================================================ */
+
+async function buildAssistantModel(provider: string, modelName: string, apiKey: string) {
+  if (provider === 'gemini') {
+    const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
+    return createGoogleGenerativeAI({ apiKey })(modelName);
+  }
+  const { createOpenAI } = await import('@ai-sdk/openai');
+  return createOpenAI({ apiKey })(modelName);
+}
+
+// خفيف ومتاح لأي مستخدم مسجّل دخول (Admin/Cashier) — الـ Widget يسأله فقط
+// "هل أعرض الزر العائم أصلاً؟"، بلا أي بيانات حساسة.
+app.get("/api/assistant-settings/status", authenticate, async (req: any, res) => {
+  try {
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+    const { data, error } = await supabaseAdmin
+      .from("assistant_settings")
+      .select("is_enabled")
+      .eq("id", "global")
+      .maybeSingle();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ isEnabled: Boolean(data?.is_enabled) });
+  } catch (err: any) {
+    console.error("Error in GET /api/assistant-settings/status:", err);
+    res.status(500).json({ error: err.message || "Internal Server Error" });
+  }
+});
+
+app.get("/api/super-admin/assistant-settings", authenticate, authorize(['super_admin']), async (req: any, res) => {
+  try {
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+    const { data, error } = await supabaseAdmin
+      .from("assistant_settings")
+      .select("*")
+      .eq("id", "global")
+      .maybeSingle();
+    if (error) return res.status(500).json({ error: error.message });
+    if (!data) return res.status(404).json({ error: "Assistant settings not found" });
+
+    const { decryptApiKey, maskApiKey } = await import("./src/server/assistantCrypto.ts");
+    let apiKeyMasked = '';
+    if (data.api_key_encrypted) {
+      try {
+        apiKeyMasked = maskApiKey(decryptApiKey(data.api_key_encrypted));
+      } catch (e) {
+        console.error("Failed to decrypt assistant API key for masking:", e);
+        apiKeyMasked = '••••••••';
+      }
+    }
+
+    res.json({
+      isEnabled: data.is_enabled,
+      aiProvider: data.ai_provider,
+      modelName: data.model_name,
+      apiKeyMasked,
+      hasApiKey: Boolean(data.api_key_encrypted),
+      systemPrompt: data.system_prompt,
+      temperature: data.temperature,
+      maxTokens: data.max_tokens,
+      dailyMessageLimit: data.daily_message_limit,
+      updatedAt: data.updated_at,
+      updatedBy: data.updated_by,
+    });
+  } catch (err: any) {
+    console.error("Error in GET /api/super-admin/assistant-settings:", err);
+    res.status(500).json({ error: err.message || "Internal Server Error" });
+  }
+});
+
+app.put("/api/super-admin/assistant-settings", authenticate, authorize(['super_admin']), async (req: any, res) => {
+  try {
+    const data = req.body;
+    if (!data) return res.status(400).json({ error: "Missing body data" });
+
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+    const { encryptApiKey } = await import("./src/server/assistantCrypto.ts");
+
+    const updatePayload: any = {
+      is_enabled: Boolean(data.isEnabled),
+      ai_provider: data.aiProvider === 'gemini' ? 'gemini' : 'openai',
+      model_name: String(data.modelName || 'gpt-4o-mini'),
+      system_prompt: String(data.systemPrompt || ''),
+      temperature: Math.min(1, Math.max(0, Number(data.temperature) || 0)),
+      max_tokens: Math.max(1, parseInt(data.maxTokens, 10) || 500),
+      daily_message_limit: Math.max(0, parseInt(data.dailyMessageLimit, 10) || 0),
+      updated_at: new Date().toISOString(),
+      updated_by: req.user?.email || req.user?.uid || null,
+    };
+
+    // حقل فارغ = "لم يتغيّر" — لا يُحذف المفتاح الحالي أبداً بالخطأ.
+    if (typeof data.apiKey === 'string' && data.apiKey.trim().length > 0) {
+      updatePayload.api_key_encrypted = encryptApiKey(data.apiKey.trim());
+    }
+
+    const { data: updated, error } = await supabaseAdmin
+      .from("assistant_settings")
+      .update(updatePayload)
+      .eq("id", "global")
+      .select("*")
+      .maybeSingle();
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    await supabaseAdmin.from('saas_security_logs').insert({
+      user_id: req.user?.uid,
+      user_email: req.user?.email,
+      action: 'assistant_settings_updated',
+      details: `isEnabled=${updatePayload.is_enabled}, provider=${updatePayload.ai_provider}, model=${updatePayload.model_name}`,
+      created_at: new Date().toISOString(),
+    }).then(({ error: logErr }: any) => {
+      if (logErr) console.warn('[saas_security_logs] insert failed:', logErr.message);
+    });
+
+    const { decryptApiKey, maskApiKey } = await import("./src/server/assistantCrypto.ts");
+    let apiKeyMasked = '';
+    if (updated?.api_key_encrypted) {
+      try { apiKeyMasked = maskApiKey(decryptApiKey(updated.api_key_encrypted)); } catch { apiKeyMasked = '••••••••'; }
+    }
+
+    res.json({
+      isEnabled: updated.is_enabled,
+      aiProvider: updated.ai_provider,
+      modelName: updated.model_name,
+      apiKeyMasked,
+      hasApiKey: Boolean(updated.api_key_encrypted),
+      systemPrompt: updated.system_prompt,
+      temperature: updated.temperature,
+      maxTokens: updated.max_tokens,
+      dailyMessageLimit: updated.daily_message_limit,
+      updatedAt: updated.updated_at,
+      updatedBy: updated.updated_by,
+    });
+  } catch (err: any) {
+    console.error("Error in PUT /api/super-admin/assistant-settings:", err);
+    res.status(500).json({ error: err.message || "Internal Server Error" });
+  }
+});
+
+// اختبار حي: يستخدم القيم غير المحفوظة القادمة من الفورم مباشرة، وليس من
+// القاعدة، حتى يرى السوبر أدمن أثر تعديلاته فوراً قبل الحفظ. إن لم يُرسل
+// حقل apiKey (المستخدم لم يغيّره)، يقع رجوعاً على المفتاح المحفوظ حالياً.
+app.post("/api/super-admin/assistant-settings/test", authenticate, authorize(['super_admin']), async (req: any, res) => {
+  try {
+    const { aiProvider, modelName, apiKey, systemPrompt, temperature, maxTokens, message } = req.body || {};
+    if (!message || typeof message !== 'string') {
+      return res.status(400).json({ error: "Missing 'message' to test with" });
+    }
+
+    let effectiveApiKey = typeof apiKey === 'string' && apiKey.trim().length > 0 ? apiKey.trim() : '';
+    if (!effectiveApiKey) {
+      const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+      const { data } = await supabaseAdmin.from("assistant_settings").select("api_key_encrypted").eq("id", "global").maybeSingle();
+      if (data?.api_key_encrypted) {
+        const { decryptApiKey } = await import("./src/server/assistantCrypto.ts");
+        effectiveApiKey = decryptApiKey(data.api_key_encrypted);
+      }
+    }
+    if (!effectiveApiKey) {
+      return res.status(400).json({ error: "No API key configured to test with" });
+    }
+
+    const { streamText } = await import('ai');
+    const model = await buildAssistantModel(aiProvider === 'gemini' ? 'gemini' : 'openai', String(modelName || 'gpt-4o-mini'), effectiveApiKey);
+
+    const result = streamText({
+      model,
+      system: String(systemPrompt || ''),
+      messages: [{ role: 'user', content: message }],
+      temperature: Math.min(1, Math.max(0, Number(temperature) || 0.7)),
+      maxOutputTokens: Math.max(1, parseInt(maxTokens, 10) || 500),
+    });
+
+    await result.pipeTextStreamToResponse(res);
+  } catch (err: any) {
+    console.error("Error in POST /api/super-admin/assistant-settings/test:", err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: err.message || "Internal Server Error" });
+    }
+  }
+});
+
+app.post("/api/chat", authenticate, async (req: any, res) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) return res.status(401).json({ error: 'Unauthorized: No tenant ID found' });
+
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+    const { data: settings, error: settingsErr } = await supabaseAdmin
+      .from("assistant_settings")
+      .select("*")
+      .eq("id", "global")
+      .maybeSingle();
+
+    if (settingsErr || !settings) {
+      return res.status(500).json({ error: "Assistant settings unavailable" });
+    }
+    if (!settings.is_enabled) {
+      return res.status(403).json({ error: 'assistant_disabled', message: 'مساعد سين الذكي معطّل حالياً.' });
+    }
+    if (!settings.api_key_encrypted) {
+      return res.status(503).json({ error: 'assistant_not_configured', message: 'لم يتم إعداد مساعد سين الذكي بعد.' });
+    }
+
+    if (settings.daily_message_limit > 0) {
+      const { data: newCount, error: usageErr } = await supabaseAdmin.rpc('increment_assistant_usage', { p_tenant_id: tenantId });
+      if (usageErr) {
+        console.error('increment_assistant_usage failed:', usageErr.message);
+      } else if (typeof newCount === 'number' && newCount > settings.daily_message_limit) {
+        return res.status(429).json({ error: 'daily_limit_reached', message: 'تم الوصول للحد الأقصى من الرسائل اليوم.' });
+      }
+    }
+
+    const { messages, userName } = req.body || {};
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ error: "Missing 'messages'" });
+    }
+
+    const roleLabels: Record<string, string> = {
+      owner: 'صاحب المحل', admin: 'مدير', manager: 'مدير فرع', cashier: 'كاشير',
+      tailor: 'خيّاط', super_admin: 'مسؤول المنصة',
+    };
+    const roleLabel = roleLabels[req.user?.role || ''] || 'مستخدم';
+    const contextualSystemPrompt = `${settings.system_prompt}\n\nيتحدث معك الآن: ${userName || ''} (${roleLabel}).`;
+
+    const { decryptApiKey } = await import("./src/server/assistantCrypto.ts");
+    const apiKey = decryptApiKey(settings.api_key_encrypted);
+    const model = await buildAssistantModel(settings.ai_provider, settings.model_name, apiKey);
+
+    const { streamText } = await import('ai');
+    const result = streamText({
+      model,
+      system: contextualSystemPrompt,
+      messages: messages.map((m: any) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: String(m.content || '') })),
+      temperature: settings.temperature,
+      maxOutputTokens: settings.max_tokens,
+    });
+
+    await result.pipeTextStreamToResponse(res);
+  } catch (err: any) {
+    console.error("Error in POST /api/chat:", err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: err.message || "Internal Server Error" });
+    }
+  }
+});
+
 async function setupServer() {
   // Public marketing landing page served at the site root "/" for visitors.
   // The SPA (app) keeps handling /login, /dashboard, /orders, ... as usual.

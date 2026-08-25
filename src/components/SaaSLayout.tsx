@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Shield, 
+  Shield,
   ShieldCheck,
-  Users, 
+  Bot,
+  Users,
   BarChart3, 
   Settings, 
   LogOut, 
@@ -62,6 +63,7 @@ const SAAS_MENU_ITEMS = [
   { id: 'audit', labelKey: 'saas.menu_audit', icon: Shield, path: '/admin/audit', roles: ['super_admin'] },
   { id: 'team', labelKey: 'saas.menu_team', icon: Users, path: '/admin/team', roles: ['super_admin'] },
   { id: 'system', labelKey: 'saas.menu_system', icon: Settings, path: '/admin/system', roles: ['super_admin'] },
+  { id: 'assistant', labelKey: 'saas.menu_assistant', icon: Bot, path: '/admin/assistant-settings', roles: ['super_admin'] },
 ];
 
 export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {

@@ -670,7 +670,11 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
         </div>
       </div>
 
-      <SeenAIFab />
+      <SeenAIFab
+        tenantId={tenantId}
+        userName={currentStaff?.name || dbUser?.display_name || dbUser?.email || ''}
+        userRole={effectiveRole}
+      />
 
       <OnboardingTour
         role={effectiveRole}
