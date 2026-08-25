@@ -2293,7 +2293,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                               order.status === 'delivered' ? "bg-success/10 text-success" :
                               order.status === 'ready' ? "bg-info/10 text-info" : "bg-warning/10 text-warning"
                             )}>
-                              {order.status}
+                              {t(`common.status_${order.status}`, order.status)}
                             </span>
                           </div>
                         </div>

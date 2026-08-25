@@ -1181,7 +1181,7 @@ export default function AdminTailors() {
                                 <p className="text-xs text-content-muted">{t('saas.tenants.remaining_until_expiry', { days: info.daysLeft })}</p>
                               </div>
                               <span className={`text-xs font-black uppercase tracking-widest ${info.isTrial ? 'text-warning' : 'text-success'}`}>
-                                {info.isTrial ? 'TRIAL' : 'PREMIUM'}
+                                {info.type}
                               </span>
                             </div>
                             <div className="h-3 w-full bg-border rounded-full overflow-hidden">

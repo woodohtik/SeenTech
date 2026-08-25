@@ -942,7 +942,7 @@ export default function SuperAdminDashboard() {
                         tenant.status === 'suspended' && "bg-gray-500/10 text-gray-600",
                       )}>
                         <span className="w-1 h-1 rounded-full bg-current" />
-                        {tenant.status}
+                        {t(`common.status_${tenant.status}`, tenant.status)}
                       </span>
                     </div>
 
@@ -1069,7 +1069,7 @@ export default function SuperAdminDashboard() {
                               tenant.status === 'suspended' && "bg-gray-500/10 text-gray-600",
                             )}>
                               <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                              {tenant.status}
+                              {t(`common.status_${tenant.status}`, tenant.status)}
                             </span>
                           </td>
                           <td className="px-6 py-4">
@@ -1385,7 +1385,7 @@ export default function SuperAdminDashboard() {
                           {new Date(log.timestamp).toLocaleString(localeOf(i18n.language))}
                         </span>
                         <span className="w-1 h-1 bg-border rounded-full" />
-                        <span className="text-[9px] font-black text-rose-600 uppercase tracking-wider">Type: {log.type}</span>
+                        <span className="text-[9px] font-black text-rose-600 uppercase tracking-wider">{t('common.type')}: {log.type}</span>
                       </div>
                     </div>
                   </div>
@@ -1475,7 +1475,7 @@ export default function SuperAdminDashboard() {
                         "inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider",
                         selectedTenant.status === 'active' ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-600"
                       )}>
-                        {selectedTenant.status}
+                        {t(`common.status_${selectedTenant.status}`, selectedTenant.status)}
                       </span>
                     </div>
                   </div>

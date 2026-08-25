@@ -1284,7 +1284,11 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                           : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
                       )}
                     >
-                      {selectedHistoryItem.status}
+                      {selectedHistoryItem.status === "Approved"
+                        ? t("inventory.status_approved", "معتمد")
+                        : selectedHistoryItem.status === "Draft"
+                        ? t("inventory.status_draft", "مسودة")
+                        : t("inventory.status_cancelled", "ملغي")}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
