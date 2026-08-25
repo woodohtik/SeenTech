@@ -736,8 +736,8 @@ export default function Settings({ tenantId }: SettingsProps) {
                                 setValue('taxSettings.trn', val, { shouldValidate: true });
                               }}
                               className={cn(
-                                "w-full bg-surface border-2 border-transparent focus:border-brand/30 rounded-xl p-3 font-black transition-all outline-none text-content text-left tracking-widest shadow-inner shadow-black/5 text-sm",
-                                errors.taxSettings?.trn && "border-red-500"
+                                "w-full bg-surface border border-border rounded-xl p-3 font-black outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content text-left tracking-widest text-sm",
+                                errors.taxSettings?.trn && "ring-2 ring-danger border-danger"
                               )}
                               dir="ltr"
                             />
@@ -749,8 +749,8 @@ export default function Settings({ tenantId }: SettingsProps) {
                               type="text" 
                               {...register('taxSettings.legalName')}
                               className={cn(
-                                "w-full bg-surface border-2 border-transparent focus:border-brand/30 rounded-xl p-3 font-bold transition-all outline-none text-content shadow-inner shadow-black/5 text-sm",
-                                errors.taxSettings?.legalName && "border-red-500"
+                                "w-full bg-surface border border-border rounded-xl p-3 font-semibold outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content text-sm",
+                                errors.taxSettings?.legalName && "ring-2 ring-danger border-danger"
                               )}
                               placeholder={t('settings_page.tax.legal_name_placeholder', 'الاسم المسجل في الشهادة الضريبية')}
                             />
@@ -767,8 +767,8 @@ export default function Settings({ tenantId }: SettingsProps) {
                                 type="number" 
                                 {...register('taxSettings.vatRate')}
                                 className={cn(
-                                  "w-full bg-surface border-2 border-transparent focus:border-brand/30 rounded-xl p-3 pl-10 font-black transition-all outline-none text-content shadow-inner shadow-black/5 text-sm",
-                                  errors.taxSettings?.vatRate && "border-red-500"
+                                  "w-full bg-surface border border-border rounded-xl p-3 pl-10 font-black outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content text-sm",
+                                  errors.taxSettings?.vatRate && "ring-2 ring-danger border-danger"
                                 )}
                                 min="0" max="100"
                               />
@@ -1138,7 +1138,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                   type="text"
                   placeholder={t('settings_page.data.search_placeholder', 'ابحث باسم الموظف، العملية، أو التفاصيل...')}
                   value={searchTerm}
-                  className="flex-1 bg-surface-muted border border-border px-4 py-3 rounded-2xl text-sm font-bold text-content focus:outline-none focus:border-brand"
+                  className="flex-1 bg-surface border border-border px-4 py-3 rounded-2xl text-sm font-bold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
                 <button

@@ -188,7 +188,7 @@ const s: Record<string, React.CSSProperties> = {
   ctaDisabled: { opacity: 0.5, cursor: 'not-allowed' },
   earned: { fontSize: 13, color: '#9FB6D4', marginTop: 12, textAlign: 'center' },
   linkRow: { display: 'flex', gap: 8 },
-  linkInput: { flex: 1, border: `1px solid ${LINE}`, borderRadius: 10, padding: '11px 12px', fontSize: 13, background: SURF, color: INK },
+  linkInput: { flex: 1, border: `1px solid ${LINE}`, borderRadius: 12, padding: '11px 12px', fontSize: 13, background: SURF, color: INK },
   copyBtn: { background: INK, color: '#fff', border: 'none', borderRadius: 10, padding: '0 18px', fontWeight: 700, fontSize: 14, cursor: 'pointer' },
   waBtn: { width: '100%', background: '#25D366', color: '#fff', border: 'none', borderRadius: 10, padding: '11px 0', fontWeight: 700, fontSize: 14, cursor: 'pointer', marginTop: 12 },
   hint: { fontSize: 13, color: GRAY, marginTop: 12, lineHeight: 1.7 },
@@ -203,7 +203,7 @@ const s: Record<string, React.CSSProperties> = {
   modalSub: { fontSize: 14, color: GRAY, margin: '8px 0 16px', lineHeight: 1.7 },
   field: { display: 'block', marginBottom: 12 },
   flbl: { display: 'block', fontSize: 13.5, fontWeight: 700, color: INK, marginBottom: 6 },
-  input: { width: '100%', border: `1px solid ${LINE}`, borderRadius: 10, padding: '11px 12px', fontSize: 15, color: INK },
+  input: { width: '100%', border: `1px solid ${LINE}`, borderRadius: 12, padding: '11px 12px', fontSize: 15, color: INK },
   err: { color: '#C0392B', fontSize: 13.5, marginTop: 4 },
   cancel: { width: '100%', background: 'transparent', border: 'none', color: GRAY, fontWeight: 600, fontSize: 14, cursor: 'pointer', marginTop: 8 },
 };

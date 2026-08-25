@@ -673,7 +673,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       required
-                      className="w-full h-12 px-4 pr-10 rounded-2xl border border-gray-200 focus:border-brand focus:ring-2 focus:ring-brand/10 outline-none transition-all font-bold text-gray-900"
+                      className="w-full h-12 px-4 pr-10 rounded-2xl border border-gray-200 focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all font-bold text-gray-900"
                       placeholder="••••••••"
                     />
                     <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -697,7 +697,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       required
-                      className="w-full h-12 px-4 pr-10 rounded-2xl border border-gray-200 focus:border-brand focus:ring-2 focus:ring-brand/10 outline-none transition-all font-bold text-gray-900"
+                      className="w-full h-12 px-4 pr-10 rounded-2xl border border-gray-200 focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all font-bold text-gray-900"
                       placeholder="••••••••"
                     />
                     <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -721,7 +721,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
-                      className="w-full h-12 px-4 pr-10 rounded-2xl border border-gray-200 focus:border-brand focus:ring-2 focus:ring-brand/10 outline-none transition-all font-bold text-gray-900"
+                      className="w-full h-12 px-4 pr-10 rounded-2xl border border-gray-200 focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all font-bold text-gray-900"
                       placeholder="••••••••"
                     />
                     <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">

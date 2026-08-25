@@ -961,7 +961,7 @@ export default function PurchaseOrders({
                       placeholder={t('procurement.quantity', 'الكمية')}
                       value={quantity || ''}
                       onChange={(e) => setQuantity(Number(e.target.value))}
-                      className="w-full px-4 py-2 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-content font-bold text-sm"
+                      className="w-full px-4 py-2 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content font-bold text-sm"
                     />
                   </div>
                   <div>
@@ -973,7 +973,7 @@ export default function PurchaseOrders({
                       readOnly={modalType === 'return'}
                       title={modalType === 'return' ? t('procurement.return_price_locked', 'السعر مقفل على سعر الشراء الفعلي ولا يمكن تعديله') : undefined}
                       className={cn(
-                        "w-full px-4 py-2 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-content font-bold text-sm",
+                        "w-full px-4 py-2 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content font-bold text-sm",
                         modalType === 'return' && "bg-surface-muted cursor-not-allowed opacity-80"
                       )}
                     />
@@ -1028,7 +1028,7 @@ export default function PurchaseOrders({
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder={t('procurement.doc_notes_placeholder', 'ملاحظات تفصيلية حول السند أو سبب الارتجاع إن وجد...')}
-                  className="w-full px-4 py-3 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none h-20 resize-none font-medium text-sm text-content"
+                  className="w-full px-4 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand h-20 resize-none font-medium text-sm text-content"
                 />
               </div>
             </div>
