@@ -1835,7 +1835,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 value={amount}
                 onChange={(e) => setAmount(Number(e.target.value))}
                 max={order.remainingAmount}
-                className="w-full bg-surface-muted border-2 border-transparent focus:border-success rounded-2xl p-4 font-black text-success outline-none transition-all"
+                className="w-full bg-surface border border-border focus:border-success rounded-xl p-4 font-black text-success outline-none transition-all focus:ring-2 focus:ring-success/20"
               />
             </div>
 
@@ -2903,7 +2903,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                         ...prev,
                                         [item.key]: e.target.value === '' ? '' : Number(e.target.value)
                                       }))}
-                                      className="w-full bg-surface-muted text-sm font-bold text-brand text-center p-1.5 rounded-lg outline-none border border-transparent focus:border-brand"
+                                      className="w-full bg-surface text-sm font-bold text-brand text-center p-1.5 rounded-xl outline-none border border-border focus:border-brand focus:ring-2 focus:ring-brand/20"
                                     />
                                   </div>
                                 ))}
@@ -2926,7 +2926,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                         ...prev,
                                         [styleItem.key]: e.target.value
                                       }))}
-                                      className="w-full bg-surface-muted text-xs font-bold text-content p-1.5 rounded-lg outline-none border border-transparent focus:border-brand"
+                                      className="w-full bg-surface text-xs font-bold text-content p-1.5 rounded-xl outline-none border border-border focus:border-brand focus:ring-2 focus:ring-brand/20"
                                     />
                                   </div>
                                 ))}
@@ -2988,9 +2988,9 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                             <input 
                               {...register(`items.${index}.garmentType` as any)} 
                               className={cn(
-                                "w-full bg-surface border-none rounded-xl p-3 text-sm font-bold shadow-sm text-content",
-                                (errors.items as any)?.[index]?.garmentType && "ring-2 ring-danger"
-                              )} 
+                                "w-full bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand",
+                                (errors.items as any)?.[index]?.garmentType && "ring-2 ring-danger border-danger"
+                              )}
                               placeholder={t('orders.item_type_placeholder')}
                             />
                           </div>
@@ -3043,9 +3043,9 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                   register(`items.${index}.quantity` as any).onChange(e);
                                 }}
                                 className={cn(
-                                  "w-2/3 bg-surface border-none rounded-xl p-3 text-sm font-bold shadow-sm text-content",
-                                  (errors.items as any)?.[index]?.quantity && "ring-2 ring-danger"
-                                )} 
+                                  "w-2/3 bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand",
+                                  (errors.items as any)?.[index]?.quantity && "ring-2 ring-danger border-danger"
+                                )}
                               />
                               <div className="w-1/3">
                                 <Controller
@@ -3078,9 +3078,9 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                               type="number" 
                               {...register(`items.${index}.price` as any)} 
                               className={cn(
-                                "w-full bg-surface border-none rounded-xl p-3 text-sm font-bold shadow-sm text-content",
-                                (errors.items as any)?.[index]?.price && "ring-2 ring-danger"
-                              )} 
+                                "w-full bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand",
+                                (errors.items as any)?.[index]?.price && "ring-2 ring-danger border-danger"
+                              )}
                             />
                           </div>
 
@@ -3210,7 +3210,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                             <input 
                               type="number" 
                               {...register('paidAmount')} 
-                              className="w-full bg-surface/10 border-2 border-surface/10 rounded-2xl p-4 pr-12 font-black text-surface placeholder:text-surface/30 focus:ring-2 focus:ring-surface outline-none" 
+                              className="w-full bg-surface/10 border border-surface/20 rounded-xl p-4 pr-12 font-black text-surface placeholder:text-surface/30 focus:ring-2 focus:ring-surface/40 focus:border-surface/40 outline-none transition-all"
                             />
                           </div>
                           <div className="flex justify-between text-xs font-bold pt-2">
@@ -3246,7 +3246,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           type="text" 
                           id="imageUrlInput"
                           placeholder={t('orders.image_url_placeholder')}
-                          className="flex-1 bg-surface-muted border-none rounded-xl p-3 text-sm font-bold text-content"
+                          className="flex-1 bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                         />
                         <button 
                           type="button"
