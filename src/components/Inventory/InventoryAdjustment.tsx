@@ -813,7 +813,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                       onChange={(e) => setSearchTerm(e.target.value)}
                       placeholder={t("inventory.search_barcode_sku_placeholder", "البحث باسم الصنف، الباركود، أو رمز الـ SKU...")}
                       className={cn(
-                        "w-full bg-surface-muted text-content border border-border py-2 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand focus:bg-surface transition-all",
+                        "w-full bg-surface text-content border border-border py-2 rounded-xl text-xs sm:text-sm outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand",
                         isRtl ? "pr-10 pl-3.5" : "pl-10 pr-3.5"
                       )}
                     />
@@ -954,7 +954,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                                     value={isTouched ? actualCounts[item.id] : ""}
                                     onChange={(e) => handleActualStockChange(item.id, e.target.value)}
                                     placeholder={bookQty.toString()}
-                                    className="w-12 bg-surface-muted text-center text-content border border-border py-1 rounded-lg font-bold text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand focus:bg-surface transition-all"
+                                    className="w-12 bg-surface text-center text-content border border-border py-1 rounded-lg font-bold text-xs sm:text-sm outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                                   />
                                   <button
                                     type="button"
@@ -990,7 +990,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                                     value={unitCosts[item.id] !== undefined ? unitCosts[item.id] : ""}
                                     onChange={(e) => handleCostChange(item.id, e.target.value)}
                                     placeholder={getUnitCost(item).toString()}
-                                    className="w-full bg-surface-muted text-center text-content border border-border py-1 rounded-lg text-xs font-bold focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand focus:bg-surface transition-all"
+                                    className="w-full bg-surface text-center text-content border border-border py-1 rounded-lg text-xs font-bold outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                                   />
                                 </div>
                               </td>
@@ -1017,7 +1017,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                                   value={reasonVal}
                                   onChange={(e) => handleItemReasonChange(item.id, e.target.value)}
                                   placeholder={t("inventory.reason_placeholder", "إتلاف، كسر، فقد...")}
-                                  className="w-full bg-surface-muted text-content border border-border px-2.5 py-1 rounded-lg text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand focus:bg-surface transition-all"
+                                  className="w-full bg-surface text-content border border-border px-2.5 py-1 rounded-lg text-xs font-semibold outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                                 />
                               </td>
 
@@ -1057,7 +1057,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                         "اكتب هنا تفاصيل الجرد، مثلاً: جرد ربع سنوي لشهر أغسطس، تم استبعاد الأقمشة التالفة وتسوية الرصيد تلقائياً."
                       )}
                       rows={2.5}
-                      className="w-full bg-surface-muted text-content border border-border p-3 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand focus:bg-surface transition-all"
+                      className="w-full bg-surface text-content border border-border p-3 rounded-xl text-xs sm:text-sm outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                     />
                   </div>
 

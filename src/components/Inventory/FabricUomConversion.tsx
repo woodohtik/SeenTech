@@ -632,7 +632,7 @@ const FabricUomConversion: React.FC<FabricUomConversionProps> = ({ tenantId }) =
                         required
                         value={inputQty}
                         onChange={(e) => setInputQty(e.target.value === '' ? '' : Number(e.target.value))}
-                        className="w-full px-4 py-3 bg-surface-muted rounded-2xl border-none focus:ring-2 focus:ring-brand font-bold text-sm text-right"
+                        className="w-full px-4 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-sm text-right"
                         placeholder="0.00"
                       />
                     </div>
@@ -672,7 +672,7 @@ const FabricUomConversion: React.FC<FabricUomConversionProps> = ({ tenantId }) =
                       value={conversionNotes}
                       onChange={(e) => setConversionNotes(e.target.value)}
                       placeholder={t('inventory.conversion_notes_placeholder', 'اكتب سبباً أو تفاصيل إضافية... (مثال: جرد سنوي، فرز مخزني)')}
-                      className="w-full px-4 py-3 bg-surface-muted rounded-2xl border-none focus:ring-2 focus:ring-brand font-medium text-xs text-right"
+                      className="w-full px-4 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-medium text-xs text-right"
                     />
                   </div>
 
@@ -834,7 +834,7 @@ const FabricUomConversion: React.FC<FabricUomConversionProps> = ({ tenantId }) =
                                   min="0.01"
                                   value={settingRate}
                                   onChange={(e) => setSettingRate(Number(e.target.value))}
-                                  className="w-20 px-2 py-1 bg-surface border border-border rounded-lg text-xs font-bold text-center"
+                                  className="w-20 px-2 py-1 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-xs font-bold text-center"
                                 />
                                 <span className="text-xs text-content-muted">{getUnitLabel(settingBaseUnit)}</span>
                               </div>
