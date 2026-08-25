@@ -231,6 +231,7 @@
     "completed": "Completed",
     "confirm": "Confirm",
     "confirm_deletion": "Confirm Data Deletion",
+    "confirmation_text_mismatch": "The text you entered does not match",
     "confirm_final_deletion": "Complete Final Deletion",
     "connected": "Connected & Stable",
     "copy": "Copy",

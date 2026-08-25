@@ -10,7 +10,7 @@ import {
   Filter,
   Download
 } from 'lucide-react';
-import { AdminIconInput } from './ui/AdminIconInput';
+import { IconInput } from './ui/IconInput';
 import { SmartSelect } from './ui/SmartSelect';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -133,7 +133,7 @@ export default function SaaSAuditLogs() {
       {/* Filters */}
       <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col md:flex-row gap-4">
         <div className="flex-1">
-          <AdminIconInput 
+          <IconInput 
             type="text"
             placeholder={t('saas.search_logs_placeholder')}
             value={searchQuery}

@@ -231,6 +231,7 @@
     "completed": "مكتمل",
     "confirm": "تأكيد",
     "confirm_deletion": "تأكيد حذف البيانات",
+    "confirmation_text_mismatch": "النص المدخل غير مطابق",
     "confirm_final_deletion": "إتمام عملية الحذف النهائية",
     "connected": "متصل ومستقر",
     "copy": "نسخ",

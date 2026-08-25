@@ -34,7 +34,7 @@ import { supabase } from '../lib/supabase/client';
 import { useTranslation } from 'react-i18next';
 import UserPreferencesMenu from './UserPreferencesMenu';
 
-import { AdminIconInput } from './ui/AdminIconInput';
+import { IconInput } from './ui/IconInput';
 
 import { isRtlLang, localeOf } from '../lib/direction';
 
@@ -518,7 +518,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
 
           <div className="flex items-center gap-4">
             <div className="hidden md:block w-64">
-              <AdminIconInput 
+              <IconInput 
                 type="text"
                 placeholder={t('saas.quick_search', 'بحث سريع...')}
                 startIcon={Search}

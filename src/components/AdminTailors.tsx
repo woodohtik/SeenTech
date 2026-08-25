@@ -39,7 +39,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { PriceDisplay } from './PriceDisplay';
 import { cn } from '../lib/utils';
 import { autoSeed } from '../services/seedService';
-import { AdminIconInput } from './ui/AdminIconInput';
+import { IconInput } from './ui/IconInput';
 import { SmartSelect } from './ui/SmartSelect';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -829,7 +829,7 @@ export default function AdminTailors() {
           <div className="bg-surface p-6 rounded-[2.5rem] border border-border shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex flex-1 gap-4 w-full md:w-auto">
               <div className="flex-1 max-w-sm">
-                <AdminIconInput 
+                <IconInput 
                   type="text"
                   placeholder={t('saas.tenants.search_placeholder')}
                   value={searchTerm}
@@ -1000,7 +1000,7 @@ export default function AdminTailors() {
                 <p className="text-content-muted text-xs font-bold mt-1">{t('saas.tenants.licenses_subtitle')}</p>
               </div>
               <div className="w-full sm:w-80">
-                <AdminIconInput 
+                <IconInput 
                   type="text" 
                   placeholder={t('saas.tenants.quick_search_placeholder')}
                   value={searchTerm}

@@ -14,7 +14,7 @@ import {
   XCircle,
   Clock
 } from 'lucide-react';
-import { AdminIconInput } from './ui/AdminIconInput';
+import { IconInput } from './ui/IconInput';
 import { SmartSelect } from './ui/SmartSelect';
 import { SaasUser, SaasUserRole } from '../types/supabase';
 import { cn } from '../lib/utils';
@@ -240,7 +240,7 @@ export default function SaaSTeamManagement() {
 
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div className="flex-1 md:w-64">
-            <AdminIconInput
+            <IconInput
               startIcon={Search}
               placeholder={t('saas.search_members_placeholder', 'ابحث بالاسم أو البريد...')}
               value={searchTerm}
@@ -367,7 +367,7 @@ export default function SaaSTeamManagement() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-content-muted">{t('common.full_name', 'الاسم الكامل')}</label>
-                  <AdminIconInput
+                  <IconInput
                     startIcon={User}
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -379,7 +379,7 @@ export default function SaaSTeamManagement() {
 
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-content-muted">{t('common.email', 'البريد الإلكتروني')}</label>
-                  <AdminIconInput
+                  <IconInput
                     type="email"
                     startIcon={Mail}
                     value={formData.email}
@@ -394,7 +394,7 @@ export default function SaaSTeamManagement() {
                 {!editingUser && (
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-content-muted">{t('common.password_temp', 'كلمة المرور المؤقتة')}</label>
-                    <AdminIconInput
+                    <IconInput
                       type="password"
                       startIcon={Shield}
                       value={formData.password}

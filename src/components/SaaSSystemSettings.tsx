@@ -19,7 +19,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { Tenant } from '../types';
-import { AdminIconInput } from './ui/AdminIconInput';
+import { IconInput } from './ui/IconInput';
 import { SmartSelect } from './ui/SmartSelect';
 import { useTranslation } from 'react-i18next';
 import GlobalRoleManager from './GlobalRoleManager';
@@ -321,7 +321,7 @@ export default function SaaSSystemSettings() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
                 <label className="block text-sm font-black text-content-muted">{t('common.company_name')}</label>
-                <AdminIconInput 
+                <IconInput 
                   type="text"
                   value={brandingSettings.companyName}
                   onChange={(e) => setBrandingSettings(prev => ({ ...prev, companyName: e.target.value }))}
@@ -332,7 +332,7 @@ export default function SaaSSystemSettings() {
 
               <div className="space-y-4">
                 <label className="block text-sm font-black text-content-muted">{t('common.website_url')}</label>
-                <AdminIconInput 
+                <IconInput 
                   type="url"
                   value={brandingSettings.websiteUrl}
                   onChange={(e) => setBrandingSettings(prev => ({ ...prev, websiteUrl: e.target.value }))}
@@ -368,7 +368,7 @@ export default function SaaSSystemSettings() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
                 <label className="block text-sm font-black text-content-muted">{t('saas.trial_duration_days', 'مدة التجربة المجانية (أيام)')}</label>
-                <AdminIconInput 
+                <IconInput 
                   type="number"
                   min="0"
                   max="90"
@@ -523,12 +523,12 @@ export default function SaaSSystemSettings() {
                     <label className="block text-sm font-black text-content-muted">
                       {t('common.write_name_to_confirm')}: <span className="text-danger">({confirmModal.tenantName})</span>
                     </label>
-                    <AdminIconInput 
+                    <IconInput 
                       type="text"
                       value={confirmModal.inputValue}
                       onChange={(e) => setConfirmModal(prev => ({ ...prev, inputValue: e.target.value }))}
                       placeholder={t('common.type_name_here')}
-                      error={confirmModal.inputValue.length > 0 && confirmModal.inputValue !== confirmModal.tenantName}
+                      error={confirmModal.inputValue.length > 0 && confirmModal.inputValue !== confirmModal.tenantName ? t('common.confirmation_text_mismatch') : undefined}
                       className="bg-surface-muted"
                     />
                   </div>
