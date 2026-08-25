@@ -2300,7 +2300,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
               <span
                 className={cn(
                   "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
-                  formData.showInPos ? "translate-x-5" : "translate-x-0"
+                  formData.showInPos ? "-translate-x-5" : "translate-x-0"
                 )}
               />
             </button>
@@ -4236,7 +4236,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
               <span
                 className={cn(
                   "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
-                  formData.showInPos ? "translate-x-5" : "translate-x-0"
+                  formData.showInPos ? "-translate-x-5" : "translate-x-0"
                 )}
               />
             </button>
