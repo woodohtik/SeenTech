@@ -763,7 +763,6 @@ async function streamAssistantReply(result: any, res: any) {
   let wroteAny = false;
   try {
     for await (const part of result.fullStream) {
-      console.log('[assistant-stream-part]', part.type, part.type === 'tool-error' ? JSON.stringify(part.error) : part.type === 'finish' || part.type === 'finish-step' ? JSON.stringify(part.finishReason || part) : '');
       if (part.type === 'text-delta') {
         wroteAny = true;
         res.write(JSON.stringify({ t: 'text', v: part.text }) + '\n');
@@ -778,7 +777,6 @@ async function streamAssistantReply(result: any, res: any) {
         throw part.error instanceof Error ? part.error : new Error(String(part.error));
       }
     }
-    console.log('[assistant-stream-done] wroteAny=', wroteAny);
     res.end();
   } catch (err: any) {
     console.error('Assistant stream error:', err);
