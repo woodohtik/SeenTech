@@ -1020,13 +1020,12 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
       messages: messages.map((m: any) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: String(m.content || '') })),
       temperature: settings.temperature,
       maxOutputTokens: settings.max_tokens,
-      tools: await buildAssistantTools(),
-      stopWhen: stepCountIs(5),
-      runtimeContext: {
+      tools: await buildAssistantTools({
         tenantId,
         userId: req.user?.uid,
         userRole: req.user?.role,
-      },
+      }),
+      stopWhen: stepCountIs(5),
     });
 
     await streamAssistantReply(result, res);

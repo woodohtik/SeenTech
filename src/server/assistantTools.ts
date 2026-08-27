@@ -10,10 +10,18 @@ import { supabaseAdmin } from './supabase-admin.ts';
 // الملف نفسه من الخارج.
 
 // أدوات بيانات "مساعد سين الذكي" — قراءة فقط (Read-Only)، بلا أي أداة
-// Insert/Update/Delete على الإطلاق. tenantId/userRole يأتيان حصراً من
-// runtimeContext الذي يبنيه server.ts من جلسة المستخدم الموثّقة (authenticate
-// middleware) — لا يوجد أي معامل tenantId في أي Zod schema أدناه، والنموذج
-// لا يستطيع التأثير عليه بأي صياغة مهما كانت.
+// Insert/Update/Delete على الإطلاق.
+//
+// tenantId/userRole يأتيان حصراً من ctx الممرَّر لـ buildAssistantTools(ctx)
+// من server.ts (المبني من جلسة المستخدم الموثّقة عبر authenticate middleware)
+// — لا يوجد أي معامل tenantId في أي Zod schema أدناه، والنموذج لا يستطيع
+// التأثير عليه بأي صياغة مهما كانت. كل أداة تُغلِق (closure) على ctx مباشرة
+// بدل الاعتماد على آلية runtimeContext/toolExecutionOptions.context الخاصة
+// بـ streamText — تبيّن عملياً (عبر اختبار حي مع سجلات Vercel) أن context
+// كان يصل undefined لكل استدعاء أداة رغم تمرير runtimeContext بشكل صحيح
+// لـ streamText، على الأرجح بسبب تعارض إصدارات بين حزمة ai وحزم @ai-sdk/*
+// المزوّدة. الإغلاق المباشر أبسط ومضمون النجاح لأنه يعتمد على JS العادي
+// فقط، بلا أي آلية داخلية من الحزمة.
 
 export interface AssistantToolContext {
   tenantId: string;
@@ -75,7 +83,7 @@ function todayStr(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export async function buildAssistantTools() {
+export async function buildAssistantTools(ctx: AssistantToolContext) {
   const { z } = await import('zod');
   const { tool } = await import('ai');
 
@@ -85,8 +93,7 @@ export async function buildAssistantTools() {
       startDate: z.string().describe('تاريخ البداية بصيغة YYYY-MM-DD'),
       endDate: z.string().describe('تاريخ النهاية بصيغة YYYY-MM-DD'),
     }),
-    execute: async ({ startDate, endDate }, { context }) => {
-      const ctx = context as AssistantToolContext;
+    execute: async ({ startDate, endDate }) => {
       let start: string; let end: string;
       if (!isAdminRole(ctx.userRole)) {
         // Cashier وأي دور تشغيلي آخر غير إداري: اليوم الحالي فقط بغض النظر
@@ -114,8 +121,7 @@ export async function buildAssistantTools() {
       startDate: z.string().optional().describe('تاريخ البداية YYYY-MM-DD'),
       endDate: z.string().optional().describe('تاريخ النهاية YYYY-MM-DD'),
     }),
-    execute: async ({ customerName, orderNumber, startDate, endDate }, { context }) => {
-      const ctx = context as AssistantToolContext;
+    execute: async ({ customerName, orderNumber, startDate, endDate }) => {
       await logToolCall(ctx, 'searchInvoices', { customerName, orderNumber, startDate, endDate }, false);
 
       let q = supabaseAdmin
@@ -144,8 +150,7 @@ export async function buildAssistantTools() {
     inputSchema: z.object({
       itemName: z.string().describe('اسم الصنف أو رمز SKU للبحث عنه'),
     }),
-    execute: async ({ itemName }, { context }) => {
-      const ctx = context as AssistantToolContext;
+    execute: async ({ itemName }) => {
       await logToolCall(ctx, 'getInventoryStatus', { itemName }, false);
 
       const { data: items, error } = await supabaseAdmin
@@ -187,8 +192,7 @@ export async function buildAssistantTools() {
   const getLowStockAlerts = tool({
     description: 'قائمة الأصناف التي وصلت أو اقتربت من حد النفاد (الكمية الحالية <= الحد الأدنى المحدد للصنف).',
     inputSchema: z.object({}),
-    execute: async (_input, { context }) => {
-      const ctx = context as AssistantToolContext;
+    execute: async () => {
       await logToolCall(ctx, 'getLowStockAlerts', {}, false);
       const { data, error } = await supabaseAdmin.rpc('assistant_get_low_stock_alerts', {
         p_tenant_id: ctx.tenantId, p_limit: 50,
@@ -204,8 +208,7 @@ export async function buildAssistantTools() {
       startDate: z.string().describe('تاريخ البداية YYYY-MM-DD'),
       endDate: z.string().describe('تاريخ النهاية YYYY-MM-DD'),
     }),
-    execute: async ({ startDate, endDate }, { context }) => {
-      const ctx = context as AssistantToolContext;
+    execute: async ({ startDate, endDate }) => {
       const { start, end } = clampDateRange(startDate, endDate);
       await logToolCall(ctx, 'getTopSellingItems', { startDate: start, endDate: end }, false);
       const { data, error } = await supabaseAdmin.rpc('assistant_get_top_selling_items', {
@@ -221,8 +224,7 @@ export async function buildAssistantTools() {
     inputSchema: z.object({
       nameOrPhone: z.string().describe('اسم العميل أو رقم جواله'),
     }),
-    execute: async ({ nameOrPhone }, { context }) => {
-      const ctx = context as AssistantToolContext;
+    execute: async ({ nameOrPhone }) => {
       await logToolCall(ctx, 'getCustomerHistory', { nameOrPhone }, false);
 
       const { data: customers, error: custErr } = await supabaseAdmin
@@ -259,8 +261,7 @@ export async function buildAssistantTools() {
   const getPendingOrders = tool({
     description: 'طلبات التفصيل الجارية غير المكتملة/غير المُسلَّمة (كل الحالات ما عدا "تم التسليم" و"ملغي"). يرجع حتى 50 طلباً.',
     inputSchema: z.object({}),
-    execute: async (_input, { context }) => {
-      const ctx = context as AssistantToolContext;
+    execute: async () => {
       await logToolCall(ctx, 'getPendingOrders', {}, false);
       const { data, error } = await supabaseAdmin
         .from('orders')
@@ -281,8 +282,7 @@ export async function buildAssistantTools() {
       startDate: z.string().describe('تاريخ البداية YYYY-MM-DD'),
       endDate: z.string().describe('تاريخ النهاية YYYY-MM-DD'),
     }),
-    execute: async ({ startDate, endDate }, { context }) => {
-      const ctx = context as AssistantToolContext;
+    execute: async ({ startDate, endDate }) => {
       if (!isAdminRole(ctx.userRole)) {
         await logToolCall(ctx, 'getRevenueReport', { startDate, endDate }, true, 'insufficient_role');
         return { denied: true, message: DENIED_ROLE_MESSAGE };
@@ -302,8 +302,7 @@ export async function buildAssistantTools() {
     inputSchema: z.object({
       date: z.string().describe('التاريخ المطلوب YYYY-MM-DD'),
     }),
-    execute: async ({ date }, { context }) => {
-      const ctx = context as AssistantToolContext;
+    execute: async ({ date }) => {
       if (!isAdminRole(ctx.userRole)) {
         await logToolCall(ctx, 'getDailyClosingReport', { date }, true, 'insufficient_role');
         return { denied: true, message: DENIED_ROLE_MESSAGE };
