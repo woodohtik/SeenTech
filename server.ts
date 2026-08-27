@@ -1017,7 +1017,7 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
       messages: messages.map((m: any) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: String(m.content || '') })),
       temperature: settings.temperature,
       maxOutputTokens: settings.max_tokens,
-      tools: buildAssistantTools(),
+      tools: await buildAssistantTools(),
       stopWhen: stepCountIs(5),
       runtimeContext: {
         tenantId,

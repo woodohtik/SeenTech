@@ -1,6 +1,13 @@
-import { z } from 'zod';
-import { tool } from 'ai';
 import { supabaseAdmin } from './supabase-admin.ts';
+
+// ملاحظة بناء: 'ai' و'zod' كلاهما حزمتان ESM-only فقط (package.json: "type":
+// "module"). هذا الملف يُحزَّم ضمن server.ts بصيغة CJS عبر esbuild
+// (--format=cjs)، وأي import ثابت من حزمة ESM يتحوّل تلقائياً إلى require()
+// عند البناء — وrequire() لا يستطيع تحميل وحدات ESM إطلاقاً (ERR_REQUIRE_ESM
+// وقت التشغيل، وليس وقت البناء). لذا استيراد ديناميكي إلزامي هنا، حتى لو
+// كانت الدالة نفسها تُستورَد ديناميكياً من server.ts — الاستيراد الساكن
+// المتداخل داخل ملف مُجمَّع يتحوّل لـ require() بغض النظر عن كيفية استيراد
+// الملف نفسه من الخارج.
 
 // أدوات بيانات "مساعد سين الذكي" — قراءة فقط (Read-Only)، بلا أي أداة
 // Insert/Update/Delete على الإطلاق. tenantId/userRole يأتيان حصراً من
@@ -68,7 +75,10 @@ function todayStr(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function buildAssistantTools() {
+export async function buildAssistantTools() {
+  const { z } = await import('zod');
+  const { tool } = await import('ai');
+
   const getSalesSummary = tool({
     description: 'إجمالي المبيعات وعدد الفواتير خلال فترة زمنية محددة. الكاشير يحصل على بيانات اليوم الحالي فقط بغض النظر عن التواريخ المطلوبة.',
     inputSchema: z.object({
