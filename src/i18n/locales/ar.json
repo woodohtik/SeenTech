@@ -30,7 +30,8 @@
     "card_collected": "المحصّل",
     "card_tax": "الضريبة",
     "card_discount": "الخصم",
-    "card_access_denied": "غير متاح"
+    "card_access_denied": "غير متاح",
+    "fetching_data": "جاري جلب البيانات..."
   },
   "billing": {
     "billing_status_title": "حالة الفوترة والتجديد",

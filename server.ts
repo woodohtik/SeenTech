@@ -756,8 +756,9 @@ async function streamTextOrError(result: any, res: any) {
 // نسخة موسّعة من streamTextOrError لمحادثة /api/chat التي تستخدم أدوات
 // (tools): بروتوكول NDJSON بسيط (سطر JSON واحد لكل جزء) بدل النص الخام، حتى
 // يستطيع العميل تمييز نص الرد عن نتائج الأدوات ويعرضها كبطاقات/جداول بدل
-// نص خام. كل سطر إما {"t":"text","v":"..."} أو {"t":"tool","name":...,"result":...}
-// أو {"t":"tool-error","name":...,"message":...}.
+// نص خام، ويعرض مؤشر "جارِ البحث..." أثناء تنفيذ الأداة بدل شاشة فارغة.
+// كل سطر إما {"t":"text","v":"..."} أو {"t":"status","name":...} (بدأ تنفيذ
+// أداة) أو {"t":"tool","name":...,"result":...} أو {"t":"tool-error",...}.
 async function streamAssistantReply(result: any, res: any) {
   res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
   let wroteAny = false;
@@ -766,6 +767,9 @@ async function streamAssistantReply(result: any, res: any) {
       if (part.type === 'text-delta') {
         wroteAny = true;
         res.write(JSON.stringify({ t: 'text', v: part.text }) + '\n');
+      } else if (part.type === 'tool-call') {
+        wroteAny = true;
+        res.write(JSON.stringify({ t: 'status', name: part.toolName }) + '\n');
       } else if (part.type === 'tool-result') {
         wroteAny = true;
         res.write(JSON.stringify({ t: 'tool', name: part.toolName, result: part.output }) + '\n');

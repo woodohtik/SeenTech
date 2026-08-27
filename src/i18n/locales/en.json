@@ -30,7 +30,8 @@
     "card_collected": "Collected",
     "card_tax": "Tax",
     "card_discount": "Discount",
-    "card_access_denied": "Not available"
+    "card_access_denied": "Not available",
+    "fetching_data": "Fetching data..."
   },
   "billing": {
     "billing_status_title": "Billing & Renewal Status",

@@ -36,10 +36,12 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [statusText, setStatusText] = useState<string | null>(null);
   const [bannerMessage, setBannerMessage] = useState<string | null>(null);
   const { t } = useTranslation();
   const { dir, isRtl } = useDirection();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const statusTextRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,6 +73,8 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
     setMessages(nextMessages);
     setInput('');
     setIsSending(true);
+    statusTextRef.current = t('ai.thinking');
+    setStatusText(statusTextRef.current);
     setBannerMessage(null);
 
     try {
@@ -87,6 +91,7 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
         const data = await res.json().catch(() => ({}));
         setBannerMessage(data.message || t('ai.assistant_disabled_message'));
         setIsSending(false);
+        setStatusText(null);
         setTimeout(() => setIsOpen(false), 2500);
         return;
       }
@@ -94,12 +99,14 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
         const data = await res.json().catch(() => ({}));
         setBannerMessage(data.message || t('ai.daily_limit_reached'));
         setIsSending(false);
+        setStatusText(null);
         return;
       }
       if (res.status === 503) {
         const data = await res.json().catch(() => ({}));
         setBannerMessage(data.message || t('ai.not_configured_message'));
         setIsSending(false);
+        setStatusText(null);
         return;
       }
       if (!res.ok || !res.body) {
@@ -123,8 +130,15 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
           if (!line.trim()) continue;
           try {
             const part = JSON.parse(line);
-            if (part.t === 'text') textAcc += part.v;
-            else if (part.t === 'tool') toolResultsAcc.push({ name: part.name, result: part.result });
+            if (part.t === 'text') {
+              if (statusTextRef.current !== null) { statusTextRef.current = null; setStatusText(null); }
+              textAcc += part.v;
+            } else if (part.t === 'status') {
+              statusTextRef.current = t('ai.fetching_data');
+              setStatusText(statusTextRef.current);
+            } else if (part.t === 'tool') {
+              toolResultsAcc.push({ name: part.name, result: part.result });
+            }
           } catch {
             // سطر NDJSON غير صالح (نادر) — تجاهله بدل كسر المحادثة كاملة
           }
@@ -142,6 +156,8 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
       setBannerMessage(t('ai.error_generic'));
     } finally {
       setIsSending(false);
+      statusTextRef.current = null;
+      setStatusText(null);
     }
   }, [input, isSending, messages, userName, userRole, t]);
 
@@ -225,12 +241,15 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
                   </div>
                 ))}
 
-                {isSending && !messages[messages.length - 1]?.content && (
+                {isSending && statusText && (
                   <div className="flex justify-start rtl:justify-end">
-                    <div className="bg-surface-muted rounded-2xl rounded-tl-md px-4 py-3 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 bg-content-muted rounded-full animate-bounce [animation-delay:-0.3s]" />
-                      <span className="w-1.5 h-1.5 bg-content-muted rounded-full animate-bounce [animation-delay:-0.15s]" />
-                      <span className="w-1.5 h-1.5 bg-content-muted rounded-full animate-bounce" />
+                    <div className="bg-surface-muted rounded-2xl rounded-tl-md px-4 py-3 flex items-center gap-2">
+                      <span className="flex items-center gap-1.5 shrink-0">
+                        <span className="w-1.5 h-1.5 bg-brand rounded-full animate-bounce [animation-delay:-0.3s]" />
+                        <span className="w-1.5 h-1.5 bg-brand rounded-full animate-bounce [animation-delay:-0.15s]" />
+                        <span className="w-1.5 h-1.5 bg-brand rounded-full animate-bounce" />
+                      </span>
+                      <span className="text-xs font-bold text-content-muted">{statusText}</span>
                     </div>
                   </div>
                 )}

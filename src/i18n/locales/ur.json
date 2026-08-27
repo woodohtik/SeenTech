@@ -30,7 +30,8 @@
     "card_collected": "وصول شدہ",
     "card_tax": "ٹیکس",
     "card_discount": "رعایت",
-    "card_access_denied": "دستیاب نہیں"
+    "card_access_denied": "دستیاب نہیں",
+    "fetching_data": "ڈیٹا حاصل کیا جا رہا ہے..."
   },
   "billing": {
     "billing_status_title": "بلنگ اور تجدید کی حالت",
