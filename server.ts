@@ -717,15 +717,6 @@ app.post("/api/tenant/settings", authenticate, authorize(['owner', 'admin']), as
    (src/server/assistantCrypto.ts) ولا يُعاد كاملاً لأي استجابة.
    ================================================================ */
 
-async function buildAssistantModel(provider: string, modelName: string, apiKey: string) {
-  if (provider === 'gemini') {
-    const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
-    return createGoogleGenerativeAI({ apiKey })(modelName);
-  }
-  const { createOpenAI } = await import('@ai-sdk/openai');
-  return createOpenAI({ apiKey })(modelName);
-}
-
 // result.pipeTextStreamToResponse() swallows model-call errors (invalid key,
 // deprecated model, quota, ...): it only forwards "text-delta" parts, so an
 // error part ends the stream with a plain 200 + empty body and no way for the
@@ -753,48 +744,82 @@ async function streamTextOrError(result: any, res: any) {
   }
 }
 
+const ASSISTANT_FRIENDLY_ERROR = 'حدث خطأ أثناء التواصل مع المساعد، حاول مرة أخرى.';
+
 // نسخة موسّعة من streamTextOrError لمحادثة /api/chat التي تستخدم أدوات
-// (tools): بروتوكول NDJSON بسيط (سطر JSON واحد لكل جزء) بدل النص الخام، حتى
-// يستطيع العميل تمييز نص الرد عن نتائج الأدوات ويعرضها كبطاقات/جداول بدل
-// نص خام، ويعرض مؤشر "جارِ البحث..." أثناء تنفيذ الأداة بدل شاشة فارغة.
-// كل سطر إما {"t":"text","v":"..."} أو {"t":"status","name":...} (بدأ تنفيذ
-// أداة) أو {"t":"tool","name":...,"result":...} أو {"t":"tool-error",...}.
-async function streamAssistantReply(result: any, res: any) {
+// (tools) وتدعم عدة مزوّدين مع ترتيب احتياطي (Fallback): بروتوكول NDJSON
+// بسيط (سطر JSON واحد لكل جزء) بدل النص الخام، حتى يستطيع العميل تمييز نص
+// الرد عن نتائج الأدوات ويعرضها كبطاقات/جداول بدل نص خام، ويعرض مؤشر "جارِ
+// البحث..." أثناء تنفيذ الأداة بدل شاشة فارغة. كل سطر إما
+// {"t":"text","v":"..."} أو {"t":"status","name":...} (بدأ تنفيذ أداة) أو
+// {"t":"tool","name":...,"result":...} أو {"t":"tool-error",...}.
+//
+// candidates: قائمة مرشّحين مرتّبة (المزوّد النشط أولاً ثم fallbackOrder،
+// بعد استبعاد غير المُعدّين). لكل مرشّح نبني موديل جديداً ونستدعي
+// buildResult(model) للحصول على نتيجة streamText طازجة، ثم نكرّر على
+// fullStream بالكامل. إن فشل مرشّح قبل أي إخراج فعلي للعميل (wroteAny لا
+// تزال false) ننتقل بصمت للمرشّح التالي مع تسجيل التبديل في سجل التدقيق؛
+// أما إن فشل بعد أن بدأ العميل يستلم رداً جزئياً فلا يمكن تبديل المزوّد
+// بأمان منتصف رد بدأ استلامه -- نتوقف برسالة خطأ مفهومة بدل ذلك.
+async function streamAssistantReply(
+  candidates: Array<{ providerKey: string; modelName: string; apiKey: string }>,
+  buildResult: (model: any) => any,
+  res: any,
+  onFallback: (failedProviderKey: string, reason: string, nextProviderKey: string | null) => Promise<void>,
+) {
   res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
-  let wroteAny = false;
-  try {
-    for await (const part of result.fullStream) {
-      if (part.type === 'text-delta') {
-        wroteAny = true;
-        res.write(JSON.stringify({ t: 'text', v: part.text }) + '\n');
-      } else if (part.type === 'tool-call') {
-        wroteAny = true;
-        res.write(JSON.stringify({ t: 'status', name: part.toolName }) + '\n');
-      } else if (part.type === 'tool-result') {
-        wroteAny = true;
-        res.write(JSON.stringify({ t: 'tool', name: part.toolName, result: part.output }) + '\n');
-      } else if (part.type === 'tool-error') {
-        wroteAny = true;
-        console.error('[assistant-tool-error]', part.toolName, part.error);
-        res.write(JSON.stringify({ t: 'tool-error', name: part.toolName, message: 'تعذّر تنفيذ الأداة' }) + '\n');
-      } else if (part.type === 'error') {
-        throw part.error instanceof Error ? part.error : new Error(String(part.error));
+  const { buildModelForProvider } = await import('./src/server/aiProviderRegistry.ts');
+
+  for (let i = 0; i < candidates.length; i++) {
+    const candidate = candidates[i];
+    let wroteAny = false;
+    try {
+      const model = await buildModelForProvider(candidate.providerKey, candidate.modelName, candidate.apiKey);
+      const result = buildResult(model);
+      for await (const part of result.fullStream) {
+        if (part.type === 'text-delta') {
+          wroteAny = true;
+          res.write(JSON.stringify({ t: 'text', v: part.text }) + '\n');
+        } else if (part.type === 'tool-call') {
+          wroteAny = true;
+          res.write(JSON.stringify({ t: 'status', name: part.toolName }) + '\n');
+        } else if (part.type === 'tool-result') {
+          wroteAny = true;
+          res.write(JSON.stringify({ t: 'tool', name: part.toolName, result: part.output }) + '\n');
+        } else if (part.type === 'tool-error') {
+          wroteAny = true;
+          console.error('[assistant-tool-error]', part.toolName, part.error);
+          res.write(JSON.stringify({ t: 'tool-error', name: part.toolName, message: 'تعذّر تنفيذ الأداة' }) + '\n');
+        } else if (part.type === 'error') {
+          throw part.error instanceof Error ? part.error : new Error(String(part.error));
+        }
       }
-    }
-    res.end();
-  } catch (err: any) {
-    // المستخدم النهائي (Admin/Cashier في الـ Widget) لا يرى تفاصيل الخطأ
-    // البرمجي أبداً (رسائل SDK/مزوّد الذكاء الاصطناعي الخام مثل quota/rate
-    // limit) -- فقط سجل الخادم يحتفظ بها لأغراض التشخيص. نص عربي مفهوم
-    // بدلاً منها، بنفس صياغة ai.error_generic في الواجهة.
-    console.error('Assistant stream error:', err);
-    const FRIENDLY_ERROR = 'حدث خطأ أثناء التواصل مع المساعد، حاول مرة أخرى.';
-    if (!wroteAny && !res.headersSent) {
-      res.status(502).json({ error: FRIENDLY_ERROR });
-    } else {
-      res.write(JSON.stringify({ t: 'text', v: `\n\n${FRIENDLY_ERROR}` }) + '\n');
       res.end();
+      return;
+    } catch (err: any) {
+      // المستخدم النهائي (Admin/Cashier في الـ Widget) لا يرى تفاصيل الخطأ
+      // البرمجي أبداً (رسائل SDK/مزوّد الذكاء الاصطناعي الخام مثل quota/rate
+      // limit) -- فقط سجل الخادم يحتفظ بها لأغراض التشخيص.
+      console.error(`Assistant stream error [provider=${candidate.providerKey}]:`, err);
+
+      if (wroteAny) {
+        // بدأ العميل بالفعل يستلم جزءاً من الرد -- لا تبديل ممكن الآن.
+        res.write(JSON.stringify({ t: 'text', v: `\n\n${ASSISTANT_FRIENDLY_ERROR}` }) + '\n');
+        res.end();
+        return;
+      }
+
+      const nextCandidate = candidates[i + 1];
+      await onFallback(candidate.providerKey, err.message || 'unknown error', nextCandidate?.providerKey || null);
+      // لم يُكتب شيء للعميل بعد -- آمن للمتابعة للمرشّح التالي في الحلقة.
     }
+  }
+
+  // فشلت كل المرشّحين المتاحين بلا أي إخراج على الإطلاق.
+  if (!res.headersSent) {
+    res.status(502).json({ error: ASSISTANT_FRIENDLY_ERROR });
+  } else {
+    res.end();
   }
 }
 
@@ -816,6 +841,35 @@ app.get("/api/assistant-settings/status", authenticate, async (req: any, res) =>
   }
 });
 
+// يبني تمثيل مصفوفة "providers" المرسلة للواجهة: صف من سجل PROVIDERS
+// (aiProviderRegistry.ts) لكل مزوّد مدعوم -- حتى المزوّدين بلا صف بيانات
+// اعتماد بعد يظهرون كـ "غير مُعدّين"، بدل الاعتماد فقط على الصفوف الموجودة
+// فعلياً في assistant_provider_credentials.
+async function buildProviderStatusList(credRows: any[]) {
+  const { PROVIDERS } = await import("./src/server/aiProviderRegistry.ts");
+  const { decryptApiKey, maskApiKey } = await import("./src/server/assistantCrypto.ts");
+  const credByKey = new Map((credRows || []).map((r: any) => [r.provider_key, r]));
+
+  return Object.entries(PROVIDERS).map(([key, def]) => {
+    const cred = credByKey.get(key);
+    let apiKeyMasked = '';
+    if (cred?.api_key_encrypted) {
+      try { apiKeyMasked = maskApiKey(decryptApiKey(cred.api_key_encrypted)); } catch { apiKeyMasked = '••••••••'; }
+    }
+    return {
+      providerKey: key,
+      label: def.label,
+      defaultModels: def.defaultModels,
+      isConfigured: Boolean(cred?.is_configured),
+      hasApiKey: Boolean(cred?.api_key_encrypted),
+      apiKeyMasked,
+      lastTestedAt: cred?.last_tested_at || null,
+      lastTestStatus: cred?.last_test_status || null,
+      lastTestMessage: cred?.last_test_message || null,
+    };
+  });
+}
+
 app.get("/api/super-admin/assistant-settings", authenticate, authorize(['super_admin']), async (req: any, res) => {
   try {
     const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
@@ -827,29 +881,21 @@ app.get("/api/super-admin/assistant-settings", authenticate, authorize(['super_a
     if (error) return res.status(500).json({ error: error.message });
     if (!data) return res.status(404).json({ error: "Assistant settings not found" });
 
-    const { decryptApiKey, maskApiKey } = await import("./src/server/assistantCrypto.ts");
-    let apiKeyMasked = '';
-    if (data.api_key_encrypted) {
-      try {
-        apiKeyMasked = maskApiKey(decryptApiKey(data.api_key_encrypted));
-      } catch (e) {
-        console.error("Failed to decrypt assistant API key for masking:", e);
-        apiKeyMasked = '••••••••';
-      }
-    }
+    const { data: credRows, error: credErr } = await supabaseAdmin.from("assistant_provider_credentials").select("*");
+    if (credErr) return res.status(500).json({ error: credErr.message });
 
     res.json({
       isEnabled: data.is_enabled,
-      aiProvider: data.ai_provider,
-      modelName: data.model_name,
-      apiKeyMasked,
-      hasApiKey: Boolean(data.api_key_encrypted),
+      activeProvider: data.active_provider,
+      activeModel: data.active_model,
+      fallbackOrder: data.fallback_order || [],
       systemPrompt: data.system_prompt,
       temperature: data.temperature,
       maxTokens: data.max_tokens,
       dailyMessageLimit: data.daily_message_limit,
       updatedAt: data.updated_at,
       updatedBy: data.updated_by,
+      providers: await buildProviderStatusList(credRows || []),
     });
   } catch (err: any) {
     console.error("Error in GET /api/super-admin/assistant-settings:", err);
@@ -863,12 +909,44 @@ app.put("/api/super-admin/assistant-settings", authenticate, authorize(['super_a
     if (!data) return res.status(400).json({ error: "Missing body data" });
 
     const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
-    const { encryptApiKey } = await import("./src/server/assistantCrypto.ts");
+    const { PROVIDERS, isKnownProvider } = await import("./src/server/aiProviderRegistry.ts");
+
+    const activeProvider = String(data.activeProvider || '');
+    if (!isKnownProvider(activeProvider)) {
+      return res.status(400).json({ error: `مزوّد غير معروف: ${activeProvider}` });
+    }
+    const fallbackOrder: string[] = Array.isArray(data.fallbackOrder)
+      ? Array.from(new Set(data.fallbackOrder.filter((p: any) => typeof p === 'string')))
+      : [];
+    for (const p of fallbackOrder) {
+      if (!isKnownProvider(p)) return res.status(400).json({ error: `مزوّد غير معروف في الترتيب الاحتياطي: ${p}` });
+    }
+
+    // لا يمكن تفعيل مزوّد أو وضعه في الترتيب الاحتياطي قبل أن يكون له مفتاح
+    // API صالح مُختبَر بنجاح -- تحقق خادمي حقيقي، وليس فقط تعطيل زر بالواجهة.
+    const keysNeedingCheck = Array.from(new Set([activeProvider, ...fallbackOrder]));
+    const { data: credRows, error: credErr } = await supabaseAdmin
+      .from("assistant_provider_credentials")
+      .select("provider_key, is_configured, last_test_status")
+      .in("provider_key", keysNeedingCheck);
+    if (credErr) return res.status(500).json({ error: credErr.message });
+    const credByKey = new Map((credRows || []).map((r: any) => [r.provider_key, r]));
+
+    const notReady = keysNeedingCheck.filter((key) => {
+      const cred = credByKey.get(key);
+      return !cred || !cred.is_configured || cred.last_test_status !== 'success';
+    });
+    if (notReady.length > 0) {
+      return res.status(400).json({
+        error: `لا يمكن التفعيل قبل اختبار الاتصال بنجاح لهذا المزوّد: ${notReady.map((k) => PROVIDERS[k]?.label || k).join('، ')}`,
+      });
+    }
 
     const updatePayload: any = {
       is_enabled: Boolean(data.isEnabled),
-      ai_provider: data.aiProvider === 'gemini' ? 'gemini' : 'openai',
-      model_name: String(data.modelName || 'gpt-4o-mini'),
+      active_provider: activeProvider,
+      active_model: String(data.activeModel || PROVIDERS[activeProvider].defaultModels[0]),
+      fallback_order: fallbackOrder.filter((p) => p !== activeProvider),
       system_prompt: String(data.systemPrompt || ''),
       temperature: Math.min(1, Math.max(0, Number(data.temperature) || 0)),
       max_tokens: Math.max(1, parseInt(data.maxTokens, 10) || 500),
@@ -876,11 +954,6 @@ app.put("/api/super-admin/assistant-settings", authenticate, authorize(['super_a
       updated_at: new Date().toISOString(),
       updated_by: req.user?.email || req.user?.uid || null,
     };
-
-    // حقل فارغ = "لم يتغيّر" — لا يُحذف المفتاح الحالي أبداً بالخطأ.
-    if (typeof data.apiKey === 'string' && data.apiKey.trim().length > 0) {
-      updatePayload.api_key_encrypted = encryptApiKey(data.apiKey.trim());
-    }
 
     const { data: updated, error } = await supabaseAdmin
       .from("assistant_settings")
@@ -895,30 +968,25 @@ app.put("/api/super-admin/assistant-settings", authenticate, authorize(['super_a
       user_id: req.user?.uid,
       user_email: req.user?.email,
       action: 'assistant_settings_updated',
-      details: `isEnabled=${updatePayload.is_enabled}, provider=${updatePayload.ai_provider}, model=${updatePayload.model_name}`,
-      created_at: new Date().toISOString(),
+      details: `isEnabled=${updatePayload.is_enabled}, activeProvider=${updatePayload.active_provider}, activeModel=${updatePayload.active_model}, fallbackOrder=${JSON.stringify(updatePayload.fallback_order)}`,
     }).then(({ error: logErr }: any) => {
       if (logErr) console.warn('[saas_security_logs] insert failed:', logErr.message);
     });
 
-    const { decryptApiKey, maskApiKey } = await import("./src/server/assistantCrypto.ts");
-    let apiKeyMasked = '';
-    if (updated?.api_key_encrypted) {
-      try { apiKeyMasked = maskApiKey(decryptApiKey(updated.api_key_encrypted)); } catch { apiKeyMasked = '••••••••'; }
-    }
+    const { data: credRowsAfter } = await supabaseAdmin.from("assistant_provider_credentials").select("*");
 
     res.json({
       isEnabled: updated.is_enabled,
-      aiProvider: updated.ai_provider,
-      modelName: updated.model_name,
-      apiKeyMasked,
-      hasApiKey: Boolean(updated.api_key_encrypted),
+      activeProvider: updated.active_provider,
+      activeModel: updated.active_model,
+      fallbackOrder: updated.fallback_order || [],
       systemPrompt: updated.system_prompt,
       temperature: updated.temperature,
       maxTokens: updated.max_tokens,
       dailyMessageLimit: updated.daily_message_limit,
       updatedAt: updated.updated_at,
       updatedBy: updated.updated_by,
+      providers: await buildProviderStatusList(credRowsAfter || []),
     });
   } catch (err: any) {
     console.error("Error in PUT /api/super-admin/assistant-settings:", err);
@@ -926,9 +994,105 @@ app.put("/api/super-admin/assistant-settings", authenticate, authorize(['super_a
   }
 });
 
-// اختبار حي: يستخدم القيم غير المحفوظة القادمة من الفورم مباشرة، وليس من
-// القاعدة، حتى يرى السوبر أدمن أثر تعديلاته فوراً قبل الحفظ. إن لم يُرسل
-// حقل apiKey (المستخدم لم يغيّره)، يقع رجوعاً على المفتاح المحفوظ حالياً.
+// يحفظ مفتاح API لمزوّد واحد (إن أُرسل مفتاح جديد غير فارغ) ثم يختبر
+// الاتصال فوراً برسالة توليد قصيرة جداً -- لا فائدة من حفظ مفتاح دون
+// التحقق من صحته، ولا من اختبار مفتاح غير محفوظ. حقل apiKey فارغ = استخدم
+// المفتاح المحفوظ مسبقاً لهذا المزوّد (لإعادة اختباره فقط). يحدّث
+// last_tested_at/last_test_status/last_test_message بدقة النتيجة الفعلية.
+app.post("/api/super-admin/assistant-settings/providers/:providerKey/test", authenticate, authorize(['super_admin']), async (req: any, res) => {
+  try {
+    const { providerKey } = req.params;
+    const { PROVIDERS, isKnownProvider, buildModelForProvider } = await import("./src/server/aiProviderRegistry.ts");
+    if (!isKnownProvider(providerKey)) return res.status(400).json({ error: `مزوّد غير معروف: ${providerKey}` });
+
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+    const { encryptApiKey, decryptApiKey, maskApiKey } = await import("./src/server/assistantCrypto.ts");
+
+    const bodyApiKey = typeof req.body?.apiKey === 'string' ? req.body.apiKey.trim() : '';
+    const modelName = String(req.body?.modelName || PROVIDERS[providerKey].defaultModels[0]);
+
+    let apiKeyToTest: string;
+    if (bodyApiKey) {
+      const { error: upsertErr } = await supabaseAdmin.from("assistant_provider_credentials").upsert({
+        provider_key: providerKey,
+        api_key_encrypted: encryptApiKey(bodyApiKey),
+        is_configured: true,
+        last_test_status: null,
+        last_test_message: null,
+        last_tested_at: null,
+        updated_at: new Date().toISOString(),
+        updated_by: req.user?.email || req.user?.uid || null,
+      });
+      if (upsertErr) return res.status(500).json({ error: upsertErr.message });
+      apiKeyToTest = bodyApiKey;
+    } else {
+      const { data: cred } = await supabaseAdmin
+        .from("assistant_provider_credentials")
+        .select("api_key_encrypted")
+        .eq("provider_key", providerKey)
+        .maybeSingle();
+      if (!cred?.api_key_encrypted) {
+        return res.status(400).json({ error: 'لا يوجد مفتاح محفوظ لهذا المزوّد لاختباره' });
+      }
+      apiKeyToTest = decryptApiKey(cred.api_key_encrypted);
+    }
+
+    let success = false;
+    let message = '';
+    try {
+      const model = await buildModelForProvider(providerKey, modelName, apiKeyToTest);
+      const { generateText } = await import('ai');
+      await generateText({ model, prompt: 'قل "تم الاتصال بنجاح" فقط.', maxOutputTokens: 20 });
+      success = true;
+      message = 'تم الاتصال بنجاح';
+    } catch (err: any) {
+      success = false;
+      message = String(err?.message || 'فشل الاتصال').slice(0, 500);
+    }
+
+    const { data: updated, error: updateErr } = await supabaseAdmin
+      .from("assistant_provider_credentials")
+      .update({
+        last_tested_at: new Date().toISOString(),
+        last_test_status: success ? 'success' : 'failed',
+        last_test_message: success ? null : message,
+      })
+      .eq("provider_key", providerKey)
+      .select("*")
+      .maybeSingle();
+    if (updateErr) console.error('[assistant_provider_credentials] test-status update failed:', updateErr.message);
+
+    let apiKeyMasked = '';
+    if (updated?.api_key_encrypted) {
+      try { apiKeyMasked = maskApiKey(decryptApiKey(updated.api_key_encrypted)); } catch { apiKeyMasked = '••••••••'; }
+    }
+
+    res.json({
+      success,
+      message,
+      provider: {
+        providerKey,
+        label: PROVIDERS[providerKey].label,
+        defaultModels: PROVIDERS[providerKey].defaultModels,
+        isConfigured: Boolean(updated?.is_configured),
+        hasApiKey: Boolean(updated?.api_key_encrypted),
+        apiKeyMasked,
+        lastTestedAt: updated?.last_tested_at || null,
+        lastTestStatus: updated?.last_test_status || null,
+        lastTestMessage: updated?.last_test_message || null,
+      },
+    });
+  } catch (err: any) {
+    console.error("Error in POST /api/super-admin/assistant-settings/providers/:providerKey/test:", err);
+    res.status(500).json({ error: err.message || "Internal Server Error" });
+  }
+});
+
+// اختبار حي (صندوق المحادثة في أسفل صفحة الإعدادات): يستخدم القيم غير
+// المحفوظة القادمة من الفورم مباشرة (مزوّد/نموذج/برومبت قد يكون المستخدم
+// غيّرها للتو)، وليس من القاعدة، حتى يرى السوبر أدمن أثر تعديلاته فوراً قبل
+// الحفظ. إن لم يُرسل حقل apiKey (المستخدم لم يكتب مفتاحاً جديداً في بطاقة
+// هذا المزوّد)، يقع رجوعاً على المفتاح المحفوظ فعلياً لهذا المزوّد.
 app.post("/api/super-admin/assistant-settings/test", authenticate, authorize(['super_admin']), async (req: any, res) => {
   try {
     const { aiProvider, modelName, apiKey, systemPrompt, temperature, maxTokens, message } = req.body || {};
@@ -936,10 +1100,17 @@ app.post("/api/super-admin/assistant-settings/test", authenticate, authorize(['s
       return res.status(400).json({ error: "Missing 'message' to test with" });
     }
 
+    const { isKnownProvider, buildModelForProvider, PROVIDERS } = await import("./src/server/aiProviderRegistry.ts");
+    const providerKey = isKnownProvider(aiProvider) ? aiProvider : 'gemini';
+
     let effectiveApiKey = typeof apiKey === 'string' && apiKey.trim().length > 0 ? apiKey.trim() : '';
     if (!effectiveApiKey) {
       const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
-      const { data } = await supabaseAdmin.from("assistant_settings").select("api_key_encrypted").eq("id", "global").maybeSingle();
+      const { data } = await supabaseAdmin
+        .from("assistant_provider_credentials")
+        .select("api_key_encrypted")
+        .eq("provider_key", providerKey)
+        .maybeSingle();
       if (data?.api_key_encrypted) {
         const { decryptApiKey } = await import("./src/server/assistantCrypto.ts");
         effectiveApiKey = decryptApiKey(data.api_key_encrypted);
@@ -950,7 +1121,7 @@ app.post("/api/super-admin/assistant-settings/test", authenticate, authorize(['s
     }
 
     const { streamText } = await import('ai');
-    const model = await buildAssistantModel(aiProvider === 'gemini' ? 'gemini' : 'openai', String(modelName || 'gpt-4o-mini'), effectiveApiKey);
+    const model = await buildModelForProvider(providerKey, String(modelName || PROVIDERS[providerKey].defaultModels[0]), effectiveApiKey);
 
     const result = streamText({
       model,
@@ -987,9 +1158,6 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
     if (!settings.is_enabled) {
       return res.status(403).json({ error: 'assistant_disabled', message: 'مساعد سين الذكي معطّل حالياً.' });
     }
-    if (!settings.api_key_encrypted) {
-      return res.status(503).json({ error: 'assistant_not_configured', message: 'لم يتم إعداد مساعد سين الذكي بعد.' });
-    }
 
     if (settings.daily_message_limit > 0) {
       const { data: newCount, error: usageErr } = await supabaseAdmin.rpc('increment_assistant_usage', { p_tenant_id: tenantId });
@@ -1015,27 +1183,73 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
 لديك أدوات وصول لبيانات حقيقية من نظام المتجر (مبيعات، فواتير، مخزون، عملاء، طلبات). استخدمها دائماً عندما يسأل المستخدم عن أرقام أو بيانات فعلية، بدل التخمين أو الإجابة من معرفة عامة. لخّص نتائج الأدوات بلغة عربية واضحة وودية، لا تكتفِ بإرجاع أرقام جافة فقط. أدواتك قراءة فقط تماماً: إذا طلب المستخدم تعديل أو حذف أي بيانات، وجّهه لاستخدام واجهة النظام العادية بدل محاولة تنفيذ ذلك. بعض الأدوات (التقارير المالية التفصيلية) متاحة فقط لأدوار الإدارة — إذا رفضتها الأداة، أخبر المستخدم بذلك بأدب دون محاولة الإلحاح أو الالتفاف على القيد مهما أعاد صياغة الطلب.`;
     const contextualSystemPrompt = `${settings.system_prompt}${toolsAddendum}\n\nيتحدث معك الآن: ${userName || ''} (${roleLabel}).`;
 
+    // ترتيب المرشّحين: المزوّد النشط أولاً، ثم الترتيب الاحتياطي (بدون
+    // تكرار المزوّد النشط)، بعد استبعاد أي مزوّد بلا مفتاح محفوظ فعلياً.
+    const { PROVIDERS } = await import("./src/server/aiProviderRegistry.ts");
+    const candidateKeys = Array.from(new Set([
+      settings.active_provider,
+      ...(Array.isArray(settings.fallback_order) ? settings.fallback_order : []),
+    ].filter(Boolean)));
+
+    const { data: credRows } = await supabaseAdmin
+      .from("assistant_provider_credentials")
+      .select("provider_key, api_key_encrypted, is_configured")
+      .in("provider_key", candidateKeys);
+    const credByKey = new Map((credRows || []).map((r: any) => [r.provider_key, r]));
+
     const { decryptApiKey } = await import("./src/server/assistantCrypto.ts");
-    const apiKey = decryptApiKey(settings.api_key_encrypted);
-    const model = await buildAssistantModel(settings.ai_provider, settings.model_name, apiKey);
+    const candidates: Array<{ providerKey: string; modelName: string; apiKey: string }> = [];
+    for (const key of candidateKeys) {
+      const cred = credByKey.get(key);
+      if (!cred || !cred.is_configured || !cred.api_key_encrypted) continue;
+      let decrypted: string;
+      try { decrypted = decryptApiKey(cred.api_key_encrypted); } catch { continue; }
+      const modelName = key === settings.active_provider
+        ? settings.active_model
+        : (PROVIDERS[key]?.defaultModels?.[0] || settings.active_model);
+      candidates.push({ providerKey: key, modelName, apiKey: decrypted });
+    }
+
+    if (candidates.length === 0) {
+      return res.status(503).json({ error: 'assistant_not_configured', message: 'لم يتم إعداد مساعد سين الذكي بعد.' });
+    }
 
     const { streamText, stepCountIs } = await import('ai');
     const { buildAssistantTools } = await import('./src/server/assistantTools.ts');
-    const result = streamText({
-      model,
-      system: contextualSystemPrompt,
-      messages: messages.map((m: any) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: String(m.content || '') })),
-      temperature: settings.temperature,
-      maxOutputTokens: settings.max_tokens,
-      tools: await buildAssistantTools({
-        tenantId,
-        userId: req.user?.uid,
-        userRole: req.user?.role,
-      }),
-      stopWhen: stepCountIs(5),
+    const tools = await buildAssistantTools({
+      tenantId,
+      userId: req.user?.uid,
+      userRole: req.user?.role,
     });
+    const conversationMessages: Array<{ role: 'assistant' | 'user'; content: string }> = messages.map((m: any) => ({ role: m.role === 'assistant' ? 'assistant' as const : 'user' as const, content: String(m.content || '') }));
 
-    await streamAssistantReply(result, res);
+    await streamAssistantReply(
+      candidates,
+      (model) => streamText({
+        model,
+        system: contextualSystemPrompt,
+        messages: conversationMessages,
+        temperature: settings.temperature,
+        maxOutputTokens: settings.max_tokens,
+        tools,
+        stopWhen: stepCountIs(5),
+      }),
+      res,
+      async (failedProviderKey, reason, nextProviderKey) => {
+        try {
+          await supabaseAdmin.from('saas_security_logs').insert({
+            user_id: req.user?.uid,
+            user_email: req.user?.email,
+            action: 'assistant_provider_auto_fallback',
+            details: nextProviderKey
+              ? `[tenant=${tenantId}] فشل المزوّد '${failedProviderKey}' (${reason}) -- تم التبديل تلقائياً إلى '${nextProviderKey}'`
+              : `[tenant=${tenantId}] فشل المزوّد '${failedProviderKey}' (${reason}) -- لا يوجد مزوّد احتياطي آخر متاح`,
+          });
+        } catch (logErr) {
+          console.error('[saas_security_logs] fallback log insert failed:', logErr);
+        }
+      },
+    );
   } catch (err: any) {
     console.error("Error in POST /api/chat:", err);
     if (!res.headersSent) {

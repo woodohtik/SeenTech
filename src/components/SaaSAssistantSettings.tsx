@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase/client';
-import { Bot, Sparkles, Save, Eye, EyeOff, RotateCcw, Send, ShieldCheck } from 'lucide-react';
+import {
+  Bot, Sparkles, Save, Eye, EyeOff, RotateCcw, Send, ShieldCheck,
+  CheckCircle2, XCircle, HelpCircle, ArrowUp, ArrowDown, X, Plus,
+} from 'lucide-react';
 import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { isRtlLang } from '../lib/direction';
@@ -8,22 +11,35 @@ import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../contexts/ConfirmContext';
 import { SmartSelect } from './ui/SmartSelect';
 import { IconInput } from './ui/IconInput';
+import { cn } from '../lib/utils';
 
 const DEFAULT_SYSTEM_PROMPT =
   'أنت مساعد سين الذكي، نظام نقاط بيع لمحلات الخياطة. مهمتك مساعدة صاحب المحل أو الكاشير بأسلوب ودود ومهني، الإجابة باختصار، وتوجيههم لكيفية إنشاء فواتير أو جرد المخزون.';
 
+interface ProviderStatus {
+  providerKey: string;
+  label: string;
+  defaultModels: string[];
+  isConfigured: boolean;
+  hasApiKey: boolean;
+  apiKeyMasked: string;
+  lastTestedAt: string | null;
+  lastTestStatus: 'success' | 'failed' | null;
+  lastTestMessage: string | null;
+}
+
 interface AssistantSettingsData {
   isEnabled: boolean;
-  aiProvider: string;
-  modelName: string;
-  apiKeyMasked: string;
-  hasApiKey: boolean;
+  activeProvider: string;
+  activeModel: string;
+  fallbackOrder: string[];
   systemPrompt: string;
   temperature: number;
   maxTokens: number;
   dailyMessageLimit: number;
   updatedAt: string | null;
   updatedBy: string | null;
+  providers: ProviderStatus[];
 }
 
 async function authedFetch(path: string, options: RequestInit = {}) {
@@ -40,6 +56,10 @@ async function authedFetch(path: string, options: RequestInit = {}) {
   });
 }
 
+function isReady(p: ProviderStatus | undefined) {
+  return Boolean(p && p.isConfigured && p.lastTestStatus === 'success');
+}
+
 export default function SaaSAssistantSettings() {
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
@@ -51,10 +71,19 @@ export default function SaaSAssistantSettings() {
   const [settings, setSettings] = useState<AssistantSettingsData | null>(null);
 
   const [isEnabled, setIsEnabled] = useState(true);
-  const [aiProvider, setAiProvider] = useState('openai');
-  const [modelName, setModelName] = useState('gpt-4o-mini');
-  const [apiKey, setApiKey] = useState('');
-  const [showApiKey, setShowApiKey] = useState(false);
+  const [providers, setProviders] = useState<ProviderStatus[]>([]);
+  const [activeProvider, setActiveProvider] = useState('');
+  const [activeModel, setActiveModel] = useState('');
+  const [fallbackOrder, setFallbackOrder] = useState<string[]>([]);
+  const [fallbackPickValue, setFallbackPickValue] = useState('');
+
+  // حالة محلية لكل بطاقة مزوّد: مفتاح API المكتوب للتو (لم يُحفظ بعد)،
+  // النموذج المختار، وحالة تحميل زر الاختبار الخاص بها.
+  const [providerApiKeyInput, setProviderApiKeyInput] = useState<Record<string, string>>({});
+  const [providerModelChoice, setProviderModelChoice] = useState<Record<string, string>>({});
+  const [providerShowKey, setProviderShowKey] = useState<Record<string, boolean>>({});
+  const [providerTesting, setProviderTesting] = useState<Record<string, boolean>>({});
+
   const [systemPrompt, setSystemPrompt] = useState('');
   const [temperature, setTemperature] = useState(0.7);
   const [maxTokens, setMaxTokens] = useState(500);
@@ -64,21 +93,32 @@ export default function SaaSAssistantSettings() {
   const [previewReply, setPreviewReply] = useState('');
   const [previewLoading, setPreviewLoading] = useState(false);
 
+  const applySettings = (data: AssistantSettingsData) => {
+    setSettings(data);
+    setIsEnabled(data.isEnabled);
+    setProviders(data.providers);
+    setActiveProvider(data.activeProvider);
+    setActiveModel(data.activeModel);
+    setFallbackOrder(data.fallbackOrder || []);
+    setSystemPrompt(data.systemPrompt);
+    setTemperature(data.temperature);
+    setMaxTokens(data.maxTokens);
+    setDailyMessageLimit(data.dailyMessageLimit);
+    setProviderApiKeyInput({});
+    const modelChoices: Record<string, string> = {};
+    for (const p of data.providers) {
+      modelChoices[p.providerKey] = p.providerKey === data.activeProvider ? data.activeModel : p.defaultModels[0];
+    }
+    setProviderModelChoice(modelChoices);
+  };
+
   const loadSettings = async () => {
     setLoading(true);
     try {
       const res = await authedFetch('/api/super-admin/assistant-settings');
       if (!res.ok) throw new Error((await res.json()).error || 'Load failed');
       const data: AssistantSettingsData = await res.json();
-      setSettings(data);
-      setIsEnabled(data.isEnabled);
-      setAiProvider(data.aiProvider);
-      setModelName(data.modelName);
-      setSystemPrompt(data.systemPrompt);
-      setTemperature(data.temperature);
-      setMaxTokens(data.maxTokens);
-      setDailyMessageLimit(data.dailyMessageLimit);
-      setApiKey('');
+      applySettings(data);
     } catch (err) {
       console.error('Failed to load assistant settings:', err);
       toastError(t('saas.assistant_settings.load_error'));
@@ -89,7 +129,80 @@ export default function SaaSAssistantSettings() {
 
   useEffect(() => { loadSettings(); }, []);
 
+  const handleTestProvider = async (providerKey: string) => {
+    const provider = providers.find((p) => p.providerKey === providerKey);
+    const typedKey = (providerApiKeyInput[providerKey] || '').trim();
+    if (!typedKey && !provider?.hasApiKey) {
+      toastError(t('saas.assistant_settings.provider_needs_key_to_test'));
+      return;
+    }
+    setProviderTesting((prev) => ({ ...prev, [providerKey]: true }));
+    try {
+      const res = await authedFetch(`/api/super-admin/assistant-settings/providers/${providerKey}/test`, {
+        method: 'POST',
+        body: JSON.stringify({
+          apiKey: typedKey || undefined,
+          modelName: providerModelChoice[providerKey] || provider?.defaultModels[0],
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || 'Test failed');
+
+      const updated: ProviderStatus = body.provider;
+      setProviders((prev) => prev.map((p) => (p.providerKey === providerKey ? updated : p)));
+      setProviderApiKeyInput((prev) => ({ ...prev, [providerKey]: '' }));
+
+      if (body.success) {
+        toastSuccess(t('saas.assistant_settings.provider_test_success_toast', { label: updated.label }));
+      } else {
+        toastError(t('saas.assistant_settings.provider_test_failed_toast', { label: updated.label, message: body.message }));
+      }
+    } catch (err: any) {
+      console.error('Provider test failed:', err);
+      toastError(err.message || t('saas.assistant_settings.save_error'));
+    } finally {
+      setProviderTesting((prev) => ({ ...prev, [providerKey]: false }));
+    }
+  };
+
+  const handleSetActive = (providerKey: string) => {
+    const provider = providers.find((p) => p.providerKey === providerKey);
+    if (!isReady(provider)) return;
+    setActiveProvider(providerKey);
+    setActiveModel(providerModelChoice[providerKey] || provider!.defaultModels[0]);
+    setFallbackOrder((prev) => prev.filter((k) => k !== providerKey));
+  };
+
+  const readyProviders = providers.filter((p) => isReady(p));
+  const fallbackCandidates = readyProviders.filter((p) => p.providerKey !== activeProvider && !fallbackOrder.includes(p.providerKey));
+
+  const handleAddFallback = () => {
+    if (!fallbackPickValue) return;
+    setFallbackOrder((prev) => [...prev, fallbackPickValue]);
+    setFallbackPickValue('');
+  };
+
+  const handleRemoveFallback = (key: string) => {
+    setFallbackOrder((prev) => prev.filter((k) => k !== key));
+  };
+
+  const handleMoveFallback = (index: number, direction: -1 | 1) => {
+    setFallbackOrder((prev) => {
+      const next = [...prev];
+      const target = index + direction;
+      if (target < 0 || target >= next.length) return prev;
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  };
+
   const handleSave = async () => {
+    const activeProviderStatus = providers.find((p) => p.providerKey === activeProvider);
+    if (!isReady(activeProviderStatus)) {
+      toastError(t('saas.assistant_settings.provider_not_ready_hint'));
+      return;
+    }
+
     if (settings) {
       if (!isEnabled && settings.isEnabled) {
         const ok = await confirm({
@@ -98,7 +211,7 @@ export default function SaaSAssistantSettings() {
           danger: true,
         });
         if (!ok) return;
-      } else if (aiProvider !== settings.aiProvider) {
+      } else if (activeProvider !== settings.activeProvider) {
         const ok = await confirm({
           title: t('saas.assistant_settings.confirm_provider_change_title'),
           description: t('saas.assistant_settings.confirm_provider_change_desc'),
@@ -112,18 +225,17 @@ export default function SaaSAssistantSettings() {
       const res = await authedFetch('/api/super-admin/assistant-settings', {
         method: 'PUT',
         body: JSON.stringify({
-          isEnabled, aiProvider, modelName, apiKey,
+          isEnabled, activeProvider, activeModel, fallbackOrder,
           systemPrompt, temperature, maxTokens, dailyMessageLimit,
         }),
       });
-      if (!res.ok) throw new Error((await res.json()).error || 'Save failed');
-      const data: AssistantSettingsData = await res.json();
-      setSettings(data);
-      setApiKey('');
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || 'Save failed');
+      applySettings(body as AssistantSettingsData);
       toastSuccess(t('saas.assistant_settings.saved_success'));
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save assistant settings:', err);
-      toastError(t('saas.assistant_settings.save_error'));
+      toastError(err.message || t('saas.assistant_settings.save_error'));
     } finally {
       setSaving(false);
     }
@@ -131,7 +243,8 @@ export default function SaaSAssistantSettings() {
 
   const handleTestPreview = async () => {
     if (!previewMessage.trim()) return;
-    if (!apiKey.trim() && !settings?.hasApiKey) {
+    const activeProviderStatus = providers.find((p) => p.providerKey === activeProvider);
+    if (!activeProviderStatus?.hasApiKey) {
       toastError(t('saas.assistant_settings.preview_no_key_error'));
       return;
     }
@@ -141,7 +254,9 @@ export default function SaaSAssistantSettings() {
       const res = await authedFetch('/api/super-admin/assistant-settings/test', {
         method: 'POST',
         body: JSON.stringify({
-          aiProvider, modelName, apiKey, systemPrompt, temperature, maxTokens,
+          aiProvider: activeProvider,
+          modelName: activeModel,
+          systemPrompt, temperature, maxTokens,
           message: previewMessage,
         }),
       });
@@ -166,6 +281,39 @@ export default function SaaSAssistantSettings() {
     } finally {
       setPreviewLoading(false);
     }
+  };
+
+  const statusBadge = (p: ProviderStatus) => {
+    if (!p.isConfigured) {
+      return (
+        <span className="flex items-center gap-1.5 text-xs font-black text-content-muted">
+          <span className="w-2 h-2 rounded-full bg-border" />
+          {t('saas.assistant_settings.provider_status_not_configured')}
+        </span>
+      );
+    }
+    if (p.lastTestStatus === 'success') {
+      return (
+        <span className="flex items-center gap-1.5 text-xs font-black text-success">
+          <CheckCircle2 size={14} />
+          {t('saas.assistant_settings.provider_status_success')}
+        </span>
+      );
+    }
+    if (p.lastTestStatus === 'failed') {
+      return (
+        <span className="flex items-center gap-1.5 text-xs font-black text-danger" title={p.lastTestMessage || ''}>
+          <XCircle size={14} />
+          {t('saas.assistant_settings.provider_status_failed')}
+        </span>
+      );
+    }
+    return (
+      <span className="flex items-center gap-1.5 text-xs font-black text-warning">
+        <HelpCircle size={14} />
+        {t('saas.assistant_settings.provider_status_untested')}
+      </span>
+    );
   };
 
   return (
@@ -203,103 +351,253 @@ export default function SaaSAssistantSettings() {
             </label>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Provider Settings */}
-            <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm space-y-6">
+          {/* Providers */}
+          <div className="space-y-4">
+            <div>
               <h3 className="text-xl font-black text-content flex items-center gap-2">
                 <Sparkles className="text-brand" size={22} />
-                {t('saas.assistant_settings.provider_section_title')}
+                {t('saas.assistant_settings.providers_section_title')}
               </h3>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-black text-content-muted">{t('saas.assistant_settings.provider_label')}</label>
-                <SmartSelect
-                  value={aiProvider}
-                  onChange={setAiProvider}
-                  options={[
-                    { value: 'openai', label: t('saas.assistant_settings.provider_openai') },
-                    { value: 'gemini', label: t('saas.assistant_settings.provider_gemini') },
-                  ]}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-black text-content-muted">{t('saas.assistant_settings.model_name_label')}</label>
-                <IconInput
-                  type="text"
-                  value={modelName}
-                  onChange={(e) => setModelName(e.target.value)}
-                  placeholder={t('saas.assistant_settings.model_name_placeholder')}
-                  dir="ltr"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-black text-content-muted">{t('saas.assistant_settings.api_key_label')}</label>
-                <IconInput
-                  type={showApiKey ? 'text' : 'password'}
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder={settings?.hasApiKey ? settings.apiKeyMasked : t('saas.assistant_settings.api_key_placeholder')}
-                  dir="ltr"
-                  endIcon={
-                    <button type="button" onClick={() => setShowApiKey(v => !v)} className="text-content-muted hover:text-content transition-colors">
-                      {showApiKey ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  }
-                />
-                <p className="text-xs text-content-muted font-medium px-1">
-                  {settings?.hasApiKey ? t('saas.assistant_settings.api_key_unchanged_hint') : t('saas.assistant_settings.api_key_none_saved')}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="block text-sm font-black text-content-muted">{t('saas.assistant_settings.temperature_label')}</label>
-                  <input
-                    type="number"
-                    min="0" max="1" step="0.1"
-                    value={temperature}
-                    onChange={(e) => setTemperature(Math.min(1, Math.max(0, Number(e.target.value) || 0)))}
-                    className="w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="block text-sm font-black text-content-muted">{t('saas.assistant_settings.max_tokens_label')}</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={maxTokens}
-                    onChange={(e) => setMaxTokens(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                    className="w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
-                  />
-                </div>
-              </div>
+              <p className="text-content-muted text-sm font-medium mt-1">{t('saas.assistant_settings.providers_section_desc')}</p>
             </div>
 
-            {/* System Prompt + Limits */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {providers.map((p) => {
+                const isActive = p.providerKey === activeProvider;
+                const ready = isReady(p);
+                return (
+                  <div
+                    key={p.providerKey}
+                    className={cn(
+                      'bg-surface p-6 rounded-[2rem] border shadow-sm space-y-4',
+                      isActive ? 'border-brand ring-2 ring-brand/20' : 'border-border'
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-content font-black">{p.label}</h4>
+                        {isActive && (
+                          <span className="text-[10px] font-black bg-brand text-white rounded-full px-2 py-0.5">
+                            {t('saas.assistant_settings.provider_active_badge')}
+                          </span>
+                        )}
+                      </div>
+                      {statusBadge(p)}
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-xs font-black text-content-muted">{t('saas.assistant_settings.api_key_label')}</label>
+                      <IconInput
+                        type={providerShowKey[p.providerKey] ? 'text' : 'password'}
+                        value={providerApiKeyInput[p.providerKey] || ''}
+                        onChange={(e) => setProviderApiKeyInput((prev) => ({ ...prev, [p.providerKey]: e.target.value }))}
+                        placeholder={p.hasApiKey ? p.apiKeyMasked : t('saas.assistant_settings.api_key_placeholder')}
+                        dir="ltr"
+                        endIcon={
+                          <button
+                            type="button"
+                            onClick={() => setProviderShowKey((prev) => ({ ...prev, [p.providerKey]: !prev[p.providerKey] }))}
+                            className="text-content-muted hover:text-content transition-colors"
+                          >
+                            {providerShowKey[p.providerKey] ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                        }
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-xs font-black text-content-muted">{t('saas.assistant_settings.provider_model_label')}</label>
+                      <SmartSelect
+                        value={providerModelChoice[p.providerKey] || p.defaultModels[0]}
+                        onChange={(v) => setProviderModelChoice((prev) => ({ ...prev, [p.providerKey]: v }))}
+                        options={p.defaultModels.map((m) => ({ value: m, label: m }))}
+                      />
+                      <IconInput
+                        type="text"
+                        value={
+                          p.defaultModels.includes(providerModelChoice[p.providerKey] || '')
+                            ? ''
+                            : (providerModelChoice[p.providerKey] || '')
+                        }
+                        onChange={(e) => setProviderModelChoice((prev) => ({ ...prev, [p.providerKey]: e.target.value }))}
+                        placeholder={t('saas.assistant_settings.provider_model_custom_placeholder')}
+                        dir="ltr"
+                      />
+                    </div>
+
+                    {p.lastTestedAt && (
+                      <p className="text-[11px] text-content-muted font-medium">
+                        {t('saas.assistant_settings.provider_last_tested', {
+                          date: new Date(p.lastTestedAt).toLocaleString(
+                            i18n.language === 'en' ? 'en-US' : i18n.language === 'ur' ? 'ur-PK-u-nu-latn' : 'ar-SA-u-nu-latn'
+                          ),
+                        })}
+                      </p>
+                    )}
+                    {p.lastTestStatus === 'failed' && p.lastTestMessage && (
+                      <p className="text-[11px] text-danger font-medium break-words">{p.lastTestMessage}</p>
+                    )}
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleTestProvider(p.providerKey)}
+                        disabled={providerTesting[p.providerKey]}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-surface-muted text-content font-black rounded-xl hover:bg-border transition-all disabled:opacity-50 text-sm"
+                      >
+                        {providerTesting[p.providerKey] ? (
+                          <div className="w-4 h-4 border-2 border-content-muted/30 border-t-content rounded-full animate-spin" />
+                        ) : null}
+                        {providerTesting[p.providerKey] ? t('saas.assistant_settings.provider_testing') : t('saas.assistant_settings.provider_test_button')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSetActive(p.providerKey)}
+                        disabled={!ready || isActive}
+                        title={!ready ? t('saas.assistant_settings.provider_not_ready_hint') : undefined}
+                        className="flex-1 px-4 py-2.5 bg-brand text-white font-black rounded-xl hover:bg-brand/90 transition-all disabled:opacity-40 text-sm"
+                      >
+                        {isActive ? t('saas.assistant_settings.provider_active_badge') : t('saas.assistant_settings.provider_set_active_button')}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Fallback Order */}
+          <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm space-y-4">
+            <div>
+              <h3 className="text-xl font-black text-content flex items-center gap-2">
+                <ShieldCheck className="text-brand" size={22} />
+                {t('saas.assistant_settings.fallback_section_title')}
+              </h3>
+              <p className="text-content-muted text-sm font-medium mt-1">{t('saas.assistant_settings.fallback_section_desc')}</p>
+            </div>
+
+            {fallbackOrder.length === 0 ? (
+              <p className="text-content-muted text-sm font-medium bg-surface-muted rounded-2xl p-4 text-center">
+                {t('saas.assistant_settings.fallback_empty_hint')}
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {fallbackOrder.map((key, index) => {
+                  const p = providers.find((pr) => pr.providerKey === key);
+                  return (
+                    <div key={key} className="flex items-center gap-3 bg-surface-muted rounded-xl px-4 py-3">
+                      <span className="w-6 h-6 flex items-center justify-center rounded-full bg-brand/10 text-brand text-xs font-black shrink-0">
+                        {index + 1}
+                      </span>
+                      <span className="flex-1 font-bold text-content text-sm">{p?.label || key}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleMoveFallback(index, -1)}
+                        disabled={index === 0}
+                        title={t('saas.assistant_settings.fallback_move_up')}
+                        className="p-1.5 text-content-muted hover:text-content disabled:opacity-30 transition-colors"
+                      >
+                        <ArrowUp size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMoveFallback(index, 1)}
+                        disabled={index === fallbackOrder.length - 1}
+                        title={t('saas.assistant_settings.fallback_move_down')}
+                        className="p-1.5 text-content-muted hover:text-content disabled:opacity-30 transition-colors"
+                      >
+                        <ArrowDown size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFallback(key)}
+                        title={t('saas.assistant_settings.fallback_remove')}
+                        className="p-1.5 text-danger hover:bg-danger/10 rounded-lg transition-colors"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {fallbackCandidates.length > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <SmartSelect
+                    value={fallbackPickValue}
+                    onChange={setFallbackPickValue}
+                    placeholder={t('saas.assistant_settings.fallback_add_placeholder')}
+                    options={fallbackCandidates.map((p) => ({ value: p.providerKey, label: p.label }))}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAddFallback}
+                  disabled={!fallbackPickValue}
+                  className="flex items-center gap-1.5 px-4 py-2.5 bg-brand/10 text-brand font-black rounded-xl hover:bg-brand/20 transition-all disabled:opacity-40 text-sm shrink-0"
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* System Prompt */}
+            <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-black text-content flex items-center gap-2">
+                  <Bot className="text-brand" size={22} />
+                  {t('saas.assistant_settings.prompt_section_title')}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setSystemPrompt(DEFAULT_SYSTEM_PROMPT)}
+                  className="flex items-center gap-1.5 text-xs font-black text-content-muted hover:text-brand transition-colors"
+                >
+                  <RotateCcw size={14} />
+                  {t('saas.assistant_settings.prompt_reset_default')}
+                </button>
+              </div>
+              <textarea
+                value={systemPrompt}
+                onChange={(e) => setSystemPrompt(e.target.value)}
+                rows={6}
+                className="w-full bg-surface border border-border rounded-xl p-4 text-sm font-medium text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand resize-none"
+              />
+            </div>
+
+            {/* Model tuning + Limits */}
             <div className="space-y-8">
               <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-black text-content flex items-center gap-2">
-                    <Bot className="text-brand" size={22} />
-                    {t('saas.assistant_settings.prompt_section_title')}
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() => setSystemPrompt(DEFAULT_SYSTEM_PROMPT)}
-                    className="flex items-center gap-1.5 text-xs font-black text-content-muted hover:text-brand transition-colors"
-                  >
-                    <RotateCcw size={14} />
-                    {t('saas.assistant_settings.prompt_reset_default')}
-                  </button>
+                <h3 className="text-xl font-black text-content flex items-center gap-2 mb-2">
+                  <Sparkles className="text-brand" size={22} />
+                  {t('saas.assistant_settings.provider_section_title')}
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-black text-content-muted">{t('saas.assistant_settings.temperature_label')}</label>
+                    <input
+                      type="number"
+                      min="0" max="1" step="0.1"
+                      value={temperature}
+                      onChange={(e) => setTemperature(Math.min(1, Math.max(0, Number(e.target.value) || 0)))}
+                      className="w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-black text-content-muted">{t('saas.assistant_settings.max_tokens_label')}</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={maxTokens}
+                      onChange={(e) => setMaxTokens(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                      className="w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                    />
+                  </div>
                 </div>
-                <textarea
-                  value={systemPrompt}
-                  onChange={(e) => setSystemPrompt(e.target.value)}
-                  rows={6}
-                  className="w-full bg-surface border border-border rounded-xl p-4 text-sm font-medium text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand resize-none"
-                />
               </div>
 
               <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm space-y-2">
