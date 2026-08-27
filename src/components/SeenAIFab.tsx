@@ -243,13 +243,10 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
 
                 {isSending && statusText && (
                   <div className="flex justify-start rtl:justify-end">
-                    <div className="bg-surface-muted rounded-2xl rounded-tl-md px-4 py-3 flex items-center gap-2">
-                      <span className="flex items-center gap-1.5 shrink-0">
-                        <span className="w-1.5 h-1.5 bg-brand rounded-full animate-bounce [animation-delay:-0.3s]" />
-                        <span className="w-1.5 h-1.5 bg-brand rounded-full animate-bounce [animation-delay:-0.15s]" />
-                        <span className="w-1.5 h-1.5 bg-brand rounded-full animate-bounce" />
-                      </span>
-                      <span className="text-xs font-bold text-content-muted">{statusText}</span>
+                    <div className="bg-surface-muted rounded-2xl rounded-tl-md px-4 py-3 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 bg-content-muted rounded-full animate-bounce [animation-delay:-0.3s]" />
+                      <span className="w-1.5 h-1.5 bg-content-muted rounded-full animate-bounce [animation-delay:-0.15s]" />
+                      <span className="w-1.5 h-1.5 bg-content-muted rounded-full animate-bounce" />
                     </div>
                   </div>
                 )}
