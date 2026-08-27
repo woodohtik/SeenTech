@@ -77,11 +77,15 @@ export function buildAssistantTools() {
     }),
     execute: async ({ startDate, endDate }, { context }) => {
       const ctx = context as AssistantToolContext;
-      let { start, end } = clampDateRange(startDate, endDate);
+      let start: string; let end: string;
       if (!isAdminRole(ctx.userRole)) {
-        // Cashier وأي دور تشغيلي آخر غير إداري: اليوم الحالي فقط.
+        // Cashier وأي دور تشغيلي آخر غير إداري: اليوم الحالي فقط بغض النظر
+        // عمّا طُلب — يُطبَّق قبل أي تحقق من صحة النطاق المُدخَل، حتى لا
+        // يفشل الطلب بخطأ "نطاق طويل جداً" بدل أن يُقيَّد بصمت لليوم الحالي.
         start = todayStr();
         end = todayStr();
+      } else {
+        ({ start, end } = clampDateRange(startDate, endDate));
       }
       await logToolCall(ctx, 'getSalesSummary', { startDate: start, endDate: end }, false);
       const { data, error } = await supabaseAdmin.rpc('assistant_get_sales_summary', {
