@@ -726,6 +726,33 @@ async function buildAssistantModel(provider: string, modelName: string, apiKey: 
   return createOpenAI({ apiKey })(modelName);
 }
 
+// result.pipeTextStreamToResponse() swallows model-call errors (invalid key,
+// deprecated model, quota, ...): it only forwards "text-delta" parts, so an
+// error part ends the stream with a plain 200 + empty body and no way for the
+// client to tell what happened. Iterate the stream manually instead so an
+// error thrown mid-iteration can still produce a real error response (JSON if
+// nothing was written yet, or a visible in-band message if streaming already
+// started).
+async function streamTextOrError(result: any, res: any) {
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  let wroteAny = false;
+  try {
+    for await (const chunk of result.textStream) {
+      wroteAny = true;
+      res.write(chunk);
+    }
+    res.end();
+  } catch (err: any) {
+    console.error('Assistant stream error:', err);
+    if (!wroteAny && !res.headersSent) {
+      res.status(502).json({ error: err.message || 'Assistant model call failed' });
+    } else {
+      res.write(`\n\n[${err.message || 'حدث خطأ أثناء توليد الرد'}]`);
+      res.end();
+    }
+  }
+}
+
 // خفيف ومتاح لأي مستخدم مسجّل دخول (Admin/Cashier) — الـ Widget يسأله فقط
 // "هل أعرض الزر العائم أصلاً؟"، بلا أي بيانات حساسة.
 app.get("/api/assistant-settings/status", authenticate, async (req: any, res) => {
@@ -888,7 +915,7 @@ app.post("/api/super-admin/assistant-settings/test", authenticate, authorize(['s
       maxOutputTokens: Math.max(1, parseInt(maxTokens, 10) || 500),
     });
 
-    await result.pipeTextStreamToResponse(res);
+    await streamTextOrError(result, res);
   } catch (err: any) {
     console.error("Error in POST /api/super-admin/assistant-settings/test:", err);
     if (!res.headersSent) {
@@ -953,7 +980,7 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
       maxOutputTokens: settings.max_tokens,
     });
 
-    await result.pipeTextStreamToResponse(res);
+    await streamTextOrError(result, res);
   } catch (err: any) {
     console.error("Error in POST /api/chat:", err);
     if (!res.headersSent) {
