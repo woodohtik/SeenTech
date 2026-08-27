@@ -32,7 +32,8 @@ import {
   CreditCard,
   UserCheck,
   AlertCircle,
-  ShieldAlert
+  ShieldAlert,
+  Bot
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -90,6 +91,7 @@ export default function SuperAdminDashboard() {
   const [planFilter, setPlanFilter] = useState('all');
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
   const [updatingTenantId, setUpdatingTenantId] = useState<string | null>(null);
+  const [updatingAssistantTenantId, setUpdatingAssistantTenantId] = useState<string | null>(null);
 
   // Security audit trail filter
   const [auditSearch, setAuditSearch] = useState('');
@@ -144,7 +146,8 @@ export default function SuperAdminDashboard() {
           commercialRegister: d.commercial_register,
           logoUrl: d.logo_url,
           defaultLayout: d.default_layout,
-          isTest: d.is_test
+          isTest: d.is_test,
+          assistantEnabled: d.assistant_enabled !== false
         }) as Tenant));
       }
 
@@ -361,6 +364,44 @@ export default function SuperAdminDashboard() {
       toastHandleError(err, t('saas.tenants.status_update_failed'));
     } finally {
       setUpdatingTenantId(null);
+    }
+  };
+
+  // Action: Toggle the Smart Assistant on/off for a single subscriber, on top
+  // of the platform-wide toggle in assistant_settings (Super Admin > AI
+  // Assistant Settings). tenants already has an "ALL" RLS policy scoped to
+  // app_is_super_admin() (same one status-toggle above relies on), so a
+  // direct client write is safe here too -- no dedicated API route needed.
+  const handleToggleAssistant = async (tenantId: string, currentlyEnabled: boolean) => {
+    if (userRole !== 'super_admin') {
+      toastError(t('saas.unauthorized_action'));
+      return;
+    }
+    setUpdatingAssistantTenantId(tenantId);
+    const nextEnabled = !currentlyEnabled;
+    try {
+      const { error } = await supabase
+        .from('tenants')
+        .update({ assistant_enabled: nextEnabled })
+        .eq('id', tenantId);
+
+      if (error) throw error;
+
+      setTenants(prev => prev.map(t => t.id === tenantId ? { ...t, assistantEnabled: nextEnabled } : t));
+      setSelectedTenant(prev => (prev && prev.id === tenantId ? { ...prev, assistantEnabled: nextEnabled } : prev));
+      toastSuccess(nextEnabled ? t('saas.tenants.assistant_enabled_success') : t('saas.tenants.assistant_disabled_success'));
+
+      await supabase.from('audit_logs').insert({
+        action: `Toggle assistant to ${nextEnabled ? 'enabled' : 'disabled'}`,
+        performedByEmail: currentAuthUser?.email || 'Super Admin',
+        details: `Merchant ${tenantId} assistant access changed to ${nextEnabled ? 'enabled' : 'disabled'}`,
+        type: 'security',
+        timestamp: new Date().toISOString()
+      });
+    } catch (err) {
+      toastHandleError(err, t('saas.tenants.assistant_toggle_failed'));
+    } finally {
+      setUpdatingAssistantTenantId(null);
     }
   };
 
@@ -1491,6 +1532,27 @@ export default function SuperAdminDashboard() {
                 <div className="pt-2">
                   <span className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.tenants.shop_address')}</span>
                   <div className="text-xs font-black text-content mt-1">{selectedTenant.address || 'N/A'}</div>
+                </div>
+
+                <div className="flex items-center justify-between gap-4 bg-surface-muted p-4 rounded-2xl border border-border">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-brand/10 text-brand rounded-xl flex items-center justify-center shrink-0">
+                      <Bot size={16} />
+                    </div>
+                    <div>
+                      <div className="text-xs font-black text-content">{t('saas.tenants.assistant_toggle_label')}</div>
+                      <div className="text-[10px] text-content-muted font-bold mt-0.5">{t('saas.tenants.assistant_toggle_desc')}</div>
+                    </div>
+                  </div>
+                  <label className={cn("relative inline-flex items-center shrink-0", updatingAssistantTenantId === selectedTenant.id ? "opacity-50 pointer-events-none" : "cursor-pointer")}>
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={selectedTenant.assistantEnabled !== false}
+                      onChange={() => handleToggleAssistant(selectedTenant.id, selectedTenant.assistantEnabled !== false)}
+                    />
+                    <div className="w-12 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand"></div>
+                  </label>
                 </div>
               </div>
 

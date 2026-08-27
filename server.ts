@@ -824,17 +824,23 @@ async function streamAssistantReply(
 }
 
 // خفيف ومتاح لأي مستخدم مسجّل دخول (Admin/Cashier) — الـ Widget يسأله فقط
-// "هل أعرض الزر العائم أصلاً؟"، بلا أي بيانات حساسة.
+// "هل أعرض الزر العائم أصلاً؟"، بلا أي بيانات حساسة. يجمع بين المفتاح العام
+// (assistant_settings.is_enabled، يُطفئ المساعد للمنصة بأكملها) وتعطيل خاص
+// بهذا المشترك تحديداً (tenants.assistant_enabled، يديره السوبر أدمن لكل
+// مشترك على حدة من لوحة إدارة المشتركين) -- كلاهما يجب أن يكون مفعّلاً.
 app.get("/api/assistant-settings/status", authenticate, async (req: any, res) => {
   try {
     const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
-    const { data, error } = await supabaseAdmin
-      .from("assistant_settings")
-      .select("is_enabled")
-      .eq("id", "global")
-      .maybeSingle();
+    const [{ data, error }, { data: tenant, error: tenantErr }] = await Promise.all([
+      supabaseAdmin.from("assistant_settings").select("is_enabled").eq("id", "global").maybeSingle(),
+      req.user?.tenantId
+        ? supabaseAdmin.from("tenants").select("assistant_enabled").eq("id", req.user.tenantId).maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+    ]);
     if (error) return res.status(500).json({ error: error.message });
-    res.json({ isEnabled: Boolean(data?.is_enabled) });
+    if (tenantErr) return res.status(500).json({ error: tenantErr.message });
+    const isEnabled = Boolean(data?.is_enabled) && tenant?.assistant_enabled !== false;
+    res.json({ isEnabled });
   } catch (err: any) {
     console.error("Error in GET /api/assistant-settings/status:", err);
     res.status(500).json({ error: err.message || "Internal Server Error" });
@@ -1157,6 +1163,18 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
     }
     if (!settings.is_enabled) {
       return res.status(403).json({ error: 'assistant_disabled', message: 'مساعد سين الذكي معطّل حالياً.' });
+    }
+
+    // تعطيل خاص بهذا المشترك (منفصل عن المفتاح العام أعلاه) -- طبقة حماية
+    // ثانية على مستوى الخادم، لا تكتفِ بما يعرضه GET status للواجهة فقط.
+    const { data: tenantRow, error: tenantErr } = await supabaseAdmin
+      .from("tenants")
+      .select("assistant_enabled")
+      .eq("id", tenantId)
+      .maybeSingle();
+    if (tenantErr) return res.status(500).json({ error: "Assistant settings unavailable" });
+    if (tenantRow?.assistant_enabled === false) {
+      return res.status(403).json({ error: 'assistant_disabled', message: 'مساعد سين الذكي معطّل لحسابكم حالياً.' });
     }
 
     if (settings.daily_message_limit > 0) {

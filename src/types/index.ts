@@ -69,6 +69,7 @@ export interface Tenant {
   subscription_status?: string | null;
   subscription_end_date?: string | null;
   trial_ends_at?: string | null;
+  assistantEnabled?: boolean;
 }
 
 export interface SaaSMetrics {
