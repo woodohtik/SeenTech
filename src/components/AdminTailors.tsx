@@ -29,7 +29,8 @@ import {
   Ban,
   Edit,
   Crown,
-  Filter
+  Filter,
+  Bot
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
@@ -74,6 +75,7 @@ export default function AdminTailors() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
+  const [updatingAssistantTenantId, setUpdatingAssistantTenantId] = useState<string | null>(null);
   const [drawerTenant, setDrawerTenant] = useState<Tenant | null>(null);
   const [drawerStats, setDrawerStats] = useState<{
     lastLogin: string | null;
@@ -113,7 +115,8 @@ export default function AdminTailors() {
           inventoryStrategy: d.inventory_strategy,
           createdAt: d.created_at,
           planId: d.plan_id,
-          commercialRegister: d.commercial_register
+          commercialRegister: d.commercial_register,
+          assistantEnabled: d.assistant_enabled !== false
         }) as unknown as Tenant);
         setTenants(ts);
         setPlatformStats(prev => ({ ...prev, totalTenants: ts.length }));
@@ -539,6 +542,37 @@ export default function AdminTailors() {
         }
       }
     });
+  };
+
+  // Toggle the Smart Assistant on/off for a single subscriber, on top of the
+  // platform-wide toggle in Super Admin > AI Assistant Settings. tenants
+  // already has an "ALL" RLS policy scoped to app_is_super_admin() (same one
+  // handleToggleStatus above relies on), so a direct client write is fine.
+  const handleToggleAssistant = async (tenant: Tenant) => {
+    if (dbUser?.role !== 'super_admin') {
+      showToast(t('saas.unauthorized_action'), 'error');
+      return;
+    }
+    const nextEnabled = !(tenant.assistantEnabled !== false);
+    setUpdatingAssistantTenantId(tenant.id);
+    try {
+      const { error } = await supabase
+        .from('tenants')
+        .update({ assistant_enabled: nextEnabled })
+        .eq('id', tenant.id);
+      if (error) throw error;
+
+      setTenants(prev => prev.map(t => t.id === tenant.id ? { ...t, assistantEnabled: nextEnabled } : t));
+      if (selectedTenant?.id === tenant.id) {
+        setSelectedTenant(prev => prev ? { ...prev, assistantEnabled: nextEnabled } : null);
+      }
+      showToast(nextEnabled ? t('saas.tenants.assistant_enabled_success') : t('saas.tenants.assistant_disabled_success'), 'success');
+    } catch (error: any) {
+      console.error('Error updating assistant toggle:', error);
+      showToast(t('saas.tenants.assistant_toggle_failed'), 'error');
+    } finally {
+      setUpdatingAssistantTenantId(null);
+    }
   };
 
   const handleManualSeed = () => {
@@ -1361,6 +1395,27 @@ export default function AdminTailors() {
                       </div>
                     </div>
                   </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-4 bg-surface-muted p-4 rounded-2xl border border-border">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-brand/10 text-brand rounded-xl flex items-center justify-center shrink-0">
+                      <Bot size={16} />
+                    </div>
+                    <div>
+                      <div className="text-xs font-black text-content">{t('saas.tenants.assistant_toggle_label')}</div>
+                      <div className="text-[10px] text-content-muted font-bold mt-0.5">{t('saas.tenants.assistant_toggle_desc')}</div>
+                    </div>
+                  </div>
+                  <label className={cn("relative inline-flex items-center shrink-0", updatingAssistantTenantId === selectedTenant.id ? "opacity-50 pointer-events-none" : "cursor-pointer")}>
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={selectedTenant.assistantEnabled !== false}
+                      onChange={() => handleToggleAssistant(selectedTenant)}
+                    />
+                    <div className="w-12 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand"></div>
+                  </label>
                 </div>
               </div>
 
