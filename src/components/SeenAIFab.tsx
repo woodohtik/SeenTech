@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { useDirection } from '../lib/direction';
 import { supabase } from '../lib/supabase/client';
+import { cn } from '../lib/utils';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -138,12 +139,24 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
 
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm" dir={dir}>
+          <div className="fixed inset-0 z-50" dir={dir}>
+            {/* موبايل: خلفية معتمة + ورقة سفلية بعرض الشاشة. سطح المكتب: طبقة شفافة
+                لإغلاق النافذة بالنقر خارجها فقط، بلا تعتيم — النافذة ترتكز بجانب
+                الزر العائم نفسه (أسفل اليسار عربي/أردو، أسفل اليمين إنجليزي). */}
+            <div
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm sm:bg-transparent sm:backdrop-blur-none"
+              onClick={() => setIsOpen(false)}
+            />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-surface w-full h-[85vh] sm:h-[600px] sm:max-w-sm rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden relative border border-border flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+              className={cn(
+                "absolute inset-x-0 bottom-0 bg-surface w-full h-[85vh] rounded-t-3xl shadow-2xl overflow-hidden border border-border flex flex-col",
+                "sm:inset-x-auto sm:bottom-24 sm:h-[600px] sm:w-full sm:max-w-sm sm:rounded-3xl",
+                isRtl ? "sm:left-6" : "sm:right-6"
+              )}
             >
               <div className="p-4 border-b border-border flex justify-between items-center bg-brand/5 dark:bg-brand/10 shrink-0">
                 <h2 className="text-lg font-bold text-content flex items-center gap-2">
