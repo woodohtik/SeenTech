@@ -783,11 +783,16 @@ async function streamAssistantReply(result: any, res: any) {
     }
     res.end();
   } catch (err: any) {
+    // المستخدم النهائي (Admin/Cashier في الـ Widget) لا يرى تفاصيل الخطأ
+    // البرمجي أبداً (رسائل SDK/مزوّد الذكاء الاصطناعي الخام مثل quota/rate
+    // limit) -- فقط سجل الخادم يحتفظ بها لأغراض التشخيص. نص عربي مفهوم
+    // بدلاً منها، بنفس صياغة ai.error_generic في الواجهة.
     console.error('Assistant stream error:', err);
+    const FRIENDLY_ERROR = 'حدث خطأ أثناء التواصل مع المساعد، حاول مرة أخرى.';
     if (!wroteAny && !res.headersSent) {
-      res.status(502).json({ error: err.message || 'Assistant model call failed' });
+      res.status(502).json({ error: FRIENDLY_ERROR });
     } else {
-      res.write(JSON.stringify({ t: 'text', v: `\n\n[${err.message || 'حدث خطأ أثناء توليد الرد'}]` }) + '\n');
+      res.write(JSON.stringify({ t: 'text', v: `\n\n${FRIENDLY_ERROR}` }) + '\n');
       res.end();
     }
   }
@@ -1034,7 +1039,7 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
   } catch (err: any) {
     console.error("Error in POST /api/chat:", err);
     if (!res.headersSent) {
-      res.status(500).json({ error: err.message || "Internal Server Error" });
+      res.status(500).json({ error: 'حدث خطأ أثناء التواصل مع المساعد، حاول مرة أخرى.' });
     }
   }
 });
