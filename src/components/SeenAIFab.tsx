@@ -1,14 +1,21 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Bot, Sparkles, X, Send } from 'lucide-react';
+import { Bot, Sparkles, X, Send, AlertTriangle, TrendingUp, FileText, Users, PackageSearch } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { useDirection } from '../lib/direction';
 import { supabase } from '../lib/supabase/client';
 import { cn } from '../lib/utils';
+import { PriceDisplay } from './PriceDisplay';
+
+interface ToolResult {
+  name: string;
+  result: any;
+}
 
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+  toolResults?: ToolResult[];
 }
 
 interface SeenAIFabProps {
@@ -99,19 +106,34 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
         throw new Error('request_failed');
       }
 
-      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: '', toolResults: [] }]);
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      let acc = '';
+      let textAcc = '';
+      const toolResultsAcc: ToolResult[] = [];
+      let lineBuffer = '';
       // eslint-disable-next-line no-constant-condition
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        acc += decoder.decode(value, { stream: true });
-        const snapshot = acc;
+        lineBuffer += decoder.decode(value, { stream: true });
+        const lines = lineBuffer.split('\n');
+        lineBuffer = lines.pop() || ''; // آخر سطر قد يكون غير مكتمل بعد
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const part = JSON.parse(line);
+            if (part.t === 'text') textAcc += part.v;
+            else if (part.t === 'tool') toolResultsAcc.push({ name: part.name, result: part.result });
+          } catch {
+            // سطر NDJSON غير صالح (نادر) — تجاهله بدل كسر المحادثة كاملة
+          }
+        }
+        const textSnapshot = textAcc;
+        const toolsSnapshot = [...toolResultsAcc];
         setMessages(prev => {
           const copy = [...prev];
-          copy[copy.length - 1] = { role: 'assistant', content: snapshot };
+          copy[copy.length - 1] = { role: 'assistant', content: textSnapshot, toolResults: toolsSnapshot };
           return copy;
         });
       }
@@ -185,16 +207,21 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
                 {/* رسائل المستخدم دائماً في اليمين الفعلي للشاشة (كما في واتساب/تيليجرام)
                     بغض النظر عن اتجاه الصفحة — لذا نعكس justify-end/start عبر rtl: */}
                 {messages.map((m, i) => (
-                  <div key={i} className={`flex ${m.role === 'user' ? 'justify-end rtl:justify-start' : 'justify-start rtl:justify-end'}`}>
-                    <div
-                      className={
-                        m.role === 'user'
-                          ? 'max-w-[80%] bg-brand text-white rounded-2xl rounded-tr-md px-4 py-2.5 text-sm font-medium whitespace-pre-wrap'
-                          : 'max-w-[80%] bg-surface-muted text-content rounded-2xl rounded-tl-md px-4 py-2.5 text-sm font-medium whitespace-pre-wrap'
-                      }
-                    >
-                      {m.content}
-                    </div>
+                  <div key={i} className={`flex flex-col gap-2 ${m.role === 'user' ? 'items-end' : 'items-start'} ${m.role === 'user' ? 'rtl:items-start' : 'rtl:items-end'}`}>
+                    {m.toolResults?.map((tr, ti) => (
+                      <ToolResultCard key={ti} name={tr.name} result={tr.result} />
+                    ))}
+                    {m.content && (
+                      <div
+                        className={
+                          m.role === 'user'
+                            ? 'max-w-[80%] bg-brand text-white rounded-2xl rounded-tr-md px-4 py-2.5 text-sm font-medium whitespace-pre-wrap'
+                            : 'max-w-[80%] bg-surface-muted text-content rounded-2xl rounded-tl-md px-4 py-2.5 text-sm font-medium whitespace-pre-wrap'
+                        }
+                      >
+                        {m.content}
+                      </div>
+                    )}
                   </div>
                 ))}
 
@@ -243,4 +270,187 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
       </AnimatePresence>
     </>
   );
+}
+
+function EmptyCard({ text }: { text: string }) {
+  return (
+    <div className="max-w-[90%] w-full bg-surface-muted border border-border rounded-2xl px-4 py-3 text-xs font-bold text-content-muted text-center">
+      {text}
+    </div>
+  );
+}
+
+// عرض توليدي (Generative UI) بسيط: كل أداة بيانات تُعرض كبطاقة/جدول مصغّر
+// حسب نوعها بدل نص خام فقط، مبني على toolName + result القادمين من بروتوكول
+// NDJSON في server.ts (streamAssistantReply).
+function ToolResultCard({ name, result }: { name: string; result: any }) {
+  const { t } = useTranslation();
+  if (!result) return null;
+
+  if (result.denied) {
+    return (
+      <div className="max-w-[90%] w-full bg-warning/10 border border-warning/20 rounded-2xl px-4 py-3 text-xs font-bold text-warning flex items-center gap-2">
+        <AlertTriangle size={16} className="shrink-0" />
+        {result.message || t('ai.card_access_denied')}
+      </div>
+    );
+  }
+
+  switch (name) {
+    case 'getSalesSummary':
+    case 'getRevenueReport':
+    case 'getDailyClosingReport': {
+      const stats: { label: string; value: number }[] = [
+        { label: t('ai.card_total_sales'), value: Number(result.totalSales) || 0 },
+        { label: t('ai.card_collected'), value: Number(result.totalRevenueCollected) || 0 },
+      ];
+      if (result.totalTax !== undefined) stats.push({ label: t('ai.card_tax'), value: Number(result.totalTax) || 0 });
+      if (result.totalDiscount !== undefined) stats.push({ label: t('ai.card_discount'), value: Number(result.totalDiscount) || 0 });
+      return (
+        <div className="max-w-[90%] w-full bg-surface border border-border rounded-2xl p-4 space-y-3">
+          <div className="flex items-center gap-2 text-xs font-black text-brand uppercase tracking-widest">
+            <TrendingUp size={14} /> {t('ai.card_summary')}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {stats.map((s, i) => (
+              <div key={i}>
+                <div className="text-[10px] text-content-muted font-bold">{s.label}</div>
+                <div className="text-sm font-black text-content"><PriceDisplay amount={s.value} /></div>
+              </div>
+            ))}
+          </div>
+          {typeof result.invoiceCount === 'number' && (
+            <div className="text-[10px] text-content-muted font-bold pt-2 border-t border-border">
+              {t('ai.card_invoice_count')}: {result.invoiceCount}
+            </div>
+          )}
+        </div>
+      );
+    }
+    case 'searchInvoices': {
+      const invoices = result.invoices || [];
+      if (invoices.length === 0) return <EmptyCard text={t('ai.card_no_results')} />;
+      return (
+        <div className="max-w-[90%] w-full bg-surface border border-border rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2 text-xs font-black text-brand uppercase tracking-widest p-3 border-b border-border">
+            <FileText size={14} /> {t('ai.card_invoices')} ({invoices.length})
+          </div>
+          <div className="divide-y divide-border max-h-52 overflow-y-auto">
+            {invoices.map((inv: any, i: number) => (
+              <div key={i} className="p-3 flex items-center justify-between gap-2 text-xs">
+                <div className="min-w-0">
+                  <div className="font-bold text-content truncate">#{inv.order_number} — {inv.customer_name}</div>
+                  <div className="text-content-muted">{String(inv.order_date || '').slice(0, 10)}</div>
+                </div>
+                <div className="font-black text-content shrink-0"><PriceDisplay amount={Number(inv.total_amount) || 0} /></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    case 'getTopSellingItems': {
+      const items = result.items || [];
+      if (items.length === 0) return <EmptyCard text={t('ai.card_no_sales_data')} />;
+      return (
+        <div className="max-w-[90%] w-full bg-surface border border-border rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2 text-xs font-black text-brand uppercase tracking-widest p-3 border-b border-border">
+            <TrendingUp size={14} /> {t('ai.card_top_selling')}
+          </div>
+          <div className="divide-y divide-border">
+            {items.map((it: any, i: number) => (
+              <div key={i} className="p-3 flex items-center justify-between text-xs">
+                <span className="font-bold text-content">{it.name}</span>
+                <span className="text-content-muted font-black">{it.total_quantity}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    case 'getLowStockAlerts': {
+      const items = result.items || [];
+      if (items.length === 0) return <EmptyCard text={t('ai.card_no_low_stock')} />;
+      return (
+        <div className="max-w-[90%] w-full bg-danger/5 border border-danger/20 rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2 text-xs font-black text-danger uppercase tracking-widest p-3 border-b border-danger/20">
+            <AlertTriangle size={14} /> {t('ai.card_low_stock')}
+          </div>
+          <div className="divide-y divide-danger/10">
+            {items.map((it: any, i: number) => (
+              <div key={i} className="p-3 flex items-center justify-between text-xs">
+                <span className="font-bold text-content">{it.name}</span>
+                <span className="text-danger font-black">{it.current_quantity} / {it.min_threshold}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    case 'getInventoryStatus': {
+      const items = result.items || [];
+      if (!result.found || items.length === 0) return <EmptyCard text={t('ai.card_item_not_found')} />;
+      return (
+        <div className="max-w-[90%] w-full bg-surface border border-border rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2 text-xs font-black text-brand uppercase tracking-widest p-3 border-b border-border">
+            <PackageSearch size={14} /> {t('ai.card_inventory_status')}
+          </div>
+          <div className="divide-y divide-border">
+            {items.map((it: any, i: number) => (
+              <div key={i} className="p-3 text-xs space-y-1">
+                <div className="font-bold text-content">{it.name}</div>
+                <div className="flex items-center justify-between text-content-muted">
+                  <span>{it.currentQuantity} {it.unit}</span>
+                  <PriceDisplay amount={Number(it.pricePerUnit) || 0} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    case 'getCustomerHistory': {
+      const customers = result.customers || [];
+      if (!result.found || customers.length === 0) return <EmptyCard text={t('ai.card_customer_not_found')} />;
+      return (
+        <div className="max-w-[90%] w-full bg-surface border border-border rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2 text-xs font-black text-brand uppercase tracking-widest p-3 border-b border-border">
+            <Users size={14} /> {t('ai.card_customer_history')}
+          </div>
+          {customers.map((c: any, ci: number) => (
+            <div key={ci} className="divide-y divide-border">
+              <div className="p-3 text-xs font-black text-content bg-surface-muted/50">{c.name} — {c.phone}</div>
+              {(c.orders || []).map((o: any, oi: number) => (
+                <div key={oi} className="p-3 flex items-center justify-between text-xs">
+                  <span className="text-content-muted">#{o.order_number}</span>
+                  <PriceDisplay amount={Number(o.total_amount) || 0} />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      );
+    }
+    case 'getPendingOrders': {
+      const orders = result.orders || [];
+      if (orders.length === 0) return <EmptyCard text={t('ai.card_no_pending_orders')} />;
+      return (
+        <div className="max-w-[90%] w-full bg-surface border border-border rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2 text-xs font-black text-brand uppercase tracking-widest p-3 border-b border-border">
+            <FileText size={14} /> {t('ai.card_pending_orders')} ({orders.length})
+          </div>
+          <div className="divide-y divide-border max-h-52 overflow-y-auto">
+            {orders.map((o: any, i: number) => (
+              <div key={i} className="p-3 flex items-center justify-between gap-2 text-xs">
+                <span className="font-bold text-content truncate">#{o.order_number} — {o.customer_name}</span>
+                <span className="text-content-muted shrink-0">{o.status}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    default:
+      return null;
+  }
 }

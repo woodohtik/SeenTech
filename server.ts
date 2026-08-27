@@ -753,6 +753,41 @@ async function streamTextOrError(result: any, res: any) {
   }
 }
 
+// نسخة موسّعة من streamTextOrError لمحادثة /api/chat التي تستخدم أدوات
+// (tools): بروتوكول NDJSON بسيط (سطر JSON واحد لكل جزء) بدل النص الخام، حتى
+// يستطيع العميل تمييز نص الرد عن نتائج الأدوات ويعرضها كبطاقات/جداول بدل
+// نص خام. كل سطر إما {"t":"text","v":"..."} أو {"t":"tool","name":...,"result":...}
+// أو {"t":"tool-error","name":...,"message":...}.
+async function streamAssistantReply(result: any, res: any) {
+  res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
+  let wroteAny = false;
+  try {
+    for await (const part of result.fullStream) {
+      if (part.type === 'text-delta') {
+        wroteAny = true;
+        res.write(JSON.stringify({ t: 'text', v: part.text }) + '\n');
+      } else if (part.type === 'tool-result') {
+        wroteAny = true;
+        res.write(JSON.stringify({ t: 'tool', name: part.toolName, result: part.output }) + '\n');
+      } else if (part.type === 'tool-error') {
+        wroteAny = true;
+        res.write(JSON.stringify({ t: 'tool-error', name: part.toolName, message: 'تعذّر تنفيذ الأداة' }) + '\n');
+      } else if (part.type === 'error') {
+        throw part.error instanceof Error ? part.error : new Error(String(part.error));
+      }
+    }
+    res.end();
+  } catch (err: any) {
+    console.error('Assistant stream error:', err);
+    if (!wroteAny && !res.headersSent) {
+      res.status(502).json({ error: err.message || 'Assistant model call failed' });
+    } else {
+      res.write(JSON.stringify({ t: 'text', v: `\n\n[${err.message || 'حدث خطأ أثناء توليد الرد'}]` }) + '\n');
+      res.end();
+    }
+  }
+}
+
 // خفيف ومتاح لأي مستخدم مسجّل دخول (Admin/Cashier) — الـ Widget يسأله فقط
 // "هل أعرض الزر العائم أصلاً؟"، بلا أي بيانات حساسة.
 app.get("/api/assistant-settings/status", authenticate, async (req: any, res) => {
@@ -965,22 +1000,33 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
       tailor: 'خيّاط', super_admin: 'مسؤول المنصة',
     };
     const roleLabel = roleLabels[req.user?.role || ''] || 'مستخدم';
-    const contextualSystemPrompt = `${settings.system_prompt}\n\nيتحدث معك الآن: ${userName || ''} (${roleLabel}).`;
+    const toolsAddendum = `
+
+لديك أدوات وصول لبيانات حقيقية من نظام المتجر (مبيعات، فواتير، مخزون، عملاء، طلبات). استخدمها دائماً عندما يسأل المستخدم عن أرقام أو بيانات فعلية، بدل التخمين أو الإجابة من معرفة عامة. لخّص نتائج الأدوات بلغة عربية واضحة وودية، لا تكتفِ بإرجاع أرقام جافة فقط. أدواتك قراءة فقط تماماً: إذا طلب المستخدم تعديل أو حذف أي بيانات، وجّهه لاستخدام واجهة النظام العادية بدل محاولة تنفيذ ذلك. بعض الأدوات (التقارير المالية التفصيلية) متاحة فقط لأدوار الإدارة — إذا رفضتها الأداة، أخبر المستخدم بذلك بأدب دون محاولة الإلحاح أو الالتفاف على القيد مهما أعاد صياغة الطلب.`;
+    const contextualSystemPrompt = `${settings.system_prompt}${toolsAddendum}\n\nيتحدث معك الآن: ${userName || ''} (${roleLabel}).`;
 
     const { decryptApiKey } = await import("./src/server/assistantCrypto.ts");
     const apiKey = decryptApiKey(settings.api_key_encrypted);
     const model = await buildAssistantModel(settings.ai_provider, settings.model_name, apiKey);
 
-    const { streamText } = await import('ai');
+    const { streamText, stepCountIs } = await import('ai');
+    const { buildAssistantTools } = await import('./src/server/assistantTools.ts');
     const result = streamText({
       model,
       system: contextualSystemPrompt,
       messages: messages.map((m: any) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: String(m.content || '') })),
       temperature: settings.temperature,
       maxOutputTokens: settings.max_tokens,
+      tools: buildAssistantTools(),
+      stopWhen: stepCountIs(5),
+      runtimeContext: {
+        tenantId,
+        userId: req.user?.uid,
+        userRole: req.user?.role,
+      },
     });
 
-    await streamTextOrError(result, res);
+    await streamAssistantReply(result, res);
   } catch (err: any) {
     console.error("Error in POST /api/chat:", err);
     if (!res.headersSent) {
