@@ -736,6 +736,13 @@ html, body {
   color: var(--content, #0f172a) !important;
 }
 
+/* Mini single-topic tour launched from the AI assistant: title + description
+   + a corner dismiss only -- no Next/Previous/progress, so the now-empty
+   footer bar (and its top border) is hidden rather than shown blank. */
+.driver-popover.seen-tour-mini .driver-popover-footer {
+  display: none !important;
+}
+
 /* Driver overlay backdrop - Soft light tint, clear view of the app */
 .driver-overlay {
   background-color: rgba(15, 23, 42, 0.18) !important;

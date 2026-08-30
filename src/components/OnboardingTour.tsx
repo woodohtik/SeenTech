@@ -553,26 +553,104 @@ export default function OnboardingTour({
     return () => window.removeEventListener('start_onboarding_tour', handleRestart);
   }, [teardown, openWelcome]);
 
-  // Single-topic launches from the AI assistant — jump straight to the
-  // matching step's spotlight, bypassing the welcome screen entirely.
+  /**
+   * Single-topic mini-tour launched from the AI assistant — entirely separate
+   * from the main onboarding tour's engine and persisted state (stepsRef,
+   * indexRef, driverRef, localStorage progress). It highlights exactly one
+   * step and nothing else: no Next/Previous, no progress count, no "seen"
+   * bookkeeping. Reaching the end of a 1-step mini-tour must never mark the
+   * *full* onboarding as completed for a user who hasn't actually taken it.
+   */
+  const miniDriverRef = useRef<Driver | null>(null);
+
+  const teardownMini = useCallback(() => {
+    if (miniDriverRef.current) {
+      try {
+        miniDriverRef.current.destroy();
+      } catch {
+        /* noop */
+      }
+      miniDriverRef.current = null;
+    }
+    document.documentElement.classList.remove('seen-tour-active');
+  }, []);
+
+  const startMiniTour = useCallback(
+    async (topic: string) => {
+      const step = buildSteps().find((s) => s.id === topic && (!s.kind || s.kind === 'spotlight'));
+      if (!step) return; // not available for this user/device — same silent drop as the full tour
+
+      // A mini-tour must never run alongside the full tour's own overlay.
+      if (driverRef.current) {
+        teardown(null);
+        setPhase('idle');
+      }
+      teardownMini();
+
+      if (step.route && pathRef.current !== step.route) {
+        navigateRef.current(step.route);
+        await wait(80);
+      }
+
+      const selectors = getStepSelectors(step, isMobileViewport());
+      const hit = await resolveAnchor(selectors, step.timeout ?? 3500);
+      if (hit) {
+        hit.element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        await wait(240);
+      }
+
+      const d = driver({
+        animate: true,
+        stagePadding: 8,
+        stageRadius: 12,
+        overlayOpacity: 0.62,
+        overlayColor: '#020617',
+        popoverClass: 'seen-tour-popover seen-tour-mini',
+        smoothScroll: true,
+        disableActiveInteraction: true,
+        allowKeyboardControl: false,
+        showButtons: ['close'],
+        showProgress: false,
+        onCloseClick: () => teardownMini(),
+        onDestroyed: () => teardownMini(),
+        onPopoverRender: (popover) => {
+          popover.wrapper.setAttribute('dir', isRtl ? 'rtl' : 'ltr');
+        },
+      });
+
+      miniDriverRef.current = d;
+      document.documentElement.classList.add('seen-tour-active');
+
+      d.highlight({
+        element: hit?.selector,
+        popover: {
+          title: t(`tour.steps.${step.id}.title`, step.id),
+          description: t(`tour.steps.${step.id}.desc`, ''),
+          side: step.side || 'bottom',
+          align: step.align || 'center',
+        },
+      });
+    },
+    [buildSteps, teardown, teardownMini, isRtl, t]
+  );
+
+  // Single-topic launches from the AI assistant.
   useEffect(() => {
     const handleTargeted = (e: Event) => {
       const topic = (e as CustomEvent<{ topic?: string }>).detail?.topic;
       if (!topic) return;
-
-      const steps = buildSteps().filter((s) => !s.kind || s.kind === 'spotlight');
-      const idx = steps.findIndex((s) => s.id === topic);
-      if (idx === -1) return; // not available for this user/device — same silent drop as the full tour
-
-      teardown(null);
-      indexRef.current = 0;
-      anchorsRef.current = {};
-      startTour(idx);
+      void startMiniTour(topic);
     };
 
     window.addEventListener('start_targeted_tour', handleTargeted);
     return () => window.removeEventListener('start_targeted_tour', handleTargeted);
-  }, [buildSteps, teardown, startTour]);
+  }, [startMiniTour]);
+
+  // Clean up the mini-tour overlay on unmount too.
+  useEffect(() => {
+    return () => teardownMini();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /**
    * Auto-launch on the very first visit.
