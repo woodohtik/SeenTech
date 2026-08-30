@@ -36,7 +36,7 @@ export default function TrialLockOverlay({ purgeAt, onSubscribe, onContactSales 
       justifyContent: 'center', padding: 20, fontFamily: 'inherit',
     }}>
       <div style={{
-        maxWidth: 460, width: '100%', background: '#fff', borderRadius: 20,
+        maxWidth: 460, width: '100%', background: 'var(--surface)', borderRadius: 20,
         padding: 32, textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
       }}>
         <div style={{
@@ -44,15 +44,15 @@ export default function TrialLockOverlay({ purgeAt, onSubscribe, onContactSales 
           background: '#FCF3E6', color: '#B9770E', display: 'flex',
           alignItems: 'center', justifyContent: 'center', fontSize: 34,
         }} aria-hidden>🔒</div>
-        <h2 style={{ fontSize: 22, fontWeight: 800, color: '#0E2A42', margin: '0 0 8px' }}>
+        <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--content)', margin: '0 0 8px' }}>
           {t('subscription.trial_ended_title')}
         </h2>
-        <p style={{ color: '#555', fontSize: 15, lineHeight: 1.7, margin: '0 0 6px' }}>
+        <p style={{ color: 'var(--content-muted)', fontSize: 15, lineHeight: 1.7, margin: '0 0 6px' }}>
           {t('subscription.trial_ended_desc')}
         </p>
         {d !== null && (
           <p style={{
-            color: d <= 2 ? '#C0392B' : '#B9770E', fontWeight: 700, fontSize: 14,
+            color: d <= 2 ? 'var(--danger)' : 'var(--warning)', fontWeight: 700, fontSize: 14,
             background: '#FCF3E6', borderRadius: 10, padding: '8px 12px', margin: '14px 0 18px',
           }}>
             {d > 0
@@ -66,7 +66,7 @@ export default function TrialLockOverlay({ purgeAt, onSubscribe, onContactSales 
           cursor: 'pointer', fontFamily: 'inherit',
         }}>{t('subscription.subscribe_now')}</button>
         <button onClick={onContactSales} style={{
-          width: '100%', background: 'transparent', color: '#0E2A42', border: 'none',
+          width: '100%', background: 'transparent', color: 'var(--content-muted)', border: 'none',
           marginTop: 10, fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
         }}>{t('subscription.have_question_contact_sales')}</button>
       </div>

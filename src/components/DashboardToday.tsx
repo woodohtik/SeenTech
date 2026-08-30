@@ -114,7 +114,7 @@ export default function DashboardToday({ tenantId }: { tenantId: string }) {
         </div>
         <button onClick={() => navigate('/sales')}
           className="w-full sm:w-auto min-h-[52px] px-6 rounded-2xl text-white font-extrabold text-base sm:text-lg shadow-md active:scale-[0.98] transition-transform"
-          style={{ background: '#0BA06B' }}>+ {t('orders.new_order')}</button>
+          style={{ background: 'var(--brand)' }}>+ {t('orders.new_order')}</button>
       </div>
 
       {/* الكتل — عمود على الجوال، عمودان من sm */}
@@ -168,7 +168,7 @@ function Row({ name, note, onAction, actionLabel }: any) {
     <div className="flex items-center gap-2 sm:gap-3 py-2.5 border-b border-border last:border-0">
       <button onClick={onAction}
         className="shrink-0 min-h-[44px] px-3 sm:px-4 rounded-xl text-white font-bold text-xs sm:text-sm active:scale-95 transition-transform"
-        style={{ background: '#0E2A42' }}>{actionLabel}</button>
+        style={{ background: 'var(--brand)' }}>{actionLabel}</button>
       <span className="text-xs sm:text-sm text-content-muted ms-auto truncate">{note}</span>
       <span className="text-sm sm:text-base font-semibold text-content truncate max-w-[40%]">{name}</span>
     </div>

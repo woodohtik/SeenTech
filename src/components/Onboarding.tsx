@@ -486,7 +486,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-3 sm:p-6 md:p-8 font-sans" dir={dir}>
+    <div className="min-h-screen bg-surface-muted flex flex-col items-center justify-center p-3 sm:p-6 md:p-8 font-sans" dir={dir}>
       {/* Container Expansion */}
       <div className="w-full max-w-6xl relative">
 
@@ -522,7 +522,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                 return (
                   <div key={s.id} className="relative z-10 flex flex-col items-center group">
                     <div className={cn(
-                      "w-10 h-10 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center transition-all duration-500 border-4 border-[#F8FAFC]",
+                      "w-10 h-10 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center transition-all duration-500 border-4 border-surface-muted",
                       isActive ? "bg-brand text-white shadow-xl shadow-brand/30 scale-110" : 
                       isCompleted ? "bg-emerald-500 text-white" : "bg-white text-slate-400"
                     )}>

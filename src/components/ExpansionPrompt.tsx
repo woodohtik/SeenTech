@@ -32,11 +32,11 @@ export default function ExpansionPrompt({ tenantId }: { tenantId: string }) {
   }
 
   return (
-    <div dir={dir} className="w-full rounded-2xl p-4 sm:p-5 mb-4 border" style={{ background: '#EAF6FD', borderColor: '#CFE6F7' }}>
+    <div dir={dir} className="w-full rounded-2xl p-4 sm:p-5 mb-4 border bg-info/10 border-info/20">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="font-bold text-base sm:text-lg" style={{ color: '#0E2A42' }}>{t('billing.expansion.title')}</div>
-          <p className="text-sm mt-1" style={{ color: '#34404D' }}>
+          <div className="font-bold text-base sm:text-lg text-content">{t('billing.expansion.title')}</div>
+          <p className="text-sm mt-1 text-content-muted">
             {t('billing.expansion.description')}
           </p>
           <button onClick={() => navigate('/subscribe')}

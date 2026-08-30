@@ -189,18 +189,18 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
                 <AreaChart data={monthlyChartData}>
                   <defs>
                     <linearGradient id="colorCommission" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.1}/>
-                      <stop offset="95%" stopColor="#4F46E5" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="var(--brand)" stopOpacity={0.1}/>
+                      <stop offset="95%" stopColor="var(--brand)" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--content-muted)' }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--content-muted)' }} />
                   <Tooltip 
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                     formatter={(value: number) => [`${value.toFixed(2)} ﷼`, t('tailors.statement.commissions')]}
                   />
-                  <Area type="monotone" dataKey="total" stroke="#4F46E5" strokeWidth={3} fillOpacity={1} fill="url(#colorCommission)" />
+                  <Area type="monotone" dataKey="total" stroke="var(--brand)" strokeWidth={3} fillOpacity={1} fill="url(#colorCommission)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -212,15 +212,15 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={tailorChartData} layout="vertical" margin={{ top: 0, right: 0, left: 40, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f3f4f6" />
-                    <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
-                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
+                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="var(--border)" />
+                    <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--content-muted)' }} />
+                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--content-muted)' }} />
                     <Tooltip 
-                      cursor={{ fill: '#f9fafb' }}
+                      cursor={{ fill: 'var(--surface-muted)' }}
                       contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                       formatter={(value: number) => [`${value.toFixed(2)} ﷼`, t('tailors.statement.commissions')]}
                     />
-                    <Bar dataKey="total" fill="#10B981" radius={[0, 4, 4, 0]} barSize={24} />
+                    <Bar dataKey="total" fill="var(--success)" radius={[0, 4, 4, 0]} barSize={24} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

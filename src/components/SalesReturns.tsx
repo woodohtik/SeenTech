@@ -259,14 +259,14 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
 
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
-      <div className="bg-white dark:bg-[#1D1D1D] p-4 sm:p-6 rounded-2xl md:rounded-[2rem] border border-gray-200 dark:border-gray-800 shadow-sm space-y-6">
+      <div className="bg-surface p-4 sm:p-6 rounded-2xl md:rounded-[2rem] border border-border shadow-sm space-y-6">
         <div>
           <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">
             {t('sales_returns.title')}
           </h2>
           <div className="flex flex-col sm:flex-row gap-3">
-            <div className="group flex-1 flex items-center bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-xl focus-within:ring-2 focus-within:ring-[#1C8FFF] transition-all overflow-hidden h-12">
-              <div className="flex items-center justify-center px-4 border-e border-gray-200/60 dark:border-gray-700 text-gray-400 group-focus-within:text-[#1C8FFF] h-full shrink-0 bg-gray-100/50 dark:bg-slate-900/50">
+            <div className="group flex-1 flex items-center bg-surface-muted border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand transition-all overflow-hidden h-12">
+              <div className="flex items-center justify-center px-4 border-e border-border text-content-muted group-focus-within:text-brand h-full shrink-0 bg-surface-muted">
                 <Search size={18} />
               </div>
               <input 
@@ -281,7 +281,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
             <button 
               onClick={handleSearch}
               disabled={loading || !searchQuery.trim()}
-              className="bg-[#1C8FFF] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#1C8FFF]/90 transition-all active:scale-95 disabled:opacity-50 cursor-pointer h-12 shrink-0"
+              className="bg-brand text-white px-6 py-3 rounded-xl font-bold hover:bg-brand/90 transition-all active:scale-95 disabled:opacity-50 cursor-pointer h-12 shrink-0"
             >
               {loading ? t('sales_returns.searching') : t('sales_returns.search_btn')}
             </button>
@@ -302,10 +302,10 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                 <button
                   key={srvOrder.id}
                   onClick={() => setOrder(srvOrder)}
-                  className={`flex flex-col ${isRtl ? 'text-right' : 'text-left'} p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 hover:bg-gray-50 dark:bg-slate-900/40 dark:hover:bg-slate-900/80 transition-all w-full focus:ring-2 focus:ring-[#1C8FFF] outline-none`}
+                  className={`flex flex-col ${isRtl ? 'text-right' : 'text-left'} p-4 rounded-xl border border-border bg-surface-muted/50 hover:bg-surface-muted transition-all w-full focus:ring-2 focus:ring-brand outline-none`}
                 >
                   <div className="flex items-center justify-between w-full mb-2 border-b border-gray-100 dark:border-gray-800/80 pb-2">
-                    <span className="font-extrabold text-[#1C8FFF]">#{srvOrder.orderNumber || srvOrder.id.slice(-6).toUpperCase()}</span>
+                    <span className="font-extrabold text-brand">#{srvOrder.orderNumber || srvOrder.id.slice(-6).toUpperCase()}</span>
                     <span className="text-xs text-gray-400 font-medium">
                       <DateTimeDisplay date={srvOrder.orderDate} showTime={false} />
                     </span>
@@ -335,13 +335,13 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
           <div className="border-t border-gray-100 dark:border-gray-800 pt-6 space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-                <ShoppingBag size={18} className="text-[#1C8FFF]" />
+                <ShoppingBag size={18} className="text-brand" />
                 {t('sales_returns.order_details')}
               </h3>
               {searchResults.length > 0 && (
                 <button
                   onClick={() => setOrder(null)}
-                  className="text-xs text-gray-500 hover:text-[#1C8FFF] flex items-center gap-1 transition-all"
+                  className="text-xs text-gray-500 hover:text-brand flex items-center gap-1 transition-all"
                 >
                   <ChevronRight size={14} className={isRtl ? 'rotate-180' : ''} />
                   {t('sales_returns.back_to_results')}
@@ -364,7 +364,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
               </div>
               <div className="bg-gray-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('sales_returns.total')}</p>
-                <p className="font-bold text-[#1C8FFF]"><PriceDisplay amount={order.totalAmount} /></p>
+                <p className="font-bold text-brand"><PriceDisplay amount={order.totalAmount} /></p>
               </div>
             </div>
 
@@ -377,7 +377,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                 {items.map((item: any, idx: number) => {
                   const isCustom = item.type === 'custom';
                   return (
-                    <div key={idx} className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white dark:bg-[#1D1D1D]">
+                    <div key={idx} className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-surface">
                       <div className="flex items-start gap-3">
                         <div className={`p-2 rounded-lg shrink-0 ${isCustom ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
                           {isCustom ? <Scissors size={18} /> : <Package size={18} />}
@@ -455,8 +455,8 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                       onClick={() => setRefundMethod('cash')}
                       className={`flex flex-col items-center justify-center p-3 rounded-xl border font-bold text-sm transition-all gap-2 ${
                         refundMethod === 'cash'
-                          ? 'bg-[#1C8FFF]/10 border-[#1C8FFF] text-[#1C8FFF]'
-                          : 'border-gray-200 dark:border-gray-800 bg-gray-50/50 hover:bg-gray-50 text-gray-600 dark:text-gray-400'
+                          ? 'bg-brand/10 border-brand text-brand'
+                          : 'border-border bg-gray-50/50 hover:bg-gray-50 text-gray-600 dark:text-gray-400'
                       }`}
                     >
                       <Coins size={18} />
@@ -467,8 +467,8 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                       onClick={() => setRefundMethod('network')}
                       className={`flex flex-col items-center justify-center p-3 rounded-xl border font-bold text-sm transition-all gap-2 ${
                         refundMethod === 'network'
-                          ? 'bg-[#1C8FFF]/10 border-[#1C8FFF] text-[#1C8FFF]'
-                          : 'border-gray-200 dark:border-gray-800 bg-gray-50/50 hover:bg-gray-50 text-gray-600 dark:text-gray-400'
+                          ? 'bg-brand/10 border-brand text-brand'
+                          : 'border-border bg-gray-50/50 hover:bg-gray-50 text-gray-600 dark:text-gray-400'
                       }`}
                     >
                       <CreditCard size={18} />
@@ -479,8 +479,8 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                       onClick={() => setRefundMethod('bank_transfer')}
                       className={`flex flex-col items-center justify-center p-3 rounded-xl border font-bold text-sm transition-all gap-2 ${
                         refundMethod === 'bank_transfer'
-                          ? 'bg-[#1C8FFF]/10 border-[#1C8FFF] text-[#1C8FFF]'
-                          : 'border-gray-200 dark:border-gray-800 bg-gray-50/50 hover:bg-gray-50 text-gray-600 dark:text-gray-400'
+                          ? 'bg-brand/10 border-brand text-brand'
+                          : 'border-border bg-gray-50/50 hover:bg-gray-50 text-gray-600 dark:text-gray-400'
                       }`}
                     >
                       <Landmark size={18} />
@@ -497,7 +497,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                   <textarea 
                     value={returnReason}
                     onChange={(e) => setReturnReason(e.target.value)}
-                    className="w-full p-4 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-[#1C8FFF] outline-none h-24 resize-none text-gray-800 dark:text-gray-100 font-semibold"
+                    className="w-full p-4 bg-surface-muted border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none h-24 resize-none text-content font-semibold"
                     placeholder={t('sales_returns.reason_placeholder')}
                   />
                 </div>
@@ -535,7 +535,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-white dark:bg-[#1D1D1D] rounded-3xl border border-gray-100 dark:border-gray-800 p-6 max-w-md w-full shadow-2xl space-y-6 text-center"
+              className="bg-surface rounded-3xl border border-gray-100 dark:border-gray-800 p-6 max-w-md w-full shadow-2xl space-y-6 text-center"
             >
               <div className="w-16 h-16 bg-red-50 dark:bg-red-950/30 rounded-full flex items-center justify-center mx-auto text-red-500">
                 <RotateCcw size={32} />
@@ -554,7 +554,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
               <div className={`bg-gray-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 ${isRtl ? 'text-right' : 'text-left'} space-y-2.5`}>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-gray-400 font-bold">{t('sales_returns.refund_amount')}:</span>
-                  <span className="font-extrabold text-lg text-[#1C8FFF]">
+                  <span className="font-extrabold text-lg text-brand">
                     <PriceDisplay amount={refundTotalAmount} />
                   </span>
                 </div>

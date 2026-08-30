@@ -722,8 +722,8 @@ export default function AdminTailors() {
   const totalTenantsCount = tenants.length;
 
   const pieData = [
-    { name: t('common.active'), value: activeTenantsCount, color: '#10B981' },
-    { name: t('saas.status_inactive'), value: Math.max(0, totalTenantsCount - activeTenantsCount), color: '#F3F4F6' }
+    { name: t('common.active'), value: activeTenantsCount, color: 'var(--success)' },
+    { name: t('saas.status_inactive'), value: Math.max(0, totalTenantsCount - activeTenantsCount), color: 'var(--surface-muted)' }
   ];
 
   const monthlyDataMap = tenants.reduce((acc, t) => {
@@ -820,7 +820,7 @@ export default function AdminTailors() {
           <div className="h-24 mt-2 w-full flex items-end">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={[{ name: t('common.coming_soon'), value: trialExpiringTenantsCount }]} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                <Bar dataKey="value" fill="#F59E0B" radius={[8, 8, 0, 0]} barSize={50} />
+                <Bar dataKey="value" fill="var(--warning)" radius={[8, 8, 0, 0]} barSize={50} />
                 <Tooltip formatter={(value: any) => [value, t('saas.tenant_count_label')]} cursor={{fill: 'transparent'}} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}/>
               </BarChart>
             </ResponsiveContainer>
@@ -843,12 +843,12 @@ export default function AdminTailors() {
               <AreaChart data={totalRegistrationsData} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorReg" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#4F46E5" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="var(--brand)" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="var(--brand)" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <Tooltip wrapperStyle={{ outline: 'none' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}/>
-                <Area type="monotone" dataKey="التسجيلات" name={t('saas.tenants.registrations')} stroke="#4F46E5" strokeWidth={3} fillOpacity={1} fill="url(#colorReg)" />
+                <Area type="monotone" dataKey="التسجيلات" name={t('saas.tenants.registrations')} stroke="var(--brand)" strokeWidth={3} fillOpacity={1} fill="url(#colorReg)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -1275,8 +1275,8 @@ export default function AdminTailors() {
                           <AreaChart data={tenantStats.ordersData}>
                             <defs>
                               <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#1e40af" stopOpacity={0.1}/>
-                                <stop offset="95%" stopColor="#1e40af" stopOpacity={0}/>
+                                <stop offset="5%" stopColor="var(--brand)" stopOpacity={0.1}/>
+                                <stop offset="95%" stopColor="var(--brand)" stopOpacity={0}/>
                               </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
@@ -1284,12 +1284,12 @@ export default function AdminTailors() {
                               dataKey="date" 
                               axisLine={false} 
                               tickLine={false} 
-                              tick={{fontSize: 10, fill: '#6b7280'}}
+                              tick={{fontSize: 10, fill: 'var(--content-muted)'}}
                             />
                             <YAxis 
                               axisLine={false} 
                               tickLine={false} 
-                              tick={{fontSize: 10, fill: '#6b7280'}}
+                              tick={{fontSize: 10, fill: 'var(--content-muted)'}}
                             />
                             <Tooltip 
                               contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
@@ -1297,7 +1297,7 @@ export default function AdminTailors() {
                             <Area 
                               type="monotone" 
                               dataKey="sales" 
-                              stroke="#3b82f6" 
+                              stroke="var(--brand)" 
                               fillOpacity={1} 
                               fill="url(#colorSales)" 
                               strokeWidth={3}
@@ -1326,19 +1326,19 @@ export default function AdminTailors() {
                               dataKey="date" 
                               axisLine={false} 
                               tickLine={false} 
-                              tick={{fontSize: 10, fill: '#6b7280'}}
+                              tick={{fontSize: 10, fill: 'var(--content-muted)'}}
                             />
                             <YAxis 
                               axisLine={false} 
                               tickLine={false} 
-                              tick={{fontSize: 10, fill: '#6b7280'}}
+                              tick={{fontSize: 10, fill: 'var(--content-muted)'}}
                             />
                             <Tooltip 
                               contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
                             />
                             <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                               {tenantStats.ordersData.map((_entry, index) => (
-                                <Cell key={`cell-${index}`} fill="#10b981" fillOpacity={0.8} />
+                                <Cell key={`cell-${index}`} fill="var(--success)" fillOpacity={0.8} />
                               ))}
                             </Bar>
                           </BarChart>

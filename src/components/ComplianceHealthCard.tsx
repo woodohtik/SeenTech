@@ -40,7 +40,7 @@ export default function ComplianceHealthCard(p: ComplianceHealthProps) {
   ];
   const done = checks.filter((c) => c.ok).length;
   const score = Math.round((done / checks.length) * 100);
-  const color = score >= 80 ? '#1E7D45' : score >= 50 ? '#B9770E' : '#C0392B';
+  const color = score >= 80 ? 'var(--success)' : score >= 50 ? 'var(--warning)' : 'var(--danger)';
 
   return (
     <div dir={dir} style={styles.card}>
@@ -54,7 +54,7 @@ export default function ComplianceHealthCard(p: ComplianceHealthProps) {
       <ul style={styles.list}>
         {checks.map((c) => (
           <li key={c.label} style={styles.row}>
-            <span style={{ ...styles.mark, color: c.ok ? '#1E7D45' : '#C0392B' }}>{c.ok ? '✓' : '✗'}</span>
+            <span style={{ ...styles.mark, color: c.ok ? 'var(--success)' : 'var(--danger)' }}>{c.ok ? '✓' : '✗'}</span>
             <span style={styles.label}>
               {c.label}
               {!c.ok && c.hint ? <span style={styles.hint}>{c.hint}</span> : null}
@@ -69,18 +69,18 @@ export default function ComplianceHealthCard(p: ComplianceHealthProps) {
   );
 }
 
-const NAVY = '#1F3A5F';
+const NAVY = 'var(--brand)';
 const styles: Record<string, React.CSSProperties> = {
-  card: { background: '#fff', borderRadius: 14, border: '1px solid #eef0f4', padding: 18, fontFamily: 'Arial, sans-serif', maxWidth: 420 },
+  card: { background: 'var(--surface)', borderRadius: 14, border: '1px solid var(--border)', padding: 18, fontFamily: 'Arial, sans-serif', maxWidth: 420 },
   head: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   title: { fontSize: 16, fontWeight: 700, color: NAVY },
   badge: { color: '#fff', fontWeight: 700, fontSize: 14, borderRadius: 20, padding: '2px 12px' },
-  barTrack: { height: 8, background: '#eef0f4', borderRadius: 8, overflow: 'hidden', marginBottom: 14 },
+  barTrack: { height: 8, background: 'var(--surface-muted)', borderRadius: 8, overflow: 'hidden', marginBottom: 14 },
   barFill: { height: '100%', borderRadius: 8, transition: 'width .4s ease' },
   list: { listStyle: 'none', padding: 0, margin: 0 },
-  row: { display: 'flex', alignItems: 'flex-start', gap: 10, padding: '7px 0', fontSize: 14, color: '#333' },
+  row: { display: 'flex', alignItems: 'flex-start', gap: 10, padding: '7px 0', fontSize: 14, color: 'var(--content)' },
   mark: { fontWeight: 700, width: 16, flexShrink: 0 },
   label: { display: 'flex', flexDirection: 'column' },
-  hint: { color: '#999', fontSize: 12, marginTop: 2 },
-  cta: { marginTop: 12, fontSize: 13, color: NAVY, background: '#F1F6FC', borderRadius: 8, padding: '8px 12px' },
+  hint: { color: 'var(--content-muted)', fontSize: 12, marginTop: 2 },
+  cta: { marginTop: 12, fontSize: 13, color: NAVY, background: 'var(--surface-muted)', borderRadius: 8, padding: '8px 12px' },
 };

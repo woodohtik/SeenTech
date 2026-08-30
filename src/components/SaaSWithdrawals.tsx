@@ -12,7 +12,10 @@ import { useTranslation } from 'react-i18next';
 import { isRtlLang } from '../lib/direction';
 import { useConfirm } from '../contexts/ConfirmContext';
 
-const INK = '#0E2A42', CTA = '#0BA06B', GRAY = '#6B7280', LINE = '#E5EAF1', SURF = '#F5F7FA';
+// INK is a fixed dark-navy header accent with no matching semantic token (this
+// table's design intentionally doesn't shift with the app's light/dark toggle);
+// the rest map cleanly onto this app's existing CSS custom properties.
+const INK = '#0E2A42', CTA = 'var(--success)', GRAY = 'var(--content-muted)', LINE = 'var(--border)', SURF = 'var(--surface-muted)';
 
 export default function SaaSWithdrawals() {
   const { t, i18n } = useTranslation();
@@ -88,13 +91,13 @@ export default function SaaSWithdrawals() {
 }
 
 const st: Record<string, React.CSSProperties> = {
-  wrap: {  padding: 24, color: '#34404D' },
+  wrap: {  padding: 24, color: 'var(--content)' },
   title: { fontFamily: "'Tajawal', sans-serif", fontWeight: 800, fontSize: 26, color: INK, margin: 0 },
   sub: { color: GRAY, fontSize: 14.5, margin: '6px 0 20px' },
   empty: { color: GRAY, fontSize: 15, padding: '30px 0', textAlign: 'center', background: SURF, borderRadius: 14 },
-  table: { width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: 14, overflow: 'hidden', border: `1px solid ${LINE}` },
+  table: { width: '100%', borderCollapse: 'collapse', background: 'var(--surface)', borderRadius: 14, overflow: 'hidden', border: `1px solid ${LINE}` },
   th: { background: INK, color: '#fff', fontFamily: "'Tajawal', sans-serif", fontWeight: 700, fontSize: 14, padding: '12px 14px' },
   td: { padding: '12px 14px', borderBottom: `1px solid ${LINE}`, fontSize: 14.5 },
   approve: { background: CTA, color: '#fff', border: 'none', borderRadius: 9, padding: '8px 16px', fontWeight: 800, fontSize: 13.5, cursor: 'pointer' },
-  reject: { background: 'transparent', color: '#C0392B', border: '1px solid #C0392B', borderRadius: 9, padding: '8px 14px', fontWeight: 700, fontSize: 13.5, cursor: 'pointer' },
+  reject: { background: 'transparent', color: 'var(--danger)', border: '1px solid var(--danger)', borderRadius: 9, padding: '8px 14px', fontWeight: 700, fontSize: 13.5, cursor: 'pointer' },
 };

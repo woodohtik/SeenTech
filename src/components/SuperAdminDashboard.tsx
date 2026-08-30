@@ -305,7 +305,9 @@ export default function SuperAdminDashboard() {
     return plansList.map((plan, idx) => ({
       name: plan.name,
       value: tenants.filter(t => t.planId === plan.id).length,
-      color: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'][idx % 5]
+      // 4th entry (purple) has no matching semantic token -- kept literal for a
+      // variable-length plan list where each slice needs a distinct hue.
+      color: ['var(--brand)', 'var(--success)', 'var(--warning)', '#8b5cf6', 'var(--danger)'][idx % 5]
     })).filter(p => p.value > 0);
   }, [tenants, plansList]);
 
@@ -828,11 +830,11 @@ export default function SuperAdminDashboard() {
                           <stop offset="95%" stopColor="var(--bg-brand)" stopOpacity={0}/>
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 700 }} dy={8} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 700 }} dx={-8} />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--content-muted)', fontSize: 11, fontWeight: 700 }} dy={8} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--content-muted)', fontSize: 11, fontWeight: 700 }} dx={-8} />
                       <Tooltip 
-                        contentStyle={{ backgroundColor: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '12px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.05)' }}
+                        contentStyle={{ backgroundColor: 'var(--surface)', borderRadius: '16px', border: '1px solid var(--border)', padding: '12px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.05)' }}
                         itemStyle={{ fontWeight: 800, fontSize: '13px' }}
                       />
                       <Area type="monotone" dataKey="mrr" name="MRR" stroke="var(--bg-brand)" strokeWidth={3} fillOpacity={1} fill="url(#colorMrr)" />

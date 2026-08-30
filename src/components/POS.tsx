@@ -1354,8 +1354,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                 className={cn(
                   "p-3 rounded-xl border transition-all cursor-pointer bg-surface",
                   focusedItemId === item.id 
-                    ? "border-[#1C8FFF] ring-2 ring-[#1C8FFF] shadow-2xl z-50 relative bg-white dark:bg-[#1D1D1D] scale-[1.02]" 
-                    : "bg-[#FFFFFF] dark:bg-[#1D1D1D] border-border hover:border-[#1C8FFF]/50",
+                    ? "border-brand ring-2 ring-brand shadow-2xl z-50 relative bg-surface scale-[1.02]"
+                    : "bg-surface border-border hover:border-brand/50",
                   focusedItemId && focusedItemId !== item.id ? "opacity-30" : ""
                 )}
               >
@@ -1370,7 +1370,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                         referrerPolicy="no-referrer"
                       />
                     ) : (
-                      <div className="w-full h-full bg-[#F5F7FA] dark:bg-[#121212] border border-border rounded-lg flex items-center justify-center text-[#6B7280]">
+                      <div className="w-full h-full bg-surface-muted border border-border rounded-lg flex items-center justify-center text-content-muted">
                         <ImageIcon size={18} />
                       </div>
                     )}
@@ -1390,12 +1390,12 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       {item.type === 'custom' ? (
-                        <span className="px-2 py-0.5 bg-[#1C8FFF]/10 text-[#1C8FFF] text-xs font-bold rounded-md flex items-center gap-1">
+                        <span className="px-2 py-0.5 bg-brand/10 text-brand text-xs font-bold rounded-md flex items-center gap-1">
                           <Scissors size={12} />
                           {t('pos.type_custom')}
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 bg-[#6B7280]/10 text-[#6B7280] text-xs font-bold rounded-md flex items-center gap-1">
+                        <span className="px-2 py-0.5 bg-content-muted/10 text-content-muted text-xs font-bold rounded-md flex items-center gap-1">
                           <Package size={12} />
                           {t('pos.type_ready_made')}
                         </span>
@@ -1404,11 +1404,11 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                         {item.type === 'custom' ? item.garmentType : (i18n.language === 'en' && item.nameEn ? item.nameEn : item.name)}
                       </span>
                     </div>
-                    <div className="text-[#1C8FFF] font-bold"><PriceDisplay amount={item.price} /></div>
+                    <div className="text-brand font-bold"><PriceDisplay amount={item.price} /></div>
                   </div>
                   
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 bg-[#F5F7FA] dark:bg-[#121212] border border-border rounded-lg p-1">
+                    <div className="flex items-center gap-2 bg-surface-muted border border-border rounded-lg p-1">
                       <button onClick={() => updateQuantity(item.id!, -1)} aria-label={t('pos.decrease_quantity')} className="w-8 h-8 flex items-center justify-center hover:bg-surface-muted rounded transition-colors">-</button>
                       <span className="w-6 text-center font-bold text-content">{item.quantity}</span>
                       <button onClick={() => updateQuantity(item.id!, 1)} aria-label={t('pos.increase_quantity')} className="w-8 h-8 flex items-center justify-center hover:bg-surface-muted rounded transition-colors">+</button>
@@ -1423,7 +1423,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                 {focusedItemId === item.id && item.type === 'ready_made' && (
                   <div className="mt-3 pt-3 border-t border-border flex flex-wrap gap-2 animate-in fade-in slide-in-from-top-1">
                     <button 
-                      className="text-[10px] font-black text-[#1C8FFF] bg-[#1C8FFF]/5 px-2 py-1 rounded-md uppercase tracking-wider cursor-pointer"
+                      className="text-[10px] font-black text-brand bg-brand/5 px-2 py-1 rounded-md uppercase tracking-wider cursor-pointer"
                       onClick={() => {
                         const input = document.createElement('input');
                         input.type = 'file';
@@ -1439,7 +1439,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
               </div>
           ))}
           {cart.length === 0 && (
-            <div className="h-full flex flex-col items-center justify-center text-[#6B7280] space-y-2 py-12">
+            <div className="h-full flex flex-col items-center justify-center text-content-muted space-y-2 py-12">
               <ShoppingCart size={48} className="opacity-20" />
               <p>{t('pos.empty_cart')}</p>
             </div>
@@ -1795,7 +1795,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               animate={{ y: 0 }}
               exit={shouldReduceMotion ? undefined : { y: '100%' }}
               transition={shouldReduceMotion ? { duration: 0 } : { type: 'spring', damping: 28, stiffness: 220 }}
-              className="fixed inset-x-0 bottom-0 h-[85vh] rounded-t-[2.5rem] bg-[#FFFFFF] dark:bg-[#1D1D1D] flex flex-col shadow-2xl z-[60] lg:hidden overflow-hidden pb-10"
+              className="fixed inset-x-0 bottom-0 h-[85vh] rounded-t-[2.5rem] bg-surface flex flex-col shadow-2xl z-[60] lg:hidden overflow-hidden pb-10"
               dir={isRtl ? 'rtl' : 'ltr'}
             >
               {renderCartPanel(true)}
@@ -2368,13 +2368,13 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     }}>
                       <div className="relative flex-1">
                         <Combobox.Input
-                          className="w-full p-3 bg-[#FFFFFF] dark:bg-[#1D1D1D] text-content border border-border rounded-xl focus:ring-2 focus:ring-[#1C8FFF] focus:border-[#1C8FFF] shadow-sm font-medium rtl:pr-10 ltr:pl-10"
+                          className="w-full p-3 bg-surface text-content border border-border rounded-xl focus:ring-2 focus:ring-brand focus:border-brand shadow-sm font-medium rtl:pr-10 ltr:pl-10"
                           placeholder={t('pos.search_customer')}
                           displayValue={(person: Customer) => person?.name || ''}
                           onChange={(event) => setCustomerQuery(event.target.value)}
                         />
                         <Combobox.Button className="absolute inset-y-0 ltr:right-0 rtl:left-0 flex items-center px-3">
-                          <User className="w-5 h-5 text-[#6B7280]" aria-hidden="true" />
+                          <User className="w-5 h-5 text-content-muted" aria-hidden="true" />
                         </Combobox.Button>
                         <Transition
                           as={React.Fragment}
@@ -2383,7 +2383,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                           leaveTo="opacity-0"
                           afterLeave={() => setCustomerQuery('')}
                         >
-                          <Combobox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-xl bg-[#FFFFFF] dark:bg-[#1D1D1D] border border-border text-content py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-[100]">
+                          <Combobox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-xl bg-surface border border-border text-content py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-[100]">
                             {customers
                               .filter((person) =>
                                 person.name.toLowerCase().includes(customerQuery.toLowerCase()) ||
@@ -2394,7 +2394,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                                 key={person.id}
                                 className={({ active }) =>
                                   `relative cursor-pointer select-none py-2 px-4 ${
-                                    active ? 'bg-[#1C8FFF] text-white' : 'text-content'
+                                    active ? 'bg-brand text-white' : 'text-content'
                                   }`
                                 }
                                 value={person}

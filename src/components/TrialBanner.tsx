@@ -42,7 +42,7 @@ export default function TrialBanner({ subscriptionStatus, trialEndsAt, onSubscri
   if (r.ended) return null; // القفل يتكفّل به TrialLockOverlay
 
   const urgent = r.days <= 2;
-  const bg = urgent ? '#C0392B' : '#1F3A5F';
+  const bg = urgent ? 'var(--danger)' : 'var(--info)';
   const label =
     r.days >= 1
       ? (r.hours

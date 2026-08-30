@@ -61,7 +61,10 @@ import { useStaff } from '../contexts/StaffContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { useDirection } from '../lib/direction';
 
-const COLORS = ['#1C8FFF', '#22C55E', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
+// First four map to this app's semantic tokens (brand/success/warning/danger); the
+// remaining three are purely categorical (purple/pink/cyan) with no matching token --
+// kept as literal hues so a 7-series chart stays visually distinguishable.
+const COLORS = ['var(--brand)', 'var(--success)', 'var(--warning)', 'var(--danger)', '#8B5CF6', '#EC4899', '#06B6D4'];
 
 type ReportTab = 'general' | 'financial' | 'orders' | 'inventory' | 'staff' | 'zreports' | 'tailor_commissions' | 'profit_loss' | 'suppliers_purchases' | 'vat';
 
@@ -1073,12 +1076,12 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     <AreaChart data={financialStats.trendChartData}>
                       <defs>
                         <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#1C8FFF" stopOpacity={0.35}/>
-                          <stop offset="100%" stopColor="#1C8FFF" stopOpacity={0.0}/>
+                          <stop offset="0%" stopColor="var(--brand)" stopOpacity={0.35}/>
+                          <stop offset="100%" stopColor="var(--brand)" stopOpacity={0.0}/>
                         </linearGradient>
                         <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#22C55E" stopOpacity={0.4}/>
-                          <stop offset="100%" stopColor="#22C55E" stopOpacity={0.0}/>
+                          <stop offset="0%" stopColor="var(--success)" stopOpacity={0.4}/>
+                          <stop offset="100%" stopColor="var(--success)" stopOpacity={0.0}/>
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="var(--border)" opacity={0.5} />
@@ -1095,12 +1098,12 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                                 <div className="text-xs font-black text-content pb-2 mb-2 border-b border-border/60">{label}</div>
                                 <div className="space-y-2 text-xs font-bold">
                                   <div className="flex items-center justify-between gap-4">
-                                    <span className="text-content-muted flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#1C8FFF]" />{t('common.sales')}:</span>
-                                    <span className="font-black text-[#1C8FFF]"><PriceDisplay amount={salesVal} /></span>
+                                    <span className="text-content-muted flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-brand" />{t('common.sales')}:</span>
+                                    <span className="font-black text-brand"><PriceDisplay amount={salesVal} /></span>
                                   </div>
                                   <div className="flex items-center justify-between gap-4">
-                                    <span className="text-content-muted flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#22C55E]" />{t('reports.revenue')}:</span>
-                                    <span className="font-black text-emerald-600"><PriceDisplay amount={revVal} /></span>
+                                    <span className="text-content-muted flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-success" />{t('reports.revenue')}:</span>
+                                    <span className="font-black text-success"><PriceDisplay amount={revVal} /></span>
                                   </div>
                                 </div>
                               </div>
@@ -1109,8 +1112,8 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                           return null;
                         }}
                       />
-                      <Area type="monotone" dataKey="sales" stroke="#1C8FFF" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" activeDot={{ r: 6, strokeWidth: 2, stroke: 'var(--surface)' }} />
-                      <Area type="monotone" dataKey="revenue" stroke="#22C55E" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" activeDot={{ r: 6, strokeWidth: 2, stroke: 'var(--surface)' }} />
+                      <Area type="monotone" dataKey="sales" stroke="var(--brand)" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" activeDot={{ r: 6, strokeWidth: 2, stroke: 'var(--surface)' }} />
+                      <Area type="monotone" dataKey="revenue" stroke="var(--success)" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" activeDot={{ r: 6, strokeWidth: 2, stroke: 'var(--surface)' }} />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -1240,7 +1243,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                       />
                       <Bar
                         dataKey="value"
-                        fill="#1C8FFF"
+                        fill="var(--brand)"
                         radius={[6, 6, 0, 0]}
                         cursor="pointer"
                         onClick={(data) => setDrillDown({
@@ -1356,7 +1359,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                         cursor={{ fill: 'var(--color-surface-muted)' }}
                         contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
                       />
-                      <Bar dataKey="quantity" fill="#1C8FFF" radius={[0, 6, 6, 0]} />
+                      <Bar dataKey="quantity" fill="var(--brand)" radius={[0, 6, 6, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -1474,7 +1477,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                           cursor={{ fill: 'var(--color-surface-muted)' }}
                           contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
                         />
-                        <Bar dataKey="completed" fill="#22C55E" radius={[6, 6, 0, 0]} name={t('reports.delivered_orders')} />
+                        <Bar dataKey="completed" fill="var(--success)" radius={[6, 6, 0, 0]} name={t('reports.delivered_orders')} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -1560,7 +1563,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                           dataKey="value"
                         >
                           {customerStats.retentionChartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={index === 0 ? '#1C8FFF' : '#22C55E'} />
+                            <Cell key={`cell-${index}`} fill={index === 0 ? 'var(--brand)' : 'var(--success)'} />
                           ))}
                         </Pie>
                         <Tooltip 
@@ -1598,8 +1601,8 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     <AreaChart data={supplierStats.purchasesTrend}>
                       <defs>
                         <linearGradient id="colorPurchases" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#1C8FFF" stopOpacity={0.35}/>
-                          <stop offset="100%" stopColor="#1C8FFF" stopOpacity={0.0}/>
+                          <stop offset="0%" stopColor="var(--brand)" stopOpacity={0.35}/>
+                          <stop offset="100%" stopColor="var(--brand)" stopOpacity={0.0}/>
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="var(--border)" opacity={0.5} />
@@ -1609,7 +1612,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                         contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
                         formatter={(value: number) => <PriceDisplay amount={value} />}
                       />
-                      <Area type="monotone" dataKey="total" stroke="#1C8FFF" strokeWidth={3} fillOpacity={1} fill="url(#colorPurchases)" />
+                      <Area type="monotone" dataKey="total" stroke="var(--brand)" strokeWidth={3} fillOpacity={1} fill="url(#colorPurchases)" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>

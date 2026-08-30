@@ -323,15 +323,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ tenantId }) => {
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlyChartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6B7280' }} />
-                <YAxis tick={{ fontSize: 12, fill: '#6B7280' }} />
-                <Tooltip 
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                <XAxis dataKey="month" tick={{ fontSize: 12, fill: 'var(--content-muted)' }} />
+                <YAxis tick={{ fontSize: 12, fill: 'var(--content-muted)' }} />
+                {/* Intentionally-dark tooltip chrome (not theme-tokenized) for guaranteed contrast on hover regardless of page theme. */}
+                <Tooltip
                   contentStyle={{ backgroundColor: '#1F2937', borderRadius: '12px', color: '#FFF', border: 'none' }}
                   formatter={(value: any) => [`${value} ﷼`, '']}
                 />
-                <Bar dataKey="mbi3at" name={t('common.sales')} fill="#4F46E5" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="arbah" name={t('dashboard.admin.profits')} fill="#10B981" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="mbi3at" name={t('common.sales')} fill="var(--brand)" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="arbah" name={t('dashboard.admin.profits')} fill="var(--success)" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

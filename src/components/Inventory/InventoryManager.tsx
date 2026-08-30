@@ -1966,7 +1966,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                     setFormData({ ...formData, description: e.target.value })
                   }
                   placeholder={t("inventory.description_placeholder")}
-                  className="w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-[#1C8FFF]/20 focus:border-[#1C8FFF] font-semibold text-content resize-none h-16 text-right"
+                  className="w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content resize-none h-16 text-right"
                 />
               </div>
             </div>
@@ -2153,7 +2153,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                   }}
                   placeholder="0.00"
                   className={cn(
-                    "w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-[#1C8FFF]/20 focus:border-[#1C8FFF] font-semibold text-content text-right",
+                    "w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content text-right",
                     fieldErrors.costPrice && "ring-2 ring-danger border-danger"
                   )}
                 />
@@ -2178,7 +2178,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                   }}
                   placeholder="0.00"
                   className={cn(
-                    "w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-[#1C8FFF]/20 focus:border-[#1C8FFF] font-semibold text-content text-right",
+                    "w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content text-right",
                     fieldErrors.pricePerUnit && "ring-2 ring-danger border-danger"
                   )}
                 />
@@ -2211,7 +2211,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                       className={cn(
                         "flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all text-center h-[52px]",
                         formData.taxType === tax.id
-                          ? "bg-[#1C8FFF]/10 border-[#1C8FFF] text-[#1C8FFF]"
+                          ? "bg-brand/10 border-brand text-brand"
                           : "bg-surface border-transparent text-content-muted hover:bg-surface-muted",
                       )}
                     >
@@ -3456,7 +3456,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
       .reduce((sum: number, s: any) => sum + s.quantity, 0),
   }));
 
-  const COLORS = ["#1C8FFF", "#22C55E", "#F59E0B", "#EF4444", "#8B5CF6"];
+  const COLORS = ["var(--brand)", "var(--success)", "var(--warning)", "var(--danger)", "#8B5CF6"];
 
   return (
     <div className="space-y-8">
@@ -3499,7 +3499,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
               <CartesianGrid
                 strokeDasharray="3 3"
                 vertical={false}
-                stroke="#E5E7EB"
+                stroke="var(--border)"
               />
               <XAxis
                 dataKey="date"
@@ -3522,9 +3522,9 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
               <Line
                 type="monotone"
                 dataKey="change"
-                stroke="#1C8FFF"
+                stroke="var(--brand)"
                 strokeWidth={4}
-                dot={{ r: 6, fill: "#1C8FFF" }}
+                dot={{ r: 6, fill: "var(--brand)" }}
                 activeDot={{ r: 8 }}
               />
             </LineChart>
@@ -3589,7 +3589,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
                 <CartesianGrid
                   strokeDasharray="3 3"
                   vertical={false}
-                  stroke="#E5E7EB"
+                  stroke="var(--border)"
                 />
                 <XAxis
                   dataKey="name"
@@ -3612,7 +3612,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
                 />
                 <Bar
                   dataKey="stock"
-                  fill="#1C8FFF"
+                  fill="var(--brand)"
                   radius={[8, 8, 0, 0]}
                   barSize={40}
                 />
@@ -3923,7 +3923,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                     setFormData({ ...formData, description: e.target.value })
                   }
                   placeholder={t("inventory.description_placeholder")}
-                  className="w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-[#1C8FFF]/20 focus:border-[#1C8FFF] font-semibold text-content resize-none h-16 text-right"
+                  className="w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content resize-none h-16 text-right"
                 />
               </div>
             </div>
@@ -4110,7 +4110,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                   }}
                   placeholder="0.00"
                   className={cn(
-                    "w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-[#1C8FFF]/20 focus:border-[#1C8FFF] font-semibold text-content text-right",
+                    "w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content text-right",
                     fieldErrors.costPrice && "ring-2 ring-danger border-danger"
                   )}
                 />
@@ -4135,7 +4135,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                   }}
                   placeholder="0.00"
                   className={cn(
-                    "w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-[#1C8FFF]/20 focus:border-[#1C8FFF] font-semibold text-content text-right",
+                    "w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content text-right",
                     fieldErrors.pricePerUnit && "ring-2 ring-danger border-danger"
                   )}
                 />
@@ -4168,7 +4168,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                       className={cn(
                         "flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all text-center h-[52px]",
                         formData.taxType === tax.id
-                          ? "bg-[#1C8FFF]/10 border-[#1C8FFF] text-[#1C8FFF]"
+                          ? "bg-brand/10 border-brand text-brand"
                           : "bg-surface border-transparent text-content-muted hover:bg-surface-muted",
                       )}
                     >

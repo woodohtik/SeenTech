@@ -15,8 +15,12 @@ import { CurrencySymbol } from './CurrencySymbol';
 import i18n from 'i18next';
 import { useDirection } from '../lib/direction';
 
+// INK/BRAND/CTA/CTA2/MINT/TINT are this feature's own deliberate "premium
+// wallet card" palette (distinct from the app's operational theme) and are
+// intentionally NOT tokenized -- see fork report. SURF/GRAY/LINE map cleanly
+// onto real app tokens and are wired to those instead of raw hex.
 const INK = '#0E2A42', BRAND = '#34BBED', CTA = '#0BA06B', CTA2 = '#0A8A5C';
-const SURF = '#F5F7FA', GRAY = '#6B7280', TEXT = '#34404D', LINE = '#E5EAF1', MINT = '#E7F7EE', TINT = '#EAF6FD';
+const SURF = 'var(--surface-muted)', GRAY = 'var(--content-muted)', TEXT = '#34404D', LINE = 'var(--border)', MINT = '#E7F7EE', TINT = '#EAF6FD';
 export default function Referral({ tenantId }: { tenantId: string }) {
   const { t, dir } = useDirection();
   const [link, setLink] = useState('');
@@ -164,11 +168,11 @@ function refStatus(r: ReferralRow): { label: string; text: string; bg: string; f
   const expiredByTime = r.status === 'pending' && r.qualified_until && new Date(r.qualified_until).getTime() < Date.now();
   if (r.status === 'credited') return { label: `+${r.reward_amount} ﷼`, text: i18n.t('referral.status.credited_text'), bg: MINT, fg: CTA2 };
   if (r.status === 'expired' || expiredByTime) return { label: i18n.t('referral.status.expired_label'), text: i18n.t('referral.status.expired_text'), bg: '#EEF1F4', fg: GRAY };
-  if (r.status === 'rejected') return { label: i18n.t('inventory.status_rejected'), text: i18n.t('referral.status.rejected_text'), bg: '#F7D9D5', fg: '#C0392B' };
+  if (r.status === 'rejected') return { label: i18n.t('inventory.status_rejected'), text: i18n.t('referral.status.rejected_text'), bg: '#F7D9D5', fg: 'var(--danger)' };
   return { label: i18n.t('referral.status.pending_label'), text: i18n.t('referral.status.pending_text'), bg: '#FBEAD0', fg: '#B9770E' };
 }
 function wStatusLabel(s: string) { return s === 'paid' ? i18n.t('referral.withdrawal.paid') : s === 'pending' ? i18n.t('referral.withdrawal.pending') : s === 'approved' ? i18n.t('referral.withdrawal.approved') : i18n.t('saas.rejection_reason_default'); }
-function wStatusColor(s: string) { return s === 'paid' ? { bg: MINT, fg: CTA2 } : s === 'rejected' ? { bg: '#F7D9D5', fg: '#C0392B' } : { bg: TINT, fg: '#2E75B6' }; }
+function wStatusColor(s: string) { return s === 'paid' ? { bg: MINT, fg: CTA2 } : s === 'rejected' ? { bg: '#F7D9D5', fg: 'var(--danger)' } : { bg: TINT, fg: '#2E75B6' }; }
 
 const s: Record<string, React.CSSProperties> = {
   wrap: {  color: TEXT, padding: 24, maxWidth: 1000, margin: '0 auto' },
@@ -176,7 +180,7 @@ const s: Record<string, React.CSSProperties> = {
   title: { fontFamily: "'Tajawal', sans-serif", fontWeight: 800, fontSize: 28, color: INK, margin: 0 },
   sub: { color: GRAY, fontSize: 15.5, margin: '6px 0 0' },
   grid: { display: 'flex', gap: 18, flexWrap: 'wrap' },
-  card: { flex: '1 1 340px', background: '#fff', border: `1px solid ${LINE}`, borderRadius: 18, padding: 24, boxShadow: '0 8px 24px rgba(14,42,66,.06)' },
+  card: { flex: '1 1 340px', background: 'var(--surface)', border: `1px solid ${LINE}`, borderRadius: 18, padding: 24, boxShadow: '0 8px 24px rgba(14,42,66,.06)' },
   walletCard: { background: `linear-gradient(135deg, ${INK}, #15395A)`, border: 'none', color: '#fff' },
   cardLbl: { fontFamily: "'Tajawal', sans-serif", fontWeight: 700, fontSize: 16, color: 'inherit', marginBottom: 12, opacity: 0.92 },
   balance: { fontFamily: "'Tajawal', sans-serif", fontWeight: 800, fontSize: 46, lineHeight: 1, color: '#fff' },
@@ -198,12 +202,12 @@ const s: Record<string, React.CSSProperties> = {
   rowDate: { fontSize: 13, color: GRAY, direction: 'ltr' },
   rowText: { fontSize: 14.5, color: TEXT, marginInlineStart: 'auto' },
   overlay: { position: 'fixed', inset: 0, background: 'rgba(15,23,42,.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: 16 },
-  modal: { width: '100%', maxWidth: 440, background: '#fff', borderRadius: 18, padding: 26 },
+  modal: { width: '100%', maxWidth: 440, background: 'var(--surface)', borderRadius: 18, padding: 26 },
   modalTitle: { fontFamily: "'Tajawal', sans-serif", fontWeight: 800, fontSize: 21, color: INK, margin: 0 },
   modalSub: { fontSize: 14, color: GRAY, margin: '8px 0 16px', lineHeight: 1.7 },
   field: { display: 'block', marginBottom: 12 },
   flbl: { display: 'block', fontSize: 13.5, fontWeight: 700, color: INK, marginBottom: 6 },
   input: { width: '100%', border: `1px solid ${LINE}`, borderRadius: 12, padding: '11px 12px', fontSize: 15, color: INK },
-  err: { color: '#C0392B', fontSize: 13.5, marginTop: 4 },
+  err: { color: 'var(--danger)', fontSize: 13.5, marginTop: 4 },
   cancel: { width: '100%', background: 'transparent', border: 'none', color: GRAY, fontWeight: 600, fontSize: 14, cursor: 'pointer', marginTop: 8 },
 };
