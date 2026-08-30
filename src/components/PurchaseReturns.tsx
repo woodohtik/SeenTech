@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, ExternalLink, Trash2, X } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
@@ -23,6 +23,19 @@ export default function PurchaseReturns({
 }) {
   const { t } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isModalOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isModalOpen]);
+
   const [selectedSupplier, setSelectedSupplier] = useState('');
   const [items, setItems] = useState<PurchaseOrderItem[]>([]);
   const [selectedItem, setSelectedItem] = useState('');
@@ -171,11 +184,20 @@ export default function PurchaseReturns({
 
       {/* Create Return Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-surface rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-border flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setIsModalOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('procurement.return_to_supplier')}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-surface rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-border flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200"
+          >
             <div className="p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
               <h2 className="text-xl font-bold text-content">{t('procurement.return_to_supplier')}</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-content-muted hover:text-content p-2 hover:bg-surface rounded-full transition-all">
+              <button onClick={() => setIsModalOpen(false)} aria-label={t('common.close')} className="text-content-muted hover:text-content p-2 hover:bg-surface rounded-full transition-all">
                 <X size={24} />
               </button>
             </div>

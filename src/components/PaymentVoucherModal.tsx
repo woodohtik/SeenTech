@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { X, CheckCircle, Printer, DollarSign, FileText, Calendar, Building, HelpCircle, ChevronDown } from 'lucide-react';
 import { addSupplierTransaction } from '../services/supplierAccountsService';
@@ -112,13 +112,27 @@ export default function PaymentVoucherModal({
     window.print();
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   return (
     <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md overflow-y-auto">
       <div className="absolute inset-0" onClick={onClose} />
-      
+
       {!issuedVoucher ? (
         // FORM SUBMIT MODAL VIEW
         <motion.div
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('procurement.pv_modal_title')}
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col font-sans"
@@ -136,6 +150,7 @@ export default function PaymentVoucherModal({
             </div>
             <button
               onClick={onClose}
+              aria-label={t('common.close')}
               className="p-2 bg-white border border-slate-100 hover:bg-slate-100 text-slate-400 hover:text-slate-700 rounded-full transition-colors cursor-pointer"
             >
               <X size={16} />
@@ -294,6 +309,9 @@ export default function PaymentVoucherModal({
       ) : (
         // SUCCESS RECEIPT / PRINT VIEW
         <motion.div
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('procurement.pv_modal_title')}
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className="relative bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-6 overflow-hidden border border-slate-200 flex flex-col font-sans text-slate-800 print:shadow-none print:border-none print:mx-auto print:my-0 print:p-0"
@@ -308,9 +326,10 @@ export default function PaymentVoucherModal({
               <Printer size={14} />
               <span>{t('procurement.pv_print')}</span>
             </button>
-            
+
             <button
               onClick={onClose}
+              aria-label={t('common.close')}
               className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full transition-colors cursor-pointer"
             >
               <X size={14} />

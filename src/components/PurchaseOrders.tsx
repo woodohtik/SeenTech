@@ -1023,8 +1023,9 @@ export default function PurchaseOrders({
               )}
 
               <div className="space-y-1">
-                <label className="text-xs font-black text-content-muted uppercase">{t('procurement.doc_notes', 'ملاحظات المستند')}</label>
+                <label htmlFor="po-doc-notes" className="text-xs font-black text-content-muted uppercase">{t('procurement.doc_notes', 'ملاحظات المستند')}</label>
                 <textarea
+                  id="po-doc-notes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder={t('procurement.doc_notes_placeholder', 'ملاحظات تفصيلية حول السند أو سبب الارتجاع إن وجد...')}

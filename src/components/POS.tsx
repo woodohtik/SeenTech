@@ -26,7 +26,12 @@ import {
   TrendingUp,
   TrendingDown,
   LayoutGrid,
-  List
+  List,
+  Keyboard,
+  Printer,
+  Download,
+  Share2,
+  AlertTriangle
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
@@ -34,7 +39,7 @@ import { Combobox, Transition, Dialog } from '@headlessui/react';
 import { Customer, InventoryItem, OrderItem, Order, PaymentMethod, OrderStatus } from '../types';
 import { cn, generateOrderNumber } from '../lib/utils';
 import { SmartSelect } from './ui/SmartSelect';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { PriceDisplay } from './PriceDisplay';
 import { decodeInventoryDescription, calculateItemTax } from '../utils/b2bHelper';
 import { QRCodeSVG } from 'qrcode.react';
@@ -93,6 +98,9 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const { confirm } = useConfirm();
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
+  // prefers-reduced-motion: skip the slide/spring enter animation and jump
+  // straight to the resting state for every drawer/sheet below.
+  const shouldReduceMotion = useReducedMotion();
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [cart, setCart] = useState<OrderItem[]>([]);
@@ -599,6 +607,16 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       if ((e.key === 'F2' || e.key === 'Escape') && completedOrderRef.current) {
         e.preventDefault();
         setCompletedOrder(null);
+        setIsPaymentModalOpen(false);
+        return;
+      }
+
+      // 10. Esc also closes the payment drawer itself before checkout, as
+      // long as nothing is mid-submit -- previously Esc only worked on the
+      // post-checkout success screen, leaving no keyboard way out while
+      // filling in the payment form.
+      if (e.key === 'Escape' && isPaymentModalOpenRef.current && !completedOrderRef.current && !loadingRef.current) {
+        e.preventDefault();
         setIsPaymentModalOpen(false);
         return;
       }
@@ -1207,8 +1225,9 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
             <span className="bg-brand/10 text-brand text-xs px-2.5 py-0.5 rounded-full font-black">{cart.length}</span>
           </div>
           {isMobilePanel && (
-            <button 
+            <button
               onClick={() => setShowCartOnMobile(false)}
+              aria-label={t('common.close')}
               className="p-2 text-content-muted hover:bg-surface-muted rounded-full transition-all cursor-pointer"
             >
               <X size={20} />
@@ -1390,11 +1409,11 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                   
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2 bg-[#F5F7FA] dark:bg-[#121212] border border-border rounded-lg p-1">
-                      <button onClick={() => updateQuantity(item.id!, -1)} className="w-6 h-6 flex items-center justify-center hover:bg-surface-muted rounded transition-colors">-</button>
+                      <button onClick={() => updateQuantity(item.id!, -1)} aria-label={t('pos.decrease_quantity')} className="w-8 h-8 flex items-center justify-center hover:bg-surface-muted rounded transition-colors">-</button>
                       <span className="w-6 text-center font-bold text-content">{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.id!, 1)} className="w-6 h-6 flex items-center justify-center hover:bg-surface-muted rounded transition-colors">+</button>
+                      <button onClick={() => updateQuantity(item.id!, 1)} aria-label={t('pos.increase_quantity')} className="w-8 h-8 flex items-center justify-center hover:bg-surface-muted rounded transition-colors">+</button>
                     </div>
-                    <button onClick={() => removeFromCart(item.id!)} className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer">
+                    <button onClick={() => removeFromCart(item.id!)} aria-label={t('pos.remove_item')} className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer">
                       <Trash2 size={18} />
                     </button>
                   </div>
@@ -1566,10 +1585,11 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               className="flex-1 min-w-0 bg-transparent border-none py-2 px-3 text-sm text-content outline-none ring-0 placeholder:text-content-muted/60 font-bold"
             />
             <div className="flex items-center justify-center px-3 border-s border-border/60 h-full shrink-0">
-              <button 
+              <button
                 type="button"
                 onClick={() => setIsScannerOpen(true)}
-                className="text-content-muted hover:text-brand transition-colors flex items-center justify-center focus:outline-none cursor-pointer"
+                aria-label={t('pos.scan_barcode')}
+                className="text-content-muted hover:text-brand transition-colors flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded cursor-pointer"
               >
                 <Barcode size={18} />
               </button>
@@ -1578,10 +1598,11 @@ const invoiceData: InvoiceData | null = completedOrder ? {
 
           <button
             onClick={() => setIsShortcutsModalOpen(true)}
+            aria-label={t('pos.shortcuts_button')}
             className="hidden sm:flex items-center justify-center gap-2 px-4 h-11 bg-surface border border-border text-content hover:bg-surface-muted rounded-xl transition-all font-black shadow-sm active:scale-95 cursor-pointer text-xs sm:text-sm shrink-0"
             title={t('pos.shortcuts_tooltip')}
           >
-            <span>⌨️</span>
+            <Keyboard size={16} />
             <span className="whitespace-nowrap">{t('pos.shortcuts_button')}</span>
           </button>
 
@@ -1769,11 +1790,11 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               onClick={() => setShowCartOnMobile(false)}
               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[50] lg:hidden"
             />
-            <motion.div 
-              initial={{ y: '100%' }}
+            <motion.div
+              initial={shouldReduceMotion ? false : { y: '100%' }}
               animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+              exit={shouldReduceMotion ? undefined : { y: '100%' }}
+              transition={shouldReduceMotion ? { duration: 0 } : { type: 'spring', damping: 28, stiffness: 220 }}
               className="fixed inset-x-0 bottom-0 h-[85vh] rounded-t-[2.5rem] bg-[#FFFFFF] dark:bg-[#1D1D1D] flex flex-col shadow-2xl z-[60] lg:hidden overflow-hidden pb-10"
               dir={isRtl ? 'rtl' : 'ltr'}
             >
@@ -1817,11 +1838,11 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
               onClick={() => !completedOrder && setIsPaymentModalOpen(false)}
             />
-            <motion.div 
-              initial={{ y: window.innerWidth < 1024 ? '100%' : 0, x: window.innerWidth >= 1024 ? '100%' : 0 }}
+            <motion.div
+              initial={shouldReduceMotion ? false : { y: window.innerWidth < 1024 ? '100%' : 0, x: window.innerWidth >= 1024 ? '100%' : 0 }}
               animate={{ y: 0, x: 0 }}
-              exit={{ y: window.innerWidth < 1024 ? '100%' : 0, x: window.innerWidth >= 1024 ? '100%' : 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              exit={shouldReduceMotion ? undefined : { y: window.innerWidth < 1024 ? '100%' : 0, x: window.innerWidth >= 1024 ? '100%' : 0 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 200 }}
               className="bg-surface w-full lg:w-[450px] md:h-auto lg:h-full h-[90vh] shadow-2xl relative z-10 flex flex-col lg:rounded-none rounded-t-[2.5rem] border-t lg:border-t-0 lg:border-r border-border overflow-hidden lg:mr-auto md:max-w-md md:rounded-[2.5rem] md:mb-10 lg:max-w-none lg:mb-0 lg:ml-0"
               dir={isRtl ? 'rtl' : 'ltr'}
             >
@@ -1864,7 +1885,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       }}
                       className="flex flex-col items-center justify-center p-4 rounded-2xl border border-border hover:border-brand hover:bg-brand/5 transition-all text-content group cursor-pointer"
                     >
-                      <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">🖨️</span>
+                      <Printer size={24} className="mb-2 group-hover:scale-110 transition-transform" />
                       <span className="text-sm font-bold">{t('pos.receipt_print')}</span>
                     </button>
                     <button 
@@ -1878,14 +1899,14 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       }}
                       className="flex flex-col items-center justify-center p-4 rounded-2xl border border-border hover:border-brand hover:bg-brand/5 transition-all text-content group"
                     >
-                      <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">📥</span>
+                      <Download size={24} className="mb-2 group-hover:scale-110 transition-transform" />
                       <span className="text-sm font-bold">{t('pos.download_pdf')}</span>
                     </button>
                     <button
                        className="col-span-2 flex flex-col items-center justify-center p-4 rounded-2xl border border-success/20 hover:border-success hover:bg-success/5 transition-all text-success group"
                        onClick={handleShareWhatsApp}
                     >
-                      <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">📱</span>
+                      <Share2 size={24} className="mb-2 group-hover:scale-110 transition-transform" />
                       <span className="text-sm font-bold">{t('pos.share_whatsapp')}</span>
                     </button>
                   </div>
@@ -1905,7 +1926,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                 <div className="flex flex-col min-h-full">
                   <div className="flex justify-between items-center mb-6 border-b border-border pb-4">
                     <h2 className="text-2xl font-black text-content">{t('pos.complete_order')}</h2>
-                    <button onClick={() => setIsPaymentModalOpen(false)} className="p-2 hover:bg-surface-muted rounded-full">
+                    <button onClick={() => setIsPaymentModalOpen(false)} aria-label={t('common.close')} className="p-2 hover:bg-surface-muted rounded-full">
                       <X size={24} />
                     </button>
                   </div>
@@ -1915,7 +1936,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     {selectedCustomer && customerUnpaidBalance > 0 && (
                       <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl flex items-center justify-between text-red-600 gap-3">
                         <div className="flex items-center gap-2.5">
-                          <span className="text-2xl">⚠️</span>
+                          <AlertTriangle size={22} />
                           <div>
                             <div className="text-sm font-black">{t('pos.customer_has_due')}</div>
                             <div className="text-xs opacity-80">{selectedCustomer.name}</div>
@@ -2132,10 +2153,10 @@ const invoiceData: InvoiceData | null = completedOrder ? {
         {showCashDrawerDetails && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md overflow-y-auto font-sans">
             <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              initial={shouldReduceMotion ? false : { scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              exit={shouldReduceMotion ? undefined : { scale: 0.95, opacity: 0, y: 20 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 200 }}
               className="relative w-full max-w-md rounded-[2.5rem] bg-surface shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-right"
               dir={isRtl ? 'rtl' : 'ltr'}
             >
@@ -2150,8 +2171,9 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     <p className="text-xs font-bold text-content-muted mt-0.5">{t('sales.shift_cash_details')}</p>
                   </div>
                 </div>
-                <button 
-                  onClick={() => setShowCashDrawerDetails(false)} 
+                <button
+                  onClick={() => setShowCashDrawerDetails(false)}
+                  aria-label={t('common.close')}
                   className="p-2 hover:bg-surface-muted rounded-full transition-colors text-content-muted"
                 >
                   <X size={20} />
@@ -2287,10 +2309,10 @@ const invoiceData: InvoiceData | null = completedOrder ? {
         {isCustomOrderModalOpen && (
           <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto font-sans">
             <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              initial={shouldReduceMotion ? false : { scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              exit={shouldReduceMotion ? undefined : { scale: 0.95, opacity: 0, y: 20 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 200 }}
               className="relative w-full max-w-[clamp(320px,94vw,1100px)] max-h-[90vh] rounded-[var(--radius-card)] bg-[var(--surface)] shadow-2xl flex flex-col my-auto border border-border z-10 overflow-hidden" 
               dir={isRtl ? 'rtl' : 'ltr'}
             >
@@ -2302,7 +2324,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   </div>
                   {t('pos.custom_tailor')}
                 </h2>
-                <button onClick={() => setIsCustomOrderModalOpen(false)} className="p-2 hover:bg-surface-muted rounded-full transition-colors shadow-sm text-content-muted">
+                <button onClick={() => setIsCustomOrderModalOpen(false)} aria-label={t('common.close')} className="p-2 hover:bg-surface-muted rounded-full transition-colors shadow-sm text-content-muted">
                   <X size={20} />
                 </button>
               </div>
@@ -2542,7 +2564,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     className="text-lg font-bold leading-6 text-gray-900 mb-4 flex items-center justify-between"
                   >
                     {t('pos.add_new_customer')}
-                    <button title="Close" onClick={() => setIsAddCustomerModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                    <button aria-label={t('common.close')} onClick={() => setIsAddCustomerModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
                       <X size={20} />
                     </button>
                   </Dialog.Title>
@@ -2639,7 +2661,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
           <Dialog.Panel className="w-full max-w-md bg-surface p-6 rounded-2xl shadow-xl border border-border">
             <div className="flex justify-between items-center mb-6">
               <Dialog.Title className="text-xl font-bold text-content">{t('pos.b2b_data_title')}</Dialog.Title>
-              <button onClick={() => setIsB2bModalOpen(false)} className="p-2 hover:bg-surface-muted rounded-full">
+              <button onClick={() => setIsB2bModalOpen(false)} aria-label={t('common.close')} className="p-2 hover:bg-surface-muted rounded-full">
                 <X size={20} />
               </button>
             </div>
@@ -2700,10 +2722,10 @@ const invoiceData: InvoiceData | null = completedOrder ? {
             <Dialog.Panel className="w-full max-w-lg bg-surface p-6 rounded-3xl shadow-2xl border border-border text-right" dir={isRtl ? 'rtl' : 'ltr'}>
               <div className="flex justify-between items-center mb-6 border-b border-border pb-4">
                 <Dialog.Title className="text-xl font-black text-content flex items-center gap-2">
-                  <span>⌨️</span>
+                  <Keyboard size={20} />
                   <span>{t('pos.keyboard_shortcuts_title')}</span>
                 </Dialog.Title>
-                <button onClick={() => setIsShortcutsModalOpen(false)} className="p-2 hover:bg-surface-muted rounded-full transition-colors">
+                <button onClick={() => setIsShortcutsModalOpen(false)} aria-label={t('common.close')} className="p-2 hover:bg-surface-muted rounded-full transition-colors">
                   <X size={20} />
                 </button>
               </div>

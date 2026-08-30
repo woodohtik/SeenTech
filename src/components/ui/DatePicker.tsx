@@ -37,6 +37,15 @@ export function DatePicker({ value, onChange, id, className, placeholder }: Date
     };
   }, []);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsOpen(false);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen]);
+
   // Helper arrays for months and weekdays in both Arabic and English
   const arabicMonths = [
     'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
@@ -132,17 +141,23 @@ export function DatePicker({ value, onChange, id, className, placeholder }: Date
 
   return (
     <div className={cn("relative inline-block w-full", className)} ref={containerRef}>
-      {/* Hidden real input so automated query selectors matching `#report-date-input` or class still work */}
-      <input 
-        type="hidden" 
-        id={id} 
-        value={value} 
-        onChange={(e) => onChange(e.target.value)} 
+      {/* Hidden real input so automated query selectors matching `#report-date-input` or class still work.
+          Not part of the accessibility tree -- the button below is the actual interactive control. */}
+      <input
+        type="hidden"
+        id={id}
+        aria-hidden="true"
+        tabIndex={-1}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
       />
 
       {/* Button Trigger */}
       <button
         type="button"
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        aria-label={formatDisplayDate(value)}
         onClick={() => {
           setIsOpen(!isOpen);
           // Set current view month to the parsed value month when opening
@@ -179,6 +194,7 @@ export function DatePicker({ value, onChange, id, className, placeholder }: Date
                 }
               }}
               title={isRtl ? 'مسح التاريخ' : 'Clear date'}
+              aria-label={isRtl ? 'مسح التاريخ' : 'Clear date'}
               className="p-1 text-content-muted hover:text-danger hover:bg-danger/10 rounded-full transition-all cursor-pointer"
             >
               <X size={14} />
@@ -199,28 +215,32 @@ export function DatePicker({ value, onChange, id, className, placeholder }: Date
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
             className={cn(
-              "absolute z-50 mt-1 w-72 bg-surface border border-border shadow-xl rounded-2xl p-4 overflow-hidden focus:outline-none",
+              "absolute z-50 mt-1 w-[22rem] bg-surface border border-border shadow-xl rounded-2xl p-4 overflow-hidden focus:outline-none",
               isRtl ? "right-0" : "left-0"
             )}
+            role="dialog"
+            aria-label={`${months[month]} ${year}`}
           >
             {/* Header Controls */}
             <div className="flex items-center justify-between mb-4">
               <button
                 type="button"
                 onClick={isRtl ? handleNextMonth : handlePrevMonth}
-                className="p-1.5 hover:bg-surface-muted rounded-xl text-content-muted hover:text-content transition-all outline-none"
+                aria-label={isRtl ? 'الشهر التالي' : 'Next month'}
+                className="p-1.5 hover:bg-surface-muted rounded-xl text-content-muted hover:text-content transition-all outline-none focus-visible:ring-2 focus-visible:ring-brand"
               >
                 <ChevronRight size={16} />
               </button>
-              
+
               <span className="text-xs font-black text-content uppercase tracking-wider">
                 {months[month]} {year}
               </span>
-              
+
               <button
                 type="button"
                 onClick={isRtl ? handlePrevMonth : handleNextMonth}
-                className="p-1.5 hover:bg-surface-muted rounded-xl text-content-muted hover:text-content transition-all outline-none"
+                aria-label={isRtl ? 'الشهر السابق' : 'Previous month'}
+                className="p-1.5 hover:bg-surface-muted rounded-xl text-content-muted hover:text-content transition-all outline-none focus-visible:ring-2 focus-visible:ring-brand"
               >
                 <ChevronLeft size={16} />
               </button>
@@ -249,8 +269,10 @@ export function DatePicker({ value, onChange, id, className, placeholder }: Date
                     key={idx}
                     type="button"
                     onClick={() => handleSelectDay(cell.dateString)}
+                    aria-current={isTodayStr ? 'date' : undefined}
+                    aria-selected={isSelected}
                     className={cn(
-                      "h-8 w-8 mx-auto flex items-center justify-center text-xs font-bold rounded-xl transition-all outline-none cursor-pointer",
+                      "h-10 w-10 mx-auto flex items-center justify-center text-xs font-bold rounded-xl transition-all outline-none cursor-pointer",
                       cell.isCurrentMonth 
                         ? "text-content hover:bg-brand/10 hover:text-brand" 
                         : "text-content-muted/30 hover:bg-surface-muted",

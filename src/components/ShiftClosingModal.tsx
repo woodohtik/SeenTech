@@ -30,7 +30,18 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [closedShiftData, setClosedShiftData] = useState<Shift | null>(null);
-  
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const [totals, setTotals] = useState<ShiftTotals>({
     cash: 0,
     card: 0,
@@ -237,7 +248,10 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
 
   return (
     <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-      <div 
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('shift_closing.title')}
         className="relative w-full max-w-[clamp(320px,94vw,560px)] max-h-[90vh] overflow-y-auto rounded-[var(--radius-card)] bg-[var(--surface)] shadow-2xl flex flex-col my-auto text-right"
         dir={isRtl ? 'rtl' : 'ltr'}
       >
@@ -253,7 +267,7 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
                 <p className="text-xs text-content-muted font-bold mt-0.5">{t('shift_closing.desc')}</p>
               </div>
             </div>
-            <button type="button" onClick={onClose} className="p-2 hover:bg-surface-muted rounded-full transition-colors shadow-sm text-content-muted cursor-pointer">
+            <button type="button" onClick={onClose} aria-label={t('common.close')} className="p-2 hover:bg-surface-muted rounded-full transition-colors shadow-sm text-content-muted cursor-pointer">
               <X size={20} />
             </button>
           </div>

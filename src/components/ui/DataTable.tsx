@@ -62,15 +62,15 @@ export function DataTable<T extends Record<string, any>>({
   };
 
   return (
-    <div className="w-full bg-white shadow-sm rounded-lg border border-gray-200">
-      <div className="p-4 border-b border-gray-200">
+    <div className="w-full bg-surface shadow-sm rounded-lg border border-border">
+      <div className="p-4 border-b border-border">
         <div className="relative">
-          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-gray-400" />
+          <div className="absolute inset-y-0 end-0 pe-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-content-muted" />
           </div>
           <input
             type="text"
-            className="block w-full sm:text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 pr-10"
+            className="block w-full sm:text-sm bg-surface border-border text-content rounded-md outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand pe-10"
             placeholder={searchPlaceholder ?? t('common.search')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -80,22 +80,22 @@ export function DataTable<T extends Record<string, any>>({
 
       <div className="overflow-x-auto w-full">
         {/* Mobile View: Vertical Stacked Card List */}
-        <div className="md:hidden flex flex-col divide-y divide-gray-100">
+        <div className="md:hidden flex flex-col divide-y divide-border">
           {isLoading ? (
-            <div className="p-6 text-center text-sm text-gray-500">{t('common.loading')}</div>
+            <div className="p-6 text-center text-sm text-content-muted">{t('common.loading')}</div>
           ) : filteredAndSortedData.length === 0 ? (
-            <div className="p-6 text-center text-sm text-gray-500">{t('common.no_matching_records')}</div>
+            <div className="p-6 text-center text-sm text-content-muted">{t('common.no_matching_records')}</div>
           ) : (
             filteredAndSortedData.map((row, rowIndex) => (
-              <div 
-                key={rowIndex} 
-                onClick={() => onRowClick?.(row)} 
-                className={`p-4 flex flex-col gap-2 transition-colors ${onRowClick ? 'cursor-pointer active:bg-gray-50' : ''}`}
+              <div
+                key={rowIndex}
+                onClick={() => onRowClick?.(row)}
+                className={`p-4 flex flex-col gap-2 transition-colors ${onRowClick ? 'cursor-pointer active:bg-surface-muted' : ''}`}
               >
                 {columns.map((col, colIndex) => (
                   <div key={colIndex} className="flex justify-between items-center text-sm">
-                    <span className="font-bold text-gray-500">{col.header}:</span>
-                    <span className="text-gray-900 text-left max-w-[60%] truncate">
+                    <span className="font-bold text-content-muted">{col.header}:</span>
+                    <span className="text-content text-end max-w-[60%] truncate">
                       {typeof col.accessor === 'function' ? col.accessor(row) : (row[col.accessor as keyof T] as any)}
                     </span>
                   </div>
@@ -106,20 +106,20 @@ export function DataTable<T extends Record<string, any>>({
         </div>
 
         {/* Tablet and Desktop View: Standard Table */}
-        <table className="hidden md:table w-full min-w-max divide-y divide-gray-200">
-          <thead className="bg-gray-50 text-right">
+        <table className="hidden md:table w-full min-w-max divide-y divide-border">
+          <thead className="bg-surface-muted text-start">
             <tr>
               {columns.map((col, i) => (
-                <th 
-                  key={i} 
-                  className={`px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider ${col.sortable ? 'cursor-pointer hover:bg-gray-100' : ''}`}
+                <th
+                  key={i}
+                  className={`px-6 py-3 text-xs font-medium text-content-muted uppercase tracking-wider text-start ${col.sortable ? 'cursor-pointer hover:bg-surface' : ''}`}
                   onClick={() => {
                     if (col.sortable && typeof col.accessor === 'string') {
                       handleSort(col.accessor as string);
                     }
                   }}
                 >
-                  <div className="flex items-center space-x-1 space-x-reverse">
+                  <div className="flex items-center gap-1">
                     <span>{col.header}</span>
                     {col.sortable && typeof col.accessor === 'string' && sortConfig?.key === col.accessor && (
                       sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
@@ -129,28 +129,28 @@ export function DataTable<T extends Record<string, any>>({
               ))}
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-surface divide-y divide-border">
             {isLoading ? (
               <tr>
-                <td colSpan={columns.length} className="px-6 py-4 text-center text-sm text-gray-500">
+                <td colSpan={columns.length} className="px-6 py-4 text-center text-sm text-content-muted">
                   {t('common.loading')}
                 </td>
               </tr>
             ) : filteredAndSortedData.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="px-6 py-4 text-center text-sm text-gray-500">
+                <td colSpan={columns.length} className="px-6 py-4 text-center text-sm text-content-muted">
                   {t('common.no_matching_records')}
                 </td>
               </tr>
             ) : (
               filteredAndSortedData.map((row, rowIndex) => (
-                <tr 
-                  key={rowIndex} 
+                <tr
+                  key={rowIndex}
                   onClick={() => onRowClick?.(row)}
-                  className={onRowClick ? "cursor-pointer hover:bg-gray-50" : ""}
+                  className={onRowClick ? "cursor-pointer hover:bg-surface-muted" : ""}
                 >
                   {columns.map((col, colIndex) => (
-                    <td key={colIndex} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td key={colIndex} className="px-6 py-4 whitespace-nowrap text-sm text-content text-start">
                       {typeof col.accessor === 'function' ? col.accessor(row) : (row[col.accessor] as any)}
                     </td>
                   ))}

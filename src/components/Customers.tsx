@@ -1625,21 +1625,27 @@ export default function Customers({ tenantId }: CustomersProps) {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-content-muted">{t('login.full_name')}</label>
-                    <input 
-                      {...register('name')} 
+                    <label htmlFor="customer-name" className="text-sm font-bold text-content-muted">{t('login.full_name')} <span className="text-danger">*</span></label>
+                    <input
+                      id="customer-name"
+                      aria-invalid={!!errors.name}
+                      aria-describedby={errors.name ? 'customer-name-error' : undefined}
+                      {...register('name')}
                       className={cn(
                         "w-full bg-surface border border-border rounded-xl p-3 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content",
                         errors.name && "ring-2 ring-danger border-danger",
                         isRtl ? "text-right" : "text-left"
                       )} 
                     />
-                    {errors.name && <p className="text-xs text-danger font-bold">{errors.name.message}</p>}
+                    {errors.name && <p id="customer-name-error" className="text-xs text-danger font-bold">{errors.name.message}</p>}
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-content-muted">{t('onboarding.fields.phone')}</label>
-                    <input 
-                      {...register('phone')} 
+                    <label htmlFor="customer-phone" className="text-sm font-bold text-content-muted">{t('onboarding.fields.phone')} <span className="text-danger">*</span></label>
+                    <input
+                      id="customer-phone"
+                      aria-invalid={!!errors.phone}
+                      aria-describedby={errors.phone ? 'customer-phone-error' : undefined}
+                      {...register('phone')}
                       onChange={(e) => {
                         const formatted = formatSaudiPhone(e.target.value);
                         setValue('phone', formatted);
@@ -1654,7 +1660,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                         isRtl ? "text-right" : "text-left"
                       )} 
                     />
-                    {errors.phone && <p className="text-xs text-danger font-bold">{errors.phone.message}</p>}
+                    {errors.phone && <p id="customer-phone-error" className="text-xs text-danger font-bold">{errors.phone.message}</p>}
                   </div>
                 </div>
 
@@ -1665,25 +1671,32 @@ export default function Customers({ tenantId }: CustomersProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 pb-8 border-b border-border">
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-content-muted">{t('customers.company_name_full')} <span className="opacity-70 text-xs">({t('common.optional')})</span></label>
-                    <input 
+                    <label htmlFor="customer-company-name" className="text-sm font-bold text-content-muted">{t('customers.company_name_full')} <span className="opacity-70 text-xs">({t('common.optional')})</span></label>
+                    <input
+                      id="customer-company-name"
                       type="text"
-                      {...register('companyName' as any)} 
+                      aria-invalid={!!errors.companyName}
+                      aria-describedby={errors.companyName ? 'customer-company-name-error' : undefined}
+                      {...register('companyName' as any)}
                       className={cn(
                         "w-full bg-surface border border-border rounded-xl p-3 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content",
                         errors.companyName && "ring-2 ring-danger border-danger",
                         isRtl ? "text-right" : "text-left"
-                      )} 
+                      )}
                       placeholder={t('customers.b2b_invoice_note')}
                     />
-                    {errors.companyName && <p className="text-xs text-danger font-bold">{errors.companyName.message as string}</p>}
+                    {errors.companyName && <p id="customer-company-name-error" className="text-xs text-danger font-bold">{errors.companyName.message as string}</p>}
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-content-muted">{t('customers.trn_company')} <span className="opacity-70 text-xs">({t('common.optional')})</span></label>
-                    <input 
+                    <label htmlFor="customer-trn" className="text-sm font-bold text-content-muted">{t('customers.trn_company')} <span className="opacity-70 text-xs">({t('common.optional')})</span></label>
+                    <input
+                      id="customer-trn"
                       type="text"
+                      inputMode="numeric"
                       maxLength={15}
-                      {...register('trn' as any)} 
+                      aria-invalid={!!errors.trn}
+                      aria-describedby={errors.trn ? 'customer-trn-error' : undefined}
+                      {...register('trn' as any)}
                       onChange={(e) => {
                         const val = e.target.value.replace(/\D/g, '').slice(0, 15);
                         setValue('trn' as any, val, { shouldValidate: true });
@@ -1691,11 +1704,11 @@ export default function Customers({ tenantId }: CustomersProps) {
                       className={cn(
                         "w-full bg-surface border border-border rounded-xl p-3 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content",
                         errors.trn && "ring-2 ring-danger border-danger"
-                      )} 
+                      )}
                       dir="ltr"
                       placeholder="300000000000003"
                     />
-                    {errors.trn && <p className="text-xs text-danger font-bold">{errors.trn.message as string}</p>}
+                    {errors.trn && <p id="customer-trn-error" className="text-xs text-danger font-bold">{errors.trn.message as string}</p>}
                   </div>
                 </div>
 
@@ -1727,8 +1740,8 @@ export default function Customers({ tenantId }: CustomersProps) {
                 </div>
 
                 <div className="space-y-2 mb-8 mt-8 pt-8 border-t border-border">
-                  <label className="text-sm font-bold text-content-muted">{t('customers.additional_notes')}</label>
-                  <textarea {...register('notes')} className={cn("w-full bg-surface border border-border rounded-xl p-3 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold h-24 text-content", isRtl ? "text-right" : "text-left")} />
+                  <label htmlFor="customer-notes" className="text-sm font-bold text-content-muted">{t('customers.additional_notes')}</label>
+                  <textarea id="customer-notes" {...register('notes')} className={cn("w-full bg-surface border border-border rounded-xl p-3 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold h-24 text-content", isRtl ? "text-right" : "text-left")} />
                 </div>
 
                 {/* isTest Flag */}
@@ -2391,11 +2404,12 @@ const CustomerStatementModal = ({
                                           <div className="space-y-3.5 animate-in fade-in slide-in-from-top-2 duration-200">
                                             {/* Payment Amount Input */}
                                             <div className="space-y-1">
-                                              <label className="text-[10px] font-black text-content-muted uppercase">
+                                              <label htmlFor={`pay-amount-${order.id}`} className="text-[10px] font-black text-content-muted uppercase">
                                                 {t('orders.pay_amount_now')} (﷼)
                                               </label>
-                                              <input 
-                                                type="number" 
+                                              <input
+                                                id={`pay-amount-${order.id}`}
+                                                type="number"
                                                 step="0.01"
                                                 max={order.remainingAmount}
                                                 value={payAmount === 0 ? '' : payAmount}

@@ -143,8 +143,9 @@ export default function CustomerSection({
                   />
                 </Combobox.Button>
                 {selectedCustomer && (
-                  <button 
+                  <button
                     onClick={() => setSelectedCustomer(null)}
+                    aria-label={t('common.clear')}
                     className="absolute left-8 top-1/2 -translate-y-1/2 text-content-muted hover:text-danger transition-colors"
                   >
                     <X size={16} />
@@ -200,8 +201,9 @@ export default function CustomerSection({
           </Combobox>
         </div>
 
-        <button 
+        <button
           onClick={() => setIsModalOpen(true)}
+          aria-label={t('pos.add_new_customer')}
           className="mt-1 h-12 w-12 flex items-center justify-center bg-brand text-white rounded-xl hover:bg-brand/90 transition-all shadow-sm shrink-0"
           title={t('pos.add_new_customer')}
         >
@@ -238,7 +240,7 @@ export default function CustomerSection({
               >
                 <div className="flex justify-between items-center mb-6">
                   <Dialog.Title className="text-xl font-bold text-content">{t('pos.add_new_customer')}</Dialog.Title>
-                  <button onClick={() => setIsModalOpen(false)} className="text-content-muted hover:text-danger p-1">
+                  <button onClick={() => setIsModalOpen(false)} aria-label={t('common.close')} className="text-content-muted hover:text-danger p-1">
                     <X size={24} />
                   </button>
                 </div>
@@ -250,6 +252,7 @@ export default function CustomerSection({
                       <input
                         type="text"
                         aria-invalid={fieldErrors.name}
+                        aria-describedby={fieldErrors.name ? 'new-customer-name-error' : undefined}
                         value={newName}
                         onChange={e => {
                           setNewName(e.target.value);
@@ -261,12 +264,16 @@ export default function CustomerSection({
                         )}
                         placeholder={t('pos.enter_name_placeholder')}
                       />
+                      {fieldErrors.name && (
+                        <p id="new-customer-name-error" className="text-xs font-bold text-danger">{t('validation.required')}</p>
+                      )}
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-sm font-bold text-content">{t('login.phone')} <span className="text-danger">*</span></label>
                       <input
                         type="text"
                         aria-invalid={fieldErrors.phone}
+                        aria-describedby={fieldErrors.phone ? 'new-customer-phone-error' : undefined}
                         value={newPhone}
                         onChange={e => {
                           setNewPhone(formatSaudiPhone(e.target.value));
@@ -279,6 +286,9 @@ export default function CustomerSection({
                         )}
                         placeholder="05xxxxxxxx"
                       />
+                      {fieldErrors.phone && (
+                        <p id="new-customer-phone-error" className="text-xs font-bold text-danger">{t('validation.required')}</p>
+                      )}
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-sm font-bold text-content">{t('pos.vat_number')} <span className="text-content-muted font-normal">{t('pos.companies_only')}</span></label>

@@ -1049,7 +1049,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     <h3 className="text-xs sm:text-xl lg:text-2xl font-black text-content mt-0.5 sm:mt-1 truncate">
                       {typeof stat.value === 'number' && stat.isCurrency
                         ? <PriceDisplay amount={stat.value} />
-                        : stat.value.toLocaleString('en-US')}
+                        : stat.value.toLocaleString(locale)}
                     </h3>
                   </div>
                 </div>
@@ -1130,6 +1130,8 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                         outerRadius={85}
                         paddingAngle={6}
                         dataKey="value"
+                        label={({ percent }) => `${Math.round((percent || 0) * 100)}%`}
+                        labelLine={false}
                       >
                         {financialStats.paymentChartData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -1236,10 +1238,11 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                         cursor={{ fill: 'var(--color-surface-muted)' }}
                         contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
                       />
-                      <Bar 
-                        dataKey="value" 
-                        fill="#1C8FFF" 
-                        radius={[6, 6, 0, 0]} 
+                      <Bar
+                        dataKey="value"
+                        fill="#1C8FFF"
+                        radius={[6, 6, 0, 0]}
+                        cursor="pointer"
                         onClick={(data) => setDrillDown({
                           title: t('reports.drilldown_orders_title', { name: data.name }),
                           data: filteredOrders.filter(o => {
@@ -1262,7 +1265,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
               {/* KPIs */}
               <div className="grid grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-6">
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm flex flex-col justify-between">
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border cursor-default flex flex-col justify-between">
                   <div>
                     <div className="flex items-center gap-2 sm:gap-4 mb-2 sm:mb-4">
                       <div className="p-2 bg-amber-500/10 text-amber-600 rounded-lg sm:rounded-xl shrink-0"><Clock size={16} className="sm:w-6 sm:h-6" /></div>

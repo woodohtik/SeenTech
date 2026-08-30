@@ -12,11 +12,25 @@ interface ScannerModalProps {
 export default function ScannerModal({ isOpen, onClose, onScan }: ScannerModalProps) {
   const { t } = useTranslation();
   const [error, setError] = useState<string>('');
+  const [manualCode, setManualCode] = useState('');
   const scannerRef = useRef<Html5Qrcode | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   useEffect(() => {
     if (isOpen) {
       setError('');
+      setManualCode('');
       const html5QrCode = new Html5Qrcode("reader");
       scannerRef.current = html5QrCode;
       
@@ -56,8 +70,17 @@ export default function ScannerModal({ isOpen, onClose, onScan }: ScannerModalPr
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto font-sans">
-      <div className="bg-surface border border-border w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-fade-in relative flex flex-col my-auto text-content">
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto font-sans"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('pos.scan_barcode')}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-surface border border-border w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-fade-in relative flex flex-col my-auto text-content"
+      >
         <div className="flex items-center justify-between p-4 border-b border-border bg-surface">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-brand/10 flex items-center justify-center text-brand">
@@ -65,8 +88,9 @@ export default function ScannerModal({ isOpen, onClose, onScan }: ScannerModalPr
             </div>
             <h2 className="text-base font-bold text-content">{t('pos.scan_barcode')}</h2>
           </div>
-          <button 
+          <button
             onClick={onClose}
+            aria-label={t('common.close')}
             className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-muted text-content-muted hover:text-content transition-colors cursor-pointer"
           >
             <X size={18} />
@@ -75,8 +99,38 @@ export default function ScannerModal({ isOpen, onClose, onScan }: ScannerModalPr
 
         <div className="p-4 flex flex-col items-center">
           {error ? (
-            <div className="text-danger font-bold text-sm text-center p-4 bg-danger/10 rounded-lg w-full">
-              {error}
+            <div className="w-full space-y-3">
+              <div className="text-danger font-bold text-sm text-center p-4 bg-danger/10 rounded-lg w-full">
+                {error}
+              </div>
+              <form
+                className="flex gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const code = manualCode.trim();
+                  if (!code) return;
+                  onScan(code);
+                  onClose();
+                }}
+              >
+                <label className="sr-only" htmlFor="scanner-manual-code">{t('pos.manual_barcode_entry')}</label>
+                <input
+                  id="scanner-manual-code"
+                  type="text"
+                  autoFocus
+                  value={manualCode}
+                  onChange={(e) => setManualCode(e.target.value)}
+                  placeholder={t('pos.manual_barcode_placeholder')}
+                  className="flex-1 bg-surface-muted border border-border rounded-xl px-3.5 py-2.5 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                />
+                <button
+                  type="submit"
+                  disabled={!manualCode.trim()}
+                  className="px-4 py-2.5 bg-brand text-white rounded-xl font-bold text-sm disabled:opacity-40 transition-all hover:bg-brand/90"
+                >
+                  {t('pos.manual_barcode_submit')}
+                </button>
+              </form>
             </div>
           ) : (
             <div id="reader" className="w-full h-full overflow-hidden rounded-xl border border-border bg-black"></div>

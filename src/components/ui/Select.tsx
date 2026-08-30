@@ -44,6 +44,15 @@ export default function Select({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsOpen(false);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen]);
+
   return (
     <div className={cn("relative w-full", isRtl ? "text-right" : "text-left", className)} ref={containerRef} dir={dir}>
       {label && (
@@ -55,6 +64,8 @@ export default function Select({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
         className={cn(
           "w-full h-[var(--size-button-height)] bg-surface border border-border dark:border-gray-800 rounded-[var(--radius-md)] px-4 text-[var(--size-text-base)] font-semibold transition-all outline-none focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand flex items-center justify-between group",
           isOpen ? "border-brand shadow-md shadow-brand/5 bg-surface" : "hover:border-brand/20 hover:bg-surface-muted/30",
@@ -94,12 +105,15 @@ export default function Select({
             exit={{ opacity: 0, y: 8, scale: 0.95 }}
             transition={{ duration: 0.12, ease: "easeOut" }}
             className="absolute z-50 w-full mt-1.5 bg-surface rounded-xl border border-border dark:border-gray-800 shadow-lg drop-shadow-sm overflow-hidden max-h-64 overflow-y-auto p-1.5"
+            role="listbox"
           >
             <div className="space-y-0.5">
               {options.map((option) => (
                 <button
                   key={option.value}
                   type="button"
+                  role="option"
+                  aria-selected={value === option.value}
                   onClick={() => {
                     onChange(option.value);
                     setIsOpen(false);
@@ -107,8 +121,8 @@ export default function Select({
                   className={cn(
                     "w-full px-3 py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-between group/item",
                     isRtl ? "text-right" : "text-left",
-                    value === option.value 
-                      ? "bg-brand/10 text-brand font-bold" 
+                    value === option.value
+                      ? "bg-brand/10 text-brand font-bold"
                       : "text-content hover:bg-surface-muted hover:text-content dark:hover:bg-gray-800"
                   )}
                 >

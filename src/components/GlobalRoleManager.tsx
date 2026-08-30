@@ -228,7 +228,7 @@ export default function GlobalRoleManager() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
       </div>
     );
   }
@@ -237,8 +237,8 @@ export default function GlobalRoleManager() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-black text-gray-900">{t('saas.global_roles.title')}</h2>
-          <p className="text-gray-500 font-medium mt-1">{t('saas.global_roles.subtitle')}</p>
+          <h2 className="text-2xl font-black text-content">{t('saas.global_roles.title')}</h2>
+          <p className="text-content-muted font-medium mt-1">{t('saas.global_roles.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -249,14 +249,14 @@ export default function GlobalRoleManager() {
                 else toastSuccess(t('saas.global_roles.seed_already_exists'));
               }
             }}
-            className="flex items-center gap-2 px-6 py-3 bg-indigo-50 text-indigo-600 rounded-2xl font-black hover:bg-indigo-100 transition-all"
+            className="flex items-center gap-2 px-6 py-3 bg-brand/10 text-brand rounded-2xl font-black hover:bg-brand/15 transition-all"
           >
             <Database size={20} />
             <span>{t('saas.global_roles.seed_button')}</span>
           </button>
           <button
             onClick={() => setIsAdding(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl font-black hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
+            className="flex items-center gap-2 px-6 py-3 bg-brand text-white rounded-2xl font-black hover:bg-brand/90 transition-all shadow-lg shadow-brand/20"
           >
             <Plus size={20} />
             <span>{t('saas.global_roles.add_system_role')}</span>
@@ -265,12 +265,12 @@ export default function GlobalRoleManager() {
       </div>
 
       {/* Category Filter Tabs */}
-      <div className="flex items-center gap-2 p-1.5 bg-gray-100 rounded-2xl w-fit">
+      <div className="flex items-center gap-2 p-1.5 bg-surface-muted rounded-2xl w-fit">
         <button
           onClick={() => setCategoryTab('all')}
           className={cn(
             "px-5 py-2 text-xs font-black rounded-xl transition-all",
-            categoryTab === 'all' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
+            categoryTab === 'all' ? "bg-surface text-content shadow-sm" : "text-content-muted hover:text-content"
           )}
         >
           {t('saas.global_roles.tab_all')} ({roles.length})
@@ -279,7 +279,7 @@ export default function GlobalRoleManager() {
           onClick={() => setCategoryTab('merchant')}
           className={cn(
             "px-5 py-2 text-xs font-black rounded-xl transition-all flex items-center gap-1.5",
-            categoryTab === 'merchant' ? "bg-indigo-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-900"
+            categoryTab === 'merchant' ? "bg-brand text-white shadow-sm" : "text-content-muted hover:text-content"
           )}
         >
           <span>{t('saas.global_roles.tab_merchant')}</span>
@@ -289,7 +289,7 @@ export default function GlobalRoleManager() {
           onClick={() => setCategoryTab('saas')}
           className={cn(
             "px-5 py-2 text-xs font-black rounded-xl transition-all flex items-center gap-1.5",
-            categoryTab === 'saas' ? "bg-purple-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-900"
+            categoryTab === 'saas' ? "bg-purple-600 text-white shadow-sm" : "text-content-muted hover:text-content"
           )}
         >
           <span>{t('saas.global_roles.tab_saas')}</span>
@@ -311,46 +311,46 @@ export default function GlobalRoleManager() {
               <motion.div
                 key={role.id}
                 layoutId={role.id}
-                className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-md transition-all group"
+                className="bg-surface p-6 rounded-[2rem] border border-border shadow-sm hover:shadow-md transition-all group"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className={cn(
                     "w-12 h-12 rounded-2xl flex items-center justify-center font-black",
-                    isSaas ? "bg-purple-50 text-purple-600" : "bg-indigo-50 text-indigo-600"
+                    isSaas ? "bg-purple-50 text-purple-600" : "bg-brand/10 text-brand"
                   )}>
                     <Shield size={24} />
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={cn(
                       "text-[10px] font-black px-2.5 py-1 rounded-full border",
-                      isSaas ? "bg-purple-50 text-purple-600 border-purple-200" : "bg-blue-50 text-blue-600 border-blue-200"
+                      isSaas ? "bg-purple-50 text-purple-600 border-purple-200" : "bg-brand/10 text-brand border-brand/20"
                     )}>
                       {isSaas ? t('saas.global_roles.badge_saas_team') : t('saas.global_roles.badge_merchant_roles')}
                     </span>
                     <button
                       onClick={() => setEditingRole(role)}
-                      className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                      className="p-2 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all"
                     >
                       <Edit2 size={18} />
                     </button>
                     <button
                       onClick={() => confirmDeleteRole(role)}
-                      className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                      className="p-2 text-content-muted hover:text-danger hover:bg-danger/10 rounded-xl transition-all"
                     >
                       <Trash2 size={18} />
                     </button>
                   </div>
                 </div>
 
-            <h3 className="text-lg font-black text-gray-900">{role.name}</h3>
-            <p className="text-sm text-gray-500 font-medium mt-1 line-clamp-2 h-10">
+            <h3 className="text-lg font-black text-content">{role.name}</h3>
+            <p className="text-sm text-content-muted font-medium mt-1 line-clamp-2 h-10">
               {role.description || t('saas.global_roles.no_description')}
             </p>
 
-            <div className="mt-6 pt-6 border-t border-gray-50">
+            <div className="mt-6 pt-6 border-t border-border">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-400 font-bold">{t('saas.global_roles.granted_permissions')}</span>
-                <span className="text-indigo-600 font-black">
+                <span className="text-content-muted font-bold">{t('saas.global_roles.granted_permissions')}</span>
+                <span className="text-brand font-black">
                   {Object.values(role.permissions || {}).filter(Boolean).length} / {ALL_PERMISSIONS.length}
                 </span>
               </div>
@@ -359,13 +359,13 @@ export default function GlobalRoleManager() {
                   const count = ALL_PERMISSIONS.filter(p => p.categoryKey === cat && role.permissions?.[p.key]).length;
                   if (count === 0) return null;
                   return (
-                    <span key={cat} className="px-2.5 py-1 bg-gray-50 text-gray-600 text-[10px] font-black rounded-lg">
+                    <span key={cat} className="px-2.5 py-1 bg-surface-muted text-content-muted text-[10px] font-black rounded-lg">
                       {t(cat)}: {count}
                     </span>
                   );
                 })}
                 {CATEGORIES.length > 3 && (
-                  <span className="px-2.5 py-1 bg-gray-50 text-gray-400 text-[10px] font-black rounded-lg">
+                  <span className="px-2.5 py-1 bg-surface-muted text-content-muted text-[10px] font-black rounded-lg">
                     ...
                   </span>
                 )}
@@ -384,18 +384,18 @@ export default function GlobalRoleManager() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col"
+              className="bg-surface rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col"
             >
-              <div className="p-8 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+              <div className="p-8 border-b border-border flex items-center justify-between bg-surface-muted/50">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200">
+                  <div className="w-12 h-12 bg-brand text-white rounded-2xl flex items-center justify-center shadow-lg shadow-brand/20">
                     <Shield size={24} />
                   </div>
                   <div>
-                    <h3 className="text-xl font-black text-gray-900">
+                    <h3 className="text-xl font-black text-content">
                       {editingRole ? t('saas.global_roles.edit_system_role') : t('saas.global_roles.add_system_role_new')}
                     </h3>
-                    <p className="text-sm text-gray-500 font-bold">{t('saas.global_roles.template_defaults_hint')}</p>
+                    <p className="text-sm text-content-muted font-bold">{t('saas.global_roles.template_defaults_hint')}</p>
                   </div>
                 </div>
                 <button
@@ -403,7 +403,7 @@ export default function GlobalRoleManager() {
                     setIsAdding(false);
                     setEditingRole(null);
                   }}
-                  className="p-3 hover:bg-white rounded-2xl transition-colors shadow-sm"
+                  className="p-3 hover:bg-surface rounded-2xl transition-colors shadow-sm"
                 >
                   <X size={20} />
                 </button>
@@ -412,20 +412,20 @@ export default function GlobalRoleManager() {
               <div className="flex-1 overflow-y-auto p-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
                   <div className="space-y-3">
-                    <label className="block text-sm font-black text-gray-700">{t('settings_page.staff.permissions.role_name')}</label>
+                    <label className="block text-sm font-black text-content">{t('settings_page.staff.permissions.role_name')}</label>
                     <input
                       type="text"
                       value={editingRole?.name || newRole.name}
-                      onChange={(e) => editingRole 
+                      onChange={(e) => editingRole
                         ? setEditingRole({ ...editingRole, name: e.target.value })
                         : setNewRole({ ...newRole, name: e.target.value })
                       }
                       placeholder={t('saas.global_roles.role_name_placeholder')}
-                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-bold"
+                      className="w-full p-4 bg-surface-muted border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-bold"
                     />
                   </div>
                   <div className="space-y-3">
-                    <label className="block text-sm font-black text-gray-700">{t('settings_page.staff.permissions.role_desc')}</label>
+                    <label className="block text-sm font-black text-content">{t('settings_page.staff.permissions.role_desc')}</label>
                     <input
                       type="text"
                       value={editingRole?.description || newRole.description}
@@ -434,38 +434,38 @@ export default function GlobalRoleManager() {
                         : setNewRole({ ...newRole, description: e.target.value })
                       }
                       placeholder={t('saas.global_roles.role_desc_placeholder')}
-                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-bold"
+                      className="w-full p-4 bg-surface-muted border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-bold"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-8">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-lg font-black text-gray-900 flex items-center gap-2">
-                      <Lock className="text-indigo-600" size={20} />
+                    <h4 className="text-lg font-black text-content flex items-center gap-2">
+                      <Lock className="text-brand" size={20} />
                       {t('saas.global_roles.permissions_matrix')}
                     </h4>
                     <div className="flex gap-2">
-                      <button 
+                      <button
                         onClick={() => {
                           const allTrue = {} as PermissionsMap;
                           ALL_PERMISSIONS.forEach(p => allTrue[p.key] = true);
                           if (editingRole) setEditingRole({ ...editingRole, permissions: allTrue });
                           else setNewRole({ ...newRole, permissions: allTrue });
                         }}
-                        className="text-xs font-black text-indigo-600 hover:underline"
+                        className="text-xs font-black text-brand hover:underline"
                       >
                         {t('inventory.select_all')}
                       </button>
-                      <span className="text-gray-300">|</span>
-                      <button 
+                      <span className="text-content-muted">|</span>
+                      <button
                         onClick={() => {
                           const allFalse = {} as PermissionsMap;
                           ALL_PERMISSIONS.forEach(p => allFalse[p.key] = false);
                           if (editingRole) setEditingRole({ ...editingRole, permissions: allFalse });
                           else setNewRole({ ...newRole, permissions: allFalse });
                         }}
-                        className="text-xs font-black text-gray-400 hover:underline"
+                        className="text-xs font-black text-content-muted hover:underline"
                       >
                         {t('customers.deselect_all')}
                       </button>
@@ -475,36 +475,36 @@ export default function GlobalRoleManager() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                     {CATEGORIES.map(category => (
                       <div key={category} className="space-y-4">
-                        <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
-                          <div className="w-1.5 h-6 bg-indigo-600 rounded-full" />
-                          <h5 className="font-black text-gray-900">{t(category)}</h5>
+                        <div className="flex items-center gap-2 pb-2 border-b border-border">
+                          <div className="w-1.5 h-6 bg-brand rounded-full" />
+                          <h5 className="font-black text-content">{t(category)}</h5>
                         </div>
                         <div className="grid grid-cols-1 gap-3">
                           {ALL_PERMISSIONS.filter(p => p.categoryKey === category).map(permission => {
-                            const isChecked = editingRole 
+                            const isChecked = editingRole
                               ? editingRole.permissions?.[permission.key]
                               : newRole.permissions?.[permission.key];
-                            
+
                             return (
                               <label
                                 key={permission.key}
                                 className={cn(
                                   "flex items-center justify-between p-4 rounded-2xl cursor-pointer transition-all border-2",
-                                  isChecked 
-                                    ? "bg-indigo-50 border-indigo-200" 
-                                    : "bg-white border-gray-50 hover:border-gray-200"
+                                  isChecked
+                                    ? "bg-brand/10 border-brand/20"
+                                    : "bg-surface border-border hover:border-content-muted/40"
                                 )}
                               >
                                 <div className="flex items-center gap-3">
                                   <div className={cn(
                                     "w-6 h-6 rounded-lg flex items-center justify-center transition-all",
-                                    isChecked ? "bg-indigo-600 text-white" : "bg-gray-100 text-transparent"
+                                    isChecked ? "bg-brand text-white" : "bg-surface-muted text-transparent"
                                   )}>
                                     <Check size={14} strokeWidth={4} />
                                   </div>
                                   <span className={cn(
                                     "text-sm font-bold",
-                                    isChecked ? "text-indigo-900" : "text-gray-600"
+                                    isChecked ? "text-brand" : "text-content-muted"
                                   )}>
                                     {t(permission.labelKey)}
                                   </span>
@@ -525,8 +525,8 @@ export default function GlobalRoleManager() {
                 </div>
               </div>
 
-              <div className="p-8 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-amber-600">
+              <div className="p-8 border-t border-border bg-surface-muted/50 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-warning">
                   <Info size={18} />
                   <span className="text-xs font-bold">{t('saas.global_roles.edit_warning')}</span>
                 </div>
@@ -536,13 +536,13 @@ export default function GlobalRoleManager() {
                       setIsAdding(false);
                       setEditingRole(null);
                     }}
-                    className="px-8 py-4 text-gray-500 font-black hover:bg-white rounded-2xl transition-all"
+                    className="px-8 py-4 text-content-muted font-black hover:bg-surface rounded-2xl transition-all"
                   >
                     {t('common.cancel')}
                   </button>
                   <button
                     onClick={handleSaveRole}
-                    className="px-12 py-4 bg-indigo-600 text-white rounded-2xl font-black hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center gap-2"
+                    className="px-12 py-4 bg-brand text-white rounded-2xl font-black hover:bg-brand/90 transition-all shadow-lg shadow-brand/20 flex items-center gap-2"
                   >
                     <Check size={20} />
                     <span>{t('saas.global_roles.save_role')}</span>
@@ -566,29 +566,29 @@ export default function GlobalRoleManager() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl p-8 overflow-hidden"
+              className="relative w-full max-w-sm bg-surface rounded-3xl shadow-2xl p-8 overflow-hidden"
             >
-              <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mb-6 mx-auto">
-                <Trash2 size={32} className="text-rose-600" />
+              <div className="w-20 h-20 bg-danger/10 rounded-full flex items-center justify-center mb-6 mx-auto">
+                <Trash2 size={32} className="text-danger" />
               </div>
-              <h3 className="text-xl font-black text-gray-900 text-center mb-2">{t('settings_page.staff.permissions.confirm_delete')}</h3>
-              <p className="text-sm font-medium text-gray-500 text-center mb-8">
+              <h3 className="text-xl font-black text-content text-center mb-2">{t('settings_page.staff.permissions.confirm_delete')}</h3>
+              <p className="text-sm font-medium text-content-muted text-center mb-8">
                 {t('saas.global_roles.confirm_delete_role', { name: roleToDelete.name })}
                 <br />
-                <span className="text-rose-600 font-bold">{t('saas.global_roles.delete_impact_warning')}</span>
+                <span className="text-danger font-bold">{t('saas.global_roles.delete_impact_warning')}</span>
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setRoleToDelete(null)}
                   disabled={isSaving}
-                  className="flex-1 px-4 py-3 rounded-2xl font-black text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 transition-all disabled:opacity-50"
+                  className="flex-1 px-4 py-3 rounded-2xl font-black text-sm text-content-muted bg-surface-muted hover:bg-border transition-all disabled:opacity-50"
                 >
                   {t('common.cancel')}
                 </button>
                 <button
                   onClick={executeDeleteRole}
                   disabled={isSaving}
-                  className="flex-1 px-4 py-3 rounded-2xl font-black text-sm text-white bg-rose-600 hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 disabled:opacity-50 flex items-center justify-center"
+                  className="flex-1 px-4 py-3 rounded-2xl font-black text-sm text-white bg-danger hover:bg-danger/90 transition-all shadow-lg shadow-danger/20 disabled:opacity-50 flex items-center justify-center"
                 >
                   {isSaving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t('settings_page.staff.permissions.confirm_delete_title')}
                 </button>
@@ -607,15 +607,15 @@ export default function GlobalRoleManager() {
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             className={cn(
               "fixed top-6 left-6 z-[9999] px-6 py-4 rounded-2xl shadow-xl flex items-center gap-3 border font-black text-sm",
-              toast.type === 'success' 
-                ? 'bg-[emerald]/10 bg-emerald-50 text-emerald-800 border-emerald-100' 
-                : 'bg-[rose]/10 bg-rose-50 text-rose-800 border-rose-100'
+              toast.type === 'success'
+                ? 'bg-success/10 text-success border-success/20'
+                : 'bg-danger/10 text-danger border-danger/20'
             )}
           >
             {toast.type === 'success' ? (
-              <Check className="w-5 h-5 text-emerald-600" />
+              <Check className="w-5 h-5 text-success" />
             ) : (
-              <AlertCircle className="w-5 h-5 text-rose-600" />
+              <AlertCircle className="w-5 h-5 text-danger" />
             )}
             <span>{toast.message}</span>
           </motion.div>

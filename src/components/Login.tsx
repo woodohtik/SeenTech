@@ -49,11 +49,6 @@ export default function Login() {
   // Form States
   const [loginId, setLoginId] = useState(''); // Email or Phone
   const [password, setPassword] = useState('');
-  // Keeps the login email/password inputs readOnly until the user actually
-  // focuses one of them, so the browser can't eagerly auto-populate them on
-  // page load. Once focused they behave normally, so clicking still shows
-  // (and can accept) the browser's saved-credential suggestion dropdown.
-  const [loginFieldsUnlocked, setLoginFieldsUnlocked] = useState(false);
   const [fullName, setFullName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPhone, setRegPhone] = useState('');
@@ -690,6 +685,8 @@ export default function Login() {
 
           {error && (
             <motion.div
+              role="alert"
+              aria-live="polite"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-danger/10 border border-danger/20 text-danger p-4 rounded-2xl flex items-center gap-3 text-sm font-bold"
@@ -713,8 +710,6 @@ export default function Login() {
                   required
                   type="text"
                   autoComplete="username"
-                  readOnly={!loginFieldsUnlocked}
-                  onFocus={() => setLoginFieldsUnlocked(true)}
                   value={loginId}
                   onChange={(e) => setLoginId(e.target.value)}
                   placeholder={t('login.email_or_phone_placeholder')}
@@ -738,8 +733,6 @@ export default function Login() {
                     required
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="current-password"
-                    readOnly={!loginFieldsUnlocked}
-                    onFocus={() => setLoginFieldsUnlocked(true)}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
@@ -810,6 +803,7 @@ export default function Login() {
                 <IconInput
                   required
                   type="text"
+                  autoComplete="name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder={t('login.full_name')}
@@ -821,6 +815,7 @@ export default function Login() {
                 <IconInput
                   required
                   type="tel"
+                  autoComplete="tel"
                   value={regPhone}
                   onChange={(e) => setRegPhone(formatSaudiPhone(e.target.value))}
                   onBlur={() => setRegPhone(formatSaudiPhone(regPhone))}
@@ -834,6 +829,7 @@ export default function Login() {
                   <IconInput
                     required
                     type="email"
+                    autoComplete="email"
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
                     placeholder="example@mail.com"
@@ -856,6 +852,7 @@ export default function Login() {
                     <IconInput
                       required
                       type={showPassword ? 'text' : 'password'}
+                      autoComplete="new-password"
                       value={regPassword}
                       onChange={(e) => setRegPassword(e.target.value)}
                       placeholder="••••••••"

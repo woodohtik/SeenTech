@@ -41,6 +41,17 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
   const [isLoadingEntries, setIsLoadingEntries] = useState(false);
   const [showHistoryMobile, setShowHistoryMobile] = useState(false);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   // Fetch recent entries for this shift
   const fetchRecentEntries = async () => {
     setIsLoadingEntries(true);
@@ -175,8 +186,15 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
   const currentEstimatedCashInDrawer = shift.openingBalance + totalDeposits - totalPayouts;
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md overflow-y-auto">
+    <div
+      className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md overflow-y-auto"
+      onClick={onClose}
+    >
       <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('cash_operations.title', 'إدارة صندوق النقدية والدرج')}
+        onClick={(e) => e.stopPropagation()}
         initial={{ opacity: 0, scale: 0.97, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.97, y: 20 }}
@@ -204,9 +222,10 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
           </div>
 
           <div className="flex items-center gap-2.5 self-end sm:self-center">
-            <button 
-              type="button" 
-              onClick={onClose} 
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t('cash_operations.close_screen')}
               className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full transition-all cursor-pointer"
               title={t('cash_operations.close_screen')}
             >

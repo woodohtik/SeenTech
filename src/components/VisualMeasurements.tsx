@@ -61,6 +61,7 @@ export default function VisualMeasurements({ values, onChange, readOnly }: Visua
               type="button"
               key={opt.id}
               disabled={readOnly}
+              aria-pressed={isSelected}
               onClick={() => onChange(field, opt.id)}
               className={cn(
                 "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all group relative overflow-hidden h-24",
@@ -111,6 +112,7 @@ export default function VisualMeasurements({ values, onChange, readOnly }: Visua
                 type="button"
                 key={opt.id}
                 disabled={readOnly}
+                aria-pressed={values.closureType === opt.id}
                 onClick={() => onChange('closureType', opt.id)}
                 className={cn(
                   "flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all",
@@ -140,6 +142,7 @@ export default function VisualMeasurements({ values, onChange, readOnly }: Visua
                 type="button"
                 key={opt.id}
                 disabled={readOnly}
+                aria-pressed={values.closureVisibility === opt.id}
                 onClick={() => onChange('closureVisibility', opt.id)}
                 className={cn(
                   "flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all",

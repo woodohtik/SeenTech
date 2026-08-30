@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase/client';
 import { Tenant } from '../types';
-import { useTheme } from '../contexts/ThemeContext';
 import { useTranslation } from 'react-i18next';
-import { Sun, Moon, Globe, Check, ChevronDown, Calendar } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface HeaderProps {
@@ -15,10 +14,7 @@ interface HeaderProps {
 
 export default function Header({ tenantId, title, subtitle, children }: HeaderProps) {
   const [tenant, setTenant] = useState<Tenant | null>(null);
-  const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
-  const { theme, setTheme } = useTheme();
   const { t, i18n } = useTranslation();
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const [trialDays, setTrialDays] = useState<number | null>(null);
   const [isTrialPlan, setIsTrialPlan] = useState<boolean>(true);
 
@@ -99,37 +95,6 @@ export default function Header({ tenantId, title, subtitle, children }: HeaderPr
       window.removeEventListener('tenant_settings_updated', fetchTenantData);
     };
   }, [tenantId]);
-
-  // Handle outside clicks to close language dropdown
-  useEffect(() => {
-    const handleOutsideClick = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsLanguageDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleOutsideClick);
-    return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, []);
-
-  const handleLanguageSelect = (languageCode: string) => {
-    i18n.changeLanguage(languageCode);
-    const dir = languageCode === 'en' ? 'ltr' : 'rtl';
-    document.documentElement.dir = dir;
-    document.documentElement.lang = languageCode;
-    setIsLanguageDropdownOpen(false);
-  };
-
-  const handleThemeToggle = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-  };
-
-  const languages = [
-    { code: 'ar', name: 'العربية', flag: '🇸🇦', isRtl: true },
-    { code: 'en', name: 'English', flag: '🇺🇸', isRtl: false },
-    { code: 'ur', name: 'اردو', flag: '🇵🇰', isRtl: true }
-  ];
-
-  const activeLanguage = languages.find(lang => lang.code === currentLanguageCode) || languages[0];
 
   return (
     <header className={cn(

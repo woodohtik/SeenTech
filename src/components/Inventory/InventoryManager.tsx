@@ -1913,10 +1913,11 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
           <div className="bg-surface-muted/50 p-6 rounded-[2rem] border border-border">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
               <div className="space-y-2 col-span-1 md:col-span-6 text-right">
-                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                <label htmlFor="add-item-name" className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
                   {t("inventory.item_name")}
                 </label>
                 <input
+                id="add-item-name"
                   aria-invalid={fieldErrors.name}
                   value={formData.name}
                   onChange={(e) => {
@@ -1955,10 +1956,11 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-12 text-right">
-                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                <label htmlFor="add-item-description" className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
                   {t("inventory.description_label")}
                 </label>
                 <textarea
+                id="add-item-description"
                   value={formData.description}
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
@@ -2087,10 +2089,11 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-4 text-right">
-                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                <label htmlFor="add-item-conversion-rate" className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
                   {t("inventory.conversion_rate")}
                 </label>
                 <input
+                id="add-item-conversion-rate"
                   type="number"
                   step="0.01"
                   aria-invalid={fieldErrors.conversionRate}
@@ -2109,10 +2112,11 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-4 text-right">
-                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                <label htmlFor="add-item-min-threshold" className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
                   {t("inventory.min_threshold")}
                 </label>
                 <input
+                id="add-item-min-threshold"
                   type="number"
                   required
                   value={formData.minThreshold}
@@ -2131,10 +2135,11 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
           <div className="bg-surface-muted/50 p-6 rounded-[2rem] border border-border">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
               <div className="space-y-2 col-span-1 md:col-span-3 text-right">
-                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                <label htmlFor="add-item-cost-price" className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
                   {t("inventory.cost_price_label")}
                 </label>
                 <input
+                id="add-item-cost-price"
                   type="number"
                   step="0.01"
                   aria-invalid={fieldErrors.costPrice}
@@ -2155,10 +2160,11 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
               </div>
 
               <div className="space-y-2 col-span-1 md:col-span-3 text-right">
-                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                <label htmlFor="add-item-selling-price" className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
                   {t("inventory.selling_price_label")}
                 </label>
                 <input
+                id="add-item-selling-price"
                   type="number"
                   step="0.01"
                   aria-invalid={fieldErrors.pricePerUnit}
@@ -2235,10 +2241,11 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-6">
-                <label className="text-xs font-black text-content uppercase tracking-widest mx-1 block">
+                <label htmlFor="add-item-initial-stock" className="text-xs font-black text-content uppercase tracking-widest mx-1 block">
                   {t("inventory.initial_stock")}
                 </label>
                 <input
+                id="add-item-initial-stock"
                   type="number"
                   min="0"
                   placeholder="0.00"
@@ -2256,10 +2263,11 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
           <div className="bg-surface-muted/50 p-6 rounded-[2rem] border border-border">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
               <div className="space-y-2 col-span-1 md:col-span-6">
-                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                <label htmlFor="add-item-sku" className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
                   {t("inventory.sku")}
                 </label>
                 <input
+                id="add-item-sku"
                   placeholder={t("inventory.sku_placeholder")}
                   value={formData.sku}
                   onChange={(e) =>
@@ -2269,10 +2277,11 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-6">
-                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                <label htmlFor="add-item-barcode" className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
                   {t("inventory.barcode")}
                 </label>
                 <input
+                id="add-item-barcode"
                   placeholder="Barcode (Auto)"
                   value={formData.barcode}
                   onChange={(e) =>
@@ -2572,10 +2581,11 @@ const StockTransferModal = ({
                   />
                 </div>
                 <div className="col-span-2 space-y-1">
-                  <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">
+                  <label htmlFor={`transfer-qty-${idx}`} className="text-[10px] font-black text-content-muted uppercase tracking-widest">
                     {t("inventory.qty")}
                   </label>
                   <input
+                    id={`transfer-qty-${idx}`}
                     type="number"
                     required
                     value={item.quantity === 0 ? "" : item.quantity}
@@ -2796,10 +2806,11 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
 
           {mode === "add" ? (
             <div className="space-y-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
+              <label htmlFor="stock-adjust-quantity-add" className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
                 {t("inventory.quantity_to_add")}
               </label>
               <input
+                id="stock-adjust-quantity-add"
                 type="number"
                 required
                 autoFocus
@@ -2810,10 +2821,11 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
             </div>
           ) : (
             <div className="space-y-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
+              <label htmlFor="stock-adjust-quantity-new" className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
                 {t("inventory.new_total_stock")}
               </label>
               <input
+                id="stock-adjust-quantity-new"
                 type="number"
                 min="0"
                 required
@@ -2825,10 +2837,11 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
             </div>
           )}
           <div className="space-y-2">
-            <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
+            <label htmlFor="stock-adjust-reason" className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
               {t("inventory.adjustment_reason")}
             </label>
             <textarea
+              id="stock-adjust-reason"
               required
               value={reason}
               onChange={(e) => setReason(e.target.value)}
@@ -3009,12 +3022,13 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch }: any) => {
 
           {/* Quantity Input */}
           <div className="space-y-2">
-            <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
-              {conversionAction === "unroll" 
+            <label htmlFor="manual-conversion-qty" className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
+              {conversionAction === "unroll"
                 ? t("inventory.qty_to_unroll", "عدد الطاقات المراد فكها")
                 : t("inventory.qty_to_bundle", "عدد الأمتار المراد تحويلها لطاقة")}
             </label>
             <input
+              id="manual-conversion-qty"
               required
               type="number"
               min="0.01"
@@ -3055,10 +3069,11 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch }: any) => {
 
           {/* Notes */}
           <div className="space-y-2">
-            <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
+            <label htmlFor="manual-conversion-notes" className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
               {t("common.notes", "ملاحظات")}
             </label>
             <textarea
+              id="manual-conversion-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder={t("inventory.example_conversion_note")}
@@ -3252,11 +3267,12 @@ const OpeningBalanceModal = ({ onClose, tenantId, branches, items }: any) => {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
+              <label htmlFor="inventory-import-file" className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
                 {t("inventory.import_excel")}
               </label>
               <div className="relative">
                 <input
+                  id="inventory-import-file"
                   type="file"
                   accept=".xlsx, .xls"
                   onChange={handleFileUpload}
@@ -3854,10 +3870,11 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
           <div className="bg-surface-muted/50 p-6 rounded-[2rem] border border-border">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
               <div className="space-y-2 col-span-1 md:col-span-6 text-right">
-                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                <label htmlFor="edit-item-name" className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
                   {t("inventory.item_name")}
                 </label>
                 <input
+                id="edit-item-name"
                   aria-invalid={fieldErrors.name}
                   value={formData.name}
                   onChange={(e) => {
@@ -3896,10 +3913,11 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-12 text-right">
-                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                <label htmlFor="edit-item-description" className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
                   {t("inventory.description_label")}
                 </label>
                 <textarea
+                id="edit-item-description"
                   value={formData.description}
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
@@ -4028,10 +4046,11 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-4 text-right">
-                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                <label htmlFor="edit-item-conversion-rate" className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
                   {t("inventory.conversion_rate")}
                 </label>
                 <input
+                id="edit-item-conversion-rate"
                   type="number"
                   step="0.01"
                   aria-invalid={fieldErrors.conversionRate}
@@ -4050,10 +4069,11 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-4 text-right">
-                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                <label htmlFor="edit-item-min-threshold" className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
                   {t("inventory.min_threshold")}
                 </label>
                 <input
+                id="edit-item-min-threshold"
                   type="number"
                   required
                   value={formData.minThreshold}
@@ -4072,10 +4092,11 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
           <div className="bg-surface-muted/50 p-6 rounded-[2rem] border border-border">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
               <div className="space-y-2 col-span-1 md:col-span-3 text-right">
-                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                <label htmlFor="edit-item-cost-price" className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
                   {t("inventory.cost_price_label")}
                 </label>
                 <input
+                id="edit-item-cost-price"
                   type="number"
                   step="0.01"
                   aria-invalid={fieldErrors.costPrice}
@@ -4096,10 +4117,11 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
               </div>
 
               <div className="space-y-2 col-span-1 md:col-span-3 text-right">
-                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                <label htmlFor="edit-item-selling-price" className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
                   {t("inventory.selling_price_label")}
                 </label>
                 <input
+                id="edit-item-selling-price"
                   type="number"
                   step="0.01"
                   aria-invalid={fieldErrors.pricePerUnit}
@@ -4176,10 +4198,11 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-6">
-                <label className="text-xs font-black text-content uppercase tracking-widest mx-1 block">
+                <label htmlFor="edit-item-initial-stock" className="text-xs font-black text-content uppercase tracking-widest mx-1 block">
                   {t("inventory.initial_stock")}
                 </label>
                 <input
+                id="edit-item-initial-stock"
                   type="number"
                   placeholder="0.00"
                   value={formData.openingBalance || ""}
@@ -4193,10 +4216,11 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
           <div className="bg-surface-muted/50 p-6 rounded-[2rem] border border-border">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
               <div className="space-y-2 col-span-1 md:col-span-6">
-                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                <label htmlFor="edit-item-sku" className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
                   {t("inventory.ref_sku")}
                 </label>
                 <input
+                id="edit-item-sku"
                   placeholder={t("inventory.sku_placeholder_edit")}
                   value={formData.sku}
                   onChange={(e) =>
@@ -4206,10 +4230,11 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                 />
               </div>
               <div className="space-y-2 col-span-1 md:col-span-6">
-                <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                <label htmlFor="edit-item-barcode" className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
                   {t("inventory.barcode")}
                 </label>
                 <input
+                id="edit-item-barcode"
                   value={formData.barcode}
                   onChange={(e) =>
                     setFormData({ ...formData, barcode: e.target.value })

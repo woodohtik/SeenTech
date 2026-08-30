@@ -281,6 +281,8 @@ export default function ResetPassword() {
               >
                 {error && (
                   <motion.div
+                    role="alert"
+                    aria-live="polite"
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="bg-danger/10 border border-danger/20 text-danger p-4 rounded-2xl flex items-center gap-3 text-sm font-bold"
@@ -293,6 +295,7 @@ export default function ResetPassword() {
                 <IconInput
                   required
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
@@ -334,6 +337,7 @@ export default function ResetPassword() {
                 <IconInput
                   required
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"

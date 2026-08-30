@@ -266,6 +266,24 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     reset(defaultOrderValues);
   }, [reset, defaultOrderValues]);
 
+  // Escape closes whichever of this page's modals/drawers is currently open,
+  // topmost (most recently opened) first -- none of these hand-rolled
+  // overlays previously had a keyboard way out.
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (isConfirmDeliveryOpen) { setIsConfirmDeliveryOpen(false); return; }
+      if (isPaymentModalOpen) { setIsPaymentModalOpen(false); return; }
+      if (isInvoiceOpen) { setIsInvoiceOpen(false); return; }
+      if (isDetailsOpen) { setIsDetailsOpen(false); return; }
+      if (dueDetailsCustomer) { setDueDetailsCustomer(null); return; }
+      if (isQuickAddOpen) { setIsQuickAddOpen(false); return; }
+      if (isModalOpen) { handleCloseModal(); return; }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isConfirmDeliveryOpen, isPaymentModalOpen, isInvoiceOpen, isDetailsOpen, dueDetailsCustomer, isQuickAddOpen, isModalOpen, handleCloseModal]);
+
   const { fields, append, remove } = useFieldArray({
     control,
     name: "items" as any
@@ -767,13 +785,20 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     };
 
     return (
-      <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto font-sans">
-        <motion.div 
-          initial={{ scale: 0.95, opacity: 0, y: 20 }} 
-          animate={{ scale: 1, opacity: 1, y: 0 }} 
+      <div
+        className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto font-sans"
+        onClick={() => setIsQuickAddOpen(false)}
+      >
+        <motion.div
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('pos.add_new_customer')}
+          onClick={(e) => e.stopPropagation()}
+          initial={{ scale: 0.95, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="relative w-full max-w-[clamp(320px,94vw,1100px)] max-h-[90vh] rounded-[var(--radius-card)] bg-[var(--surface)] shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-start" 
+          className="relative w-full max-w-[clamp(320px,94vw,1100px)] max-h-[90vh] rounded-[var(--radius-card)] bg-[var(--surface)] shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-start"
           dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}
         >
           {/* Header (Fixed) */}
@@ -784,7 +809,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               </div>
               <h3 className="text-base sm:text-lg lg:text-xl font-black text-content">{t('pos.add_new_customer')}</h3>
             </div>
-            <button type="button" onClick={() => setIsQuickAddOpen(false)} className="p-2 hover:bg-surface-muted rounded-full transition-colors shadow-sm text-content-muted">
+            <button type="button" onClick={() => setIsQuickAddOpen(false)} aria-label={t('common.close')} className="p-2 hover:bg-surface-muted rounded-full transition-colors shadow-sm text-content-muted">
               <X size={20} />
             </button>
           </div>
@@ -1409,7 +1434,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           className="absolute inset-0 bg-black/40 backdrop-blur-sm"
           onClick={() => setIsDetailsOpen(false)}
         />
-        <motion.div 
+        <motion.div
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('orders.order_details')}
           initial={{ x: '100%', y: '100%' }}
           animate={{ x: 0, y: 0 }}
           exit={{ x: '100%', y: '100%' }}
@@ -1427,7 +1455,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 <p className="text-xs text-content-muted font-bold">#{order.id.slice(-6).toUpperCase()}</p>
               </div>
             </div>
-            <button onClick={() => setIsDetailsOpen(false)} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm">
+            <button onClick={() => setIsDetailsOpen(false)} aria-label={t('common.close')} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm">
               <X size={24} className="text-content-muted" />
             </button>
           </div>
@@ -1704,7 +1732,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const ConfirmDeliveryModal = () => (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsConfirmDeliveryOpen(false)} />
-      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-surface w-full max-w-sm rounded-[2rem] shadow-2xl relative z-10 p-8 text-center" dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}>
+      <motion.div role="dialog" aria-modal="true" aria-label={t('orders.confirm_delivery_title')} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-surface w-full max-w-sm rounded-[2rem] shadow-2xl relative z-10 p-8 text-center" dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}>
         <div className="w-20 h-20 bg-success/10 text-success rounded-full flex items-center justify-center mx-auto mb-6">
           <CheckCircle2 size={40} />
         </div>
@@ -1802,12 +1830,15 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     return (
       <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsPaymentModalOpen(false)} />
-        <motion.div 
-          initial={{ scale: 0.95, opacity: 0, y: 20 }} 
-          animate={{ scale: 1, opacity: 1, y: 0 }} 
+        <motion.div
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('orders.complete_payment_title')}
+          initial={{ scale: 0.95, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="bg-surface w-full lg:max-w-md rounded-3xl shadow-2xl relative z-10 overflow-y-auto max-h-[90vh] text-start border border-border" 
+          className="bg-surface w-full lg:max-w-md rounded-3xl shadow-2xl relative z-10 overflow-y-auto max-h-[90vh] text-start border border-border"
           dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}
         >
           <div className="p-6 border-b border-border flex justify-between items-center bg-success/5">
@@ -1817,7 +1848,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               </div>
               <h3 className="text-xl font-black text-content">{t('orders.complete_payment_title')}</h3>
             </div>
-            <button onClick={() => setIsPaymentModalOpen(false)} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm">
+            <button onClick={() => setIsPaymentModalOpen(false)} aria-label={t('common.close')} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm">
               <X size={24} className="text-content-muted" />
             </button>
           </div>
@@ -1880,7 +1911,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         className="absolute inset-0 bg-black/60 backdrop-blur-md"
         onClick={() => setIsInvoiceOpen(false)}
       />
-      <motion.div 
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('orders.invoice')}
         initial={{ y: '100%', opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: '100%', opacity: 0 }}
@@ -1892,7 +1926,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             <div className="bg-brand text-white p-4 rounded-3xl">
               <ShoppingBag size={32} />
             </div>
-            <button onClick={() => setIsInvoiceOpen(false)} className="p-2 hover:bg-surface-muted rounded-full transition-colors">
+            <button onClick={() => setIsInvoiceOpen(false)} aria-label={t('common.close')} className="p-2 hover:bg-surface-muted rounded-full transition-colors">
               <X size={24} className="text-content-muted" />
             </button>
           </div>
@@ -2606,7 +2640,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               onClick={() => setDueDetailsCustomer(null)}
               className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             />
-            <motion.div 
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-label={t('orders.due_details_title')}
               initial={{ y: '100%', opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}
@@ -2628,9 +2665,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                     </p>
                   </div>
                 </div>
-                <button 
-                  type="button" 
-                  onClick={() => setDueDetailsCustomer(null)} 
+                <button
+                  type="button"
+                  onClick={() => setDueDetailsCustomer(null)}
+                  aria-label={t('common.close')}
                   className="p-2 hover:bg-surface-muted rounded-full transition-colors shadow-sm text-content-muted"
                 >
                   <X size={20} />
@@ -2719,7 +2757,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 onClick={handleCloseModal}
                 className="absolute inset-0 bg-black/50 backdrop-blur-sm"
               />
-              <motion.div 
+              <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-label={t('orders.create_new_order')}
               initial={{ y: '100%', opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}
@@ -2735,7 +2776,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   </div>
                   <h3 className="text-base sm:text-lg lg:text-xl font-black text-content">{t('orders.create_new_order')}</h3>
                 </div>
-                <button type="button" onClick={handleCloseModal} className="p-2 hover:bg-surface-muted rounded-full transition-colors shadow-sm text-content-muted">
+                <button type="button" onClick={handleCloseModal} aria-label={t('common.close')} className="p-2 hover:bg-surface-muted rounded-full transition-colors shadow-sm text-content-muted">
                   <X size={20} />
                 </button>
               </div>

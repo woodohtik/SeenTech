@@ -475,7 +475,7 @@ export default function AddEmployeeModal({
                 <span
                   className={cn(
                     "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-                    enablePin ? "-translate-x-6" : "-translate-x-1"
+                    enablePin ? "-translate-x-6 rtl:translate-x-6" : "-translate-x-1 rtl:translate-x-1"
                   )}
                 />
               </button>

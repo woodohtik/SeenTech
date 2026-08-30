@@ -215,40 +215,41 @@ export default function LockScreen({ currentStaff, onUnlock, tenantId, onUnlockW
               onClick={() => handleNumberClick(num)}
               className={cn(
                 "h-16 rounded-2xl bg-white/5 border border-white/10 text-xl font-bold flex items-center justify-center transition-all min-h-[44px]",
-                "hover:bg-white/10 active:scale-95 active:bg-white/15 cursor-pointer touch-manipulation focus:outline-none",
+                "hover:bg-white/10 active:scale-95 active:bg-white/15 cursor-pointer touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-brand",
                 activeKey === num && "bg-white/25 scale-95 border-brand"
               )}
             >
               {num}
             </button>
           ))}
-          
+
           <button
             type="button"
             onClick={handleClear}
-            className="h-16 rounded-2xl text-xs font-bold text-white/40 hover:text-white flex items-center justify-center transition-all cursor-pointer min-h-[44px] focus:outline-none"
+            className="h-16 rounded-2xl text-xs font-bold text-white/40 hover:text-white flex items-center justify-center transition-all cursor-pointer min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
           >
             {t('common.clear')}
           </button>
-          
+
           <button
             type="button"
             onClick={() => handleNumberClick('0')}
             className={cn(
               "h-16 rounded-2xl bg-white/5 border border-white/10 text-xl font-bold flex items-center justify-center transition-all min-h-[44px]",
-              "hover:bg-white/10 active:scale-95 active:bg-white/15 cursor-pointer touch-manipulation focus:outline-none",
+              "hover:bg-white/10 active:scale-95 active:bg-white/15 cursor-pointer touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-brand",
               activeKey === '0' && "bg-white/25 scale-95 border-brand"
             )}
           >
             0
           </button>
-          
+
           <button
             type="button"
             onClick={handleDelete}
+            aria-label={t('common.delete', 'حذف')}
             className={cn(
               "h-16 rounded-2xl bg-white/5 border border-white/10 text-white flex items-center justify-center transition-all min-h-[44px]",
-              "hover:bg-white/10 active:scale-95 active:bg-white/15 cursor-pointer touch-manipulation focus:outline-none",
+              "hover:bg-white/10 active:scale-95 active:bg-white/15 cursor-pointer touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-brand",
               activeKey === 'Backspace' && "bg-white/25 scale-95 border-brand"
             )}
           >

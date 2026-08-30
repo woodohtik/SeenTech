@@ -56,6 +56,15 @@ export const IconSelect: React.FC<IconSelectProps> = ({
     };
   }, []);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsOpen(false);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen]);
+
   const renderIcon = (iconToRender: React.ComponentType<{ className?: string }> | React.ReactNode, customClasses = "w-5 h-5") => {
     if (!iconToRender) return null;
     if (React.isValidElement(iconToRender)) {
@@ -98,6 +107,8 @@ export const IconSelect: React.FC<IconSelectProps> = ({
         type="button"
         disabled={disabled}
         onClick={handlesSelectClick}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
         className={cn(
           "group flex items-center w-full h-[var(--size-button-height,42px)] min-h-[40px] bg-surface border rounded-xl overflow-hidden transition-all duration-200 text-start outline-none focus:outline-none focus:ring-2",
           disabled && "opacity-50 cursor-not-allowed bg-surface-muted/30",
@@ -167,6 +178,7 @@ export const IconSelect: React.FC<IconSelectProps> = ({
             transition={{ duration: 0.12, ease: "easeOut" }}
             className="absolute z-50 w-full top-full mt-1.5 bg-surface rounded-xl border border-border dark:border-gray-800 shadow-lg drop-shadow-sm overflow-hidden p-1.5"
             style={{ maxHeight: '260px', overflowY: 'auto' }}
+            role="listbox"
           >
             <div className="space-y-0.5">
               {options.length === 0 ? (
@@ -180,6 +192,8 @@ export const IconSelect: React.FC<IconSelectProps> = ({
                     <button
                       key={option.value}
                       type="button"
+                      role="option"
+                      aria-selected={isSelected}
                       onClick={() => {
                         onChange(option.value);
                         setIsOpen(false);

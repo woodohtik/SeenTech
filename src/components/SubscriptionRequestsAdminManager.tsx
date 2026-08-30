@@ -130,9 +130,9 @@ export default function SubscriptionRequestsAdminManager() {
         <div className="bg-surface p-6 rounded-3xl border border-border shadow-sm flex items-center justify-between">
           <div>
             <p className="text-xs font-black text-content-muted uppercase tracking-wider mb-1">{t('subscription.requests.pending_count_label')}</p>
-            <p className="text-3xl font-black text-amber-500">{pendingCount}</p>
+            <p className="text-3xl font-black text-warning">{pendingCount}</p>
           </div>
-          <div className="p-4 bg-amber-500/10 text-amber-600 rounded-2xl">
+          <div className="p-4 bg-warning/10 text-warning rounded-2xl">
             <Clock size={28} />
           </div>
         </div>
@@ -140,9 +140,9 @@ export default function SubscriptionRequestsAdminManager() {
         <div className="bg-surface p-6 rounded-3xl border border-border shadow-sm flex items-center justify-between">
           <div>
             <p className="text-xs font-black text-content-muted uppercase tracking-wider mb-1">{t('subscription.requests.approved_count_label')}</p>
-            <p className="text-3xl font-black text-emerald-600">{approvedCount}</p>
+            <p className="text-3xl font-black text-success">{approvedCount}</p>
           </div>
-          <div className="p-4 bg-emerald-500/10 text-emerald-600 rounded-2xl">
+          <div className="p-4 bg-success/10 text-success rounded-2xl">
             <CheckCircle2 size={28} />
           </div>
         </div>
@@ -150,9 +150,9 @@ export default function SubscriptionRequestsAdminManager() {
         <div className="bg-surface p-6 rounded-3xl border border-border shadow-sm flex items-center justify-between">
           <div>
             <p className="text-xs font-black text-content-muted uppercase tracking-wider mb-1">{t('subscription.requests.rejected_count_label')}</p>
-            <p className="text-3xl font-black text-rose-500">{rejectedCount}</p>
+            <p className="text-3xl font-black text-danger">{rejectedCount}</p>
           </div>
-          <div className="p-4 bg-rose-500/10 text-rose-600 rounded-2xl">
+          <div className="p-4 bg-danger/10 text-danger rounded-2xl">
             <XCircle size={28} />
           </div>
         </div>
@@ -165,7 +165,7 @@ export default function SubscriptionRequestsAdminManager() {
             onClick={() => setFilterStatus('pending')}
             className={`px-5 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
               filterStatus === 'pending'
-                ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
+                ? 'bg-warning text-white shadow-lg shadow-warning/20'
                 : 'bg-surface-muted text-content-muted hover:text-content'
             }`}
           >
@@ -193,7 +193,7 @@ export default function SubscriptionRequestsAdminManager() {
             onClick={() => setFilterStatus('approved')}
             className={`px-5 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
               filterStatus === 'approved'
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+                ? 'bg-success text-white shadow-lg shadow-success/20'
                 : 'bg-surface-muted text-content-muted hover:text-content'
             }`}
           >
@@ -205,7 +205,7 @@ export default function SubscriptionRequestsAdminManager() {
             onClick={() => setFilterStatus('rejected')}
             className={`px-5 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
               filterStatus === 'rejected'
-                ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/20'
+                ? 'bg-danger text-white shadow-lg shadow-danger/20'
                 : 'bg-surface-muted text-content-muted hover:text-content'
             }`}
           >
@@ -230,6 +230,7 @@ export default function SubscriptionRequestsAdminManager() {
             onClick={loadRequests}
             className="p-2.5 bg-surface-muted hover:bg-border rounded-2xl text-content-muted hover:text-content transition-all cursor-pointer"
             title={t('subscription.requests.refresh_list')}
+            aria-label={t('subscription.requests.refresh_list')}
           >
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
           </button>
@@ -267,19 +268,19 @@ export default function SubscriptionRequestsAdminManager() {
 
                     {/* Status Badge */}
                     {req.status === 'pending' && (
-                      <span className="px-3 py-1 bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 rounded-full text-xs font-black flex items-center gap-1.5 animate-pulse">
+                      <span className="px-3 py-1 bg-warning/10 text-warning border border-warning/20 rounded-full text-xs font-black flex items-center gap-1.5 animate-pulse">
                         <Clock size={12} />
                         {t('referral.withdrawal.pending')}
                       </span>
                     )}
                     {req.status === 'approved' && (
-                      <span className="px-3 py-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 rounded-full text-xs font-black flex items-center gap-1.5">
+                      <span className="px-3 py-1 bg-success/10 text-success border border-success/20 rounded-full text-xs font-black flex items-center gap-1.5">
                         <CheckCircle2 size={12} />
                         {t('subscription.requests.status_approved_active')}
                       </span>
                     )}
                     {req.status === 'rejected' && (
-                      <span className="px-3 py-1 bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20 rounded-full text-xs font-black flex items-center gap-1.5">
+                      <span className="px-3 py-1 bg-danger/10 text-danger border border-danger/20 rounded-full text-xs font-black flex items-center gap-1.5">
                         <XCircle size={12} />
                         {t('referral.withdrawal.approved')}
                       </span>
@@ -311,7 +312,7 @@ export default function SubscriptionRequestsAdminManager() {
                     <span>•</span>
                     <div>
                       <span>{t('common.amount')}: </span>
-                      <span className="text-emerald-600 font-black dir-ltr inline-block">
+                      <span className="text-success font-black dir-ltr inline-block">
                         <PriceDisplay amount={req.amount} />
                       </span>
                     </div>
@@ -336,7 +337,7 @@ export default function SubscriptionRequestsAdminManager() {
                   </div>
 
                   {req.rejection_reason && (
-                    <p className="text-xs font-bold text-rose-600 bg-rose-500/5 p-2.5 rounded-xl border border-rose-500/20">
+                    <p className="text-xs font-bold text-danger bg-danger/5 p-2.5 rounded-xl border border-danger/20">
                       {t('subscription.requests.rejection_reason_value', { reason: req.rejection_reason })}
                     </p>
                   )}
@@ -367,7 +368,7 @@ export default function SubscriptionRequestsAdminManager() {
                         type="button"
                         disabled={processingId === req.id}
                         onClick={() => handleApprove(req)}
-                        className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-black shadow-lg shadow-emerald-600/20 flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                        className="px-5 py-2.5 bg-success hover:bg-success/90 text-white rounded-2xl text-xs font-black shadow-lg shadow-success/20 flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
                       >
                         {processingId === req.id ? (
                           <RefreshCw size={14} className="animate-spin" />
@@ -381,7 +382,7 @@ export default function SubscriptionRequestsAdminManager() {
                         type="button"
                         disabled={processingId === req.id}
                         onClick={() => setRejectingReq(req)}
-                        className="px-4 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 rounded-2xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 border border-rose-500/20"
+                        className="px-4 py-2.5 bg-danger/10 hover:bg-danger/20 text-danger rounded-2xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 border border-danger/20"
                       >
                         <XCircle size={16} />
                         <span>{t('saas.reject')}</span>
@@ -465,7 +466,7 @@ export default function SubscriptionRequestsAdminManager() {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-surface rounded-3xl p-6 max-w-md w-full border border-border shadow-2xl space-y-5 animate-in zoom-in-95">
             <div className="flex items-center justify-between border-b border-border pb-3">
-              <h4 className="text-base font-black text-rose-600 flex items-center gap-2">
+              <h4 className="text-base font-black text-danger flex items-center gap-2">
                 <AlertCircle size={20} />
                 <span>{t('subscription.requests.reject_title')}</span>
               </h4>
@@ -486,7 +487,7 @@ export default function SubscriptionRequestsAdminManager() {
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
               placeholder={t('subscription.requests.reject_reason_placeholder')}
-              className="w-full p-3.5 bg-surface-muted border border-border rounded-2xl text-xs font-bold text-content focus:border-rose-500 focus:outline-none resize-none"
+              className="w-full p-3.5 bg-surface-muted border border-border rounded-2xl text-xs font-bold text-content focus:border-danger focus:outline-none resize-none"
             />
 
             <div className="flex items-center gap-3 pt-2">
@@ -500,7 +501,7 @@ export default function SubscriptionRequestsAdminManager() {
               <button
                 type="button"
                 onClick={handleConfirmReject}
-                className="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20 cursor-pointer"
+                className="flex-1 py-3 bg-danger hover:bg-danger/90 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-danger/20 cursor-pointer"
               >
                 <span>{t('subscription.requests.confirm_reject')}</span>
               </button>

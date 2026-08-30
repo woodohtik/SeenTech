@@ -270,8 +270,8 @@ export default function TenantAnalyticsDashboard() {
                 title={t('saas.avg_invoice_value')}
                 value={<PriceDisplay amount={data.finance.avgOrderValue} />}
                 icon={Briefcase}
-                color="text-indigo-500"
-                bg="bg-indigo-500/10"
+                color="text-info"
+                bg="bg-info/10"
               />
             </div>
           </div>
@@ -287,15 +287,15 @@ export default function TenantAnalyticsDashboard() {
                 title={t('saas.total_staff')}
                 value={data.staff.total.toString()}
                 icon={Users}
-                color="text-blue-500"
-                bg="bg-blue-500/10"
+                color="text-info"
+                bg="bg-info/10"
               />
               <StatCard 
                 title={t('saas.avg_shift_work_hours')}
                 value={`${data.staff.avgWorkHours.toFixed(1)} ${t('common.hours')}`}
                 icon={Clock}
-                color="text-amber-500"
-                bg="bg-amber-500/10"
+                color="text-warning"
+                bg="bg-warning/10"
               />
             </div>
           </div>

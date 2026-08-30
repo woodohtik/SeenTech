@@ -300,7 +300,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                   />
 
                   {passwordError && (
-                    <div className="flex items-center gap-2 text-danger text-xs font-bold bg-danger/10 px-4 py-2 rounded-xl border border-danger/20">
+                    <div role="alert" aria-live="polite" className="flex items-center gap-2 text-danger text-xs font-bold bg-danger/10 px-4 py-2 rounded-xl border border-danger/20">
                       <AlertCircle size={14} />
                       <span>{passwordError}</span>
                     </div>
@@ -445,7 +445,9 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                     </motion.div>
                   )}
                   {error && (
-                    <motion.div 
+                    <motion.div
+                      role="alert"
+                      aria-live="polite"
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
@@ -465,9 +467,9 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                       onClick={() => handleNumberClick(num.toString())}
                       disabled={isVerifying}
                       className={cn(
-                        "h-20 rounded-2xl text-3xl font-black transition-all active:scale-95 disabled:opacity-50 border border-transparent",
-                        activeKey === num.toString() 
-                          ? "bg-brand text-white scale-95 shadow-lg shadow-brand/20 border-brand" 
+                        "h-20 rounded-2xl text-3xl font-black transition-all active:scale-95 disabled:opacity-50 border border-transparent touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
+                        activeKey === num.toString()
+                          ? "bg-brand text-white scale-95 shadow-lg shadow-brand/20 border-brand"
                           : "bg-surface-muted text-content hover:bg-brand/5 hover:text-brand hover:border-brand/10"
                       )}
                     >
@@ -479,9 +481,9 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                     onClick={() => handleNumberClick('0')}
                     disabled={isVerifying}
                     className={cn(
-                      "h-20 rounded-2xl text-3xl font-black transition-all active:scale-95 disabled:opacity-50 border border-transparent",
-                      activeKey === '0' 
-                        ? "bg-brand text-white scale-95 shadow-lg shadow-brand/20 border-brand" 
+                      "h-20 rounded-2xl text-3xl font-black transition-all active:scale-95 disabled:opacity-50 border border-transparent touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
+                      activeKey === '0'
+                        ? "bg-brand text-white scale-95 shadow-lg shadow-brand/20 border-brand"
                         : "bg-surface-muted text-content hover:bg-brand/5 hover:text-brand hover:border-brand/10"
                     )}
                   >
@@ -491,11 +493,12 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                     onClick={handleDelete}
                     disabled={isVerifying}
                     className={cn(
-                      "h-20 rounded-2xl flex items-center justify-center transition-all active:scale-95 disabled:opacity-50 border border-transparent",
+                      "h-20 rounded-2xl flex items-center justify-center transition-all active:scale-95 disabled:opacity-50 border border-transparent touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
                       activeKey === 'Backspace'
                         ? "bg-danger text-white scale-95 shadow-lg shadow-danger/20 border-danger"
                         : "bg-surface-muted text-content-muted hover:bg-danger/10 hover:text-danger hover:border-danger/20"
                     )}
+                    aria-label={t('common.delete', 'حذف')}
                   >
                     <Delete size={28} />
                   </button>

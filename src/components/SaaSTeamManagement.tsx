@@ -73,7 +73,7 @@ export default function SaaSTeamManagement() {
 
   const roleColors: Record<SaasUserRole, string> = {
     super_admin: 'bg-brand/10 text-brand',
-    support_tech: 'bg-indigo-500/10 text-indigo-500',
+    support_tech: 'bg-info/10 text-info',
     sales: 'bg-success/10 text-success',
     billing_admin: 'bg-warning/10 text-warning'
   };
@@ -438,7 +438,7 @@ export default function SaaSTeamManagement() {
                     type="button"
                     onClick={() => setIsModalOpen(false)}
                     disabled={isSubmitting}
-                    className="flex-1 py-3 bg-surface-muted text-content font-bold rounded-2xl hover:bg-gray-200 transition-colors disabled:opacity-50 cursor-pointer"
+                    className="flex-1 py-3 bg-surface-muted text-content font-bold rounded-2xl hover:bg-border transition-colors disabled:opacity-50 cursor-pointer"
                   >
                     {t('common.cancel', 'إلغاء')}
                   </button>

@@ -86,6 +86,18 @@ export default function Sales({ tenantId }: { tenantId: string }) {
   const [isCashOperationsModalOpen, setIsCashOperationsModalOpen] = useState(false);
   const [cashDrawerBalance, setCashDrawerBalance] = useState<number>(0);
   const [isCashDrawerDetailsOpen, setIsCashDrawerDetailsOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isCashDrawerDetailsOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsCashDrawerDetailsOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isCashDrawerDetailsOpen]);
   const [cashDrawerBreakdown, setCashDrawerBreakdown] = useState({
     opening: 0,
     sales: 0,
@@ -626,8 +638,15 @@ export default function Sales({ tenantId }: { tenantId: string }) {
       {/* Cash Drawer Details Modal */}
       <AnimatePresence>
         {isCashDrawerDetailsOpen && activeShift && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md overflow-y-auto font-sans">
+          <div
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md overflow-y-auto font-sans"
+            onClick={() => setIsCashDrawerDetailsOpen(false)}
+          >
             <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-label={t('sales.cash_drawer_details')}
+              onClick={(e) => e.stopPropagation()}
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
@@ -646,8 +665,9 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                     <p className="text-xs font-bold text-content-muted mt-0.5">{t('sales.shift_cash_details')}</p>
                   </div>
                 </div>
-                <button 
-                  onClick={() => setIsCashDrawerDetailsOpen(false)} 
+                <button
+                  onClick={() => setIsCashDrawerDetailsOpen(false)}
+                  aria-label={t('common.close')}
                   className="p-2 hover:bg-surface-muted rounded-full transition-colors text-content-muted"
                 >
                   <X size={20} />

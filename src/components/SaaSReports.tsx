@@ -90,32 +90,32 @@ export default function SaaSReports() {
   if (data.loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <RefreshCw className="animate-spin text-indigo-500 w-12 h-12" />
+        <RefreshCw className="animate-spin text-brand w-12 h-12" />
       </div>
     );
   }
 
   const stats = [
-    { label: t('saas.total_revenue_platform_sales'), value: <PriceDisplay amount={data.totalRevenue} />, trend: '+12.5%', icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { label: t('saas.average_revenue_per_user'), value: <PriceDisplay amount={data.arpu} />, trend: '+5.2%', icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-    { label: t('saas.recurring_revenue_mrr'), value: <PriceDisplay amount={data.mrr} />, trend: '+2.1%', icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: t('saas.renewal_rate_typical'), value: '94.2%', trend: '-0.5%', icon: BarChart3, color: 'text-rose-600', bg: 'bg-rose-50' },
+    { label: t('saas.total_revenue_platform_sales'), value: <PriceDisplay amount={data.totalRevenue} />, trend: '+12.5%', icon: DollarSign, color: 'text-success', bg: 'bg-success/10' },
+    { label: t('saas.average_revenue_per_user'), value: <PriceDisplay amount={data.arpu} />, trend: '+5.2%', icon: Users, color: 'text-info', bg: 'bg-info/10' },
+    { label: t('saas.recurring_revenue_mrr'), value: <PriceDisplay amount={data.mrr} />, trend: '+2.1%', icon: TrendingUp, color: 'text-brand', bg: 'bg-brand/10' },
+    { label: t('saas.renewal_rate_typical'), value: '94.2%', trend: '-0.5%', icon: BarChart3, color: 'text-danger', bg: 'bg-danger/10' },
   ];
 
   return (
     <div className="space-y-8 font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-black text-gray-900">{t('saas.financial_reports_title')}</h1>
-          <p className="text-gray-500 font-bold mt-1">{t('saas.financial_reports_subtitle')}</p>
+          <h1 className="text-3xl font-black text-content">{t('saas.financial_reports_title')}</h1>
+          <p className="text-content-muted font-bold mt-1">{t('saas.financial_reports_subtitle')}</p>
         </div>
         <div className="flex gap-2">
-          <button className="px-6 py-2 bg-white border border-gray-100 rounded-xl font-bold text-sm shadow-sm hover:bg-gray-50 transition-colors cursor-pointer">
+          <button className="px-6 py-2 bg-surface border border-border rounded-xl font-bold text-sm shadow-sm hover:bg-surface-muted transition-colors cursor-pointer">
             {t('saas.export_pdf')}
           </button>
-          <button 
+          <button
             onClick={fetchData}
-            className="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-100 flex items-center gap-2 hover:bg-indigo-700 transition-all cursor-pointer"
+            className="px-6 py-2 bg-brand text-white rounded-xl font-bold text-sm shadow-lg shadow-brand/20 flex items-center gap-2 hover:bg-brand/90 transition-all cursor-pointer"
           >
             <RefreshCw size={16} className={data.loading ? "animate-spin" : ""} />
             {t('saas.refresh_data')}
@@ -125,37 +125,37 @@ export default function SaaSReports() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat) => (
-          <div key={stat.label} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm transition-all hover:shadow-md">
+          <div key={stat.label} className="bg-surface p-6 rounded-[2rem] border border-border shadow-sm transition-all hover:shadow-md">
             <div className="flex items-center justify-between mb-4">
               <div className={`${stat.bg} ${stat.color} p-3 rounded-2xl`}>
                 <stat.icon size={24} />
               </div>
-              <span className={`text-xs font-bold ${stat.trend.startsWith('+') ? 'text-emerald-600' : 'text-rose-600'}`}>
+              <span className={`text-xs font-bold ${stat.trend.startsWith('+') ? 'text-success' : 'text-danger'}`}>
                 {stat.trend}
               </span>
             </div>
-            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">{stat.label}</p>
-            <h3 className="text-2xl font-black text-gray-900 mt-1">{stat.value}</h3>
+            <p className="text-content-muted text-[10px] font-black uppercase tracking-widest">{stat.label}</p>
+            <h3 className="text-2xl font-black text-content mt-1">{stat.value}</h3>
           </div>
         ))}
       </div>
 
-      <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
-        <h3 className="text-xl font-black text-gray-900 mb-8">{t('saas.monthly_revenue_growth_platform')}</h3>
+      <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
+        <h3 className="text-xl font-black text-content mb-8">{t('saas.monthly_revenue_growth_platform')}</h3>
         <div className="h-96">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data.chartData.length > 0 ? data.chartData : [
               { month: t('common.no_data'), revenue: 0 }
             ]}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12, fontWeight: 600}} />
-              <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12, fontWeight: 600}} />
-              <Tooltip 
-                cursor={{fill: '#f8fafc'}} 
-                contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} 
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: 'var(--content-muted)', fontSize: 12, fontWeight: 600 }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--content-muted)', fontSize: 12, fontWeight: 600 }} />
+              <Tooltip
+                cursor={{ fill: 'var(--surface-muted)' }}
+                contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                 formatter={(value: number) => [ <PriceDisplay amount={value} />, '' ]}
               />
-              <Bar dataKey="revenue" fill="#4f46e5" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="revenue" fill="var(--brand)" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

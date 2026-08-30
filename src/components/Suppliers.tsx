@@ -548,13 +548,14 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
             </div>
             <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-content-muted mb-1">{t('procurement.company_name', 'اسم الشركة/المورد')}</label>
+                <label htmlFor="supplier-name" className="block text-sm font-medium text-content-muted mb-1">{t('procurement.company_name', 'اسم الشركة/المورد')}</label>
                 <div className={cn(
                   "flex items-center gap-2.5 px-3.5 py-2.5 bg-surface-muted border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand focus-within:border-transparent transition-all",
                   errors.name && "border-red-500"
                 )}>
                   <Building size={18} className="text-content-muted shrink-0" />
-                  <input 
+                  <input
+                    id="supplier-name"
                     {...register('name')}
                     placeholder={t('procurement.company_name', 'اسم الشركة/المورد')}
                     className="w-full bg-transparent border-none p-0 outline-none text-content focus:ring-0 text-sm font-medium"
@@ -563,13 +564,14 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                 {errors.name && <p className="text-xs text-red-500 font-bold mt-1">{errors.name.message}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-content-muted mb-1">{t('procurement.contact_person', 'الشخص المسؤول')}</label>
+                <label htmlFor="supplier-contact-person" className="block text-sm font-medium text-content-muted mb-1">{t('procurement.contact_person', 'الشخص المسؤول')}</label>
                 <div className={cn(
                   "flex items-center gap-2.5 px-3.5 py-2.5 bg-surface-muted border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand focus-within:border-transparent transition-all",
                   errors.contactPerson && "border-red-500"
                 )}>
                   <User size={18} className="text-content-muted shrink-0" />
-                  <input 
+                  <input
+                    id="supplier-contact-person"
                     {...register('contactPerson')}
                     placeholder={t('procurement.contact_person', 'الشخص المسؤول')}
                     className="w-full bg-transparent border-none p-0 outline-none text-content focus:ring-0 text-sm font-medium"
@@ -579,13 +581,14 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-content-muted mb-1">{t('procurement.email', 'البريد الإلكتروني')}</label>
+                  <label htmlFor="supplier-email" className="block text-sm font-medium text-content-muted mb-1">{t('procurement.email', 'البريد الإلكتروني')}</label>
                   <div className={cn(
                     "flex items-center gap-2.5 px-3.5 py-2.5 bg-surface-muted border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand focus-within:border-transparent transition-all",
                     errors.email && "border-red-500"
                   )}>
                     <Mail size={18} className="text-content-muted shrink-0" />
-                    <input 
+                    <input
+                      id="supplier-email"
                       type="email"
                       {...register('email')}
                       placeholder={t('procurement.email', 'البريد الإلكتروني')}
@@ -595,13 +598,14 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                   {errors.email && <p className="text-xs text-red-500 font-bold mt-1">{errors.email.message}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-content-muted mb-1">{t('procurement.phone', 'رقم الهاتف')}</label>
+                  <label htmlFor="supplier-phone" className="block text-sm font-medium text-content-muted mb-1">{t('procurement.phone', 'رقم الهاتف')}</label>
                   <div className={cn(
                     "flex items-center gap-2.5 px-3.5 py-2.5 bg-surface-muted border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand focus-within:border-transparent transition-all",
                     errors.phone && "border-red-500"
                   )}>
                     <Phone size={18} className="text-content-muted shrink-0" />
-                    <input 
+                    <input
+                      id="supplier-phone"
                       type="tel"
                       {...register('phone')}
                       placeholder={t('procurement.phone', 'رقم الهاتف')}
@@ -613,13 +617,14 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-content-muted mb-1">{t('procurement.tax_number', 'الرقم الضريبي (اختياري)')}</label>
+                  <label htmlFor="supplier-tax-number" className="block text-sm font-medium text-content-muted mb-1">{t('procurement.tax_number', 'الرقم الضريبي (اختياري)')}</label>
                   <div className={cn(
                     "flex items-center gap-2.5 px-3.5 py-2.5 bg-surface-muted border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand focus-within:border-transparent transition-all",
                     errors.taxNumber && "border-red-500"
                   )}>
                     <FileText size={18} className="text-content-muted shrink-0" />
-                    <input 
+                    <input
+                      id="supplier-tax-number"
                       {...register('taxNumber')}
                       placeholder={t('procurement.tax_number', 'الرقم الضريبي')}
                       className="w-full bg-transparent border-none p-0 outline-none text-content focus:ring-0 text-sm font-medium"
@@ -651,13 +656,14 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-content-muted mb-1">{t('procurement.address', 'العنوان (اختياري)')}</label>
+                <label htmlFor="supplier-address" className="block text-sm font-medium text-content-muted mb-1">{t('procurement.address', 'العنوان (اختياري)')}</label>
                 <div className={cn(
                   "flex items-start gap-2.5 px-3.5 py-2.5 bg-surface-muted border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand focus-within:border-transparent transition-all",
                   errors.address && "border-red-500"
                 )}>
                   <MapPin size={18} className="text-content-muted shrink-0 mt-0.5" />
-                  <textarea 
+                  <textarea
+                    id="supplier-address"
                     {...register('address')}
                     placeholder={t('procurement.address_placeholder', 'العنوان (اختياري)')}
                     className="w-full bg-transparent border-none p-0 outline-none h-20 resize-none text-content focus:ring-0 text-sm font-medium"

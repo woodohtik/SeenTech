@@ -726,10 +726,11 @@ export default function SuperAdminDashboard() {
               {t('saas.engine_status_stable')}
             </span>
           </div>
-          <button 
-            onClick={fetchData} 
+          <button
+            onClick={fetchData}
             className="flex items-center gap-2 p-3 bg-surface border border-border text-content hover:bg-surface-muted rounded-2xl shadow-sm transition-all cursor-pointer"
             title={t('saas.refresh_data')}
+            aria-label={t('saas.refresh_data')}
           >
             <RefreshCw size={16} />
           </button>
@@ -1252,11 +1253,12 @@ export default function SuperAdminDashboard() {
                 <div>
                   <div className="flex justify-between items-start mb-4">
                     <span className="text-[10px] font-black text-content-muted uppercase tracking-widest leading-none">Database Latency</span>
-                    <button 
+                    <button
                       disabled={testingLatency}
                       onClick={measureLatency}
                       className="p-1 text-brand hover:bg-brand/5 rounded-lg transition-all cursor-pointer"
                       title="Measure Latency Now"
+                      aria-label="Measure Latency Now"
                     >
                       <RefreshCw size={14} className={cn(testingLatency && "animate-spin")} />
                     </button>

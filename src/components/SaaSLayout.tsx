@@ -89,6 +89,13 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
     return () => window.removeEventListener('resize', handleResize);
   }, [isSidebarOpen]);
   
+  const [quickSearchValue, setQuickSearchValue] = useState('');
+  const handleQuickSearch = useCallback(() => {
+    const q = quickSearchValue.trim();
+    if (!q) return;
+    navigate('/admin/tailors', { state: { search: q } });
+  }, [quickSearchValue, navigate]);
+
   const [notifications, setNotifications] = useState<SaaSNotification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -201,7 +208,12 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
 
   // 1. Session Timeout Logic (Idle Timeout)
   const IDLE_TIMEOUT = 15 * 60 * 1000; // 15 minutes
+  // Warn this long before the forced logout, so an admin mid-form (Roles,
+  // System Settings, ...) gets a chance to stay signed in instead of losing
+  // unsaved input with no notice.
+  const IDLE_WARNING_LEAD = 60 * 1000; // 60 seconds
   const [lastActivity, setLastActivity] = useState(Date.now());
+  const [showIdleWarning, setShowIdleWarning] = useState(false);
 
   const handleLogout = useCallback(async () => {
     await logSaaSSecurityEvent('saas_logout', 'User logged out or session timed out');
@@ -215,17 +227,30 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
     window.location.replace('/login');
   }, [navigate]);
 
+  const stayLoggedIn = useCallback(() => {
+    setLastActivity(Date.now());
+    setShowIdleWarning(false);
+  }, []);
+
   useEffect(() => {
-    const handleActivity = () => setLastActivity(Date.now());
+    const handleActivity = () => {
+      setLastActivity(Date.now());
+      setShowIdleWarning(false);
+    };
     window.addEventListener('mousemove', handleActivity);
     window.addEventListener('keydown', handleActivity);
     window.addEventListener('scroll', handleActivity);
 
+    // Checked more often than the warning window itself, so a 60s-granularity
+    // poll can never skip straight from "no warning" to "logged out".
     const interval = setInterval(() => {
-      if (Date.now() - lastActivity > IDLE_TIMEOUT) {
+      const idleFor = Date.now() - lastActivity;
+      if (idleFor > IDLE_TIMEOUT) {
         handleLogout();
+      } else if (idleFor > IDLE_TIMEOUT - IDLE_WARNING_LEAD) {
+        setShowIdleWarning(true);
       }
-    }, 60000); // Check every minute
+    }, 15000);
 
     return () => {
       window.removeEventListener('mousemove', handleActivity);
@@ -527,6 +552,9 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                 data-lpignore="true"
                 data-1p-ignore="true"
                 data-form-type="other"
+                value={quickSearchValue}
+                onChange={(e) => setQuickSearchValue(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleQuickSearch(); } }}
                 placeholder={t('saas.quick_search', 'بحث سريع...')}
                 startIcon={Search}
                 className="rounded-2xl"
@@ -673,23 +701,24 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                 )}
 
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-700 block">{t('saas.current_temp_password')}</label>
+                  <label className="text-xs font-black text-gray-700 block">{t('saas.current_temp_password')} <span className="text-danger">*</span></label>
                   <div className="relative">
                     <input
                       type={showCurrentPass ? "text" : "password"}
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       required
-                      className="w-full h-12 px-4 pr-10 rounded-2xl border border-gray-200 focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all font-bold text-gray-900"
+                      className="w-full h-12 ps-10 pe-10 rounded-2xl border border-gray-200 focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all font-bold text-gray-900"
                       placeholder="••••••••"
                     />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <div className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400">
                       <Lock size={18} />
                     </div>
                     <button
                       type="button"
                       onClick={() => setShowCurrentPass(!showCurrentPass)}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      aria-label={showCurrentPass ? t('saas.hide_password') : t('saas.show_password')}
+                      className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     >
                       {showCurrentPass ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -697,23 +726,24 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-700 block">{t('saas.new_password')}</label>
+                  <label className="text-xs font-black text-gray-700 block">{t('saas.new_password')} <span className="text-danger">*</span></label>
                   <div className="relative">
                     <input
                       type={showPass1 ? "text" : "password"}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       required
-                      className="w-full h-12 px-4 pr-10 rounded-2xl border border-gray-200 focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all font-bold text-gray-900"
+                      className="w-full h-12 ps-10 pe-10 rounded-2xl border border-gray-200 focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all font-bold text-gray-900"
                       placeholder="••••••••"
                     />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <div className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400">
                       <Lock size={18} />
                     </div>
                     <button
                       type="button"
                       onClick={() => setShowPass1(!showPass1)}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      aria-label={showPass1 ? t('saas.hide_password') : t('saas.show_password')}
+                      className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     >
                       {showPass1 ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -721,23 +751,24 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-700 block">{t('saas.confirm_new_password')}</label>
+                  <label className="text-xs font-black text-gray-700 block">{t('saas.confirm_new_password')} <span className="text-danger">*</span></label>
                   <div className="relative">
                     <input
                       type={showPass2 ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
-                      className="w-full h-12 px-4 pr-10 rounded-2xl border border-gray-200 focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all font-bold text-gray-900"
+                      className="w-full h-12 ps-10 pe-10 rounded-2xl border border-gray-200 focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all font-bold text-gray-900"
                       placeholder="••••••••"
                     />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <div className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400">
                       <Lock size={18} />
                     </div>
                     <button
                       type="button"
                       onClick={() => setShowPass2(!showPass2)}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      aria-label={showPass2 ? t('saas.hide_password') : t('saas.show_password')}
+                      className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     >
                       {showPass2 ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -759,6 +790,34 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                   )}
                 </button>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showIdleWarning && (
+          <div className="fixed bottom-6 inset-x-0 z-[110] flex justify-center px-4 pointer-events-none" dir={isRtl ? 'rtl' : 'ltr'}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="pointer-events-auto bg-surface border border-warning/30 shadow-2xl rounded-2xl px-5 py-4 flex items-center gap-4 max-w-md w-full"
+            >
+              <div className="w-10 h-10 bg-warning/10 text-warning rounded-xl flex items-center justify-center shrink-0">
+                <Clock size={20} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-black text-content">{t('saas.idle_warning_title')}</p>
+                <p className="text-xs text-content-muted font-medium mt-0.5">{t('saas.idle_warning_desc')}</p>
+              </div>
+              <button
+                type="button"
+                onClick={stayLoggedIn}
+                className="shrink-0 bg-brand text-white text-xs font-black px-4 py-2.5 rounded-xl hover:bg-brand/90 transition-all"
+              >
+                {t('saas.idle_warning_stay')}
+              </button>
             </motion.div>
           </div>
         )}

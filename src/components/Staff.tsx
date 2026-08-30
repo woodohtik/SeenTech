@@ -1174,6 +1174,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                 <button
                   onClick={() => setPinModalTarget(null)}
                   className="p-2 hover:bg-surface-muted rounded-full text-content-muted transition-colors"
+                  aria-label={t('common.close')}
                 >
                   <X size={18} />
                 </button>
@@ -1622,6 +1623,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                 }}
                                 className="p-1.5 text-content-muted hover:text-brand rounded-lg hover:bg-surface"
                                 title={t('settings_page.staff.permissions.edit_role_title')}
+                                aria-label={t('settings_page.staff.permissions.edit_role_title')}
                               >
                                 <Edit2 size={13} />
                               </button>
@@ -1633,6 +1635,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                   }}
                                   className="p-1.5 text-content-muted hover:text-danger rounded-lg hover:bg-surface"
                                   title={t('settings_page.staff.permissions.delete_role_title')}
+                                  aria-label={t('settings_page.staff.permissions.delete_role_title')}
                                 >
                                   <Trash2 size={13} />
                                 </button>
@@ -2128,6 +2131,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                         setNewRoleDesc('');
                       }}
                       className="p-2 hover:bg-surface-muted rounded-xl transition-all"
+                      aria-label={t('common.close')}
                     >
                       <X size={20} className="text-content-muted" />
                     </button>

@@ -193,8 +193,9 @@ export default function ShiftHistory({ tenantId, staffId, isManager }: ShiftHist
                   </td>
                   <td className="px-6 py-4">
                     {shift.status === 'closed' && (
-                      <button 
+                      <button
                          onClick={() => handlePrintZReport(shift)}
+                        aria-label={t('shift_history.print_z_report')}
                         className="p-2 text-brand hover:bg-brand/10 rounded-lg transition-colors"
                         title={t('shift_history.print_z_report')}
                       >

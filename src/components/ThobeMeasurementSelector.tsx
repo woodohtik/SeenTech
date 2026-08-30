@@ -49,6 +49,13 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
     inputRefs.current[part]?.focus();
   };
 
+  const handlePartKeyDown = (part: ThobePart) => (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handlePartClick(part);
+    }
+  };
+
   const handleInputChange = (part: ThobePart, value: string) => {
     if (readOnly) return;
     const numValue = Math.max(0, parseFloat(value) || 0);
@@ -135,8 +142,12 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
             fill={activePart === 'shoulder' ? `${highlightColor}33` : 'transparent'}
             stroke={activePart === 'shoulder' ? highlightColor : 'transparent'}
             strokeWidth="3"
-            className="cursor-pointer"
+            className="cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+            role="button"
+            tabIndex={readOnly ? -1 : 0}
+            aria-label={t(PART_LABELS.shoulder)}
             onClick={() => handlePartClick('shoulder')}
+            onKeyDown={handlePartKeyDown('shoulder')}
             whileHover={{ fill: `${highlightColor}11` }}
             animate={{ 
               opacity: activePart && activePart !== 'shoulder' ? 0.3 : 1,
@@ -144,11 +155,15 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
           />
 
           {/* Collar / Neck */}
-          <motion.g 
+          <motion.g
             id="part-neck"
-            className="cursor-pointer"
+            className="cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+            role="button"
+            tabIndex={readOnly ? -1 : 0}
+            aria-label={t(PART_LABELS.neck)}
             onClick={() => handlePartClick('neck')}
-            animate={{ 
+            onKeyDown={handlePartKeyDown('neck')}
+            animate={{
               opacity: activePart && activePart !== 'neck' ? 0.3 : 1,
               y: activePart === 'neck' ? -5 : 0
             }}
@@ -170,8 +185,12 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
             fill={activePart === 'chest' ? `${highlightColor}33` : 'transparent'}
             stroke={activePart === 'chest' ? highlightColor : 'transparent'}
             strokeWidth="3"
-            className="cursor-pointer"
+            className="cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+            role="button"
+            tabIndex={readOnly ? -1 : 0}
+            aria-label={t(PART_LABELS.chest)}
             onClick={() => handlePartClick('chest')}
+            onKeyDown={handlePartKeyDown('chest')}
             whileHover={{ fill: `${highlightColor}11` }}
             animate={{ 
               opacity: activePart && activePart !== 'chest' ? 0.3 : 1,
@@ -185,8 +204,12 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
             fill={activePart === 'waist' ? `${highlightColor}33` : 'transparent'}
             stroke={activePart === 'waist' ? highlightColor : 'transparent'}
             strokeWidth="3"
-            className="cursor-pointer"
+            className="cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+            role="button"
+            tabIndex={readOnly ? -1 : 0}
+            aria-label={t(PART_LABELS.waist)}
             onClick={() => handlePartClick('waist')}
+            onKeyDown={handlePartKeyDown('waist')}
             whileHover={{ fill: `${highlightColor}11` }}
             animate={{ 
               opacity: activePart && activePart !== 'waist' ? 0.3 : 1,
@@ -200,8 +223,12 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
             fill={activePart === 'hips' ? `${highlightColor}33` : 'transparent'}
             stroke={activePart === 'hips' ? highlightColor : 'transparent'}
             strokeWidth="3"
-            className="cursor-pointer"
+            className="cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+            role="button"
+            tabIndex={readOnly ? -1 : 0}
+            aria-label={t(PART_LABELS.hips)}
             onClick={() => handlePartClick('hips')}
+            onKeyDown={handlePartKeyDown('hips')}
             whileHover={{ fill: `${highlightColor}11` }}
             animate={{ 
               opacity: activePart && activePart !== 'hips' ? 0.3 : 1,
@@ -209,11 +236,15 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
           />
 
           {/* Sleeves with Cuffs */}
-          <motion.g 
-            id="part-sleeve" 
-            className="cursor-pointer"
+          <motion.g
+            id="part-sleeve"
+            className="cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+            role="button"
+            tabIndex={readOnly ? -1 : 0}
+            aria-label={t(PART_LABELS.sleeve)}
             onClick={() => handlePartClick('sleeve')}
-            animate={{ 
+            onKeyDown={handlePartKeyDown('sleeve')}
+            animate={{
               opacity: activePart && activePart !== 'sleeve' ? 0.3 : 1,
             }}
           >
@@ -243,9 +274,13 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
           {/* Length Measurement Line */}
           <motion.g
             id="part-length"
-            className="cursor-pointer"
+            className="cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+            role="button"
+            tabIndex={readOnly ? -1 : 0}
+            aria-label={t(PART_LABELS.length)}
             onClick={() => handlePartClick('length')}
-            animate={{ 
+            onKeyDown={handlePartKeyDown('length')}
+            animate={{
               opacity: activePart && activePart !== 'length' ? 0.3 : 1,
             }}
           >
@@ -267,8 +302,12 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
             stroke={activePart === 'bottomWidth' ? highlightColor : '#94a3b8'}
             strokeWidth={activePart === 'bottomWidth' ? "3" : "1"}
             strokeDasharray={activePart === 'bottomWidth' ? "none" : "5,3"}
-            className="cursor-pointer"
+            className="cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+            role="button"
+            tabIndex={readOnly ? -1 : 0}
+            aria-label={t(PART_LABELS.bottomWidth)}
             onClick={() => handlePartClick('bottomWidth')}
+            onKeyDown={handlePartKeyDown('bottomWidth')}
             whileHover={{ fill: `${highlightColor}11` }}
             animate={{ 
               opacity: activePart && activePart !== 'bottomWidth' ? 0.3 : 1,
@@ -356,7 +395,7 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
                 )}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-[10px] font-black text-content-muted uppercase tracking-widest">
+                  <label htmlFor={`thobe-part-${part}`} className="block text-[10px] font-black text-content-muted uppercase tracking-widest">
                     {t(PART_LABELS[part])}
                   </label>
                   {isInstructionMode && (
@@ -387,6 +426,7 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
 
                 <div className="flex items-center gap-3">
                   <input
+                    id={`thobe-part-${part}`}
                     ref={(el) => { inputRefs.current[part] = el; }}
                     type="number"
                     min="0"

@@ -114,7 +114,7 @@ export default function UserPreferencesMenu({
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "w-full rounded-2xl flex items-center gap-3 transition-all active:scale-98 bg-brand/5 border border-brand/10 hover:bg-brand/10 text-content cursor-pointer focus:outline-none",
+          "w-full rounded-2xl flex items-center gap-3 transition-all active:scale-98 bg-brand/5 border border-brand/10 hover:bg-brand/10 text-content cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand",
           isCollapsed ? "justify-center p-2" : "p-3"
         )}
       >
@@ -186,7 +186,7 @@ export default function UserPreferencesMenu({
                   setIsOpen(false);
                 }}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-muted text-content-muted hover:text-content text-sm transition-all cursor-pointer focus:outline-none w-full",
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-muted text-content-muted hover:text-content text-sm transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand w-full",
                   isRtl ? "text-right" : "text-left"
                 )}
               >
@@ -238,7 +238,7 @@ export default function UserPreferencesMenu({
             <button
               onClick={handleThemeToggle}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-muted text-content-muted hover:text-content text-sm transition-all cursor-pointer focus:outline-none w-full",
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-muted text-content-muted hover:text-content text-sm transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand w-full",
                 isRtl ? "text-right" : "text-left"
               )}
             >
@@ -262,7 +262,7 @@ export default function UserPreferencesMenu({
                 window.dispatchEvent(new CustomEvent('start_onboarding_tour'));
               }}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-brand/5 text-content hover:text-brand text-sm transition-all cursor-pointer focus:outline-none w-full",
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-brand/5 text-content hover:text-brand text-sm transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand w-full",
                 isRtl ? "text-right" : "text-left"
               )}
             >
@@ -283,7 +283,7 @@ export default function UserPreferencesMenu({
                   onLock();
                 }}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-brand/5 text-brand hover:text-brand-dark text-sm font-bold transition-all cursor-pointer focus:outline-none w-full",
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-brand/5 text-brand hover:text-brand-dark text-sm font-bold transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand w-full",
                   isRtl ? "text-right" : "text-left"
                 )}
               >
@@ -302,7 +302,7 @@ export default function UserPreferencesMenu({
                 onLogout();
               }}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-500/5 text-red-500 hover:text-red-600 text-sm font-bold transition-all cursor-pointer focus:outline-none w-full",
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-500/5 text-red-500 hover:text-red-600 text-sm font-bold transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand w-full",
                 isRtl ? "text-right" : "text-left"
               )}
             >

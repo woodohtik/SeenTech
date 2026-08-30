@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, 
   RotateCcw, 
@@ -44,6 +44,18 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
   const [refundMethod, setRefundMethod] = useState<'cash' | 'network' | 'bank_transfer'>('cash');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  useEffect(() => {
+    if (!showConfirmModal) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setShowConfirmModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showConfirmModal]);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -511,8 +523,15 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
 
       <AnimatePresence>
         {showConfirmModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowConfirmModal(false)}
+          >
             <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-label={t('sales_returns.confirm_title')}
+              onClick={(e) => e.stopPropagation()}
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}

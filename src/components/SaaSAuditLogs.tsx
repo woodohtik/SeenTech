@@ -101,19 +101,19 @@ export default function SaaSAuditLogs() {
 
   const getLogIcon = (type: string) => {
     switch (type) {
-      case 'security_alert': return <AlertCircle className="text-rose-600" size={20} />;
-      case 'deletion': return <Activity className="text-amber-600" size={20} />;
-      case 'login': return <Shield className="text-indigo-600" size={20} />;
-      default: return <Activity className="text-gray-600" size={20} />;
+      case 'security_alert': return <AlertCircle className="text-danger" size={20} />;
+      case 'deletion': return <Activity className="text-warning" size={20} />;
+      case 'login': return <Shield className="text-info" size={20} />;
+      default: return <Activity className="text-content-muted" size={20} />;
     }
   };
 
   const getLogBg = (type: string) => {
     switch (type) {
-      case 'security_alert': return 'bg-rose-50';
-      case 'deletion': return 'bg-amber-50';
-      case 'login': return 'bg-indigo-50';
-      default: return 'bg-gray-50';
+      case 'security_alert': return 'bg-danger/10';
+      case 'deletion': return 'bg-warning/10';
+      case 'login': return 'bg-info/10';
+      default: return 'bg-surface-muted';
     }
   };
 
@@ -121,17 +121,17 @@ export default function SaaSAuditLogs() {
     <div className="space-y-8 font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h2 className="text-3xl font-black text-gray-900">{t('saas.audit_logs_title')}</h2>
-          <p className="text-gray-500 font-bold mt-1">{t('saas.audit_logs_subtitle')}</p>
+          <h2 className="text-3xl font-black text-content">{t('saas.audit_logs_title')}</h2>
+          <p className="text-content-muted font-bold mt-1">{t('saas.audit_logs_subtitle')}</p>
         </div>
-        <button className="flex items-center gap-2 px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-2xl font-bold hover:bg-gray-50 transition-all shadow-sm cursor-pointer">
+        <button className="flex items-center gap-2 px-6 py-3 bg-surface border border-border text-content rounded-2xl font-bold hover:bg-surface-muted transition-all shadow-sm cursor-pointer">
           <Download size={18} />
           <span>{t('saas.export_logs')}</span>
         </button>
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col md:flex-row gap-4">
+      <div className="bg-surface p-6 rounded-[2.5rem] border border-border shadow-sm flex flex-col md:flex-row gap-4">
         <div className="flex-1">
           <IconInput 
             type="text"
@@ -159,58 +159,58 @@ export default function SaaSAuditLogs() {
       </div>
 
       {/* Logs Table */}
-      <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-x-auto whitespace-nowrap scrollbar-hide">
+      <div className="bg-surface rounded-[2.5rem] border border-border shadow-sm overflow-x-auto whitespace-nowrap scrollbar-hide">
         <table className="w-full text-right rtl:text-right ltr:text-left min-w-max">
           <thead>
-            <tr className="bg-gray-50 text-gray-500 text-xs font-black uppercase tracking-wider">
+            <tr className="bg-surface-muted text-content-muted text-xs font-black uppercase tracking-wider">
               <th className="px-8 py-5 text-right rtl:text-right ltr:text-left">{t('saas.action_performed')}</th>
               <th className="px-8 py-5 text-right rtl:text-right ltr:text-left">{t('saas.performed_by')}</th>
               <th className="px-8 py-5 text-right rtl:text-right ltr:text-left">{t('saas.details')}</th>
               <th className="px-8 py-5 text-right rtl:text-right ltr:text-left">{t('saas.timestamp')}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-border">
             {loading ? (
               <tr>
                 <td colSpan={4} className="px-8 py-20 text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand mx-auto"></div>
                 </td>
               </tr>
             ) : filteredLogs.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-8 py-20 text-center">
-                  <p className="text-gray-400 font-bold">{t('saas.no_logs_found')}</p>
+                  <p className="text-content-muted font-bold">{t('saas.no_logs_found')}</p>
                 </td>
               </tr>
             ) : (
               filteredLogs.map((log) => (
-                <tr key={log.id} className="hover:bg-gray-50 transition-colors group">
+                <tr key={log.id} className="hover:bg-surface-muted transition-colors group">
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-3">
                       <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", getLogBg(log.type))}>
                         {getLogIcon(log.type)}
                       </div>
                       <div className="text-right rtl:text-right ltr:text-left">
-                        <div className="font-bold text-gray-900">{log.action}</div>
-                        <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest">{log.type}</div>
+                        <div className="font-bold text-content">{log.action}</div>
+                        <div className="text-[10px] text-content-muted font-black uppercase tracking-widest">{log.type}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500">
+                      <div className="w-8 h-8 bg-surface-muted rounded-lg flex items-center justify-center text-content-muted">
                         <User size={16} />
                       </div>
-                      <div className="text-sm font-bold text-gray-700">{log.performedByEmail}</div>
+                      <div className="text-sm font-bold text-content">{log.performedByEmail}</div>
                     </div>
                   </td>
                   <td className="px-8 py-6">
-                    <p className="text-sm text-gray-600 font-medium max-w-md truncate" title={log.details}>
+                    <p className="text-sm text-content-muted font-medium max-w-md truncate" title={log.details}>
                       {log.details}
                     </p>
                   </td>
                   <td className="px-8 py-6">
-                    <div className="flex items-center gap-2 text-gray-500 text-xs font-bold">
+                    <div className="flex items-center gap-2 text-content-muted text-xs font-bold">
                       <Clock size={14} />
                       <span>
                         {new Date(log.timestamp).toLocaleString(

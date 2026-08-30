@@ -6,7 +6,7 @@ import { cn, getCurrencySymbol } from '../lib/utils';
 import { decodeOrderB2BNotes } from '../utils/b2bHelper';
 import { decodeOrderRow } from '../utils/orderHistoryHelper';
 import { PriceDisplay } from './PriceDisplay';
-import { FileText, Eye, X, Download, Package, Scissors, User, Calendar, CreditCard, ShoppingBag, Clock, Printer, Share2 } from 'lucide-react';
+import { FileText, Eye, X, Download, Package, Scissors, User, Calendar, CreditCard, ShoppingBag, Clock, Printer, Share2, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { downloadInvoicePDF, downloadInvoicePDFSilently, shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
 import SimplifiedTaxInvoice from './printing/SimplifiedTaxInvoice';
@@ -29,6 +29,18 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+
+  useEffect(() => {
+    if (!selectedOrder) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setSelectedOrder(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedOrder]);
   const [tenantInfo, setTenantInfo] = useState<{ name: string; vat_number: string; address?: string; phone?: string } | null>(null);
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
@@ -249,7 +261,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
   if (error) {
     return (
       <div className="p-6 font-sans flex flex-col items-center justify-center h-64 text-center bg-surface border border-border rounded-2xl max-w-md mx-auto my-12 shadow-sm animate-fade-in" dir={isRtl ? 'rtl' : 'ltr'}>
-        <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4 font-black text-xl">⚠️</div>
+        <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4"><AlertTriangle size={22} /></div>
         <h3 className="text-sm font-black text-content mb-2">{t('sales_record.failed_to_load', 'فشل تحميل سجل المبيعات')}</h3>
         <p className="text-xs text-content-muted mb-4 font-bold max-w-[280px] leading-relaxed">{error}</p>
         <button
@@ -378,8 +390,16 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
 
       {/* Order Details Modal */}
       {selectedOrder && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-2 sm:p-4">
-          <div className={cn(
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-2 sm:p-4"
+          onClick={() => setSelectedOrder(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('pos.order_details')}
+            onClick={(e) => e.stopPropagation()}
+            className={cn(
             "bg-surface rounded-2xl md:rounded-[2rem] shadow-2xl flex flex-col max-h-[92vh] overflow-hidden transition-all duration-200",
             selectedOrder.isB2B ? "w-full max-w-3xl" : "w-full max-w-[92mm] sm:max-w-[100mm]"
           )}>
@@ -395,7 +415,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                   </div>
                 </div>
               </div>
-              <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-surface-muted rounded-full transition-colors">
+              <button onClick={() => setSelectedOrder(null)} aria-label={t('common.close')} className="p-2 hover:bg-surface-muted rounded-full transition-colors">
                 <X className="w-5 h-5 sm:w-6 sm:h-6 text-content-muted" />
               </button>
             </div>

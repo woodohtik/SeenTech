@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { TailorRequest, Tenant, Plan, Order } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { PriceDisplay } from './PriceDisplay';
@@ -68,11 +68,14 @@ export default function AdminTailors() {
   const { dbUser } = useAuth();
   const userRole = dbUser?.role;
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<'tenants' | 'subscriptions'>('tenants');
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [statusFilter, setStatusFilter] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
+  // Seeded from the Super Admin header's quick-search box (SaaSLayout.tsx),
+  // which hands off here via navigate('/admin/tailors', { state: { search } }).
+  const [searchTerm, setSearchTerm] = useState(() => (location.state as { search?: string } | null)?.search || '');
   const [loading, setLoading] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
   const [updatingAssistantTenantId, setUpdatingAssistantTenantId] = useState<string | null>(null);
