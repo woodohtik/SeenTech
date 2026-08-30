@@ -389,6 +389,11 @@ export default function SaaSAssistantSettings() {
                       <label className="block text-xs font-black text-content-muted">{t('saas.assistant_settings.api_key_label')}</label>
                       <IconInput
                         type={providerShowKey[p.providerKey] ? 'text' : 'password'}
+                        name={`provider-api-key-${p.providerKey}`}
+                        autoComplete="new-password"
+                        data-lpignore="true"
+                        data-1p-ignore="true"
+                        data-form-type="other"
                         value={providerApiKeyInput[p.providerKey] || ''}
                         onChange={(e) => setProviderApiKeyInput((prev) => ({ ...prev, [p.providerKey]: e.target.value }))}
                         placeholder={p.hasApiKey ? p.apiKeyMasked : t('saas.assistant_settings.api_key_placeholder')}

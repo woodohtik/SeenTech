@@ -520,8 +520,13 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
 
           <div className="flex items-center gap-4">
             <div className="hidden md:block w-64">
-              <IconInput 
+              <IconInput
                 type="text"
+                name="saas-quick-search"
+                autoComplete="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-form-type="other"
                 placeholder={t('saas.quick_search', 'بحث سريع...')}
                 startIcon={Search}
                 className="rounded-2xl"
