@@ -1,6 +1,7 @@
 {
   "ai": {
     "assistant_title": "SeenAI Assistant",
+    "assistant_subtitle": "AI-powered • here to help with the system",
     "coming_soon_desc": "This feature is still in development. Soon the AI assistant will help you manage your shop, analyze sales, and answer your questions.",
     "ok_waiting": "Great, I'll wait!",
     "type_message_placeholder": "Type your message...",
@@ -31,7 +32,15 @@
     "card_tax": "Tax",
     "card_discount": "Discount",
     "card_access_denied": "Not available",
-    "fetching_data": "Fetching data..."
+    "fetching_data": "Fetching data...",
+    "guided_tour_question": "Want me to walk you there in the interface now?",
+    "guided_tour_yes": "Yes, guide me",
+    "guided_tour_no": "No thanks",
+    "guided_tour_starting": "Guiding you now...",
+    "suggestion_sales_today": "What are today's sales?",
+    "suggestion_add_customer": "How do I add a new customer?",
+    "suggestion_low_stock": "Any items running low on stock?",
+    "suggestion_new_order": "How do I create a new tailoring order?"
   },
   "billing": {
     "billing_status_title": "Billing & Renewal Status",

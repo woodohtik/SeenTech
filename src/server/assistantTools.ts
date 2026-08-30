@@ -316,6 +316,31 @@ export async function buildAssistantTools(ctx: AssistantToolContext) {
     },
   });
 
+  // قائمة الوجهات المتاحة للجولة التعليمية المخصّصة — تطابق تماماً معرّفات
+  // الخطوات ذات kind='spotlight' في src/config/tourSteps.ts (باستثناء
+  // خطوات التوجيه العامة مثل sidebar/preferences/ai_assistant التي ليست
+  // وجهة "كيفية إضافة شيء"). أي topic خارج هذه القائمة يُرفض من Zod قبل
+  // وصوله للتنفيذ، فلا مجال لنموذج اللغة لاختراع معرّف غير موجود في الواجهة.
+  const GUIDED_TOUR_TOPICS = [
+    'dashboard', 'pos_intro', 'pos_shift', 'pos_subtabs',
+    'orders_new', 'orders_tabs', 'orders_search',
+    'customers_add', 'customers_search',
+    'inventory_tabs', 'inventory_actions',
+    'suppliers', 'reports_filters', 'reports_tabs', 'settings',
+  ] as const;
+
+  const guidedTour = tool({
+    description: 'اعرض أو فعّل جولة تعليمية تفاعلية تُشير فعلياً إلى مكان الإجراء في واجهة النظام (نفس نظام الجولة التي تظهر أول مرة عند تسجيل الدخول، لكن مركّزة على موضوع واحد). استدعِ هذه الأداة دائماً مباشرة بعد شرح "كيف أضيف/أنشئ/أسجّل ..." بـ action="offer" — الأداة نفسها تعرض للمستخدم زر توجيه، فلا تكتفِ بسؤاله نصياً فقط دون استدعائها. إن وافق المستخدم لاحقاً بالنص على عرض سابق (مثل "نعم" أو "أكيد")، استدعها مرة أخرى بنفس الـ topic و action="start" لتشغيل الجولة فوراً. لا تستخدمها لموضوع لم تشرحه للمستخدم للتو.',
+    inputSchema: z.object({
+      topic: z.enum(GUIDED_TOUR_TOPICS).describe('معرّف القسم/الإجراء المطابق تماماً لما شرحته للتو'),
+      action: z.enum(['offer', 'start']).describe('offer: اعرض بطاقة توجيه بعد الشرح (الوضع الافتراضي في كل مرة). start: فعّل الجولة فوراً، فقط بعد موافقة نصية صريحة من المستخدم على عرض سابق لنفس الموضوع'),
+    }),
+    execute: async ({ topic, action }) => {
+      await logToolCall(ctx, 'guidedTour', { topic, action }, false);
+      return { topic, action };
+    },
+  });
+
   return {
     getSalesSummary,
     searchInvoices,
@@ -326,5 +351,6 @@ export async function buildAssistantTools(ctx: AssistantToolContext) {
     getPendingOrders,
     getRevenueReport,
     getDailyClosingReport,
+    guidedTour,
   };
 }

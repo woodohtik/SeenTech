@@ -1,6 +1,7 @@
 {
   "ai": {
     "assistant_title": "SeenAI ذہین معاون",
+    "assistant_subtitle": "مصنوعی ذہانت سے چلتا ہے • نظام میں آپ کی مدد کے لیے یہاں ہے",
     "coming_soon_desc": "یہ سہولت ابھی زیر تیاری ہے۔ جلد ہی اے آئی اسسٹنٹ آپ کی دکان کے انتظام، فروخت کے تجزیے اور سوالات کے جواب میں مدد کرے گا۔",
     "ok_waiting": "ٹھیک ہے، انتظار رہے گا!",
     "type_message_placeholder": "اپنا پیغام لکھیں...",
@@ -31,7 +32,15 @@
     "card_tax": "ٹیکس",
     "card_discount": "رعایت",
     "card_access_denied": "دستیاب نہیں",
-    "fetching_data": "ڈیٹا حاصل کیا جا رہا ہے..."
+    "fetching_data": "ڈیٹا حاصل کیا جا رہا ہے...",
+    "guided_tour_question": "کیا میں اب آپ کو انٹرفیس میں وہاں تک رہنمائی کروں؟",
+    "guided_tour_yes": "جی ہاں، رہنمائی کریں",
+    "guided_tour_no": "نہیں شکریہ",
+    "guided_tour_starting": "اب آپ کی رہنمائی کی جا رہی ہے...",
+    "suggestion_sales_today": "آج کی فروخت کتنی ہے؟",
+    "suggestion_add_customer": "نیا کسٹمر کیسے شامل کروں؟",
+    "suggestion_low_stock": "کیا کوئی آئٹم ختم ہونے والا ہے؟",
+    "suggestion_new_order": "نیا سلائی آرڈر کیسے بناؤں؟"
   },
   "billing": {
     "billing_status_title": "بلنگ اور تجدید کی حالت",

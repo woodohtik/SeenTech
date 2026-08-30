@@ -1,6 +1,7 @@
 {
   "ai": {
     "assistant_title": "المساعد الذكي SeenAI",
+    "assistant_subtitle": "مدعوم بالذكاء الاصطناعي • هنا لمساعدتك في النظام",
     "coming_soon_desc": "هذه الميزة قيد التطوير حالياً. قريباً سيتمكن المساعد الذكي من مساعدتك في إدارة متجرك، تحليل المبيعات، والإجابة على استفساراتك.",
     "ok_waiting": "حسناً، بانتظار ذلك!",
     "type_message_placeholder": "اكتب رسالتك...",
@@ -31,7 +32,15 @@
     "card_tax": "الضريبة",
     "card_discount": "الخصم",
     "card_access_denied": "غير متاح",
-    "fetching_data": "جاري جلب البيانات..."
+    "fetching_data": "جاري جلب البيانات...",
+    "guided_tour_question": "هل تريدني أن أوجهك لمكانها في الواجهة الآن؟",
+    "guided_tour_yes": "نعم، وجّهني",
+    "guided_tour_no": "لا شكراً",
+    "guided_tour_starting": "جاري توجيهك الآن...",
+    "suggestion_sales_today": "كم مبيعات اليوم؟",
+    "suggestion_add_customer": "كيف أضيف عميل جديد؟",
+    "suggestion_low_stock": "هل هناك أصناف أوشكت على النفاد؟",
+    "suggestion_new_order": "كيف أنشئ طلب تفصيل جديد؟"
   },
   "billing": {
     "billing_status_title": "حالة الفوترة والتجديد",

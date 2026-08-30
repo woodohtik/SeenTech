@@ -28,6 +28,17 @@ export function restartOnboardingTour() {
   window.dispatchEvent(new CustomEvent('start_onboarding_tour'));
 }
 
+/**
+ * Launch a single-topic spotlight, jumping straight into the same tour
+ * engine at the step matching `topic` (a TOUR_STEPS id) — no welcome screen.
+ * Used by the AI assistant's "guide me there" action. If the step isn't
+ * available for the current user/device (permission, mobile drop, …) this
+ * is a silent no-op, matching how the full tour already drops such steps.
+ */
+export function startTargetedTour(topic: string) {
+  window.dispatchEvent(new CustomEvent('start_targeted_tour', { detail: { topic } }));
+}
+
 type TourStatus = 'idle' | 'running' | 'completed' | 'skipped';
 
 interface StoredTourState {
@@ -541,6 +552,27 @@ export default function OnboardingTour({
     window.addEventListener('start_onboarding_tour', handleRestart);
     return () => window.removeEventListener('start_onboarding_tour', handleRestart);
   }, [teardown, openWelcome]);
+
+  // Single-topic launches from the AI assistant — jump straight to the
+  // matching step's spotlight, bypassing the welcome screen entirely.
+  useEffect(() => {
+    const handleTargeted = (e: Event) => {
+      const topic = (e as CustomEvent<{ topic?: string }>).detail?.topic;
+      if (!topic) return;
+
+      const steps = buildSteps().filter((s) => !s.kind || s.kind === 'spotlight');
+      const idx = steps.findIndex((s) => s.id === topic);
+      if (idx === -1) return; // not available for this user/device — same silent drop as the full tour
+
+      teardown(null);
+      indexRef.current = 0;
+      anchorsRef.current = {};
+      startTour(idx);
+    };
+
+    window.addEventListener('start_targeted_tour', handleTargeted);
+    return () => window.removeEventListener('start_targeted_tour', handleTargeted);
+  }, [buildSteps, teardown, startTour]);
 
   /**
    * Auto-launch on the very first visit.

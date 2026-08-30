@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Bot, Sparkles, X, Send, AlertTriangle, TrendingUp, FileText, Users, PackageSearch } from 'lucide-react';
+import { Bot, Sparkles, X, Send, AlertTriangle, TrendingUp, FileText, Users, PackageSearch, Compass, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { useDirection } from '../lib/direction';
 import { supabase } from '../lib/supabase/client';
 import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
+import { startTargetedTour } from './OnboardingTour';
 
 interface ToolResult {
   name: string;
@@ -42,6 +43,12 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
   const { dir, isRtl } = useDirection();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const statusTextRef = useRef<string | null>(null);
+  const pendingTourTopicRef = useRef<string | null>(null);
+
+  const launchGuidedTour = useCallback((topic: string) => {
+    setIsOpen(false);
+    window.setTimeout(() => startTargetedTour(topic), 300);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,8 +72,8 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isSending]);
 
-  const sendMessage = useCallback(async () => {
-    const text = input.trim();
+  const sendMessage = useCallback(async (overrideText?: string) => {
+    const text = (overrideText ?? input).trim();
     if (!text || isSending) return;
 
     const nextMessages: ChatMessage[] = [...messages, { role: 'user', content: text }];
@@ -119,6 +126,7 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
       let textAcc = '';
       const toolResultsAcc: ToolResult[] = [];
       let lineBuffer = '';
+      pendingTourTopicRef.current = null;
       // eslint-disable-next-line no-constant-condition
       while (true) {
         const { done, value } = await reader.read();
@@ -138,6 +146,9 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
               setStatusText(statusTextRef.current);
             } else if (part.t === 'tool') {
               toolResultsAcc.push({ name: part.name, result: part.result });
+              if (part.name === 'guidedTour' && part.result?.action === 'start' && part.result?.topic) {
+                pendingTourTopicRef.current = part.result.topic;
+              }
             }
           } catch {
             // سطر NDJSON غير صالح (نادر) — تجاهله بدل كسر المحادثة كاملة
@@ -151,6 +162,15 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
           return copy;
         });
       }
+
+      // المستخدم وافق نصياً على جولة تعليمية عُرضت سابقاً — بعد اكتمال رد
+      // المساعد كاملاً (النص الختامي مرئي أولاً)، أغلق نافذة الدردشة وابدأ
+      // الجولة على الموضوع المطلوب مباشرة.
+      if (pendingTourTopicRef.current) {
+        const topic = pendingTourTopicRef.current;
+        pendingTourTopicRef.current = null;
+        window.setTimeout(() => launchGuidedTour(topic), 500);
+      }
     } catch (err) {
       console.error('SeenAI chat error:', err);
       setBannerMessage(t('ai.error_generic'));
@@ -159,7 +179,7 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
       statusTextRef.current = null;
       setStatusText(null);
     }
-  }, [input, isSending, messages, userName, userRole, t]);
+  }, [input, isSending, messages, userName, userRole, t, launchGuidedTour]);
 
   if (!isEnabled) return null;
 
@@ -170,6 +190,7 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
           onClick={() => setIsOpen(true)}
           className="w-14 h-14 bg-brand rounded-2xl shadow-lg flex items-center justify-center text-white hover:shadow-xl hover:scale-105 transition-all relative group"
         >
+          {!isOpen && <span className="absolute inset-0 rounded-2xl bg-brand animate-ping opacity-20 pointer-events-none" />}
           <Sparkles className="absolute top-2 right-2 w-3 h-3 text-white/70 opacity-0 group-hover:opacity-100 transition-opacity" />
           <Bot size={28} />
         </button>
@@ -196,13 +217,20 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
                 isRtl ? "sm:left-6" : "sm:right-6"
               )}
             >
-              <div className="p-4 border-b border-border flex justify-between items-center bg-brand/5 dark:bg-brand/10 shrink-0">
-                <h2 className="text-lg font-bold text-content flex items-center gap-2">
-                  <Bot className="text-brand" size={22} /> {t('ai.assistant_title')}
-                </h2>
+              <div className="p-4 border-b border-border flex justify-between items-center bg-gradient-to-br from-brand/10 via-brand/5 to-transparent shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="relative w-9 h-9 bg-brand rounded-xl flex items-center justify-center shrink-0">
+                    <Bot className="text-white" size={20} />
+                    <span className="absolute -bottom-0.5 -end-0.5 w-2.5 h-2.5 bg-success rounded-full border-2 border-surface" />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="text-sm font-black text-content leading-tight">{t('ai.assistant_title')}</h2>
+                    <p className="text-[10px] font-bold text-content-muted leading-tight">{t('ai.assistant_subtitle')}</p>
+                  </div>
+                </div>
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-2 hover:bg-black/5 rounded-full text-content-muted transition-colors"
+                  className="p-2 hover:bg-black/5 rounded-full text-content-muted transition-colors shrink-0"
                 >
                   <X size={20} />
                 </button>
@@ -210,13 +238,30 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
 
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {messages.length === 0 && !bannerMessage && (
-                  <div className="h-full flex flex-col items-center justify-center text-center gap-3 px-4">
+                  <div className="h-full flex flex-col items-center justify-center text-center gap-4 px-4">
                     <div className="w-16 h-16 bg-brand/10 rounded-full flex items-center justify-center">
                       <Bot size={32} className="text-brand" />
                     </div>
                     <p className="text-content-muted font-bold text-sm">
                       {t('ai.empty_state_greeting', { name: userName || '' })}
                     </p>
+                    <div className="flex flex-wrap justify-center gap-2 max-w-[280px]">
+                      {[
+                        t('ai.suggestion_sales_today'),
+                        t('ai.suggestion_add_customer'),
+                        t('ai.suggestion_low_stock'),
+                        t('ai.suggestion_new_order'),
+                      ].map((suggestion, i) => (
+                        <button
+                          key={i}
+                          onClick={() => sendMessage(suggestion)}
+                          disabled={isSending}
+                          className="text-xs font-bold text-brand bg-brand/10 hover:bg-brand/15 rounded-full px-3.5 py-2 transition-colors disabled:opacity-50"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
 
@@ -225,14 +270,14 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
                 {messages.map((m, i) => (
                   <div key={i} className={`flex flex-col gap-2 ${m.role === 'user' ? 'items-end' : 'items-start'} ${m.role === 'user' ? 'rtl:items-start' : 'rtl:items-end'}`}>
                     {m.toolResults?.map((tr, ti) => (
-                      <ToolResultCard key={ti} name={tr.name} result={tr.result} />
+                      <ToolResultCard key={ti} name={tr.name} result={tr.result} onStartTour={launchGuidedTour} />
                     ))}
                     {m.content && (
                       <div
                         className={
                           m.role === 'user'
-                            ? 'max-w-[80%] bg-brand text-white rounded-2xl rounded-tr-md px-4 py-2.5 text-sm font-medium whitespace-pre-wrap'
-                            : 'max-w-[80%] bg-surface-muted text-content rounded-2xl rounded-tl-md px-4 py-2.5 text-sm font-medium whitespace-pre-wrap'
+                            ? 'max-w-[80%] bg-brand text-white rounded-2xl rounded-tr-md px-4 py-2.5 text-sm font-medium whitespace-pre-wrap shadow-sm'
+                            : 'max-w-[80%] bg-surface-muted text-content rounded-2xl rounded-tl-md px-4 py-2.5 text-sm font-medium whitespace-pre-wrap shadow-sm'
                         }
                       >
                         {m.content}
@@ -272,7 +317,7 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
                     className="flex-1 bg-transparent border-none outline-none focus:ring-0 py-2.5 text-sm font-medium text-content placeholder:text-content-muted/60"
                   />
                   <button
-                    onClick={sendMessage}
+                    onClick={() => sendMessage()}
                     disabled={isSending || !input.trim()}
                     className="w-8 h-8 shrink-0 bg-brand text-white rounded-xl flex items-center justify-center disabled:opacity-40 transition-all hover:bg-brand/90"
                   >
@@ -296,10 +341,58 @@ function EmptyCard({ text }: { text: string }) {
   );
 }
 
+// بطاقة "جولة تعليمية مخصّصة" — تظهر بعد شرح المساعد لأي "كيف أضيف/أنشئ..."
+// (guidedTour tool, action="offer") بزر توجيه فعلي للمستخدم، أو كإشعار
+// تلقائي عابر عندما يوافق المستخدم نصياً على عرض سابق (action="start").
+function GuidedTourCard({ topic, action, onStartTour }: { topic: string; action: string; onStartTour: (topic: string) => void }) {
+  const { t } = useTranslation();
+  const [choice, setChoice] = useState<'pending' | 'accepted' | 'dismissed'>('pending');
+  const title = t(`tour.steps.${topic}.title`, topic);
+
+  if (action === 'start') {
+    return (
+      <div className="max-w-[90%] w-full bg-brand/5 border border-brand/20 rounded-2xl px-4 py-3 flex items-center gap-2.5">
+        <Compass size={16} className="text-brand shrink-0 animate-pulse" />
+        <span className="text-xs font-bold text-content">{t('ai.guided_tour_starting')}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-[90%] w-full bg-surface border border-brand/20 rounded-2xl overflow-hidden">
+      <div className="flex items-center gap-2 text-xs font-black text-brand uppercase tracking-widest p-3 border-b border-border">
+        <Compass size={14} /> {title}
+      </div>
+      <div className="p-3 space-y-2.5">
+        <p className="text-xs font-bold text-content-muted">{t('ai.guided_tour_question')}</p>
+        {choice === 'pending' && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { setChoice('accepted'); onStartTour(topic); }}
+              className="flex-1 flex items-center justify-center gap-1.5 bg-brand text-white text-xs font-black rounded-xl px-3 py-2 hover:bg-brand/90 transition-all"
+            >
+              {t('ai.guided_tour_yes')} <ArrowRight size={14} className="rtl:-scale-x-100" />
+            </button>
+            <button
+              onClick={() => setChoice('dismissed')}
+              className="text-xs font-bold text-content-muted hover:text-content px-3 py-2 transition-colors"
+            >
+              {t('ai.guided_tour_no')}
+            </button>
+          </div>
+        )}
+        {choice === 'accepted' && (
+          <span className="text-xs font-bold text-brand">{t('ai.guided_tour_starting')}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // عرض توليدي (Generative UI) بسيط: كل أداة بيانات تُعرض كبطاقة/جدول مصغّر
 // حسب نوعها بدل نص خام فقط، مبني على toolName + result القادمين من بروتوكول
 // NDJSON في server.ts (streamAssistantReply).
-function ToolResultCard({ name, result }: { name: string; result: any }) {
+function ToolResultCard({ name, result, onStartTour }: { name: string; result: any; onStartTour: (topic: string) => void }) {
   const { t } = useTranslation();
   if (!result) return null;
 
@@ -313,6 +406,8 @@ function ToolResultCard({ name, result }: { name: string; result: any }) {
   }
 
   switch (name) {
+    case 'guidedTour':
+      return <GuidedTourCard topic={result.topic} action={result.action} onStartTour={onStartTour} />;
     case 'getSalesSummary':
     case 'getRevenueReport':
     case 'getDailyClosingReport': {
