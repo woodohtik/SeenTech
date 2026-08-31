@@ -3171,7 +3171,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                 "w-full bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand",
                                 (errors.items as any)?.[index]?.garmentType && "ring-2 ring-danger border-danger"
                               )}
-                              placeholder={t('orders.item_type_placeholder')}
+                              placeholder={t(isLegacyVertical ? 'orders.item_type_placeholder' : 'orders.item_type_placeholder_generic')}
                             />
                           </div>
                           <div className="space-y-1">

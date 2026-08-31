@@ -1707,6 +1707,7 @@
     "invoice": "الفاتورة",
     "item_type": "نوع القطعة",
     "item_type_placeholder": "مثلاً: ثوب، قميص...",
+    "item_type_placeholder_generic": "اسم أو وصف الصنف...",
     "items": "الأصناف",
     "manage_orders": "إدارة الطلبات",
     "measurements_update_failed": "حدث خطأ أثناء تحديث القياسات",

@@ -1707,6 +1707,7 @@
     "invoice": "انوائس",
     "item_type": "آئٹم کی قسم",
     "item_type_placeholder": "مثال: ثوب، قمیض...",
+    "item_type_placeholder_generic": "شے کا نام یا تفصیل...",
     "items": "آئٹمز",
     "manage_orders": "آرڈرز کا انتظام",
     "measurements_update_failed": "ناپ اپ ڈیٹ کرنے کے دوران خرابی پیش آئی",

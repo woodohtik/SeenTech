@@ -1707,6 +1707,7 @@
     "invoice": "Invoice",
     "item_type": "Item Type",
     "item_type_placeholder": "e.g., Thobe, Shirt...",
+    "item_type_placeholder_generic": "Item name or description...",
     "items": "Items",
     "manage_orders": "Manage Orders",
     "measurements_update_failed": "An error occurred while updating measurements",
