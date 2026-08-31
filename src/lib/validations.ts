@@ -130,7 +130,9 @@ export const onboardingSchema = z.object({
   shopName: z.string().min(2, t('validation.min_length', { count: 2 })),
   phone: z.string().optional().or(z.literal('')),
   logoUrl: z.string().optional(),
-  category: z.enum(['tailor', 'tailor-female', 'uniform']),
+  // Dynamic — sourced from the `verticals` table (verticalService.listVerticals()),
+  // not a fixed enum, so a newly-added vertical never needs a code change here.
+  vertical: z.string().min(1, t('validation.required')),
   taxNumber: z.string().regex(/^\d{15}$/, t('validation.tax_number_format')).optional().or(z.literal('')),
   taxStatus: z.enum(['registered', 'unregistered']).optional(),
   invoiceDefaults: z.string().optional(),

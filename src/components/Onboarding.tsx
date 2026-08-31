@@ -40,6 +40,8 @@ import { analytics, AnalyticsEvent } from '../services/analyticsService';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import { markSetup } from '../services/activationService';
 import { useDirection } from '../lib/direction';
+import { listVerticals, DEFAULT_VERTICAL } from '../services/verticalService';
+import type { Vertical } from '../types/expansion';
 
 type Step = 1 | 2 | 3;
 
@@ -100,7 +102,17 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   const { user: authUser, logout } = useAuth();
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
+  const [verticals, setVerticals] = useState<Vertical[]>([]);
   const navigate = useNavigate();
+
+  // Dynamic activity-type list — DB-driven (verticals table) instead of a
+  // hardcoded 3-option enum, so a newly-added vertical (e.g. fabric_store)
+  // shows up here with no code change.
+  useEffect(() => {
+    listVerticals().then(setVerticals).catch((err) => {
+      console.error('Failed to load verticals list:', err);
+    });
+  }, []);
 
   const { 
     register, 
@@ -117,7 +129,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       customerId: `SN-${Math.floor(100000 + Math.random() * 900000)}`,
       shopName: '',
       phone: authUser?.phone || '',
-      category: 'tailor' as const,
+      vertical: DEFAULT_VERTICAL,
       taxNumber: '',
       taxStatus: 'registered' as const,
       address: '',
@@ -210,7 +222,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
   const handleNext = async () => {
     let fieldsToValidate: any[] = [];
-    if (currentStep === 1) fieldsToValidate = ['shopName', 'category', 'taxNumber', 'taxStatus'];
+    if (currentStep === 1) fieldsToValidate = ['shopName', 'vertical', 'taxNumber', 'taxStatus'];
     if (currentStep === 2) fieldsToValidate = ['address', 'city', 'country'];
     
     if (currentStep === 3) {
@@ -386,7 +398,8 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         is_tax_enabled: isTaxRegistered,
         default_tax_rate: 15,
         logo_url: data.logoUrl || '',
-        default_layout: data.defaultLayout || 'sidebar'
+        default_layout: data.defaultLayout || 'sidebar',
+        vertical: data.vertical || DEFAULT_VERTICAL
       }).eq('id', tenantId);
 
       if (tenantError) throw new Error(`Failed to update tenant: ${tenantError.message}`);
@@ -448,7 +461,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         analytics.track(AnalyticsEvent.TENANT_ONBOARDED, {
           tenant_id: tenantId,
           customer_id: data.customerId,
-          category: data.category
+          vertical: data.vertical
         });
 
         logEmployeeAction(
@@ -617,16 +630,12 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                         </label>
                         <Controller
                           control={control}
-                          name="category"
+                          name="vertical"
                           render={({ field }) => (
                             <SmartSelect
                               {...field}
                               className="w-full bg-white border border-border focus-within:border-brand rounded-xl py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none transition-all shadow-sm"
-                              options={[
-                                { value: 'tailor', label: t('onboarding.categories.tailor') },
-                                { value: 'tailor-female', label: t('onboarding.categories.tailor_female') },
-                                { value: 'uniform', label: t('onboarding.categories.uniform') }
-                              ]}
+                              options={verticals.map((v) => ({ value: v.key, label: v.name_ar }))}
                             />
                           )}
                         />
