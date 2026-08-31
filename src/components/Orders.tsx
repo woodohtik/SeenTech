@@ -78,7 +78,7 @@ import { useStaff } from '../contexts/StaffContext';
 import { useBranding } from '../contexts/BrandingContext';
 import { analytics, AnalyticsEvent } from '../services/analyticsService';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
-import type { WorkflowStage } from '../types/expansion';
+import type { WorkflowStage, FieldSchema } from '../types/expansion';
 import { legacyOrderStatusFor } from '../services/verticalService';
 
 import { isRtlLang, localeOf } from '../lib/direction';
@@ -206,6 +206,74 @@ const PAYMENT_METHODS = [
   { id: 'partial', labelKey: 'common.payment_methods.partial', icon: Clock },
 ];
 
+/**
+ * حقول تخصيص الصنف لأي نشاط غير mens_tailoring — بديل VisualMeasurements/padding/
+ * additions/embroidery الثابتة، مصدرها getFieldSchemas(vertical, 'order_item')
+ * (عبر useVerticalConfig). تُخزَّن القيم في items[index].attributes بدل أعمدة سمّاها
+ * بالاسم مباشرة، لأن كل نشاط له حقوله الخاصة تماماً (انظر MIGRATION_extensibility).
+ */
+const DynamicOrderItemFields = ({
+  index, fields, watch, setValue,
+}: {
+  index: number;
+  fields: FieldSchema[];
+  watch: (name: any) => any;
+  setValue: (name: any, value: any) => void;
+}) => {
+  const { t } = useTranslation();
+  if (fields.length === 0) return null;
+
+  return (
+    <div className="md:col-span-4 mt-4 pt-4 border-t border-border grid grid-cols-1 md:grid-cols-3 gap-4">
+      {fields.map((f) => {
+        const path = `items.${index}.attributes.${f.field_key}`;
+        const value = watch(path);
+        if (f.field_type === 'select') {
+          return (
+            <div key={f.field_key} className="space-y-1">
+              <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{f.label_ar}</label>
+              <SmartSelect
+                value={value ?? ''}
+                onChange={(val) => setValue(path, val)}
+                className="w-full bg-surface rounded-xl shadow-sm"
+                options={[{ value: '', label: t('orders.choose_option') }, ...(f.options || []).map((o) => ({ value: o, label: o }))]}
+              />
+            </div>
+          );
+        }
+        if (f.field_type === 'bool') {
+          return (
+            <div key={f.field_key} className="space-y-1">
+              <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{f.label_ar}</label>
+              <button
+                type="button"
+                onClick={() => setValue(path, !value)}
+                className={cn(
+                  "w-full px-3 py-2.5 rounded-xl border-2 text-xs font-bold transition-all",
+                  value ? "border-brand bg-brand/10 text-brand" : "border-border bg-surface text-content-muted"
+                )}
+              >
+                {value ? t('common.yes') : t('common.no')}
+              </button>
+            </div>
+          );
+        }
+        return (
+          <div key={f.field_key} className="space-y-1">
+            <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{f.label_ar}</label>
+            <input
+              type={f.field_type === 'number' ? 'number' : 'text'}
+              value={value ?? ''}
+              onChange={(e) => setValue(path, f.field_type === 'number' ? (e.target.value === '' ? '' : Number(e.target.value)) : e.target.value)}
+              className="w-full bg-surface border border-border rounded-xl p-3 text-xs font-bold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 export default function Orders({ tenantId }: { tenantId: string }) {
   const { t, i18n } = useTranslation();
   const router = useRouter();
@@ -245,7 +313,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const [searchParams] = useSearchParams();
   const { currentStaff } = useStaff();
   const { user: currentAuthUser } = useAuth();
-  const { workflowStages, isLegacyVertical } = useVerticalConfig();
+  const { workflowStages, orderItemFields, isLegacyVertical } = useVerticalConfig();
   const { hasPermission, checkPermission } = usePermissions(currentStaff);
 
   // قائمة مفاتيح الحالة المتاحة للاختيار (شريط التحديث السريع + قوائم الحالة المنسدلة
@@ -3190,60 +3258,64 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           </div>
 
                           {/* Visual Customization UI */}
-                          <div className="md:col-span-4 mt-4 pt-4 border-t border-border space-y-6">
-                            <VisualMeasurements 
-                              values={watch(`items.${index}` as any)} 
-                              onChange={(field, val) => setValue(`items.${index}.${field}` as any, val)} 
-                            />
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <div className="space-y-2">
-                                <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.padding_type')}</label>
-                                <div className="flex gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => setValue(`items.${index}.collarPadding` as any, 'hard')}
-                                    className={cn(
-                                      "flex-1 flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all",
-                                      watch(`items.${index}.collarPadding` as any) === 'hard' ? "border-brand bg-brand/10 text-brand" : "border-border bg-surface text-content-muted"
-                                    )}
-                                  >
-                                    <Shield size={18} />
-                                    <span className="text-[10px] font-bold">{t('orders.padding_hard')}</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => setValue(`items.${index}.collarPadding` as any, 'soft')}
-                                    className={cn(
-                                      "flex-1 flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all",
-                                      watch(`items.${index}.collarPadding` as any) === 'soft' ? "border-brand bg-brand/10 text-brand" : "border-border bg-surface text-content-muted"
-                                    )}
-                                  >
-                                    <Clock size={18} />
-                                    <span className="text-[10px] font-bold">{t('orders.padding_soft')}</span>
-                                  </button>
+                          {isLegacyVertical ? (
+                            <div className="md:col-span-4 mt-4 pt-4 border-t border-border space-y-6">
+                              <VisualMeasurements
+                                values={watch(`items.${index}` as any)}
+                                onChange={(field, val) => setValue(`items.${index}.${field}` as any, val)}
+                              />
+
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                  <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.padding_type')}</label>
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => setValue(`items.${index}.collarPadding` as any, 'hard')}
+                                      className={cn(
+                                        "flex-1 flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all",
+                                        watch(`items.${index}.collarPadding` as any) === 'hard' ? "border-brand bg-brand/10 text-brand" : "border-border bg-surface text-content-muted"
+                                      )}
+                                    >
+                                      <Shield size={18} />
+                                      <span className="text-[10px] font-bold">{t('orders.padding_hard')}</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setValue(`items.${index}.collarPadding` as any, 'soft')}
+                                      className={cn(
+                                        "flex-1 flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all",
+                                        watch(`items.${index}.collarPadding` as any) === 'soft' ? "border-brand bg-brand/10 text-brand" : "border-border bg-surface text-content-muted"
+                                      )}
+                                    >
+                                      <Clock size={18} />
+                                      <span className="text-[10px] font-bold">{t('orders.padding_soft')}</span>
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.other_additions')}</label>
+                                  <input
+                                    {...register(`items.${index}.additions` as any)}
+                                    placeholder={t('orders.other_additions_placeholder')}
+                                    className="w-full bg-surface border border-border rounded-xl p-3 text-xs font-bold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                                  />
+                                </div>
+
+                                <div className="space-y-2">
+                                  <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.embroidery_label')}</label>
+                                  <input
+                                    {...register(`items.${index}.embroidery` as any)}
+                                    placeholder={t('orders.embroidery_placeholder')}
+                                    className="w-full bg-surface border border-border rounded-xl p-3 text-xs font-bold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                                  />
                                 </div>
                               </div>
-
-                              <div className="space-y-2">
-                                <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.other_additions')}</label>
-                                <input 
-                                  {...register(`items.${index}.additions` as any)}
-                                  placeholder={t('orders.other_additions_placeholder')}
-                                  className="w-full bg-surface border border-border rounded-xl p-3 text-xs font-bold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
-                                />
-                              </div>
-
-                              <div className="space-y-2">
-                                <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.embroidery_label')}</label>
-                                <input 
-                                  {...register(`items.${index}.embroidery` as any)}
-                                  placeholder={t('orders.embroidery_placeholder')}
-                                  className="w-full bg-surface border border-border rounded-xl p-3 text-xs font-bold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
-                                />
-                              </div>
                             </div>
-                          </div>
+                          ) : (
+                            <DynamicOrderItemFields index={index} fields={orderItemFields} watch={watch} setValue={setValue} />
+                          )}
 
                           {index > 0 && (
                             <button 

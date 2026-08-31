@@ -74,6 +74,8 @@ export const orderSchema = z.object({
     collarPadding: z.enum(['hard', 'soft']).optional(),
     additions: z.string().optional(),
     embroidery: z.string().optional(),
+    // حقول التخصيص الديناميكية لأي نشاط غير mens_tailoring — بلا zod يُسقطها zodResolver صامتاً.
+    attributes: z.record(z.string(), z.any()).optional(),
   })).min(1, t('validation.required')),
   totalAmount: z.coerce.number().min(0).optional(),
   subTotalAmount: z.coerce.number().min(0).optional(),

@@ -488,6 +488,10 @@ export interface OrderItem {
   collarPadding?: 'hard' | 'soft';
   additions?: string;
   embroidery?: string;
+
+  // حقول التخصيص الديناميكية لأي نشاط غير mens_tailoring (مصدرها
+  // getFieldSchemas(vertical, 'order_item')) — بديل حقول الخياطة أعلاه.
+  attributes?: Record<string, string | number | boolean>;
 }
 
 export type PaymentMethod = 'cash' | 'network' | 'bank_transfer' | 'cash_on_delivery' | 'partial';
