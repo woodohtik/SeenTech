@@ -613,14 +613,14 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
       {activeSubTab === "new_adjustment" && (
         <div className="space-y-6">
           {isSchemaMissing && (
-            <div className="bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 p-5 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm" id="schema-missing-banner-new">
+            <div className="bg-warning/10 border border-warning/20 text-warning p-5 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm" id="schema-missing-banner-new">
               <div className="flex gap-3">
-                <Database className="text-amber-600 shrink-0 mt-0.5" size={20} />
+                <Database className="text-warning shrink-0 mt-0.5" size={20} />
                 <div className="space-y-1">
-                  <h4 className="font-black text-sm text-amber-800 dark:text-amber-300">
+                  <h4 className="font-black text-sm text-warning">
                     {t("inventory.schema_missing_title", "تنبيه: ميزة جرد وتسوية المخزون بحاجة لتفعيل")}
                   </h4>
-                  <p className="text-xs text-amber-700/80 dark:text-amber-400/80 leading-relaxed max-w-2xl">
+                  <p className="text-xs text-warning/80 leading-relaxed max-w-2xl">
                     {t("inventory.schema_missing_desc_merchant", "ميزة جرد وتسوية المخزون بحاجة إلى تفعيل من قبل فريق الإدارة أو الدعم الفني للربط مع قاعدة البيانات الخاصة بمتجرك.")}
                   </p>
                 </div>
@@ -836,7 +836,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleSetAllToBook}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-success/10 text-success border border-success/20 hover:bg-success/20 transition-all cursor-pointer"
                   >
                     <CheckCircle2 size={13} />
                     {t("inventory.import_all_current", "تعبئة الدفتري للكل")}
@@ -972,9 +972,9 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                                   className={cn(
                                     "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold",
                                     varianceQty > 0
-                                      ? "text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-300"
+                                      ? "text-success bg-success/10"
                                       : varianceQty < 0
-                                      ? "text-rose-700 bg-rose-50 dark:bg-rose-950/30 dark:text-rose-300"
+                                      ? "text-danger bg-danger/10"
                                       : "text-content-muted bg-surface-muted"
                                   )}
                                 >
@@ -1000,9 +1000,9 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                                 <span
                                   className={cn(
                                     varianceQty > 0
-                                      ? "text-emerald-600 dark:text-emerald-400"
+                                      ? "text-success"
                                       : varianceQty < 0
-                                      ? "text-rose-600 dark:text-rose-400"
+                                      ? "text-danger"
                                       : "text-content-muted"
                                   )}
                                 >
@@ -1064,7 +1064,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 pt-4 border-t border-border/60">
                     <div className="space-y-0.5">
                       <p className="text-xs sm:text-sm font-bold text-content flex items-center gap-1.5">
-                        <Check size={16} className="text-emerald-500" />
+                        <Check size={16} className="text-success" />
                         {t("inventory.ready_to_commit_take", "مستند الجرد جاهز للتأكيد والاعتماد")}
                       </p>
                       <p className="text-xs text-content-muted leading-relaxed max-w-xl font-medium">
@@ -1086,7 +1086,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                             onClick={() => setIsApprovedState(!isApprovedState)}
                             className={cn(
                               "w-11 h-6 rounded-full p-0.5 transition-all duration-300 relative focus:outline-none cursor-pointer",
-                              isApprovedState ? "bg-brand" : "bg-neutral-300 dark:bg-neutral-700"
+                              isApprovedState ? "bg-brand" : "bg-border"
                             )}
                           >
                             <div
@@ -1121,14 +1121,14 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
       {activeSubTab === "adjustment_history" && (
         <div className="space-y-6">
           {isSchemaMissing && (
-            <div className="bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 p-5 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm" id="schema-missing-banner-history">
+            <div className="bg-warning/10 border border-warning/20 text-warning p-5 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm" id="schema-missing-banner-history">
               <div className="flex gap-3">
-                <Database className="text-amber-600 shrink-0 mt-0.5" size={20} />
+                <Database className="text-warning shrink-0 mt-0.5" size={20} />
                 <div className="space-y-1">
-                  <h4 className="font-black text-sm text-amber-800 dark:text-amber-300">
+                  <h4 className="font-black text-sm text-warning">
                     {t("inventory.schema_missing_title", "تنبيه: ميزة جرد وتسوية المخزون بحاجة لتفعيل")}
                   </h4>
-                  <p className="text-xs text-amber-700/80 dark:text-amber-400/80 leading-relaxed max-w-2xl">
+                  <p className="text-xs text-warning/80 leading-relaxed max-w-2xl">
                     {t("inventory.schema_missing_desc_merchant", "ميزة جرد وتسوية المخزون بحاجة إلى تفعيل من قبل فريق الإدارة أو الدعم الفني للربط مع قاعدة البيانات الخاصة بمتجرك.")}
                   </p>
                 </div>
@@ -1198,10 +1198,10 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                               className={cn(
                                 "inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold",
                                 record.status === "Approved"
-                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                  ? "bg-success/10 text-success"
                                   : record.status === "Draft"
-                                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                                  : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                                  ? "bg-warning/10 text-warning"
+                                  : "bg-danger/10 text-danger"
                               )}
                             >
                               {record.status === "Approved"
@@ -1267,8 +1267,8 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                       className={cn(
                         "font-extrabold px-1.5 py-0.5 rounded-md text-[11px]",
                         selectedHistoryItem.status === "Approved"
-                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                          : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                          ? "bg-success/10 text-success"
+                          : "bg-warning/10 text-warning"
                       )}
                     >
                       {selectedHistoryItem.status === "Approved"
@@ -1285,7 +1285,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                   {selectedHistoryItem.approved_by_name && (
                     <div className="flex justify-between items-center">
                       <span className="text-content-muted">{t("inventory.history_approver", "المشرف المعتمد:")}</span>
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400">{selectedHistoryItem.approved_by_name}</span>
+                      <span className="font-bold text-success">{selectedHistoryItem.approved_by_name}</span>
                     </div>
                   )}
                   {selectedHistoryItem.notes && (
@@ -1333,7 +1333,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                               <span
                                 className={cn(
                                   "inline-flex px-1.5 py-0.5 rounded-md text-[9px] font-bold",
-                                  isLoss ? "bg-rose-500/10 text-rose-600 dark:text-rose-400" : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                  isLoss ? "bg-danger/10 text-danger" : "bg-success/10 text-success"
                                 )}
                               >
                                 {detail.variance_qty > 0 ? `+${detail.variance_qty}` : detail.variance_qty}
@@ -1415,7 +1415,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                   <span
                     className={cn(
                       "font-black",
-                      sessionStats.netFinancialImpact >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                      sessionStats.netFinancialImpact >= 0 ? "text-success" : "text-danger"
                     )}
                   >
                     {formatCurrency(sessionStats.netFinancialImpact)}
@@ -1427,8 +1427,8 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                     className={cn(
                       "font-bold px-1.5 py-0.5 rounded-md text-xs",
                       isApprovedState && hasApprovePermission
-                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                        : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                        ? "bg-success/10 text-success"
+                        : "bg-warning/10 text-warning"
                     )}
                   >
                     {isApprovedState && hasApprovePermission ? t("inventory.confirm_status_approved") : t("inventory.confirm_status_draft")}

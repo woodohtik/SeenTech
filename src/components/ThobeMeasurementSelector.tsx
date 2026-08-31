@@ -377,7 +377,7 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
               type="button"
               onClick={() => setIsInstructionMode(!isInstructionMode)}
               title={t('measurements.instructions_mode')}
-              className={cn("p-2.5 rounded-xl transition-colors shrink-0", isInstructionMode ? "bg-amber-100 text-amber-600" : "bg-surface-muted text-content-muted hover:bg-border")}
+              className={cn("p-2.5 rounded-xl transition-colors shrink-0", isInstructionMode ? "bg-warning/10 text-warning" : "bg-surface-muted text-content-muted hover:bg-border")}
             >
               <Lightbulb size={24} />
             </button>
@@ -402,7 +402,7 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
                     <button 
                       type="button"
                       onClick={() => setActiveHint(activeHint === part ? null : part)}
-                      className={cn("p-1.5 rounded-full transition-colors", activeHint === part ? "text-amber-600 bg-amber-100" : "text-amber-500 hover:bg-amber-50")}
+                      className={cn("p-1.5 rounded-full transition-colors", activeHint === part ? "text-warning bg-warning/10" : "text-warning hover:bg-warning/10")}
                     >
                       <Lightbulb size={14} />
                     </button>
@@ -417,7 +417,7 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
                       exit={{ opacity: 0, height: 0 }}
                       className="overflow-hidden mb-3"
                     >
-                      <p className="text-xs text-amber-700 bg-amber-50/80 p-2.5 rounded-xl font-bold leading-relaxed border border-amber-100/50">
+                      <p className="text-xs text-warning bg-warning/10 p-2.5 rounded-xl font-bold leading-relaxed border border-warning/20">
                         {t(PART_HINTS[part])}
                       </p>
                     </motion.div>

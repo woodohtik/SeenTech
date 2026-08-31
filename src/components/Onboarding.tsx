@@ -494,7 +494,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           type="button"
           onClick={() => logout()}
           className={cn(
-            "absolute top-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all",
+            "absolute top-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-content-muted hover:text-danger hover:bg-danger/10 transition-all",
             dir === 'rtl' ? "left-0" : "right-0"
           )}
         >
@@ -508,12 +508,12 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-brand rounded-2xl flex items-center justify-center shadow-lg shadow-brand/20">
                 <ShieldCheck className="text-white sm:w-7 sm:h-7" size={24} />
               </div>
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Seen System</h1>
+              <h1 className="text-xl sm:text-2xl font-black text-content tracking-tight">Seen System</h1>
             </div>
 
             {/* Form Stepper */}
             <div className="flex items-center justify-between relative px-2">
-              <div className="absolute top-1/2 left-7 right-7 sm:left-9 sm:right-9 h-0.5 bg-slate-200 -translate-y-1/2 z-0" />
+              <div className="absolute top-1/2 left-7 right-7 sm:left-9 sm:right-9 h-0.5 bg-border -translate-y-1/2 z-0" />
               {steps.map((s, idx) => {
                 const Icon = s.icon;
                 const isActive = currentStep === s.id;
@@ -524,14 +524,14 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                     <div className={cn(
                       "w-10 h-10 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center transition-all duration-500 border-4 border-surface-muted",
                       isActive ? "bg-brand text-white shadow-xl shadow-brand/30 scale-110" : 
-                      isCompleted ? "bg-emerald-500 text-white" : "bg-white text-slate-400"
+                      isCompleted ? "bg-success text-white" : "bg-white text-content-muted"
                     )}>
                       {isCompleted ? <CheckCircle size={18} className="sm:w-6 sm:h-6" /> : <Icon size={18} className="sm:w-6 sm:h-6" />}
                     </div>
                     <div className="absolute -bottom-8 sm:-bottom-10 whitespace-nowrap text-center">
                       <p className={cn(
                         "text-[10px] sm:text-xs font-black uppercase tracking-wider transition-colors",
-                        isActive ? "text-brand" : "text-slate-400"
+                        isActive ? "text-brand" : "text-content-muted"
                       )}>{s.title}</p>
                     </div>
                   </div>
@@ -546,73 +546,73 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="bg-white rounded-[2rem] sm:rounded-[3rem] shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden"
+              className="bg-white rounded-[2rem] sm:rounded-[3rem] shadow-2xl shadow-slate-200/50 border border-border overflow-hidden"
             >
               <div className="p-5 sm:p-8 md:p-14">
                 {currentStep === 1 && (
                   <div className="space-y-8 sm:space-y-12 md:space-y-16">
                     <div className="max-w-2xl">
-                      <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 mb-2">{t('onboarding.titles.identity')}</h2>
-                      <p className="text-slate-500 font-medium text-sm sm:text-base md:text-lg leading-relaxed">
+                      <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-content mb-2">{t('onboarding.titles.identity')}</h2>
+                      <p className="text-content-muted font-medium text-sm sm:text-base md:text-lg leading-relaxed">
                         {t('onboarding.desc.identity')}
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-100">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 bg-surface-muted p-4 sm:p-6 rounded-2xl border border-border">
                       <div className="md:col-span-2">
-                        <h3 className="text-base sm:text-lg font-black text-slate-900 mb-1 flex items-center gap-2">
+                        <h3 className="text-base sm:text-lg font-black text-content mb-1 flex items-center gap-2">
                           <Store className="text-brand" size={18} /> {t('onboarding.steps.identity')}
                         </h3>
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center gap-2">
+                        <label className="text-xs font-bold text-content uppercase tracking-widest flex items-center gap-2">
                           {t('onboarding.fields.shop_name')}
                         </label>
                         <div className={cn(
                           "group flex items-center bg-white border rounded-xl overflow-hidden focus-within:border-brand transition-all shadow-sm focus-within:ring-1 focus-within:ring-brand/30",
-                          errors.shopName ? "border-rose-500 bg-rose-50/30" : "border-slate-200"
+                          errors.shopName ? "border-danger bg-danger/10/30" : "border-border"
                         )}>
                           <div className={cn(
                             "flex items-center justify-center p-2.5 sm:p-3 border-e transition-colors shrink-0",
-                            errors.shopName ? "text-rose-500 border-rose-500/20" : "text-slate-400 border-slate-100 group-focus-within:border-brand/40 group-focus-within:text-brand"
+                            errors.shopName ? "text-danger border-danger/20" : "text-content-muted border-border group-focus-within:border-brand/40 group-focus-within:text-brand"
                           )}>
                             <Store size={18} />
                           </div>
                           <input 
                             {...register('shopName')}
                             placeholder={t('onboarding.fields.shop_name_placeholder')}
-                            className="flex-1 w-full bg-transparent border-none py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none ring-0 placeholder:text-slate-300 text-content"
+                            className="flex-1 w-full bg-transparent border-none py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none ring-0 placeholder:text-content-muted text-content"
                           />
                         </div>
-                        {errors.shopName && <p className="text-xs text-rose-500 font-bold mt-1 ps-2">{errors.shopName.message as string}</p>}
+                        {errors.shopName && <p className="text-xs text-danger font-bold mt-1 ps-2">{errors.shopName.message as string}</p>}
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center gap-2">
+                        <label className="text-xs font-bold text-content uppercase tracking-widest flex items-center gap-2">
                           {t('settings_page.profile.phone')}
                         </label>
                         <div className={cn(
                           "group flex items-center bg-white border rounded-xl overflow-hidden focus-within:border-brand transition-all shadow-sm focus-within:ring-1 focus-within:ring-brand/30",
-                          errors.phone ? "border-rose-500 bg-rose-50/30" : "border-slate-200"
+                          errors.phone ? "border-danger bg-danger/10/30" : "border-border"
                         )}>
                           <div className={cn(
                             "flex items-center justify-center p-2.5 sm:p-3 border-e transition-colors shrink-0",
-                            errors.phone ? "text-rose-500 border-rose-500/20" : "text-slate-400 border-slate-100 group-focus-within:border-brand/40 group-focus-within:text-brand"
+                            errors.phone ? "text-danger border-danger/20" : "text-content-muted border-border group-focus-within:border-brand/40 group-focus-within:text-brand"
                           )}>
                             <Phone size={18} />
                           </div>
                           <input 
                             {...register('phone')}
                             placeholder="05XXXXXXXX / 9200XXXXX"
-                            className="flex-1 w-full bg-transparent border-none py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none ring-0 placeholder:text-slate-300 text-content"
+                            className="flex-1 w-full bg-transparent border-none py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none ring-0 placeholder:text-content-muted text-content"
                           />
                         </div>
-                        {errors.phone && <p className="text-xs text-rose-500 font-bold mt-1 ps-2">{errors.phone.message as string}</p>}
+                        {errors.phone && <p className="text-xs text-danger font-bold mt-1 ps-2">{errors.phone.message as string}</p>}
                       </div>
 
                       <div className="md:col-span-2 space-y-2">
-                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center gap-2">
+                        <label className="text-xs font-bold text-content uppercase tracking-widest flex items-center gap-2">
                           {t('onboarding.fields.activity_type')}
                         </label>
                         <Controller
@@ -621,7 +621,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                           render={({ field }) => (
                             <SmartSelect
                               {...field}
-                              className="w-full bg-white border border-slate-200 focus-within:border-brand rounded-xl py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none transition-all shadow-sm"
+                              className="w-full bg-white border border-border focus-within:border-brand rounded-xl py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none transition-all shadow-sm"
                               options={[
                                 { value: 'tailor', label: t('onboarding.categories.tailor') },
                                 { value: 'tailor-female', label: t('onboarding.categories.tailor_female') },
@@ -633,7 +633,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                       </div>
 
                       <div className="md:col-span-2 space-y-2">
-                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest block">{t('onboarding.fields.logo')}</label>
+                        <label className="text-xs font-bold text-content uppercase tracking-widest block">{t('onboarding.fields.logo')}</label>
                         <input 
                           type="file" 
                           id="logo-upload" 
@@ -643,9 +643,9 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                         />
                         <label 
                           htmlFor="logo-upload"
-                          className="flex items-center gap-3 p-1.5 bg-white rounded-xl border border-dashed border-slate-300 hover:border-brand hover:bg-slate-50 transition-all cursor-pointer group"
+                          className="flex items-center gap-3 p-1.5 bg-white rounded-xl border border-dashed border-border hover:border-brand hover:bg-surface-muted transition-all cursor-pointer group"
                         >
-                          <div className="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center shadow-sm text-slate-300 overflow-hidden group-hover:scale-105 transition-transform border border-slate-100 shrink-0">
+                          <div className="w-10 h-10 bg-surface-muted rounded-lg flex items-center justify-center shadow-sm text-content-muted overflow-hidden group-hover:scale-105 transition-transform border border-border shrink-0">
                             {formData.logoUrl ? (
                               <img src={formData.logoUrl} alt="Logo Preview" className="w-full h-full object-cover" />
                             ) : (
@@ -653,30 +653,30 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                             )}
                           </div>
                           <div className={cn("flex-1 min-w-0", i18n.language === 'en' ? "text-left" : "text-right")}>
-                            <h3 className="font-bold text-slate-700 text-xs truncate group-hover:text-brand transition-colors">
+                            <h3 className="font-bold text-content text-xs truncate group-hover:text-brand transition-colors">
                               {formData.logoUrl ? t('onboarding.fields.logo_uploaded') : t('onboarding.fields.logo_upload')}
                             </h3>
                           </div>
                         </label>
                       </div>
 
-                      <div className="md:col-span-2 pt-4 sm:pt-6 border-t border-slate-100 mt-2">
-                        <h3 className="text-base sm:text-lg font-black text-slate-900 mb-3 flex items-center gap-2">
+                      <div className="md:col-span-2 pt-4 sm:pt-6 border-t border-border mt-2">
+                        <h3 className="text-base sm:text-lg font-black text-content mb-3 flex items-center gap-2">
                           <ShieldCheck className="text-brand" size={18} /> {t('onboarding.fields.tax_info')}
                         </h3>
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center gap-2">
+                        <label className="text-xs font-bold text-content uppercase tracking-widest flex items-center gap-2">
                           {t('onboarding.fields.tax_number')}
                         </label>
                         <div className={cn(
                           "group flex items-center bg-white border rounded-xl overflow-hidden transition-all shadow-sm focus-within:ring-1 focus-within:ring-brand/30",
-                          errors.taxNumber ? "border-rose-500 bg-rose-50/30" : checkVatValid(watch('taxNumber')) ? "border-emerald-500" : "border-slate-200 focus-within:border-brand"
+                          errors.taxNumber ? "border-danger bg-danger/10/30" : checkVatValid(watch('taxNumber')) ? "border-success" : "border-border focus-within:border-brand"
                         )}>
                           <div className={cn(
                             "flex items-center justify-center p-2.5 sm:p-3 border-e transition-colors shrink-0",
-                            errors.taxNumber ? "text-rose-500 border-rose-500/20" : checkVatValid(watch('taxNumber')) ? "text-emerald-500 border-emerald-500/20" : "text-slate-400 border-slate-100 group-focus-within:border-brand/40 group-focus-within:text-brand"
+                            errors.taxNumber ? "text-danger border-danger/20" : checkVatValid(watch('taxNumber')) ? "text-success border-success/20" : "text-content-muted border-border group-focus-within:border-brand/40 group-focus-within:text-brand"
                           )}>
                             <ShieldCheck size={18} />
                           </div>
@@ -684,19 +684,19 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                             {...register('taxNumber')}
                             placeholder={t('onboarding.fields.tax_number_placeholder')}
                             maxLength={15}
-                            className="flex-1 min-w-0 bg-transparent border-none py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none ring-0 placeholder:text-slate-300 text-content"
+                            className="flex-1 min-w-0 bg-transparent border-none py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none ring-0 placeholder:text-content-muted text-content"
                           />
                           {checkVatValid(watch('taxNumber')) && (
-                            <div className="mx-2 bg-emerald-100 text-emerald-600 px-2.5 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1 shrink-0">
+                            <div className="mx-2 bg-success/10 text-success px-2.5 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1 shrink-0">
                               <Check size={10} /> {t('common.verified')}
                             </div>
                           )}
                         </div>
-                        {errors.taxNumber && <p className="text-xs text-rose-500 font-bold mt-1 ps-2">{errors.taxNumber.message as string}</p>}
+                        {errors.taxNumber && <p className="text-xs text-danger font-bold mt-1 ps-2">{errors.taxNumber.message as string}</p>}
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center gap-2">
+                        <label className="text-xs font-bold text-content uppercase tracking-widest flex items-center gap-2">
                           {t('onboarding.fields.tax_status')}
                         </label>
                         <Controller
@@ -705,7 +705,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                           render={({ field }) => (
                             <SmartSelect
                               {...field}
-                              className="w-full bg-white border border-slate-200 focus-within:border-brand rounded-xl py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none transition-all shadow-sm"
+                              className="w-full bg-white border border-border focus-within:border-brand rounded-xl py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none transition-all shadow-sm"
                               options={[
                                 { value: 'registered', label: t('onboarding.tax_status_options.registered') },
                                 { value: 'unregistered', label: t('onboarding.tax_status_options.unregistered') }
@@ -721,64 +721,64 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                 {currentStep === 2 && (
                   <div className="space-y-8 sm:space-y-12 md:space-y-16">
                     <div className="max-w-2xl">
-                      <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 mb-2">{t('onboarding.titles.location')}</h2>
-                      <p className="text-slate-500 font-medium text-sm sm:text-base md:text-lg leading-relaxed">
+                      <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-content mb-2">{t('onboarding.titles.location')}</h2>
+                      <p className="text-content-muted font-medium text-sm sm:text-base md:text-lg leading-relaxed">
                         {t('onboarding.desc.location')}
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mt-4 bg-indigo-50/50 p-4 sm:p-6 rounded-2xl border border-indigo-100/50">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mt-4 bg-brand/10/50 p-4 sm:p-6 rounded-2xl border border-brand/20/50">
                       <div className="md:col-span-2">
-                        <h3 className="text-base sm:text-lg font-black text-slate-900 mb-1 flex items-center gap-2">
-                          <MapPin className="text-indigo-500" size={18} /> {t('onboarding.fields.address')}
+                        <h3 className="text-base sm:text-lg font-black text-content mb-1 flex items-center gap-2">
+                          <MapPin className="text-brand" size={18} /> {t('onboarding.fields.address')}
                         </h3>
                       </div>
 
                       <div className="md:col-span-2 space-y-2">
-                        <label className={cn("text-xs font-bold text-slate-700 uppercase tracking-widest", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.address')}</label>
+                        <label className={cn("text-xs font-bold text-content uppercase tracking-widest", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.address')}</label>
                         <div className={cn(
-                          "group flex items-center bg-white border rounded-xl overflow-hidden focus-within:border-indigo-500 transition-all shadow-sm focus-within:ring-1 focus-within:ring-indigo-500/30",
-                          errors.address ? "border-rose-500 bg-rose-50/30" : "border-slate-200"
+                          "group flex items-center bg-white border rounded-xl overflow-hidden focus-within:border-brand transition-all shadow-sm focus-within:ring-1 focus-within:ring-brand/30",
+                          errors.address ? "border-danger bg-danger/10/30" : "border-border"
                         )}>
                           <div className={cn(
                             "flex items-center justify-center p-2.5 sm:p-3 border-e transition-colors shrink-0",
-                            errors.address ? "text-rose-500 border-rose-500/20" : "text-slate-400 border-slate-100 group-focus-within:border-indigo-500/40 group-focus-within:text-indigo-500"
+                            errors.address ? "text-danger border-danger/20" : "text-content-muted border-border group-focus-within:border-brand/40 group-focus-within:text-brand"
                           )}>
                             <MapPin size={18} />
                           </div>
                           <input 
                             {...register('address')}
                             placeholder={t('onboarding.fields.address_placeholder')}
-                            className="flex-1 w-full bg-transparent border-none py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none ring-0 placeholder:text-slate-300 text-content"
+                            className="flex-1 w-full bg-transparent border-none py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none ring-0 placeholder:text-content-muted text-content"
                           />
                         </div>
-                        {errors.address && <p className="text-xs text-rose-500 font-bold mt-1 ps-2">{errors.address.message as string}</p>}
+                        {errors.address && <p className="text-xs text-danger font-bold mt-1 ps-2">{errors.address.message as string}</p>}
                       </div>
 
                       <div className="space-y-2">
-                        <label className={cn("text-xs font-bold text-slate-700 uppercase tracking-widest", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.city')}</label>
+                        <label className={cn("text-xs font-bold text-content uppercase tracking-widest", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.city')}</label>
                         <input 
                           {...register('city')}
                           placeholder={t('onboarding.fields.city_placeholder')}
                           className={cn(
-                            "w-full bg-white border border-slate-200 outline-none transition-all shadow-sm focus:ring-2 focus:ring-brand/20 focus:border-brand rounded-xl py-2.5 sm:py-3 px-3.5 text-sm sm:text-base font-bold",
-                            errors.city && "border-rose-500 bg-rose-50/30"
+                            "w-full bg-white border border-border outline-none transition-all shadow-sm focus:ring-2 focus:ring-brand/20 focus:border-brand rounded-xl py-2.5 sm:py-3 px-3.5 text-sm sm:text-base font-bold",
+                            errors.city && "border-danger bg-danger/10/30"
                           )}
                         />
-                        {errors.city && <p className="text-xs text-rose-500 font-bold mt-1 ps-2">{errors.city.message as string}</p>}
+                        {errors.city && <p className="text-xs text-danger font-bold mt-1 ps-2">{errors.city.message as string}</p>}
                       </div>
 
                       <div className="space-y-2">
-                        <label className={cn("text-xs font-bold text-slate-700 uppercase tracking-widest", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.country')}</label>
+                        <label className={cn("text-xs font-bold text-content uppercase tracking-widest", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.country')}</label>
                         <input 
                           {...register('country')}
                           placeholder={t('onboarding.fields.country_placeholder')}
                           className={cn(
-                            "w-full bg-white border border-slate-200 outline-none transition-all shadow-sm focus:ring-2 focus:ring-brand/20 focus:border-brand rounded-xl py-2.5 sm:py-3 px-3.5 text-sm sm:text-base font-bold",
-                            errors.country && "border-rose-500 bg-rose-50/30"
+                            "w-full bg-white border border-border outline-none transition-all shadow-sm focus:ring-2 focus:ring-brand/20 focus:border-brand rounded-xl py-2.5 sm:py-3 px-3.5 text-sm sm:text-base font-bold",
+                            errors.country && "border-danger bg-danger/10/30"
                           )}
                         />
-                        {errors.country && <p className="text-xs text-rose-500 font-bold mt-1 ps-2">{errors.country.message as string}</p>}
+                        {errors.country && <p className="text-xs text-danger font-bold mt-1 ps-2">{errors.country.message as string}</p>}
                       </div>
 
                       <div className="md:col-span-2 space-y-4 sm:space-y-6">
@@ -810,12 +810,12 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                             i18n.language === 'en' ? "sm:right-4 sm:left-auto" : "sm:left-4 sm:right-auto"
                           )}>
                             <div className="flex items-start gap-3">
-                              <div className="w-8 h-8 bg-indigo-100 text-indigo-500 rounded-lg flex items-center justify-center shrink-0">
+                              <div className="w-8 h-8 bg-brand/10 text-brand rounded-lg flex items-center justify-center shrink-0">
                                 <Navigation size={16} />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-0.5">{t('onboarding.fields.location_selected')}</p>
-                                <p className="text-xs font-bold text-slate-700 line-clamp-2 leading-snug">
+                                <p className="text-[10px] font-black text-content-muted uppercase tracking-wider mb-0.5">{t('onboarding.fields.location_selected')}</p>
+                                <p className="text-xs font-bold text-content line-clamp-2 leading-snug">
                                   {formData.address || t('onboarding.fields.location_manual')}
                                 </p>
                               </div>
@@ -830,29 +830,29 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                 {currentStep === 3 && (
                   <div className="space-y-16">
                     <div className="max-w-2xl">
-                      <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 mb-2">{t('onboarding.titles.financial_tax')}</h2>
-                      <p className="text-slate-500 font-medium text-sm sm:text-base md:text-lg leading-relaxed">
+                      <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-content mb-2">{t('onboarding.titles.financial_tax')}</h2>
+                      <p className="text-content-muted font-medium text-sm sm:text-base md:text-lg leading-relaxed">
                         {t('onboarding.desc.financial_tax')}
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-100">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 bg-surface-muted p-4 sm:p-6 rounded-2xl border border-border">
                       
                       <div className="md:col-span-2">
-                        <h3 className="text-base sm:text-lg font-black text-slate-900 mb-1 flex items-center gap-2">
-                          <Coins className="text-amber-500" size={18} /> {t('onboarding.titles.preferences')}
+                        <h3 className="text-base sm:text-lg font-black text-content mb-1 flex items-center gap-2">
+                          <Coins className="text-warning" size={18} /> {t('onboarding.titles.preferences')}
                         </h3>
                       </div>
 
                       <div className="md:col-span-2 space-y-2">
-                        <label className={cn("text-xs font-bold text-slate-700 uppercase tracking-widest", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.language')}</label>
+                        <label className={cn("text-xs font-bold text-content uppercase tracking-widest", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.language')}</label>
                         <Controller
                           control={control}
                           name="language"
                           render={({ field }) => (
                             <SmartSelect
                               {...field}
-                              className="w-full bg-white border border-slate-200 focus-within:border-brand rounded-xl py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none transition-all shadow-sm"
+                              className="w-full bg-white border border-border focus-within:border-brand rounded-xl py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none transition-all shadow-sm"
                               options={[
                                 { value: 'ar', label: 'العربية' },
                                 { value: 'en', label: 'English' },
@@ -864,12 +864,12 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                       </div>
 
                       <div className="md:col-span-2 space-y-2">
-                         <label className={cn("text-xs font-bold text-slate-700 uppercase tracking-widest", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.invoice_terms')}</label>
+                         <label className={cn("text-xs font-bold text-content uppercase tracking-widest", i18n.language === 'en' ? "ps-1" : "pe-1")}>{t('onboarding.fields.invoice_terms')}</label>
                          <textarea 
                            {...register('invoiceDefaults')}
                            placeholder={t('onboarding.fields.invoice_terms_placeholder')}
                            rows={3}
-                           className="w-full bg-white border border-slate-200 outline-none transition-all shadow-sm focus:ring-2 focus:ring-brand/20 focus:border-brand rounded-xl py-2.5 sm:py-3 px-3.5 text-sm sm:text-base font-bold resize-none"
+                           className="w-full bg-white border border-border outline-none transition-all shadow-sm focus:ring-2 focus:ring-brand/20 focus:border-brand rounded-xl py-2.5 sm:py-3 px-3.5 text-sm sm:text-base font-bold resize-none"
                          />
                       </div>
 
@@ -879,12 +879,12 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               </div>
 
               {/* Navigation Footer */}
-              <div className="px-5 sm:px-8 md:px-14 py-5 sm:py-8 bg-slate-50 border-t border-slate-100 flex items-center justify-between font-sans">
+              <div className="px-5 sm:px-8 md:px-14 py-5 sm:py-8 bg-surface-muted border-t border-border flex items-center justify-between font-sans">
                 <div>
                   {currentStep > 1 && (
                     <button 
                       onClick={handleBack}
-                      className="flex items-center gap-2 text-slate-500 font-black hover:text-slate-700 transition-colors text-sm sm:text-base"
+                      className="flex items-center gap-2 text-content-muted font-black hover:text-content transition-colors text-sm sm:text-base"
                     >
                       {i18n.language === 'en' ? <ArrowLeft size={18} /> : <ArrowRight size={18} />}
                       <span>{t('common.back')}</span>
@@ -915,7 +915,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
         {/* Support Microcopy */}
         <div className="mt-10 text-center opacity-40">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500" dir="ltr">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-content-muted" dir="ltr">
             Powered by Seen System &copy; 2026
           </p>
         </div>

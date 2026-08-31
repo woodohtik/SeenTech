@@ -195,7 +195,7 @@ export default function ZReport({ data, onClose }: ZReportProps) {
           <button 
             onClick={handleWhatsAppExport}
             disabled={exportingPdf}
-            className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white rounded-xl transition-colors font-bold text-xs sm:text-sm shadow-lg shadow-emerald-500/20 cursor-pointer"
+            className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2 bg-success hover:bg-success/90 disabled:bg-success/50 text-white rounded-xl transition-colors font-bold text-xs sm:text-sm shadow-lg shadow-success/20 cursor-pointer"
           >
             {exportingPdf ? (
               <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -452,40 +452,40 @@ export default function ZReport({ data, onClose }: ZReportProps) {
       {/* WhatsApp Modal Dialog with instructions */}
       {whatsappModalOpen && (
         <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-md flex items-center justify-center p-4 z-50 print:hidden animate-fade-in" dir={isRtl ? 'rtl' : 'ltr'}>
-          <div className="bg-white border border-slate-100 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-6">
+          <div className="bg-surface border border-border rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-6">
             <div className="text-center space-y-2">
-              <div className="mx-auto w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center animate-bounce">
+              <div className="mx-auto w-12 h-12 bg-success/10 text-success rounded-full flex items-center justify-center animate-bounce">
                 <MessageCircle size={24} />
               </div>
-              <h3 className="text-lg font-black text-slate-900">{t('z_report.pdf_ready', 'تم تجهيز كشف إغلاق الوردية PDF!')}</h3>
-              <p className="text-xs font-bold text-slate-500 leading-relaxed">
+              <h3 className="text-lg font-black text-content">{t('z_report.pdf_ready', 'تم تجهيز كشف إغلاق الوردية PDF!')}</h3>
+              <p className="text-xs font-bold text-content-muted leading-relaxed">
                 {t('z_report.whatsapp_save_instruction', 'تم حفظ التقرير بنجاح على جهازك. يرجى كتابة رقم واتساب المستلم بالأسفل (المندوب أو المدير أو المالك) ومن ثم إرساله.')}
               </p>
             </div>
 
             <div className="space-y-2">
-              <label className="block text-xs font-black text-slate-700">{t('z_report.recipient_phone', 'رقم جوال المستلم (مثال: 0501234567)')}</label>
+              <label className="block text-xs font-black text-content-muted">{t('z_report.recipient_phone', 'رقم جوال المستلم (مثال: 0501234567)')}</label>
               <input
                 type="text"
                 placeholder={t('z_report.recipient_phone_placeholder', 'أدخل رقم الجوال هنا')}
                 value={recipientPhone}
                 onChange={(e) => setRecipientPhone(formatSaudiPhone(e.target.value))}
                 onBlur={(e) => setRecipientPhone(formatSaudiPhone(e.target.value))}
-                className="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm font-bold text-slate-950 focus:outline-none focus:border-emerald-500 bg-slate-50 focus:bg-white transition-all"
+                className="w-full px-4 py-3 border border-border rounded-2xl text-sm font-bold text-content focus:outline-none focus:border-success bg-surface-muted focus:bg-surface transition-all"
               />
             </div>
 
             <div className="flex gap-2 font-black">
               <button
                 onClick={proceedToWhatsApp}
-                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-600/15 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                className="flex-1 py-3 bg-success hover:bg-success/90 text-white rounded-xl text-xs font-black shadow-md shadow-success/15 flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
                 <span>{t('z_report.continue_to_whatsapp', 'متابعة إلى واتساب')}</span>
                 <ArrowLeft size={14} className="rotate-180" />
               </button>
               <button
                 onClick={() => setWhatsappModalOpen(false)}
-                className="px-4 py-3 bg-slate-150 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black transition-colors cursor-pointer"
+                className="px-4 py-3 bg-surface-muted hover:bg-border text-content-muted rounded-xl text-xs font-black transition-colors cursor-pointer"
               >
                 {t('common.cancel', 'إلغاء')}
               </button>

@@ -571,7 +571,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                 transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
                 className="absolute top-10 left-10 w-20 h-20 bg-success/20 backdrop-blur-xl rounded-3xl border border-white/20 flex items-center justify-center shadow-xl z-30"
               >
-                <User size={32} className="text-success-content" />
+                <User size={32} className="text-success" />
               </motion.div>
 
               <motion.div 
@@ -579,7 +579,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                 transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
                 className="absolute bottom-10 right-10 w-24 h-24 bg-warning/20 backdrop-blur-xl rounded-[2rem] border border-white/20 flex items-center justify-center shadow-xl z-30"
               >
-                <Users size={40} className="text-warning-content" />
+                <Users size={40} className="text-warning" />
               </motion.div>
 
               <motion.div 

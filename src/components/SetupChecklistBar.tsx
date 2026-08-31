@@ -147,7 +147,7 @@ export default function SetupChecklistBar({ tenantId, hasPermission }: SetupChec
                         className={cn(
                           'flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-colors',
                           item.completed
-                            ? 'bg-emerald-500/[0.03] border-emerald-500/20 text-emerald-700 line-through opacity-80'
+                            ? 'bg-success/[0.03] border-success/20 text-success line-through opacity-80'
                             : isActive
                             ? 'bg-brand/5 border-brand/40 text-brand'
                             : 'bg-surface border-border text-content-muted hover:border-brand/30'

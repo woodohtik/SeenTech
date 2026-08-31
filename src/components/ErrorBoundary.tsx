@@ -97,8 +97,8 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
 
     if (isLazyLoadError) {
       return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4" dir={dirOf()}>
-          <div className="flex flex-col items-center gap-4 text-slate-400">
+        <div className="min-h-screen bg-surface-muted flex items-center justify-center p-4" dir={dirOf()}>
+          <div className="flex flex-col items-center gap-4 text-content-muted">
             <RefreshCcw size={32} className="animate-spin" />
             <p className="font-bold text-sm">{i18n.t('errors.updating')}</p>
           </div>
@@ -136,27 +136,27 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
       }
 
       return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sansSelection" dir={dirOf()}>
-          <div className="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 p-10 text-center relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-red-500 to-rose-500"></div>
+        <div className="min-h-screen bg-surface-muted flex items-center justify-center p-4 font-sansSelection" dir={dirOf()}>
+          <div className="max-w-md w-full bg-surface rounded-[2.5rem] shadow-2xl border border-border p-10 text-center relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-danger to-danger"></div>
             
-            <div className="w-24 h-24 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-8 animate-pulse">
-              <AlertCircle className="text-rose-500" size={48} />
+            <div className="w-24 h-24 bg-danger/10 rounded-full flex items-center justify-center mx-auto mb-8 animate-pulse">
+              <AlertCircle className="text-danger" size={48} />
             </div>
             
-            <h1 className="text-2xl font-black text-gray-900 mb-2">
+            <h1 className="text-2xl font-black text-content mb-2">
               {isPermissionError ? i18n.t('errors.permission_error_title') : i18n.t('errors.generic_title')}
             </h1>
             
-            <p className="text-slate-500 font-bold mb-8 leading-relaxed">
+            <p className="text-content-muted font-bold mb-8 leading-relaxed">
               {errorMessage}
-              {pathInfo && <span className="block text-[10px] mt-2 text-slate-400 font-mono" dir="ltr">{pathInfo}</span>}
+              {pathInfo && <span className="block text-[10px] mt-2 text-content-muted font-mono" dir="ltr">{pathInfo}</span>}
             </p>
 
             <div className="space-y-4">
               <button
                 onClick={this.handleReset}
-                className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-sm flex items-center justify-center gap-3 hover:bg-black transition-all shadow-xl shadow-slate-200"
+                className="w-full bg-content text-white py-5 rounded-2xl font-black text-sm flex items-center justify-center gap-3 hover:bg-black transition-all shadow-xl shadow-slate-200"
               >
                 <RefreshCcw size={20} />
                 {i18n.t('errors.reload_system')}
@@ -164,7 +164,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
               
               <button
                 onClick={this.handleGoHome}
-                className="w-full bg-slate-50 text-slate-600 py-5 rounded-2xl font-black text-sm flex items-center justify-center gap-3 hover:bg-slate-100 transition-all border-2 border-slate-100"
+                className="w-full bg-surface-muted text-content-muted py-5 rounded-2xl font-black text-sm flex items-center justify-center gap-3 hover:bg-surface-muted transition-all border-2 border-border"
               >
                 <Home size={20} />
                 {i18n.t('errors.back_home')}
@@ -172,7 +172,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
             </div>
 
             {eventId && (
-               <p className="text-xs text-gray-400 mt-6 font-mono">{i18n.t('errors.error_id', { id: eventId })}</p>
+               <p className="text-xs text-content-muted mt-6 font-mono">{i18n.t('errors.error_id', { id: eventId })}</p>
             )}
 
             {import.meta.env.DEV && error && (
@@ -182,7 +182,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
                   <span className="text-xs font-bold uppercase tracking-wider">Developer Error Log</span>
                 </div>
                 <p className="text-xs font-mono text-red-300 font-bold mb-2">{error.toString()}</p>
-                <pre className="text-[10px] font-mono text-gray-400 whitespace-pre-wrap leading-relaxed">
+                <pre className="text-[10px] font-mono text-content-muted whitespace-pre-wrap leading-relaxed">
                   {error.stack}
                 </pre>
               </div>

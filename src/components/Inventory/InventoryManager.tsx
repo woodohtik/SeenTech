@@ -647,7 +647,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                       <h4
                         className={cn(
                           "text-sm font-black",
-                          isLowStockOnly ? "text-white" : "text-danger-content",
+                          isLowStockOnly ? "text-white" : "text-danger",
                         )}
                       >
                         {isLowStockOnly
@@ -945,7 +945,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                           "p-1.5 rounded-lg",
                                           branch.type === "warehouse"
                                             ? "bg-brand/10 text-brand"
-                                            : "bg-amber-500/10 text-amber-500",
+                                            : "bg-warning/10 text-warning",
                                         )}
                                       >
                                         {branch.type === "warehouse" ? (
@@ -1144,8 +1144,8 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                 <span className="text-[10px] font-black">{t("inventory.status_visible")}</span>
                               </div>
                             ) : (
-                              <div className="flex items-center gap-1.5 text-content-muted bg-neutral-100 dark:bg-neutral-800 px-3 py-1 rounded-full w-fit">
-                                <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
+                              <div className="flex items-center gap-1.5 text-content-muted bg-surface-muted px-3 py-1 rounded-full w-fit">
+                                <span className="w-1.5 h-1.5 rounded-full bg-content-muted"></span>
                                 <span className="text-[10px] font-black">{t("inventory.status_hidden")}</span>
                               </div>
                             )}
@@ -1350,7 +1350,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                                       branch.type ===
                                                         "warehouse"
                                                         ? "bg-brand/10 text-brand"
-                                                        : "bg-amber-500/10 text-amber-500",
+                                                        : "bg-warning/10 text-warning",
                                                     )}
                                                   >
                                                     {branch.type ===
@@ -1395,7 +1395,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                                             true,
                                                           );
                                                         }}
-                                                        className="text-[9px] font-black text-emerald-600 hover:underline uppercase tracking-tighter"
+                                                        className="text-[9px] font-black text-success hover:underline uppercase tracking-tighter"
                                                       >
                                                         {t(
                                                           "inventory.stock_in",
@@ -1412,7 +1412,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                                           });
                                                           setShowConversionModal(true);
                                                         }}
-                                                        className="text-[9px] font-black text-amber-600 hover:underline uppercase tracking-tighter"
+                                                        className="text-[9px] font-black text-warning hover:underline uppercase tracking-tighter"
                                                       >
                                                         {t("inventory.manual_convert_action", "فك يدوي")}
                                                       </button>
@@ -2303,7 +2303,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
               onClick={() => setFormData({ ...formData, showInPos: !formData.showInPos })}
               className={cn(
                 "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2",
-                formData.showInPos ? "bg-brand" : "bg-neutral-300 dark:bg-neutral-700"
+                formData.showInPos ? "bg-brand" : "bg-border"
               )}
             >
               <span
@@ -2756,7 +2756,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
       >
         <div className="p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-amber-500 text-white rounded-xl">
+            <div className="p-3 bg-warning text-white rounded-xl">
               <History size={20} />
             </div>
             <div>
@@ -2784,7 +2784,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
               className={cn(
                 "flex-1 py-2 rounded-xl text-xs font-black transition-all",
                 mode === "add"
-                  ? "bg-surface text-emerald-600 shadow-sm"
+                  ? "bg-surface text-success shadow-sm"
                   : "text-content-muted",
               )}
             >
@@ -2816,7 +2816,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
                 autoFocus
                 value={addQuantity}
                 onChange={(e) => setAddQuantity(Number(e.target.value))}
-                className="w-full px-4 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-black text-xl text-content"
+                className="w-full px-4 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-success/20 focus:border-success font-black text-xl text-content"
               />
             </div>
           ) : (
@@ -3230,7 +3230,7 @@ const OpeningBalanceModal = ({ onClose, tenantId, branches, items }: any) => {
       >
         <div className="p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
           <div className="flex items-center gap-4">
-            <div className="p-4 bg-emerald-500 text-white rounded-2xl shadow-lg shadow-emerald-500/10">
+            <div className="p-4 bg-success text-white rounded-2xl shadow-lg shadow-success/10">
               <Download size={24} />
             </div>
             <div>
@@ -3339,7 +3339,7 @@ const OpeningBalanceModal = ({ onClose, tenantId, branches, items }: any) => {
           <button
             onClick={handleSave}
             disabled={loading || !selectedBranch || stockEntries.length === 0}
-            className="w-full bg-emerald-500 text-white py-4 rounded-2xl font-black text-lg shadow-xl shadow-emerald-500/10 hover:bg-emerald-600 transition-all disabled:opacity-50"
+            className="w-full bg-success text-white py-4 rounded-2xl font-black text-lg shadow-xl shadow-success/10 hover:bg-success/90 transition-all disabled:opacity-50"
           >
             {loading
               ? t("common.saving")
@@ -4255,7 +4255,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
               onClick={() => setFormData({ ...formData, showInPos: !formData.showInPos })}
               className={cn(
                 "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2",
-                formData.showInPos ? "bg-brand" : "bg-neutral-300 dark:bg-neutral-700"
+                formData.showInPos ? "bg-brand" : "bg-border"
               )}
             >
               <span

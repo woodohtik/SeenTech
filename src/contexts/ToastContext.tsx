@@ -93,17 +93,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
 function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void; key?: React.Key }) {
   const icons = {
-    success: <CheckCircle2 className="text-green-500" size={20} />,
-    error: <AlertCircle className="text-red-500" size={20} />,
-    info: <Info className="text-blue-500" size={20} />,
-    warning: <AlertTriangle className="text-amber-500" size={20} />,
+    success: <CheckCircle2 className="text-success" size={20} />,
+    error: <AlertCircle className="text-danger" size={20} />,
+    info: <Info className="text-info" size={20} />,
+    warning: <AlertTriangle className="text-warning" size={20} />,
   };
 
   const bgColors = {
-    success: 'bg-green-50 border-green-100',
-    error: 'bg-red-50 border-red-100',
-    info: 'bg-blue-50 border-blue-100',
-    warning: 'bg-amber-50 border-amber-100',
+    success: 'bg-success/10 border-success/20',
+    error: 'bg-danger/10 border-danger/20',
+    info: 'bg-info/10 border-info/20',
+    warning: 'bg-warning/10 border-warning/20',
   };
 
   return (

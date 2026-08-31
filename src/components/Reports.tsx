@@ -700,7 +700,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
   if (!canViewReports) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] text-right" dir={dir}>
-        <div className="p-6 bg-rose-500/10 text-rose-600 rounded-[2.5rem] mb-6">
+        <div className="p-6 bg-danger/10 text-danger rounded-[2.5rem] mb-6">
           <AlertTriangle size={48} />
         </div>
         <h2 className="text-2xl font-black text-content mb-2">{t('reports.access_denied_title')}</h2>
@@ -867,7 +867,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               !canExportReports && "opacity-50 cursor-not-allowed"
             )}
           >
-            <FileSpreadsheet size={16} className="text-emerald-600 sm:w-5 sm:h-5" />
+            <FileSpreadsheet size={16} className="text-success sm:w-5 sm:h-5" />
             <span>{t('dashboard.export_excel')}</span>
           </button>
           <button
@@ -1038,10 +1038,10 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           {activeTab === 'general' && (
             <div id="reports-general-grid" className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
               {[
-                { label: t('dashboard.total_revenue'), value: financialStats.totalRevenue, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-500/10', isCurrency: true },
+                { label: t('dashboard.total_revenue'), value: financialStats.totalRevenue, icon: DollarSign, color: 'text-success', bg: 'bg-success/10', isCurrency: true },
                 { label: t('dashboard.admin.total_sales'), value: financialStats.totalSales, icon: TrendingUp, color: 'text-brand', bg: 'bg-brand/10', isCurrency: true },
-                { label: t('dashboard.orders_count'), value: filteredOrders.length, icon: ShoppingBag, color: 'text-amber-600', bg: 'bg-amber-500/10', isCurrency: false },
-                { label: t('reports.delayed_orders'), value: orderStats.delayedCount, icon: AlertTriangle, color: 'text-rose-600', bg: 'bg-rose-500/10', isCurrency: false },
+                { label: t('dashboard.orders_count'), value: filteredOrders.length, icon: ShoppingBag, color: 'text-warning', bg: 'bg-warning/10', isCurrency: false },
+                { label: t('reports.delayed_orders'), value: orderStats.delayedCount, icon: AlertTriangle, color: 'text-danger', bg: 'bg-danger/10', isCurrency: false },
               ].map((stat, i) => (
                 <div key={i} className="bg-surface p-3 sm:p-6 lg:p-8 rounded-xl sm:rounded-[2.5rem] border border-border shadow-sm flex flex-col sm:flex-row items-center sm:items-start lg:items-center gap-3 sm:gap-6 text-center sm:text-right">
                   <div className={cn("p-2.5 sm:p-5 rounded-xl sm:rounded-2xl shrink-0", stat.bg, stat.color)}>
@@ -1068,7 +1068,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                   <h3 className="text-sm sm:text-lg font-black text-content">{t('reports.revenue_vs_sales')}</h3>
                   <div className="flex gap-2 sm:gap-4 text-[10px] sm:text-xs font-bold">
                     <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-brand rounded-full" /><span>{t('common.sales')}</span></div>
-                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-emerald-500 rounded-full" /><span>{t('reports.revenue')}</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-success rounded-full" /><span>{t('reports.revenue')}</span></div>
                   </div>
                 </div>
                 <div className="h-64 sm:h-80">
@@ -1154,12 +1154,12 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
                 <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
                   <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.total_tax')}</p>
-                  <h3 className="text-base sm:text-2xl font-black text-rose-600 mt-1 sm:mt-2"><PriceDisplay amount={financialStats.totalTax} /></h3>
+                  <h3 className="text-base sm:text-2xl font-black text-danger mt-1 sm:mt-2"><PriceDisplay amount={financialStats.totalTax} /></h3>
                   <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('dashboard.admin.vat_15')}</p>
                 </div>
                 <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
                   <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.net_profit')}</p>
-                  <h3 className="text-base sm:text-2xl font-black text-emerald-600 mt-1 sm:mt-2"><PriceDisplay amount={financialStats.netProfit} /></h3>
+                  <h3 className="text-base sm:text-2xl font-black text-success mt-1 sm:mt-2"><PriceDisplay amount={financialStats.netProfit} /></h3>
                   <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('reports.after_tax_deduction')}</p>
                 </div>
                 <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
@@ -1180,7 +1180,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
           {activeTab === 'profit_loss' && (
             <div className="space-y-4 sm:space-y-8">
-              <div className="bg-amber-500/5 border border-amber-500/15 text-amber-700 dark:text-amber-400 rounded-2xl p-4 text-xs sm:text-sm font-bold flex items-start gap-3">
+              <div className="bg-warning/5 border border-warning/15 text-warning rounded-2xl p-4 text-xs sm:text-sm font-bold flex items-start gap-3">
                 <AlertTriangle size={18} className="shrink-0 mt-0.5" />
                 <span>{t('reports.pl_estimate_disclaimer')}</span>
               </div>
@@ -1188,10 +1188,10 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-6">
                 {[
                   { label: t('reports.pl_net_sales'), value: profitLossStats.netSalesExclVat, color: 'text-brand', bg: 'bg-brand/10' },
-                  { label: t('reports.pl_cogs'), value: profitLossStats.cogs, color: 'text-amber-600', bg: 'bg-amber-500/10' },
-                  { label: t('reports.pl_gross_profit'), value: profitLossStats.grossProfit, color: 'text-emerald-600', bg: 'bg-emerald-500/10', sub: t('reports.pl_margin', { n: profitLossStats.grossMargin.toFixed(1) }) },
-                  { label: t('reports.pl_expenses'), value: profitLossStats.operatingExpenses, color: 'text-rose-600', bg: 'bg-rose-500/10' },
-                  { label: t('reports.pl_net_profit'), value: profitLossStats.netProfit, color: profitLossStats.netProfit >= 0 ? 'text-emerald-600' : 'text-danger', bg: profitLossStats.netProfit >= 0 ? 'bg-emerald-500/10' : 'bg-danger/10', sub: t('reports.pl_margin', { n: profitLossStats.netMargin.toFixed(1) }) },
+                  { label: t('reports.pl_cogs'), value: profitLossStats.cogs, color: 'text-warning', bg: 'bg-warning/10' },
+                  { label: t('reports.pl_gross_profit'), value: profitLossStats.grossProfit, color: 'text-success', bg: 'bg-success/10', sub: t('reports.pl_margin', { n: profitLossStats.grossMargin.toFixed(1) }) },
+                  { label: t('reports.pl_expenses'), value: profitLossStats.operatingExpenses, color: 'text-danger', bg: 'bg-danger/10' },
+                  { label: t('reports.pl_net_profit'), value: profitLossStats.netProfit, color: profitLossStats.netProfit >= 0 ? 'text-success' : 'text-danger', bg: profitLossStats.netProfit >= 0 ? 'bg-success/10' : 'bg-danger/10', sub: t('reports.pl_margin', { n: profitLossStats.netMargin.toFixed(1) }) },
                 ].map((card, i) => (
                   <div key={i} className="bg-surface p-3 sm:p-6 rounded-xl sm:rounded-[2.5rem] border border-border shadow-sm">
                     <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest truncate">{card.label}</p>
@@ -1271,7 +1271,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border cursor-default flex flex-col justify-between">
                   <div>
                     <div className="flex items-center gap-2 sm:gap-4 mb-2 sm:mb-4">
-                      <div className="p-2 bg-amber-500/10 text-amber-600 rounded-lg sm:rounded-xl shrink-0"><Clock size={16} className="sm:w-6 sm:h-6" /></div>
+                      <div className="p-2 bg-warning/10 text-warning rounded-lg sm:rounded-xl shrink-0"><Clock size={16} className="sm:w-6 sm:h-6" /></div>
                       <h4 className="font-black text-xs sm:text-base text-content">{t('reports.completion_time')}</h4>
                     </div>
                     <h3 className="text-lg sm:text-3xl font-black text-content">{t('reports.days_value', { n: orderStats.avgTime })}</h3>
@@ -1280,7 +1280,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 </div>
 
                 <div 
-                  className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm cursor-pointer hover:border-rose-500/30 transition-all flex flex-col justify-between"
+                  className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm cursor-pointer hover:border-danger/30 transition-all flex flex-col justify-between"
                   onClick={() => setDrillDown({
                     title: t('reports.delayed_orders_title'),
                     data: orderStats.delayedOrders,
@@ -1294,10 +1294,10 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 >
                   <div>
                     <div className="flex items-center gap-2 sm:gap-4 mb-2 sm:mb-4">
-                      <div className="p-2 bg-rose-500/10 text-rose-600 rounded-lg sm:rounded-xl shrink-0"><AlertTriangle size={16} className="sm:w-6 sm:h-6" /></div>
+                      <div className="p-2 bg-danger/10 text-danger rounded-lg sm:rounded-xl shrink-0"><AlertTriangle size={16} className="sm:w-6 sm:h-6" /></div>
                       <h4 className="font-black text-xs sm:text-base text-content">{t('reports.delayed_orders')}</h4>
                     </div>
-                    <h3 className="text-lg sm:text-3xl font-black text-rose-600">{orderStats.delayedCount}</h3>
+                    <h3 className="text-lg sm:text-3xl font-black text-danger">{orderStats.delayedCount}</h3>
                   </div>
                   <p className="text-[9px] sm:text-xs text-content-muted font-bold mt-2">{t('reports.over_seven_working_days')}</p>
                 </div>
@@ -1311,10 +1311,10 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
                 <div className="flex items-center justify-between mb-6 sm:mb-8">
                   <h3 className="text-sm sm:text-lg font-black text-content flex items-center gap-1.5 sm:gap-2">
-                    <AlertTriangle className="text-rose-500 shrink-0 sm:w-5 sm:h-5" size={18} />
+                    <AlertTriangle className="text-danger shrink-0 sm:w-5 sm:h-5" size={18} />
                     {t('reports.low_stock_alerts')}
                   </h3>
-                  <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-rose-500/10 text-rose-600 rounded-full text-[10px] sm:text-xs font-black">
+                  <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-danger/10 text-danger rounded-full text-[10px] sm:text-xs font-black">
                     {t('reports.items_count', { n: inventoryStats.lowStockItems.length })}
                   </span>
                 </div>
@@ -1323,7 +1323,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     inventoryStats.lowStockItems.map(item => (
                       <div key={item.id} className="flex items-center justify-between p-3 sm:p-4 bg-surface-muted rounded-xl sm:rounded-2xl">
                         <div className="flex items-center gap-2 sm:gap-3">
-                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-surface rounded-lg sm:rounded-xl flex items-center justify-center text-rose-500 shadow-sm shrink-0">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-surface rounded-lg sm:rounded-xl flex items-center justify-center text-danger shadow-sm shrink-0">
                             <Package size={16} className="sm:w-5 sm:h-5" />
                           </div>
                           <div>
@@ -1332,14 +1332,14 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                           </div>
                         </div>
                         <div className="text-left">
-                          <p className="text-xs sm:text-sm font-black text-rose-600">{item.quantity} {item.unit}</p>
+                          <p className="text-xs sm:text-sm font-black text-danger">{item.quantity} {item.unit}</p>
                           <p className="text-[9px] sm:text-[10px] text-content-muted font-bold">{t('reports.current_quantity')}</p>
                         </div>
                       </div>
                     ))
                   ) : (
                     <div className="text-center py-12">
-                      <CheckCircle2 size={40} className="text-emerald-500/20 mx-auto mb-3 sm:w-12 sm:h-12" />
+                      <CheckCircle2 size={40} className="text-success/20 mx-auto mb-3 sm:w-12 sm:h-12" />
                       <p className="text-content-muted font-bold text-xs sm:text-sm">{t('reports.stock_healthy')}</p>
                     </div>
                   )}
@@ -1418,7 +1418,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                             </td>
                             <td className="px-6 py-4 font-black text-content">{member.totalHandled}</td>
                             <td className="px-6 py-4 font-black text-brand">{member.active}</td>
-                            <td className="px-6 py-4 font-black text-emerald-600">{member.completed}</td>
+                            <td className="px-6 py-4 font-black text-success">{member.completed}</td>
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3 min-w-[140px]">
                                 <div className="flex-1 h-2 bg-surface-muted rounded-full overflow-hidden">
@@ -1584,8 +1584,8 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 {[
                   { label: t('reports.sp_total_purchases'), value: supplierStats.totalPurchases, color: 'text-brand', bg: 'bg-brand/10' },
                   { label: t('reports.sp_total_returns'), value: supplierStats.totalPurchaseReturns, color: 'text-danger', bg: 'bg-danger/10' },
-                  { label: t('reports.sp_net_purchases'), value: supplierStats.totalPurchases - supplierStats.totalPurchaseReturns, color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
-                  { label: t('reports.sp_outstanding_balance'), value: supplierStats.totalOutstandingBalance, color: 'text-amber-600', bg: 'bg-amber-500/10' },
+                  { label: t('reports.sp_net_purchases'), value: supplierStats.totalPurchases - supplierStats.totalPurchaseReturns, color: 'text-success', bg: 'bg-success/10' },
+                  { label: t('reports.sp_outstanding_balance'), value: supplierStats.totalOutstandingBalance, color: 'text-warning', bg: 'bg-warning/10' },
                 ].map((stat, i) => (
                   <div key={i} className="bg-surface p-3 sm:p-6 rounded-xl sm:rounded-[2.5rem] border border-border shadow-sm">
                     <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest truncate">{stat.label}</p>
@@ -1638,7 +1638,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                             <td className="px-6 py-4 font-bold text-content">{s.name}</td>
                             <td className="px-6 py-4 font-black text-brand"><PriceDisplay amount={s.purchases} /></td>
                             <td className="px-6 py-4 font-black text-danger"><PriceDisplay amount={s.returns} /></td>
-                            <td className="px-6 py-4 font-black text-emerald-600"><PriceDisplay amount={s.net} /></td>
+                            <td className="px-6 py-4 font-black text-success"><PriceDisplay amount={s.net} /></td>
                             <td className="px-6 py-4">
                               <button
                                 onClick={() => setDrillDown({
@@ -1675,7 +1675,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
           {activeTab === 'vat' && (
             <div className="space-y-4 sm:space-y-8">
-              <div className="bg-amber-500/5 border border-amber-500/15 text-amber-700 dark:text-amber-400 rounded-2xl p-4 text-xs sm:text-sm font-bold flex items-start gap-3">
+              <div className="bg-warning/5 border border-warning/15 text-warning rounded-2xl p-4 text-xs sm:text-sm font-bold flex items-start gap-3">
                 <AlertTriangle size={18} className="shrink-0 mt-0.5" />
                 <span>{t('reports.vat_estimate_disclaimer')}</span>
               </div>
@@ -1688,12 +1688,12 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 </div>
                 <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
                   <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.vat_input')}</p>
-                  <h3 className="text-base sm:text-2xl font-black text-amber-600 mt-1 sm:mt-2"><PriceDisplay amount={vatStats.inputVat} /></h3>
+                  <h3 className="text-base sm:text-2xl font-black text-warning mt-1 sm:mt-2"><PriceDisplay amount={vatStats.inputVat} /></h3>
                   <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('reports.vat_input_desc')}</p>
                 </div>
                 <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
                   <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.vat_net_due')}</p>
-                  <h3 className={cn("text-base sm:text-2xl font-black mt-1 sm:mt-2", vatStats.netVatDue >= 0 ? 'text-danger' : 'text-emerald-600')}>
+                  <h3 className={cn("text-base sm:text-2xl font-black mt-1 sm:mt-2", vatStats.netVatDue >= 0 ? 'text-danger' : 'text-success')}>
                     <PriceDisplay amount={Math.abs(vatStats.netVatDue)} />
                   </h3>
                   <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">
@@ -1749,7 +1749,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               )}
 
               {!dailyZData && !loadingZ && (
-                <div className="text-center py-12 text-gray-400 font-bold text-xs sm:text-sm">
+                <div className="text-center py-12 text-content-muted font-bold text-xs sm:text-sm">
                   {t('reports.no_report_generated')}
                 </div>
               )}
@@ -1792,7 +1792,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto border-t sm:border-0 pt-3 sm:pt-0 border-border">
                   <button 
                     onClick={() => exportToExcel(drillDown.data, drillDown.title)}
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-emerald-500/10 px-4 py-2 sm:py-2.5 rounded-xl border border-emerald-500/20 text-xs sm:text-sm font-bold text-emerald-600 hover:bg-emerald-500/20 transition-all"
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-success/10 px-4 py-2 sm:py-2.5 rounded-xl border border-success/20 text-xs sm:text-sm font-bold text-success hover:bg-success/20 transition-all"
                   >
                     <FileSpreadsheet size={16} />
                     {t('dashboard.export_excel')}

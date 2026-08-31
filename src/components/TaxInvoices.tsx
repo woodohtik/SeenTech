@@ -441,7 +441,7 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
             </button>
             <button
               onClick={handlePrint}
-              className="px-4 py-2 bg-slate-600 text-white rounded-xl font-bold flex items-center gap-2 hover:bg-slate-700 transition-colors shadow-sm cursor-pointer text-xs"
+              className="px-4 py-2 bg-content text-surface rounded-xl font-bold flex items-center gap-2 hover:bg-content/90 transition-colors shadow-sm cursor-pointer text-xs"
             >
               <Printer size={16} /> {t('tax_invoices.print')}
             </button>

@@ -227,7 +227,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ tenantId }) => {
         </div>
         <div className="flex items-center gap-2">
           <div className="px-4 py-2.5 bg-surface border border-border rounded-2xl shadow-sm text-xs font-bold text-content flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-success animate-pulse"></span>
             {t('dashboard.admin.cloud_connected')}
           </div>
         </div>
@@ -246,21 +246,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ tenantId }) => {
           <div className="text-2xl font-black text-content tracking-tight">
             <PriceDisplay amount={financials.totalSales} />
           </div>
-          <div className="mt-3 flex items-center gap-1.5 text-xs text-emerald-600 font-bold">
+          <div className="mt-3 flex items-center gap-1.5 text-xs text-success font-bold">
             <ArrowUpRight size={14} />
             <span>{t('dashboard.admin.vs_last_month')}</span>
           </div>
         </div>
 
         {/* Net Profit */}
-        <div className="bg-surface p-5 rounded-3xl border border-emerald-500/20 shadow-sm hover:border-emerald-500/40 transition-all group">
+        <div className="bg-surface p-5 rounded-3xl border border-success/20 shadow-sm hover:border-success/40 transition-all group">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-black text-content-muted">{t('dashboard.admin.estimated_net_profit')}</span>
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 rounded-2xl bg-success/10 text-success flex items-center justify-center group-hover:scale-110 transition-transform">
               <DollarSign size={20} />
             </div>
           </div>
-          <div className="text-2xl font-black text-emerald-600 tracking-tight">
+          <div className="text-2xl font-black text-success tracking-tight">
             <PriceDisplay amount={financials.netProfit} />
           </div>
           <div className="mt-3 text-xs text-content-muted font-medium">
@@ -269,30 +269,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ tenantId }) => {
         </div>
 
         {/* Expenses */}
-        <div className="bg-surface p-5 rounded-3xl border border-amber-500/20 shadow-sm hover:border-amber-500/40 transition-all group">
+        <div className="bg-surface p-5 rounded-3xl border border-warning/20 shadow-sm hover:border-warning/40 transition-all group">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-black text-content-muted">{t('dashboard.admin.operating_expenses')}</span>
-            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 rounded-2xl bg-warning/10 text-warning flex items-center justify-center group-hover:scale-110 transition-transform">
               <Wallet size={20} />
             </div>
           </div>
           <div className="text-2xl font-black text-content tracking-tight">
             <PriceDisplay amount={financials.expenses} />
           </div>
-          <div className="mt-3 text-xs text-amber-600 font-bold">
+          <div className="mt-3 text-xs text-warning font-bold">
             {t('dashboard.admin.expenses_breakdown')}
           </div>
         </div>
 
         {/* VAT Due */}
-        <div className="bg-surface p-5 rounded-3xl border border-indigo-500/20 shadow-sm hover:border-indigo-500/40 transition-all group">
+        <div className="bg-surface p-5 rounded-3xl border border-info/20 shadow-sm hover:border-info/40 transition-all group">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-black text-content-muted">{t('dashboard.admin.vat_15')}</span>
-            <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 rounded-2xl bg-info/10 text-info flex items-center justify-center group-hover:scale-110 transition-transform">
               <Receipt size={20} />
             </div>
           </div>
-          <div className="text-2xl font-black text-indigo-600 tracking-tight">
+          <div className="text-2xl font-black text-info tracking-tight">
             <PriceDisplay amount={financials.vatDue} />
           </div>
           <div className="mt-3 text-xs text-content-muted font-medium">
@@ -342,14 +342,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ tenantId }) => {
         <div className="space-y-6">
           {/* Top Tailor Card */}
           <div className="bg-surface p-6 rounded-3xl border border-border shadow-sm relative overflow-hidden">
-            <div className="absolute -top-6 -left-6 w-24 h-24 bg-amber-500/10 rounded-full blur-xl pointer-events-none"></div>
+            <div className="absolute -top-6 -left-6 w-24 h-24 bg-warning/10 rounded-full blur-xl pointer-events-none"></div>
             
             <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-black text-amber-600 bg-amber-500/10 px-3 py-1 rounded-full flex items-center gap-1">
+              <span className="text-xs font-black text-warning bg-warning/10 px-3 py-1 rounded-full flex items-center gap-1">
                 <Award size={14} />
                 {t('dashboard.admin.top_tailor')}
               </span>
-              <Scissors size={20} className="text-amber-500" />
+              <Scissors size={20} className="text-warning" />
             </div>
 
             {topTailor ? (

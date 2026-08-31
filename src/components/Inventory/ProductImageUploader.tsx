@@ -145,7 +145,7 @@ export default function ProductImageUploader({
             {!isUploading && (
               <button
                 onClick={clearImage}
-                className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full shadow-lg hover:scale-110 transition-transform z-10"
+                className="absolute -top-2 -right-2 p-1.5 bg-danger text-white rounded-full shadow-lg hover:scale-110 transition-transform z-10"
               >
                 <X size={16} />
               </button>
@@ -174,7 +174,7 @@ export default function ProductImageUploader({
         )}
 
         {error && (
-          <p className="text-xs text-red-500 font-bold mt-2">{error}</p>
+          <p className="text-xs text-danger font-bold mt-2">{error}</p>
         )}
       </div>
 

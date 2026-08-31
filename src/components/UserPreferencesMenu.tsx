@@ -283,7 +283,7 @@ export default function UserPreferencesMenu({
                   onLock();
                 }}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-brand/5 text-brand hover:text-brand-dark text-sm font-bold transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand w-full",
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-brand/5 text-brand hover:text-brand/80 text-sm font-bold transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand w-full",
                   isRtl ? "text-right" : "text-left"
                 )}
               >
@@ -302,7 +302,7 @@ export default function UserPreferencesMenu({
                 onLogout();
               }}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-500/5 text-red-500 hover:text-red-600 text-sm font-bold transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand w-full",
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-danger/5 text-danger hover:text-danger text-sm font-bold transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand w-full",
                 isRtl ? "text-right" : "text-left"
               )}
             >

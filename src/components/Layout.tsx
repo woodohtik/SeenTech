@@ -515,8 +515,8 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
                 <div className="flex flex-col text-right rtl:text-right ltr:text-left">
                   <span className="font-black text-content truncate max-w-[150px] text-sm leading-tight">{tenantName}</span>
                   <div className="flex items-center gap-1.5 mt-0.5 justify-start rtl:justify-start ltr:justify-start">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
-                    <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider leading-none">
+                    <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
+                    <span className="text-[9px] text-success font-bold uppercase tracking-wider leading-none">
                       {t('saas.status_active')}
                     </span>
                   </div>

@@ -119,7 +119,7 @@ export default function Header({ tenantId, title, subtitle, children }: HeaderPr
                 "px-3 py-1.5 rounded-2xl text-xs font-bold tracking-wide flex items-center gap-1.5 shrink-0 select-none border whitespace-nowrap",
                 trialDays <= 3 
                   ? "bg-danger/10 text-danger border-danger/20 animate-pulse" 
-                  : "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-900/30"
+                  : "bg-info/10 text-info border-info/20"
               )}>
                 <Calendar size={13} strokeWidth={2.5} />
                 {trialDays === 0

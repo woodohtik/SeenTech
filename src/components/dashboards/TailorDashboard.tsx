@@ -128,13 +128,13 @@ export const TailorDashboard: React.FC<TailorDashboardProps> = ({ tenantId }) =>
   return (
     <div dir={dir} className="space-y-6 animate-fade-in">
       {/* Top Banner Header */}
-      <div className="bg-gradient-to-l from-amber-500/15 via-surface to-surface p-6 rounded-3xl border border-amber-500/20 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-gradient-to-l from-warning/15 via-surface to-surface p-6 rounded-3xl border border-warning/20 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 text-xs font-black">
+            <span className="px-3 py-1 rounded-full bg-warning/10 text-warning text-xs font-black">
               {t('tailors.workshop_badge')}
             </span>
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 text-xs font-bold flex items-center gap-1">
+            <span className="px-2.5 py-0.5 rounded-full bg-success/10 text-success text-xs font-bold flex items-center gap-1">
               <ShieldCheck size={14} />
               {t('tailors.security_isolated')}
             </span>
@@ -149,7 +149,7 @@ export const TailorDashboard: React.FC<TailorDashboardProps> = ({ tenantId }) =>
 
         <button
           onClick={() => navigate('/orders')}
-          className="px-6 py-3.5 bg-amber-600 text-white font-black rounded-2xl shadow-lg shadow-amber-600/25 hover:bg-amber-700 active:scale-95 transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
+          className="px-6 py-3.5 bg-warning text-white font-black rounded-2xl shadow-lg shadow-warning/25 hover:bg-warning/90 active:scale-95 transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
         >
           <Scissors size={20} />
           <span>{t('tailors.open_workshop_orders')}</span>
@@ -175,14 +175,14 @@ export const TailorDashboard: React.FC<TailorDashboardProps> = ({ tenantId }) =>
         </div>
 
         {/* Completed Today */}
-        <div className="bg-surface p-5 rounded-3xl border border-emerald-500/20 shadow-sm">
+        <div className="bg-surface p-5 rounded-3xl border border-success/20 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-black text-content-muted">{t('tailors.completed_today')}</span>
-            <div className="w-9 h-9 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-2xl bg-success/10 text-success flex items-center justify-center">
               <CheckCircle size={18} />
             </div>
           </div>
-          <div className="text-2xl font-black text-emerald-600 tracking-tight">
+          <div className="text-2xl font-black text-success tracking-tight">
             {t('tailors.completed_pieces_count', { count: metrics.completedTodayCount })}
           </div>
           <div className="mt-2 text-xs text-content-muted font-medium">

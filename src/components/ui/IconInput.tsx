@@ -52,7 +52,7 @@ export const IconInput = forwardRef<HTMLInputElement, IconInputProps>(({
           className={cn(
             "block text-xs font-black uppercase tracking-widest px-1 transition-colors select-none",
             disabled ? "text-content-muted/50" : "text-content-muted hover:text-content",
-            error ? "text-red-500" : ""
+            error ? "text-danger" : ""
           )}
         >
           {label}
@@ -63,9 +63,9 @@ export const IconInput = forwardRef<HTMLInputElement, IconInputProps>(({
         className={cn(
           "group flex items-center w-full h-[var(--size-button-height,42px)] min-h-[40px] bg-surface border rounded-xl overflow-hidden transition-all duration-200",
           disabled && "opacity-50 cursor-not-allowed bg-surface-muted/30",
-          error 
-            ? "border-red-500 ring-2 ring-red-500/10 focus-within:ring-2 focus-within:ring-red-500/20 focus-within:border-red-600" 
-            : "border-border dark:border-gray-800 focus-within:ring-2 focus-within:ring-brand/20 focus-within:border-brand hover:border-border-hover dark:hover:border-gray-700",
+          error
+            ? "border-danger ring-2 ring-danger/10 focus-within:ring-2 focus-within:ring-danger/20 focus-within:border-danger"
+            : "border-border focus-within:ring-2 focus-within:ring-brand/20 focus-within:border-brand hover:border-content-muted",
           wrapperClassName
         )}
       >
@@ -74,9 +74,9 @@ export const IconInput = forwardRef<HTMLInputElement, IconInputProps>(({
           <div 
             className={cn(
               "flex items-center justify-center h-full px-3.5 bg-surface-muted/10 border-e transition-all duration-200",
-              error 
-                ? "text-red-500 border-red-500/20 bg-red-50/5" 
-                : "text-gray-400 dark:text-gray-500 border-border dark:border-gray-800 group-focus-within:border-brand/40 group-focus-within:text-brand bg-surface-muted/20"
+              error
+                ? "text-danger border-danger/20 bg-danger/5"
+                : "text-content-muted border-border group-focus-within:border-brand/40 group-focus-within:text-brand bg-surface-muted/20"
             )}
           >
             {renderIcon(StartIcon)}
@@ -102,9 +102,9 @@ export const IconInput = forwardRef<HTMLInputElement, IconInputProps>(({
           <div 
             className={cn(
               "flex items-center justify-center h-full px-3.5 bg-surface-muted/10 border-s transition-all duration-200",
-              error 
-                ? "text-red-500 border-red-500/20 bg-red-50/5" 
-                : "text-gray-400 dark:text-gray-500 border-border dark:border-gray-800 group-focus-within:border-brand/40 group-focus-within:text-brand bg-surface-muted/20"
+              error
+                ? "text-danger border-danger/20 bg-danger/5"
+                : "text-content-muted border-border group-focus-within:border-brand/40 group-focus-within:text-brand bg-surface-muted/20"
             )}
           >
             {renderIcon(EndIcon)}
@@ -114,7 +114,7 @@ export const IconInput = forwardRef<HTMLInputElement, IconInputProps>(({
 
       {/* Error Message */}
       {error && (
-        <span className="text-xs font-semibold text-red-500 px-1 mt-0.5 animate-fadeIn">
+        <span className="text-xs font-semibold text-danger px-1 mt-0.5 animate-fadeIn">
           {error}
         </span>
       )}

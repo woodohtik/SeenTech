@@ -276,7 +276,7 @@ export function DatePicker({ value, onChange, id, className, placeholder }: Date
                       cell.isCurrentMonth 
                         ? "text-content hover:bg-brand/10 hover:text-brand" 
                         : "text-content-muted/30 hover:bg-surface-muted",
-                      isSelected && "bg-brand text-brand-foreground font-black shadow-lg shadow-brand/20 hover:bg-brand hover:text-brand-foreground",
+                      isSelected && "bg-brand text-white font-black shadow-lg shadow-brand/20 hover:bg-brand hover:text-white",
                       isTodayStr && !isSelected && "border-2 border-brand/20 text-brand font-black"
                     )}
                   >

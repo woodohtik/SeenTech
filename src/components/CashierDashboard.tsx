@@ -191,7 +191,7 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
             <span className="px-3 py-1 rounded-full bg-brand/10 text-brand text-xs font-black">
               {t('dashboard.cashier.badge')}
             </span>
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 text-xs font-bold flex items-center gap-1">
+            <span className="px-2.5 py-0.5 rounded-full bg-success/10 text-success text-xs font-bold flex items-center gap-1">
               <ShieldCheck size={14} />
               {t('dashboard.cashier.secure_zone')}
             </span>
@@ -209,7 +209,7 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
             onClick={() => navigate('/shifts')}
             className="px-4 py-3 bg-surface-muted hover:bg-surface border border-border text-content font-bold rounded-2xl transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
           >
-            <Clock size={18} className="text-emerald-600" />
+            <Clock size={18} className="text-success" />
             <span>{t('dashboard.cashier.manage_shift')}</span>
           </button>
 
@@ -229,12 +229,12 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
         <div className="bg-surface p-5 rounded-3xl border border-border shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-black text-content-muted">{t('dashboard.cashier.current_shift_status')}</span>
-            <div className="w-9 h-9 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-2xl bg-success/10 text-success flex items-center justify-center">
               <Clock size={18} />
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-emerald-500 animate-ping"></span>
+            <span className="w-3 h-3 rounded-full bg-success animate-ping"></span>
             <span className="text-xl font-black text-content">{t('dashboard.cashier.shift_open')}</span>
           </div>
           <div className="mt-2 text-xs text-content-muted font-medium">
@@ -243,14 +243,14 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
         </div>
 
         {/* Cash in Drawer */}
-        <div className="bg-surface p-5 rounded-3xl border border-emerald-500/20 shadow-sm">
+        <div className="bg-surface p-5 rounded-3xl border border-success/20 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-black text-content-muted">{t('dashboard.cashier.cash_in_drawer')}</span>
-            <div className="w-9 h-9 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-2xl bg-success/10 text-success flex items-center justify-center">
               <CreditCard size={18} />
             </div>
           </div>
-          <div className="text-2xl font-black text-emerald-600 tracking-tight">
+          <div className="text-2xl font-black text-success tracking-tight">
             <PriceDisplay amount={shift.currentCashInDrawer} />
           </div>
           <div className="mt-2 text-xs text-content-muted font-medium">
@@ -275,14 +275,14 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
         </div>
 
         {/* Pending Unpaid Invoices */}
-        <div className="bg-surface p-5 rounded-3xl border border-amber-500/20 shadow-sm">
+        <div className="bg-surface p-5 rounded-3xl border border-warning/20 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-black text-content-muted">{t('dashboard.cashier.pending_collection')}</span>
-            <div className="w-9 h-9 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-2xl bg-warning/10 text-warning flex items-center justify-center">
               <Receipt size={18} />
             </div>
           </div>
-          <div className="text-2xl font-black text-amber-600 tracking-tight">
+          <div className="text-2xl font-black text-warning tracking-tight">
             <PriceDisplay amount={summaryStats.pendingUnpaidTotal} />
           </div>
           <div className="mt-2 text-xs text-content-muted font-medium">
@@ -334,7 +334,7 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
               </button>
               <button
                 onClick={() => setFilterStatus('unpaid')}
-                className={`px-3 py-1.5 rounded-lg transition-all ${filterStatus === 'unpaid' ? 'bg-amber-600 text-white shadow-sm' : 'text-content-muted hover:text-content'}`}
+                className={`px-3 py-1.5 rounded-lg transition-all ${filterStatus === 'unpaid' ? 'bg-warning text-white shadow-sm' : 'text-content-muted hover:text-content'}`}
               >
                 {t('dashboard.cashier.not_fully_paid')}
               </button>
@@ -382,16 +382,16 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
                     <td className="p-3 font-bold text-content">
                       <PriceDisplay amount={order.totalAmount} />
                     </td>
-                    <td className="p-3 font-bold text-emerald-600">
+                    <td className="p-3 font-bold text-success">
                       <PriceDisplay amount={order.paidAmount} />
                     </td>
                     <td className="p-3 font-black">
                       {order.balanceDue > 0 ? (
-                        <span className="text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded-md">
+                        <span className="text-warning bg-warning/10 px-2 py-0.5 rounded-md">
                           <PriceDisplay amount={order.balanceDue} />
                         </span>
                       ) : (
-                        <span className="text-emerald-600 font-bold">{t('dashboard.cashier.paid_complete')}</span>
+                        <span className="text-success font-bold">{t('dashboard.cashier.paid_complete')}</span>
                       )}
                     </td>
                     <td className="p-3 text-center">
@@ -452,7 +452,7 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
         {/* Security Isolation Guarantee */}
         <div className="bg-surface p-6 rounded-3xl border border-border shadow-sm flex flex-col justify-between space-y-4">
           <div>
-            <div className="flex items-center gap-2 text-xs font-black text-emerald-600 bg-emerald-500/10 px-3 py-1 rounded-full w-fit mb-3">
+            <div className="flex items-center gap-2 text-xs font-black text-success bg-success/10 px-3 py-1 rounded-full w-fit mb-3">
               <Lock size={14} />
               {t('dashboard.cashier.data_isolation')}
             </div>
@@ -464,7 +464,7 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
             </p>
           </div>
 
-          <div className="p-3.5 bg-emerald-500/5 rounded-2xl border border-emerald-500/20 text-xs text-emerald-700 font-bold flex items-center gap-2">
+          <div className="p-3.5 bg-success/5 rounded-2xl border border-success/20 text-xs text-success font-bold flex items-center gap-2">
             <CheckCircle2 size={18} className="shrink-0" />
             <span>{t('dashboard.cashier.pos_audited_note')}</span>
           </div>
@@ -480,20 +480,20 @@ function OrderStatusBadge({ status }: { status: string }) {
   switch (status) {
     case 'ready':
       return (
-        <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 font-black text-[11px] inline-flex items-center gap-1">
+        <span className="px-2.5 py-1 rounded-lg bg-success/10 text-success font-black text-[11px] inline-flex items-center gap-1">
           <CheckCircle2 size={12} />
           {t('orders.ready_for_delivery')}
         </span>
       );
     case 'in_tailoring':
       return (
-        <span className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-600 font-black text-[11px]">
+        <span className="px-2.5 py-1 rounded-lg bg-info/10 text-info font-black text-[11px]">
           {t('orders.in_tailoring')}
         </span>
       );
     case 'pending':
       return (
-        <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-600 font-black text-[11px]">
+        <span className="px-2.5 py-1 rounded-lg bg-warning/10 text-warning font-black text-[11px]">
           {t('orders.awaiting_tailoring')}
         </span>
       );

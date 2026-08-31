@@ -261,7 +261,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
   if (error) {
     return (
       <div className="p-6 font-sans flex flex-col items-center justify-center h-64 text-center bg-surface border border-border rounded-2xl max-w-md mx-auto my-12 shadow-sm animate-fade-in" dir={isRtl ? 'rtl' : 'ltr'}>
-        <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4"><AlertTriangle size={22} /></div>
+        <div className="w-12 h-12 bg-danger/10 text-danger rounded-full flex items-center justify-center mb-4"><AlertTriangle size={22} /></div>
         <h3 className="text-sm font-black text-content mb-2">{t('sales_record.failed_to_load', 'فشل تحميل سجل المبيعات')}</h3>
         <p className="text-xs text-content-muted mb-4 font-bold max-w-[280px] leading-relaxed">{error}</p>
         <button
@@ -461,7 +461,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
               const invNumber = selectedOrder.invoiceNumber || String(selectedOrder.orderNumber || selectedOrder.id.slice(0, 8));
 
               return (
-                <div className="flex-1 overflow-auto p-4 sm:p-8 flex justify-center bg-gray-50 print:bg-white print:p-2 print:px-3 print:overflow-visible print:max-h-none" id="sales-record-print-area">
+                <div className="flex-1 overflow-auto p-4 sm:p-8 flex justify-center bg-surface-muted print:bg-white print:p-2 print:px-3 print:overflow-visible print:max-h-none" id="sales-record-print-area">
                   {selectedOrder.isB2B ? (
                     <TaxInvoice
                       invoiceNumber={invNumber}
@@ -523,7 +523,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
               </button>
               <button 
                 onClick={handlePrint}
-                className="flex-1 min-w-[90px] bg-slate-600 text-white py-2.5 px-3 rounded-xl font-bold text-xs shadow-md hover:bg-slate-700 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                className="flex-1 min-w-[90px] bg-content text-surface py-2.5 px-3 rounded-xl font-bold text-xs shadow-md hover:bg-content/90 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Printer size={16} />
                 {t('tax_invoices.print', 'طباعة')}

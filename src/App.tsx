@@ -117,33 +117,33 @@ function AccountIssueScreen({ variant, email, detail, onRetry, onLogout }: {
     error: { title: t('login.account_check_failed_title'), desc: t('login.account_check_failed_desc') },
   }[variant];
   return (
-    <div className={`min-h-screen flex items-center justify-center bg-gray-50 ${isRtl ? 'text-right' : 'text-left'} p-6 font-sans`} dir={dir}>
+    <div className={`min-h-screen flex items-center justify-center bg-surface-muted ${isRtl ? 'text-right' : 'text-left'} p-6 font-sans`} dir={dir}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl p-10 border border-amber-100 text-center relative overflow-hidden"
+        className="max-w-md w-full bg-surface rounded-[2.5rem] shadow-2xl p-10 border border-warning/20 text-center relative overflow-hidden"
       >
-        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-full blur-3xl opacity-50 -mr-16 -mt-16" />
-        <div className="w-20 h-20 bg-amber-50 text-amber-600 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-amber-100">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-warning/10 rounded-full blur-3xl opacity-50 -mr-16 -mt-16" />
+        <div className="w-20 h-20 bg-warning/10 text-warning rounded-3xl flex items-center justify-center mx-auto mb-6 border border-warning/20">
           <AlertCircle size={40} />
         </div>
-        <h2 className="text-2xl font-black text-gray-900 mb-3">{copy.title}</h2>
-        <p className="text-gray-500 font-medium leading-relaxed mb-2 px-2 text-sm">
+        <h2 className="text-2xl font-black text-content mb-3">{copy.title}</h2>
+        <p className="text-content-muted font-medium leading-relaxed mb-2 px-2 text-sm">
           {copy.desc}
         </p>
-        {email && <p className="text-gray-400 font-mono text-xs mt-2">{email}</p>}
-        {detail && <p className="text-gray-300 font-mono text-[10px] mt-1 break-all" dir="ltr">{detail}</p>}
+        {email && <p className="text-content-muted font-mono text-xs mt-2">{email}</p>}
+        {detail && <p className="text-content-muted font-mono text-[10px] mt-1 break-all" dir="ltr">{detail}</p>}
         <div className="space-y-3 mt-8">
           <button
             onClick={onRetry}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-bold transition-all shadow-lg shadow-indigo-600/10 flex items-center justify-center gap-2"
+            className="w-full bg-brand hover:bg-brand/90 text-white py-4 rounded-2xl font-bold transition-all shadow-lg shadow-brand/10 flex items-center justify-center gap-2"
           >
             <RefreshCw size={18} />
             {t('common.retry')}
           </button>
           <button
             onClick={onLogout}
-            className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2"
+            className="w-full bg-surface-muted hover:bg-border text-content py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2"
           >
             <LogOut size={18} />
             {t('common.logout_from_account')}
@@ -399,31 +399,31 @@ function AppContent() {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl p-8 md:p-10 border border-slate-100 relative overflow-hidden"
+          className="max-w-md w-full bg-surface rounded-[2.5rem] shadow-2xl p-8 md:p-10 border border-border relative overflow-hidden"
         >
           {/* Decorative accents */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-3xl -mr-16 -mt-16" />
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl -ml-16 -mb-16" />
-          
-          <div className="w-20 h-20 bg-amber-50 text-amber-600 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-amber-500/10 shadow-sm">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-warning/5 rounded-full blur-3xl -mr-16 -mt-16" />
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-brand/5 rounded-full blur-3xl -ml-16 -mb-16" />
+
+          <div className="w-20 h-20 bg-warning/10 text-warning rounded-3xl flex items-center justify-center mx-auto mb-6 border border-warning/10 shadow-sm">
             <AlertCircle size={40} className="animate-pulse" />
           </div>
-          
-          <h2 className="text-2xl font-black text-slate-900 text-center mb-3 tracking-tight leading-tight">{t('login.multi_device_title')}</h2>
-          <p className="text-slate-500 text-center font-medium leading-relaxed mb-8 px-2 text-sm">
+
+          <h2 className="text-2xl font-black text-content text-center mb-3 tracking-tight leading-tight">{t('login.multi_device_title')}</h2>
+          <p className="text-content-muted text-center font-medium leading-relaxed mb-8 px-2 text-sm">
             {t('login.multi_device_desc')}
           </p>
-          
+
           <div className="flex flex-col gap-3">
-            <button 
+            <button
               onClick={handleResolveConflict}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-bold transition-all shadow-lg shadow-indigo-600/10 flex items-center justify-center gap-2 text-base"
+              className="w-full bg-brand hover:bg-brand/90 text-white py-4 rounded-2xl font-bold transition-all shadow-lg shadow-brand/10 flex items-center justify-center gap-2 text-base"
             >
               {t('login.multi_device_confirm')}
             </button>
-            <button 
+            <button
               onClick={handleRejectConflict}
-              className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-base"
+              className="w-full bg-surface-muted hover:bg-border text-content py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-base"
             >
               {t('login.multi_device_reject')}
             </button>
@@ -522,7 +522,7 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans" dir={i18n.language === 'en' ? 'ltr' : 'rtl'}>
+    <div className="min-h-screen bg-surface-muted font-sans" dir={i18n.language === 'en' ? 'ltr' : 'rtl'}>
       <AnimatePresence mode="wait">
         <Routes>
           {/* Public order tracking (no auth) */}

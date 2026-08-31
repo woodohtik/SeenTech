@@ -248,13 +248,13 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
     const status = tenant?.status || 'active';
     switch (status) {
       case 'active':
-        return { label: t('billing.status.active'), bg: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' };
+        return { label: t('billing.status.active'), bg: 'bg-success/10 text-success border-success/20' };
       case 'trial':
       case 'onboarding':
-        return { label: t('billing.status.trial'), bg: 'bg-amber-500/10 text-amber-600 border-amber-500/20' };
+        return { label: t('billing.status.trial'), bg: 'bg-warning/10 text-warning border-warning/20' };
       case 'suspended':
       case 'locked':
-        return { label: t('billing.status.suspended'), bg: 'bg-rose-500/10 text-rose-600 border-rose-500/20' };
+        return { label: t('billing.status.suspended'), bg: 'bg-danger/10 text-danger border-danger/20' };
       default:
         return { label: t('billing.status.active'), bg: 'bg-brand/10 text-brand border-brand/20' };
     }
@@ -292,17 +292,17 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
     <div className={cn("space-y-8 max-w-6xl mx-auto w-full relative", isRtl ? "text-right" : "text-left")} dir={isRtl ? "rtl" : "ltr"}>
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-[92vw] bg-slate-900 text-white px-5 sm:px-6 py-3.5 rounded-2xl shadow-2xl text-xs sm:text-sm font-black flex items-center gap-3 border border-brand/30 animate-bounce">
-          <Sparkles size={18} className="text-amber-400 shrink-0" />
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-[92vw] bg-surface-muted text-white px-5 sm:px-6 py-3.5 rounded-2xl shadow-2xl text-xs sm:text-sm font-black flex items-center gap-3 border border-brand/30 animate-bounce">
+          <Sparkles size={18} className="text-warning shrink-0" />
           <span className="text-center">{toastMessage}</span>
         </div>
       )}
 
       {/* Pending Request Alert Banner */}
       {pendingRequests.length > 0 && (
-        <div className="bg-amber-500/10 border-2 border-amber-500/30 p-5 rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-amber-900 dark:text-amber-200 shadow-sm">
+        <div className="bg-warning/10 border-2 border-warning/30 p-5 rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-warning shadow-sm">
           <div className="flex items-center gap-3.5">
-            <div className="p-3 bg-amber-500/20 text-amber-600 rounded-2xl shrink-0">
+            <div className="p-3 bg-warning/20 text-warning rounded-2xl shrink-0">
               <Clock size={24} className="animate-spin" />
             </div>
             <div>
@@ -315,7 +315,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
               </p>
             </div>
           </div>
-          <span className="px-4 py-1.5 bg-amber-500/20 border border-amber-500/40 rounded-full text-xs font-black text-amber-700 dark:text-amber-300 shrink-0">
+          <span className="px-4 py-1.5 bg-warning/20 border border-warning/40 rounded-full text-xs font-black text-warning shrink-0">
             {t('billing.pending_request_status')}
           </span>
         </div>
@@ -355,7 +355,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
 
             <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-content-muted pt-3 border-t border-border/60">
               <span className="flex items-center gap-1.5 text-content font-bold">
-                <ShieldCheck size={16} className="text-emerald-500" />
+                <ShieldCheck size={16} className="text-success" />
                 {t('billing.store_id')} <span className="font-mono text-brand font-black">{tenantId.slice(0, 8).toUpperCase()}</span>
               </span>
               <span>•</span>
@@ -368,7 +368,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
             <div>
               <p className="text-content-muted font-black uppercase tracking-wider text-[11px] mb-1">{t('billing.billing_status_title')}</p>
               <p className="text-2xl sm:text-3xl font-black text-content">{getNextBillingDate()}</p>
-              <p className="text-[11px] text-emerald-600 font-bold mt-1">✓ {t('billing.vat_included_hint')}</p>
+              <p className="text-[11px] text-success font-bold mt-1">✓ {t('billing.vat_included_hint')}</p>
             </div>
 
             <button
@@ -377,7 +377,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                 setSelectedPlanId('basic');
                 setShowUpgradeModal(true);
               }}
-              className="w-full bg-brand hover:bg-brand-dark text-white px-6 py-4 rounded-2xl font-black transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-brand/20 flex items-center justify-center gap-2 cursor-pointer text-sm"
+              className="w-full bg-brand hover:bg-brand/90 text-white px-6 py-4 rounded-2xl font-black transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-brand/20 flex items-center justify-center gap-2 cursor-pointer text-sm"
             >
               <Sparkles size={18} />
               <span>{t('billing.upgrade_btn_action')}</span>
@@ -428,7 +428,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                     <div className="flex items-center justify-between">
                       <h4 className="text-xl sm:text-2xl font-black text-content">{plan.name}</h4>
                       {isCurrent && (
-                        <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 rounded-full text-xs font-black">
+                        <span className="px-3 py-1 bg-success/10 text-success border border-success/20 rounded-full text-xs font-black">
                           {t('billing.card_current_plan')}
                         </span>
                       )}
@@ -449,7 +449,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                     <ul className="space-y-2.5">
                       {plan.features.map((feat, idx) => (
                         <li key={idx} className="flex items-start gap-2.5 text-xs font-bold text-content leading-relaxed">
-                          <CheckCircle2 size={16} className="text-emerald-500 shrink-0 mt-0.5" />
+                          <CheckCircle2 size={16} className="text-success shrink-0 mt-0.5" />
                           <span>{feat}</span>
                         </li>
                       ))}
@@ -467,7 +467,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                     }}
                     className={`w-full py-4 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md ${
                       plan.isPopular
-                        ? 'bg-brand hover:bg-brand-dark text-white shadow-brand/20 hover:scale-[1.02]'
+                        ? 'bg-brand hover:bg-brand/90 text-white shadow-brand/20 hover:scale-[1.02]'
                         : 'bg-surface-muted hover:bg-border text-content hover:scale-[1.02]'
                     }`}
                   >
@@ -514,20 +514,20 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                   <td className="p-2.5 sm:p-4 text-center">
                     {typeof item.free === 'boolean' ? (
                       item.free ? (
-                        <CheckCircle2 size={18} className="text-emerald-500 mx-auto" />
+                        <CheckCircle2 size={18} className="text-success mx-auto" />
                       ) : (
-                        <X size={18} className="text-rose-400 mx-auto" />
+                        <X size={18} className="text-danger mx-auto" />
                       )
                     ) : (
-                      <span className="font-bold text-amber-600 bg-amber-500/10 px-2.5 py-1 rounded-md">{item.free}</span>
+                      <span className="font-bold text-warning bg-warning/10 px-2.5 py-1 rounded-md">{item.free}</span>
                     )}
                   </td>
                   <td className="p-2.5 sm:p-4 text-center">
                     {typeof item.basic === 'boolean' ? (
                       item.basic ? (
-                        <CheckCircle2 size={18} className="text-emerald-500 mx-auto" />
+                        <CheckCircle2 size={18} className="text-success mx-auto" />
                       ) : (
-                        <X size={18} className="text-rose-400 mx-auto" />
+                        <X size={18} className="text-danger mx-auto" />
                       )
                     ) : (
                       <span className="font-black text-brand bg-brand/10 px-2.5 py-1 rounded-md">{item.basic}</span>
@@ -566,7 +566,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
             <button
               type="button"
               onClick={() => setShowUpgradeModal(true)}
-              className="text-xs font-black text-white bg-brand hover:bg-brand-dark px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 w-full sm:w-auto justify-center shadow-md shadow-brand/20 cursor-pointer"
+              className="text-xs font-black text-white bg-brand hover:bg-brand/90 px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 w-full sm:w-auto justify-center shadow-md shadow-brand/20 cursor-pointer"
             >
               <Plus size={16} />
               <span>{t('billing.history_send_proof')}</span>
@@ -582,7 +582,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                 className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center p-4 sm:p-5 bg-surface-muted/40 hover:bg-surface border-2 border-transparent hover:border-brand/20 hover:shadow-lg rounded-2xl transition-all group gap-4"
               >
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-right">
-                  <div className="w-12 h-12 bg-emerald-500/10 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 bg-success/10 text-success rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                     <CheckCircle2 size={24} />
                   </div>
                   <div>
@@ -607,7 +607,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                   <span className="text-xl font-black text-content">
                     <PriceDisplay amount={Number(inv.amount)} />
                   </span>
-                  <div className="p-2 bg-emerald-500/10 text-emerald-700 rounded-xl text-xs font-black flex items-center gap-1">
+                  <div className="p-2 bg-success/10 text-success rounded-xl text-xs font-black flex items-center gap-1">
                     <span>{t('billing.status_completed')}</span>
                   </div>
                 </div>
@@ -628,7 +628,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
             <button
               type="button"
               onClick={() => setShowUpgradeModal(true)}
-              className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 bg-brand text-white rounded-xl text-xs font-black hover:bg-brand-dark transition-all cursor-pointer shadow-md shadow-brand/20"
+              className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 bg-brand text-white rounded-xl text-xs font-black hover:bg-brand/90 transition-all cursor-pointer shadow-md shadow-brand/20"
             >
               <Plus size={16} />
               <span>{t('billing.history_empty_btn')}</span>
@@ -643,7 +643,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
           <div className="bg-surface rounded-3xl p-6 sm:p-8 max-w-xl w-full border border-border shadow-2xl space-y-6 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div className="flex items-center justify-between border-b border-border pb-4">
               <h4 className="text-xl font-black text-content flex items-center gap-2">
-                <Sparkles size={22} className="text-amber-500" />
+                <Sparkles size={22} className="text-warning" />
                 <span>{t('billing.modal_title')}</span>
               </h4>
               <button
@@ -744,7 +744,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
               {/* Attach Proof File (إرفاق إثبات الدفع) */}
               <div className="space-y-2">
                 <label className="text-xs font-black text-content uppercase tracking-wider block flex items-center justify-between">
-                  <span>{t('billing.modal_proof_label')} <span className="text-rose-500">{t('billing.modal_proof_req')}</span></span>
+                  <span>{t('billing.modal_proof_label')} <span className="text-danger">{t('billing.modal_proof_req')}</span></span>
                   <span className="text-[10px] text-content-muted font-bold">{t('billing.modal_proof_hint')}</span>
                 </label>
 
@@ -782,7 +782,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                       </div>
                       <div className="truncate">
                         <p className="text-xs font-black text-content truncate">{proofFile?.name || t('billing.modal_proof_fallback_filename')}</p>
-                        <p className="text-[10px] text-emerald-600 font-bold mt-0.5">{t('billing.modal_proof_success')}</p>
+                        <p className="text-[10px] text-success font-bold mt-0.5">{t('billing.modal_proof_success')}</p>
                       </div>
                     </div>
                     <button
@@ -791,7 +791,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                         setProofFile(null);
                         setProofPreview(null);
                       }}
-                      className="p-2 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 rounded-xl transition-all cursor-pointer shrink-0"
+                      className="p-2 bg-danger/10 text-danger hover:bg-danger/20 rounded-xl transition-all cursor-pointer shrink-0"
                       title={t('billing.modal_proof_delete')}
                     >
                       <X size={18} />
@@ -843,7 +843,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 py-3.5 bg-brand hover:bg-brand-dark disabled:opacity-50 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-brand/20 transition-all cursor-pointer"
+                  className="flex-1 py-3.5 bg-brand hover:bg-brand/90 disabled:opacity-50 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-brand/20 transition-all cursor-pointer"
                 >
                   {submitting ? (
                     <RefreshCw size={16} className="animate-spin" />

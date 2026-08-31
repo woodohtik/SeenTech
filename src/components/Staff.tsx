@@ -1282,8 +1282,8 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
             className="w-full rounded-2xl h-12 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border text-sm font-bold text-content shadow-inner shadow-black/5"
             options={[
               { value: 'all', label: t('settings_page.staff.all_statuses'), icon: <Users size={14} className="text-brand" /> },
-              { value: 'active', label: t('settings_page.staff.status_active'), icon: <CheckCircle size={14} className="text-emerald-500" /> },
-              { value: 'inactive', label: t('settings_page.staff.status_inactive'), icon: <XCircle size={14} className="text-rose-500" /> }
+              { value: 'active', label: t('settings_page.staff.status_active'), icon: <CheckCircle size={14} className="text-success" /> },
+              { value: 'inactive', label: t('settings_page.staff.status_inactive'), icon: <XCircle size={14} className="text-danger" /> }
             ]}
           />
         </div>
@@ -1308,7 +1308,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                 {/* Active/Inactive side accent */}
                 <div className={cn(
                   "absolute top-0 right-0 w-2 h-full rounded-r-2xl sm:rounded-r-3xl",
-                  member.status === 'active' ? 'bg-success' : 'bg-slate-300'
+                  member.status === 'active' ? 'bg-success' : 'bg-border'
                 )} />
 
                 {/* Right side: Employee Avatar + Info */}
@@ -1377,7 +1377,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                   <div className="flex items-center gap-1.5">
                     <span className={cn(
                       "w-2 h-2 rounded-full",
-                      member.status === 'active' ? 'bg-success' : 'bg-slate-400'
+                      member.status === 'active' ? 'bg-success' : 'bg-border'
                     )} />
                     <span className={cn(
                       "text-xs font-black",
@@ -1708,7 +1708,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                   <User size={12} />
                                   <span>{s.name}</span>
                                   {Object.keys(overrides[s.id] || {}).length > 0 && (
-                                    <span className="bg-amber-500 text-white text-[9px] px-1.5 rounded-full font-bold">
+                                    <span className="bg-warning text-white text-[9px] px-1.5 rounded-full font-bold">
                                       {Object.keys(overrides[s.id] || {}).length}
                                     </span>
                                   )}
@@ -1721,8 +1721,8 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                     </div>
 
                     {!isSuperAdmin && (!selectedRoleForPermissions.tenantId || selectedRoleForPermissions.tenantId === 'system' || DEFAULT_ROLES[selectedRoleForPermissions.roleKey] || selectedRoleForPermissions.isDefault) && (
-                      <div className="p-4 bg-amber-500/10 rounded-2xl border border-amber-500/30 text-right flex items-center justify-between flex-wrap gap-3 shadow-sm">
-                        <div className="flex items-center gap-2 text-amber-800 dark:text-amber-400 font-bold text-xs">
+                      <div className="p-4 bg-warning/10 rounded-2xl border border-warning/30 text-right flex items-center justify-between flex-wrap gap-3 shadow-sm">
+                        <div className="flex items-center gap-2 text-warning font-bold text-xs">
                           <Lock size={16} className="shrink-0" />
                           <span>{t('settings_page.staff.permissions.protected_role_msg')}</span>
                         </div>
@@ -1800,7 +1800,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                           <div className="shrink-0 flex items-center gap-2 pt-0.5">
                                             <span className={cn(
                                               "text-[9px] font-black px-2 py-0.5 rounded-full hidden sm:inline-block",
-                                              isEnabled ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-surface-muted text-content-muted"
+                                              isEnabled ? "bg-success/10 text-success" : "bg-surface-muted text-content-muted"
                                             )}>
                                               {isEnabled ? t('settings_page.staff.permissions.enabled') : t('settings_page.staff.permissions.disabled')}
                                             </span>
@@ -1810,7 +1810,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                               disabled={isReadOnlyRole}
                                               className={cn(
                                                 "w-11 h-6 rounded-full relative transition-all duration-300 shrink-0 cursor-pointer",
-                                                isEnabled ? (isReadOnlyRole ? "bg-brand/50" : "bg-brand") : "bg-border/80 dark:bg-zinc-700",
+                                                isEnabled ? (isReadOnlyRole ? "bg-brand/50" : "bg-brand") : "bg-border",
                                                 isReadOnlyRole && "opacity-50 cursor-not-allowed"
                                               )}
                                             >
@@ -1878,7 +1878,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                            </p>
                          </div>
                          {Object.keys(overrides[member.id] || {}).length > 0 && (
-                           <span className="bg-amber-500/10 text-amber-600 border border-amber-500/20 text-[9px] px-1.5 py-0.5 rounded-full font-black shrink-0">
+                           <span className="bg-warning/10 text-warning border border-warning/20 text-[9px] px-1.5 py-0.5 rounded-full font-black shrink-0">
                              {t('settings_page.staff.permissions.exceptions_count', { count: Object.keys(overrides[member.id] || {}).length })}
                            </span>
                          )}
@@ -1952,7 +1952,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                               <span className="text-[10px] underline">{t('settings_page.staff.permissions.edit_role_link')}</span>
                             </button>
                             {staffOverrideCount > 0 ? (
-                              <span className="bg-amber-500/10 text-amber-600 border border-amber-500/20 px-3 py-1 rounded-xl text-xs font-black flex items-center gap-1">
+                              <span className="bg-warning/10 text-warning border border-warning/20 px-3 py-1 rounded-xl text-xs font-black flex items-center gap-1">
                                 <Zap size={12} />
                                 <span>{t('settings_page.staff.permissions.exceptions_present', { count: staffOverrideCount })}</span>
                               </span>
@@ -2022,7 +2022,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                               <span className="text-xs sm:text-sm font-bold text-content leading-tight">{getTransPermName(perm.id, perm.categoryKey, perm.name)}</span>
                                               <span className={cn(
                                                 "text-[9px] font-black px-2 py-0.5 rounded-full uppercase",
-                                                isOverridden ? "bg-amber-500/10 text-amber-600 border border-amber-500/20" : "bg-surface-muted text-content-muted border border-border/40"
+                                                isOverridden ? "bg-warning/10 text-warning border border-warning/20" : "bg-surface-muted text-content-muted border border-border/40"
                                               )}>
                                                 {isOverridden ? t('settings_page.staff.permissions.custom_exception') : t('settings_page.staff.permissions.inherited')}
                                               </span>
@@ -2046,7 +2046,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                               disabled={isOwner}
                                               className={cn(
                                                 "w-11 h-6 rounded-full relative transition-all duration-300 shrink-0 cursor-pointer",
-                                                effectiveValue ? "bg-emerald-500" : "bg-border/80 dark:bg-zinc-700",
+                                                effectiveValue ? "bg-success" : "bg-border",
                                                 isOwner && "opacity-50 cursor-not-allowed"
                                               )}
                                             >
@@ -2361,7 +2361,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                       )}
                     />
                   </div>
-                  {errors.name && <p className="text-xs text-red-500 font-bold">{errors.name.message}</p>}
+                  {errors.name && <p className="text-xs text-danger font-bold">{errors.name.message}</p>}
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-black text-content-muted uppercase tracking-widest">{t('staff.job_role')}</label>
@@ -2385,7 +2385,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                     render={({ field }) => (
                       <SmartSelect 
                         {...field}
-                        className={cn("w-full", errors.branchId && "ring-2 ring-red-500")}
+                        className={cn("w-full", errors.branchId && "ring-2 ring-danger")}
                         options={[
                           { value: '', label: t('staff.select_branch_placeholder') },
                           ...branches.map(branch => ({ value: branch.id, label: branch.name }))
@@ -2393,7 +2393,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                       />
                     )}
                   />
-                  {errors.branchId && <p className="text-xs text-red-500 font-bold">{errors.branchId.message}</p>}
+                  {errors.branchId && <p className="text-xs text-danger font-bold">{errors.branchId.message}</p>}
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-black text-content-muted uppercase tracking-widest">{t('common.email')}</label>
@@ -2408,7 +2408,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                       dir="ltr"
                     />
                   </div>
-                  {errors.email && <p className="text-xs text-red-500 font-bold">{errors.email.message}</p>}
+                  {errors.email && <p className="text-xs text-danger font-bold">{errors.email.message}</p>}
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-black text-content-muted uppercase tracking-widest">{t('onboarding.fields.phone')}</label>
@@ -2423,7 +2423,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                       dir="ltr"
                     />
                   </div>
-                  {errors.phone && <p className="text-xs text-red-500 font-bold">{errors.phone.message}</p>}
+                  {errors.phone && <p className="text-xs text-danger font-bold">{errors.phone.message}</p>}
                 </div>
                 {/* Enable PIN Flag */}
                 <div className="flex items-center gap-3 p-4 bg-brand/5 rounded-2xl border border-brand/10">
@@ -2457,20 +2457,20 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                         )}
                       />
                     </div>
-                    {errors.pin && <p className="text-xs text-red-500 font-bold">{errors.pin.message}</p>}
+                    {errors.pin && <p className="text-xs text-danger font-bold">{errors.pin.message}</p>}
                     <p className="text-xs text-brand font-bold mt-2">{t('staff.pin_leave_empty_hint')}</p>
                   </div>
                 )}
 
                 {/* isTest Flag */}
-                <div className="flex items-center gap-3 p-4 bg-amber-500/10 rounded-2xl border border-amber-500/20">
+                <div className="flex items-center gap-3 p-4 bg-warning/10 rounded-2xl border border-warning/20">
                   <input
                     type="checkbox"
                     id="isTest"
                     {...register('isTest')}
                     className="w-5 h-5 text-brand border-border rounded focus:ring-brand"
                   />
-                  <label htmlFor="isTest" className="text-sm font-bold text-amber-600 flex items-center gap-2">
+                  <label htmlFor="isTest" className="text-sm font-bold text-warning flex items-center gap-2">
                     <Zap size={16} />
                     {t('common.test_data')}
                   </label>
@@ -2600,11 +2600,11 @@ const RolePermissionsModal = ({ role, onClose }: { role: Role; onClose: () => vo
                                   <span className="text-[10px] text-content-muted font-medium">{transPermDesc(perm.id, perm.categoryKey, perm.description)}</span>
                                 </div>
                                 {isEnabled ? (
-                                  <div className="bg-emerald-500/10 text-emerald-600 p-1 rounded-full">
+                                  <div className="bg-success/10 text-success p-1 rounded-full">
                                     <CheckCircle2 size={16} />
                                   </div>
                                 ) : (
-                                  <div className="bg-rose-500/10 text-rose-600 p-1 rounded-full">
+                                  <div className="bg-danger/10 text-danger p-1 rounded-full">
                                     <XCircle size={16} />
                                   </div>
                                 )}

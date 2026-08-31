@@ -261,7 +261,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
     <div className="p-4 sm:p-6 max-w-4xl mx-auto font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="bg-surface p-4 sm:p-6 rounded-2xl md:rounded-[2rem] border border-border shadow-sm space-y-6">
         <div>
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">
+          <h2 className="text-lg sm:text-xl font-bold text-content mb-4">
             {t('sales_returns.title')}
           </h2>
           <div className="flex flex-col sm:flex-row gap-3">
@@ -275,7 +275,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="flex-1 min-w-0 bg-transparent border-none py-3 px-4 text-sm text-gray-800 dark:text-gray-100 outline-none ring-0 placeholder:text-gray-400 font-semibold"
+                className="flex-1 min-w-0 bg-transparent border-none py-3 px-4 text-sm text-content outline-none ring-0 placeholder:text-content-muted font-semibold"
               />
             </div>
             <button 
@@ -290,8 +290,8 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
 
         {/* Multiple results found list */}
         {searchResults.length > 0 && !order && (
-          <div className="border-t border-gray-100 dark:border-gray-800 pt-6 space-y-4">
-            <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+          <div className="border-t border-border pt-6 space-y-4">
+            <div className="flex items-center gap-2 text-warning">
               <AlertTriangle size={18} />
               <h3 className="font-bold text-sm sm:text-base">
                 {t('sales_returns.multiple_found')}
@@ -304,23 +304,23 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                   onClick={() => setOrder(srvOrder)}
                   className={`flex flex-col ${isRtl ? 'text-right' : 'text-left'} p-4 rounded-xl border border-border bg-surface-muted/50 hover:bg-surface-muted transition-all w-full focus:ring-2 focus:ring-brand outline-none`}
                 >
-                  <div className="flex items-center justify-between w-full mb-2 border-b border-gray-100 dark:border-gray-800/80 pb-2">
+                  <div className="flex items-center justify-between w-full mb-2 border-b border-border pb-2">
                     <span className="font-extrabold text-brand">#{srvOrder.orderNumber || srvOrder.id.slice(-6).toUpperCase()}</span>
-                    <span className="text-xs text-gray-400 font-medium">
+                    <span className="text-xs text-content-muted font-medium">
                       <DateTimeDisplay date={srvOrder.orderDate} showTime={false} />
                     </span>
                   </div>
-                  <div className="flex justify-between items-center w-full text-xs text-gray-500 dark:text-gray-400">
+                  <div className="flex justify-between items-center w-full text-xs text-content-muted">
                     <div className="flex items-center gap-1.5">
                       <User size={12} />
-                      <span className="font-bold text-gray-700 dark:text-gray-300">{srvOrder.customerName}</span>
+                      <span className="font-bold text-content-muted">{srvOrder.customerName}</span>
                     </div>
-                    <div className="font-black text-gray-800 dark:text-gray-200">
+                    <div className="font-black text-content">
                       <PriceDisplay amount={srvOrder.totalAmount} />
                     </div>
                   </div>
                   {srvOrder.status === 'cancelled' && (
-                    <span className="mt-2 text-[10px] self-start bg-red-500/10 text-red-500 px-2 py-0.5 rounded-full font-bold">
+                    <span className="mt-2 text-[10px] self-start bg-danger/10 text-danger px-2 py-0.5 rounded-full font-bold">
                       {t('procurement.return')}
                     </span>
                   )}
@@ -332,16 +332,16 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
 
         {/* Single Selected Order */}
         {order && (
-          <div className="border-t border-gray-100 dark:border-gray-800 pt-6 space-y-6">
+          <div className="border-t border-border pt-6 space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+              <h3 className="font-bold text-content flex items-center gap-2">
                 <ShoppingBag size={18} className="text-brand" />
                 {t('sales_returns.order_details')}
               </h3>
               {searchResults.length > 0 && (
                 <button
                   onClick={() => setOrder(null)}
-                  className="text-xs text-gray-500 hover:text-brand flex items-center gap-1 transition-all"
+                  className="text-xs text-content-muted hover:text-brand flex items-center gap-1 transition-all"
                 >
                   <ChevronRight size={14} className={isRtl ? 'rotate-180' : ''} />
                   {t('sales_returns.back_to_results')}
@@ -350,43 +350,43 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-gray-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('sales_returns.invoice_no')}</p>
-                <p className="font-bold text-gray-800 dark:text-gray-100">#{order.orderNumber || order.id.slice(-6).toUpperCase()}</p>
+              <div className="bg-surface-muted p-4 rounded-xl border border-border">
+                <p className="text-sm text-content-muted mb-1">{t('sales_returns.invoice_no')}</p>
+                <p className="font-bold text-content">#{order.orderNumber || order.id.slice(-6).toUpperCase()}</p>
               </div>
-              <div className="bg-gray-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('sales_returns.customer')}</p>
-                <p className="font-bold text-gray-800 dark:text-gray-100">{order.customerName}</p>
+              <div className="bg-surface-muted p-4 rounded-xl border border-border">
+                <p className="text-sm text-content-muted mb-1">{t('sales_returns.customer')}</p>
+                <p className="font-bold text-content">{order.customerName}</p>
               </div>
-              <div className="bg-gray-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('sales_returns.date')}</p>
+              <div className="bg-surface-muted p-4 rounded-xl border border-border">
+                <p className="text-sm text-content-muted mb-1">{t('sales_returns.date')}</p>
                 <DateTimeDisplay date={order.orderDate} showTime={true} size="xs" />
               </div>
-              <div className="bg-gray-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('sales_returns.total')}</p>
+              <div className="bg-surface-muted p-4 rounded-xl border border-border">
+                <p className="text-sm text-content-muted mb-1">{t('sales_returns.total')}</p>
                 <p className="font-bold text-brand"><PriceDisplay amount={order.totalAmount} /></p>
               </div>
             </div>
 
             {/* List items and demonstrate eligibility */}
             <div className="space-y-3">
-              <h4 className="font-bold text-sm text-gray-700 dark:text-gray-300">
+              <h4 className="font-bold text-sm text-content-muted">
                 {t('sales_returns.items_list')}
               </h4>
-              <div className="border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
+              <div className="border border-border rounded-xl overflow-hidden divide-y divide-border">
                 {items.map((item: any, idx: number) => {
                   const isCustom = item.type === 'custom';
                   return (
                     <div key={idx} className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-surface">
                       <div className="flex items-start gap-3">
-                        <div className={`p-2 rounded-lg shrink-0 ${isCustom ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                        <div className={`p-2 rounded-lg shrink-0 ${isCustom ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'}`}>
                           {isCustom ? <Scissors size={18} /> : <Package size={18} />}
                         </div>
                         <div>
-                          <p className="font-bold text-gray-800 dark:text-gray-100 text-sm">
+                          <p className="font-bold text-content text-sm">
                             {isCustom ? item.garmentType || t('orders.custom_thobe') : item.name || t('orders.ready_made')}
                           </p>
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-content-muted">
                             {t('common.quantity')}: {item.quantity} × <PriceDisplay amount={item.price} />
                           </p>
                         </div>
@@ -394,17 +394,17 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                       
                       <div className="flex items-center gap-3 self-end sm:self-center">
                         {isCustom ? (
-                          <span className="text-xs font-bold px-3 py-1 bg-amber-500/10 text-amber-600 rounded-full flex items-center gap-1">
+                          <span className="text-xs font-bold px-3 py-1 bg-warning/10 text-warning rounded-full flex items-center gap-1">
                             <AlertTriangle size={12} />
                             {t('sales_returns.non_returnable')}
                           </span>
                         ) : (
-                          <span className="text-xs font-bold px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-full flex items-center gap-1">
+                          <span className="text-xs font-bold px-3 py-1 bg-success/10 text-success rounded-full flex items-center gap-1">
                             <CheckCircle2 size={12} />
                             {t('sales_returns.returnable_restock')}
                           </span>
                         )}
-                        <span className="font-black text-gray-800 dark:text-gray-200 text-sm">
+                        <span className="font-black text-content text-sm">
                           <PriceDisplay amount={item.quantity * item.price} />
                         </span>
                       </div>
@@ -416,25 +416,25 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
 
             {/* Custom rule constraints feedback */}
             {isFullyCustom ? (
-              <div className="p-4 bg-red-50 dark:bg-red-950/20 rounded-xl border border-red-100 dark:border-red-900/30 flex items-start gap-3">
-                <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={18} />
+              <div className="p-4 bg-danger/10 rounded-xl border border-danger/20 flex items-start gap-3">
+                <AlertTriangle className="text-danger shrink-0 mt-0.5" size={18} />
                 <div>
-                  <h4 className="font-bold text-red-800 dark:text-red-400 text-sm">
+                  <h4 className="font-bold text-danger text-sm">
                     {t('sales_returns.cannot_return_title')}
                   </h4>
-                  <p className="text-xs text-red-600 dark:text-red-400/80 mt-1 leading-relaxed">
+                  <p className="text-xs text-danger/80 mt-1 leading-relaxed">
                     {t('sales_returns.cannot_return_msg')}
                   </p>
                 </div>
               </div>
             ) : hasCustom ? (
-              <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-100 dark:border-amber-900/30 flex items-start gap-3">
-                <AlertTriangle className="text-amber-500 shrink-0 mt-0.5" size={18} />
+              <div className="p-4 bg-warning/10 rounded-xl border border-warning/20 flex items-start gap-3">
+                <AlertTriangle className="text-warning shrink-0 mt-0.5" size={18} />
                 <div>
-                  <h4 className="font-bold text-amber-800 dark:text-amber-400 text-sm">
+                  <h4 className="font-bold text-warning text-sm">
                     {t('sales_returns.partial_return_warning_title')}
                   </h4>
-                  <p className="text-xs text-amber-600 dark:text-amber-400/80 mt-1 leading-relaxed">
+                  <p className="text-xs text-warning/80 mt-1 leading-relaxed">
                     {t('sales_returns.partial_return_warning_msg')} <PriceDisplay amount={refundTotalAmount} />.
                   </p>
                 </div>
@@ -446,7 +446,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
               <>
                 {/* 1. Refund Payment Method Selection */}
                 <div className="space-y-3">
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                  <label className="block text-sm font-bold text-content-muted">
                     {t('sales_returns.refund_method_label')}
                   </label>
                   <div className="grid grid-cols-3 gap-3">
@@ -456,7 +456,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                       className={`flex flex-col items-center justify-center p-3 rounded-xl border font-bold text-sm transition-all gap-2 ${
                         refundMethod === 'cash'
                           ? 'bg-brand/10 border-brand text-brand'
-                          : 'border-border bg-gray-50/50 hover:bg-gray-50 text-gray-600 dark:text-gray-400'
+                          : 'border-border bg-surface-muted/50 hover:bg-surface-muted text-content-muted'
                       }`}
                     >
                       <Coins size={18} />
@@ -468,7 +468,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                       className={`flex flex-col items-center justify-center p-3 rounded-xl border font-bold text-sm transition-all gap-2 ${
                         refundMethod === 'network'
                           ? 'bg-brand/10 border-brand text-brand'
-                          : 'border-border bg-gray-50/50 hover:bg-gray-50 text-gray-600 dark:text-gray-400'
+                          : 'border-border bg-surface-muted/50 hover:bg-surface-muted text-content-muted'
                       }`}
                     >
                       <CreditCard size={18} />
@@ -480,7 +480,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                       className={`flex flex-col items-center justify-center p-3 rounded-xl border font-bold text-sm transition-all gap-2 ${
                         refundMethod === 'bank_transfer'
                           ? 'bg-brand/10 border-brand text-brand'
-                          : 'border-border bg-gray-50/50 hover:bg-gray-50 text-gray-600 dark:text-gray-400'
+                          : 'border-border bg-surface-muted/50 hover:bg-surface-muted text-content-muted'
                       }`}
                     >
                       <Landmark size={18} />
@@ -491,7 +491,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
 
                 {/* 2. Reason Textarea */}
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-sm font-bold text-content-muted mb-2">
                     {t('sales_returns.return_reason')}
                   </label>
                   <textarea 
@@ -508,7 +508,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
             <button 
               onClick={() => setShowConfirmModal(true)}
               disabled={isSubmitting || order.status === 'cancelled' || isFullyCustom}
-              className="w-full bg-red-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full bg-danger text-white py-4 rounded-xl font-bold text-lg hover:bg-danger/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
             >
               <RotateCcw size={20} />
               {order.status === 'cancelled' 
@@ -535,39 +535,39 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-surface rounded-3xl border border-gray-100 dark:border-gray-800 p-6 max-w-md w-full shadow-2xl space-y-6 text-center"
+              className="bg-surface rounded-3xl border border-border p-6 max-w-md w-full shadow-2xl space-y-6 text-center"
             >
-              <div className="w-16 h-16 bg-red-50 dark:bg-red-950/30 rounded-full flex items-center justify-center mx-auto text-red-500">
+              <div className="w-16 h-16 bg-danger/10 rounded-full flex items-center justify-center mx-auto text-danger">
                 <RotateCcw size={32} />
               </div>
               
               <div className="space-y-2">
-                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+                <h3 className="text-xl font-bold text-content">
                   {t('sales_returns.confirm_title')}
                 </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                <p className="text-sm text-content-muted leading-relaxed">
                   {t('sales_returns.confirm_return_msg_custom')}
                 </p>
               </div>
 
               {/* Total Summary */}
-              <div className={`bg-gray-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 ${isRtl ? 'text-right' : 'text-left'} space-y-2.5`}>
+              <div className={`bg-surface-muted p-4 rounded-2xl border border-border ${isRtl ? 'text-right' : 'text-left'} space-y-2.5`}>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-400 font-bold">{t('sales_returns.refund_amount')}:</span>
+                  <span className="text-xs text-content-muted font-bold">{t('sales_returns.refund_amount')}:</span>
                   <span className="font-extrabold text-lg text-brand">
                     <PriceDisplay amount={refundTotalAmount} />
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-400 font-bold">{t('sales_returns.refund_method_confirm')}:</span>
-                  <span className="text-sm font-bold text-gray-800 dark:text-gray-200">
+                  <span className="text-xs text-content-muted font-bold">{t('sales_returns.refund_method_confirm')}:</span>
+                  <span className="text-sm font-bold text-content">
                     {refundMethod === 'cash' ? t('sales_returns.method_cash') : refundMethod === 'network' ? t('sales_returns.method_network_mada') : t('pos.bank_transfer')}
                   </span>
                 </div>
                 {returnReason && (
-                  <div className="border-t border-gray-100 dark:border-gray-800 pt-2 mt-1">
-                    <p className="text-xs text-gray-400 mb-0.5">{t('sales_returns.return_reason')}:</p>
-                    <p className="text-xs font-bold text-gray-700 dark:text-gray-300">{returnReason}</p>
+                  <div className="border-t border-border pt-2 mt-1">
+                    <p className="text-xs text-content-muted mb-0.5">{t('sales_returns.return_reason')}:</p>
+                    <p className="text-xs font-bold text-content-muted">{returnReason}</p>
                   </div>
                 )}
               </div>
@@ -576,7 +576,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                 <button
                   type="button"
                   onClick={() => setShowConfirmModal(false)}
-                  className="w-full bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-100 py-3 rounded-xl font-bold text-sm transition-all cursor-pointer"
+                  className="w-full bg-surface-muted hover:bg-border/40 text-content py-3 rounded-xl font-bold text-sm transition-all cursor-pointer"
                 >
                   {t('common.cancel')}
                 </button>
@@ -584,7 +584,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
                   type="button"
                   onClick={handleReturn}
                   disabled={isSubmitting}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold text-sm transition-all shadow-md shadow-red-500/10 flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full bg-danger hover:bg-danger/90 text-white py-3 rounded-xl font-bold text-sm transition-all shadow-md shadow-danger/10 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>

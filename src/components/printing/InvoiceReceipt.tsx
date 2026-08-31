@@ -305,21 +305,21 @@ export default function InvoiceReceipt({
   };
 
   return (
-    <div className="flex flex-col items-center bg-gray-100 min-h-screen py-8 print:py-0 print:bg-white overflow-x-auto w-full" dir="rtl">
-      
+    <div className="flex flex-col items-center bg-surface-muted min-h-screen py-8 print:py-0 print:bg-white overflow-x-auto w-full" dir="rtl">
+
       {/* Print Controls (Hidden on Print) */}
-      <div className="mb-8 bg-white p-4 rounded-2xl shadow-md border border-gray-200 flex flex-col sm:flex-row items-center gap-4 print:hidden sticky top-4 z-50">
+      <div className="mb-8 bg-surface p-4 rounded-2xl shadow-md border border-border flex flex-col sm:flex-row items-center gap-4 print:hidden sticky top-4 z-50">
         <div className="flex items-center gap-3">
-          <span className="text-sm font-black text-gray-800">{t('printing.paper_size')}</span>
-          <div className="flex bg-gray-50 rounded-xl p-1 border border-gray-200 shadow-inner">
+          <span className="text-sm font-black text-content">{t('printing.paper_size')}</span>
+          <div className="flex bg-surface-muted rounded-xl p-1 border border-border shadow-inner">
             {(['58mm', '80mm', 'A5', 'A4'] as PrintSize[]).map((size) => (
               <button
                 key={size}
                 onClick={() => setPrintSize(size)}
                 className={`px-5 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${
-                  printSize === size 
-                    ? 'bg-blue-600 text-white shadow-md transform scale-100' 
-                    : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+                  printSize === size
+                    ? 'bg-brand text-white shadow-md transform scale-100'
+                    : 'text-content-muted hover:bg-surface hover:text-content'
                 }`}
               >
                 {size}
@@ -327,10 +327,10 @@ export default function InvoiceReceipt({
             ))}
           </div>
         </div>
-        <div className="w-px h-8 bg-gray-200 hidden sm:block mx-2"></div>
+        <div className="w-px h-8 bg-border hidden sm:block mx-2"></div>
         <button
           onClick={handlePrint}
-          className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white px-8 py-2.5 rounded-xl font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+          className="flex items-center gap-2 bg-brand hover:bg-brand/90 text-white px-8 py-2.5 rounded-xl font-bold transition-all shadow-md active:scale-95 cursor-pointer"
         >
           <Printer size={18} />
           <span>{t('printing.print_invoice')}</span>

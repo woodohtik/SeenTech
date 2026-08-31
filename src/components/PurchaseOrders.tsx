@@ -592,7 +592,7 @@ export default function PurchaseOrders({
             onClick={() => setStatusFilter('draft')}
             className={cn(
               "flex-1 text-center py-2 text-[10px] sm:text-xs font-black rounded-xl transition-all",
-              statusFilter === 'draft' ? "bg-neutral-200 dark:bg-neutral-800 text-content" : "text-content-muted hover:text-content"
+              statusFilter === 'draft' ? "bg-surface-muted text-content" : "text-content-muted hover:text-content"
             )}
           >
             {t('procurement.po_status_draft', 'مسودة')}
@@ -649,8 +649,8 @@ export default function PurchaseOrders({
                           <span className="text-[10px] font-black">{t('procurement.po_status_confirmed', 'مؤكد ومرحل')}</span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-1.5 text-content-muted bg-neutral-100 dark:bg-neutral-800 px-3 py-1 rounded-full w-fit">
-                          <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
+                        <div className="flex items-center gap-1.5 text-content-muted bg-surface-muted px-3 py-1 rounded-full w-fit">
+                          <span className="w-1.5 h-1.5 rounded-full bg-content-muted"></span>
                           <span className="text-[10px] font-black">{t('procurement.po_status_draft', 'مسودة')}</span>
                         </div>
                       )}
@@ -733,8 +733,8 @@ export default function PurchaseOrders({
                         <span className="text-[9px] font-black">{t('procurement.po_status_confirmed', 'مؤكد ومرحل')}</span>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-1 text-content-muted bg-neutral-100 dark:bg-neutral-800 px-2.5 py-0.5 rounded-full">
-                        <span className="w-1 h-1 rounded-full bg-neutral-400"></span>
+                      <div className="flex items-center gap-1 text-content-muted bg-surface-muted px-2.5 py-0.5 rounded-full">
+                        <span className="w-1 h-1 rounded-full bg-content-muted"></span>
                         <span className="text-[9px] font-black">{t('procurement.po_status_draft', 'مسودة')}</span>
                       </div>
                     )}
@@ -814,7 +814,7 @@ export default function PurchaseOrders({
                     {(selectedOrder.status || 'draft') === 'confirmed' || (selectedOrder.status || 'draft') === 'received' ? (
                       <span className="text-success text-xs font-black bg-success/15 px-2.5 py-1 rounded-full">{t('procurement.po_status_confirmed_desc', 'مؤكد ومرحل للمخزن')}</span>
                     ) : (
-                      <span className="text-content-muted text-xs font-black bg-neutral-100 dark:bg-neutral-800 px-2.5 py-1 rounded-full">{t('procurement.po_status_draft_desc', 'مسودة (انتظار التأكيد)')}</span>
+                      <span className="text-content-muted text-xs font-black bg-surface-muted px-2.5 py-1 rounded-full">{t('procurement.po_status_draft_desc', 'مسودة (انتظار التأكيد)')}</span>
                     )}
                   </div>
                 </div>
@@ -1042,7 +1042,7 @@ export default function PurchaseOrders({
                 <button
                   onClick={() => handleCreateOrder(false)}
                   disabled={isSubmitting || items.length === 0 || !selectedSupplier}
-                  className="flex-1 sm:flex-initial bg-neutral-200 dark:bg-neutral-800 text-content px-5 py-3 rounded-xl font-bold text-xs hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50"
+                  className="flex-1 sm:flex-initial bg-surface-muted text-content px-5 py-3 rounded-xl font-bold text-xs hover:bg-border transition-colors disabled:opacity-50"
                 >
                   {isSubmitting ? t('procurement.saving_loading', 'جاري الحفظ...') : t('procurement.save_as_draft', 'حفظ كمسودة (بدون ترحيل)')}
                 </button>

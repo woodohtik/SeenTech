@@ -438,8 +438,8 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
             <div>
               <h2 className="text-2xl font-black text-content flex items-center gap-2">
                 {isSuperAdmin ? t('permissions.title_super_admin') : t('permissions.title_tenant')}
-                <span className="text-xs bg-emerald-500/10 text-emerald-600 px-3 py-1 rounded-full border border-emerald-500/20 font-bold flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                <span className="text-xs bg-success/10 text-success px-3 py-1 rounded-full border border-success/20 font-bold flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-success animate-ping"></span>
                   {isSuperAdmin ? t('permissions.badge_super_admin') : t('permissions.badge_tenant')}
                 </span>
               </h2>
@@ -589,12 +589,12 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                         <div className="flex items-center gap-3">
                           <div className={cn(
                             "w-10 h-10 rounded-xl flex items-center justify-center font-black transition-colors shrink-0",
-                            isOwner ? "bg-amber-500/10 text-amber-600" :
+                            isOwner ? "bg-warning/10 text-warning" :
                             isSaas ? "bg-purple-500/10 text-purple-600" :
                             role.roleKey === 'manager' ? "bg-brand/10 text-brand" :
-                            role.roleKey === 'cashier' ? "bg-blue-500/10 text-blue-600" :
-                            role.roleKey === 'accountant' ? "bg-emerald-500/10 text-emerald-600" :
-                            "bg-indigo-500/10 text-indigo-600"
+                            role.roleKey === 'cashier' ? "bg-info/10 text-info" :
+                            role.roleKey === 'accountant' ? "bg-success/10 text-success" :
+                            "bg-brand/10 text-brand"
                           )}>
                             {isOwner ? <Lock size={18} /> : <Shield size={18} />}
                           </div>
@@ -603,7 +603,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-sm font-black text-content truncate">{role.name}</span>
                               {isOwner && (
-                                <span className="text-[9px] bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-full font-bold">
+                                <span className="text-[9px] bg-warning/10 text-warning px-2 py-0.5 rounded-full font-bold">
                                   {t('permissions.badge_full_access')}
                                 </span>
                               )}
@@ -612,13 +612,13 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                                   "text-[9px] px-2 py-0.5 rounded-full font-black border",
                                   isSaas
                                     ? "bg-purple-500/10 text-purple-600 border-purple-500/20"
-                                    : "bg-blue-500/10 text-blue-600 border-blue-500/20"
+                                    : "bg-info/10 text-info border-info/20"
                                 )}>
                                   {isSaas ? t('permissions.filter_saas') : t('permissions.badge_merchant_roles')}
                                 </span>
                               )}
                               {!isOwner && isTenantCustom && !isSuperAdmin && (
-                                <span className="text-[9px] bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-full font-bold">
+                                <span className="text-[9px] bg-success/10 text-success px-2 py-0.5 rounded-full font-bold">
                                   {t('permissions.badge_custom_to_store')}
                                 </span>
                               )}
@@ -646,8 +646,8 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                 </div>
               </div>
 
-          <div className="p-5 bg-amber-500/5 rounded-2xl border border-amber-500/20 text-right space-y-2">
-            <div className="flex items-center gap-2 text-amber-600 font-black text-xs">
+          <div className="p-5 bg-warning/5 rounded-2xl border border-warning/20 text-right space-y-2">
+            <div className="flex items-center gap-2 text-warning font-black text-xs">
               <Info size={16} />
               <span>{t('permissions.owner_note_title')}</span>
             </div>
@@ -694,7 +694,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                   <button
                     onClick={handleResetToDefault}
                     disabled={isReadOnlyRole}
-                    className="px-3.5 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 text-xs font-bold rounded-xl border border-amber-500/20 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="px-3.5 py-2 bg-warning/10 hover:bg-warning/20 text-warning text-xs font-bold rounded-xl border border-warning/20 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <RotateCcw size={14} />
                     <span>{t('permissions.default_button')}</span>
@@ -704,9 +704,9 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
 
               {/* Warning Banner for Merchant Viewing Default Role */}
               {!isSuperAdmin && isSelectedRoleDefault && (
-                <div className="p-5 bg-amber-500/10 rounded-2xl border border-amber-500/30 text-right space-y-3">
+                <div className="p-5 bg-warning/10 rounded-2xl border border-warning/30 text-right space-y-3">
                   <div className="flex items-center justify-between flex-wrap gap-3">
-                    <div className="flex items-center gap-2.5 text-amber-700 dark:text-amber-400 font-black text-sm">
+                    <div className="flex items-center gap-2.5 text-warning font-black text-sm">
                       <Lock size={18} />
                       <span>{t('permissions.protected_default_role')}</span>
                     </div>
@@ -819,7 +819,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                                   <div className="text-xs font-black text-content group-hover:text-brand transition-colors flex items-center gap-2 flex-wrap">
                                     <span>{getTransPermName(perm.id, perm.categoryKey, perm.name)}</span>
                                     {perm.id.endsWith('.view') && (
-                                      <span className="text-[9px] bg-blue-500/10 text-blue-600 px-2 py-0.2 rounded font-bold">
+                                      <span className="text-[9px] bg-info/10 text-info px-2 py-0.2 rounded font-bold">
                                         {t('settings.staff.permissions.view_badge')}
                                       </span>
                                     )}
@@ -840,7 +840,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                                 >
                                   <div
                                     className={cn(
-                                      "absolute top-1 w-4 h-4 bg-white rounded-full shadow-md transition-all duration-300",
+                                      "absolute top-1 w-4 h-4 bg-surface rounded-full shadow-md transition-all duration-300",
                                       isEnabled ? "right-1" : "right-7"
                                     )}
                                   />
@@ -868,14 +868,14 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                         setPermissionsState((selectedRole.permissions || {}) as PermissionsMap);
                         setHasChanges(false);
                       }}
-                      className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-xl text-xs font-bold transition-all"
+                      className="px-4 py-2 bg-surface/20 hover:bg-surface/30 text-white rounded-xl text-xs font-bold transition-all"
                     >
                       {t('permissions.discard_changes')}
                     </button>
                     <button
                       onClick={handleSaveChanges}
                       disabled={saving}
-                      className="px-5 py-2 bg-white text-brand font-black rounded-xl text-xs transition-all hover:bg-surface shadow-md"
+                      className="px-5 py-2 bg-surface text-brand font-black rounded-xl text-xs transition-all hover:bg-surface shadow-md"
                     >
                       {saving ? t('common.saving') : t('permissions.save_permissions_now')}
                     </button>

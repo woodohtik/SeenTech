@@ -29,7 +29,7 @@ export const PriceDisplay: React.FC<PriceDisplayProps> = ({
   return (
     <span className={cn("inline-flex items-center gap-1.5", className)} dir={isAr ? "rtl" : "ltr"}>
       {!isAr && showSymbol && (
-        <span className={cn("text-[0.8em] font-bold text-gray-500 mr-1", symbolClassName)}>
+        <span className={cn("text-[0.8em] font-bold text-content-muted mr-1", symbolClassName)}>
           SAR
         </span>
       )}

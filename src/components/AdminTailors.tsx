@@ -983,7 +983,7 @@ export default function AdminTailors() {
                                   e.stopPropagation();
                                   openTenantDrawer(tenant);
                                 }}
-                                className="p-2 text-content-muted hover:text-emerald-500 hover:bg-emerald-500/5 rounded-xl transition-all"
+                                className="p-2 text-content-muted hover:text-success hover:bg-success/5 rounded-xl transition-all"
                                 title={t('saas.tenants.view_shop_ui')}
                               >
                                 <Globe size={18} />
@@ -1082,9 +1082,9 @@ export default function AdminTailors() {
                           <td className="px-8 py-6 text-center">
                             <span className={cn(
                               "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
-                              tenant.planId === 'basic' ? "bg-indigo-100 text-indigo-800 border border-indigo-200" :
-                              tenant.planId === 'free' ? "bg-emerald-100 text-emerald-800 border border-emerald-200" :
-                              "bg-gray-100 text-gray-700 shadow-sm"
+                              tenant.planId === 'basic' ? "bg-info/10 text-info border border-info/20" :
+                              tenant.planId === 'free' ? "bg-success/10 text-success border border-success/20" :
+                              "bg-surface-muted text-content-muted shadow-sm"
                             )}>
                               {getPlanName(tenant.planId)}
                             </span>
@@ -1570,7 +1570,7 @@ export default function AdminTailors() {
                   <ShieldAlert size={18} />
                   {t('saas.tenants.stealth_login')}
                   {!(userRole === 'super_admin' || userRole === 'owner' as any || (dbUser as any)?.can_stealth_login === true || (dbUser as any)?.stealth_login_enabled === true) && (
-                    <span className="text-[10px] bg-red-500/20 text-red-300 px-1.5 py-0.5 rounded ml-1">{t('saas.tenants.locked_badge')}</span>
+                    <span className="text-[10px] bg-danger/20 text-danger px-1.5 py-0.5 rounded ml-1">{t('saas.tenants.locked_badge')}</span>
                   )}
                 </button>
               </div>

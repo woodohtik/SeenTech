@@ -132,12 +132,12 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
     <div className="space-y-6" dir={dir}>
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
+          <div className="w-10 h-10 bg-brand/10 text-brand rounded-xl flex items-center justify-center">
             <Scissors size={20} />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-900">{t('tailors.statement.title')}</h2>
-            <p className="text-sm text-gray-500">{t('tailors.statement.subtitle')}</p>
+            <h2 className="text-xl font-bold text-content">{t('tailors.statement.title')}</h2>
+            <p className="text-sm text-content-muted">{t('tailors.statement.subtitle')}</p>
           </div>
         </div>
 
@@ -155,25 +155,25 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-indigo-50/50 p-6 rounded-2xl border border-indigo-100 flex items-center gap-4">
-          <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center">
+        <div className="bg-brand/5 p-6 rounded-2xl border border-brand/10 flex items-center gap-4">
+          <div className="w-12 h-12 bg-brand/10 text-brand rounded-xl flex items-center justify-center">
             <DollarSign size={24} />
           </div>
           <div>
-            <p className="text-sm font-medium text-indigo-600/80 mb-1">{t('tailors.statement.total_commissions')}</p>
-            <div className="text-2xl font-black text-indigo-900">
+            <p className="text-sm font-medium text-brand/80 mb-1">{t('tailors.statement.total_commissions')}</p>
+            <div className="text-2xl font-black text-brand">
               <PriceDisplay amount={totalCommission} />
             </div>
           </div>
         </div>
-        
-        <div className="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 flex items-center gap-4">
-          <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center">
+
+        <div className="bg-success/5 p-6 rounded-2xl border border-success/10 flex items-center gap-4">
+          <div className="w-12 h-12 bg-success/10 text-success rounded-xl flex items-center justify-center">
             <Scissors size={24} />
           </div>
           <div>
-            <p className="text-sm font-medium text-emerald-600/80 mb-1">{t('dashboard.admin.completed_pieces')}</p>
-            <div className="text-2xl font-black text-emerald-900">
+            <p className="text-sm font-medium text-success/80 mb-1">{t('dashboard.admin.completed_pieces')}</p>
+            <div className="text-2xl font-black text-success">
               {commissions.length}
             </div>
           </div>
@@ -182,8 +182,8 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
 
       {!loading && commissions.length > 0 && (
         <div className={`grid grid-cols-1 ${selectedTailor === 'all' && tailorChartData.length > 0 ? 'lg:grid-cols-2' : ''} gap-6`}>
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-            <h3 className="text-lg font-bold text-gray-900 mb-6">{t('tailors.statement.monthly_trend')}</h3>
+          <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm">
+            <h3 className="text-lg font-bold text-content mb-6">{t('tailors.statement.monthly_trend')}</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={monthlyChartData}>
@@ -207,8 +207,8 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
           </div>
 
           {selectedTailor === 'all' && tailorChartData.length > 0 && (
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-              <h3 className="text-lg font-bold text-gray-900 mb-6">{t('tailors.statement.distribution_by_tailor')}</h3>
+            <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm">
+              <h3 className="text-lg font-bold text-content mb-6">{t('tailors.statement.distribution_by_tailor')}</h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={tailorChartData} layout="vertical" margin={{ top: 0, right: 0, left: 40, bottom: 0 }}>
@@ -229,46 +229,46 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
         {loading ? (
           <div className="p-12 flex justify-center">
-            <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+            <Loader2 className="w-8 h-8 text-brand animate-spin" />
           </div>
         ) : commissions.length === 0 ? (
-          <div className="p-12 text-center text-gray-500">
+          <div className="p-12 text-center text-content-muted">
             {t('tailors.statement.no_records')}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-right min-w-max">
-              <thead className="bg-gray-50/50">
+              <thead className="bg-surface-muted/50">
                 <tr>
-                  <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">{t('dashboard.cashier.col_order_number')}</th>
-                  <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">{t('tailors.statement.col_piece')}</th>
-                  <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">{t('tailors.statement.col_tailor')}</th>
-                  <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">{t('tailors.statement.col_completion_date')}</th>
-                  <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">{t('tailors.statement.col_earned_commission')}</th>
+                  <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('dashboard.cashier.col_order_number')}</th>
+                  <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('tailors.statement.col_piece')}</th>
+                  <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('tailors.statement.col_tailor')}</th>
+                  <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('tailors.statement.col_completion_date')}</th>
+                  <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('tailors.statement.col_earned_commission')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border">
                 {commissions.map((item) => {
                   const tailor = tailors.find(t => t.id === (item as any).assigned_tailor_id);
                   return (
-                    <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-6 py-4 font-bold text-gray-900">
+                    <tr key={item.id} className="hover:bg-surface-muted/50 transition-colors">
+                      <td className="px-6 py-4 font-bold text-content">
                         #{item.order_id.slice(0, 8)}
                       </td>
-                      <td className="px-6 py-4 text-gray-700 font-medium">
+                      <td className="px-6 py-4 text-content font-medium">
                         {item.name || item.garment_type || t('inventory.unit_piece')}
                       </td>
-                      <td className="px-6 py-4 text-gray-700 font-medium">
+                      <td className="px-6 py-4 text-content font-medium">
                         {tailor?.name || t('sales.unknown')}
                       </td>
-                      <td className="px-6 py-4 text-gray-500" dir="ltr">
+                      <td className="px-6 py-4 text-content-muted" dir="ltr">
                         {new Date(item.created_at).toLocaleString(localeOf(i18n.language))}
                       </td>
                       <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-3 py-1 bg-emerald-50 text-emerald-700 font-bold rounded-lg text-sm">
+                        <span className="inline-flex items-center px-3 py-1 bg-success/10 text-success font-bold rounded-lg text-sm">
                           <PriceDisplay amount={item.calculated_commission} />
                         </span>
                       </td>

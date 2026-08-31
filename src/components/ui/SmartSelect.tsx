@@ -64,20 +64,20 @@ export function SmartSelect({
     'relative w-full cursor-default outline-none transition-all shadow-sm focus:border-brand focus:ring-2 focus:ring-brand/20 flex items-center',
     !hasHeight && 'h-[var(--size-input-height)]',
     !hasRounded && 'rounded-[var(--radius-md)]',
-    !hasBorder && 'border border-border dark:border-gray-800',
+    !hasBorder && 'border border-border',
     !hasPadding && 'px-4',
     'bg-surface font-semibold',
     !hasTextSize && 'text-[var(--size-text-base)]',
     dir === 'rtl' 
       ? (!hasPadding ? 'text-right pr-4 pl-10' : 'text-right justify-start') 
       : (!hasPadding ? 'text-left pl-4 pr-10' : 'text-left justify-start'),
-    disabled && 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-gray-900',
+    disabled && 'opacity-50 cursor-not-allowed bg-surface-muted',
     error && 'border-danger focus:border-danger focus:ring-2 focus:ring-danger/20',
     className
   );
 
   const popoverClasses = cn(
-    'z-[9999]  max-h-64 overflow-y-auto rounded-3xl bg-surface p-2.5 text-sm shadow-xl border border-border dark:border-gray-800 focus:outline-none scrollbar-hide',
+    'z-[9999]  max-h-64 overflow-y-auto rounded-3xl bg-surface p-2.5 text-sm shadow-xl border border-border focus:outline-none scrollbar-hide',
     dir === 'rtl' ? 'text-right font-sans' : 'text-left font-sans'
   );
 
@@ -115,7 +115,7 @@ export function SmartSelect({
               "absolute inset-y-0 flex items-center transition-colors",
               dir === 'rtl' ? "left-4" : "right-4"
             )}>
-              <ChevronDown className="h-4 w-4 text-gray-400 group-hover:text-brand" aria-hidden="true" />
+              <ChevronDown className="h-4 w-4 text-content-muted group-hover:text-brand" aria-hidden="true" />
             </Combobox.Button>
             <Transition as={Fragment} {...transitionProps} afterLeave={() => setQuery('')}>
               <Combobox.Options className={popoverClasses} anchor="bottom" style={{ width: "var(--button-width)" }}>
@@ -130,7 +130,7 @@ export function SmartSelect({
                       className={({ active }) =>
                         cn(
                           'relative cursor-default select-none py-2 px-3 rounded-lg transition-all mb-0.5 group/item flex items-center justify-between',
-                          active ? 'bg-brand/10 text-brand' : 'text-content hover:bg-surface-muted dark:hover:bg-gray-800'
+                          active ? 'bg-brand/10 text-brand' : 'text-content hover:bg-surface-muted'
                         )
                       }
                       value={option}
@@ -146,7 +146,7 @@ export function SmartSelect({
                             {option.icon && (
                               <span className={cn(
                                 "w-4 h-4 flex items-center justify-center flex-shrink-0 transition-colors [&>svg]:w-4 [&>svg]:h-4",
-                                selected ? "text-brand" : "text-gray-400 group-hover/item:text-brand"
+                                selected ? "text-brand" : "text-content-muted group-hover/item:text-brand"
                               )}>
                                 {option.icon}
                               </span>
@@ -189,9 +189,9 @@ export function SmartSelect({
                 dir === 'rtl' ? "right-4" : "left-4"
               )} aria-hidden="true" />
             )}
-            <span className={cn('block truncate flex items-center gap-3', !hasTextSize && 'text-sm', !selectedOption && 'text-gray-400')}>
+            <span className={cn('block truncate flex items-center gap-3', !hasTextSize && 'text-sm', !selectedOption && 'text-content-muted')}>
               {selectedOption?.icon && (
-                <span className="w-4 h-4 flex items-center justify-center flex-shrink-0 text-gray-400 group-hover:text-brand transition-colors [&>svg]:w-4 [&>svg]:h-4">
+                <span className="w-4 h-4 flex items-center justify-center flex-shrink-0 text-content-muted group-hover:text-brand transition-colors [&>svg]:w-4 [&>svg]:h-4">
                   {selectedOption.icon}
                 </span>
               )}
@@ -201,7 +201,7 @@ export function SmartSelect({
               "pointer-events-none absolute inset-y-0 flex items-center transition-colors",
               dir === 'rtl' ? "left-4 px-1" : "right-4 px-1"
             )}>
-              <ChevronDown className="h-4 w-4 text-gray-400 group-hover:text-brand" aria-hidden="true" />
+              <ChevronDown className="h-4 w-4 text-content-muted group-hover:text-brand" aria-hidden="true" />
             </span>
           </Listbox.Button>
           <Transition as={Fragment} {...transitionProps}>
@@ -212,7 +212,7 @@ export function SmartSelect({
                    className={({ active }) =>
                      cn(
                        'relative cursor-default select-none py-2 px-3 rounded-lg transition-all mb-0.5 group/item flex items-center justify-between',
-                       active ? 'bg-brand/10 text-brand' : 'text-content hover:bg-surface-muted dark:hover:bg-gray-800'
+                       active ? 'bg-brand/10 text-brand' : 'text-content hover:bg-surface-muted'
                      )
                    }
                    value={option.value}
@@ -228,7 +228,7 @@ export function SmartSelect({
                         {option.icon && (
                           <span className={cn(
                             "w-4 h-4 flex items-center justify-center flex-shrink-0 transition-colors [&>svg]:w-4 [&>svg]:h-4",
-                            selected ? "text-brand" : "text-gray-400 group-hover/item:text-brand"
+                            selected ? "text-brand" : "text-content-muted group-hover/item:text-brand"
                           )}>
                             {option.icon}
                           </span>

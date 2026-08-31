@@ -135,23 +135,23 @@ export default function PaymentVoucherModal({
           aria-label={t('procurement.pv_modal_title')}
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col font-sans"
+          className="relative bg-surface w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-border flex flex-col font-sans"
           dir={dir}
         >
-          <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <div className="p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-red-50 text-red-600 rounded-2xl shadow-inner">
+              <div className="p-3 bg-danger/10 text-danger rounded-2xl shadow-inner">
                 <DollarSign size={22} className="stroke-[2.5]" />
               </div>
               <div>
-                <h2 className="text-lg font-black text-slate-800">{t('procurement.pv_modal_title')}</h2>
-                <p className="text-xs font-bold text-slate-400">Payment Voucher formulation</p>
+                <h2 className="text-lg font-black text-content">{t('procurement.pv_modal_title')}</h2>
+                <p className="text-xs font-bold text-content-muted">Payment Voucher formulation</p>
               </div>
             </div>
             <button
               onClick={onClose}
               aria-label={t('common.close')}
-              className="p-2 bg-white border border-slate-100 hover:bg-slate-100 text-slate-400 hover:text-slate-700 rounded-full transition-colors cursor-pointer"
+              className="p-2 bg-surface border border-border hover:bg-surface-muted text-content-muted hover:text-content-muted rounded-full transition-colors cursor-pointer"
             >
               <X size={16} />
             </button>
@@ -159,19 +159,19 @@ export default function PaymentVoucherModal({
 
           <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
             {/* Supplier Quick Details card */}
-            <div className="bg-slate-50 p-4 border border-slate-100 rounded-2xl space-y-2">
-              <div className="flex items-center gap-2 text-slate-500 font-bold text-xs">
-                <Building size={14} className="text-red-500" />
+            <div className="bg-surface-muted p-4 border border-border rounded-2xl space-y-2">
+              <div className="flex items-center gap-2 text-content-muted font-bold text-xs">
+                <Building size={14} className="text-danger" />
                 <span>{t('procurement.pv_recipient_party')}</span>
               </div>
               <div className="flex justify-between items-end">
-                <span className="text-sm font-black text-slate-800">{supplier.name}</span>
-                <span className="text-xs font-mono font-bold text-slate-400">{supplier.phone}</span>
+                <span className="text-sm font-black text-content">{supplier.name}</span>
+                <span className="text-xs font-mono font-bold text-content-muted">{supplier.phone}</span>
               </div>
-              <div className="h-px bg-slate-200/50 my-1.5" />
+              <div className="h-px bg-border/50 my-1.5" />
               <div className="flex justify-between items-center text-xs">
-                <span className="font-bold text-slate-500">{t('procurement.pv_current_balance')}</span>
-                <span className="font-black text-rose-600 text-sm">
+                <span className="font-bold text-content-muted">{t('procurement.pv_current_balance')}</span>
+                <span className="font-black text-danger text-sm">
                   <PriceDisplay amount={supplier.balance} />
                 </span>
               </div>
@@ -179,12 +179,12 @@ export default function PaymentVoucherModal({
 
             {/* Input - Amount to payout */}
             <div className="space-y-1.5">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-wide block mr-1">
-                {t('procurement.pv_payout_amount')} <span className="text-red-500">*</span>
+              <label className="text-xs font-black text-content-muted uppercase tracking-wide block mr-1">
+                {t('procurement.pv_payout_amount')} <span className="text-danger">*</span>
               </label>
               <div className="relative">
                 {/* Currency badge positioned safely on the far left */}
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 bg-slate-100 border border-slate-200 text-slate-600 font-extrabold text-[11px] rounded-lg px-2.5 py-1.5 pointer-events-none select-none z-10">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 bg-surface-muted border border-border text-content-muted font-extrabold text-[11px] rounded-lg px-2.5 py-1.5 pointer-events-none select-none z-10">
                   ﷼
                 </div>
                 <input
@@ -199,20 +199,20 @@ export default function PaymentVoucherModal({
                   }}
                   style={{ paddingLeft: '6.5rem', paddingRight: '1rem', textAlign: 'right' }}
                   className={cn(
-                    "w-full h-12 bg-slate-50 hover:bg-slate-100/50 focus:bg-white border border-slate-200 focus:border-red-500 rounded-xl outline-none transition-all font-black text-base focus:ring-4 focus:ring-red-100 text-slate-800",
+                    "w-full h-12 bg-surface-muted hover:bg-surface-muted/50 focus:bg-surface border border-border focus:border-danger rounded-xl outline-none transition-all font-black text-base focus:ring-4 focus:ring-danger/20 text-content",
                     amountInvalid && "ring-4 ring-danger border-danger"
                   )}
                   placeholder="0.00"
                   autoFocus
                 />
               </div>
-              <div className="flex justify-between text-[10px] text-slate-400 font-bold mt-1 px-1">
+              <div className="flex justify-between text-[10px] text-content-muted font-bold mt-1 px-1">
                 <span>{t('procurement.pv_amount_hint')}</span>
                 {supplier.balance > 0 && (
                   <button
                     type="button"
                     onClick={() => setAmount(supplier.balance.toFixed(2))}
-                    className="text-red-600 hover:underline hover:text-red-700 flex items-center gap-1"
+                    className="text-danger hover:underline hover:text-danger flex items-center gap-1"
                   >
                     {t('procurement.pv_pay_full_balance')} (<PriceDisplay amount={supplier.balance} />)
                   </button>
@@ -222,7 +222,7 @@ export default function PaymentVoucherModal({
 
             {/* Selection - Payment Method */}
             <div className="space-y-1.5">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-wide block mr-1">
+              <label className="text-xs font-black text-content-muted uppercase tracking-wide block mr-1">
                 {t('procurement.pv_payment_method')}
               </label>
               <div className="grid grid-cols-2 gap-3">
@@ -232,8 +232,8 @@ export default function PaymentVoucherModal({
                   className={cn(
                     "py-3 rounded-xl border font-bold text-xs flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer",
                     paymentMethod === 'cash'
-                      ? "border-red-500 bg-red-50/50 text-red-600 shadow-md shadow-red-500/5"
-                      : "border-slate-200 hover:border-slate-300 text-slate-500"
+                      ? "border-danger bg-danger/10 text-danger shadow-md shadow-danger/5"
+                      : "border-border hover:border-border text-content-muted"
                   )}
                 >
                   <DollarSign size={18} />
@@ -246,8 +246,8 @@ export default function PaymentVoucherModal({
                   className={cn(
                     "py-3 rounded-xl border font-bold text-xs flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer",
                     paymentMethod === 'bank_transfer'
-                      ? "border-red-500 bg-red-50/50 text-red-600 shadow-md shadow-red-500/5"
-                      : "border-slate-200 hover:border-slate-300 text-slate-500"
+                      ? "border-danger bg-danger/10 text-danger shadow-md shadow-danger/5"
+                      : "border-border hover:border-border text-content-muted"
                   )}
                 >
                   <Building size={18} />
@@ -259,7 +259,7 @@ export default function PaymentVoucherModal({
             {/* Input - Voucher Date */}
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-wide block mr-1 flex items-center gap-1">
+                <label className="text-xs font-black text-content-muted uppercase tracking-wide block mr-1 flex items-center gap-1">
                   <Calendar size={13} />
                   <span>{t('procurement.pv_voucher_date')}</span>
                 </label>
@@ -269,7 +269,7 @@ export default function PaymentVoucherModal({
 
             {/* Input - Notes */}
             <div className="space-y-1.5">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-wide block mr-1 flex items-center gap-1">
+              <label className="text-xs font-black text-content-muted uppercase tracking-wide block mr-1 flex items-center gap-1">
                 <FileText size={13} />
                 <span>{t('procurement.pv_notes_label')}</span>
               </label>
@@ -277,25 +277,25 @@ export default function PaymentVoucherModal({
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl outline-none text-xs font-semibold text-slate-700 resize-none h-16 leading-relaxed"
+                className="w-full px-4 py-3 bg-surface-muted border border-border focus:border-danger focus:bg-surface rounded-xl outline-none text-xs font-semibold text-content-muted resize-none h-16 leading-relaxed"
                 placeholder={t('procurement.pv_notes_placeholder')}
               />
             </div>
 
             {/* Action buttons */}
-            <div className="pt-4 flex gap-3 border-t border-slate-100">
+            <div className="pt-4 flex gap-3 border-t border-border">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="flex-1 border border-slate-200 hover:bg-slate-50 text-slate-500 py-3 rounded-xl font-bold text-xs transition-colors cursor-pointer disabled:opacity-50"
+                className="flex-1 border border-border hover:bg-surface-muted text-content-muted py-3 rounded-xl font-bold text-xs transition-colors cursor-pointer disabled:opacity-50"
               >
                 {t('procurement.pv_cancel')}
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting || !amount}
-                className="flex-[2] bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl font-bold text-xs shadow-lg shadow-slate-900/10 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="flex-[2] bg-danger hover:bg-danger/90 text-white py-3 rounded-xl font-bold text-xs shadow-lg shadow-danger/10 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />

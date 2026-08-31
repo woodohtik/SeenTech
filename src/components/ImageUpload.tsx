@@ -96,16 +96,16 @@ export default function ImageUpload({ tenantId, onImageUploaded, onImageRemoved,
 
   return (
     <div className="w-full">
-      <label className="block text-sm font-medium text-gray-500 mb-2">{t('inventory.product_image')}</label>
+      <label className="block text-sm font-medium text-content-muted mb-2">{t('inventory.product_image')}</label>
       
       {preview ? (
-        <div className="relative w-32 h-32 rounded-xl border border-gray-200 overflow-hidden shadow-sm group">
+        <div className="relative w-32 h-32 rounded-xl border border-border overflow-hidden shadow-sm group">
           <img src={preview} alt="Preview" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
             <button
               type="button"
               onClick={handleRemove}
-              className="bg-white/20 hover:bg-red-500 text-white rounded-full p-1.5 transition-colors"
+              className="bg-white/20 hover:bg-danger text-white rounded-full p-1.5 transition-colors"
             >
               <X size={18} />
             </button>
@@ -121,11 +121,11 @@ export default function ImageUpload({ tenantId, onImageUploaded, onImageRemoved,
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
-          className="w-full border-2 border-dashed border-gray-200 rounded-2xl p-6 flex flex-col items-center justify-center text-gray-400 hover:border-brand hover:bg-brand/5 hover:text-brand transition-colors cursor-pointer"
+          className="w-full border-2 border-dashed border-border rounded-2xl p-6 flex flex-col items-center justify-center text-content-muted hover:border-brand hover:bg-brand/5 hover:text-brand transition-colors cursor-pointer"
         >
           <UploadCloud size={32} className="mb-2" />
           <span className="text-sm font-bold">{t('inventory.drop_image_hint')}</span>
-          <span className="text-xs text-gray-400 mt-1">{t('inventory.image_auto_compressed')}</span>
+          <span className="text-xs text-content-muted mt-1">{t('inventory.image_auto_compressed')}</span>
           <input 
             type="file" 
             ref={fileInputRef} 
@@ -135,7 +135,7 @@ export default function ImageUpload({ tenantId, onImageUploaded, onImageRemoved,
           />
         </div>
       )}
-      {error && <p className="text-red-500 text-xs font-bold mt-2">{error}</p>}
+      {error && <p className="text-danger text-xs font-bold mt-2">{error}</p>}
     </div>
   );
 }

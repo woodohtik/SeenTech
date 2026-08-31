@@ -669,7 +669,7 @@ export default function Customers({ tenantId }: CustomersProps) {
             className="bg-surface text-content border border-border px-4 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-surface-muted transition-all text-xs sm:text-sm cursor-pointer shadow-sm hover:border-brand/30"
             title={t('customers.export_excel_title')}
           >
-            <FileSpreadsheet size={18} className="text-emerald-600 dark:text-emerald-400" />
+            <FileSpreadsheet size={18} className="text-success" />
             <span className="hidden sm:inline">{t('customers.export_excel')}</span>
           </button>
 
@@ -906,25 +906,25 @@ export default function Customers({ tenantId }: CustomersProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 p-4 bg-surface rounded-2xl border border-border/80 shadow-sm transition-all hover:border-red-500/20">
-            <div className="w-9 h-9 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center shrink-0">
+          <div className="flex items-center gap-3 p-4 bg-surface rounded-2xl border border-border/80 shadow-sm transition-all hover:border-danger/20">
+            <div className="w-9 h-9 rounded-xl bg-danger/10 text-danger flex items-center justify-center shrink-0">
               <ArrowDownLeft size={16} />
             </div>
             <div className="min-w-0">
               <span className="block text-[10px] font-black text-content-muted uppercase tracking-wider leading-none">{t('customers.stat_debtors')}</span>
-              <span className="text-sm sm:text-base font-black text-red-500 mt-1 block">
+              <span className="text-sm sm:text-base font-black text-danger mt-1 block">
                 {customers.filter(c => (customerBalances[c.id] || 0) > 0).length}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 p-4 bg-surface rounded-2xl border border-border/80 shadow-sm transition-all hover:border-emerald-500/20">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+          <div className="flex items-center gap-3 p-4 bg-surface rounded-2xl border border-border/80 shadow-sm transition-all hover:border-success/20">
+            <div className="w-9 h-9 rounded-xl bg-success/10 text-success flex items-center justify-center shrink-0">
               <ArrowUpRight size={16} />
             </div>
             <div className="min-w-0">
               <span className="block text-[10px] font-black text-content-muted uppercase tracking-wider leading-none">{t('customers.stat_creditors')}</span>
-              <span className="text-sm sm:text-base font-black text-emerald-500 mt-1 block">
+              <span className="text-sm sm:text-base font-black text-success mt-1 block">
                 {customers.filter(c => (customerBalances[c.id] || 0) < 0).length}
               </span>
             </div>
@@ -1143,10 +1143,10 @@ export default function Customers({ tenantId }: CustomersProps) {
                                       setActiveMenuId(null);
                                       handleDelete(customer.id);
                                     }}
-                                    className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-red-500 hover:text-red-600 hover:bg-red-500/5 transition-all cursor-pointer group"
+                                    className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-danger hover:text-danger/90 hover:bg-danger/5 transition-all cursor-pointer group"
                                   >
                                     <span className="truncate">{t('common.delete')}</span>
-                                    <div className="w-6 h-6 rounded-lg bg-red-500/5 flex items-center justify-center shrink-0 group-hover:bg-red-500/15 text-red-500 transition-all">
+                                    <div className="w-6 h-6 rounded-lg bg-danger/5 flex items-center justify-center shrink-0 group-hover:bg-danger/15 text-danger transition-all">
                                       <Trash2 size={12} />
                                     </div>
                                   </button>
@@ -1207,16 +1207,16 @@ export default function Customers({ tenantId }: CustomersProps) {
                         {(() => {
                           if (balance > 0) {
                             return (
-                              <span className="bg-red-500/10 text-red-600 border border-red-500/20 px-2 py-0.5 rounded-md text-[10px] font-black flex items-center gap-1 truncate">
-                                <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shrink-0" />
+                              <span className="bg-danger/10 text-danger border border-danger/20 px-2 py-0.5 rounded-md text-[10px] font-black flex items-center gap-1 truncate">
+                                <span className="w-1.5 h-1.5 bg-danger rounded-full animate-pulse shrink-0" />
                                 <span>{t('customers.debtor')}:</span>
                                 <PriceDisplay amount={balance} />
                               </span>
                             );
                           } else if (balance < 0) {
                             return (
-                              <span className="bg-green-500/10 text-green-600 border border-green-500/20 px-2 py-0.5 rounded-md text-[10px] font-black flex items-center gap-1 truncate">
-                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full shrink-0" />
+                              <span className="bg-success/10 text-success border border-success/20 px-2 py-0.5 rounded-md text-[10px] font-black flex items-center gap-1 truncate">
+                                <span className="w-1.5 h-1.5 bg-success rounded-full shrink-0" />
                                 <span>{t('customers.creditor')}:</span>
                                 <PriceDisplay amount={Math.abs(balance)} />
                               </span>
@@ -1310,16 +1310,16 @@ export default function Customers({ tenantId }: CustomersProps) {
                     {(() => {
                       if (balance > 0) {
                         return (
-                          <span className="bg-red-500/10 text-red-600 border border-red-500/20 px-2.5 py-1 rounded-full text-xs font-black whitespace-nowrap flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shrink-0" />
+                          <span className="bg-danger/10 text-danger border border-danger/20 px-2.5 py-1 rounded-full text-xs font-black whitespace-nowrap flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 bg-danger rounded-full animate-pulse shrink-0" />
                             <span>{t('customers.debtor')}:</span>
                             <PriceDisplay amount={balance} />
                           </span>
                         );
                       } else if (balance < 0) {
                         return (
-                          <span className="bg-green-500/10 text-green-600 border border-green-500/20 px-2.5 py-1 rounded-full text-xs font-black whitespace-nowrap flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full shrink-0" />
+                          <span className="bg-success/10 text-success border border-success/20 px-2.5 py-1 rounded-full text-xs font-black whitespace-nowrap flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 bg-success rounded-full shrink-0" />
                             <span>{t('customers.creditor')}:</span>
                             <PriceDisplay amount={Math.abs(balance)} />
                           </span>
@@ -1449,10 +1449,10 @@ export default function Customers({ tenantId }: CustomersProps) {
                                     setActiveMenuId(null);
                                     handleDelete(customer.id);
                                   }}
-                                  className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-red-500 hover:text-red-600 hover:bg-red-500/5 transition-all cursor-pointer group"
+                                  className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-danger hover:text-danger/90 hover:bg-danger/5 transition-all cursor-pointer group"
                                 >
                                   <span className="truncate">{t('common.delete')}</span>
-                                  <div className="w-6 h-6 rounded-lg bg-red-500/5 flex items-center justify-center shrink-0 group-hover:bg-red-500/15 text-red-500 transition-all">
+                                  <div className="w-6 h-6 rounded-lg bg-danger/5 flex items-center justify-center shrink-0 group-hover:bg-danger/15 text-danger transition-all">
                                     <Trash2 size={12} />
                                   </div>
                                 </button>
@@ -1523,7 +1523,7 @@ export default function Customers({ tenantId }: CustomersProps) {
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={() => handleExportExcel()}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all hover:scale-102 cursor-pointer border border-emerald-500/10 shadow-lg shadow-emerald-600/10"
+                className="bg-success hover:bg-success/90 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all hover:scale-102 cursor-pointer border border-success/10 shadow-lg shadow-success/10"
                 title={t('customers.export_selected_excel')}
               >
                 <FileSpreadsheet size={14} />
@@ -1533,7 +1533,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               {canDelete && (
                 <button
                   onClick={() => setIsBulkDeleteModalOpen(true)}
-                  className="bg-red-600 hover:bg-red-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all hover:scale-102 cursor-pointer border border-red-500/10 shadow-lg shadow-red-600/10"
+                  className="bg-danger hover:bg-danger/90 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all hover:scale-102 cursor-pointer border border-danger/10 shadow-lg shadow-danger/10"
                   title={t('customers.delete_selected_customers')}
                 >
                   <Trash2 size={14} />
@@ -2262,9 +2262,9 @@ const CustomerStatementModal = ({
             <div className={cn(
               "p-4 rounded-2xl border flex flex-col justify-between print:border-black print:bg-white",
               netBalance > 0 
-                ? "bg-red-500/5 border-red-500/10 text-red-600 print:text-black" 
+                ? "bg-danger/5 border-danger/10 text-danger print:text-black" 
                 : netBalance < 0 
-                  ? "bg-green-500/5 border-green-500/10 text-green-600 print:text-black" 
+                  ? "bg-success/5 border-success/10 text-success print:text-black" 
                   : "bg-surface-muted/50 border-border text-content print:text-black"
             )}>
               <span className="text-[10px] opacity-80 font-black uppercase tracking-wider mb-1 flex items-center gap-1">
@@ -2315,7 +2315,7 @@ const CustomerStatementModal = ({
                         <React.Fragment key={order.id}>
                           <tr className={cn(
                             "hover:bg-brand/5 transition-colors print:hover:bg-transparent",
-                            order.remainingAmount > 0 ? "bg-red-500/[0.02]" : ""
+                            order.remainingAmount > 0 ? "bg-danger/[0.02]" : ""
                           )}>
                             <td className="p-3 font-black text-content print:text-black">
                               #{order.orderNumber || order.id.slice(-6).toUpperCase()}
@@ -2393,7 +2393,7 @@ const CustomerStatementModal = ({
 
                                   {/* Pay remaining column */}
                                   {order.remainingAmount > 0 && (
-                                    <div className="bg-surface p-4 rounded-2xl border border-red-500/10 space-y-3.5 shadow-sm flex flex-col justify-between">
+                                    <div className="bg-surface p-4 rounded-2xl border border-danger/10 space-y-3.5 shadow-sm flex flex-col justify-between">
                                       <div>
                                         <h4 className="font-black text-danger border-b border-border/40 pb-1 flex items-center gap-1.5 text-xs mb-3">
                                           <CreditCard size={14} />

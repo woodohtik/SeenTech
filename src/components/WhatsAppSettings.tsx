@@ -118,21 +118,21 @@ export default function WhatsAppSettings() {
     <div className={cn("bg-surface p-5 sm:p-8 md:p-10 rounded-2xl md:rounded-[3rem] border border-border shadow-xl shadow-brand/5 space-y-6 md:space-y-10 w-full relative", isRtl ? "text-right" : "text-left")} dir={isRtl ? "rtl" : "ltr"}>
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-[92vw] bg-slate-900 text-white px-5 py-2.5 rounded-2xl shadow-2xl text-xs sm:text-sm font-black flex items-center gap-2 border border-slate-700 animate-bounce">
-          <Sparkles size={16} className="text-amber-400 shrink-0" />
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-[92vw] bg-surface-muted text-white px-5 py-2.5 rounded-2xl shadow-2xl text-xs sm:text-sm font-black flex items-center gap-2 border border-border animate-bounce">
+          <Sparkles size={16} className="text-warning shrink-0" />
           <span className="text-center">{toastMessage}</span>
         </div>
       )}
 
       {/* Header */}
       <div className={cn("flex flex-col sm:flex-row items-center gap-4 border-b border-border pb-6 sm:pb-8", isRtl ? "sm:items-start text-center sm:text-right" : "sm:items-start text-center sm:text-left")}>
-        <div className="p-4 bg-emerald-500/10 text-emerald-600 rounded-[1.5rem] shadow-inner shrink-0">
+        <div className="p-4 bg-success/10 text-success rounded-[1.5rem] shadow-inner shrink-0">
           <MessageSquare size={32} />
         </div>
         <div className="flex-1">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <h3 className="text-2xl font-black text-content">{t('settings_page.whatsapp.title')}</h3>
-            <span className="text-xs font-black text-emerald-600 bg-emerald-500/10 px-3 py-1 rounded-full self-center sm:self-auto">
+            <span className="text-xs font-black text-success bg-success/10 px-3 py-1 rounded-full self-center sm:self-auto">
               {t('settings_page.whatsapp.status_tag')}
             </span>
           </div>
@@ -144,10 +144,10 @@ export default function WhatsAppSettings() {
 
       <div className="space-y-6 md:space-y-8 w-full">
         {/* Toggle Switch Box */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between p-5 sm:p-8 bg-emerald-500/5 rounded-2xl sm:rounded-[2.5rem] border border-emerald-500/20 gap-6">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between p-5 sm:p-8 bg-success/5 rounded-2xl sm:rounded-[2.5rem] border border-success/20 gap-6">
           <div className={cn("flex flex-col sm:flex-row items-center gap-5 flex-1", isRtl ? "sm:items-start text-center sm:text-right" : "sm:items-start text-center sm:text-left")}>
-            <div className="p-4 bg-white rounded-2xl shadow-sm shrink-0">
-              <Zap size={28} className="text-emerald-600 animate-pulse" />
+            <div className="p-4 bg-surface rounded-2xl shadow-sm shrink-0">
+              <Zap size={28} className="text-success animate-pulse" />
             </div>
             <div className="space-y-1">
               <p className="text-lg font-black text-content">{t('settings_page.whatsapp.toggle_title')}</p>
@@ -167,7 +167,7 @@ export default function WhatsAppSettings() {
                 checked={enabled}
                 onChange={handleToggle}
               />
-              <div className="w-16 h-8 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:start-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-emerald-600"></div>
+              <div className="w-16 h-8 bg-surface-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:start-[4px] after:bg-surface after:border-border after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-success"></div>
             </label>
           </div>
         </div>
@@ -176,7 +176,7 @@ export default function WhatsAppSettings() {
         <div className="space-y-3 bg-surface-muted/50 p-5 rounded-2xl border border-border">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <label className="text-xs font-black text-content flex items-start gap-2 min-w-0">
-              <Sparkles size={16} className="text-amber-500 shrink-0 mt-0.5" />
+              <Sparkles size={16} className="text-warning shrink-0 mt-0.5" />
               <span>{t('settings_page.whatsapp.vars_selector_label')}</span>
             </label>
             {/* Redundant hint — hidden on phones where the row has no room. */}
@@ -194,7 +194,7 @@ export default function WhatsAppSettings() {
                 className={cn("flex flex-col items-start p-2.5 bg-surface hover:bg-brand/10 border border-border hover:border-brand/40 rounded-xl transition-all group active:scale-95 shadow-xs", isRtl ? "text-right" : "text-left")}
                 title={t('settings_page.whatsapp.click_to_add_var', { label: item.label })}
               >
-                <span className="text-[11px] font-black text-brand group-hover:text-brand-dark transition-colors dir-ltr font-mono break-all">
+                <span className="text-[11px] font-black text-brand group-hover:text-brand/80 transition-colors dir-ltr font-mono break-all">
                   {item.tag}
                 </span>
                 <span className="text-[10px] text-content-muted font-bold mt-0.5">
@@ -223,7 +223,7 @@ export default function WhatsAppSettings() {
               onChange={(e) => setTemplate(e.target.value)}
               placeholder={t('settings_page.whatsapp.textarea_placeholder')}
               rows={5}
-              className="w-full bg-surface-muted border-2 border-border focus:border-emerald-500 focus:bg-surface rounded-2xl p-5 font-medium transition-all outline-none resize-none text-sm sm:text-base leading-relaxed text-content shadow-inner"
+              className="w-full bg-surface-muted border-2 border-border focus:border-success focus:bg-surface rounded-2xl p-5 font-medium transition-all outline-none resize-none text-sm sm:text-base leading-relaxed text-content shadow-inner"
             />
           </div>
         </div>
@@ -232,22 +232,22 @@ export default function WhatsAppSettings() {
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
             <span className="text-xs font-black text-content-muted uppercase tracking-wider flex items-center gap-1.5">
-              <Info size={14} className="text-emerald-600" />
+              <Info size={14} className="text-success" />
               {t('settings_page.whatsapp.preview_label')}
             </span>
-            <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-700 px-2 py-0.5 rounded-full">
+            <span className="text-[10px] font-bold bg-success/10 text-success px-2 py-0.5 rounded-full">
               {t('settings_page.whatsapp.preview_badge')}
             </span>
           </div>
 
-          <div className="p-4 sm:p-6 bg-[#efeae2] dark:bg-slate-900/80 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-inner">
-            <div className={cn("max-w-md bg-[#d9fdd3] dark:bg-emerald-950/80 text-slate-800 dark:text-emerald-100 p-4 rounded-2xl rounded-tr-none shadow-md space-y-2 border border-emerald-200/50 dark:border-emerald-800/50", isRtl ? "ml-auto" : "mr-auto")}>
+          <div className="p-4 sm:p-6 bg-[#efeae2] dark:bg-surface-muted/80 rounded-2xl border border-border shadow-inner">
+            <div className={cn("max-w-md bg-[#d9fdd3] dark:bg-success/80 text-content dark:text-success p-4 rounded-2xl rounded-tr-none shadow-md space-y-2 border border-success/50", isRtl ? "ml-auto" : "mr-auto")}>
               <p className={cn("text-sm font-medium whitespace-pre-wrap leading-relaxed", isRtl ? "text-right" : "text-left")} dir={isRtl ? "rtl" : "ltr"}>
                 {sampleMessage}
               </p>
-              <div className={cn("flex items-center gap-1 text-[10px] text-slate-500 dark:text-emerald-400 font-bold pt-1", isRtl ? "justify-end" : "justify-start")}>
+              <div className={cn("flex items-center gap-1 text-[10px] text-content-muted dark:text-success font-bold pt-1", isRtl ? "justify-end" : "justify-start")}>
                 <span>{new Date().toLocaleTimeString(isRtl ? 'ar-SA-u-nu-latn' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
-                <span className="text-emerald-600 dark:text-emerald-400">✓✓</span>
+                <span className="text-success">✓✓</span>
               </div>
             </div>
           </div>
@@ -261,7 +261,7 @@ export default function WhatsAppSettings() {
             <button
               type="button"
               onClick={handleReset}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-surface-muted hover:bg-slate-200 dark:hover:bg-slate-800 text-content-muted hover:text-content rounded-xl text-xs font-black transition-all w-full sm:w-auto"
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-surface-muted hover:bg-surface-muted dark:hover:bg-surface-muted text-content-muted hover:text-content rounded-xl text-xs font-black transition-all w-full sm:w-auto"
             >
               <RotateCcw size={16} />
               <span>{t('settings_page.whatsapp.reset_btn')}</span>
@@ -270,7 +270,7 @@ export default function WhatsAppSettings() {
             <button
               type="button"
               onClick={() => setShowTestModal(true)}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-xl text-xs font-black transition-all w-full sm:w-auto"
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-success/10 hover:bg-success/20 text-success rounded-xl text-xs font-black transition-all w-full sm:w-auto"
             >
               <Send size={16} />
               <span>{t('settings_page.whatsapp.test_send_btn')}</span>
@@ -280,7 +280,7 @@ export default function WhatsAppSettings() {
           <button
             type="button"
             onClick={handleSave}
-            className="flex items-center justify-center gap-2 px-8 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-black transition-all shadow-lg shadow-emerald-600/20 active:scale-95 w-full sm:w-auto"
+            className="flex items-center justify-center gap-2 px-8 py-3.5 bg-success hover:bg-success/90 text-white rounded-xl text-sm font-black transition-all shadow-lg shadow-success/20 active:scale-95 w-full sm:w-auto"
           >
             <CheckCircle2 size={18} />
             <span>{savedSuccess ? t('settings_page.whatsapp.saved_btn_success') : t('settings_page.whatsapp.save_btn')}</span>
@@ -294,7 +294,7 @@ export default function WhatsAppSettings() {
           <div className="bg-surface rounded-2xl sm:rounded-3xl p-5 sm:p-6 max-w-md w-full max-h-[92dvh] overflow-y-auto my-auto border border-border shadow-2xl space-y-5 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between border-b border-border pb-4">
               <h4 className="text-lg font-black text-content flex items-center gap-2">
-                <Send size={20} className="text-emerald-600" />
+                <Send size={20} className="text-success" />
                 <span>{t('settings_page.whatsapp.test_modal_title')}</span>
               </h4>
               <button
@@ -317,7 +317,7 @@ export default function WhatsAppSettings() {
                 placeholder={t('settings_page.whatsapp.phone_input_placeholder')}
                 value={testPhone}
                 onChange={(e) => setTestPhone(e.target.value)}
-                className={cn("w-full p-3.5 bg-surface-muted border border-border rounded-xl text-sm font-bold text-content outline-none focus:border-emerald-500 dir-ltr", isRtl ? "text-right" : "text-left")}
+                className={cn("w-full p-3.5 bg-surface-muted border border-border rounded-xl text-sm font-bold text-content outline-none focus:border-success dir-ltr", isRtl ? "text-right" : "text-left")}
               />
             </div>
 
@@ -332,7 +332,7 @@ export default function WhatsAppSettings() {
               <button
                 type="button"
                 onClick={handleSendTest}
-                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20"
+                className="flex-1 py-3 bg-success hover:bg-success/90 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-md shadow-success/20"
               >
                 <Send size={14} />
                 <span>{t('procurement.open_whatsapp_now')}</span>

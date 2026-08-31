@@ -17,19 +17,19 @@ const IconInput = forwardRef<HTMLInputElement, any>(({ icon: Icon, error, type =
   return (
     <div className={cn(
       "flex items-center overflow-hidden border rounded-2xl bg-surface-muted transition-all focus-within:ring-2 focus-within:border-brand",
-      error 
-        ? "border-red-500 ring-red-500/20 focus-within:ring-red-500/20 focus-within:border-red-500" 
+      error
+        ? "border-danger ring-danger/20 focus-within:ring-danger/20 focus-within:border-danger"
         : "border-border"
     )}>
       {Icon && (
         <div className={cn(
           "flex items-center justify-center px-4 py-4 border-e bg-surface/50 text-content-muted shrink-0 transition-colors",
-          error ? "border-red-500 text-red-500 bg-red-500/5" : "border-border"
+          error ? "border-danger text-danger bg-danger/5" : "border-border"
         )}>
           <Icon size={20} />
         </div>
       )}
-      <input 
+      <input
         ref={ref}
         type={type}
         dir={dir}
@@ -42,7 +42,7 @@ const IconInput = forwardRef<HTMLInputElement, any>(({ icon: Icon, error, type =
       {rightElement && (
         <div className={cn(
           "border-s bg-surface/50 flex shrink-0 transition-colors",
-          error ? "border-red-500" : "border-border"
+          error ? "border-danger" : "border-border"
         )}>
           {rightElement}
         </div>
@@ -83,13 +83,13 @@ const IconSelect = forwardRef<any, any>(({ icon: Icon, error, options, value, on
         <div className={cn(
           "flex items-center overflow-visible border rounded-2xl bg-surface-muted transition-all focus-within:ring-2 focus-within:border-brand",
           open 
-            ? "ring-2 border-brand" 
-            : (error ? "border-red-500 ring-red-500/20 focus-within:ring-red-500/20 focus-within:border-red-500" : "border-border")
+            ? "ring-2 border-brand"
+            : (error ? "border-danger ring-danger/20 focus-within:ring-danger/20 focus-within:border-danger" : "border-border")
         )}>
           {Icon && (
             <div className={cn(
               "flex items-center justify-center px-4 py-4 border-e bg-surface/50 text-content-muted rounded-s-2xl shrink-0 transition-colors",
-              error ? "border-red-500 text-red-500 bg-red-500/5" : "border-border"
+              error ? "border-danger text-danger bg-danger/5" : "border-border"
             )}>
               <Icon size={20} />
             </div>
@@ -367,7 +367,7 @@ export default function AddEmployeeModal({
         
         <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-6">
           {errorMsg && (
-            <div className="p-4 bg-red-50 text-red-600 rounded-2xl border border-red-200 font-bold text-sm">
+            <div className="p-4 bg-danger/10 text-danger rounded-2xl border border-danger/20 font-bold text-sm">
               {errorMsg}
             </div>
           )}
@@ -379,7 +379,7 @@ export default function AddEmployeeModal({
               icon={User}
               error={errors.name}
             />
-            {errors.name && <p className="text-xs text-red-500 font-bold">{t(errors.name.message as string)}</p>}
+            {errors.name && <p className="text-xs text-danger font-bold">{t(errors.name.message as string)}</p>}
           </div>
 
           <div className="space-y-2">
@@ -399,7 +399,7 @@ export default function AddEmployeeModal({
                 />
               )}
             />
-            {errors.role && <p className="text-xs text-red-500 font-bold">{t(errors.role.message as string)}</p>}
+            {errors.role && <p className="text-xs text-danger font-bold">{t(errors.role.message as string)}</p>}
           </div>
 
           <div className="space-y-2">
@@ -419,7 +419,7 @@ export default function AddEmployeeModal({
                 />
               )}
             />
-            {errors.branchId && <p className="text-xs text-red-500 font-bold">{t(errors.branchId.message as string)}</p>}
+            {errors.branchId && <p className="text-xs text-danger font-bold">{t(errors.branchId.message as string)}</p>}
           </div>
 
           <div className="space-y-2">
@@ -431,7 +431,7 @@ export default function AddEmployeeModal({
               dir="ltr"
               placeholder="user@example.com"
             />
-            {errors.email && <p className="text-xs text-red-500 font-bold">{t(errors.email.message as string)}</p>}
+            {errors.email && <p className="text-xs text-danger font-bold">{t(errors.email.message as string)}</p>}
           </div>
 
           <div className="space-y-2">
@@ -442,7 +442,7 @@ export default function AddEmployeeModal({
               dir="ltr"
               placeholder="••••••••"
             />
-            {errors.password && <p className="text-xs text-red-500 font-bold">{t(errors.password.message as string)}</p>}
+            {errors.password && <p className="text-xs text-danger font-bold">{t(errors.password.message as string)}</p>}
           </div>
 
           <div className="space-y-2">
@@ -454,7 +454,7 @@ export default function AddEmployeeModal({
               dir="ltr"
               placeholder="+966500000000"
             />
-            {errors.phone && <p className="text-xs text-red-500 font-bold">{t(errors.phone.message as string)}</p>}
+            {errors.phone && <p className="text-xs text-danger font-bold">{t(errors.phone.message as string)}</p>}
           </div>
 
           <div className="p-4 bg-surface-muted rounded-2xl space-y-4">
@@ -493,7 +493,7 @@ export default function AddEmployeeModal({
                   placeholder="****"
                   className="tracking-[1em]"
                 />
-                {errors.pin && <p className="text-xs text-red-500 font-bold">{t(errors.pin.message as string)}</p>}
+                {errors.pin && <p className="text-xs text-danger font-bold">{t(errors.pin.message as string)}</p>}
               </div>
             )}
           </div>

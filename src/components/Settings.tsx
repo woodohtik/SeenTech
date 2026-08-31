@@ -553,7 +553,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                     <div className="sm:col-span-2 space-y-1.5">
                       <div className="flex flex-wrap items-center justify-between gap-1 px-1">
                         <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.email_protected', 'البريد الإلكتروني (غير قابل للتعديل)')}</label>
-                        <span className="text-[10px] text-slate-400 font-black bg-slate-100 dark:bg-slate-800 rounded px-2 py-0.5 select-none shrink-0" dir={isRtl ? "rtl" : "ltr"}>{t('settings_page.profile.official_protected', 'رسمي ومحمي')}</span>
+                        <span className="text-[10px] text-content-muted font-black bg-surface-muted rounded px-2 py-0.5 select-none shrink-0" dir={isRtl ? "rtl" : "ltr"}>{t('settings_page.profile.official_protected', 'رسمي ومحمي')}</span>
                       </div>
                       <IconInput 
                         type="email" 
@@ -572,7 +572,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
-                        className="flex items-center gap-2 px-3.5 py-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold"
+                        className="flex items-center gap-2 px-3.5 py-2 bg-success/10 text-success border border-success/20 rounded-xl text-xs font-bold"
                       >
                         <CheckCircle2 size={16} />
                         <span>{t('settings_page.profile.save_success', 'تم حفظ البيانات بنجاح')}</span>
@@ -585,7 +585,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                         disabled={isSubmitting}
                         className={cn(
                           "px-6 sm:px-8 py-3 rounded-xl font-black transition-all shadow-lg disabled:opacity-50 hover:scale-102 active:scale-98 flex items-center justify-center gap-2 text-white cursor-pointer text-sm",
-                          saveSuccess ? "bg-emerald-600 shadow-emerald-500/20" : "bg-brand hover:bg-brand/90 shadow-brand/20"
+                          saveSuccess ? "bg-success shadow-success/20" : "bg-brand hover:bg-brand/90 shadow-brand/20"
                         )}
                       >
                         {isSubmitting ? (
@@ -741,7 +741,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                               )}
                               dir="ltr"
                             />
-                            {errors.taxSettings?.trn && <p className="text-xs text-red-500 font-bold">{errors.taxSettings.trn.message}</p>}
+                            {errors.taxSettings?.trn && <p className="text-xs text-danger font-bold">{errors.taxSettings.trn.message}</p>}
                           </div>
                           <div className="space-y-2">
                             <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em] px-1">{t('settings_page.tax.legal_name', 'اسم المكلف القانوني')}</label>
@@ -754,7 +754,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                               )}
                               placeholder={t('settings_page.tax.legal_name_placeholder', 'الاسم المسجل في الشهادة الضريبية')}
                             />
-                            {errors.taxSettings?.legalName && <p className="text-xs text-red-500 font-bold">{errors.taxSettings.legalName.message}</p>}
+                            {errors.taxSettings?.legalName && <p className="text-xs text-danger font-bold">{errors.taxSettings.legalName.message}</p>}
                           </div>
                           <div className="space-y-2 sm:col-span-2">
                              <div className="flex flex-wrap items-center justify-between gap-1.5 px-1">
@@ -773,7 +773,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                                 min="0" max="100"
                               />
                             </div>
-                            {errors.taxSettings?.vatRate && <p className="text-xs text-red-500 font-bold">{errors.taxSettings.vatRate.message}</p>}
+                            {errors.taxSettings?.vatRate && <p className="text-xs text-danger font-bold">{errors.taxSettings.vatRate.message}</p>}
                           </div>
 
                           <div className="space-y-3 sm:col-span-2 border-t border-border/50 pt-4">
@@ -822,7 +822,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
-                        className="flex items-center gap-2 px-3.5 py-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold"
+                        className="flex items-center gap-2 px-3.5 py-2 bg-success/10 text-success border border-success/20 rounded-xl text-xs font-bold"
                       >
                         <CheckCircle2 size={16} />
                         <span>{t('settings_page.tax.save_success', 'تم حفظ البيانات الضريبية بنجاح')}</span>
@@ -837,7 +837,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                         disabled={isSubmitting}
                         className={cn(
                           "px-6 sm:px-8 py-3 rounded-xl font-black transition-all shadow-lg disabled:opacity-50 hover:scale-102 active:scale-98 flex items-center justify-center gap-2 text-white cursor-pointer text-sm",
-                          saveSuccess ? "bg-emerald-600 shadow-emerald-500/20" : "bg-brand hover:bg-brand/90 shadow-brand/20"
+                          saveSuccess ? "bg-success shadow-success/20" : "bg-brand hover:bg-brand/90 shadow-brand/20"
                         )}
                       >
                         {isSubmitting ? (
@@ -896,7 +896,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                           <div className="flex justify-end sm:justify-start">
                             <label className="relative inline-flex items-center cursor-pointer">
                               <input type="checkbox" className="sr-only peer" {...register(item.field as any)} />
-                              <div className="w-14 h-7 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:start-[3px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand"></div>
+                              <div className="w-14 h-7 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:start-[3px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand"></div>
                             </label>
                           </div>
                         </div>
@@ -910,7 +910,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
-                            className="flex items-center gap-2 px-3.5 py-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold"
+                            className="flex items-center gap-2 px-3.5 py-2 bg-success/10 text-success border border-success/20 rounded-xl text-xs font-bold"
                           >
                             <CheckCircle2 size={16} />
                             <span>{t('settings_page.notifications.save_success', 'تم حفظ إعدادات التنبيهات بنجاح')}</span>
@@ -921,7 +921,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                           disabled={isSubmitting}
                           className={cn(
                             "px-6 sm:px-8 py-3 rounded-xl font-black transition-all shadow-lg disabled:opacity-50 hover:scale-102 active:scale-98 flex items-center justify-center gap-2 text-white cursor-pointer text-sm",
-                            saveSuccess ? "bg-emerald-600 shadow-emerald-500/20" : "bg-brand hover:bg-brand/90 shadow-brand/20"
+                            saveSuccess ? "bg-success shadow-success/20" : "bg-brand hover:bg-brand/90 shadow-brand/20"
                           )}
                         >
                           {isSubmitting ? (
@@ -1007,7 +1007,7 @@ export default function Settings({ tenantId }: SettingsProps) {
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
-            className="fixed bottom-6 left-6 z-50 bg-emerald-600 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 font-black text-sm border border-emerald-400/30"
+            className="fixed bottom-6 left-6 z-50 bg-success text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 font-black text-sm border border-success/30"
           >
             <CheckCircle2 size={22} className="text-white" />
             <span>{t('settings_page.data.save_success')}</span>

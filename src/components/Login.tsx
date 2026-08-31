@@ -676,7 +676,7 @@ export default function Login() {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-amber-500/10 border border-amber-500/20 text-amber-700 p-4 rounded-2xl flex items-start gap-3 text-sm font-bold"
+              className="bg-warning/10 border border-warning/20 text-warning p-4 rounded-2xl flex items-start gap-3 text-sm font-bold"
             >
               <AlertCircle size={18} className="shrink-0 mt-0.5" />
               <span>{t('login.session_conflict_logout')}</span>
@@ -838,7 +838,7 @@ export default function Login() {
                     wrapperClassName="h-11"
                     readOnly={!!googleUser}
                     disabled={!!googleUser}
-                    className={cn(googleUser && "bg-gray-50 text-gray-400 cursor-not-allowed")}
+                    className={cn(googleUser && "bg-surface-muted text-content-muted cursor-not-allowed")}
                   />
                   {googleUser && (
                     <span className="absolute top-1 left-2 text-[10px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">

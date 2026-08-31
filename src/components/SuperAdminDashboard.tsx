@@ -236,8 +236,8 @@ export default function SuperAdminDashboard() {
       label: t('saas.kpi_mrr'), 
       value: <PriceDisplay amount={mrr} />, 
       icon: TrendingUp, 
-      color: 'text-emerald-600', 
-      bg: 'bg-emerald-500/5',
+      color: 'text-success',
+      bg: 'bg-success/5',
       trend: '+12.4%',
       isPositive: true
     },
@@ -245,8 +245,8 @@ export default function SuperAdminDashboard() {
       label: t('saas.kpi_arr'), 
       value: <PriceDisplay amount={arr} />, 
       icon: DollarSign, 
-      color: 'text-amber-600', 
-      bg: 'bg-amber-500/5',
+      color: 'text-warning',
+      bg: 'bg-warning/5',
       trend: '+12.4%',
       isPositive: true
     },
@@ -254,8 +254,8 @@ export default function SuperAdminDashboard() {
       label: t('saas.kpi_active_subscribers'), 
       value: activeTenantsCount, 
       icon: Activity, 
-      color: 'text-rose-600', 
-      bg: 'bg-rose-500/5',
+      color: 'text-danger',
+      bg: 'bg-danger/5',
       trend: t('saas.stable'),
       isPositive: true
     },
@@ -722,9 +722,9 @@ export default function SuperAdminDashboard() {
         </div>
         
         <div className="flex items-center gap-3">
-          <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest leading-none">
+          <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-success/5 border border-success/10 rounded-2xl">
+            <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+            <span className="text-[10px] font-black text-success uppercase tracking-widest leading-none">
               {t('saas.engine_status_stable')}
             </span>
           </div>
@@ -793,7 +793,7 @@ export default function SuperAdminDashboard() {
                     </div>
                     <div className={cn(
                       "flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black",
-                      stat.isPositive ? "bg-emerald-500/5 text-emerald-600" : "bg-rose-500/5 text-rose-600"
+                      stat.isPositive ? "bg-success/5 text-success" : "bg-danger/5 text-danger"
                     )}>
                       {stat.isPositive ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
                       <span>{stat.trend}</span>
@@ -934,13 +934,13 @@ export default function SuperAdminDashboard() {
                   </button>
                   <button 
                     onClick={() => setStatusFilter('active')} 
-                    className={cn("px-3 py-1.5 rounded-lg text-xs font-black cursor-pointer", statusFilter === 'active' ? "bg-white text-emerald-600 shadow-sm" : "text-content-muted")}
+                    className={cn("px-3 py-1.5 rounded-lg text-xs font-black cursor-pointer", statusFilter === 'active' ? "bg-white text-success shadow-sm" : "text-content-muted")}
                   >
                     {t('saas.active_short')}
                   </button>
                   <button 
                     onClick={() => setStatusFilter('inactive')} 
-                    className={cn("px-3 py-1.5 rounded-lg text-xs font-black cursor-pointer", statusFilter === 'inactive' ? "bg-white text-rose-600 shadow-sm" : "text-content-muted")}
+                    className={cn("px-3 py-1.5 rounded-lg text-xs font-black cursor-pointer", statusFilter === 'inactive' ? "bg-white text-danger shadow-sm" : "text-content-muted")}
                   >
                     {t('saas.inactive_short')}
                   </button>
@@ -980,10 +980,10 @@ export default function SuperAdminDashboard() {
                       </div>
                       <span className={cn(
                         "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider",
-                        tenant.status === 'active' && "bg-emerald-500/10 text-emerald-600",
-                        tenant.status === 'onboarding' && "bg-amber-500/10 text-amber-600",
-                        tenant.status === 'inactive' && "bg-rose-500/10 text-rose-600",
-                        tenant.status === 'suspended' && "bg-gray-500/10 text-gray-600",
+                        tenant.status === 'active' && "bg-success/10 text-success",
+                        tenant.status === 'onboarding' && "bg-warning/10 text-warning",
+                        tenant.status === 'inactive' && "bg-danger/10 text-danger",
+                        tenant.status === 'suspended' && "bg-content-muted/10 text-content-muted",
                       )}>
                         <span className="w-1 h-1 rounded-full bg-current" />
                         {t(`common.status_${tenant.status}`, tenant.status)}
@@ -1027,8 +1027,8 @@ export default function SuperAdminDashboard() {
                         className={cn(
                           "p-2.5 rounded-xl text-xs font-black transition-all cursor-pointer border flex items-center justify-center shrink-0",
                           tenant.status === 'active' 
-                            ? "bg-rose-500/5 text-rose-600 border-rose-500/10 hover:bg-rose-500/10" 
-                            : "bg-emerald-500/5 text-emerald-600 border-emerald-500/10 hover:bg-emerald-500/10"
+                            ? "bg-danger/5 text-danger border-danger/10 hover:bg-danger/10" 
+                            : "bg-success/5 text-success border-success/10 hover:bg-success/10"
                         )}
                         title={tenant.status === 'active' ? t('saas.tenants.deactivate') : t('saas.tenants.enable')}
                       >
@@ -1107,10 +1107,10 @@ export default function SuperAdminDashboard() {
                           <td className="px-6 py-4">
                             <span className={cn(
                               "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
-                              tenant.status === 'active' && "bg-emerald-500/10 text-emerald-600",
-                              tenant.status === 'onboarding' && "bg-amber-500/10 text-amber-600",
-                              tenant.status === 'inactive' && "bg-rose-500/10 text-rose-600",
-                              tenant.status === 'suspended' && "bg-gray-500/10 text-gray-600",
+                              tenant.status === 'active' && "bg-success/10 text-success",
+                              tenant.status === 'onboarding' && "bg-warning/10 text-warning",
+                              tenant.status === 'inactive' && "bg-danger/10 text-danger",
+                              tenant.status === 'suspended' && "bg-content-muted/10 text-content-muted",
                             )}>
                               <span className="w-1.5 h-1.5 rounded-full bg-current" />
                               {t(`common.status_${tenant.status}`, tenant.status)}
@@ -1135,8 +1135,8 @@ export default function SuperAdminDashboard() {
                                 className={cn(
                                   "p-2 rounded-xl text-xs font-black transition-all cursor-pointer border",
                                   tenant.status === 'active' 
-                                    ? "bg-rose-500/5 text-rose-600 border-rose-500/10 hover:bg-rose-500/10" 
-                                    : "bg-emerald-500/5 text-emerald-600 border-emerald-500/10 hover:bg-emerald-500/10"
+                                    ? "bg-danger/5 text-danger border-danger/10 hover:bg-danger/10" 
+                                    : "bg-success/5 text-success border-success/10 hover:bg-success/10"
                                 )}
                                 title={tenant.status === 'active' ? t('saas.tenants.deactivate_account') : t('saas.tenants.enable_account')}
                               >
@@ -1184,8 +1184,8 @@ export default function SuperAdminDashboard() {
           >
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
-                { label: t('saas.arpu_label', 'ARPU (متوسط الدخل لكل مشترك)'), value: <PriceDisplay amount={arpu} />, icon: MousePointer2, color: 'text-indigo-600', bg: 'bg-indigo-500/5' },
-                { label: t('saas.arr_label', 'ARR (الإيراد السنوي المتكرر)'), value: <PriceDisplay amount={arr} />, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-500/5' },
+                { label: t('saas.arpu_label', 'ARPU (متوسط الدخل لكل مشترك)'), value: <PriceDisplay amount={arpu} />, icon: MousePointer2, color: 'text-info', bg: 'bg-info/5' },
+                { label: t('saas.arr_label', 'ARR (الإيراد السنوي المتكرر)'), value: <PriceDisplay amount={arr} />, icon: TrendingUp, color: 'text-success', bg: 'bg-success/5' },
                 { label: t('saas.kpi_ltv'), value: <PriceDisplay amount={ltv} />, icon: Activity, color: 'text-brand', bg: 'bg-brand/5' },
               ].map((m) => (
                 <div key={m.label} className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
@@ -1227,7 +1227,7 @@ export default function SuperAdminDashboard() {
                         </div>
                         <div className="text-right">
                           <span className="text-[10px] font-black text-content-muted uppercase tracking-widest">Monthly Yield</span>
-                          <div className="text-base font-black text-emerald-600 mt-0.5"><PriceDisplay amount={planmrr} /></div>
+                          <div className="text-base font-black text-success mt-0.5"><PriceDisplay amount={planmrr} /></div>
                         </div>
                       </div>
                     </div>
@@ -1265,7 +1265,7 @@ export default function SuperAdminDashboard() {
                       <RefreshCw size={14} className={cn(testingLatency && "animate-spin")} />
                     </button>
                   </div>
-                  <div className="text-3xl font-black text-emerald-600 tracking-tight">
+                  <div className="text-3xl font-black text-success tracking-tight">
                     {dbLatency ? `${dbLatency}ms` : '---'}
                   </div>
                 </div>
@@ -1273,15 +1273,15 @@ export default function SuperAdminDashboard() {
                   <motion.div 
                     initial={{ width: 0 }}
                     animate={{ width: dbLatency ? `${Math.min(100, (dbLatency / 300) * 100)}%` : '0%' }}
-                    className="h-full bg-emerald-500" 
+                    className="h-full bg-success" 
                   />
                 </div>
                 <span className="text-[10px] font-bold text-content-muted mt-2">Real round-trip query performance</span>
               </div>
 
               {[
-                { label: 'CPU Engine Load', value: '11.8%', progress: 12, color: 'text-indigo-600', bg: 'bg-indigo-500' },
-                { label: 'Uptime (30-day index)', value: '99.98%', progress: 99.9, color: 'text-amber-500', bg: 'bg-amber-500' },
+                { label: 'CPU Engine Load', value: '11.8%', progress: 12, color: 'text-info', bg: 'bg-info' },
+                { label: 'Uptime (30-day index)', value: '99.98%', progress: 99.9, color: 'text-warning', bg: 'bg-warning' },
                 { label: 'Active API Traffic', value: '1.4k requests/m', progress: 34, color: 'text-brand', bg: 'bg-brand' },
               ].map((p, i) => (
                 <div key={i} className="bg-surface p-6 rounded-[2rem] border border-border shadow-sm flex flex-col justify-between">
@@ -1331,7 +1331,7 @@ export default function SuperAdminDashboard() {
                           <Trans
                             i18nKey="saas.activity_log_entry"
                             values={{ staff: log.staffName, action: log.action }}
-                            components={{ s: <span className="text-brand font-black" />, a: <span className="text-emerald-600 font-black" /> }}
+                            components={{ s: <span className="text-brand font-black" />, a: <span className="text-success font-black" /> }}
                           />
                         </div>
                         <p className="text-[10px] text-content-muted font-bold mt-1 leading-none">{log.details}</p>
@@ -1367,13 +1367,13 @@ export default function SuperAdminDashboard() {
             className="space-y-8"
           >
             {/* Security Alert Header */}
-            <div className="bg-rose-500/5 p-8 rounded-[2rem] border border-rose-500/10 flex flex-col md:flex-row items-start md:items-center gap-6">
-              <div className="w-16 h-16 bg-rose-500/10 text-rose-600 rounded-2xl flex items-center justify-center shrink-0">
+            <div className="bg-danger/5 p-8 rounded-[2rem] border border-danger/10 flex flex-col md:flex-row items-start md:items-center gap-6">
+              <div className="w-16 h-16 bg-danger/10 text-danger rounded-2xl flex items-center justify-center shrink-0">
                 <Shield size={32} />
               </div>
               <div>
-                <h3 className="text-lg font-black text-rose-600 mb-1">{t('saas.security_center_title', 'مركز مراقبة الأمان والنزاهة')}</h3>
-                <p className="text-rose-600/80 font-bold leading-relaxed max-w-2xl text-xs">
+                <h3 className="text-lg font-black text-danger mb-1">{t('saas.security_center_title', 'مركز مراقبة الأمان والنزاهة')}</h3>
+                <p className="text-danger/80 font-bold leading-relaxed max-w-2xl text-xs">
                   {t('saas.security_center_desc', 'هذا القسم مخصص لمراقبة الأحداث الأمنية، محاولات الدخول، وتعديلات البيانات الحساسة على مستوى المنصة ككل. أي تغيير في هذا القسم يتم توثيقه في سجل التدقيق الأبدي.')}
                 </p>
               </div>
@@ -1384,7 +1384,7 @@ export default function SuperAdminDashboard() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
                   <h3 className="text-base font-black text-content flex items-center gap-2">
-                    <Lock className="text-rose-600" size={18} />
+                    <Lock className="text-danger" size={18} />
                     <span>{t('saas.audit_logs_label', 'سجل التدقيق (Audit Logs)')}</span>
                   </h3>
                 </div>
@@ -1418,12 +1418,12 @@ export default function SuperAdminDashboard() {
               <div className="space-y-3">
                 {filteredAuditLogs.map((log) => (
                   <div key={log.id} className="flex items-start gap-4 p-5 bg-surface-muted/20 rounded-2xl border border-border border-r-4 border-r-rose-400">
-                    <div className="p-2 bg-rose-500/10 text-rose-600 rounded-lg shrink-0 mt-0.5">
+                    <div className="p-2 bg-danger/10 text-danger rounded-lg shrink-0 mt-0.5">
                       <AlertCircle size={14} />
                     </div>
                     <div className="flex-1">
                       <div className="text-xs font-black text-content">
-                        {log.action} - <span className="text-rose-600 font-bold">{log.performedByEmail}</span>
+                        {log.action} - <span className="text-danger font-bold">{log.performedByEmail}</span>
                       </div>
                       <p className="text-[10px] text-content-muted font-bold mt-1">{log.details}</p>
                       <div className="mt-3 flex items-center gap-3">
@@ -1431,7 +1431,7 @@ export default function SuperAdminDashboard() {
                           {new Date(log.timestamp).toLocaleString(localeOf(i18n.language))}
                         </span>
                         <span className="w-1 h-1 bg-border rounded-full" />
-                        <span className="text-[9px] font-black text-rose-600 uppercase tracking-wider">{t('common.type')}: {log.type}</span>
+                        <span className="text-[9px] font-black text-danger uppercase tracking-wider">{t('common.type')}: {log.type}</span>
                       </div>
                     </div>
                   </div>
@@ -1519,7 +1519,7 @@ export default function SuperAdminDashboard() {
                     <div className="mt-1">
                       <span className={cn(
                         "inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider",
-                        selectedTenant.status === 'active' ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-600"
+                        selectedTenant.status === 'active' ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
                       )}>
                         {t(`common.status_${selectedTenant.status}`, selectedTenant.status)}
                       </span>
@@ -1614,9 +1614,9 @@ export default function SuperAdminDashboard() {
                 </p>
 
                 {pollingStatus === 'pending' && (
-                  <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex flex-col items-center justify-center text-center gap-2">
-                    <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-[11px] font-black text-amber-600">
+                  <div className="p-4 bg-warning/10 border border-warning/20 rounded-2xl flex flex-col items-center justify-center text-center gap-2">
+                    <div className="w-6 h-6 border-2 border-warning border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-[11px] font-black text-warning">
                       {t('saas.tenants.awaiting_client_approval')}
                     </p>
                   </div>
@@ -1627,7 +1627,7 @@ export default function SuperAdminDashboard() {
                 {pollingStatus === 'pending' ? (
                   <button
                     onClick={() => handleCancelSupportAccess(true)}
-                    className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 shadow-lg shadow-red-600/15 cursor-pointer"
+                    className="w-full bg-danger hover:bg-danger/90 text-white py-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 shadow-lg shadow-danger/15 cursor-pointer"
                   >
                     <X size={16} />
                     {t('saas.tenants.cancel_access_request') || 'إلغاء طلب الدخول'}
@@ -1654,7 +1654,7 @@ export default function SuperAdminDashboard() {
                   <ShieldAlert size={16} />
                   <span>{t('saas.tenants.stealth_admin_login')}</span>
                   {!(userRole === 'super_admin' || userRole === 'owner' as any || (dbUser as any)?.can_stealth_login === true || (dbUser as any)?.stealth_login_enabled === true) && (
-                    <span className="text-[9px] bg-red-500/20 text-red-300 px-1.5 py-0.5 rounded ml-1">{t('saas.tenants.locked_badge')}</span>
+                    <span className="text-[9px] bg-danger/20 text-danger px-1.5 py-0.5 rounded ml-1">{t('saas.tenants.locked_badge')}</span>
                   )}
                 </button>
 
@@ -1686,7 +1686,7 @@ export default function SuperAdminDashboard() {
             </div>
             <div className="px-2 sm:px-4">
               <p className="text-[11px] sm:text-xs font-black text-content leading-tight">{t('saas.live_tech_support', 'دعم فني مباشر')}</p>
-              <p className="text-[9px] sm:text-[10px] font-bold text-emerald-500 leading-tight mt-0.5">{t('saas.active_now_green', 'متواجدون الآن')}</p>
+              <p className="text-[9px] sm:text-[10px] font-bold text-success leading-tight mt-0.5">{t('saas.active_now_green', 'متواجدون الآن')}</p>
             </div>
           </div>
           <button className="px-4 py-2.5 sm:px-8 sm:py-3 bg-brand text-white rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-xs shadow-md shadow-brand/15 hover:scale-105 active:scale-95 transition-all cursor-pointer whitespace-nowrap shrink-0">

@@ -56,7 +56,7 @@ export default function TourFinishModal({
 
   return (
     <div
-      className="seen-tour-modal-backdrop fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md"
+      className="seen-tour-modal-backdrop fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-content/70 backdrop-blur-md"
       dir={isRtl ? 'rtl' : 'ltr'}
     >
       <motion.div
@@ -145,7 +145,7 @@ export default function TourFinishModal({
                   className={cn(
                     'w-full flex items-center gap-3.5 p-3.5 rounded-2xl border transition-all text-start cursor-pointer group relative overflow-hidden',
                     isCompleted
-                      ? 'bg-emerald-500/[0.02] border-emerald-500/20 hover:border-emerald-500/40 hover:bg-emerald-500/[0.04]'
+                      ? 'bg-success/[0.02] border-success/20 hover:border-success/40 hover:bg-success/[0.04]'
                       : isActive
                       ? 'bg-brand/5 border-brand/40 shadow-md shadow-brand/5 ring-2 ring-brand/10'
                       : 'bg-surface border-border hover:border-brand/30 hover:bg-surface-muted/50'
@@ -161,7 +161,7 @@ export default function TourFinishModal({
                     className={cn(
                       'w-9 h-9 shrink-0 rounded-xl border flex items-center justify-center transition-all',
                       isCompleted
-                        ? 'bg-emerald-50 border-emerald-100 text-emerald-600'
+                        ? 'bg-success/10 border-success/20 text-success'
                         : isActive
                         ? 'bg-brand text-white border-brand shadow-sm animate-pulse-subtle'
                         : 'bg-surface border-border text-content-muted group-hover:bg-brand group-hover:text-white group-hover:border-brand'
@@ -184,7 +184,7 @@ export default function TourFinishModal({
                       </p>
 
                       {isCompleted && (
-                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-black bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase tracking-wider">
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-black bg-success/10 text-success border border-success/20 uppercase tracking-wider">
                           {t('common.completed')}
                         </span>
                       )}
@@ -205,7 +205,7 @@ export default function TourFinishModal({
                     className={cn(
                       'shrink-0 transition-colors',
                       isCompleted
-                        ? 'text-emerald-500/50 group-hover:text-emerald-600'
+                        ? 'text-success/50 group-hover:text-success'
                         : isActive
                         ? 'text-brand'
                         : 'text-content-muted/50 group-hover:text-brand'

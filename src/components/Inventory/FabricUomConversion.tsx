@@ -680,7 +680,7 @@ const FabricUomConversion: React.FC<FabricUomConversionProps> = ({ tenantId }) =
                   <button
                     type="submit"
                     disabled={processing || !selectedItemId || !selectedBranchId || inputQty === ''}
-                    className="w-full py-3.5 bg-brand text-white rounded-2xl font-black text-sm shadow-md hover:bg-brand-hover disabled:opacity-40 flex items-center justify-center gap-2"
+                    className="w-full py-3.5 bg-brand text-white rounded-2xl font-black text-sm shadow-md hover:bg-brand/90 disabled:opacity-40 flex items-center justify-center gap-2"
                   >
                     {processing ? (
                       <Loader2 className="animate-spin" size={18} />
@@ -766,7 +766,7 @@ const FabricUomConversion: React.FC<FabricUomConversionProps> = ({ tenantId }) =
                       <span>{t('permissions.full_edit_access', 'صلاحية تعديل كاملة')}</span>
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1 px-3 py-1 bg-amber-500/10 text-amber-600 border border-amber-500/20 rounded-full text-[10px] font-black">
+                    <span className="flex items-center gap-1 px-3 py-1 bg-warning/10 text-warning border border-warning/20 rounded-full text-[10px] font-black">
                       <Lock size={12} />
                       <span>{t('permissions.readonly_access', 'عرض فقط')}</span>
                     </span>
@@ -849,7 +849,7 @@ const FabricUomConversion: React.FC<FabricUomConversionProps> = ({ tenantId }) =
                               <div className="flex items-center justify-center gap-2">
                                 <button
                                   onClick={() => handleUpdateSettings(item.id)}
-                                  className="px-3 py-1.5 bg-brand text-white rounded-lg text-xs font-black shadow hover:bg-brand-hover"
+                                  className="px-3 py-1.5 bg-brand text-white rounded-lg text-xs font-black shadow hover:bg-brand/90"
                                 >
                                   {t('common.save', 'حفظ')}
                                 </button>
@@ -925,7 +925,7 @@ const FabricUomConversion: React.FC<FabricUomConversionProps> = ({ tenantId }) =
                           <td className="px-6 py-4">
                             <span className={cn(
                               "px-2.5 py-1 rounded-full text-[10px] font-black",
-                              isUnrolled ? "bg-blue-500/10 text-blue-600" : "bg-purple-500/10 text-purple-600"
+                              isUnrolled ? "bg-brand/10 text-brand" : "bg-purple-500/10 text-purple-600"
                             )}>
                               {isUnrolled ? t('inventory.unrolling_tag', 'فك طاقة الأقمشة') : t('inventory.bundling_tag', 'لف وتجميع')}
                             </span>

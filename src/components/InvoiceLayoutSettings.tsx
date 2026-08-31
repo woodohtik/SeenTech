@@ -305,7 +305,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
             disabled={saving}
             className={cn(
               "w-full sm:w-auto text-white px-6 py-3 rounded-xl font-black transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-102 active:scale-98 cursor-pointer text-sm",
-              saveSuccess ? "bg-emerald-600 shadow-emerald-500/20" : "bg-brand hover:bg-brand/90 shadow-brand/20"
+              saveSuccess ? "bg-success shadow-success/20" : "bg-brand hover:bg-brand/90 shadow-brand/20"
             )}
           >
             {saving ? (
@@ -378,15 +378,15 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
 
             {/* Fast Thermal Print Mode Toggle */}
             <div className="pt-2 border-t border-border/50">
-              <label className="flex items-center justify-between p-3 sm:p-4 bg-amber-500/5 rounded-2xl border border-amber-500/20 cursor-pointer hover:bg-amber-500/10 transition-all gap-3 sm:gap-4">
+              <label className="flex items-center justify-between p-3 sm:p-4 bg-warning/5 rounded-2xl border border-warning/20 cursor-pointer hover:bg-warning/10 transition-all gap-3 sm:gap-4">
                 <div className={cn("flex items-start gap-3 min-w-0", isRtl ? "text-right" : "text-left")}>
-                  <div className="p-2.5 bg-amber-500 text-white rounded-xl shrink-0 shadow-sm">
+                  <div className="p-2.5 bg-warning text-white rounded-xl shrink-0 shadow-sm">
                     <Zap size={20} className="animate-pulse" />
                   </div>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-black text-content text-xs sm:text-sm">{t('settings_page.invoice.fast_thermal')}</p>
-                      <span className="text-[9px] bg-amber-500/10 text-amber-700 peer peer-checked:after:translate-x-full peer-checked:after:border-white px-2 py-0.5 rounded-full font-black border border-amber-500/20">
+                      <span className="text-[9px] bg-warning/10 text-warning peer peer-checked:after:translate-x-full peer-checked:after:border-white px-2 py-0.5 rounded-full font-black border border-warning/20">
                         {t('settings_page.invoice.paper_saving')}
                       </span>
                     </div>
@@ -407,7 +407,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                       window.dispatchEvent(new CustomEvent('fast_thermal_mode_changed', { detail: checked }));
                     }}
                   />
-                  <div className="w-12 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:start-[3px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
+                  <div className="w-12 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:start-[3px] after:bg-white after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-warning"></div>
                 </div>
               </label>
             </div>
@@ -439,7 +439,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                 {logoPreview && (
                   <button 
                     onClick={() => { setLogoPreview(null); setSettings(s => ({ ...s, header: { ...s.header, logoUrl: '' } })); }}
-                    className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-lg shadow-lg hover:bg-red-600 transition-all"
+                    className="absolute -top-2 -right-2 p-1.5 bg-danger text-white rounded-lg shadow-lg hover:bg-danger/90 transition-all"
                   >
                     <CloseIcon size={14} />
                   </button>
@@ -487,7 +487,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                       checked={settings.header.logoBorder}
                       onChange={(e) => setSettings(s => ({ ...s, header: { ...s.header, logoBorder: e.target.checked } }))}
                     />
-                    <div className="w-12 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:start-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand"></div>
+                    <div className="w-12 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:start-[4px] after:bg-white after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand"></div>
                   </div>
                 </label>
               </div>
@@ -556,7 +556,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                       checked={(settings.columns as any)[col.id]}
                       onChange={(e) => setSettings(s => ({ ...s, columns: { ...s.columns, [col.id]: e.target.checked } }))}
                     />
-                    <div className="w-12 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:start-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand"></div>
+                    <div className="w-12 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:start-[4px] after:bg-white after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand"></div>
                   </div>
                 </label>
               ))}
@@ -611,7 +611,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                     checked={settings.footer.showZatcaQr}
                     onChange={(e) => setSettings(s => ({ ...s, footer: { ...s.footer, showZatcaQr: e.target.checked } }))}
                   />
-                  <div className="w-14 h-7 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:start-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand"></div>
+                  <div className="w-14 h-7 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:start-[4px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand"></div>
                 </div>
               </div>
             </label>

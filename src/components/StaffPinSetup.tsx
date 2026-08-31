@@ -127,35 +127,35 @@ export default function StaffPinSetup({ staff, onSuccess }: StaffPinSetupProps) 
   };
 
   return (
-    <div className="fixed inset-0 z-[200] bg-white flex items-center justify-center p-6 font-sans" dir={dir}>
-      <motion.div 
+    <div className="fixed inset-0 z-[200] bg-surface flex items-center justify-center p-6 font-sans" dir={dir}>
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-gray-200 p-8 flex flex-col items-center"
+        className="w-full max-w-md bg-surface rounded-3xl shadow-xl border border-border p-8 flex flex-col items-center"
       >
-        <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 mb-6">
+        <div className="w-16 h-16 bg-brand/10 rounded-2xl flex items-center justify-center text-brand mb-6">
           <Shield size={32} />
         </div>
 
-        <h2 className="text-2xl font-black text-gray-900 mb-2 text-center">{t('staff.pin_setup_title')}</h2>
-        <p className="text-gray-500 text-sm mb-8 text-center">
+        <h2 className="text-2xl font-black text-content mb-2 text-center">{t('staff.pin_setup_title')}</h2>
+        <p className="text-content-muted text-sm mb-8 text-center">
           {t('staff.pin_setup_intro', { name: staff.name })}
         </p>
 
         <form onSubmit={handleSubmit} className="w-full space-y-5">
           <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-500 flex items-center gap-2">
+            <label className="text-xs font-bold text-content-muted flex items-center gap-2">
               <Lock size={14} />
               {t('staff.pin_new')}
             </label>
-            <input 
+            <input
               type="password"
               maxLength={4}
               value={pin}
               onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
               className={cn(
-                "w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-center text-xl font-bold tracking-[0.5em] outline-none transition-all focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500",
-                error && "border-red-300 bg-red-50"
+                "w-full bg-surface-muted border border-border rounded-xl p-3 text-center text-xl font-bold tracking-[0.5em] outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand",
+                error && "border-danger bg-danger/5"
               )}
               placeholder="****"
               required
@@ -163,18 +163,18 @@ export default function StaffPinSetup({ staff, onSuccess }: StaffPinSetupProps) 
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-500 flex items-center gap-2">
+            <label className="text-xs font-bold text-content-muted flex items-center gap-2">
               <CheckCircle2 size={14} />
               {t('staff.pin_confirm')}
             </label>
-            <input 
+            <input
               type="password"
               maxLength={4}
               value={confirmPin}
               onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
               className={cn(
-                "w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-center text-xl font-bold tracking-[0.5em] outline-none transition-all focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500",
-                error && "border-red-300 bg-red-50"
+                "w-full bg-surface-muted border border-border rounded-xl p-3 text-center text-xl font-bold tracking-[0.5em] outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand",
+                error && "border-danger bg-danger/5"
               )}
               placeholder="****"
               required
@@ -182,10 +182,10 @@ export default function StaffPinSetup({ staff, onSuccess }: StaffPinSetupProps) 
           </div>
 
           {error && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-2 text-red-600 text-xs font-bold bg-red-50 px-4 py-3 rounded-lg border border-red-100"
+              className="flex items-center gap-2 text-danger text-xs font-bold bg-danger/10 px-4 py-3 rounded-lg border border-danger/20"
             >
               <AlertCircle size={16} />
               <span>{error}</span>
@@ -196,7 +196,7 @@ export default function StaffPinSetup({ staff, onSuccess }: StaffPinSetupProps) 
             <button 
               type="submit"
               disabled={loading || pin.length !== 4 || confirmPin.length !== 4}
-              className="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full bg-brand text-white py-3.5 rounded-xl font-bold hover:bg-brand/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
@@ -211,16 +211,16 @@ export default function StaffPinSetup({ staff, onSuccess }: StaffPinSetupProps) 
               type="button"
               onClick={handleSkip}
               disabled={loading}
-              className="w-full bg-gray-100 text-gray-700 py-3.5 rounded-xl font-bold hover:bg-gray-200 transition-all disabled:opacity-50"
+              className="w-full bg-surface-muted text-content py-3.5 rounded-xl font-bold hover:bg-surface transition-all disabled:opacity-50"
             >
               {t('staff.pin_skip')}
             </button>
           </div>
         </form>
 
-        <div className="mt-6 p-4 bg-gray-50 rounded-xl w-full">
-          <h4 className="text-xs font-bold text-gray-600 mb-2">{t('staff.pin_security_tips')}</h4>
-          <ul className="text-xs text-gray-500 space-y-1">
+        <div className="mt-6 p-4 bg-surface-muted rounded-xl w-full">
+          <h4 className="text-xs font-bold text-content-muted mb-2">{t('staff.pin_security_tips')}</h4>
+          <ul className="text-xs text-content-muted space-y-1">
             <li>• {t('staff.pin_tip_no_sequences')}</li>
             <li>• {t('staff.pin_tip_no_repeats')}</li>
             <li>• {t('staff.pin_tip_do_not_share')}</li>

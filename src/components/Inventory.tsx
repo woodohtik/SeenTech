@@ -1191,10 +1191,10 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                       {...register('quantity')}
                       className={cn(
                         "w-full px-4 py-2 bg-surface-muted border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-content",
-                        errors.quantity && "border-red-500"
+                        errors.quantity && "border-danger"
                       )}
                     />
-                    {errors.quantity && <p className="text-xs text-red-500 font-bold mt-1">{errors.quantity.message}</p>}
+                    {errors.quantity && <p className="text-xs text-danger font-bold mt-1">{errors.quantity.message}</p>}
                   </div>
 
                   <div>
@@ -1297,10 +1297,10 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                       {...registerSupplier('name')}
                       className={cn(
                         "w-full px-4 py-2 bg-surface-muted border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-content placeholder-content-muted",
-                        supplierErrors.name && "border-red-500"
+                        supplierErrors.name && "border-danger"
                       )}
                     />
-                    {supplierErrors.name && <p className="text-xs text-red-500 font-bold mt-1">{supplierErrors.name.message}</p>}
+                    {supplierErrors.name && <p className="text-xs text-danger font-bold mt-1">{supplierErrors.name.message}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-content-muted mb-1">{t('suppliers.contact_person')}</label>
@@ -1308,10 +1308,10 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                       {...registerSupplier('contactPerson')}
                       className={cn(
                         "w-full px-4 py-2 bg-surface-muted border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-content placeholder-content-muted",
-                        supplierErrors.contactPerson && "border-red-500"
+                        supplierErrors.contactPerson && "border-danger"
                       )}
                     />
-                    {supplierErrors.contactPerson && <p className="text-xs text-red-500 font-bold mt-1">{supplierErrors.contactPerson.message}</p>}
+                    {supplierErrors.contactPerson && <p className="text-xs text-danger font-bold mt-1">{supplierErrors.contactPerson.message}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-content-muted mb-1">{t('suppliers.phone')}</label>
@@ -1327,10 +1327,10 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                       }}
                       className={cn(
                         "w-full px-4 py-2 bg-surface-muted border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-content placeholder-content-muted",
-                        supplierErrors.phone && "border-red-500"
+                        supplierErrors.phone && "border-danger"
                       )}
                     />
-                    {supplierErrors.phone && <p className="text-xs text-red-500 font-bold mt-1">{supplierErrors.phone.message}</p>}
+                    {supplierErrors.phone && <p className="text-xs text-danger font-bold mt-1">{supplierErrors.phone.message}</p>}
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-content-muted mb-1">{t('suppliers.email')}</label>
@@ -1339,10 +1339,10 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                       {...registerSupplier('email')}
                       className={cn(
                         "w-full px-4 py-2 bg-surface-muted border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-content placeholder-content-muted",
-                        supplierErrors.email && "border-red-500"
+                        supplierErrors.email && "border-danger"
                       )}
                     />
-                    {supplierErrors.email && <p className="text-xs text-red-500 font-bold mt-1">{supplierErrors.email.message}</p>}
+                    {supplierErrors.email && <p className="text-xs text-danger font-bold mt-1">{supplierErrors.email.message}</p>}
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-content-muted mb-1">{t('suppliers.address', 'العنوان (اختياري)')}</label>
@@ -1352,10 +1352,10 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                       placeholder={t('suppliers.address_placeholder', 'العنوان (اختياري)')}
                       className={cn(
                         "w-full px-4 py-2 bg-surface-muted border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-content placeholder-content-muted",
-                        supplierErrors.address && "border-red-500"
+                        supplierErrors.address && "border-danger"
                       )}
                     />
-                    {supplierErrors.address && <p className="text-xs text-red-500 font-bold mt-1">{supplierErrors.address.message}</p>}
+                    {supplierErrors.address && <p className="text-xs text-danger font-bold mt-1">{supplierErrors.address.message}</p>}
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-content-muted mb-1">{t('suppliers.specialty')}</label>
@@ -1426,10 +1426,10 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                     {...registerReconcile('actualQuantity')}
                     className={cn(
                       "w-full px-4 py-2 bg-surface-muted border border-border rounded-xl focus:ring-2 focus:ring-warning outline-none text-content",
-                      reconcileErrors.actualQuantity && "border-red-500"
+                      reconcileErrors.actualQuantity && "border-danger"
                     )}
                   />
-                  {reconcileErrors.actualQuantity && <p className="text-xs text-red-500 font-bold mt-1">{reconcileErrors.actualQuantity.message}</p>}
+                  {reconcileErrors.actualQuantity && <p className="text-xs text-danger font-bold mt-1">{reconcileErrors.actualQuantity.message}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-content-muted mb-1">{t('reconciliation.reason')}</label>
@@ -1437,7 +1437,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                     {...registerReconcile('reason')}
                     className={cn(
                       "w-full px-4 py-2 bg-surface-muted border border-border rounded-xl focus:ring-2 focus:ring-warning outline-none text-content",
-                      reconcileErrors.reason && "border-red-500"
+                      reconcileErrors.reason && "border-danger"
                     )}
                   >
                     <option value="">{t('reconciliation.select_reason')}</option>
@@ -1447,7 +1447,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                     <option value="return">{t('inventory.return')}</option>
                     <option value="other">{t('common.other')}</option>
                   </select>
-                  {reconcileErrors.reason && <p className="text-xs text-red-500 font-bold mt-1">{reconcileErrors.reason.message}</p>}
+                  {reconcileErrors.reason && <p className="text-xs text-danger font-bold mt-1">{reconcileErrors.reason.message}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-content-muted mb-1">{t('reconciliation.reconciled_by')}</label>
@@ -1455,7 +1455,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                     {...registerReconcile('staffId')}
                     className={cn(
                       "w-full px-4 py-2 bg-surface-muted border border-border rounded-xl focus:ring-2 focus:ring-warning outline-none text-content",
-                      reconcileErrors.staffId && "border-red-500"
+                      reconcileErrors.staffId && "border-danger"
                     )}
                   >
                     <option value="">{t('common.select_staff')}</option>
@@ -1463,7 +1463,7 @@ export default function Inventory({ tenantId }: { tenantId: string }) {
                       <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
                   </select>
-                  {reconcileErrors.staffId && <p className="text-xs text-red-500 font-bold mt-1">{reconcileErrors.staffId.message}</p>}
+                  {reconcileErrors.staffId && <p className="text-xs text-danger font-bold mt-1">{reconcileErrors.staffId.message}</p>}
                 </div>
                 <button 
                   type="submit"

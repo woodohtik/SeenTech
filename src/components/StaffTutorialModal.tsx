@@ -68,7 +68,7 @@ export default function StaffTutorialModal({ role }: { role?: string | null }) {
               </div>
 
               <div className="bg-surface-muted/30 p-5 rounded-2xl border border-border flex flex-col items-center text-center">
-                <div className="w-12 h-12 bg-emerald-500/10 text-emerald-500 rounded-xl flex items-center justify-center mb-4">
+                <div className="w-12 h-12 bg-success/10 text-success rounded-xl flex items-center justify-center mb-4">
                   <CreditCard size={24} />
                 </div>
                 <h3 className="font-bold text-content mb-2">{t('staff.tutorial_step3_title')}</h3>
@@ -80,7 +80,7 @@ export default function StaffTutorialModal({ role }: { role?: string | null }) {
           <div className="p-6 border-t border-border bg-surface-muted flex justify-end gap-3">
             <button
               onClick={handleDismiss}
-              className="px-6 py-2.5 bg-brand text-white rounded-xl font-bold text-sm hover:bg-brand-dark transition-colors"
+              className="px-6 py-2.5 bg-brand text-white rounded-xl font-bold text-sm hover:bg-brand/90 transition-colors"
             >
               {t('staff.tutorial_got_it')}
             </button>

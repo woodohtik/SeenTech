@@ -1530,7 +1530,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               )}
 
               {isPaying && (
-                <div className="mt-4 p-4 bg-surface rounded-2xl border border-red-500/20 space-y-4 animate-in fade-in slide-in-from-top-2">
+                <div className="mt-4 p-4 bg-surface rounded-2xl border border-danger/20 space-y-4 animate-in fade-in slide-in-from-top-2">
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-content-muted uppercase">{t('orders.pay_amount_now')}</label>
                     <input 
@@ -2241,7 +2241,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                 } as Customer;
                                 setDueDetailsCustomer(matchingCustomer);
                               }}
-                              className="flex items-center gap-1 bg-red-500/10 text-red-600 border border-red-500/20 px-1.5 py-0.5 rounded-md text-[9px] font-black shrink-0 animate-pulse"
+                              className="flex items-center gap-1 bg-danger/10 text-danger border border-danger/20 px-1.5 py-0.5 rounded-md text-[9px] font-black shrink-0 animate-pulse"
                             >
                               <AlertCircle size={10} />
                               <PriceDisplay amount={totalUnpaid} />
@@ -2354,13 +2354,13 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                       </span>
                       <div>
                         {order.remainingAmount > 0 ? (
-                          <span className="bg-red-500/10 text-red-600 border border-red-500/20 px-2 py-0.5 rounded-md text-[10px] font-black inline-flex items-center gap-1 truncate">
-                            <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shrink-0" />
+                          <span className="bg-danger/10 text-danger border border-danger/20 px-2 py-0.5 rounded-md text-[10px] font-black inline-flex items-center gap-1 truncate">
+                            <span className="w-1.5 h-1.5 bg-danger rounded-full animate-pulse shrink-0" />
                             <PriceDisplay amount={order.remainingAmount} />
                           </span>
                         ) : (
-                          <span className="bg-green-500/10 text-green-600 border border-green-500/20 px-2 py-0.5 rounded-md text-[10px] font-black inline-flex items-center gap-1 truncate">
-                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full shrink-0" />
+                          <span className="bg-success/10 text-success border border-success/20 px-2 py-0.5 rounded-md text-[10px] font-black inline-flex items-center gap-1 truncate">
+                            <span className="w-1.5 h-1.5 bg-success rounded-full shrink-0" />
                             {t('orders.fully_paid')}
                           </span>
                         )}
@@ -2456,10 +2456,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                               } as Customer;
                               setDueDetailsCustomer(matchingCustomer);
                             }}
-                            className="flex items-center gap-1 bg-red-500/10 hover:bg-red-500/20 text-red-600 border border-red-500/20 px-2.5 py-1 rounded-full text-xs font-black transition-all animate-pulse"
+                            className="flex items-center gap-1 bg-danger/10 hover:bg-danger/20 text-danger border border-danger/20 px-2.5 py-1 rounded-full text-xs font-black transition-all animate-pulse"
                             title={t('orders.customer_has_dues')}
                           >
-                            <AlertCircle size={14} className="text-red-600" />
+                            <AlertCircle size={14} className="text-danger" />
                             <span><PriceDisplay amount={totalUnpaid} /></span>
                           </button>
                         )}
@@ -2678,7 +2678,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
                 <div className="p-4 bg-danger/10 border border-danger/20 rounded-2xl flex justify-between items-center">
                   <span className="font-bold text-sm text-danger">{t('orders.total_customer_dues')}</span>
-                  <span className="font-mono font-black text-xl text-red-700">
+                  <span className="font-mono font-black text-xl text-danger">
                     <PriceDisplay amount={unpaidOrders.filter(o => o.customerId === dueDetailsCustomer.id).reduce((sum, o) => sum + (o.remainingAmount || 0), 0)} />
                   </span>
                 </div>
@@ -2717,7 +2717,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           <div className="text-xs text-content-muted font-bold">
                             {t('orders.remaining_label')}
                           </div>
-                          <div className="font-mono font-black text-base text-red-600">
+                          <div className="font-mono font-black text-base text-danger">
                             <PriceDisplay amount={o.remainingAmount} />
                           </div>
                           <div className="text-[10px] text-content-muted font-bold">
@@ -3326,14 +3326,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 </div>
 
                 {/* isTest Flag */}
-                <div className="flex items-center gap-3 p-4 bg-amber-500/10 rounded-2xl border border-amber-500/20 mb-8">
+                <div className="flex items-center gap-3 p-4 bg-warning/10 rounded-2xl border border-warning/20 mb-8">
                   <input
                     type="checkbox"
                     id="isTestOrder"
                     {...register('isTest')}
                     className="w-5 h-5 text-brand border-border rounded focus:ring-brand"
                   />
-                  <label htmlFor="isTestOrder" className="text-sm font-bold text-amber-600 flex items-center gap-2">
+                  <label htmlFor="isTestOrder" className="text-sm font-bold text-warning flex items-center gap-2">
                     <Zap size={16} />
                     {t('common.test_data')}
                   </label>

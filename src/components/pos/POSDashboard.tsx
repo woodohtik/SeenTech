@@ -72,14 +72,14 @@ export default function POSDashboard({ tenantId }: POSDashboardProps) {
 
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center bg-gray-50">
+      <div className="flex h-full items-center justify-center bg-surface-muted">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col md:flex-row overflow-hidden bg-gray-100" dir="rtl">
+    <div className="h-full flex flex-col md:flex-row overflow-hidden bg-surface-muted" dir="rtl">
       {/* Main Content Area: Customers + Products */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         <div className="p-4 space-y-4">

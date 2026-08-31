@@ -67,7 +67,7 @@ export default function Select({
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         className={cn(
-          "w-full h-[var(--size-button-height)] bg-surface border border-border dark:border-gray-800 rounded-[var(--radius-md)] px-4 text-[var(--size-text-base)] font-semibold transition-all outline-none focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand flex items-center justify-between group",
+          "w-full h-[var(--size-button-height)] bg-surface border border-border rounded-[var(--radius-md)] px-4 text-[var(--size-text-base)] font-semibold transition-all outline-none focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand flex items-center justify-between group",
           isOpen ? "border-brand shadow-md shadow-brand/5 bg-surface" : "hover:border-brand/20 hover:bg-surface-muted/30",
           className
         )}
@@ -78,14 +78,14 @@ export default function Select({
           selectedOption ? "text-content" : "text-content-muted"
         )}>
           {selectedOption?.icon && (
-            <span className="w-4 h-4 flex items-center justify-center flex-shrink-0 text-gray-400 group-hover:text-brand transition-colors [&>svg]:w-4 [&>svg]:h-4">
+            <span className="w-4 h-4 flex items-center justify-center flex-shrink-0 text-content-muted group-hover:text-brand transition-colors [&>svg]:w-4 [&>svg]:h-4">
               {selectedOption.icon}
             </span>
           )}
           <span className="truncate">{selectedOption ? selectedOption.label : resolvedPlaceholder}</span>
         </span>
         <div className={cn(
-          "absolute top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-brand transition-colors flex-shrink-0 pointer-events-none",
+          "absolute top-1/2 -translate-y-1/2 text-content-muted group-hover:text-brand transition-colors flex-shrink-0 pointer-events-none",
           isRtl ? "left-4" : "right-4"
         )}>
           <motion.div
@@ -104,7 +104,7 @@ export default function Select({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.95 }}
             transition={{ duration: 0.12, ease: "easeOut" }}
-            className="absolute z-50 w-full mt-1.5 bg-surface rounded-xl border border-border dark:border-gray-800 shadow-lg drop-shadow-sm overflow-hidden max-h-64 overflow-y-auto p-1.5"
+            className="absolute z-50 w-full mt-1.5 bg-surface rounded-xl border border-border shadow-lg drop-shadow-sm overflow-hidden max-h-64 overflow-y-auto p-1.5"
             role="listbox"
           >
             <div className="space-y-0.5">
@@ -123,14 +123,14 @@ export default function Select({
                     isRtl ? "text-right" : "text-left",
                     value === option.value
                       ? "bg-brand/10 text-brand font-bold"
-                      : "text-content hover:bg-surface-muted hover:text-content dark:hover:bg-gray-800"
+                      : "text-content hover:bg-surface-muted hover:text-content"
                   )}
                 >
                   <span className="flex items-center gap-3">
                     {option.icon && (
                       <span className={cn(
                         "w-4 h-4 flex items-center justify-center flex-shrink-0 transition-colors [&>svg]:w-4 [&>svg]:h-4",
-                        value === option.value ? "text-brand" : "text-gray-400 group-hover/item:text-brand"
+                        value === option.value ? "text-brand" : "text-content-muted group-hover/item:text-brand"
                       )}>
                         {option.icon}
                       </span>

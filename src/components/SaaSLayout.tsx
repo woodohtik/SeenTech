@@ -429,11 +429,11 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
               <AlertCircle size={18} />
               <span>{t('common.support_mode_desc')}</span>
             </div>
-            <div className="h-4 w-px bg-white/30 mx-2" />
+            <div className="h-4 w-px bg-surface/30 mx-2" />
             <span className="text-xs font-bold">{t('common.current_subscriber')}: {impersonatedTenantName || impersonationTenantId}</span>
             <button 
               onClick={stopImpersonation}
-              className="bg-white text-warning px-4 py-1 rounded-full text-xs font-black hover:bg-white/90 transition-all ml-4"
+              className="bg-surface text-warning px-4 py-1 rounded-full text-xs font-black hover:bg-surface/90 transition-all ml-4"
             >
               {t('common.end_impersonation')}
             </button>
@@ -680,45 +680,45 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className={cn("w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100", isRtl ? "text-right" : "text-left")}
+              className={cn("w-full max-w-md bg-surface rounded-3xl shadow-2xl overflow-hidden border border-border", isRtl ? "text-right" : "text-left")}
             >
               <div className="p-8 text-center bg-brand/5 border-b border-brand/10">
                 <div className="w-16 h-16 bg-brand/10 text-brand rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Lock size={32} />
                 </div>
-                <h2 className="text-2xl font-black text-gray-900 tracking-tight">{t('saas.set_new_password_title')}</h2>
-                <p className="text-sm text-gray-500 font-medium mt-1 leading-relaxed">
+                <h2 className="text-2xl font-black text-content tracking-tight">{t('saas.set_new_password_title')}</h2>
+                <p className="text-sm text-content-muted font-medium mt-1 leading-relaxed">
                   {t('saas.set_new_password_desc')}
                 </p>
               </div>
 
               <form onSubmit={handleUpdatePassword} className="p-8 space-y-6">
                 {passError && (
-                  <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex gap-3 text-red-600 text-sm font-medium">
+                  <div className="p-4 bg-danger border border-danger rounded-2xl flex gap-3 text-danger text-sm font-medium">
                     <AlertCircle className="shrink-0" size={20} />
                     <span>{passError}</span>
                   </div>
                 )}
 
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-700 block">{t('saas.current_temp_password')} <span className="text-danger">*</span></label>
+                  <label className="text-xs font-black text-content block">{t('saas.current_temp_password')} <span className="text-danger">*</span></label>
                   <div className="relative">
                     <input
                       type={showCurrentPass ? "text" : "password"}
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       required
-                      className="w-full h-12 ps-10 pe-10 rounded-2xl border border-gray-200 focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all font-bold text-gray-900"
+                      className="w-full h-12 ps-10 pe-10 rounded-2xl border border-border focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all font-bold text-content"
                       placeholder="••••••••"
                     />
-                    <div className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <div className="absolute start-3 top-1/2 -translate-y-1/2 text-content-muted">
                       <Lock size={18} />
                     </div>
                     <button
                       type="button"
                       onClick={() => setShowCurrentPass(!showCurrentPass)}
                       aria-label={showCurrentPass ? t('saas.hide_password') : t('saas.show_password')}
-                      className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute end-3 top-1/2 -translate-y-1/2 text-content-muted hover:text-content"
                     >
                       {showCurrentPass ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -726,24 +726,24 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-700 block">{t('saas.new_password')} <span className="text-danger">*</span></label>
+                  <label className="text-xs font-black text-content block">{t('saas.new_password')} <span className="text-danger">*</span></label>
                   <div className="relative">
                     <input
                       type={showPass1 ? "text" : "password"}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       required
-                      className="w-full h-12 ps-10 pe-10 rounded-2xl border border-gray-200 focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all font-bold text-gray-900"
+                      className="w-full h-12 ps-10 pe-10 rounded-2xl border border-border focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all font-bold text-content"
                       placeholder="••••••••"
                     />
-                    <div className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <div className="absolute start-3 top-1/2 -translate-y-1/2 text-content-muted">
                       <Lock size={18} />
                     </div>
                     <button
                       type="button"
                       onClick={() => setShowPass1(!showPass1)}
                       aria-label={showPass1 ? t('saas.hide_password') : t('saas.show_password')}
-                      className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute end-3 top-1/2 -translate-y-1/2 text-content-muted hover:text-content"
                     >
                       {showPass1 ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -751,24 +751,24 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-700 block">{t('saas.confirm_new_password')} <span className="text-danger">*</span></label>
+                  <label className="text-xs font-black text-content block">{t('saas.confirm_new_password')} <span className="text-danger">*</span></label>
                   <div className="relative">
                     <input
                       type={showPass2 ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
-                      className="w-full h-12 ps-10 pe-10 rounded-2xl border border-gray-200 focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all font-bold text-gray-900"
+                      className="w-full h-12 ps-10 pe-10 rounded-2xl border border-border focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all font-bold text-content"
                       placeholder="••••••••"
                     />
-                    <div className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <div className="absolute start-3 top-1/2 -translate-y-1/2 text-content-muted">
                       <Lock size={18} />
                     </div>
                     <button
                       type="button"
                       onClick={() => setShowPass2(!showPass2)}
                       aria-label={showPass2 ? t('saas.hide_password') : t('saas.show_password')}
-                      className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute end-3 top-1/2 -translate-y-1/2 text-content-muted hover:text-content"
                     >
                       {showPass2 ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>

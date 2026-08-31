@@ -1321,14 +1321,14 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                 <span className="font-mono font-bold text-content">{selectedCustomer.phone}</span>
               </div>
               {customerUnpaidBalance > 0 ? (
-                <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-lg flex justify-between items-center font-bold">
+                <div className="mt-2 p-2 bg-danger/10 border border-danger/20 text-danger rounded-lg flex justify-between items-center font-bold">
                   <span>{t('pos.previous_due_balance')}</span>
-                  <span className="font-mono font-black text-sm text-red-700 dark:text-red-300">
+                  <span className="font-mono font-black text-sm text-danger">
                     <PriceDisplay amount={customerUnpaidBalance} />
                   </span>
                 </div>
               ) : (
-                <div className="mt-2 p-1.5 px-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg text-center font-bold text-[11px]">
+                <div className="mt-2 p-1.5 px-2 bg-success/10 border border-success/20 text-success rounded-lg text-center font-bold text-[11px]">
                   {t('pos.no_previous_due')}
                 </div>
               )}
@@ -1413,7 +1413,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                       <span className="w-6 text-center font-bold text-content">{item.quantity}</span>
                       <button onClick={() => updateQuantity(item.id!, 1)} aria-label={t('pos.increase_quantity')} className="w-8 h-8 flex items-center justify-center hover:bg-surface-muted rounded transition-colors">+</button>
                     </div>
-                    <button onClick={() => removeFromCart(item.id!)} aria-label={t('pos.remove_item')} className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer">
+                    <button onClick={() => removeFromCart(item.id!)} aria-label={t('pos.remove_item')} className="p-2 text-danger hover:bg-danger/10 rounded-lg transition-colors cursor-pointer">
                       <Trash2 size={18} />
                     </button>
                   </div>
@@ -1484,7 +1484,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                setPaidAmount(totalAmount);
             }}
             disabled={cart.length === 0}
-            className="w-full py-3.5 sm:py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-base sm:text-lg transition-all shadow-md shadow-emerald-600/10 active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:scale-100 flex items-center justify-center gap-2.5 cursor-pointer"
+            className="w-full py-3.5 sm:py-4 bg-success hover:bg-success/90 text-white rounded-2xl font-black text-base sm:text-lg transition-all shadow-md shadow-success/10 active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:scale-100 flex items-center justify-center gap-2.5 cursor-pointer"
           >
             <CreditCard size={22} />
             <span>{t('pos.checkout_and_pay')}</span>
@@ -1698,8 +1698,8 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       <span className={cn(
                         "text-[10px] font-bold px-2 py-0.5 rounded-full",
                         (branchStock[item.id] || 0) <= 0
-                          ? "bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400"
-                          : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400"
+                          ? "bg-danger/10 text-danger"
+                          : "bg-success/10 text-success"
                       )}>
                         {t('inventory.available')}: {branchStock[item.id] || 0}
                       </span>
@@ -1743,8 +1743,8 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                         <span className={cn(
                           "text-[10px] font-bold px-2 py-0.5 rounded-full",
                           (branchStock[item.id] || 0) <= 0
-                            ? "bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400"
-                            : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400"
+                            ? "bg-danger/10 text-danger"
+                            : "bg-success/10 text-success"
                         )}>
                           {t('inventory.available')}: {branchStock[item.id] || 0}
                         </span>
@@ -1816,7 +1816,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
         >
           <div className="relative">
             <ShoppingCart size={28} />
-            <span className="absolute -top-3 -right-3 bg-red-500 text-white text-[10px] font-black w-7 h-7 rounded-full flex items-center justify-center ring-4 ring-white shadow-lg">
+            <span className="absolute -top-3 -right-3 bg-danger text-white text-[10px] font-black w-7 h-7 rounded-full flex items-center justify-center ring-4 ring-white shadow-lg">
               {cart.length}
             </span>
           </div>
@@ -1860,7 +1860,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     <h2 className="text-2xl font-black text-content mb-1">{t('pos.invoice_issued')}</h2>
                     <p className="text-content-muted">{completedOrder.invoiceNumber}</p>
                   </div>
-                  <div className="w-full max-h-[50vh] overflow-y-auto bg-gray-100 rounded-xl border border-border p-4 flex justify-center custom-scrollbar">
+                  <div className="w-full max-h-[50vh] overflow-y-auto bg-surface-muted rounded-xl border border-border p-4 flex justify-center custom-scrollbar">
                     {invoiceData && <ThermalInvoice data={invoiceData} size="80mm" />}
                   </div>
                   <div className="grid grid-cols-2 gap-3 w-full pt-4 print:hidden">
@@ -1934,7 +1934,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   <div className="space-y-6 flex-1">
                     {/* Customer Unpaid Balance Alert */}
                     {selectedCustomer && customerUnpaidBalance > 0 && (
-                      <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl flex items-center justify-between text-red-600 gap-3">
+                      <div className="bg-danger/10 border border-danger/20 p-4 rounded-2xl flex items-center justify-between text-danger gap-3">
                         <div className="flex items-center gap-2.5">
                           <AlertTriangle size={22} />
                           <div>
@@ -1942,7 +1942,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                             <div className="text-xs opacity-80">{selectedCustomer.name}</div>
                           </div>
                         </div>
-                        <span className="font-mono font-black text-lg text-red-700 whitespace-nowrap">
+                        <span className="font-mono font-black text-lg text-danger whitespace-nowrap">
                           <PriceDisplay amount={customerUnpaidBalance} />
                         </span>
                       </div>
@@ -1953,7 +1953,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       <label className="block text-sm font-bold text-content mb-3">{t('tax_invoices.invoice_type')}</label>
                       <div className="flex bg-surface-muted p-1 rounded-xl">
                         <button
-                          className={cn("flex-1 py-2 text-sm font-bold rounded-lg transition-colors", !isB2B ? "bg-white shadow-sm text-brand" : "text-content-muted hover:text-content")}
+                          className={cn("flex-1 py-2 text-sm font-bold rounded-lg transition-colors", !isB2B ? "bg-surface shadow-sm text-brand" : "text-content-muted hover:text-content")}
                           onClick={() => {
                             setIsB2B(false);
                             setB2bData({ companyName: '', trn: '' });
@@ -1962,7 +1962,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                           {t('pos.simple_invoice')}
                         </button>
                         <button
-                          className={cn("flex-1 py-2 text-sm font-bold rounded-lg transition-colors", isB2B ? "bg-white shadow-sm text-brand" : "text-content-muted hover:text-content")}
+                          className={cn("flex-1 py-2 text-sm font-bold rounded-lg transition-colors", isB2B ? "bg-surface shadow-sm text-brand" : "text-content-muted hover:text-content")}
                           onClick={() => {
                             setIsB2B(true);
                             setIsB2bModalOpen(true);
@@ -2086,7 +2086,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                         <span className="font-bold text-content line-through opacity-70"><PriceDisplay amount={totalAmount + calculatedDiscountAmount} /></span>
                       </div>
                       {calculatedDiscountAmount > 0 && (
-                        <div className="flex justify-between items-center mb-2 px-1 text-red-500 font-bold">
+                        <div className="flex justify-between items-center mb-2 px-1 text-danger font-bold">
                           <span>{t('pos.discount')}:</span>
                           <span>-<PriceDisplay amount={calculatedDiscountAmount} /></span>
                         </div>
@@ -2104,8 +2104,8 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                         </div>
                         {totalAmount - paidAmount > 0 && (
                             <div className="flex flex-col items-end">
-                                <span className="text-[10px] text-red-500 font-bold uppercase">{t('pos.remaining_amount')}</span>
-                                <span className="text-lg font-bold text-red-600"><PriceDisplay amount={totalAmount - paidAmount} /></span>
+                                <span className="text-[10px] text-danger font-bold uppercase">{t('pos.remaining_amount')}</span>
+                                <span className="text-lg font-bold text-danger"><PriceDisplay amount={totalAmount - paidAmount} /></span>
                             </div>
                         )}
                     </div>
@@ -2123,7 +2123,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                             localStorage.setItem('pos_auto_print', String(val));
                           }} 
                         />
-                        <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand"></div>
+                        <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-surface after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand"></div>
                       </label>
                     </div>
 
@@ -2189,11 +2189,11 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                 </div>
 
                 {/* Main Cash Drawer Indicator */}
-                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-3xl p-5 text-center space-y-2">
-                  <span className="text-xs font-black text-emerald-600 block uppercase tracking-widest">
+                <div className="bg-success/10 border border-success/20 rounded-3xl p-5 text-center space-y-2">
+                  <span className="text-xs font-black text-success block uppercase tracking-widest">
                     {t('sales.expected_cash')}
                   </span>
-                  <div className="text-3xl font-black text-emerald-500 tracking-tight">
+                  <div className="text-3xl font-black text-success tracking-tight">
                     <PriceDisplay amount={cashDrawerBalance} />
                   </div>
                   <p className="text-[10px] text-content-muted">
@@ -2209,7 +2209,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     {/* Opening Balance */}
                     <div className="flex items-center justify-between p-3.5 bg-surface-muted/30 border border-border rounded-2xl">
                       <div className="flex items-center gap-2.5">
-                        <div className="p-2 bg-blue-500/10 text-blue-500 rounded-xl">
+                        <div className="p-2 bg-info/10 text-info rounded-xl">
                           <Coins size={18} />
                         </div>
                         <span className="text-xs font-bold text-content">{t('sales.opening_balance')}</span>
@@ -2222,12 +2222,12 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     {/* Cash Sales */}
                     <div className="flex items-center justify-between p-3.5 bg-surface-muted/30 border border-border rounded-2xl">
                       <div className="flex items-center gap-2.5">
-                        <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-xl">
+                        <div className="p-2 bg-success/10 text-success rounded-xl">
                           <TrendingUp size={18} />
                         </div>
                         <span className="text-xs font-bold text-content">{t('sales.cash_sales')}</span>
                       </div>
-                      <span className="text-sm font-black text-emerald-500">
+                      <span className="text-sm font-black text-success">
                         + <PriceDisplay amount={cashDrawerBreakdown.sales} />
                       </span>
                     </div>
@@ -2236,12 +2236,12 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     {cashDrawerBreakdown.deposits > 0 && (
                       <div className="flex items-center justify-between p-3.5 bg-surface-muted/30 border border-border rounded-2xl">
                         <div className="flex items-center gap-2.5">
-                          <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-xl">
+                          <div className="p-2 bg-success/10 text-success rounded-xl">
                             <Plus size={18} />
                           </div>
                           <span className="text-xs font-bold text-content">{t('sales.cash_deposits')}</span>
                         </div>
-                        <span className="text-sm font-black text-emerald-500">
+                        <span className="text-sm font-black text-success">
                           + <PriceDisplay amount={cashDrawerBreakdown.deposits} />
                         </span>
                       </div>
@@ -2251,12 +2251,12 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     {cashDrawerBreakdown.returns > 0 && (
                       <div className="flex items-center justify-between p-3.5 bg-surface-muted/30 border border-border rounded-2xl">
                         <div className="flex items-center gap-2.5">
-                          <div className="p-2 bg-red-500/10 text-red-500 rounded-xl">
+                          <div className="p-2 bg-danger/10 text-danger rounded-xl">
                             <TrendingDown size={18} />
                           </div>
                           <span className="text-xs font-bold text-content">{t('sales.cash_returns')}</span>
                         </div>
-                        <span className="text-sm font-black text-red-500">
+                        <span className="text-sm font-black text-danger">
                           - <PriceDisplay amount={cashDrawerBreakdown.returns} />
                         </span>
                       </div>
@@ -2266,12 +2266,12 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     {cashDrawerBreakdown.withdrawals > 0 && (
                       <div className="flex items-center justify-between p-3.5 bg-surface-muted/30 border border-border rounded-2xl">
                         <div className="flex items-center gap-2.5">
-                          <div className="p-2 bg-red-500/10 text-red-500 rounded-xl">
+                          <div className="p-2 bg-danger/10 text-danger rounded-xl">
                             <X size={18} />
                           </div>
                           <span className="text-xs font-bold text-content">{t('sales.expenses_withdrawals')}</span>
                         </div>
-                        <span className="text-sm font-black text-red-500">
+                        <span className="text-sm font-black text-danger">
                           - <PriceDisplay amount={cashDrawerBreakdown.withdrawals} />
                         </span>
                       </div>
@@ -2558,20 +2558,20 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                 leaveFrom="opacity-100 translate-y-0 sm:scale-100"
                 leaveTo="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
               >
-                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-t-3xl sm:rounded-3xl bg-white p-6 text-right align-middle shadow-2xl transition-all border border-border">
+                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-t-3xl sm:rounded-3xl bg-surface p-6 text-right align-middle shadow-2xl transition-all border border-border">
                   <Dialog.Title
                     as="h3"
-                    className="text-lg font-bold leading-6 text-gray-900 mb-4 flex items-center justify-between"
+                    className="text-lg font-bold leading-6 text-content mb-4 flex items-center justify-between"
                   >
                     {t('pos.add_new_customer')}
-                    <button aria-label={t('common.close')} onClick={() => setIsAddCustomerModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                    <button aria-label={t('common.close')} onClick={() => setIsAddCustomerModalOpen(false)} className="text-content-muted hover:text-content transition-colors">
                       <X size={20} />
                     </button>
                   </Dialog.Title>
                   
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('pos.customer_name')} <span className="text-red-500">*</span></label>
+                      <label className="block text-sm font-medium text-content mb-1">{t('pos.customer_name')} <span className="text-danger">*</span></label>
                       <input 
                         type="text" 
                         value={newCustomerName}
@@ -2581,7 +2581,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('login.phone')} <span className="text-red-500">*</span></label>
+                      <label className="block text-sm font-medium text-content mb-1">{t('login.phone')} <span className="text-danger">*</span></label>
                       <input 
                         type="tel" 
                         value={newCustomerPhone}
@@ -2593,7 +2593,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('pos.trn_label_clean')} <span className="text-gray-400 text-xs font-normal">{t('pos.for_b2b_only')}</span></label>
+                      <label className="block text-sm font-medium text-content mb-1">{t('pos.trn_label_clean')} <span className="text-content-muted text-xs font-normal">{t('pos.for_b2b_only')}</span></label>
                       <input 
                         type="text" 
                         value={newCustomerVat}
@@ -2607,7 +2607,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   <div className="mt-6 flex justify-end gap-3">
                     <button
                       type="button"
-                      className="px-4 py-2 font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+                      className="px-4 py-2 font-medium text-content bg-surface-muted hover:bg-border/40 rounded-xl transition-colors"
                       onClick={() => setIsAddCustomerModalOpen(false)}
                     >
                       {t('common.cancel')}
@@ -2643,7 +2643,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
           data-paper={invoiceData.invoiceType === 'standard_b2b' ? 'A4' : '80mm'}
           className={`fixed top-0 left-0 opacity-0 pointer-events-none ${
             invoiceData.invoiceType === 'standard_b2b' ? 'w-[194mm]' : 'w-[80mm]'
-          } print:opacity-100 print:pointer-events-auto print:static print:w-full print:block print:max-w-none print:m-0 print:p-0 bg-white z-[99999]`}
+          } print:opacity-100 print:pointer-events-auto print:static print:w-full print:block print:max-w-none print:m-0 print:p-0 bg-surface z-[99999]`}
           dir="rtl"
         >
           {invoiceData.invoiceType === "standard_b2b" ? (
@@ -2668,7 +2668,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-bold text-content mb-2">{t('pos.company_name')} <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-bold text-content mb-2">{t('pos.company_name')} <span className="text-danger">*</span></label>
                 <input
                   type="text"
                   placeholder={t('pos.company_name_placeholder')}
@@ -2678,7 +2678,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-content mb-2">{t('pos.trn_label_clean')} <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-bold text-content mb-2">{t('pos.trn_label_clean')} <span className="text-danger">*</span></label>
                 <input
                   type="text"
                   placeholder="300000000000003"
@@ -2754,7 +2754,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                         {shortcut.keys.map((key, kIdx) => (
                           <React.Fragment key={kIdx}>
                             {kIdx > 0 && <span className="text-content-muted self-center font-bold text-xs">+</span>}
-                            <kbd className="px-2 py-1 bg-white dark:bg-zinc-800 border border-border rounded-lg shadow-sm font-mono text-xs font-black text-brand">
+                            <kbd className="px-2 py-1 bg-surface dark:bg-content border border-border rounded-lg shadow-sm font-mono text-xs font-black text-brand">
                               {key}
                             </kbd>
                           </React.Fragment>

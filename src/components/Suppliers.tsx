@@ -551,7 +551,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                 <label htmlFor="supplier-name" className="block text-sm font-medium text-content-muted mb-1">{t('procurement.company_name', 'اسم الشركة/المورد')}</label>
                 <div className={cn(
                   "flex items-center gap-2.5 px-3.5 py-2.5 bg-surface-muted border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand focus-within:border-transparent transition-all",
-                  errors.name && "border-red-500"
+                  errors.name && "border-danger"
                 )}>
                   <Building size={18} className="text-content-muted shrink-0" />
                   <input
@@ -561,13 +561,13 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                     className="w-full bg-transparent border-none p-0 outline-none text-content focus:ring-0 text-sm font-medium"
                   />
                 </div>
-                {errors.name && <p className="text-xs text-red-500 font-bold mt-1">{errors.name.message}</p>}
+                {errors.name && <p className="text-xs text-danger font-bold mt-1">{errors.name.message}</p>}
               </div>
               <div>
                 <label htmlFor="supplier-contact-person" className="block text-sm font-medium text-content-muted mb-1">{t('procurement.contact_person', 'الشخص المسؤول')}</label>
                 <div className={cn(
                   "flex items-center gap-2.5 px-3.5 py-2.5 bg-surface-muted border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand focus-within:border-transparent transition-all",
-                  errors.contactPerson && "border-red-500"
+                  errors.contactPerson && "border-danger"
                 )}>
                   <User size={18} className="text-content-muted shrink-0" />
                   <input
@@ -577,14 +577,14 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                     className="w-full bg-transparent border-none p-0 outline-none text-content focus:ring-0 text-sm font-medium"
                   />
                 </div>
-                {errors.contactPerson && <p className="text-xs text-red-500 font-bold mt-1">{errors.contactPerson.message}</p>}
+                {errors.contactPerson && <p className="text-xs text-danger font-bold mt-1">{errors.contactPerson.message}</p>}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="supplier-email" className="block text-sm font-medium text-content-muted mb-1">{t('procurement.email', 'البريد الإلكتروني')}</label>
                   <div className={cn(
                     "flex items-center gap-2.5 px-3.5 py-2.5 bg-surface-muted border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand focus-within:border-transparent transition-all",
-                    errors.email && "border-red-500"
+                    errors.email && "border-danger"
                   )}>
                     <Mail size={18} className="text-content-muted shrink-0" />
                     <input
@@ -595,13 +595,13 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                       className="w-full bg-transparent border-none p-0 outline-none text-content focus:ring-0 text-sm font-medium"
                     />
                   </div>
-                  {errors.email && <p className="text-xs text-red-500 font-bold mt-1">{errors.email.message}</p>}
+                  {errors.email && <p className="text-xs text-danger font-bold mt-1">{errors.email.message}</p>}
                 </div>
                 <div>
                   <label htmlFor="supplier-phone" className="block text-sm font-medium text-content-muted mb-1">{t('procurement.phone', 'رقم الهاتف')}</label>
                   <div className={cn(
                     "flex items-center gap-2.5 px-3.5 py-2.5 bg-surface-muted border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand focus-within:border-transparent transition-all",
-                    errors.phone && "border-red-500"
+                    errors.phone && "border-danger"
                   )}>
                     <Phone size={18} className="text-content-muted shrink-0" />
                     <input
@@ -612,7 +612,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                       className="w-full bg-transparent border-none p-0 outline-none text-content focus:ring-0 text-sm font-medium"
                     />
                   </div>
-                  {errors.phone && <p className="text-xs text-red-500 font-bold mt-1">{errors.phone.message}</p>}
+                  {errors.phone && <p className="text-xs text-danger font-bold mt-1">{errors.phone.message}</p>}
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -620,7 +620,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                   <label htmlFor="supplier-tax-number" className="block text-sm font-medium text-content-muted mb-1">{t('procurement.tax_number', 'الرقم الضريبي (اختياري)')}</label>
                   <div className={cn(
                     "flex items-center gap-2.5 px-3.5 py-2.5 bg-surface-muted border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand focus-within:border-transparent transition-all",
-                    errors.taxNumber && "border-red-500"
+                    errors.taxNumber && "border-danger"
                   )}>
                     <FileText size={18} className="text-content-muted shrink-0" />
                     <input
@@ -630,7 +630,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                       className="w-full bg-transparent border-none p-0 outline-none text-content focus:ring-0 text-sm font-medium"
                     />
                   </div>
-                  {errors.taxNumber && <p className="text-xs text-red-500 font-bold mt-1">{errors.taxNumber.message}</p>}
+                  {errors.taxNumber && <p className="text-xs text-danger font-bold mt-1">{errors.taxNumber.message}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-content-muted mb-1">{t('procurement.category', 'التصنيف')}</label>
@@ -640,7 +640,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                     render={({ field }) => (
                       <SmartSelect
                         {...field}
-                        className={cn("w-full", errors.category && "ring-2 ring-red-500")}
+                        className={cn("w-full", errors.category && "ring-2 ring-danger")}
                         options={[
                           { value: 'fabric', label: t('procurement.category_fabric', 'أقمشة') },
                           { value: 'accessories', label: t('procurement.category_accessories', 'إكسسوارات') },
@@ -652,14 +652,14 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                       />
                     )}
                   />
-                  {errors.category && <p className="text-xs text-red-500 font-bold mt-1">{errors.category.message}</p>}
+                  {errors.category && <p className="text-xs text-danger font-bold mt-1">{errors.category.message}</p>}
                 </div>
               </div>
               <div>
                 <label htmlFor="supplier-address" className="block text-sm font-medium text-content-muted mb-1">{t('procurement.address', 'العنوان (اختياري)')}</label>
                 <div className={cn(
                   "flex items-start gap-2.5 px-3.5 py-2.5 bg-surface-muted border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand focus-within:border-transparent transition-all",
-                  errors.address && "border-red-500"
+                  errors.address && "border-danger"
                 )}>
                   <MapPin size={18} className="text-content-muted shrink-0 mt-0.5" />
                   <textarea
@@ -669,7 +669,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                     className="w-full bg-transparent border-none p-0 outline-none h-20 resize-none text-content focus:ring-0 text-sm font-medium"
                   />
                 </div>
-                {errors.address && <p className="text-xs text-red-500 font-bold mt-1">{errors.address.message}</p>}
+                {errors.address && <p className="text-xs text-danger font-bold mt-1">{errors.address.message}</p>}
               </div>
               <button 
                 type="submit"

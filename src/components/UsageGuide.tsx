@@ -12,8 +12,8 @@ const INSTRUCTIONS = [
     contentKey: 'usage_guide.customer.content',
     actionLink: '/sales',
     actionTextKey: 'usage_guide.customer.action',
-    color: 'text-blue-600',
-    bg: 'bg-blue-100'
+    color: 'text-info',
+    bg: 'bg-info'
   },
   {
     id: 'measurements',
@@ -22,8 +22,8 @@ const INSTRUCTIONS = [
     contentKey: 'usage_guide.measurements.content',
     actionLink: '/customers',
     actionTextKey: 'usage_guide.measurements.action',
-    color: 'text-amber-600',
-    bg: 'bg-amber-100'
+    color: 'text-warning',
+    bg: 'bg-warning'
   },
   {
     id: 'order',
@@ -32,8 +32,8 @@ const INSTRUCTIONS = [
     contentKey: 'usage_guide.order.content',
     actionLink: '/sales',
     actionTextKey: 'usage_guide.order.action',
-    color: 'text-emerald-600',
-    bg: 'bg-emerald-100'
+    color: 'text-success',
+    bg: 'bg-success'
   }
 ];
 

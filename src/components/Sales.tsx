@@ -352,9 +352,9 @@ export default function Sales({ tenantId }: { tenantId: string }) {
             {activeShift && (
               <button
                 onClick={() => setIsCashDrawerDetailsOpen(true)}
-                className="flex md:hidden items-center gap-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-3 py-1.5 rounded-xl border border-emerald-500/20 text-xs font-black cursor-pointer shadow-sm active:scale-95"
+                className="flex md:hidden items-center gap-1.5 bg-success/10 text-success px-3 py-1.5 rounded-xl border border-success/20 text-xs font-black cursor-pointer shadow-sm active:scale-95"
               >
-                <Wallet size={14} className="text-emerald-500 shrink-0" />
+                <Wallet size={14} className="text-success shrink-0" />
                 <span>
                   <PriceDisplay amount={cashDrawerBalance} />
                 </span>
@@ -378,12 +378,12 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                 {/* Desktop Cash Drawer */}
                 <button
                   onClick={() => setIsCashDrawerDetailsOpen(true)}
-                  className="hidden md:flex items-center gap-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-3.5 py-1.5 rounded-xl border border-emerald-500/20 shadow-sm hover:bg-emerald-500/20 transition-all cursor-pointer active:scale-95 shrink-0"
+                  className="hidden md:flex items-center gap-2 bg-success/10 text-success px-3.5 py-1.5 rounded-xl border border-success/20 shadow-sm hover:bg-success/20 transition-all cursor-pointer active:scale-95 shrink-0"
                   title={t('sales.cash_drawer_tooltip')}
                 >
-                  <Wallet size={16} className="text-emerald-500 shrink-0" />
-                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">{t('sales.cash_drawer')}:</span>
-                  <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
+                  <Wallet size={16} className="text-success shrink-0" />
+                  <span className="text-xs font-bold text-success">{t('sales.cash_drawer')}:</span>
+                  <span className="text-sm font-black text-success">
                     <PriceDisplay amount={cashDrawerBalance} />
                   </span>
                 </button>
@@ -683,11 +683,11 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                 </div>
 
                 {/* Main Cash Drawer Indicator */}
-                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-3xl p-5 text-center space-y-2">
-                  <span className="text-xs font-black text-emerald-600 block uppercase tracking-widest">
+                <div className="bg-success/10 border border-success/20 rounded-3xl p-5 text-center space-y-2">
+                  <span className="text-xs font-black text-success block uppercase tracking-widest">
                     {t('sales.expected_cash')}
                   </span>
-                  <div className="text-3xl font-black text-emerald-500 tracking-tight">
+                  <div className="text-3xl font-black text-success tracking-tight">
                     <PriceDisplay amount={cashDrawerBalance} />
                   </div>
                   <p className="text-[10px] text-content-muted">
@@ -703,7 +703,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                     {/* Opening Balance */}
                     <div className="flex items-center justify-between p-3.5 bg-surface-muted/30 border border-border rounded-2xl">
                       <div className="flex items-center gap-2.5">
-                        <div className="p-2 bg-blue-500/10 text-blue-500 rounded-xl">
+                        <div className="p-2 bg-info/10 text-info rounded-xl">
                           <Coins size={18} />
                         </div>
                         <span className="text-xs font-bold text-content">{t('sales.opening_balance')}</span>
@@ -716,12 +716,12 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                     {/* Cash Sales */}
                     <div className="flex items-center justify-between p-3.5 bg-surface-muted/30 border border-border rounded-2xl">
                       <div className="flex items-center gap-2.5">
-                        <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-xl">
+                        <div className="p-2 bg-success/10 text-success rounded-xl">
                           <TrendingUp size={18} />
                         </div>
                         <span className="text-xs font-bold text-content">{t('sales.cash_sales')}</span>
                       </div>
-                      <span className="text-sm font-black text-emerald-500">
+                      <span className="text-sm font-black text-success">
                         + <PriceDisplay amount={cashDrawerBreakdown.sales} />
                       </span>
                     </div>
@@ -730,12 +730,12 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                     {cashDrawerBreakdown.deposits > 0 && (
                       <div className="flex items-center justify-between p-3.5 bg-surface-muted/30 border border-border rounded-2xl">
                         <div className="flex items-center gap-2.5">
-                          <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-xl">
+                          <div className="p-2 bg-success/10 text-success rounded-xl">
                             <Plus size={18} />
                           </div>
                           <span className="text-xs font-bold text-content">{t('sales.cash_deposits')}</span>
                         </div>
-                        <span className="text-sm font-black text-emerald-500">
+                        <span className="text-sm font-black text-success">
                           + <PriceDisplay amount={cashDrawerBreakdown.deposits} />
                         </span>
                       </div>
@@ -745,12 +745,12 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                     {cashDrawerBreakdown.returns > 0 && (
                       <div className="flex items-center justify-between p-3.5 bg-surface-muted/30 border border-border rounded-2xl">
                         <div className="flex items-center gap-2.5">
-                          <div className="p-2 bg-red-500/10 text-red-500 rounded-xl">
+                          <div className="p-2 bg-danger/10 text-danger rounded-xl">
                             <TrendingDown size={18} />
                           </div>
                           <span className="text-xs font-bold text-content">{t('sales.cash_returns')}</span>
                         </div>
-                        <span className="text-sm font-black text-red-500">
+                        <span className="text-sm font-black text-danger">
                           - <PriceDisplay amount={cashDrawerBreakdown.returns} />
                         </span>
                       </div>
@@ -760,12 +760,12 @@ export default function Sales({ tenantId }: { tenantId: string }) {
                     {cashDrawerBreakdown.withdrawals > 0 && (
                       <div className="flex items-center justify-between p-3.5 bg-surface-muted/30 border border-border rounded-2xl">
                         <div className="flex items-center gap-2.5">
-                          <div className="p-2 bg-red-500/10 text-red-500 rounded-xl">
+                          <div className="p-2 bg-danger/10 text-danger rounded-xl">
                             <X size={18} />
                           </div>
                           <span className="text-xs font-bold text-content">{t('sales.expenses_withdrawals')}</span>
                         </div>
-                        <span className="text-sm font-black text-red-500">
+                        <span className="text-sm font-black text-danger">
                           - <PriceDisplay amount={cashDrawerBreakdown.withdrawals} />
                         </span>
                       </div>
