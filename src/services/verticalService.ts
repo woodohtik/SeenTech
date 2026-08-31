@@ -56,3 +56,41 @@ export async function getInventoryCategories(vertical: VerticalKey): Promise<Inv
 }
 
 function safeParse(s: string): any { try { return JSON.parse(s); } catch { return null; } }
+
+// -----------------------------------------------------------------------------
+// توافق عكسي: orders.status و inventory_items.category أعمدة enum حقيقية في
+// Postgres (order_status / inventory_category) بقائمة قيم ثابتة — لا يمكن
+// كتابة أي stage_key/category_key جديد فيها مباشرة (سيفشل الاستعلام). كل مكان
+// يكتب الحالة/الفئة الجديدة في status_key/category_key (نص حر) يجب أيضًا أن
+// يكتب قيمة enum-صالحة في العمود القديم عبر هاتين الدالتين، حتى لا تنكسر أي
+// تقارير/استعلامات قديمة تعتمد عليه (mens_tailoring/womens_tailoring تُطابقان
+// قيم الـenum تمامًا فتُعاد كما هي؛ أي stage/فئة جديدة كليًا من نشاط جديد
+// تُصنَّف لأقرب دلو عام بدل رفض الكتابة بخطأ).
+const ORDER_STATUS_ENUM = new Set([
+  'measurements_taken', 'cutting', 'sewing', 'embroidery', 'ironing_packaging',
+  'ready', 'partial_delivered', 'delivered', 'cancelled',
+]);
+const INVENTORY_CATEGORY_ENUM = new Set([
+  'fabric', 'thread', 'button', 'lining', 'accessories', 'ready_made', 'other',
+]);
+
+/** يحوّل stage_key (حر) إلى أقرب قيمة صالحة لعمود orders.status/order_items.status القديم. */
+export function mapStageKeyToLegacyStatus(stageKey: string, isTerminal: boolean): string {
+  if (ORDER_STATUS_ENUM.has(stageKey)) return stageKey;
+  return isTerminal ? 'delivered' : 'ready';
+}
+
+/** يحوّل category_key (حر) إلى أقرب قيمة صالحة لعمود inventory_items.category القديم. */
+export function mapCategoryKeyToLegacyCategory(categoryKey: string): string {
+  return INVENTORY_CATEGORY_ENUM.has(categoryKey) ? categoryKey : 'other';
+}
+
+/**
+ * نفس mapStageKeyToLegacyStatus لكن تبحث بنفسها عن is_terminal داخل workflowStages
+ * (مصدرها useVerticalConfig) بدل أن يمرّرها الطرف المستدعي يدوياً في كل مكان يكتب فيه
+ * orders.status/order_items.status.
+ */
+export function legacyOrderStatusFor(stageKey: string, workflowStages: WorkflowStage[]): string {
+  const stage = workflowStages.find((s) => s.stage_key === stageKey);
+  return mapStageKeyToLegacyStatus(stageKey, stage?.is_terminal ?? false);
+}

@@ -78,6 +78,8 @@ import StockTransferWorkflow from "./StockTransferWorkflow";
 import { InventoryAdjustment } from "./InventoryAdjustment";
 import FabricUomConversion from "./FabricUomConversion";
 import { formatSmartStockDisplay, getUnitLabel } from "../../utils/fabricUomConverter";
+import { useVerticalConfig } from "../../hooks/useVerticalConfig";
+import { mapCategoryKeyToLegacyCategory } from "../../services/verticalService";
 
 const generateSKU = (name?: string) => {
   const random = Math.floor(10000000 + Math.random() * 90000000);
@@ -95,6 +97,13 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
   const { currentStaff } = useStaff();
   const { hasPermission } = usePermissions(currentStaff);
   const { error: toastError, success: toastSuccess, handleError } = useToast();
+  const { inventoryCategories, isLegacyVertical } = useVerticalConfig();
+  // خريطة category_key -> label_ar جاهزة من إعدادات النشاط، لعرض فئات
+  // الأنشطة الجديدة (لا يوجد لها مفتاح ترجمة inventory.category_* أصلاً).
+  const categoryLabels = useMemo(
+    () => new Map(inventoryCategories.map((c) => [c.category_key, c.label_ar])),
+    [inventoryCategories]
+  );
 
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -400,7 +409,8 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
     const matchesCategory =
-      selectedCategory === "all" || item.category === selectedCategory;
+      selectedCategory === "all" ||
+      (isLegacyVertical ? item.category : item.category_key) === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -599,18 +609,25 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
               <Select
                 value={selectedCategory}
                 onChange={(val) => setSelectedCategory(val)}
-                options={[
-                  { value: "all", label: t("inventory.all_categories") },
-                  { value: "fabric", label: t("inventory.category_fabric") },
-                  {
-                    value: "ready_made",
-                    label: t("inventory.category_ready_made"),
-                  },
-                  { value: "thread", label: t("inventory.category_thread") },
-                  { value: "button", label: t("inventory.category_button") },
-                  { value: "lining", label: t("inventory.category_lining") },
-                  { value: "other", label: t("inventory.category_other") },
-                ]}
+                options={
+                  isLegacyVertical
+                    ? [
+                        { value: "all", label: t("inventory.all_categories") },
+                        { value: "fabric", label: t("inventory.category_fabric") },
+                        {
+                          value: "ready_made",
+                          label: t("inventory.category_ready_made"),
+                        },
+                        { value: "thread", label: t("inventory.category_thread") },
+                        { value: "button", label: t("inventory.category_button") },
+                        { value: "lining", label: t("inventory.category_lining") },
+                        { value: "other", label: t("inventory.category_other") },
+                      ]
+                    : [
+                        { value: "all", label: t("inventory.all_categories") },
+                        ...inventoryCategories.map((c) => ({ value: c.category_key, label: c.label_ar })),
+                      ]
+                }
                 className="bg-surface-muted w-full"
               />
             </div>
@@ -1105,7 +1122,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                           </td>
                           <td className="px-8 py-6">
                             <span className="px-4 py-1.5 bg-surface-muted text-content-muted rounded-full text-xs font-black uppercase tracking-widest">
-                              {t(`inventory.category_${item.category}`)}
+                              {categoryLabels.get(item.category_key || "") || t(`inventory.category_${item.category}`)}
                             </span>
                           </td>
                           <td className="px-8 py-6">
@@ -1652,6 +1669,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
   const { dir } = useDirection();
   const { currentStaff } = useStaff();
   const { error: toastError, success: toastSuccess, handleError } = useToast();
+  const { inventoryCategories, isLegacyVertical } = useVerticalConfig();
   const [suppliersList, setSuppliersList] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
@@ -1786,7 +1804,10 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
       const sanitizedSku = formData.sku ? formData.sku.replace(/\D/g, '') : generateSKU();
       const itemData: any = {
         name: formData.name,
-        category: formData.category,
+        // category (enum قديم) يجب أن تبقى دومًا قيمة صالحة له حتى لأنشطة
+        // جديدة لا وجود لفئتها هناك؛ category_key هو المصدر الفعلي الجديد.
+        category: mapCategoryKeyToLegacyCategory(formData.category),
+        category_key: formData.category,
         unit: formData.unit,
         conversion_rate: formData.conversionRate,
         min_threshold: formData.minThreshold,
@@ -1940,18 +1961,22 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                   onChange={(val) =>
                     setFormData({ ...formData, category: val as any })
                   }
-                  options={[
-                    { value: "fabric", label: t("inventory.category_fabric") },
-                    {
-                      value: "ready_made",
-                      label: t("inventory.category_ready_made"),
-                    },
-                    { value: "thread", label: t("inventory.category_thread") },
-                    { value: "button", label: t("inventory.category_button") },
-                    { value: "lining", label: t("inventory.category_lining") },
-                    { value: "accessories", label: t("inventory.category_accessories") },
-                    { value: "other", label: t("inventory.category_other") },
-                  ]}
+                  options={
+                    isLegacyVertical
+                      ? [
+                          { value: "fabric", label: t("inventory.category_fabric") },
+                          {
+                            value: "ready_made",
+                            label: t("inventory.category_ready_made"),
+                          },
+                          { value: "thread", label: t("inventory.category_thread") },
+                          { value: "button", label: t("inventory.category_button") },
+                          { value: "lining", label: t("inventory.category_lining") },
+                          { value: "accessories", label: t("inventory.category_accessories") },
+                          { value: "other", label: t("inventory.category_other") },
+                        ]
+                      : inventoryCategories.map((c) => ({ value: c.category_key, label: c.label_ar }))
+                  }
                   className="text-right"
                 />
               </div>
@@ -3700,13 +3725,15 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
   const { t } = useTranslation();
   const { dir } = useDirection();
   const { error: toastError, success: toastSuccess, handleError } = useToast();
+  const { inventoryCategories, isLegacyVertical } = useVerticalConfig();
   const [suppliersList, setSuppliersList] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
   const isEditItem = true;
   const [formData, setFormData] = useState({
     name: item.name || "",
-    category: item.category || "fabric",
+    // category_key (الفعلي) أولاً إن وُجد، وإلا القيمة القديمة (صفوف قبل هذا العمود).
+    category: item.category_key || item.category || "fabric",
     unit: item.unit || "meter",
     conversionRate: item.conversion_rate || 1,
     minThreshold: item.min_threshold || 10,
@@ -3779,7 +3806,8 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
     try {
       const updateData: any = {
         name: formData.name,
-        category: formData.category,
+        category: mapCategoryKeyToLegacyCategory(formData.category),
+        category_key: formData.category,
         unit: formData.unit,
         conversion_rate: formData.conversionRate,
         min_threshold: formData.minThreshold,
@@ -3897,18 +3925,22 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                   onChange={(val) =>
                     setFormData({ ...formData, category: val as any })
                   }
-                  options={[
-                    { value: "fabric", label: t("inventory.category_fabric") },
-                    {
-                      value: "ready_made",
-                      label: t("inventory.category_ready_made"),
-                    },
-                    { value: "thread", label: t("inventory.category_thread") },
-                    { value: "button", label: t("inventory.category_button") },
-                    { value: "lining", label: t("inventory.category_lining") },
-                    { value: "accessories", label: t("inventory.category_accessories") },
-                    { value: "other", label: t("inventory.category_other") },
-                  ]}
+                  options={
+                    isLegacyVertical
+                      ? [
+                          { value: "fabric", label: t("inventory.category_fabric") },
+                          {
+                            value: "ready_made",
+                            label: t("inventory.category_ready_made"),
+                          },
+                          { value: "thread", label: t("inventory.category_thread") },
+                          { value: "button", label: t("inventory.category_button") },
+                          { value: "lining", label: t("inventory.category_lining") },
+                          { value: "accessories", label: t("inventory.category_accessories") },
+                          { value: "other", label: t("inventory.category_other") },
+                        ]
+                      : inventoryCategories.map((c) => ({ value: c.category_key, label: c.label_ar }))
+                  }
                   className="text-right"
                 />
               </div>

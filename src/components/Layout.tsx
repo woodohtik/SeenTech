@@ -48,6 +48,7 @@ import { AlertCircle } from 'lucide-react';
 import { UserRole, Staff as StaffType, PermissionKey } from '../types';
 import { getFilteredNavItems } from '../config/navigation';
 import { usePermissions } from '../hooks/usePermissions';
+import { VerticalConfigProvider } from '../hooks/useVerticalConfig';
 import UserPreferencesMenu from './UserPreferencesMenu';
 import SupportConsentModal from './SupportConsentModal';
 import StaffTutorialModal from './StaffTutorialModal';
@@ -218,6 +219,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
   );
 
   return (
+    <VerticalConfigProvider tenantId={tenantId}>
     <div className={cn("flex min-h-[100dvh] h-[100dvh] bg-surface-muted font-sans overflow-hidden w-full transition-all duration-300", isLocked && "blur-xl select-none pointer-events-none scale-98")}>
       {/* Global Impersonation Banner */}
       <AnimatePresence>
@@ -691,5 +693,6 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
 
       {tenantId && <SupportConsentModal tenantId={tenantId} />}
     </div>
+    </VerticalConfigProvider>
   );
 }

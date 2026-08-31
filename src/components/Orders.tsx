@@ -77,6 +77,9 @@ import { checkStockAvailability, deductStock } from '../services/inventoryServic
 import { useStaff } from '../contexts/StaffContext';
 import { useBranding } from '../contexts/BrandingContext';
 import { analytics, AnalyticsEvent } from '../services/analyticsService';
+import { useVerticalConfig } from '../hooks/useVerticalConfig';
+import type { WorkflowStage } from '../types/expansion';
+import { legacyOrderStatusFor } from '../services/verticalService';
 
 import { isRtlLang, localeOf } from '../lib/direction';
 
@@ -92,6 +95,33 @@ export const STATUS_CONFIG: Record<OrderStatus, { labelKey: string, icon: any, c
   'cancelled': { labelKey: 'common.status_cancelled', icon: X, color: 'text-danger', bgColor: 'bg-danger/10' }
 };
 
+type StatusVisual = { labelKey: string; icon: any; color: string; bgColor: string };
+
+const GENERIC_IN_PROGRESS: Omit<StatusVisual, 'labelKey'> = { icon: Clock, color: 'text-info', bgColor: 'bg-info/10' };
+const GENERIC_DONE: Omit<StatusVisual, 'labelKey'> = { icon: CheckCircle2, color: 'text-success', bgColor: 'bg-success/10' };
+const GENERIC_CANCELLED: Omit<StatusVisual, 'labelKey'> = { icon: X, color: 'text-danger', bgColor: 'bg-danger/10' };
+
+/**
+ * بديل آمن لـ STATUS_CONFIG[key] يعمل لأي نشاط. لمستأجري mens_tailoring
+ * (وأي مفتاح يطابق enum order_status الأصلي حرفياً) يرجع نفس القيمة الثابتة
+ * كما هي تماماً — صفر تغيير سلوكي. لأي stage_key آخر من نشاط آخر، يبني عرضاً
+ * عاماً من بيانات vertical_workflow_stages نفسها (لا حاجة لجدول ثابت لكل
+ * نشاط). labelKey هنا قد يكون نص عربي حرفي (label_ar) بدل مفتاح ترجمة —
+ * تمريره لـ t() آمن: i18next يرجع النص كما هو عند عدم وجود مفتاح مطابق.
+ */
+function getOrderStatusDisplay(key: string, workflowStages: WorkflowStage[]): StatusVisual {
+  const legacy = STATUS_CONFIG[key as OrderStatus];
+  if (legacy) return legacy;
+
+  const stage = workflowStages.find((s) => s.stage_key === key);
+  if (!stage) return { labelKey: key, ...GENERIC_IN_PROGRESS };
+
+  if (stage.is_terminal) {
+    return { labelKey: stage.label_ar, ...(key === 'cancelled' ? GENERIC_CANCELLED : GENERIC_DONE) };
+  }
+  return { labelKey: stage.label_ar, ...GENERIC_IN_PROGRESS };
+}
+
 const ORDER_STAGES: OrderStatus[] = [
   'measurements_taken',
   'cutting',
@@ -102,22 +132,29 @@ const ORDER_STAGES: OrderStatus[] = [
   'delivered'
 ];
 
-const OrderStepper = ({ currentStatus }: { currentStatus: OrderStatus }) => {
+const OrderStepper = ({ currentStatus, stages }: { currentStatus: string; stages?: WorkflowStage[] }) => {
   const { t } = useTranslation();
-  const currentIdx = ORDER_STAGES.indexOf(currentStatus === 'partial_delivered' ? 'ready' : currentStatus);
-  
+  // نشاط ديناميكي (غير mens_tailoring): يعرض مراحل عمله الفعلية بدل التسلسل
+  // الثابت، مستبعداً المرحلتين الختاميتين (delivered/cancelled) من الشريط
+  // نفسه تماماً كما يفعل ORDER_STAGES الثابت أصلاً.
+  const dynamicStages = stages && stages.length > 0
+    ? stages.filter((s) => !s.is_terminal || s.stage_key === 'delivered').map((s) => s.stage_key)
+    : null;
+  const activeStages = dynamicStages ?? ORDER_STAGES;
+  const currentIdx = activeStages.indexOf(currentStatus === 'partial_delivered' ? 'ready' : currentStatus);
+
   return (
     <div className="bg-surface p-6 rounded-[2rem] border border-border shadow-sm overflow-x-auto mb-8">
       <div className="relative flex justify-between items-start min-w-[600px] px-4">
         {/* Progress Line */}
         <div className="absolute top-5 right-10 left-10 h-0.5 bg-surface-muted -z-0" />
-        <div 
-          className="absolute top-5 right-10 h-0.5 bg-brand transition-all duration-700 ease-in-out -z-0" 
-          style={{ width: `${Math.max(0, (currentIdx / (ORDER_STAGES.length - 1)) * 100)}%` }}
+        <div
+          className="absolute top-5 right-10 h-0.5 bg-brand transition-all duration-700 ease-in-out -z-0"
+          style={{ width: `${Math.max(0, (currentIdx / (activeStages.length - 1)) * 100)}%` }}
         />
 
-        {ORDER_STAGES.map((status, idx) => {
-          const config = STATUS_CONFIG[status];
+        {activeStages.map((status, idx) => {
+          const config = getOrderStatusDisplay(status, stages || []);
           const Icon = config.icon;
           const isCompleted = idx <= currentIdx;
           const isActive = idx === currentIdx;
@@ -195,8 +232,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [pendingStatusUpdate, setPendingStatusUpdate] = useState<{ id: string, status: OrderStatus } | null>(null);
-  const [statusFilter, setStatusFilter] = useState<OrderStatus | ''>('');
+  const [pendingStatusUpdate, setPendingStatusUpdate] = useState<{ id: string, status: string } | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
@@ -208,7 +245,17 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const [searchParams] = useSearchParams();
   const { currentStaff } = useStaff();
   const { user: currentAuthUser } = useAuth();
+  const { workflowStages, isLegacyVertical } = useVerticalConfig();
   const { hasPermission, checkPermission } = usePermissions(currentStaff);
+
+  // قائمة مفاتيح الحالة المتاحة للاختيار (شريط التحديث السريع + قوائم الحالة المنسدلة
+  // + فلتر الحالة). لمستأجري mens_tailoring نفس ORDER_STAGES القديم حرفياً بلا تغيير؛
+  // لأي نشاط آخر تُبنى من vertical_workflow_stages الفعلية لهذا النشاط.
+  const statusOptions = useMemo(() => (
+    isLegacyVertical || workflowStages.length === 0
+      ? (Object.keys(STATUS_CONFIG) as OrderStatus[])
+      : workflowStages.map((s) => s.stage_key)
+  ), [isLegacyVertical, workflowStages]);
 
   const canCreate = hasPermission('orders.create');
   const canEdit = hasPermission('orders.edit');
@@ -376,6 +423,11 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     const decoded = decodeOrderRow(o);
     return {
       ...decoded,
+      // status_key (نص حر، يعكس المرحلة الفعلية لأي نشاط) يتقدّم على status
+      // (enum order_status القديم، مقيّد بتسميات الخياطة الرجالية فقط) متى
+      // كان موجوداً. الطلبات القديمة السابقة لهذه الهجرة لا تملك status_key
+      // بعد (NULL) فترجع لـstatus كما كانت دائماً — صفر تغيير لها.
+      status: decoded.status_key || decoded.status,
       customerId: decoded.customer_id ?? decoded.customerId,
       customerName: decoded.customer_name ?? decoded.customerName,
       tenantId: decoded.tenant_id ?? decoded.tenantId,
@@ -953,15 +1005,20 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       return;
     }
 
+    // مرحلة البدء: أول مرحلة عمل لنشاط هذا المستأجر إن كان نشاطاً ديناميكياً (غير
+    // mens_tailoring)، وإلا نفس 'measurements_taken' الثابت كما كان دوماً.
+    const initialStageKey: string = data.status
+      || (!isLegacyVertical && workflowStages.length > 0 ? workflowStages[0].stage_key : 'measurements_taken');
+
     const initialHistory: OrderHistory = {
-      status: 'measurements_taken',
+      status: initialStageKey,
       updatedAt: new Date().toISOString(),
       updatedBy: currentStaff?.name || t('common.owner'),
       updatedByUid: currentStaff?.id || currentAuthUser?.id,
       notes: t('orders.order_created_note')
     };
 
-    const isUuid = (val: string | undefined | null) => 
+    const isUuid = (val: string | undefined | null) =>
       val ? /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val) : false;
 
     const orderData = {
@@ -970,7 +1027,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       customer_id: isUuid(data.customerId) ? data.customerId : null,
       customer_name: selectedCustomer?.name || t('orders.unknown_customer'),
       order_number: generateOrderNumber(),
-      status: data.status || 'measurements_taken',
+      status: legacyOrderStatusFor(initialStageKey, workflowStages),
+      status_key: initialStageKey,
       payment_method: data.paymentMethod || 'cash',
       total_amount: roundedGrandTotal,
       paid_amount: Number(data.paidAmount || 0),
@@ -1063,7 +1121,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     }
   };
 
-  const updateStatus = async (id: string, status: OrderStatus, notes?: string) => {
+  const updateStatus = async (id: string, status: string, notes?: string) => {
     setOpenStatusDropdownId(null);
     const order = orders.find(o => o.id === id);
     if (!order) return;
@@ -1108,7 +1166,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         updatedAt: new Date().toISOString(),
         updatedBy: currentStaff?.name || t('common.roles.owner'),
         updatedByUid: currentStaff?.id || currentAuthUser?.id,
-        notes: notes || t('orders.status_change_note', { status: t(STATUS_CONFIG[status].labelKey) })
+        notes: notes || t('orders.status_change_note', { status: t(getOrderStatusDisplay(status, workflowStages).labelKey) })
       };
 
       const updatedHistory = [...(order.history || []), historyEntry];
@@ -1116,7 +1174,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       const { error } = await supabase
         .from('orders')
         .update({
-          status,
+          // status_key: القيمة الفعلية الحرة لأي نشاط. status: enum قديم ثابت —
+          // يبقى دوماً صالحاً عبر legacyOrderStatusFor (انظر تعليق verticalService.ts).
+          status: legacyOrderStatusFor(status, workflowStages),
+          status_key: status,
           history: updatedHistory,
           items: order.items || []
         })
@@ -1156,7 +1217,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       const { error } = await supabase
         .from('orders')
         .update({
-          status,
+          status: legacyOrderStatusFor(status, workflowStages),
+          status_key: status,
           history: updatedHistory,
           items: order.items || []
         })
@@ -1366,7 +1428,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     const [payMethod, setPayMethod] = useState<PaymentMethod>('cash');
     const [isProcessing, setIsProcessing] = useState(false);
 
-    const statusOrder: OrderStatus[] = [
+    const statusOrder: string[] = [
       'measurements_taken',
       'cutting',
       'sewing',
@@ -1461,7 +1523,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           </div>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-8">
-            <OrderStepper currentStatus={order.status} />
+            <OrderStepper currentStatus={order.status} stages={isLegacyVertical ? undefined : workflowStages} />
 
             {/* Quick Status Updater */}
             <section className="bg-surface p-5 rounded-3xl border border-border space-y-3">
@@ -1478,11 +1540,11 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 <div className="space-y-2">
                   <SmartSelect
                     value={order.status}
-                    onChange={(v) => updateStatus(order.id, v as OrderStatus)}
+                    onChange={(v) => updateStatus(order.id, v)}
                     className="rounded-2xl p-4 text-sm"
-                    options={(Object.keys(STATUS_CONFIG) as OrderStatus[]).map((status) => ({
+                    options={statusOptions.map((status) => ({
                       value: status,
-                      label: t(STATUS_CONFIG[status].labelKey),
+                      label: t(getOrderStatusDisplay(status, workflowStages).labelKey),
                     }))}
                   />
                 </div>
@@ -1605,8 +1667,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                       <div className="bg-surface-muted p-4 rounded-2xl border border-border">
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex flex-col">
-                            <span className={cn("text-xs font-bold", STATUS_CONFIG[h.status].color)}>
-                              {t(STATUS_CONFIG[h.status].labelKey)}
+                            <span className={cn("text-xs font-bold", getOrderStatusDisplay(h.status, workflowStages).color)}>
+                              {t(getOrderStatusDisplay(h.status, workflowStages).labelKey)}
                             </span>
                             <div className="flex items-center gap-1.5 mt-1">
                               <div className="w-5 h-5 rounded-full bg-surface flex items-center justify-center border border-border">
@@ -1802,8 +1864,9 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
           await supabase
             .from('orders')
-            .update({ 
-              status: pendingStatusUpdate.status,
+            .update({
+              status: legacyOrderStatusFor(pendingStatusUpdate.status, workflowStages),
+              status_key: pendingStatusUpdate.status,
               history: finalHistory,
               items: order.items || []
             })
@@ -2058,7 +2121,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 [t('common.total')]: o.totalAmount,
                 [t('orders.amount_paid')]: o.paidAmount,
                 [t('orders.remaining_label')]: o.remainingAmount,
-                [t('common.status')]: t(STATUS_CONFIG[o.status].labelKey),
+                [t('common.status')]: t(getOrderStatusDisplay(o.status, workflowStages).labelKey),
                 [t('orders.payment_method')]: t(`common.payment_methods.${o.paymentMethod}`, o.paymentMethod)
               }));
               const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -2127,12 +2190,12 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           <div className="flex items-center gap-2 min-w-[180px]">
             <Select
               value={statusFilter}
-              onChange={(val) => setStatusFilter(val as OrderStatus | '')}
+              onChange={(val) => setStatusFilter(val)}
               options={[
                 { value: '', label: t('orders.all_statuses') },
-                ...(Object.keys(STATUS_CONFIG) as OrderStatus[]).map((status) => ({
+                ...statusOptions.map((status) => ({
                   value: status,
-                  label: t(STATUS_CONFIG[status].labelKey)
+                  label: t(getOrderStatusDisplay(status, workflowStages).labelKey)
                 }))
               ]}
               className="bg-surface-muted"
@@ -2182,6 +2245,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           filteredOrders.map((order, index) => {
             const customerUnpaid = unpaidOrders.filter(o => o.customerId === order.customerId);
             const totalUnpaid = customerUnpaid.reduce((sum, o) => sum + (o.remainingAmount || 0), 0);
+            const statusDisplay = getOrderStatusDisplay(order.status, workflowStages);
 
             return (
               <motion.div
@@ -2212,10 +2276,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className={cn(
                         "w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 shadow-inner",
-                        STATUS_CONFIG[order.status].bgColor,
-                        STATUS_CONFIG[order.status].color
+                        statusDisplay.bgColor,
+                        statusDisplay.color
                       )}>
-                        {React.createElement(STATUS_CONFIG[order.status].icon, { size: 20 })}
+                        {React.createElement(statusDisplay.icon, { size: 20 })}
                       </div>
 
                       <div className="min-w-0 flex flex-col justify-center cursor-pointer" onClick={() => { setSelectedOrder(order); setIsDetailsOpen(true); }}>
@@ -2268,12 +2332,12 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         }}
                         className={cn(
                           "px-2.5 py-1.5 rounded-xl text-[11px] font-black flex items-center gap-1.5 transition-all shadow-xs border border-border/60",
-                          STATUS_CONFIG[order.status].bgColor,
-                          STATUS_CONFIG[order.status].color
+                          statusDisplay.bgColor,
+                          statusDisplay.color
                         )}
                       >
-                        <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse", STATUS_CONFIG[order.status].color.replace('text', 'bg'))} />
-                        <span>{t(STATUS_CONFIG[order.status].labelKey)}</span>
+                        <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse", statusDisplay.color.replace('text', 'bg'))} />
+                        <span>{t(statusDisplay.labelKey)}</span>
                         {order.status !== 'delivered' && <ChevronDown size={12} className="opacity-60" />}
                       </button>
 
@@ -2282,8 +2346,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           "absolute top-full mt-2 w-48 bg-surface rounded-2xl shadow-2xl border border-border py-2 z-50 backdrop-blur-xl",
                           isRtlLang(i18n.language) ? "left-0" : "right-0"
                         )}>
-                          {(Object.keys(STATUS_CONFIG) as OrderStatus[]).map((status) => {
-                            const cfg = STATUS_CONFIG[status];
+                          {statusOptions.map((status) => {
+                            const cfg = getOrderStatusDisplay(status, workflowStages);
                             return (
                               <button
                                 key={status}
@@ -2435,10 +2499,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   <div className="flex items-center gap-5">
                     <div className={cn(
                       "w-16 h-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-500 group-hover:scale-105 group-hover:rotate-3 shrink-0",
-                      STATUS_CONFIG[order.status].bgColor,
-                      STATUS_CONFIG[order.status].color
+                      statusDisplay.bgColor,
+                      statusDisplay.color
                     )}>
-                      {React.createElement(STATUS_CONFIG[order.status].icon, { size: 32 })}
+                      {React.createElement(statusDisplay.icon, { size: 32 })}
                     </div>
                     <div className="cursor-pointer" onClick={() => { setSelectedOrder(order); setIsDetailsOpen(true); }}>
                       <div className="flex items-center gap-3 flex-wrap">
@@ -2549,16 +2613,16 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         }}
                         className={cn(
                           "px-4 py-2.5 rounded-2xl text-xs font-black flex items-center gap-3 transition-all shadow-sm relative z-30",
-                          STATUS_CONFIG[order.status].bgColor,
-                          STATUS_CONFIG[order.status].color,
+                          statusDisplay.bgColor,
+                          statusDisplay.color,
                           order.status === 'delivered' ? "cursor-not-allowed opacity-80" : "hover:shadow-lg hover:shadow-brand/5 border border-brand/10 cursor-pointer"
                         )}
                       >
-                        <div className={cn("w-2 h-2 rounded-full animate-pulse", STATUS_CONFIG[order.status].color.replace('text', 'bg'))} />
-                        <span>{t(STATUS_CONFIG[order.status].labelKey)}</span>
+                        <div className={cn("w-2 h-2 rounded-full animate-pulse", statusDisplay.color.replace('text', 'bg'))} />
+                        <span>{t(statusDisplay.labelKey)}</span>
                         {order.status !== 'delivered' && <ChevronDown size={14} className="opacity-50" />}
                       </motion.button>
-                      
+
                       {order.status !== 'delivered' && openStatusDropdownId === order.id && (
                         <div className={cn(
                           "absolute top-full mt-2 w-56 bg-surface rounded-[2rem] shadow-2xl border border-border/50 py-3 z-30 animate-in fade-in zoom-in duration-200 backdrop-blur-xl",
@@ -2567,8 +2631,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           <div className="px-4 py-2 mb-2 border-b border-border/50">
                             <span className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('orders.update_status')}</span>
                           </div>
-                          {(Object.keys(STATUS_CONFIG) as OrderStatus[]).map((status) => {
-                            const cfg = STATUS_CONFIG[status];
+                          {statusOptions.map((status) => {
+                            const cfg = getOrderStatusDisplay(status, workflowStages);
                             return (
                               <button
                                 key={status}
@@ -2705,7 +2769,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                               #{o.orderNumber || o.id.slice(-6).toUpperCase()}
                             </span>
                             <span className="text-[10px] bg-brand/10 text-brand px-2 py-0.5 rounded-full font-bold">
-                              {t(STATUS_CONFIG[o.status]?.labelKey || `common.status_${o.status}`)}
+                              {t(getOrderStatusDisplay(o.status, workflowStages).labelKey)}
                             </span>
                           </div>
                           <p className="text-xs text-content-muted font-bold">

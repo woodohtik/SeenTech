@@ -330,7 +330,12 @@ export interface InventoryItem {
   name: string;
   nameEn?: string; // English name for bilingual invoices
   description?: string;
+  // enum قديم ثابت (inventory_category) — يبقى دومًا صالحًا (mapCategoryKeyToLegacyCategory
+  // يضمن ذلك عند الكتابة)، حتى للأنشطة الجديدة التي لا فئة لها هنا فعليًا.
   category: 'fabric' | 'thread' | 'button' | 'lining' | 'accessories' | "ready_made" | 'other';
+  // نص حر جديد (category_key) — الفئة الفعلية بحسب نشاط المستأجر (verticalService).
+  // undefined لصفوف أُنشئت قبل هذا العمود.
+  category_key?: string;
   unit: 'meter' | 'yard' | 'roll' | 'bolt' | 'piece' | 'spool' | 'box';
   baseUnit: 'meter' | 'piece'; // The normalized unit
   conversionRate: number; // How many baseUnits per unit (e.g., 1 yard = 0.9144 meters)
@@ -499,7 +504,8 @@ export type OrderStatus =
   | 'cancelled';
 
 export interface OrderHistory {
-  status: OrderStatus;
+  // OrderStatus لمستأجري mens_tailoring، أو stage_key حر لأي نشاط آخر (انظر Orders.tsx: getOrderStatusDisplay).
+  status: OrderStatus | string;
   updatedAt: string;
   updatedBy: string;
   updatedByUid?: string;
@@ -521,7 +527,8 @@ export interface Order {
   discountAmount?: number;
   remainingAmount: number;
   paymentMethod: PaymentMethod;
-  status: OrderStatus;
+  // OrderStatus لمستأجري mens_tailoring، أو stage_key حر لأي نشاط آخر (انظر Orders.tsx: getOrderStatusDisplay).
+  status: OrderStatus | string;
   orderDate: string;
   deliveryDate: string;
   taxAmount?: number;
