@@ -777,12 +777,12 @@ export default function Settings({ tenantId }: SettingsProps) {
                           </div>
 
                           <div className="space-y-3 sm:col-span-2 border-t border-border/50 pt-4">
-                            <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em] px-1">{t('settings_page.tax.calculation_method', 'طريقة احتساب ضريبة التفصيل والقص')}</label>
+                            <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em] px-1">{t('settings_page.tax.calculation_method', 'طريقة احتساب ضريبة الأصناف المخصصة')}</label>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                               {[
-                                { id: 'inclusive', label: t('settings_page.tax.inclusive', 'شامل الضريبة'), desc: t('settings_page.tax.inclusive_desc', 'سعر التفصيل شامل لضريبة القيمة المضافة') },
-                                { id: 'exclusive', label: t('settings_page.tax.exclusive', 'غير شامل الضريبة'), desc: t('settings_page.tax.exclusive_desc', 'يتم احتساب الضريبة بشكل إضافي فوق سعر التفصيل') },
-                                { id: 'exempt', label: t('settings_page.tax.exempt', 'معفي من الضريبة'), desc: t('settings_page.tax.exempt_desc', 'لا يتم احتساب أي ضريبة على التفصيل والقص') }
+                                { id: 'inclusive', label: t('settings_page.tax.inclusive', 'شامل الضريبة'), desc: t('settings_page.tax.inclusive_desc', 'سعر الصنف شامل لضريبة القيمة المضافة') },
+                                { id: 'exclusive', label: t('settings_page.tax.exclusive', 'غير شامل الضريبة'), desc: t('settings_page.tax.exclusive_desc', 'يتم احتساب الضريبة بشكل إضافي فوق سعر الصنف') },
+                                { id: 'exempt', label: t('settings_page.tax.exempt', 'معفي من الضريبة'), desc: t('settings_page.tax.exempt_desc', 'لا يتم احتساب أي ضريبة على الأصناف المخصصة') }
                               ].map((option) => (
                                 <div
                                   key={option.id}
@@ -878,7 +878,7 @@ export default function Settings({ tenantId }: SettingsProps) {
 
                     <div className="space-y-4 w-full">
                       {[
-                        { field: 'notificationSettings.lowStock', title: t('settings_page.notifications.low_stock_title', 'تحذيرات المخزون المنخفض'), desc: t('settings_page.notifications.low_stock_desc', 'سيتم تنبيهك عندما تصل كمية القماش أو الإكسسوارات للحد الأدنى.'), icon: Database, color: 'text-danger' },
+                        { field: 'notificationSettings.lowStock', title: t('settings_page.notifications.low_stock_title', 'تحذيرات المخزون المنخفض'), desc: t('settings_page.notifications.low_stock_desc', 'سيتم تنبيهك عندما تصل كمية أحد أصناف المخزون للحد الأدنى.'), icon: Database, color: 'text-danger' },
                         { field: 'notificationSettings.newOrder', title: t('settings_page.notifications.new_order_title', 'إشعارات الطلبات الجديدة'), desc: t('settings_page.notifications.new_order_desc', 'إشعار فوري عند قيام أي موظف بإنشاء فاتورة بيع جديدة.'), icon: Store, color: 'text-brand' },
                         { field: 'notificationSettings.dailyClose', title: t('settings_page.notifications.daily_close_title', 'تقارير الإغلاق اليومية'), desc: t('settings_page.notifications.daily_close_desc', 'ملخص بالأرباح والخسائر والمبيعات فور إغلاق الوردية.'), icon: FileText, color: 'text-success' },
                         { field: 'notificationSettings.tomorrowDelivery', title: t('settings_page.notifications.tomorrow_delivery_title', 'مواعيد تسليم الغد'), desc: t('settings_page.notifications.tomorrow_delivery_desc', 'تنبيه لقائمة العملاء الذين يجب تسليم طلباتهم في اليوم التالي.'), icon: Bell, color: 'text-warning' },

@@ -14,27 +14,33 @@ import { PriceDisplay } from './PriceDisplay';
 import { HelpCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useDirection } from '../lib/direction';
-
+import { useVerticalConfig } from '../hooks/useVerticalConfig';
+import { legacyOrderStatusFor } from '../services/verticalService';
+import { getOrderStatusDisplay } from './Orders';
+import type { WorkflowStage } from '../types/expansion';
 
 const STAGES = ['measurements_taken','cutting','sewing','embroidery','ironing_packaging','ready','delivered'];
 const STAGE_AR: Record<string,string> = {
   measurements_taken:'أخذ المقاسات', cutting:'قص', sewing:'خياطة', embroidery:'تطريز',
   ironing_packaging:'كي وتغليف', ready:'جاهز', delivered:'تم التسليم'
 };
-/** Display-only labels. STAGE_AR above is kept because it feeds the persisted `history.notes` payload. */
-const STAGE_LABEL_KEYS: Record<string,string> = {
-  measurements_taken:'common.status_measurements_taken', cutting:'dashboard.today.stage_cutting',
-  sewing:'common.status_sewing', embroidery:'common.status_embroidery',
-  ironing_packaging:'dashboard.today.stage_ironing_packaging', ready:'dashboard.ready',
-  delivered:'common.status_delivered'
-};
-const nextStage = (s: string) => STAGES[Math.min(STAGES.indexOf(s) + 1, STAGES.length - 1)];
+/** يمشي على مراحل النشاط الفعلية (workflowStages) بدل STAGES الثابت — يبقى STAGES/STAGE_AR
+ * كما هما لمستأجري mens_tailoring (isLegacyVertical) فقط، بلا أي تغيير سلوكي لهم. */
+function nextStageFor(current: string, isLegacyVertical: boolean, workflowStages: WorkflowStage[]): string {
+  if (isLegacyVertical || workflowStages.length === 0) {
+    return STAGES[Math.min(STAGES.indexOf(current) + 1, STAGES.length - 1)];
+  }
+  const keys = workflowStages.map((s) => s.stage_key);
+  const idx = keys.indexOf(current);
+  return keys[Math.min(idx + 1, keys.length - 1)] ?? current;
+}
 
 export default function DashboardToday({ tenantId }: { tenantId: string }) {
   const { t, dir, locale } = useDirection();
   const navigate = useNavigate();
   const { currentStaff } = useStaff();
   const { hasPermission } = usePermissions(currentStaff);
+  const { workflowStages, isLegacyVertical } = useVerticalConfig();
   const [due, setDue] = useState<any[]>([]);
   const [active, setActive] = useState<any[]>([]);
   const [collectedToday, setCollectedToday] = useState(0);
@@ -48,7 +54,9 @@ export default function DashboardToday({ tenantId }: { tenantId: string }) {
     try {
       const today = new Date(); today.setHours(23,59,59,999);
       const { data: orders } = await supabase.from('orders').select('*').eq('tenant_id', tenantId);
-      const list = orders || [];
+      // status_key (حر، أي نشاط) يتقدّم على status (enum قديم) — وإلا كل طلب نشط لنشاط
+      // غير mens_tailoring يظهر status='ready' الثابت فيُستبعد خطأً من قائمة "قيد التنفيذ".
+      const list = (orders || []).map((o: any) => ({ ...o, status: o.status_key || o.status }));
       setDue(list.filter((o:any) => o.delivery_date && new Date(o.delivery_date) <= today && !['delivered','cancelled'].includes(o.status)));
       setActive(list.filter((o:any) => !['delivered','ready','cancelled'].includes(o.status)));
       const d0 = new Date(); d0.setHours(0,0,0,0);
@@ -62,19 +70,24 @@ export default function DashboardToday({ tenantId }: { tenantId: string }) {
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [tenantId]);
 
   async function advance(o: any) {
-    const nextStatus = nextStage(o.status);
+    const nextStatus = nextStageFor(o.status, isLegacyVertical, workflowStages);
+    const nextLabel = isLegacyVertical
+      ? (STAGE_AR[nextStatus] || nextStatus)
+      : (workflowStages.find((s) => s.stage_key === nextStatus)?.label_ar || nextStatus);
     const historyEntry = {
       status: nextStatus,
       updatedAt: new Date().toISOString(),
       updatedBy: currentStaff?.name || 'المالك',
-      notes: `تحديث الحالة من لوحة اليوم إلى ${STAGE_AR[nextStatus] || nextStatus}`
+      notes: `تحديث الحالة من لوحة اليوم إلى ${nextLabel}`
     };
-    
+
     // We must decode the raw database row before retrieving history/items
     // Since o is fetched from the database, it's already decoded because of the fetch interceptor.
     // However, we must preserve both items and history when calling update to prevent them being erased.
-    await supabase.from('orders').update({ 
-      status: nextStatus,
+    await supabase.from('orders').update({
+      // status_key: القيمة الفعلية الحرة لأي نشاط. status: enum قديم يبقى صالحاً دوماً.
+      status: legacyOrderStatusFor(nextStatus, workflowStages),
+      status_key: nextStatus,
       items: o.items || [],
       history: [...(o.history || []), historyEntry]
     }).eq('id', o.id);
@@ -121,13 +134,13 @@ export default function DashboardToday({ tenantId }: { tenantId: string }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <Section title={t('dashboard.today.due_for_delivery', { count: due.length })} loading={loading}>
           {due.length === 0 ? <Empty text={t('dashboard.today.no_due_deliveries')} /> :
-            due.map((o:any) => <Row key={o.id} name={o.customer_name} note={t(STAGE_LABEL_KEYS[o.status] || o.status)}
+            due.map((o:any) => <Row key={o.id} name={o.customer_name} note={t(getOrderStatusDisplay(o.status, workflowStages).labelKey)}
               onAction={() => advance(o)} actionLabel={t('dashboard.today.next_stage_short')} />)}
         </Section>
 
         <Section title={t('dashboard.today.in_progress_count', { count: active.length })} loading={loading}>
           {active.length === 0 ? <Empty text={t('dashboard.today.no_active_orders')} /> :
-            active.slice(0,12).map((o:any) => <Row key={o.id} name={o.customer_name} note={t(STAGE_LABEL_KEYS[o.status] || o.status)}
+            active.slice(0,12).map((o:any) => <Row key={o.id} name={o.customer_name} note={t(getOrderStatusDisplay(o.status, workflowStages).labelKey)}
               onAction={() => advance(o)} actionLabel={t('dashboard.today.move_to_next_stage')} />)}
         </Section>
 

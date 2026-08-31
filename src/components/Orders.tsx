@@ -95,7 +95,7 @@ export const STATUS_CONFIG: Record<OrderStatus, { labelKey: string, icon: any, c
   'cancelled': { labelKey: 'common.status_cancelled', icon: X, color: 'text-danger', bgColor: 'bg-danger/10' }
 };
 
-type StatusVisual = { labelKey: string; icon: any; color: string; bgColor: string };
+export type StatusVisual = { labelKey: string; icon: any; color: string; bgColor: string };
 
 const GENERIC_IN_PROGRESS: Omit<StatusVisual, 'labelKey'> = { icon: Clock, color: 'text-info', bgColor: 'bg-info/10' };
 const GENERIC_DONE: Omit<StatusVisual, 'labelKey'> = { icon: CheckCircle2, color: 'text-success', bgColor: 'bg-success/10' };
@@ -109,7 +109,7 @@ const GENERIC_CANCELLED: Omit<StatusVisual, 'labelKey'> = { icon: X, color: 'tex
  * نشاط). labelKey هنا قد يكون نص عربي حرفي (label_ar) بدل مفتاح ترجمة —
  * تمريره لـ t() آمن: i18next يرجع النص كما هو عند عدم وجود مفتاح مطابق.
  */
-function getOrderStatusDisplay(key: string, workflowStages: WorkflowStage[]): StatusVisual {
+export function getOrderStatusDisplay(key: string, workflowStages: WorkflowStage[]): StatusVisual {
   const legacy = STATUS_CONFIG[key as OrderStatus];
   if (legacy) return legacy;
 

@@ -28,7 +28,8 @@ import { supabase } from '../lib/supabase/client';
 import { deleteTestDataForTenant } from '../services/trialService';
 import { auth, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Customer, Order, InventoryItem, AppNotification, OrderStatus, Tenant, BranchInventory } from '../types';
-import { STATUS_CONFIG } from './Orders';
+import { STATUS_CONFIG, getOrderStatusDisplay } from './Orders';
+import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
 import { CurrencySymbol } from './CurrencySymbol';
@@ -343,6 +344,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
 
   const { currentStaff } = useStaff();
   const { hasPermission } = usePermissions(currentStaff);
+  const { workflowStages, isLegacyVertical } = useVerticalConfig();
 
   const hasRevenuePermission = hasPermission('dashboard.revenue');
   const hasOrdersPermission = hasPermission('dashboard.orders') || hasPermission('dashboard.view');
@@ -449,6 +451,8 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
 
         let orders = (ordersRes.data || []).map(d => ({
           ...d,
+          // status_key (نص حر لأي نشاط) يتقدّم على status (enum قديم) متى وُجد — انظر Orders.tsx.
+          status: d.status_key || d.status,
           customerId: d.customer_id || '',
           customerName: d.customer_name || '',
           orderDate: d.order_date || new Date().toISOString(),
@@ -1072,7 +1076,9 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       acc[order.status] = (acc[order.status] || 0) + 1;
       return acc;
     }, {});
-    const dist = [
+    // لمستأجري mens_tailoring: نفس القائمة الثابتة حرفياً. لأي نشاط آخر: من
+    // مراحل عمله الفعلية غير الختامية (workflowStages)، بدل قائمة الخياطة الثابتة.
+    const dist = isLegacyVertical || workflowStages.length === 0 ? [
       { id: 'pending', name: t('common.status_pending', 'معلق'), value: statusCounts['pending'] || 0, color: 'var(--content-muted)' },
       { id: 'measurements_taken', name: t('common.status_measurements_taken', 'أخذ المقاسات'), value: statusCounts['measurements_taken'] || 0, color: 'var(--color-info)' },
       { id: 'cutting', name: t('common.status_cutting', 'قص القماش'), value: statusCounts['cutting'] || 0, color: 'var(--color-warning)' },
@@ -1080,10 +1086,15 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       { id: 'embroidery', name: t('common.status_embroidery', 'تطريز'), value: statusCounts['embroidery'] || 0, color: 'var(--color-brand)' },
       { id: 'ironing_packaging', name: t('common.status_ironing_packaging', 'كوي وتغليف'), value: statusCounts['ironing_packaging'] || 0, color: 'var(--color-info)' },
       { id: 'ready', name: t('common.status_ready', 'جاهز للاستلام'), value: statusCounts['ready'] || 0, color: 'var(--color-success)' },
-    ];
+    ] : (() => {
+      const DIST_COLORS = ['var(--color-info)', 'var(--color-warning)', 'var(--color-brand)', 'var(--color-success)', 'var(--content-muted)'];
+      return workflowStages
+        .filter((s) => !s.is_terminal)
+        .map((s, idx) => ({ id: s.stage_key, name: s.label_ar, value: statusCounts[s.stage_key] || 0, color: DIST_COLORS[idx % DIST_COLORS.length] }));
+    })();
     setStatusDistribution(dist);
 
-  }, [selectedTimeframe, customStartDate, customEndDate, allOrders, allCustomers, allInventory, branchInventory, revenueRange, i18n.language]);
+  }, [selectedTimeframe, customStartDate, customEndDate, allOrders, allCustomers, allInventory, branchInventory, revenueRange, i18n.language, isLegacyVertical, workflowStages]);
 
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState('all');
@@ -2177,21 +2188,10 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                           <td className="px-8 py-5">
                             <span className={cn(
                               "px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider",
-                              order.status === 'delivered' ? "bg-success/10 text-success" :
-                              order.status === 'ready' ? "bg-brand/10 text-brand" :
-                              order.status === 'cancelled' ? "bg-danger/10 text-danger" :
-                              "bg-warning/10 text-warning"
+                              getOrderStatusDisplay(order.status, workflowStages).bgColor,
+                              getOrderStatusDisplay(order.status, workflowStages).color
                             )}>
-                              {order.status === 'delivered' ? t('common.status_delivered', 'تم التسليم') :
-                               order.status === 'ready' ? t('common.status_ready', 'جاهز للاستلام') :
-                               order.status === 'measurements_taken' ? t('common.status_measurements_taken', 'أخذ المقاسات') :
-                               order.status === 'cutting' ? t('common.status_cutting', 'قص القماش') :
-                               order.status === 'sewing' ? t('common.status_sewing', 'خياطة') :
-                               order.status === 'embroidery' ? t('common.status_embroidery', 'تطريز') :
-                               order.status === 'ironing_packaging' ? t('common.status_ironing_packaging', 'كوي وتغليف') :
-                               order.status === 'partial_delivered' ? t('common.status_partial_delivered', 'تسليم جزئي') :
-                               order.status === 'cancelled' ? t('common.status_cancelled', 'ملغي') :
-                               t('common.status_in_progress', 'قيد التنفيذ')}
+                              {t(getOrderStatusDisplay(order.status, workflowStages).labelKey)}
                             </span>
                           </td>
                           <td className="px-8 py-5">

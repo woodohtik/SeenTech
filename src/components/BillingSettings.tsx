@@ -213,7 +213,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
     try {
       await createSubscriptionRequest({
         tenant_id: tenantId,
-        tenant_name: tenant?.name || 'محل تفصيل سين',
+        tenant_name: tenant?.name || 'سين',
         tenant_email: tenant?.owner_email || '',
         plan_id: targetPlan.id,
         plan_name: targetPlan.name,
