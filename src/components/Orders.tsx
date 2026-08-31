@@ -334,10 +334,12 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const defaultOrderValues = useMemo(() => ({
     customerId: '',
     deliveryDate: '',
-    items: [{ 
-      garmentType: 'ثوب', 
-      quantity: 1, 
-      price: 0, 
+    items: [{
+      // نص "ثوب" افتراضي منطقي فقط لمستأجري mens_tailoring؛ لأي نشاط آخر يبقى فارغاً
+      // ليدخل المستخدم وصف صنفه الفعلي بدل رؤية مصطلح خياطة لا يخصه.
+      garmentType: isLegacyVertical ? 'ثوب' : '',
+      quantity: 1,
+      price: 0,
       fabric: '',
       fabricId: '',
       selectedUnit: 'meter',
@@ -352,7 +354,9 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       additions: '',
       embroidery: ''
     }],
-    status: 'measurements_taken' as const,
+    // مرحلة البدء الافتراضية: أول مرحلة عمل فعلية للنشاط، أو 'measurements_taken'
+    // الثابتة لمستأجري mens_tailoring — انظر onSubmit لنفس المنطق عند الحفظ الفعلي.
+    status: (isLegacyVertical || workflowStages.length === 0 ? 'measurements_taken' : workflowStages[0].stage_key) as any,
     paidAmount: 0,
     paymentMethod: 'cash' as const,
     discountAmount: 0,
@@ -360,7 +364,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     internalNotes: '',
     images: [] as string[],
     isTest: false
-  }), []);
+  }), [isLegacyVertical, workflowStages]);
 
   const { register, control, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting, isValid } } = useForm({
     resolver: zodResolver(orderSchema),
@@ -2915,7 +2919,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
               <form onSubmit={handleSubmit(onSubmit, onInvalidSubmit)} className="flex-1 flex flex-col min-h-0 overflow-hidden">
                 <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-                  <OrderStepper currentStatus="measurements_taken" />
+                  <OrderStepper
+                    currentStatus={isLegacyVertical || workflowStages.length === 0 ? 'measurements_taken' : workflowStages[0].stage_key}
+                    stages={isLegacyVertical ? undefined : workflowStages}
+                  />
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Customer Selection & Info */}
@@ -3141,7 +3148,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                     </h4>
                     <button 
                       type="button" 
-                      onClick={() => append({ garmentType: 'ثوب', quantity: 1, price: 0, fabric: '' })}
+                      onClick={() => append({ garmentType: isLegacyVertical ? 'ثوب' : '', quantity: 1, price: 0, fabric: '' })}
                       className="bg-brand/5 text-brand px-4 py-2 rounded-xl text-xs font-black hover:bg-brand/10 transition-all flex items-center gap-2"
                     >
                       <Plus size={14} /> {t('orders.add_item')}

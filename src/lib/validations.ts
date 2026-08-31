@@ -85,7 +85,8 @@ export const orderSchema = z.object({
   paymentMethod: z.enum(['cash', 'network', 'cash_on_delivery', 'partial']),
   deliveryDate: z.string().min(1, t('validation.required')),
   createdBy: z.string().optional(),
-  status: z.enum(['measurements_taken', 'cutting', 'sewing', 'embroidery', 'ironing_packaging', 'ready', 'delivered']),
+  // enum ثابت لمستأجري mens_tailoring، أو stage_key حر لأي نشاط آخر (انظر Orders.tsx: defaultOrderValues/onSubmit).
+  status: z.string().min(1, t('validation.required')),
   notes: z.string().max(1000).optional().or(z.literal('')),
   internalNotes: z.string().max(1000).optional().or(z.literal('')),
   images: z.array(z.string()).optional(),

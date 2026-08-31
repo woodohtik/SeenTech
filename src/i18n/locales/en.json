@@ -1504,9 +1504,9 @@
       "strong": "Strong",
       "weak": "Weak"
     },
-    "subtitle": "Integrated solution for tailoring shops, from measurements to invoices and financial reports in one place.",
+    "subtitle": "Integrated solution for managing your business, from orders to invoices and financial reports in one place.",
     "system_active": "System Active",
-    "tailor_name": "Tailor / Shop Name",
+    "tailor_name": "Full Name",
     "title": "Seen System",
     "verifying_pin": "Verifying...",
     "welcome_back": "Welcome Back"
@@ -1777,7 +1777,7 @@
     "status_history": "Status History",
     "status_updated_success": "Order status updated successfully",
     "stock_shortage_confirm": "Warning: The following quantities are not available in stock: {{items}}. Do you want to continue anyway?",
-    "subtitle": "Tailoring orders and appointments management",
+    "subtitle": "Orders and appointments management",
     "subtotal": "Taxable Total",
     "test_data": "Test Data",
     "test_data_badge": "Test Data",
