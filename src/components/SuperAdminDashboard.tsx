@@ -1389,8 +1389,8 @@ export default function SuperAdminDashboard() {
                   </h3>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <div className="relative w-48 sm:w-64">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="relative w-full sm:w-64">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted" size={14} />
                     <input
                       type="text"

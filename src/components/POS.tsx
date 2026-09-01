@@ -1409,11 +1409,11 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                   
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2 bg-surface-muted border border-border rounded-lg p-1">
-                      <button onClick={() => updateQuantity(item.id!, -1)} aria-label={t('pos.decrease_quantity')} className="w-8 h-8 flex items-center justify-center hover:bg-surface-muted rounded transition-colors">-</button>
+                      <button onClick={() => updateQuantity(item.id!, -1)} aria-label={t('pos.decrease_quantity')} className="w-11 h-11 flex items-center justify-center hover:bg-surface-muted rounded transition-colors">-</button>
                       <span className="w-6 text-center font-bold text-content">{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.id!, 1)} aria-label={t('pos.increase_quantity')} className="w-8 h-8 flex items-center justify-center hover:bg-surface-muted rounded transition-colors">+</button>
+                      <button onClick={() => updateQuantity(item.id!, 1)} aria-label={t('pos.increase_quantity')} className="w-11 h-11 flex items-center justify-center hover:bg-surface-muted rounded transition-colors">+</button>
                     </div>
-                    <button onClick={() => removeFromCart(item.id!)} aria-label={t('pos.remove_item')} className="p-2 text-danger hover:bg-danger/10 rounded-lg transition-colors cursor-pointer">
+                    <button onClick={() => removeFromCart(item.id!)} aria-label={t('pos.remove_item')} className="p-3 text-danger hover:bg-danger/10 rounded-lg transition-colors cursor-pointer">
                       <Trash2 size={18} />
                     </button>
                   </div>

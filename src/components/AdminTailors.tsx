@@ -864,7 +864,7 @@ export default function AdminTailors() {
         >
           {/* Filters & Actions */}
           <div className="bg-surface p-6 rounded-[2.5rem] border border-border shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex flex-1 gap-4 w-full md:w-auto">
+            <div className="flex flex-col sm:flex-row flex-1 gap-4 w-full md:w-auto">
               <div className="flex-1 max-w-sm">
                 <IconInput 
                   type="text"

@@ -129,7 +129,7 @@ export default function ShiftHistory({ tenantId, staffId, isManager }: ShiftHist
           <h2 className="text-2xl font-black text-content">{t('shift_history.title')}</h2>
           <p className="text-content-muted mt-1">{t('shift_history.desc')}</p>
         </div>
-        <div className="flex gap-3 w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
           <div className="relative flex-1 md:w-64">
             <Search className={cn("absolute top-1/2 -translate-y-1/2 text-content-muted", isRtl ? "right-3" : "left-3")} size={18} />
             <input 

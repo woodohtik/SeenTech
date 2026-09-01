@@ -267,29 +267,29 @@ export default function CartSidebar({
                   </div>
 
                   <div className="flex flex-col items-end justify-between min-w-[100px]">
-                    <button 
+                    <button
                       onClick={() => onRemove(item.id)}
-                      className="text-danger/60 hover:text-danger hover:bg-danger/10 p-1.5 rounded-lg transition-all"
+                      className="text-danger/60 hover:text-danger hover:bg-danger/10 p-3 rounded-lg transition-all"
                       title={t('common.delete')}
                     >
                       <Trash2 size={18} />
                     </button>
-                    
+
                     <div className="flex items-center gap-2 bg-surface-muted rounded-lg p-1 border border-border mt-2">
-                      <button 
+                      <button
                         onClick={() => onUpdateQuantity(item.id, Math.max(1, item.quantity - 1))}
-                        className="w-7 h-7 flex items-center justify-center bg-surface border border-border rounded text-content hover:text-brand hover:border-brand transition-all"
+                        className="w-11 h-11 flex items-center justify-center bg-surface border border-border rounded text-content hover:text-brand hover:border-brand transition-all"
                       >
                         <Minus size={14} />
                       </button>
-                      
+
                       <span className="text-base font-bold w-8 text-center tabular-nums text-content">
                         {item.quantity}
                       </span>
-                      
-                      <button 
+
+                      <button
                         onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-                        className="w-7 h-7 flex items-center justify-center bg-surface border border-border rounded text-content hover:text-brand hover:border-brand transition-all"
+                        className="w-11 h-11 flex items-center justify-center bg-surface border border-border rounded text-content hover:text-brand hover:border-brand transition-all"
                       >
                         <Plus size={14} />
                       </button>

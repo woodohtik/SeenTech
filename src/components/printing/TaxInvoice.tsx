@@ -308,6 +308,7 @@ export default function TaxInvoice({
 
         {/* Detailed Items Table */}
         <div className="mb-8 border border-slate-200 rounded-2xl overflow-hidden">
+        <div className="overflow-x-auto">
           <table className="w-full text-right border-collapse text-[11px]">
             <thead>
               <tr className="bg-slate-900 text-white text-[10px] font-black">
@@ -368,6 +369,7 @@ export default function TaxInvoice({
               })}
             </tbody>
           </table>
+        </div>
         </div>
 
         {/* Totals Breakdown Block + ZATCA QR Code */}

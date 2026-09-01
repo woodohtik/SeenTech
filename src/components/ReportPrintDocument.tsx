@@ -74,6 +74,7 @@ export default function ReportPrintDocument({ id, reportTitle, dateRangeLabel, k
           <div key={ti} className="mb-8">
             <h3 className="font-black text-sm mb-2">{table.title}</h3>
             {table.rows.length > 0 ? (
+              <div className="overflow-x-auto">
               <table className="w-full text-xs border-collapse" style={{ border: '1px solid #000' }}>
                 <thead>
                   <tr>
@@ -94,6 +95,7 @@ export default function ReportPrintDocument({ id, reportTitle, dateRangeLabel, k
                   ))}
                 </tbody>
               </table>
+              </div>
             ) : (
               <p className="text-xs text-gray-500">{t('reports.no_customer_data', 'لا توجد بيانات')}</p>
             )}
