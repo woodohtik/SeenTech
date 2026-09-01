@@ -3,7 +3,7 @@ import { Staff } from '../types';
 
 interface StaffContextType {
   currentStaff: Staff | null;
-  setCurrentStaff: (staff: Staff | null) => void;
+  setCurrentStaff: React.Dispatch<React.SetStateAction<Staff | null>>;
 }
 
 const StaffContext = createContext<StaffContextType | undefined>(undefined);

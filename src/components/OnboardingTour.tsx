@@ -3,6 +3,7 @@ import { driver, type Driver, type DriveStep } from 'driver.js';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase/client';
+import { useStaff } from '../contexts/StaffContext';
 import {
   TOUR_CHECKLIST,
   buildTourSteps,
@@ -146,6 +147,7 @@ export default function OnboardingTour({
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+  const { setCurrentStaff } = useStaff();
 
   const isRtl = isRtlLang(i18n.language);
 
@@ -233,10 +235,16 @@ export default function OnboardingTour({
             .update({ has_seen_onboarding: true })
             .eq('id', staffId)
             .then(undefined, () => undefined);
+
+          // currentStaff (from StaffContext) was fetched before this write and
+          // won't reflect it on its own — patch it locally so SetupChecklistBar
+          // (gated on currentStaff.has_seen_onboarding) shows up immediately
+          // instead of only after a full page reload.
+          setCurrentStaff((prev) => (prev ? { ...prev, has_seen_onboarding: true } : prev));
         }
       }
     },
-    [stateKey, legacyKey, tenantId, staffId]
+    [stateKey, legacyKey, tenantId, staffId, setCurrentStaff]
   );
 
   /** Records progress without touching the sticky `seen` flag. */
