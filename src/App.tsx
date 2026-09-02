@@ -155,12 +155,6 @@ function AccountIssueScreen({ variant, email, detail, onRetry, onLogout }: {
 }
 
 function AppContent() {
-  // TEMP: seen-fault-isolation-task.md stage 3 verification — remove after test.
-  // مقصود بشرط بدل throw مباشر: يبقى بقية الاختبار (صفحة/ودجت) قابلاً للتصفح
-  // بلا انقطاع أثناء نفس نافذة الاختبار.
-  if (typeof window !== 'undefined' && window.location.search.includes('test_top_level_crash')) {
-    throw new Error('اختبار الغلاف الأعلى (main.tsx)');
-  }
   const { t, i18n } = useTranslation();
   const { dir, isRtl } = useDirection();
   const { currentStaff, setCurrentStaff } = useStaff();

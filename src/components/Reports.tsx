@@ -75,8 +75,6 @@ interface DrillDownData {
 }
 
 export default function Reports({ tenantId }: { tenantId: string }) {
-  // TEMP: seen-fault-isolation-task.md stage 3 verification — remove after test.
-  throw new Error('اختبار عزل الأعطال');
   const { t, dir, locale } = useDirection();
   const { currentStaff } = useStaff();
   const { hasPermission, loading: permsLoading } = usePermissions(currentStaff);
