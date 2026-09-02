@@ -155,6 +155,12 @@ function AccountIssueScreen({ variant, email, detail, onRetry, onLogout }: {
 }
 
 function AppContent() {
+  // TEMP: seen-fault-isolation-task.md stage 3 verification — remove after test.
+  // مقصود بشرط بدل throw مباشر: يبقى بقية الاختبار (صفحة/ودجت) قابلاً للتصفح
+  // بلا انقطاع أثناء نفس نافذة الاختبار.
+  if (typeof window !== 'undefined' && window.location.search.includes('test_top_level_crash')) {
+    throw new Error('اختبار الغلاف الأعلى (main.tsx)');
+  }
   const { t, i18n } = useTranslation();
   const { dir, isRtl } = useDirection();
   const { currentStaff, setCurrentStaff } = useStaff();
@@ -552,47 +558,63 @@ function AppContent() {
                 <SaaSLayout userRole={userRole}>
                   <React.Suspense fallback={<PageSkeleton />}>
                     <Routes>
-                      <Route path="/dashboard" element={<SuperAdminDashboard />} />
-                      <Route path="/tailors" element={<AdminTailors />} />
+                      <Route path="/dashboard" element={<ErrorBoundary variant="inline"><SuperAdminDashboard /></ErrorBoundary>} />
+                      <Route path="/tailors" element={<ErrorBoundary variant="inline"><AdminTailors /></ErrorBoundary>} />
                       <Route path="/roles" element={
-                        <RoleGuard allowedRoles={['super_admin']}>
-                          <RolePermissionsSettings isSuperAdmin={true} />
-                        </RoleGuard>
+                        <ErrorBoundary variant="inline">
+                          <RoleGuard allowedRoles={['super_admin']}>
+                            <RolePermissionsSettings isSuperAdmin={true} />
+                          </RoleGuard>
+                        </ErrorBoundary>
                       } />
                       <Route path="/tailors/:tenantId/analytics" element={
-                        <RoleGuard allowedRoles={['super_admin', 'billing_admin', 'sales']}>
-                          <TenantAnalyticsDashboard />
-                        </RoleGuard>
+                        <ErrorBoundary variant="inline">
+                          <RoleGuard allowedRoles={['super_admin', 'billing_admin', 'sales']}>
+                            <TenantAnalyticsDashboard />
+                          </RoleGuard>
+                        </ErrorBoundary>
                       } />
                       <Route path="/reports" element={
-                        <RoleGuard allowedRoles={['super_admin', 'billing_admin', 'sales']}>
-                          <SaaSReports />
-                        </RoleGuard>
+                        <ErrorBoundary variant="inline">
+                          <RoleGuard allowedRoles={['super_admin', 'billing_admin', 'sales']}>
+                            <SaaSReports />
+                          </RoleGuard>
+                        </ErrorBoundary>
                       } />
                       <Route path="/withdrawals" element={
-                        <RoleGuard allowedRoles={['super_admin', 'billing_admin']}>
-                          <SaaSWithdrawals />
-                        </RoleGuard>
+                        <ErrorBoundary variant="inline">
+                          <RoleGuard allowedRoles={['super_admin', 'billing_admin']}>
+                            <SaaSWithdrawals />
+                          </RoleGuard>
+                        </ErrorBoundary>
                       } />
                       <Route path="/audit" element={
-                        <RoleGuard allowedRoles={['super_admin']}>
-                          <SaaSAuditLogs />
-                        </RoleGuard>
+                        <ErrorBoundary variant="inline">
+                          <RoleGuard allowedRoles={['super_admin']}>
+                            <SaaSAuditLogs />
+                          </RoleGuard>
+                        </ErrorBoundary>
                       } />
                       <Route path="/system" element={
-                        <RoleGuard allowedRoles={['super_admin']}>
-                          <SaaSSystemSettings />
-                        </RoleGuard>
+                        <ErrorBoundary variant="inline">
+                          <RoleGuard allowedRoles={['super_admin']}>
+                            <SaaSSystemSettings />
+                          </RoleGuard>
+                        </ErrorBoundary>
                       } />
                       <Route path="/assistant-settings" element={
-                        <RoleGuard allowedRoles={['super_admin']}>
-                          <SaaSAssistantSettings />
-                        </RoleGuard>
+                        <ErrorBoundary variant="inline">
+                          <RoleGuard allowedRoles={['super_admin']}>
+                            <SaaSAssistantSettings />
+                          </RoleGuard>
+                        </ErrorBoundary>
                       } />
                       <Route path="/team" element={
-                        <RoleGuard allowedRoles={['super_admin']}>
-                          <SaaSTeamManagement />
-                        </RoleGuard>
+                        <ErrorBoundary variant="inline">
+                          <RoleGuard allowedRoles={['super_admin']}>
+                            <SaaSTeamManagement />
+                          </RoleGuard>
+                        </ErrorBoundary>
                       } />
                       <Route path="*" element={<Navigate to="/admin/dashboard" />} />
                     </Routes>
@@ -661,50 +683,66 @@ function AppContent() {
                           <React.Suspense fallback={<PageSkeleton />}>
                             <Routes>
                               <Route path="/" element={
-                                userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> : 
+                                userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> :
                                 (effectiveRole === 'cashier' ? <Navigate to="/sales" /> :
                                  effectiveRole === 'tailor' ? <Navigate to="/orders" /> :
-                                 <Dashboard tenantId={effectiveTenantId!} />)
+                                 <ErrorBoundary variant="inline"><Dashboard tenantId={effectiveTenantId!} /></ErrorBoundary>)
                               } />
                               <Route path="/dashboard" element={
-                                <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager']} permission="dashboard.view" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
-                                  {userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> : <Dashboard tenantId={effectiveTenantId!} />}
-                                </ProtectedRoute>
+                                <ErrorBoundary variant="inline">
+                                  <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager']} permission="dashboard.view" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                    {userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> : <Dashboard tenantId={effectiveTenantId!} />}
+                                  </ProtectedRoute>
+                                </ErrorBoundary>
                               } />
                               <Route path="/sales" element={
-                                <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'cashier']} permission="sales.view" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
-                                  <Sales tenantId={effectiveTenantId!} />
-                                </ProtectedRoute>
+                                <ErrorBoundary variant="inline">
+                                  <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'cashier']} permission="sales.view" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                    <Sales tenantId={effectiveTenantId!} />
+                                  </ProtectedRoute>
+                                </ErrorBoundary>
                               } />
                               <Route path="/orders" element={
-                                <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'cashier', 'tailor']} permission="orders.view" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
-                                  <Orders tenantId={effectiveTenantId!} />
-                                </ProtectedRoute>
+                                <ErrorBoundary variant="inline">
+                                  <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'cashier', 'tailor']} permission="orders.view" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                    <Orders tenantId={effectiveTenantId!} />
+                                  </ProtectedRoute>
+                                </ErrorBoundary>
                               } />
                               <Route path="/customers" element={
-                                <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'cashier']} permission="customers.view" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
-                                  <Customers tenantId={effectiveTenantId!} />
-                                </ProtectedRoute>
+                                <ErrorBoundary variant="inline">
+                                  <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'cashier']} permission="customers.view" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                    <Customers tenantId={effectiveTenantId!} />
+                                  </ProtectedRoute>
+                                </ErrorBoundary>
                               } />
                               <Route path="/inventory" element={
-                                <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'warehouse_manager']} permission="inventory.view" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
-                                  <InventoryManager tenantId={effectiveTenantId!} />
-                                </ProtectedRoute>
+                                <ErrorBoundary variant="inline">
+                                  <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'warehouse_manager']} permission="inventory.view" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                    <InventoryManager tenantId={effectiveTenantId!} />
+                                  </ProtectedRoute>
+                                </ErrorBoundary>
                               } />
                               <Route path="/suppliers" element={
-                                <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'accountant']} permission="suppliers.manage" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
-                                  <Suppliers tenantId={effectiveTenantId!} />
-                                </ProtectedRoute>
+                                <ErrorBoundary variant="inline">
+                                  <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'accountant']} permission="suppliers.manage" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                    <Suppliers tenantId={effectiveTenantId!} />
+                                  </ProtectedRoute>
+                                </ErrorBoundary>
                               } />
                               <Route path="/reports" element={
-                                <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'accountant']} permission="reports.view" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
-                                  <Reports tenantId={effectiveTenantId!} />
-                                </ProtectedRoute>
+                                <ErrorBoundary variant="inline">
+                                  <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'accountant']} permission="reports.view" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                    <Reports tenantId={effectiveTenantId!} />
+                                  </ProtectedRoute>
+                                </ErrorBoundary>
                               } />
                               <Route path="/settings" element={
-                                <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin']} permission="settings.view" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
-                                  <Settings tenantId={effectiveTenantId!} />
-                                </ProtectedRoute>
+                                <ErrorBoundary variant="inline">
+                                  <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin']} permission="settings.view" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                    <Settings tenantId={effectiveTenantId!} />
+                                  </ProtectedRoute>
+                                </ErrorBoundary>
                               } />
                               <Route path="/403" element={<AccessDenied userRole={effectiveRole} />} />
                               <Route path="*" element={<Navigate to="/" />} />
@@ -755,50 +793,66 @@ function AppContent() {
                       <React.Suspense fallback={<PageSkeleton />}>
                         <Routes>
                           <Route path="/" element={
-                            userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> : 
+                            userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> :
                             (effectiveRole === 'cashier' ? <Navigate to="/sales" /> :
                              effectiveRole === 'tailor' ? <Navigate to="/orders" /> :
-                             <Dashboard tenantId={effectiveTenantId!} />)
+                             <ErrorBoundary variant="inline"><Dashboard tenantId={effectiveTenantId!} /></ErrorBoundary>)
                           } />
                           <Route path="/dashboard" element={
-                            <ProtectedRoute permission="dashboard.view" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
-                              {userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> : <Dashboard tenantId={effectiveTenantId!} />}
-                            </ProtectedRoute>
+                            <ErrorBoundary variant="inline">
+                              <ProtectedRoute permission="dashboard.view" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                {userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> : <Dashboard tenantId={effectiveTenantId!} />}
+                              </ProtectedRoute>
+                            </ErrorBoundary>
                           } />
                           <Route path="/sales" element={
-                            <ProtectedRoute permission="sales.view" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'cashier']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
-                              <Sales tenantId={effectiveTenantId!} />
-                            </ProtectedRoute>
+                            <ErrorBoundary variant="inline">
+                              <ProtectedRoute permission="sales.view" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'cashier']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                <Sales tenantId={effectiveTenantId!} />
+                              </ProtectedRoute>
+                            </ErrorBoundary>
                           } />
                           <Route path="/orders" element={
-                            <ProtectedRoute permission="orders.view" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'cashier', 'tailor']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
-                              <Orders tenantId={effectiveTenantId!} />
-                            </ProtectedRoute>
+                            <ErrorBoundary variant="inline">
+                              <ProtectedRoute permission="orders.view" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'cashier', 'tailor']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                <Orders tenantId={effectiveTenantId!} />
+                              </ProtectedRoute>
+                            </ErrorBoundary>
                           } />
                           <Route path="/customers" element={
-                            <ProtectedRoute permission="customers.view" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'cashier']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
-                              <Customers tenantId={effectiveTenantId!} />
-                            </ProtectedRoute>
+                            <ErrorBoundary variant="inline">
+                              <ProtectedRoute permission="customers.view" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'cashier']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                <Customers tenantId={effectiveTenantId!} />
+                              </ProtectedRoute>
+                            </ErrorBoundary>
                           } />
                           <Route path="/inventory" element={
-                            <ProtectedRoute permission="inventory.view" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'warehouse_manager']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
-                              <InventoryManager tenantId={effectiveTenantId!} />
-                            </ProtectedRoute>
+                            <ErrorBoundary variant="inline">
+                              <ProtectedRoute permission="inventory.view" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'warehouse_manager']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                <InventoryManager tenantId={effectiveTenantId!} />
+                              </ProtectedRoute>
+                            </ErrorBoundary>
                           } />
                           <Route path="/suppliers" element={
-                            <ProtectedRoute permission="suppliers.manage" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'accountant']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
-                              <Suppliers tenantId={effectiveTenantId!} />
-                            </ProtectedRoute>
+                            <ErrorBoundary variant="inline">
+                              <ProtectedRoute permission="suppliers.manage" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'accountant']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                <Suppliers tenantId={effectiveTenantId!} />
+                              </ProtectedRoute>
+                            </ErrorBoundary>
                           } />
                           <Route path="/reports" element={
-                            <ProtectedRoute permission="reports.view" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'accountant']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
-                              <Reports tenantId={effectiveTenantId!} />
-                            </ProtectedRoute>
+                            <ErrorBoundary variant="inline">
+                              <ProtectedRoute permission="reports.view" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'accountant']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                <Reports tenantId={effectiveTenantId!} />
+                              </ProtectedRoute>
+                            </ErrorBoundary>
                           } />
                           <Route path="/settings" element={
-                            <ProtectedRoute permission="settings.view" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
-                              <Settings tenantId={effectiveTenantId!} />
-                            </ProtectedRoute>
+                            <ErrorBoundary variant="inline">
+                              <ProtectedRoute permission="settings.view" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                <Settings tenantId={effectiveTenantId!} />
+                              </ProtectedRoute>
+                            </ErrorBoundary>
                           } />
                           <Route path="/403" element={<AccessDenied userRole={effectiveRole} />} />
                           <Route path="*" element={<Navigate to="/" />} />

@@ -32,6 +32,8 @@ async function getAuthHeader(): Promise<Record<string, string>> {
 }
 
 export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabProps) {
+  // TEMP: seen-fault-isolation-task.md stage 3 verification — remove after test.
+  throw new Error('اختبار عزل عطل المساعد الذكي');
   const [isOpen, setIsOpen] = useState(false);
   const [isEnabled, setIsEnabled] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);

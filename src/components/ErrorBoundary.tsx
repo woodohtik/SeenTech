@@ -6,6 +6,15 @@ import { dirOf } from '../lib/direction';
 
 interface ErrorBoundaryProps {
   children?: React.ReactNode;
+  /**
+   * 'full' (default): شاشة خطأ كاملة تملأ الصفحة — يبقى هذا فقط على الغلاف
+   * الأعلى في main.tsx كخط الدفاع الأخير. 'inline': بطاقة صغيرة داخل مكانها
+   * (لا تُسقط بقية الصفحة)، وزر إعادة المحاولة يعيد تعيين حالة هذا الـ
+   * boundary فقط دون window.location.reload().
+   */
+  variant?: 'full' | 'inline';
+  /** عنوان مختصر اختياري يظهر في بطاقة الـ inline (مثلاً اسم الودجت المعطوب). */
+  inlineLabel?: string;
 }
 
 interface ErrorBoundaryState {
@@ -30,13 +39,21 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
   }
 
   componentDidMount() {
-    window.addEventListener('unhandledrejection', this.handlePromiseRejection);
-    window.addEventListener('error', this.handleGlobalError);
+    // فقط الغلاف الأعلى (full، الافتراضي) يستمع لأخطاء window العامة —
+    // boundaries الـ inline المتعددة (صفحة لكل مسار + ودجت المساعد) قد
+    // تكون عدة نسخ مُركّبة في آن واحد، فلو استمعت كلها لنفس أحداث window
+    // لتكرر تسجيل نفس الخطأ العام مرات بعدد الـ boundaries المركّبة.
+    if (this.props.variant !== 'inline') {
+      window.addEventListener('unhandledrejection', this.handlePromiseRejection);
+      window.addEventListener('error', this.handleGlobalError);
+    }
   }
 
   componentWillUnmount() {
-    window.removeEventListener('unhandledrejection', this.handlePromiseRejection);
-    window.removeEventListener('error', this.handleGlobalError);
+    if (this.props.variant !== 'inline') {
+      window.removeEventListener('unhandledrejection', this.handlePromiseRejection);
+      window.removeEventListener('error', this.handleGlobalError);
+    }
   }
 
   handlePromiseRejection = (event: PromiseRejectionEvent) => {
@@ -87,6 +104,11 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
     window.location.reload();
   };
 
+  /** يعيد تعيين حالة هذا الـ boundary فقط — بلا إعادة تحميل الصفحة. */
+  handleInlineRetry = () => {
+    this.setState({ hasError: false, error: null, errorInfo: null, eventId: null });
+  };
+
   handleGoHome = () => {
     this.setState({ hasError: false, error: null, errorInfo: null, eventId: null });
     window.location.href = '/';
@@ -133,6 +155,29 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
         if (error?.message?.toLowerCase().includes('fetch') || error?.message?.toLowerCase().includes('network')) {
            errorMessage = i18n.t('errors.network');
         }
+      }
+
+      if (this.props.variant === 'inline') {
+        return (
+          <div className="bg-danger/5 border border-danger/20 rounded-2xl p-5 text-center font-sansSelection" dir={dirOf()}>
+            <div className="w-11 h-11 bg-danger/10 rounded-full flex items-center justify-center mx-auto mb-3">
+              <AlertCircle className="text-danger" size={22} />
+            </div>
+            {this.props.inlineLabel && (
+              <p className="text-[11px] font-black text-content-muted uppercase tracking-wider mb-1">{this.props.inlineLabel}</p>
+            )}
+            <p className="text-content-muted font-bold text-sm mb-4 leading-relaxed">
+              {isPermissionError ? i18n.t('errors.permission_error_title') : errorMessage}
+            </p>
+            <button
+              onClick={this.handleInlineRetry}
+              className="inline-flex items-center justify-center gap-2 bg-content text-white px-5 py-2.5 rounded-xl font-black text-xs hover:bg-black transition-all"
+            >
+              <RefreshCcw size={14} />
+              {i18n.t('common.retry')}
+            </button>
+          </div>
+        );
       }
 
       return (

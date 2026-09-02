@@ -53,6 +53,7 @@ import UserPreferencesMenu from './UserPreferencesMenu';
 import SupportConsentModal from './SupportConsentModal';
 import StaffTutorialModal from './StaffTutorialModal';
 import SeenAIFab from './SeenAIFab';
+import ErrorBoundary from './ErrorBoundary';
 import OnboardingTour from './OnboardingTour';
 import SetupChecklistBar from './SetupChecklistBar';
 
@@ -672,11 +673,19 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
         </div>
       </div>
 
-      <SeenAIFab
-        tenantId={tenantId}
-        userName={currentStaff?.name || dbUser?.display_name || dbUser?.email || ''}
-        userRole={effectiveRole}
-      />
+      {/* عزل مقصود: عطل في المساعد الذكي يجب أن يُخفي الودجت فقط (أو يعرض
+          زر إعادة تحميل صغير) بدل إسقاط الصفحة المحيطة بالكامل. الغلاف
+          fixed هنا يضمن أن بطاقة الخطأ الصغيرة تظهر بنفس زاوية الودجت
+          حتى لو SeenAIFab نفسه لم يُتح فرصة لعرض موضعه الداخلي fixed. */}
+      <div className={cn("fixed bottom-6 z-50", isRtl ? "left-6" : "right-6")}>
+        <ErrorBoundary variant="inline" inlineLabel={t('errors.assistant_unavailable')}>
+          <SeenAIFab
+            tenantId={tenantId}
+            userName={currentStaff?.name || dbUser?.display_name || dbUser?.email || ''}
+            userRole={effectiveRole}
+          />
+        </ErrorBoundary>
+      </div>
 
       <OnboardingTour
         role={effectiveRole}

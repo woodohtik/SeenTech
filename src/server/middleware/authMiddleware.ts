@@ -170,29 +170,34 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
  */
 export const authorize = (roles: string[]) => {
   return async (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (!req.user || !req.user.role) {
-      return res.status(403).json({ error: 'Forbidden: No role assigned' });
+    try {
+      if (!req.user || !req.user.role) {
+        return res.status(403).json({ error: 'Forbidden: No role assigned' });
+      }
+
+      if (req.user.role === 'super_admin') {
+        return next(); // Super admin can do anything
+      }
+
+      if (roles.includes(req.user.role)) {
+        return next();
+      }
+
+      // Log unauthorized role attempt
+      await logSecurityEvent({
+        type: 'insufficient_permissions',
+        uid: req.user.uid,
+        email: req.user.email,
+        role: req.user.role,
+        required_roles: roles,
+        path: req.path,
+        method: req.method
+      });
+
+      return res.status(403).json({ error: 'Forbidden: Insufficient permissions' });
+    } catch (error) {
+      console.error('Authorize Middleware Error:', error);
+      return res.status(403).json({ error: 'Forbidden: Insufficient permissions' });
     }
-
-    if (req.user.role === 'super_admin') {
-      return next(); // Super admin can do anything
-    }
-
-    if (roles.includes(req.user.role)) {
-      return next();
-    }
-
-    // Log unauthorized role attempt
-    await logSecurityEvent({
-      type: 'insufficient_permissions',
-      uid: req.user.uid,
-      email: req.user.email,
-      role: req.user.role,
-      required_roles: roles,
-      path: req.path,
-      method: req.method
-    });
-
-    return res.status(403).json({ error: 'Forbidden: Insufficient permissions' });
   };
 };

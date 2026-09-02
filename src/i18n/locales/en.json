@@ -904,6 +904,7 @@
       "unexpected_login": "An unexpected error occurred while signing in.",
       "weak_password": "Password is too weak. It must be at least 6 characters."
     },
+    "assistant_unavailable": "The smart assistant couldn't load",
     "back_home": "Back to Home",
     "daily_quota_exceeded": "You have exceeded today's usage quota. Please try again tomorrow.",
     "error_id": "Error ID: {{id}}",

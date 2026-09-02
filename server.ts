@@ -1304,6 +1304,26 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
   }
 });
 
+// شبكة أمان أخيرة لما يفلت من كل try/catch أعلاه (كود مستقبلي ينساها، أو خطأ
+// متزامن في middleware قبل الوصول للمسار). لا تستدعِ process.exit() في
+// unhandledRejection/uncaughtException -- هذا التطبيق يعمل كدالة Vercel
+// serverless (عبر api/index.js)، وإنهاء العملية غير مجدٍ/ضار في هذا السياق.
+process.on('unhandledRejection', (reason) => {
+  console.error('[unhandledRejection]', reason instanceof Error ? reason : new Error(String(reason)));
+});
+process.on('uncaughtException', (err) => {
+  console.error('[uncaughtException]', err);
+});
+
+// middleware معالجة أخطاء عام (4 معاملات) -- يجب أن يُسجَّل بعد كل مسارات
+// /api/* أعلاه ليلتقط ما يفلت منها؛ لا يغيّر سلوك أي مسار يعالج أخطاءه بنفسه
+// بالفعل (الأغلبية هنا فعلياً يفعل).
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error(`[globalErrorHandler] ${req.path}:`, err);
+  if (res.headersSent) return next(err);
+  res.status(500).json({ error: 'حدث خطأ غير متوقع، حاول لاحقًا' });
+});
+
 async function setupServer() {
   // Public marketing landing page served at the site root "/" for visitors.
   // The SPA (app) keeps handling /login, /dashboard, /orders, ... as usual.
