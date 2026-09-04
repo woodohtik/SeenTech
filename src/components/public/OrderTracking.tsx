@@ -17,6 +17,9 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDirection } from '../../lib/direction';
+import { subscribeToOrderNotifications, type SubscribeResult } from '../../lib/pushNotifications';
+
+const NOTIFY_STORAGE_PREFIX = 'seen_tracking_notify_';
 
 type PublicStatus =
   | 'measurements_taken' | 'cutting' | 'sewing' | 'embroidery'
@@ -50,6 +53,36 @@ export default function OrderTracking({ token }: { token: string }) {
   const [order, setOrder] = useState<PublicOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notifyState, setNotifyState] = useState<SubscribeResult | 'idle' | 'loading'>(() => {
+    try {
+      return localStorage.getItem(NOTIFY_STORAGE_PREFIX + token) === 'granted' ? 'granted' : 'idle';
+    } catch {
+      return 'idle';
+    }
+  });
+
+  // localStorage alone only remembers that the customer opted in once --
+  // it can't know if they later revoked the browser permission. Re-check
+  // the live permission on mount and fall back to the enable button rather
+  // than keep showing a stale "you're subscribed" message the customer
+  // can no longer act on from this page.
+  useEffect(() => {
+    if (notifyState !== 'granted') return;
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+      setNotifyState('idle');
+      try { localStorage.removeItem(NOTIFY_STORAGE_PREFIX + token); } catch { /* non-fatal */ }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
+  const handleEnableNotifications = async () => {
+    setNotifyState('loading');
+    const result = await subscribeToOrderNotifications(token);
+    setNotifyState(result);
+    if (result === 'granted') {
+      try { localStorage.setItem(NOTIFY_STORAGE_PREFIX + token, 'granted'); } catch { /* private mode etc -- non-fatal */ }
+    }
+  };
 
   useEffect(() => {
     let alive = true;
@@ -114,6 +147,28 @@ export default function OrderTracking({ token }: { token: string }) {
             {order.delivery_date && order.status !== 'cancelled' && (
               <p style={styles.delivery}>{t('public_tracking.expected_delivery', { date: order.delivery_date })}</p>
             )}
+
+            {order.status !== 'cancelled' && order.status !== 'delivered' && (
+              <div style={styles.notifyBox}>
+                {notifyState === 'idle' && (
+                  <button style={styles.notifyButton} onClick={handleEnableNotifications}>
+                    {t('public_tracking.enable_notifications')}
+                  </button>
+                )}
+                {notifyState === 'loading' && (
+                  <p style={styles.muted}>{t('public_tracking.notify_loading')}</p>
+                )}
+                {notifyState === 'granted' && (
+                  <p style={styles.notifySuccess}>{t('public_tracking.notify_granted')}</p>
+                )}
+                {notifyState === 'denied' && (
+                  <p style={styles.muted}>{t('public_tracking.notify_denied')}</p>
+                )}
+                {(notifyState === 'unsupported' || notifyState === 'error') && (
+                  <p style={styles.muted}>{t('public_tracking.notify_unavailable')}</p>
+                )}
+              </div>
+            )}
           </>
         )}
 
@@ -140,5 +195,11 @@ const styles: Record<string, React.CSSProperties> = {
   dot: { width: 28, height: 28, borderRadius: '50%', background: '#e6e9ef', color: '#9aa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, flexShrink: 0 },
   dotActive: { background: BLUE, color: '#fff' },
   delivery: { marginTop: 12, color: NAVY, fontSize: 15, fontWeight: 600 },
+  notifyBox: { marginTop: 20 },
+  notifyButton: {
+    width: '100%', padding: '12px 16px', borderRadius: 12, border: 'none',
+    background: BLUE, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+  },
+  notifySuccess: { color: '#1E8E5A', fontSize: 14, fontWeight: 600, margin: 0 },
   footer: { marginTop: 20, paddingTop: 14, borderTop: '1px solid #eee', color: '#aaa', fontSize: 12 },
 };

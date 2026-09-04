@@ -18,7 +18,7 @@ export const finalConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID?.trim() || '',
 };
 
-const app = finalConfig.apiKey ? initializeApp(finalConfig) : null;
+export const app = finalConfig.apiKey ? initializeApp(finalConfig) : null;
 
 // Fix for Iframe/Preview blocking: attempt graceful degradation of persistence
 let auth: ReturnType<typeof getAuth> | null = null;

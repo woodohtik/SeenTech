@@ -67,6 +67,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import * as XLSX from 'xlsx';
 import Branding from './Branding';
 import { buildWhatsAppMessage, getWhatsAppTemplate, sendWhatsAppMessage } from '../utils/whatsapp';
+import { notifyOrderStatusChange } from '../utils/orderNotify';
 import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
 import { downloadInvoicePDFSilently, shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
 import ScannerModal from './ScannerModal';
@@ -1267,6 +1268,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       setOrders(prev => prev.map(o => o.id === id ? { ...o, status, history: updatedHistory } : o));
       setUnpaidOrders(prev => prev.map(o => o.id === id ? { ...o, status, history: updatedHistory } : o));
 
+      void notifyOrderStatusChange(id);
       router.refresh();
       toastSuccess(t('orders.status_updated_success'));
     } catch (error) {
@@ -1315,6 +1317,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         total_amount: order.totalAmount
       });
 
+      void notifyOrderStatusChange(id);
       setIsConfirmDeliveryOpen(false);
       setPendingStatusUpdate(null);
       router.refresh();

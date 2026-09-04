@@ -50,3 +50,11 @@ if (!admin.apps.length) {
 export const adminAuth = admin.apps.length ? admin.auth() : null as any;
 // NOTE (Stage 1 migration): Firestore (adminDb) has been removed. Role/tenant
 // lookups now read from Supabase — see ./supabase-admin.ts.
+
+// Used to send order-status push notifications (seen-companion-app-task_1.md
+// Phase 2). Actually sending requires a real service-account credential
+// (the "Project ID only" fallback above constructs an app that can't sign
+// FCM sends) -- callers must expect adminMessaging.send() to reject when
+// FIREBASE_SERVICE_ACCOUNT isn't configured, and must not let that fail the
+// caller's own request (see notifyOrderStatusChange's try/catch pattern).
+export const adminMessaging = admin.apps.length ? admin.messaging() : null as any;

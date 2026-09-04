@@ -162,6 +162,32 @@ function clientIp(req: express.Request): string {
   return req.ip || 'unknown';
 }
 
+// مشترك بين GET (قراءة الحالة) وPOST (تسجيل اشتراك الإشعارات) على نفس
+// المسار -- كلاهما تخمين محتمل لتوكِنات عشوائية فيستحقان نفس الحماية.
+// يزيد العدّاد فقط عند الاستدعاء بـ recordFailure=true (طلب بتوكِن غير
+// موجود)، حتى لا يُعاقَب عميل شرعي يعيد تحميل/يعيد تفعيل الإشعارات لطلبه
+// الصحيح.
+//
+// فحص "هل تجاوز الحد" أدناه قراءة عادية (قد تكون متأخرة جزء من ثانية تحت
+// تزامن عالٍ -- مقبول، مجرد حد سريع لتفادي عمل إضافي). الزيادة الفعلية عبر
+// increment_tracking_attempt (RPC ذرّية، 20260904010000) وليس upsert
+// قراءة-ثم-كتابة، حتى لا تتراكم محاولتان متزامنتان على نفس count القديم
+// بدل الزيادة الصحيحة.
+async function checkTrackingRateLimit(
+  supabaseAdmin: any,
+  ip: string
+): Promise<{ allowed: boolean; recordFailure: () => Promise<void> }> {
+  const { data: rec } = await supabaseAdmin.from('tracking_attempts').select('*').eq('ip', ip).maybeSingle();
+  const recActive = !!rec && new Date(rec.reset_at).getTime() > Date.now();
+  const allowed = !(recActive && rec.count >= TRACKING_ATTEMPTS_PER_MINUTE);
+  return {
+    allowed,
+    recordFailure: async () => {
+      await supabaseAdmin.rpc('increment_tracking_attempt', { p_ip: ip });
+    },
+  };
+}
+
 app.get("/api/public/order-tracking/:token", asyncHandler(async (req, res) => {
   const { token } = req.params;
   const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
@@ -172,11 +198,8 @@ app.get("/api/public/order-tracking/:token", asyncHandler(async (req, res) => {
     return res.status(404).json({ error: 'Order not found' });
   }
 
-  const ip = clientIp(req);
-  const { data: rec } = await supabaseAdmin.from('tracking_attempts').select('*').eq('ip', ip).maybeSingle();
-  const recActive = !!rec && new Date(rec.reset_at).getTime() > Date.now();
-
-  if (recActive && rec!.count >= TRACKING_ATTEMPTS_PER_MINUTE) {
+  const { allowed, recordFailure } = await checkTrackingRateLimit(supabaseAdmin, clientIp(req));
+  if (!allowed) {
     return res.status(429).json({ error: 'محاولات كثيرة جداً. انتظر دقيقة ثم أعد المحاولة.' });
   }
 
@@ -187,11 +210,7 @@ app.get("/api/public/order-tracking/:token", asyncHandler(async (req, res) => {
     .maybeSingle();
 
   if (!orderData) {
-    await supabaseAdmin.from('tracking_attempts').upsert({
-      ip,
-      count: recActive ? rec!.count + 1 : 1,
-      reset_at: recActive ? rec!.reset_at : new Date(Date.now() + 60_000).toISOString(),
-    });
+    await recordFailure();
     return res.status(404).json({ error: 'Order not found' });
   }
 
@@ -208,6 +227,113 @@ app.get("/api/public/order-tracking/:token", asyncHandler(async (req, res) => {
     shop_logo_url: tenantData?.logo_url || null,
     delivery_date: orderData.delivery_date,
   });
+}));
+
+// تفعيل إشعارات Push من صفحة التتبّع العامة نفسها -- بلا حساب، الاشتراك
+// مربوط بـ tracking_token فقط (انظر 20260904000000_order_push_subscriptions.sql).
+app.post("/api/public/order-tracking/:token/subscribe", asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  const fcmToken = (req.body || {}).fcmToken;
+  const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+
+  if (!TRACKING_TOKEN_RE.test(token)) {
+    return res.status(404).json({ error: 'Order not found' });
+  }
+  if (typeof fcmToken !== 'string' || !fcmToken || fcmToken.length > 4096) {
+    return res.status(400).json({ error: 'Invalid subscription token' });
+  }
+
+  const { allowed, recordFailure } = await checkTrackingRateLimit(supabaseAdmin, clientIp(req));
+  if (!allowed) {
+    return res.status(429).json({ error: 'محاولات كثيرة جداً. انتظر دقيقة ثم أعد المحاولة.' });
+  }
+
+  const { data: orderData } = await supabaseAdmin.from('orders').select('id').eq('tracking_token', token).maybeSingle();
+  if (!orderData) {
+    await recordFailure();
+    return res.status(404).json({ error: 'Order not found' });
+  }
+
+  const { error } = await supabaseAdmin.from('order_push_subscriptions').upsert(
+    { tracking_token: token, fcm_token: fcmToken, updated_at: new Date().toISOString() },
+    { onConflict: 'tracking_token,fcm_token' }
+  );
+  if (error) {
+    console.error('[order-tracking/subscribe]', error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+
+  res.json({ ok: true });
+}));
+
+// نص عربي مبسّط لحالات الخياطة الرجالية القديمة (mens_tailoring) فقط --
+// نفس فجوة STEPS الموثّقة في PUBLIC_TRACKING_SPEC.md: مستأجرو القطاعات
+// الأخرى (status_key حر حسب vertical) يحصلون على نص الحالة الخام بدل تسمية
+// عربية مترجمة إلى أن يُعمَّم هذا حسب vertical كل تاجر.
+const ORDER_STATUS_LABELS_AR: Record<string, string> = {
+  measurements_taken: 'تم أخذ المقاسات', cutting: 'قص', sewing: 'خياطة', embroidery: 'تطريز',
+  ironing_packaging: 'كي وتغليف', ready: 'جاهز للاستلام', partial_delivered: 'تسليم جزئي',
+  delivered: 'تم التسليم', cancelled: 'ملغى',
+};
+
+// يُستدعى من العميل (الموظف المصادَق) فور نجاح أي تحديث لحالة طلب --
+// Orders.tsx وDashboardToday.tsx (src/utils/orderNotify.ts). لا يعدّل حالة
+// الطلب ولا يتوقف عليه أي منطق آخر؛ فشله لا يجب أن يُبطئ أو يُفشل تحديث
+// الحالة نفسه (المُستدعي يستخدم fire-and-forget مع try/catch منفصل).
+app.post("/api/orders/:id/notify-status", authenticate, asyncHandler(async (req: any, res) => {
+  const tenantId = req.user?.tenantId;
+  const { id } = req.params;
+  if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+  const { data: orderData } = await supabaseAdmin
+    .from('orders')
+    .select('tenant_id, tracking_token, status, status_key, order_number')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (!orderData || orderData.tenant_id !== tenantId) {
+    return res.status(404).json({ error: 'Order not found' });
+  }
+
+  const { data: subs } = await supabaseAdmin
+    .from('order_push_subscriptions')
+    .select('fcm_token')
+    .eq('tracking_token', orderData.tracking_token);
+
+  if (!subs || subs.length === 0) {
+    return res.json({ ok: true, sent: 0 });
+  }
+
+  const { adminMessaging } = await import("./src/server/firebase-admin.ts");
+  if (!adminMessaging) {
+    return res.json({ ok: true, sent: 0 });
+  }
+
+  const statusKey = orderData.status_key || orderData.status;
+  const title = `طلبك رقم ${orderData.order_number}`;
+  const body = `الحالة الآن: ${ORDER_STATUS_LABELS_AR[statusKey] || statusKey}`;
+  const link = `${req.protocol}://${req.get('host')}/track/${orderData.tracking_token}`;
+
+  const results = await Promise.allSettled(
+    subs.map((s: { fcm_token: string }) => adminMessaging.send({
+      token: s.fcm_token,
+      notification: { title, body },
+      webpush: { fcmOptions: { link } },
+    }))
+  );
+
+  // ينظّف توكِنات FCM المنتهية/المُلغاة بدل تركها تفشل بصمت كل مرة.
+  const deadTokens = results
+    .map((r: PromiseSettledResult<any>, i: number) => ({ r, token: subs[i].fcm_token }))
+    .filter(({ r }: any) => r.status === 'rejected' && r.reason?.code === 'messaging/registration-token-not-registered')
+    .map(({ token }: any) => token);
+
+  if (deadTokens.length) {
+    await supabaseAdmin.from('order_push_subscriptions').delete().eq('tracking_token', orderData.tracking_token).in('fcm_token', deadTokens);
+  }
+
+  res.json({ ok: true, sent: results.filter((r: PromiseSettledResult<any>) => r.status === 'fulfilled').length });
 }));
 
 app.get("/api/health", (req, res) => {

@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { useDirection } from '../lib/direction';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import { legacyOrderStatusFor } from '../services/verticalService';
+import { notifyOrderStatusChange } from '../utils/orderNotify';
 import { getOrderStatusDisplay } from './Orders';
 import type { WorkflowStage } from '../types/expansion';
 
@@ -84,13 +85,14 @@ export default function DashboardToday({ tenantId }: { tenantId: string }) {
     // We must decode the raw database row before retrieving history/items
     // Since o is fetched from the database, it's already decoded because of the fetch interceptor.
     // However, we must preserve both items and history when calling update to prevent them being erased.
-    await supabase.from('orders').update({
+    const { error } = await supabase.from('orders').update({
       // status_key: القيمة الفعلية الحرة لأي نشاط. status: enum قديم يبقى صالحاً دوماً.
       status: legacyOrderStatusFor(nextStatus, workflowStages),
       status_key: nextStatus,
       items: o.items || [],
       history: [...(o.history || []), historyEntry]
     }).eq('id', o.id);
+    if (!error) void notifyOrderStatusChange(o.id);
     load();
   }
   const todayStr = new Date().toLocaleDateString(locale, { weekday:'long', day:'numeric', month:'long' });

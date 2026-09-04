@@ -2786,7 +2786,12 @@
     "order_number": "Order #{{number}}",
     "powered_by": "Powered by Seen — tailoring shop management system",
     "rate_limited": "Too many attempts. Please wait a minute and try again.",
-    "title": "Track Your Order"
+    "title": "Track Your Order",
+    "enable_notifications": "Enable order status notifications",
+    "notify_loading": "Enabling…",
+    "notify_granted": "Enabled — you'll get notified when your order status changes.",
+    "notify_denied": "Notification permission was denied by the browser.",
+    "notify_unavailable": "Notifications aren't supported in this browser right now."
   },
   "reconciliation": {
     "actual": "Actual Quantity",
