@@ -602,11 +602,10 @@ export function registerPrintRelay(app: Express): void {
         .maybeSingle();
 
       if (!station) {
-        await supabaseAdmin.from('print_pair_attempts').upsert({
-          ip,
-          count: recActive ? rec!.count + 1 : 1,
-          reset_at: recActive ? rec!.reset_at : new Date(nowMs() + 60_000).toISOString(),
-        });
+        // increment_print_pair_attempt (RPC ذرّية) بدل upsert قراءة-ثم-كتابة
+        // -- نفس إصلاح increment_tracking_attempt، يمنع محاولتين متزامنتين
+        // من الكتابة على نفس count القديم بدل التراكم الصحيح.
+        await supabaseAdmin.rpc('increment_print_pair_attempt', { p_ip: ip });
         return res.status(404).json({
           ok: false,
           error: 'رمز اقتران غير صحيح، أو أن وسيط الطباعة غير مُشغَّل. تأكد من الرمز الظاهر في نافذة الوسيط.',

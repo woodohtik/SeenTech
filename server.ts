@@ -203,9 +203,12 @@ app.get("/api/public/order-tracking/:token", asyncHandler(async (req, res) => {
     return res.status(429).json({ error: 'محاولات كثيرة جداً. انتظر دقيقة ثم أعد المحاولة.' });
   }
 
+  // Embedded select (one round trip) instead of orders then tenants
+  // sequentially -- this is an unauthenticated, WhatsApp-shared page whose
+  // whole point is a fast first load.
   const { data: orderData } = await supabaseAdmin
     .from('orders')
-    .select('order_number, status, status_key, delivery_date, tenant_id')
+    .select('order_number, status, status_key, delivery_date, tenant:tenants(name, logo_url)')
     .eq('tracking_token', token)
     .maybeSingle();
 
@@ -214,11 +217,7 @@ app.get("/api/public/order-tracking/:token", asyncHandler(async (req, res) => {
     return res.status(404).json({ error: 'Order not found' });
   }
 
-  const { data: tenantData } = await supabaseAdmin
-    .from('tenants')
-    .select('name, logo_url')
-    .eq('id', orderData.tenant_id)
-    .maybeSingle();
+  const tenantData = (orderData as any).tenant;
 
   res.json({
     order_number: orderData.order_number,
@@ -410,14 +409,21 @@ app.post("/api/orders/:id/notify-new-order", authenticate, asyncHandler(async (r
     return res.status(404).json({ error: 'Order not found' });
   }
 
-  if (!eligibleStaff || eligibleStaff.length === 0) {
+  // Exclude whoever created the order -- they already saw it happen (and
+  // the client-side toast) and don't need an OS push telling them their
+  // own order arrived.
+  const targetStaffIds = eligibleStaff
+    ? eligibleStaff.map((s: { id: string }) => s.id).filter((sid: string) => sid !== req.user?.staffId)
+    : [];
+
+  if (targetStaffIds.length === 0) {
     return res.json({ ok: true, sent: 0 });
   }
 
   const { data: subs } = await supabaseAdmin
     .from('staff_push_subscriptions')
     .select('fcm_token, staff_id')
-    .in('staff_id', eligibleStaff.map((s: { id: string }) => s.id));
+    .in('staff_id', targetStaffIds);
 
   if (!subs || subs.length === 0) {
     return res.json({ ok: true, sent: 0 });

@@ -704,7 +704,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
       {tenantId && <SupportConsentModal tenantId={tenantId} />}
 
       {tenantId && !isActingAsSaaS && (
-        <NewOrderAlert tenantId={tenantId} enabled={hasPermission('orders.view')} />
+        <NewOrderAlert tenantId={tenantId} enabled={hasPermission('orders.view')} currentStaffId={currentStaff?.id} />
       )}
     </div>
     </VerticalConfigProvider>

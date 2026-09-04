@@ -24,10 +24,13 @@ interface NewOrderEvent {
 export default function NewOrderAlert({
   tenantId,
   enabled,
+  currentStaffId,
 }: {
   tenantId?: string | null;
   /** Staff must have orders.view (or be owner/super_admin) -- computed by the caller, which already holds usePermissions(). */
   enabled: boolean;
+  /** Skip alerting whoever just created the order themselves -- they already saw the checkout/save succeed. */
+  currentStaffId?: string | null;
 }) {
   const { t } = useTranslation();
   const { isRtl } = useDirection();
@@ -53,6 +56,9 @@ export default function NewOrderAlert({
   useRealtimeSync('orders', enabled ? (tenantId ?? undefined) : undefined, (payload) => {
     if (payload.eventType !== 'INSERT' || !payload.new) return;
     const row = payload.new as any;
+    // Don't alert the staff member who just created this order themselves
+    // -- they already saw checkout/save succeed via the normal toast.
+    if (currentStaffId && row.created_by === currentStaffId) return;
     const event: NewOrderEvent = {
       id: row.id,
       title: t('orders.notification_new_order_title'),

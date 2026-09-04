@@ -15,14 +15,23 @@ import { supabase } from './supabase/client';
 
 export type SubscribeResult = 'granted' | 'denied' | 'unsupported' | 'error';
 
-let messagingPromise: Promise<import('firebase/messaging').Messaging | null> | null = null;
+let messagingPromise: Promise<import('firebase/messaging').Messaging | 'unsupported' | null> | null = null;
 
+// Distinguishes "browser genuinely can't do push" from "Firebase isn't
+// configured on this deploy" -- both used to collapse into the same
+// getMessagingInstance() -> null -> 'unsupported' result, which sent
+// debugging toward a browser-compat red herring on any preview/staging
+// deploy that simply hadn't gotten its Firebase env vars copied over yet
+// (finalConfig.apiKey empty -> src/lib/firebase.ts sets app = null).
 async function getMessagingInstance() {
   if (!messagingPromise) {
     messagingPromise = (async () => {
-      if (!app) return null;
+      if (!app) {
+        console.error('[pushNotifications] Firebase is not configured (VITE_FIREBASE_* env vars missing) -- push is unavailable regardless of browser support.');
+        return null;
+      }
       const { isSupported, getMessaging } = await import('firebase/messaging');
-      if (!(await isSupported())) return null;
+      if (!(await isSupported())) return 'unsupported';
       return getMessaging(app);
     })();
   }
@@ -41,7 +50,8 @@ async function acquireFcmToken(): Promise<{ token: string } | { denied: true } |
   }
 
   const messaging = await getMessagingInstance();
-  if (!messaging) return { unsupported: true };
+  if (messaging === 'unsupported') return { unsupported: true };
+  if (!messaging) return { error: true }; // Firebase misconfigured, not a browser-support issue
 
   const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY?.trim();
   if (!vapidKey) {

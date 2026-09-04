@@ -273,23 +273,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 // connections) even though staffData.tenant_id is present --
                 // this is exactly the flash-then-recover "account not
                 // eligible" screen users hit right after signing in. Retry a
-                // direct, non-embedded read of the tenant's status a couple
-                // of times with backoff before concluding the account isn't
-                // approved, mirroring the retry already used below for a
-                // fresh-signup's cold tailor_requests read.
-                let tenantStatus = staffData.tenant?.status ?? null;
-                if (!tenantStatus && staffData.tenant_id) {
-                    for (let attempt = 0; attempt < 3 && !tenantStatus; attempt++) {
+                // direct, non-embedded read of the full tenant row (not just
+                // status -- App.tsx's trial/subscription-expiry checks and
+                // the header's workspace name read staffData.tenant.* too,
+                // and were still silently seeing the stale null embed here
+                // even after the isApproved flash itself got fixed) a
+                // couple of times with backoff before concluding the
+                // account isn't approved, mirroring the retry already used
+                // below for a fresh-signup's cold tailor_requests read.
+                let tenantRow: any = staffData.tenant ?? null;
+                if (!tenantRow && staffData.tenant_id) {
+                    for (let attempt = 0; attempt < 3 && !tenantRow; attempt++) {
                         await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
-                        const { data: tenantRow } = await supabase
+                        const { data: fetchedTenant } = await supabase
                             .from('tenants')
-                            .select('status')
+                            .select('*')
                             .eq('id', staffData.tenant_id)
                             .maybeSingle();
-                        tenantStatus = tenantRow?.status ?? null;
+                        tenantRow = fetchedTenant ?? null;
                     }
+                    if (tenantRow) staffData.tenant = tenantRow;
                 }
 
+                const tenantStatus = tenantRow?.status ?? null;
                 const approved = tenantStatus === 'active' || tenantStatus === 'approved' || tenantStatus === 'onboarding';
                 const isPending = tenantStatus === 'pending';
 

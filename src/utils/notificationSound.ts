@@ -4,11 +4,26 @@
  * Audio API instead of shipping an audio asset -- no file to source/host,
  * no licensing question, and it's a handful of lines.
  */
+
+// One shared AudioContext, created lazily on first use and reused for
+// every subsequent chime -- a fresh POS-rush burst of new orders used to
+// allocate (and schedule a delayed close() for) a brand-new AudioContext
+// per event, and browsers cap concurrent contexts, so several chimes
+// arriving within that window could start silently failing.
+let sharedCtx: AudioContext | null = null;
+
+function getAudioContext(): AudioContext | null {
+  if (sharedCtx && sharedCtx.state !== 'closed') return sharedCtx;
+  const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
+  if (!AudioContextCtor) return null;
+  sharedCtx = new AudioContextCtor();
+  return sharedCtx;
+}
+
 export function playNewOrderChime(): void {
   try {
-    const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContextCtor) return;
-    const ctx = new AudioContextCtor();
+    const ctx = getAudioContext();
+    if (!ctx) return;
 
     const playTone = (freq: number, startAt: number, duration: number) => {
       const osc = ctx.createOscillator();
@@ -28,8 +43,6 @@ export function playNewOrderChime(): void {
     // arrived", distinct from the generic toast's silent appearance.
     playTone(740, 0, 0.16);
     playTone(988, 0.1, 0.22);
-
-    setTimeout(() => ctx.close().catch(() => {}), 600);
   } catch {
     // Autoplay policies / unsupported browsers -- the visual alert alone
     // is still enough, sound is a nice-to-have.
