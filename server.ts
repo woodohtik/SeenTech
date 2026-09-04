@@ -266,6 +266,36 @@ app.post("/api/public/order-tracking/:token/subscribe", asyncHandler(async (req,
   res.json({ ok: true });
 }));
 
+// مشترك بين مسارَي إشعار حالة الطلب وإشعار الموظفين بطلب جديد -- يرسل عبر
+// FCM لكل اشتراك، وينظّف توكِنات المُلغاة/المنتهية (تفادياً لتكرار نفس
+// منطق التنظيف بالضبط في كل مسار push جديد).
+async function sendPushAndPruneDeadTokens(
+  adminMessaging: any,
+  subs: { fcm_token: string }[],
+  notification: { title: string; body: string },
+  link: string,
+  pruneDeadTokens: (deadTokens: string[]) => PromiseLike<any>
+): Promise<number> {
+  const results = await Promise.allSettled(
+    subs.map((s) => adminMessaging.send({
+      token: s.fcm_token,
+      notification,
+      webpush: { fcmOptions: { link } },
+    }))
+  );
+
+  const deadTokens = results
+    .map((r, i) => ({ r, token: subs[i].fcm_token }))
+    .filter(({ r }) => r.status === 'rejected' && (r as any).reason?.code === 'messaging/registration-token-not-registered')
+    .map(({ token }) => token);
+
+  if (deadTokens.length) {
+    await pruneDeadTokens(deadTokens);
+  }
+
+  return results.filter((r) => r.status === 'fulfilled').length;
+}
+
 // نص عربي مبسّط لحالات الخياطة الرجالية القديمة (mens_tailoring) فقط --
 // نفس فجوة STEPS الموثّقة في PUBLIC_TRACKING_SPEC.md: مستأجرو القطاعات
 // الأخرى (status_key حر حسب vertical) يحصلون على نص الحالة الخام بدل تسمية
@@ -315,25 +345,98 @@ app.post("/api/orders/:id/notify-status", authenticate, asyncHandler(async (req:
   const body = `الحالة الآن: ${ORDER_STATUS_LABELS_AR[statusKey] || statusKey}`;
   const link = `${req.protocol}://${req.get('host')}/track/${orderData.tracking_token}`;
 
-  const results = await Promise.allSettled(
-    subs.map((s: { fcm_token: string }) => adminMessaging.send({
-      token: s.fcm_token,
-      notification: { title, body },
-      webpush: { fcmOptions: { link } },
-    }))
+  const sent = await sendPushAndPruneDeadTokens(adminMessaging, subs, { title, body }, link, (deadTokens) =>
+    supabaseAdmin.from('order_push_subscriptions').delete().eq('tracking_token', orderData.tracking_token).in('fcm_token', deadTokens)
   );
 
-  // ينظّف توكِنات FCM المنتهية/المُلغاة بدل تركها تفشل بصمت كل مرة.
-  const deadTokens = results
-    .map((r: PromiseSettledResult<any>, i: number) => ({ r, token: subs[i].fcm_token }))
-    .filter(({ r }: any) => r.status === 'rejected' && r.reason?.code === 'messaging/registration-token-not-registered')
-    .map(({ token }: any) => token);
+  res.json({ ok: true, sent });
+}));
 
-  if (deadTokens.length) {
-    await supabaseAdmin.from('order_push_subscriptions').delete().eq('tracking_token', orderData.tracking_token).in('fcm_token', deadTokens);
+// تسجيل اشتراك إشعارات Push للموظف (المرحلة 3) -- staff_id من
+// req.user.staffId (يُشتقّه authMiddleware.ts من الجلسة المصادَق عليها
+// نفسها أثناء تحقّقه من الدور/tenant، فلا حاجة لاستعلام staff ثانٍ هنا)،
+// لا يُقرأ من جسم الطلب إطلاقاً -- فلا يقدر أي موظف يسجّل توكِن جهازه باسم
+// موظف آخر. staffId يكون undefined لموظفي SaaS (saas_users، لا صف staff
+// لهم أصلاً) فيُرفَض الطلب بوضوح بدل استعلام يرجع فارغاً.
+app.post("/api/staff/push-subscribe", authenticate, asyncHandler(async (req: any, res) => {
+  const staffId = req.user?.staffId;
+  const fcmToken = (req.body || {}).fcmToken;
+  if (!staffId) return res.status(404).json({ error: 'Staff record not found' });
+  if (typeof fcmToken !== 'string' || !fcmToken || fcmToken.length > 4096) {
+    return res.status(400).json({ error: 'Invalid subscription token' });
   }
 
-  res.json({ ok: true, sent: results.filter((r: PromiseSettledResult<any>) => r.status === 'fulfilled').length });
+  const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+  const { error } = await supabaseAdmin.from('staff_push_subscriptions').upsert(
+    { staff_id: staffId, fcm_token: fcmToken, updated_at: new Date().toISOString() },
+    { onConflict: 'staff_id,fcm_token' }
+  );
+  if (error) {
+    console.error('[staff/push-subscribe]', error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+
+  res.json({ ok: true });
+}));
+
+// كل أدوار MERCHANT_ROLE_KEYS (src/services/permissionService.ts) تملك
+// orders.view افتراضياً -- بما فيها accountant وwarehouse_manager
+// وbranch_manager (سقطت من نسخة أولى لهذه القائمة، فكانت النقطة تُفعَّل
+// بنجاح من إعدادات الموظف بلا أي خطأ ظاهر، لكن لا تُرسل له push إشعار
+// فعلياً أبداً). تقريب متعمَّد لصلاحية orders.view الفعلية بدل حساب الأدوار
+// المخصّصة الكاملة (roles_permissions/role overrides) هنا؛ الموظف أصلاً
+// اختار التفعيل بنفسه من إعداداته، وهذا الفحص طبقة أمان إضافية لا الوحيدة.
+// موثَّق كتبسيط معروف في PUBLIC_TRACKING_SPEC.md.
+const ORDERS_VIEW_ROLES = ['super_admin', 'owner', 'admin', 'manager', 'branch_manager', 'accountant', 'warehouse_manager', 'cashier', 'tailor'];
+
+// يُستدعى من العميل فور نجاح إنشاء طلب جديد (Orders.tsx، POS.tsx --
+// src/utils/orderNotify.ts) لإشعار الموظفين المشتركين. لا ينشئ الطلب ولا
+// يتوقف عليه؛ فشله معزول بنفس نمط notify-status أعلاه.
+app.post("/api/orders/:id/notify-new-order", authenticate, asyncHandler(async (req: any, res) => {
+  const tenantId = req.user?.tenantId;
+  const { id } = req.params;
+  if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+  // eligibleStaff only depends on tenantId (already known from the
+  // verified JWT via req.user, not from the order row) so it doesn't need
+  // to wait on orderData -- fetched in parallel instead of after it.
+  const [{ data: orderData }, { data: eligibleStaff }] = await Promise.all([
+    supabaseAdmin.from('orders').select('tenant_id, order_number, customer_name, total_amount').eq('id', id).maybeSingle(),
+    supabaseAdmin.from('staff').select('id').eq('tenant_id', tenantId).eq('status', 'active').in('role', ORDERS_VIEW_ROLES),
+  ]);
+
+  if (!orderData || orderData.tenant_id !== tenantId) {
+    return res.status(404).json({ error: 'Order not found' });
+  }
+
+  if (!eligibleStaff || eligibleStaff.length === 0) {
+    return res.json({ ok: true, sent: 0 });
+  }
+
+  const { data: subs } = await supabaseAdmin
+    .from('staff_push_subscriptions')
+    .select('fcm_token, staff_id')
+    .in('staff_id', eligibleStaff.map((s: { id: string }) => s.id));
+
+  if (!subs || subs.length === 0) {
+    return res.json({ ok: true, sent: 0 });
+  }
+
+  const { adminMessaging } = await import("./src/server/firebase-admin.ts");
+  if (!adminMessaging) {
+    return res.json({ ok: true, sent: 0 });
+  }
+
+  const title = 'طلب مبيعات جديد';
+  const body = `${orderData.customer_name || 'عميل'} — #${orderData.order_number} — ${Number(orderData.total_amount || 0).toFixed(2)} ر.س`;
+  const link = `${req.protocol}://${req.get('host')}/orders?highlight=${id}`;
+
+  const sent = await sendPushAndPruneDeadTokens(adminMessaging, subs, { title, body }, link, (deadTokens) =>
+    supabaseAdmin.from('staff_push_subscriptions').delete().in('fcm_token', deadTokens)
+  );
+
+  res.json({ ok: true, sent });
 }));
 
 app.get("/api/health", (req, res) => {

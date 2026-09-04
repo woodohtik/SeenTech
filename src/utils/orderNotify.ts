@@ -22,3 +22,22 @@ export async function notifyOrderStatusChange(orderId: string): Promise<void> {
     console.warn('[notifyOrderStatusChange] non-fatal:', e);
   }
 }
+
+/**
+ * Same fire-and-forget pattern as notifyOrderStatusChange, called once
+ * right after a new order is successfully created (Orders.tsx, POS.tsx) --
+ * pushes staff who opted in from their preferences menu (Phase 3). Never
+ * touches order-creation logic and never fails it.
+ */
+export async function notifyNewOrderForStaff(orderId: string): Promise<void> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+    await fetch(`/api/orders/${orderId}/notify-new-order`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+  } catch (e) {
+    console.warn('[notifyNewOrderForStaff] non-fatal:', e);
+  }
+}

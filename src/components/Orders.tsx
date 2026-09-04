@@ -67,7 +67,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import * as XLSX from 'xlsx';
 import Branding from './Branding';
 import { buildWhatsAppMessage, getWhatsAppTemplate, sendWhatsAppMessage } from '../utils/whatsapp';
-import { notifyOrderStatusChange } from '../utils/orderNotify';
+import { notifyOrderStatusChange, notifyNewOrderForStaff } from '../utils/orderNotify';
 import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
 import { downloadInvoicePDFSilently, shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
 import ScannerModal from './ScannerModal';
@@ -1149,6 +1149,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         .single();
       
       if (error) throw error;
+
+      void notifyNewOrderForStaff(newOrder.id);
 
       // Insert order notification
       try {

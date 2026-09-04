@@ -49,6 +49,7 @@ import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../contexts/ConfirmContext';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import { adjustStock } from '../services/inventoryService';
+import { notifyNewOrderForStaff } from '../utils/orderNotify';
 import { generateZatcaQR } from '../lib/zatca';
 import VisualMeasurements from './VisualMeasurements';
 import ThobeMeasurementSelector from './ThobeMeasurementSelector';
@@ -1003,6 +1004,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         .single();
 
       if (orderError) throw orderError;
+
+      void notifyNewOrderForStaff(newOrder.id);
 
       // Insert into order_items
       const VALID_INVENTORY_UNITS = ['meter', 'yard', 'roll', 'bolt', 'piece', 'spool', 'box'];

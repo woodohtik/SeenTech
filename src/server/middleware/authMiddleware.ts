@@ -22,6 +22,8 @@ export interface AuthRequest extends Request {
     email?: string;
     role?: string;
     tenantId?: string;
+    /** staff.id (not staff.uid) -- only set for the staff-table path below, undefined for saas_users. */
+    staffId?: string;
   };
 }
 
@@ -130,7 +132,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     // 2. Check staff table
     const { data: staffRow, error: staffError } = await supabaseAdmin
       .from('staff')
-      .select('role, tenant_id')
+      .select('id, role, tenant_id')
       .eq('uid', decodedToken.uid)
       .maybeSingle();
     if (staffError) {
@@ -139,6 +141,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     if (staffRow) {
       req.user.role = staffRow.role;
       req.user.tenantId = staffRow.tenant_id;
+      req.user.staffId = staffRow.id;
       return next();
     }
 

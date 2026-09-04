@@ -1,27 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  UserCircle, 
-  Settings, 
-  Lock, 
-  LogOut, 
-  Globe, 
-  Sun, 
-  Moon, 
+import {
+  UserCircle,
+  Settings,
+  Lock,
+  LogOut,
+  Globe,
+  Sun,
+  Moon,
   LayoutGrid,
-  Maximize2, 
-  Minimize2, 
-  Sparkles, 
-  Compass, 
-  ChevronDown
+  Maximize2,
+  Minimize2,
+  Sparkles,
+  Compass,
+  ChevronDown,
+  Bell,
+  BellOff
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTheme, ThemeType } from '../contexts/ThemeContext';
 import { Staff } from '../types';
 import { cn } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
+import { subscribeStaffToNewOrderNotifications } from '../lib/pushNotifications';
 
 import { isRtlLang, changeAppLanguage } from '../lib/direction';
+
+const STAFF_NOTIFY_STORAGE_KEY = 'seen_staff_new_order_push';
 
 interface UserPreferencesMenuProps {
   currentStaff?: Staff | null;
@@ -54,11 +60,42 @@ export default function UserPreferencesMenu({
   const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const { dbUser } = useAuth();
+  const { success: toastSuccess, error: toastError, warning: toastWarning } = useToast();
+  const [newOrderPushEnabled, setNewOrderPushEnabled] = useState(() => {
+    try { return localStorage.getItem(STAFF_NOTIFY_STORAGE_KEY) === 'granted'; } catch { return false; }
+  });
+  const [newOrderPushLoading, setNewOrderPushLoading] = useState(false);
 
   const effectiveRole = currentStaff?.role || role || dbUser?.role;
   const effectiveName = currentStaff?.name || dbUser?.display_name || dbUser?.email || t('common.system_user');
 
   const isRtl = isRtlLang(i18n.language);
+
+  const handleToggleNewOrderPush = async () => {
+    if (newOrderPushEnabled) {
+      // No server-side unsubscribe endpoint yet -- just stop showing as
+      // enabled locally. The FCM token stays registered server-side
+      // (harmless: worst case an extra push to a device that stopped
+      // caring, no data exposure), a fuller "revoke" is a later polish.
+      setNewOrderPushEnabled(false);
+      try { localStorage.removeItem(STAFF_NOTIFY_STORAGE_KEY); } catch { /* non-fatal */ }
+      return;
+    }
+
+    setNewOrderPushLoading(true);
+    const result = await subscribeStaffToNewOrderNotifications();
+    setNewOrderPushLoading(false);
+
+    if (result === 'granted') {
+      setNewOrderPushEnabled(true);
+      try { localStorage.setItem(STAFF_NOTIFY_STORAGE_KEY, 'granted'); } catch { /* non-fatal */ }
+      toastSuccess(t('common.new_order_push_enabled_toast'));
+    } else if (result === 'denied') {
+      toastWarning(t('common.new_order_push_denied_toast'));
+    } else {
+      toastError(t('common.new_order_push_error_toast'));
+    }
+  };
 
   // Determine dynamic alignment to prevent clipping when direction is LTR
   let alignmentClass = '';
@@ -254,6 +291,39 @@ export default function UserPreferencesMenu({
                 </span>
               </div>
             </button>
+
+            {/* 4.2 New-order push notifications (Phase 3, seen-companion-app-task_1.md) --
+                explicit opt-in, never enabled silently. Tenant staff only --
+                POST /api/staff/push-subscribe resolves the subscriber via
+                a `staff` table row, which SaaS admins (saas_users, no
+                currentStaff here -- see SaaSLayout.tsx) don't have; the
+                button would 404 every time for that audience. */}
+            {currentStaff && (
+              <button
+                onClick={handleToggleNewOrderPush}
+                disabled={newOrderPushLoading}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-muted text-content-muted hover:text-content text-sm transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand w-full disabled:opacity-60",
+                  isRtl ? "text-right" : "text-left"
+                )}
+              >
+                {newOrderPushEnabled ? (
+                  <Bell size={18} className="text-success" />
+                ) : (
+                  <BellOff size={18} className="text-brand" />
+                )}
+                <div className={cn("flex-1 flex flex-col", isRtl ? "text-right" : "text-left")}>
+                  <span className="font-bold">{t('common.new_order_push_label')}</span>
+                  <span className="text-[10px] text-content-muted">
+                    {newOrderPushLoading
+                      ? t('common.new_order_push_loading')
+                      : newOrderPushEnabled
+                        ? t('common.new_order_push_on')
+                        : t('common.new_order_push_off')}
+                  </span>
+                </div>
+              </button>
+            )}
 
             {/* 4.5 Restart Onboarding Tour */}
             <button

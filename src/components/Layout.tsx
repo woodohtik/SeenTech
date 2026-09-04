@@ -56,6 +56,7 @@ import SeenAIFab from './SeenAIFab';
 import ErrorBoundary from './ErrorBoundary';
 import OnboardingTour from './OnboardingTour';
 import SetupChecklistBar from './SetupChecklistBar';
+import NewOrderAlert from './NewOrderAlert';
 
 
 
@@ -701,6 +702,10 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
       />
 
       {tenantId && <SupportConsentModal tenantId={tenantId} />}
+
+      {tenantId && !isActingAsSaaS && (
+        <NewOrderAlert tenantId={tenantId} enabled={hasPermission('orders.view')} />
+      )}
     </div>
     </VerticalConfigProvider>
   );
