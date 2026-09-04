@@ -265,8 +265,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             if (staffData) {
                 const role = staffData.role as UserRole;
-                const approved = staffData.tenant?.status === 'active' || staffData.tenant?.status === 'approved' || staffData.tenant?.status === 'onboarding';
-                const isPending = staffData.tenant?.status === 'pending';
+
+                // The `tenant:tenants(*)` embed above can come back null on a
+                // cold PostgREST read right after login (RLS on the embedded
+                // tenants row denying access for a beat while the fresh
+                // session's claims finish propagating across pooled
+                // connections) even though staffData.tenant_id is present --
+                // this is exactly the flash-then-recover "account not
+                // eligible" screen users hit right after signing in. Retry a
+                // direct, non-embedded read of the tenant's status a couple
+                // of times with backoff before concluding the account isn't
+                // approved, mirroring the retry already used below for a
+                // fresh-signup's cold tailor_requests read.
+                let tenantStatus = staffData.tenant?.status ?? null;
+                if (!tenantStatus && staffData.tenant_id) {
+                    for (let attempt = 0; attempt < 3 && !tenantStatus; attempt++) {
+                        await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+                        const { data: tenantRow } = await supabase
+                            .from('tenants')
+                            .select('status')
+                            .eq('id', staffData.tenant_id)
+                            .maybeSingle();
+                        tenantStatus = tenantRow?.status ?? null;
+                    }
+                }
+
+                const approved = tenantStatus === 'active' || tenantStatus === 'approved' || tenantStatus === 'onboarding';
+                const isPending = tenantStatus === 'pending';
 
                 let staffPinCount = false;
                 try {
@@ -289,7 +314,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 let step = 4;
                 if (requestRes.data && (!requestRes.data.onboarding_step || requestRes.data.onboarding_step < 4)) {
                     step = requestRes.data.onboarding_step || 1;
-                } else if (staffData.tenant?.status === 'onboarding') {
+                } else if (tenantStatus === 'onboarding') {
                     step = requestRes.data?.onboarding_step || 1;
                 } else if (isPending && requestRes.data) {
                     step = requestRes.data.onboarding_step || 1;
