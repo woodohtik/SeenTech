@@ -118,6 +118,15 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
     const { hasError, error, eventId, isLazyLoadError } = this.state;
 
     if (isLazyLoadError) {
+      if (this.props.variant === 'inline') {
+        return (
+          <div className="bg-surface-muted border border-border rounded-2xl p-5 flex flex-col items-center gap-3 text-content-muted" dir={dirOf()}>
+            <RefreshCcw size={20} className="animate-spin" />
+            <p className="font-bold text-xs">{i18n.t('errors.updating')}</p>
+          </div>
+        );
+      }
+
       return (
         <div className="min-h-screen bg-surface-muted flex items-center justify-center p-4" dir={dirOf()}>
           <div className="flex flex-col items-center gap-4 text-content-muted">
