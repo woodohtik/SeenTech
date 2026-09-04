@@ -30,25 +30,45 @@ ALTER TABLE assistant_settings ADD COLUMN IF NOT EXISTS fallback_order text[] NO
 -- المنقول يُعتبر "غير مُختبَر بعد" (last_test_status = NULL) حتى يُعاد
 -- اختباره صراحةً من لوحة السوبر أدمن -- الاختبار السابق (قبل هذا الملف) لم
 -- يُسجَّل بهذا الشكل أصلاً.
-INSERT INTO assistant_provider_credentials (provider_key, api_key_encrypted, is_configured, updated_at, updated_by)
-SELECT ai_provider, api_key_encrypted, (api_key_encrypted IS NOT NULL), updated_at, updated_by
-FROM assistant_settings
-WHERE id = 'global' AND ai_provider IS NOT NULL
-ON CONFLICT (provider_key) DO NOTHING;
+--
+-- ملفوف بفحص وجود العمود القديم ai_provider لأن هذا الملف نفسه سبق تشغيله
+-- يدوياً (عبر محرر SQL في لوحة Supabase) على staging دون تسجيله في جدول
+-- تتبّع الهجرات -- فحُذف ai_provider/model_name/api_key_encrypted فعلياً
+-- من قبل. إعادة التشغيل الآلي عبر CLI بلا هذا الفحص كانت تفشل دائماً على
+-- عمود غير موجود. الفحص يبقي هذا الملف صحيحاً أيضاً على بيئة جديدة تماماً.
+DO $do$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'assistant_settings' AND column_name = 'ai_provider'
+  ) THEN
+    INSERT INTO assistant_provider_credentials (provider_key, api_key_encrypted, is_configured, updated_at, updated_by)
+    SELECT ai_provider, api_key_encrypted, (api_key_encrypted IS NOT NULL), updated_at, updated_by
+    FROM assistant_settings
+    WHERE id = 'global' AND ai_provider IS NOT NULL
+    ON CONFLICT (provider_key) DO NOTHING;
 
-UPDATE assistant_settings
-SET active_provider = COALESCE(active_provider, ai_provider, 'gemini'),
-    active_model = COALESCE(active_model, model_name, 'gemini-3.6-flash')
-WHERE id = 'global';
+    UPDATE assistant_settings
+    SET active_provider = COALESCE(active_provider, ai_provider, 'gemini'),
+        active_model = COALESCE(active_model, model_name, 'gemini-3.6-flash')
+    WHERE id = 'global';
+
+    ALTER TABLE assistant_settings DROP COLUMN IF EXISTS ai_provider;
+    ALTER TABLE assistant_settings DROP COLUMN IF EXISTS model_name;
+    ALTER TABLE assistant_settings DROP COLUMN IF EXISTS api_key_encrypted;
+  ELSE
+    UPDATE assistant_settings
+    SET active_provider = COALESCE(active_provider, 'gemini'),
+        active_model = COALESCE(active_model, 'gemini-3.6-flash')
+    WHERE id = 'global';
+  END IF;
+END
+$do$;
 
 ALTER TABLE assistant_settings ALTER COLUMN active_provider SET NOT NULL;
 ALTER TABLE assistant_settings ALTER COLUMN active_model SET NOT NULL;
 ALTER TABLE assistant_settings ALTER COLUMN active_provider SET DEFAULT 'gemini';
 ALTER TABLE assistant_settings ALTER COLUMN active_model SET DEFAULT 'gemini-3.6-flash';
-
-ALTER TABLE assistant_settings DROP COLUMN IF EXISTS ai_provider;
-ALTER TABLE assistant_settings DROP COLUMN IF EXISTS model_name;
-ALTER TABLE assistant_settings DROP COLUMN IF EXISTS api_key_encrypted;
 
 ALTER TABLE assistant_provider_credentials ENABLE ROW LEVEL SECURITY;
 -- عمداً بلا أي سياسة: الوصول حصراً عبر مفتاح service_role من السيرفر

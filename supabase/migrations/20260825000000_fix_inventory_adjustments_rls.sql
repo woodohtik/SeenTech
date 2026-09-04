@@ -8,6 +8,7 @@
 -- with the rest of the schema's app_current_tenant_id() convention.
 
 DROP POLICY IF EXISTS tenant_isolation_inventory_adjustments ON inventory_adjustments;
+DROP POLICY IF EXISTS inventory_adjustments_tenant ON inventory_adjustments;
 CREATE POLICY inventory_adjustments_tenant ON inventory_adjustments
     FOR ALL
     TO authenticated
@@ -15,6 +16,7 @@ CREATE POLICY inventory_adjustments_tenant ON inventory_adjustments
     WITH CHECK (tenant_id = app_current_tenant_id()::text);
 
 DROP POLICY IF EXISTS tenant_isolation_adjustment_items ON adjustment_items;
+DROP POLICY IF EXISTS adjustment_items_tenant ON adjustment_items;
 CREATE POLICY adjustment_items_tenant ON adjustment_items
     FOR ALL
     TO authenticated

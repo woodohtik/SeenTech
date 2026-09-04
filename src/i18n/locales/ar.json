@@ -1795,7 +1795,11 @@
     "view_invoice": "استعراض الفاتورة",
     "visual_details_title": "التفاصيل البصرية والمقاسات التفاعلية",
     "visual_measurement_selector": "مُحدد المقاسات البصري التفاعلي",
-    "whatsapp": "واتساب"
+    "whatsapp": "واتساب",
+    "send_tracking_link": "إرسال رابط التتبّع",
+    "tracking_link_message": "مرحباً {{customerName}}، يمكنك متابعة حالة طلبك من هنا: {{url}}\n- {{storeName}}",
+    "tracking_whatsapp_modal_title": "إرسال رابط التتبّع عبر واتساب",
+    "tracking_whatsapp_modal_desc": "أدخل رقم جوال العميل لفتح واتساب مع رابط تتبّع الطلب جاهزاً للإرسال."
   },
   "permissions": {
     "access_denied_desc": "غير محدد",
@@ -2781,6 +2785,7 @@
     "order_not_found": "لم نعثر على هذا الطلب. تأكّد من الرابط.",
     "order_number": "طلب رقم #{{number}}",
     "powered_by": "مدعوم بنظام «سين» لإدارة محلات التفصيل",
+    "rate_limited": "محاولات كثيرة جداً. انتظر دقيقة ثم أعد المحاولة.",
     "title": "تتبّع طلبك"
   },
   "reconciliation": {

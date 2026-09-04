@@ -310,6 +310,11 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const [tenantStrategy, setTenantStrategy] = useState<'centralized' | 'decentralized'>('centralized');
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
   const [pendingWhatsAppOrder, setPendingWhatsAppOrder] = useState<Order | null>(null);
+  // Which message the pending-phone-number modal below should send once the
+  // cashier types in a number -- the invoice link (sendToWhatsApp) or the
+  // public tracking link (sendTrackingLink). Same modal, same order, two
+  // possible messages.
+  const [whatsappModalMode, setWhatsappModalMode] = useState<'invoice' | 'tracking'>('invoice');
   const [searchParams] = useSearchParams();
   const { currentStaff } = useStaff();
   const { user: currentAuthUser } = useAuth();
@@ -517,6 +522,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       discountAmount: decoded.discount_amount ?? decoded.discountAmount,
       orderNumber: decoded.order_number ?? decoded.orderNumber,
       paymentMethod: decoded.payment_method ?? decoded.paymentMethod,
+      trackingToken: decoded.tracking_token ?? decoded.trackingToken,
       items: Array.isArray(decoded.items) ? decoded.items : [],
       history: Array.isArray(decoded.history) ? decoded.history : []
     } as Order;
@@ -1424,9 +1430,18 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     });
   };
 
+  const buildTrackingMessage = (order: Order) => t('orders.tracking_link_message', {
+    customerName: order.customerName,
+    storeName: branding.companyName || t('pos.store_default'),
+    url: `${window.location.origin}/track/${order.trackingToken}`,
+  });
+
   const proceedToWhatsApp = (phone: string) => {
     if (!pendingWhatsAppOrder) return;
-    sendWhatsAppMessage(phone, buildOrderWhatsAppMessage(pendingWhatsAppOrder, phone));
+    const message = whatsappModalMode === 'tracking'
+      ? buildTrackingMessage(pendingWhatsAppOrder)
+      : buildOrderWhatsAppMessage(pendingWhatsAppOrder, phone);
+    sendWhatsAppMessage(phone, message);
     setWhatsappModalOpen(false);
     setPendingWhatsAppOrder(null);
   };
@@ -1440,6 +1455,24 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       sendWhatsAppMessage(phone, buildOrderWhatsAppMessage(order, phone));
       return;
     }
+    setWhatsappModalMode('invoice');
+    setPendingWhatsAppOrder(order);
+    setWhatsappModalOpen(true);
+  };
+
+  // Sends the public /track/:token link (server-issued, unguessable --
+  // see PUBLIC_TRACKING_SPEC.md) over WhatsApp, reusing the exact same
+  // send/prompt-for-phone pattern as sendToWhatsApp above rather than a new
+  // delivery mechanism.
+  const sendTrackingLink = (order: Order) => {
+    if (!order.trackingToken) return;
+    const customer = customers.find(c => c.id === order.customerId);
+    const phone = customer?.phone || order.customerPhone || '';
+    if (phone) {
+      sendWhatsAppMessage(phone, buildTrackingMessage(order));
+      return;
+    }
+    setWhatsappModalMode('tracking');
     setPendingWhatsAppOrder(order);
     setWhatsappModalOpen(true);
   };
@@ -1850,13 +1883,22 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               <Printer size={18} />
               <span>{t('orders.print')}</span>
             </button>
-            <button 
+            <button
               onClick={() => sendToWhatsApp(order)}
               className="flex items-center justify-center gap-2 bg-success text-white py-4 rounded-2xl font-bold hover:bg-success/90 transition-all shadow-lg shadow-success/10 text-sm"
             >
               <MessageSquare size={18} />
               <span>{t('orders.whatsapp')}</span>
             </button>
+            {order.trackingToken && (
+              <button
+                onClick={() => sendTrackingLink(order)}
+                className="col-span-2 flex items-center justify-center gap-2 bg-brand/10 text-brand py-4 rounded-2xl font-bold border border-brand/20 hover:bg-brand/15 transition-all text-sm"
+              >
+                <Truck size={18} />
+                <span>{t('orders.send_tracking_link')}</span>
+              </button>
+            )}
           </div>
         </motion.div>
       </div>
@@ -2174,8 +2216,12 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         <WhatsAppPhoneModal
           onClose={() => { setWhatsappModalOpen(false); setPendingWhatsAppOrder(null); }}
           onConfirm={proceedToWhatsApp}
-          title={t('printing.whatsapp_modal_title', 'إرسال الفاتورة عبر واتساب')}
-          description={t('printing.whatsapp_modal_desc', 'أدخل رقم جوال العميل لفتح واتساب مع تفاصيل الفاتورة جاهزة للإرسال.')}
+          title={whatsappModalMode === 'tracking'
+            ? t('orders.tracking_whatsapp_modal_title')
+            : t('printing.whatsapp_modal_title', 'إرسال الفاتورة عبر واتساب')}
+          description={whatsappModalMode === 'tracking'
+            ? t('orders.tracking_whatsapp_modal_desc')
+            : t('printing.whatsapp_modal_desc', 'أدخل رقم جوال العميل لفتح واتساب مع تفاصيل الفاتورة جاهزة للإرسال.')}
         />
       )}
       <Header

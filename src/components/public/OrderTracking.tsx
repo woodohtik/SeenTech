@@ -4,17 +4,18 @@
  * growth loop: المحل يرسل رابطاً (واتساب) فيه رمز تتبّع، فيشوف عميل المحل حالة
  * طلبه بعلامة «سين» — وعي مجاني بالعلامة + التقاط بيانات.
  *
- * الأمان: لا تستعلم عن جدول orders مباشرة. تستدعي دالة Supabase آمنة
- * `get_public_order_tracking(p_token)` التي تُرجع الحقول المسموحة فقط
- * (رقم الطلب، الحالة، اسم المحل، تاريخ التسليم) عبر رمز عشوائي غير قابل للتخمين.
- * SQL هذه الدالة والـ RLS في PUBLIC_TRACKING_SPEC.md.
+ * الأمان: لا تستعلم عن جدول orders مباشرة، ولا تستدعي Supabase من المتصفح
+ * إطلاقاً. تجلب البيانات عبر GET /api/public/order-tracking/:token في
+ * server.ts (supabaseAdmin يختار الحقول المسموحة فقط: رقم الطلب، الحالة،
+ * اسم المحل، تاريخ التسليم) عبر رمز عشوائي غير قابل للتخمين
+ * (orders.tracking_token)، مع تحديد معدّل محاولات لكل IP. التفاصيل الكاملة
+ * في PUBLIC_TRACKING_SPEC.md.
  *
- * التوصيل: أضِف مساراً عاماً (بلا مصادقة) مثل /track/:token يعرض هذا المكوّن.
+ * التوصيل: مسار عام (بلا مصادقة) /track/:token في App.tsx يعرض هذا المكوّن.
  */
 
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { supabase } from '../../lib/supabase/client';
 import { useDirection } from '../../lib/direction';
 
 type PublicStatus =
@@ -56,12 +57,16 @@ export default function OrderTracking({ token }: { token: string }) {
       setLoading(true);
       setError(null);
       try {
-        const { data, error } = await supabase.rpc('get_public_order_tracking', { p_token: token });
+        const response = await fetch(`/api/public/order-tracking/${token}`);
         if (!alive) return;
-        if (error) throw error;
-        const row = Array.isArray(data) ? data[0] : data;
-        if (!row) setError(t('public_tracking.order_not_found'));
-        else setOrder(row as PublicOrder);
+        if (response.status === 429) {
+          setError(t('public_tracking.rate_limited'));
+        } else if (!response.ok) {
+          setError(t('public_tracking.order_not_found'));
+        } else {
+          const row = await response.json();
+          setOrder(row as PublicOrder);
+        }
       } catch (e) {
         if (alive) setError(t('public_tracking.load_failed'));
       } finally {

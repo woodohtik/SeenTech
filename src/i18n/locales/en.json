@@ -1795,7 +1795,11 @@
     "view_invoice": "View Invoice",
     "visual_details_title": "Visual Details & Interactive Measurements",
     "visual_measurement_selector": "Interactive Visual Measurement Selector",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "send_tracking_link": "Send Tracking Link",
+    "tracking_link_message": "Hi {{customerName}}, you can track your order status here: {{url}}\n- {{storeName}}",
+    "tracking_whatsapp_modal_title": "Send Tracking Link via WhatsApp",
+    "tracking_whatsapp_modal_desc": "Enter the customer's phone number to open WhatsApp with the order tracking link ready to send."
   },
   "permissions": {
     "access_denied_desc": "Not specified",
@@ -2781,6 +2785,7 @@
     "order_not_found": "We couldn't find this order. Check the link.",
     "order_number": "Order #{{number}}",
     "powered_by": "Powered by Seen — tailoring shop management system",
+    "rate_limited": "Too many attempts. Please wait a minute and try again.",
     "title": "Track Your Order"
   },
   "reconciliation": {

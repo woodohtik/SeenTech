@@ -551,6 +551,8 @@ export interface Order {
   isTest?: boolean;
   updatedAt?: string;
   assignedTo?: string;
+  /** Random public token for the customer-facing /track/:token page. Never guessable from orderNumber/id. */
+  trackingToken?: string;
 }
 
 export interface TaxInvoice {

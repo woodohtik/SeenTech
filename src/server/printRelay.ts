@@ -183,12 +183,12 @@ const safeEqual = (a: unknown, b: unknown): boolean => {
 const isOnline = (s: Pick<StationRow, 'last_seen_at'>) =>
   nowMs() - new Date(s.last_seen_at).getTime() < CONFIG.offlineAfterMs;
 
-const clientIp = (req: Request): string =>
-  String(
-    (req.headers['x-forwarded-for'] as string || '').split(',')[0].trim() ||
-      req.socket.remoteAddress ||
-      'unknown'
-  );
+// req.ip -- server.ts يضبط app.set('trust proxy', 1) فيثق Express بقفزة
+// وكيل Vercel الواحدة ويشتق العنوان من الطرف الصحيح من سلسلة
+// X-Forwarded-For، فلا يقدر الطالب تزييف عنوانه بوضع قيمة مزوَّرة في أول
+// الترويسة (القراءة اليدوية السابقة كانت تأخذ أول قيمة في القائمة، وهي
+// بالضبط ما يتحكم به الطالب -- يتيح تجاوز حد pairAttemptsPerMinute أدناه).
+const clientIp = (req: Request): string => req.ip || 'unknown';
 
 const bearer = (req: Request): string => {
   const h = String(req.headers.authorization || '');

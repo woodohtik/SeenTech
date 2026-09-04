@@ -614,6 +614,8 @@ export interface Order {
     notes: string | null;
     created_by: UUID | null;
     is_test: boolean;
+    /** Random token for the public /track/:token page. Never derived from order_number/id. */
+    tracking_token: UUID;
     created_at: Timestamptz;
     updated_at: Timestamptz;
 }

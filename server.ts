@@ -11,6 +11,16 @@ dotenv.config();
 
 const app = express();
 
+// بلا هذا، Express لا يثق بترويسة X-Forwarded-For إطلاقاً و req.ip يرجع
+// عنوان وكيل Vercel الداخلي نفسه لكل الطلبات -- فكل تحديد معدّل مبني على IP
+// (المحدّد العام أدناه، /api/staff/verify-pin، printRelay.ts، ونقطة تتبّع
+// الطلب العامة) كان إما يُطبَّق على "IP" واحد وهمي مشترك بين كل المستخدمين،
+// أو -- إن اعتُمِد على الترويسة مباشرة بلا `trust proxy` -- قابلاً للتزييف
+// الكامل من طالب الخدمة نفسه (Express يتجاهل الترويسة المزوَّرة فقط عندما
+// لا يثق بها؛ قراءتها يدوياً كما في clientIp() أدناه لا تحلّ هذا). Vercel
+// يمرّ عبر قفزة وكيل واحدة موثوقة قبل الوصول لدالة السيرفر.
+app.set('trust proxy', 1);
+
 // E-2 (security-fix-tasklist.md): baseline HTTP security headers and a
 // general per-IP rate limit, on top of the endpoint-specific limiter added
 // for /api/staff/verify-pin (E-1) and the pre-existing pairAttempts one in
@@ -32,6 +42,19 @@ app.use(rateLimit({ windowMs: 60_000, max: 120 }));
 
 // حجم كبير لأن بيانات الرسم النقطي للفاتورة قد تصل لعدة ميغابايت
 app.use(express.json({ limit: '25mb' }));
+
+// Express 4 لا يمرّر رفض Promise غير ملتقط من معالج async إلى next(err)
+// تلقائياً -- فيفلت من middleware معالجة الأخطاء العام أسفل الملف ويبقى
+// الطلب معلّقًا حتى ينتهي وقت دالة Vercel. استخدم هذا الغلاف لأي مسار async
+// جديد لا يغلّف جسمه بـ try/catch بنفسه (معظم المسارات الحالية تفعل ذلك
+// يدويًا، فهذا مخصص للمسارات المستقبلية).
+function asyncHandler(
+  fn: (req: express.Request, res: express.Response, next: express.NextFunction) => Promise<any>
+) {
+  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+}
 
 /* ================================================================
    وسيط الطباعة  —  SEEN POS Printing
@@ -115,6 +138,77 @@ app.get("/api/public/invoices/:id", async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
+// صفحة تتبّع الطلب العامة (/track/:token في الواجهة) -- بلا مصادقة، رمز
+// عشوائي غير قابل للتخمين (orders.tracking_token). نفس نمط
+// /api/public/invoices/:id أعلاه: supabaseAdmin (يتجاوز RLS) مع اختيار
+// الحقول المسموحة فقط يدوياً -- لا استعلام عام مباشر من المتصفح على
+// orders، ولا RPC معرَّض لـanon (تفادياً للاعتماد على رؤية IP الحقيقي
+// للعميل داخل Postgres خلف مجمِّع الاتصالات). التفاصيل الكاملة في
+// PUBLIC_TRACKING_SPEC.md.
+//
+// تحديد معدّل: جدول tracking_attempts (نفس نمط print_pair_attempts في
+// printRelay.ts) يعدّ محاولات كل IP، ويُزاد فقط عند عدم إيجاد طلب -- حتى لا
+// يُعاقَب عميل شرعي يعيد تحميل صفحة تتبّعه الصحيحة.
+const TRACKING_TOKEN_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const TRACKING_ATTEMPTS_PER_MINUTE = 20;
+
+// req.ip (وليس قراءة X-Forwarded-For يدوياً) -- Express مع `trust proxy: 1`
+// أعلاه يثق بقفزة وكيل Vercel الواحدة فقط ويشتق العنوان من الطرف الصحيح من
+// سلسلة الترويسة، فلا يقدر الطالب تزييف عنوانه بوضع قيمة مزوَّرة في أول
+// الترويسة (كانت القراءة اليدوية السابقة تأخذ أول قيمة في القائمة، وهي
+// بالضبط ما يتحكم به الطالب).
+function clientIp(req: express.Request): string {
+  return req.ip || 'unknown';
+}
+
+app.get("/api/public/order-tracking/:token", asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+
+  // شكل غير صالح أصلاً (لا حتى UUID) -- لا داعي لاستهلاك حصة تحديد المعدّل
+  // أو الوصول لقاعدة البيانات على تخمينات عشوائية واضحة.
+  if (!TRACKING_TOKEN_RE.test(token)) {
+    return res.status(404).json({ error: 'Order not found' });
+  }
+
+  const ip = clientIp(req);
+  const { data: rec } = await supabaseAdmin.from('tracking_attempts').select('*').eq('ip', ip).maybeSingle();
+  const recActive = !!rec && new Date(rec.reset_at).getTime() > Date.now();
+
+  if (recActive && rec!.count >= TRACKING_ATTEMPTS_PER_MINUTE) {
+    return res.status(429).json({ error: 'محاولات كثيرة جداً. انتظر دقيقة ثم أعد المحاولة.' });
+  }
+
+  const { data: orderData } = await supabaseAdmin
+    .from('orders')
+    .select('order_number, status, status_key, delivery_date, tenant_id')
+    .eq('tracking_token', token)
+    .maybeSingle();
+
+  if (!orderData) {
+    await supabaseAdmin.from('tracking_attempts').upsert({
+      ip,
+      count: recActive ? rec!.count + 1 : 1,
+      reset_at: recActive ? rec!.reset_at : new Date(Date.now() + 60_000).toISOString(),
+    });
+    return res.status(404).json({ error: 'Order not found' });
+  }
+
+  const { data: tenantData } = await supabaseAdmin
+    .from('tenants')
+    .select('name, logo_url')
+    .eq('id', orderData.tenant_id)
+    .maybeSingle();
+
+  res.json({
+    order_number: orderData.order_number,
+    status: (orderData as any).status_key || orderData.status,
+    shop_name: tenantData?.name || '',
+    shop_logo_url: tenantData?.logo_url || null,
+    delivery_date: orderData.delivery_date,
+  });
+}));
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
@@ -1304,8 +1398,8 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
   }
 });
 
-// شبكة أمان أخيرة لما يفلت من كل try/catch أعلاه (كود مستقبلي ينساها، أو خطأ
-// متزامن في middleware قبل الوصول للمسار). لا تستدعِ process.exit() في
+// شبكة أمان أخيرة لما يفلت من كل شيء أعلاه (تسجيل فقط، بلا رد على العميل --
+// الطلب الأصلي يبقى معلّقًا حتى وقت دالة Vercel). لا تستدعِ process.exit() في
 // unhandledRejection/uncaughtException -- هذا التطبيق يعمل كدالة Vercel
 // serverless (عبر api/index.js)، وإنهاء العملية غير مجدٍ/ضار في هذا السياق.
 process.on('unhandledRejection', (reason) => {
@@ -1316,8 +1410,13 @@ process.on('uncaughtException', (err) => {
 });
 
 // middleware معالجة أخطاء عام (4 معاملات) -- يجب أن يُسجَّل بعد كل مسارات
-// /api/* أعلاه ليلتقط ما يفلت منها؛ لا يغيّر سلوك أي مسار يعالج أخطاءه بنفسه
-// بالفعل (الأغلبية هنا فعلياً يفعل).
+// /api/* أعلاه ليلتقط ما يُمرَّر إليه عبر next(err). لا يغيّر سلوك أي مسار
+// يعالج أخطاءه بنفسه (الأغلبية هنا فعلياً يفعل). تنبيه: Express 4 لا يمرّر
+// رفض Promise غير ملتقط من معالج async إلى هذا الـ middleware تلقائيًا --
+// فقط الأخطاء المتزامنة أو تلك المُمرَّرة يدويًا عبر next(err) (أو معالج
+// مُغلَّف بـ asyncHandler أعلاه) تصل إليه. مسار async جديد بلا try/catch
+// وبلا asyncHandler سيُترك معلّقًا حتى وقت دالة Vercel، مسجَّلاً فقط عبر
+// unhandledRejection أعلاه.
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error(`[globalErrorHandler] ${req.path}:`, err);
   if (res.headersSent) return next(err);

@@ -1795,7 +1795,11 @@
     "view_invoice": "انوائس دیکھیں",
     "visual_details_title": "بصری تفصیلات اور انٹرایکٹو پیمائش",
     "visual_measurement_selector": "انٹرایکٹو بصری پیمائش سیلیکٹر",
-    "whatsapp": "واٹس ایپ"
+    "whatsapp": "واٹس ایپ",
+    "send_tracking_link": "ٹریکنگ لنک بھیجیں",
+    "tracking_link_message": "ہیلو {{customerName}}, آپ اپنے آرڈر کی حیثیت یہاں سے ٹریک کر سکتے ہیں: {{url}}\n- {{storeName}}",
+    "tracking_whatsapp_modal_title": "واٹس ایپ کے ذریعے ٹریکنگ لنک بھیجیں",
+    "tracking_whatsapp_modal_desc": "واٹس ایپ کھولنے کے لیے کسٹمر کا فون نمبر درج کریں، آرڈر ٹریکنگ لنک بھیجنے کے لیے تیار ہوگا۔"
   },
   "permissions": {
     "access_denied_desc": "غیر متعین",
@@ -2781,6 +2785,7 @@
     "order_not_found": "یہ آرڈر نہیں مل سکا۔ لنک کی تصدیق کریں۔",
     "order_number": "آرڈر نمبر #{{number}}",
     "powered_by": "«سین» درزی شاپ مینجمنٹ سسٹم سے پاورڈ",
+    "rate_limited": "بہت زیادہ کوششیں۔ ایک منٹ انتظار کریں پھر دوبارہ کوشش کریں۔",
     "title": "اپنا آرڈر ٹریک کریں"
   },
   "reconciliation": {
