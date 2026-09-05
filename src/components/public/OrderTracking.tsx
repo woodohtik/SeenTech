@@ -159,7 +159,7 @@ export default function OrderTracking({ token }: { token: string }) {
   const isDelivered = order?.status === 'delivered';
 
   let deliveryLabel: string | null = null;
-  if (order?.delivery_date && order.status !== 'cancelled') {
+  if (order?.delivery_date && order.status !== 'cancelled' && !isDelivered) {
     const diff = daysUntil(order.delivery_date);
     deliveryLabel = diff <= 0
       ? t('public_tracking.delivery_today')
