@@ -69,7 +69,7 @@ import Branding from './Branding';
 import { buildWhatsAppMessage, getWhatsAppTemplate, sendWhatsAppMessage } from '../utils/whatsapp';
 import { notifyOrderStatusChange, notifyNewOrderForStaff } from '../utils/orderNotify';
 import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
-import { downloadInvoicePDFSilently, shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
+import { shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
 import ScannerModal from './ScannerModal';
 import Select from './ui/Select';
 import { SmartSelect } from './ui/SmartSelect';
@@ -1484,25 +1484,28 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
   // Same as sendToWhatsApp, but used from inside the open InvoiceModal
   // (where #order-invoice-print-area is actually rendered) so the invoice
-  // can go out as an attached PDF -- WhatsApp's link format only ever
-  // carries text, never a file, so a known number still opens the chat
-  // directly with the PDF downloaded alongside to attach manually.
+  // can go out as an attached PDF. Native share (text + file together) is
+  // tried first regardless of whether the phone is already known --
+  // wa.me/api.whatsapp.com links can only ever carry text, never a file,
+  // so a known number alone can never get both to WhatsApp at once. The
+  // tradeoff: the staff member picks the WhatsApp contact themselves in
+  // the OS share sheet instead of it being pre-filled.
   const handleInvoiceModalWhatsApp = async (order: Order) => {
     const customer = customers.find(c => c.id === order.customerId);
     const phone = customer?.phone || order.customerPhone || '';
     const filename = `Invoice-${order.orderNumber || order.id.slice(-6).toUpperCase()}.pdf`;
+    const text = buildOrderWhatsAppMessage(order, phone);
 
+    const result = await shareOrDownloadInvoicePDF('order-invoice-print-area', filename, text);
+    if (result === 'shared') return;
+
+    // Native share isn't available on this device/browser -- the PDF was
+    // downloaded instead (ready to attach manually). Known phone -> open
+    // the chat directly; otherwise ask for a number.
     if (phone) {
-      downloadInvoicePDFSilently('order-invoice-print-area', filename);
-      sendWhatsAppMessage(phone, buildOrderWhatsAppMessage(order, phone));
+      sendWhatsAppMessage(phone, text);
       return;
     }
-
-    // No number on file: let native share (when supported) hand the PDF
-    // straight into WhatsApp with the recipient picked inside the app,
-    // instead of asking for a number ourselves.
-    const result = await shareOrDownloadInvoicePDF('order-invoice-print-area', filename, buildOrderWhatsAppMessage(order, ''));
-    if (result === 'shared') return;
     setPendingWhatsAppOrder(order);
     setWhatsappModalOpen(true);
   };

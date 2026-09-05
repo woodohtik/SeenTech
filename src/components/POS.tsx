@@ -54,7 +54,8 @@ import { generateZatcaQR } from '../lib/zatca';
 import VisualMeasurements from './VisualMeasurements';
 import ThobeMeasurementSelector from './ThobeMeasurementSelector';
 import Branding from './Branding';
-import { downloadInvoicePDF, downloadInvoicePDFSilently, shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
+import { downloadInvoicePDF, shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
+import { buildWhatsAppMessage, getWhatsAppTemplate } from '../utils/whatsapp';
 import { useBranding } from '../contexts/BrandingContext';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
 import { useRouter, useRefreshCounter } from '../hooks/useRouter';
@@ -1523,41 +1524,43 @@ const invoiceData: InvoiceData | null = completedOrder ? {
   invoiceType: completedOrder.invoiceType
 } : null;
 
+  // The user's own customizable template (WhatsAppSettings), not a fixed
+  // string -- the invoice share message must match what they configured.
+  const buildInvoiceMessage = (phone?: string) => buildWhatsAppMessage(getWhatsAppTemplate(), {
+    customerName: completedOrder?.customerName,
+    orderId: completedOrder?.invoiceNumber,
+    totalAmount: completedOrder?.total,
+    customerPhone: phone,
+    storeName: brandingSettings?.storeName || t('pos.store_default'),
+  });
+
   const proceedToWhatsApp = (phone: string) => {
-    const text = t('pos.whatsapp_invoice_text', {
-      store: brandingSettings?.storeName || t('pos.store_default'),
-      invoiceNumber: completedOrder.invoiceNumber,
-      total: completedOrder.total,
-    });
-    window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`, '_blank');
+    window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(buildInvoiceMessage(phone))}`, '_blank');
     setWhatsappModalOpen(false);
   };
 
   const handleShareWhatsApp = async () => {
     if (!completedOrder) return;
     const filename = `Invoice-${completedOrder.invoiceNumber}.pdf`;
-    // Known customer phone -> send straight to WhatsApp, no extra step.
-    // Only prompt for a number when there's none on file.
     const knownPhone = completedOrder.customerPhone ? formatSaudiPhone(completedOrder.customerPhone).replace('+', '') : '';
+    const text = buildInvoiceMessage(knownPhone || undefined);
+
+    // Native share (text + file together) is tried first regardless of
+    // whether the customer's phone is already known -- wa.me/
+    // api.whatsapp.com links can only ever carry text, never a file, so
+    // that path can't send both together no matter what. The tradeoff:
+    // the staff member picks the WhatsApp contact themselves in the OS
+    // share sheet instead of it being pre-filled from a known number.
+    const result = await shareOrDownloadInvoicePDF('pos-invoice-print-area', filename, text);
+    if (result === 'shared') return;
+
+    // Native share isn't available on this device/browser -- the PDF was
+    // downloaded instead (ready to attach manually). Known phone -> open
+    // the chat directly; otherwise ask for a number.
     if (knownPhone) {
-      // WhatsApp's link format can only carry text, never a file, so the
-      // PDF is downloaded alongside (best-effort, never blocking) to be
-      // attached manually in the chat that just opened.
-      downloadInvoicePDFSilently('pos-invoice-print-area', filename);
       proceedToWhatsApp(knownPhone);
       return;
     }
-
-    // No number on file: let native share (when supported) hand the PDF
-    // straight into WhatsApp with the recipient picked inside the app,
-    // instead of asking for a number ourselves.
-    const text = t('pos.whatsapp_invoice_text', {
-      store: brandingSettings?.storeName || t('pos.store_default'),
-      invoiceNumber: completedOrder.invoiceNumber,
-      total: completedOrder.total,
-    });
-    const result = await shareOrDownloadInvoicePDF('pos-invoice-print-area', filename, text);
-    if (result === 'shared') return;
     setWhatsappModalOpen(true);
   };
 

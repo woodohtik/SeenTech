@@ -2,13 +2,14 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
 import { Order } from '../types';
-import { cn, getCurrencySymbol } from '../lib/utils';
+import { cn } from '../lib/utils';
 import { decodeOrderB2BNotes } from '../utils/b2bHelper';
 import { decodeOrderRow } from '../utils/orderHistoryHelper';
 import { PriceDisplay } from './PriceDisplay';
 import { FileText, Eye, X, Download, Package, Scissors, User, Calendar, CreditCard, ShoppingBag, Clock, Printer, Share2, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { downloadInvoicePDF, downloadInvoicePDFSilently, shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
+import { downloadInvoicePDF, shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
+import { buildWhatsAppMessage, getWhatsAppTemplate } from '../utils/whatsapp';
 import SimplifiedTaxInvoice from './printing/SimplifiedTaxInvoice';
 import TaxInvoice from './printing/TaxInvoice';
 import DateTimeDisplay from './DateTimeDisplay';
@@ -91,49 +92,44 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
     }
   };
 
-  const buildWhatsAppInvoiceText = (order: Order) => {
-    const paymentMethodText = order.paymentMethod === 'cash' ? t('pos.cash') :
-                          order.paymentMethod === 'network' ? t('pos.card') :
-                          order.paymentMethod === 'partial' ? t('pos.partial') :
-                          order.paymentMethod === 'bank_transfer' ? t('pos.bank_transfer') : t('pos.other');
-    const statusText = getStatusBadge(order.status).label;
-
-    return t('sales_record.whatsapp_invoice_message', {
-      invoiceNumber: order.invoiceNumber || order.orderNumber || order.id.slice(-6).toUpperCase(),
-      total: order.totalAmount,
-      currency: getCurrencySymbol(),
-      method: paymentMethodText,
-      status: statusText
-    });
-  };
+  // The user's own customizable template (WhatsAppSettings), not a fixed
+  // string -- the invoice share message must match what they configured.
+  const buildWhatsAppInvoiceText = (order: Order, phone?: string) => buildWhatsAppMessage(getWhatsAppTemplate(), {
+    customerName: order.customerName,
+    orderId: order.invoiceNumber || order.orderNumber || order.id.slice(-6).toUpperCase(),
+    totalAmount: order.totalAmount,
+    customerPhone: phone,
+    storeName: tenantInfo?.name,
+  });
 
   const handleShareWhatsApp = async () => {
     if (!selectedOrder) return;
     const filename = `Invoice-${selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase()}.pdf`;
     const knownPhone = selectedOrder.customerPhone ? formatSaudiPhone(selectedOrder.customerPhone).replace('+', '') : '';
+    const text = buildWhatsAppInvoiceText(selectedOrder, knownPhone || undefined);
 
+    // Native share (text + file together) is tried first regardless of
+    // whether the customer's phone is already known -- wa.me/
+    // api.whatsapp.com links can only ever carry text, never a file, so
+    // that path can't send both together no matter what. The tradeoff:
+    // the staff member picks the WhatsApp contact themselves in the OS
+    // share sheet instead of it being pre-filled from a known number.
+    const result = await shareOrDownloadInvoicePDF('sales-record-print-area', filename, text);
+    if (result === 'shared') return;
+
+    // Native share isn't available on this device/browser -- the PDF was
+    // downloaded instead (ready to attach manually). Known phone -> open
+    // the chat directly; otherwise ask for a number.
     if (knownPhone) {
-      // Known number: go straight to the correct chat, no extra step.
-      // WhatsApp's link format can only carry text, never a file, so the
-      // PDF is downloaded alongside (best-effort, never blocking) to be
-      // attached manually in the chat that just opened.
-      downloadInvoicePDFSilently('sales-record-print-area', filename);
       proceedToWhatsApp(knownPhone);
       return;
     }
-
-    // No number on file: let native share (when supported) hand the PDF
-    // straight into WhatsApp with the recipient picked inside the app,
-    // instead of asking for a number ourselves.
-    const text = buildWhatsAppInvoiceText(selectedOrder);
-    const result = await shareOrDownloadInvoicePDF('sales-record-print-area', filename, text);
-    if (result === 'shared') return;
     setWhatsappModalOpen(true);
   };
 
   const proceedToWhatsApp = (phone: string) => {
     if (!selectedOrder) return;
-    const text = buildWhatsAppInvoiceText(selectedOrder);
+    const text = buildWhatsAppInvoiceText(selectedOrder, phone);
     window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`, '_blank');
     setWhatsappModalOpen(false);
   };

@@ -31,7 +31,7 @@ import { useDirection } from '../lib/direction';
 import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
 import { DatePicker } from './ui/DatePicker';
 import { SmartSelect } from './ui/SmartSelect';
-import { downloadInvoicePDFSilently, shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
+import { shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
 import { formatSaudiPhone } from '../utils/phoneUtils';
 
 interface SupplierLedgerProps {
@@ -188,23 +188,24 @@ export default function SupplierLedger({
 
   const handleWhatsAppShare = async () => {
     const filename = t('procurement.ledger_pdf_filename', { name: supplier.name.replace(/\s+/g, '_') });
-    // Known supplier phone -> send straight to WhatsApp, no extra step.
-    // Only prompt for a number when there's none on file.
     const knownPhone = supplier.phone ? formatSaudiPhone(supplier.phone).replace('+', '') : '';
+
+    // Native share (text + file together) is tried first regardless of
+    // whether the supplier's phone is already known -- wa.me/
+    // api.whatsapp.com links can only ever carry text, never a file, so
+    // that path can't send both together no matter what. The tradeoff:
+    // whoever's sending picks the WhatsApp contact themselves in the OS
+    // share sheet instead of it being pre-filled from a known number.
+    const result = await shareOrDownloadInvoicePDF('supplier-ledger-pdf-capture', filename, buildLedgerWhatsAppMessage());
+    if (result === 'shared') return;
+
+    // Native share isn't available on this device/browser -- the PDF was
+    // downloaded instead (ready to attach manually). Known phone -> open
+    // the chat directly; otherwise ask for a number.
     if (knownPhone) {
-      // WhatsApp's link format can only carry text, never a file, so the
-      // PDF is downloaded alongside (best-effort, never blocking) to be
-      // attached manually in the chat that just opened.
-      downloadInvoicePDFSilently('supplier-ledger-pdf-capture', filename);
       proceedToWhatsApp(knownPhone);
       return;
     }
-
-    // No number on file: let native share (when supported) hand the PDF
-    // straight into WhatsApp with the recipient picked inside the app,
-    // instead of asking for a number ourselves.
-    const result = await shareOrDownloadInvoicePDF('supplier-ledger-pdf-capture', filename, buildLedgerWhatsAppMessage());
-    if (result === 'shared') return;
     setWhatsappModalOpen(true);
   };
 

@@ -65,56 +65,6 @@ export const downloadInvoicePDF = async (elementId: string, filename: string) =>
   }
 };
 
-/**
- * Same as downloadInvoicePDF, but never alerts or falls back to
- * window.print() on failure -- for callers firing this as a best-effort
- * side effect (e.g. alongside opening a WhatsApp chat directly) where a
- * capture hiccup must not interrupt or block the primary action.
- */
-export const downloadInvoicePDFSilently = async (elementId: string, filename: string): Promise<boolean> => {
-  try {
-    const blob = await generateInvoicePDF(elementId, filename);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      if (a.parentNode) a.parentNode.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 100);
-    return true;
-  } catch (error) {
-    console.error('PDF generation failed:', error);
-    return false;
-  }
-};
-
-export const shareInvoiceAsPDFFile = async (elementId: string, filename: string, text: string) => {
-  try {
-    const blob = await generateInvoicePDF(elementId, filename);
-    const file = new File([blob], filename, { type: 'application/pdf' });
-
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({
-        title: i18n.t('settings_page.invoice.tax'),
-        text: text,
-        files: [file]
-      });
-    } else {
-      // Fallback
-      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-      // maybe trigger download too
-      downloadInvoicePDF(elementId, filename);
-    }
-  } catch (error) {
-    console.error("Share failed:", error);
-    // Fallback
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-  }
-};
-
 export type ShareAttachmentResult = 'shared' | 'downloaded' | 'failed';
 
 /**

@@ -9,8 +9,9 @@ import { Customer, TaxInvoice } from '../../types/supabase';
 import { PriceDisplay } from '../PriceDisplay';
 import WhatsAppPhoneModal from '../ui/WhatsAppPhoneModal';
 import { formatSaudiPhone } from '../../utils/phoneUtils';
-import { downloadInvoicePDF, downloadInvoicePDFSilently, shareOrDownloadInvoicePDF } from '../../utils/pdfGenerator';
+import { downloadInvoicePDF, shareOrDownloadInvoicePDF } from '../../utils/pdfGenerator';
 import { useToast } from '../../contexts/ToastContext';
+import { buildWhatsAppMessage, getWhatsAppTemplate } from '../../utils/whatsapp';
 
 interface InvoiceModalProps {
   isOpen: boolean;
@@ -78,42 +79,43 @@ export function InvoiceModal({ isOpen, onClose, invoice, tenantName, tenantVatNu
     }
   };
 
+  // The user's own customizable template (WhatsAppSettings), not a fixed
+  // string -- the invoice share message must match what they configured.
+  const buildInvoiceMessage = (phone?: string) => buildWhatsAppMessage(getWhatsAppTemplate(), {
+    customerName: invoice.customer_name || undefined,
+    orderId: invoice.invoice_number,
+    totalAmount: invoice.total_amount,
+    customerPhone: phone,
+    invoiceUrl: `${window.location.origin}/p/inv/${invoice.id}`,
+    storeName: tenantName,
+  });
+
   const proceedToWhatsApp = (phone: string) => {
-    const text = t('printing.invoice_share_text', {
-      tenant: tenantName,
-      number: invoice.invoice_number,
-      total: invoice.total_amount,
-    });
-    window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`, '_blank');
+    window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(buildInvoiceMessage(phone))}`, '_blank');
     setWhatsappModalOpen(false);
   };
 
   const handleShareWhatsApp = async () => {
     const filename = `Invoice-${invoice.invoice_number}.pdf`;
-    // Known customer phone -> send straight to WhatsApp, no extra step.
-    // Only prompt for a number when there's none on file.
     const knownPhone = customerPhone ? formatSaudiPhone(customerPhone).replace('+', '') : '';
+    const text = buildInvoiceMessage(knownPhone || undefined);
+
+    // Native share (text + file together) is tried first regardless of
+    // whether the customer's phone is already known -- wa.me/
+    // api.whatsapp.com links can only ever carry text, never a file, so
+    // that path can't send both together no matter what. The tradeoff:
+    // the staff member picks the WhatsApp contact themselves in the OS
+    // share sheet instead of it being pre-filled from a known number.
+    const result = await shareOrDownloadInvoicePDF('print-area', filename, text);
+    if (result === 'shared') return;
+
+    // Native share isn't available on this device/browser -- the PDF was
+    // downloaded instead (ready to attach manually). Known phone -> open
+    // the chat directly; otherwise ask for a number.
     if (knownPhone) {
-      // WhatsApp's link format can only carry text, never a file, so the
-      // PDF is downloaded alongside (best-effort, never blocking) to be
-      // attached manually in the chat that just opened. Fired without
-      // awaiting so window.open below stays inside the click's user
-      // gesture instead of racing a popup blocker.
-      downloadInvoicePDFSilently('print-area', filename);
       proceedToWhatsApp(knownPhone);
       return;
     }
-
-    // No number on file: let native share (when supported) hand the PDF
-    // straight into WhatsApp with the recipient picked inside the app,
-    // instead of asking for a number ourselves.
-    const text = t('printing.invoice_share_text', {
-      tenant: tenantName,
-      number: invoice.invoice_number,
-      total: invoice.total_amount,
-    });
-    const result = await shareOrDownloadInvoicePDF('print-area', filename, text);
-    if (result === 'shared') return;
     setWhatsappModalOpen(true);
   };
 
