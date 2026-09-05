@@ -43,6 +43,25 @@ app.use(rateLimit({ windowMs: 60_000, max: 120 }));
 // حجم كبير لأن بيانات الرسم النقطي للفاتورة قد تصل لعدة ميغابايت
 app.use(express.json({ limit: '25mb' }));
 
+// CORS لمسارات /api/public/* فقط (seen-companion-app-android-task.md, Track B).
+// تطبيق العميل الأصلي يعمل من أصل https://localhost (خادم Capacitor
+// المحلي)، فأي طلب لهذا الأصل الحقيقي (staging.seentech.io) يُعتبر
+// cross-origin -- اكتُشف هذا فعلياً عبر اختبار حي على جهاز حقيقي (كل طلبات
+// /api/public/order-lookup كانت تُحجَب بصمت من WebView قبل هذا الإصلاح).
+// آمن لأن هذه المسارات عامة بالتصميم أصلاً (بلا كوكيز، بلا جلسة) --
+// الحماية الفعلية هي رمز التتبّع/رقم الفاتورة+الجوال وتحديد المعدّل، لا
+// أصل الطلب. لا يمسّ أي مسار آخر (موظف/مصادَق).
+app.use('/api/public', (req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') {
+    res.status(204).end();
+    return;
+  }
+  next();
+});
+
 // Express 4 لا يمرّر رفض Promise غير ملتقط من معالج async إلى next(err)
 // تلقائياً -- فيفلت من middleware معالجة الأخطاء العام أسفل الملف ويبقى
 // الطلب معلّقًا حتى ينتهي وقت دالة Vercel. استخدم هذا الغلاف لأي مسار async

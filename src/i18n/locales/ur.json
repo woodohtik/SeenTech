@@ -2803,7 +2803,10 @@
     "step_cutting": "کپڑا کاٹا جا رہا ہے",
     "step_sewing": "سلائی جاری ہے",
     "step_preparing": "تیاری اور پیکنگ",
-    "notify_native_auto": "ایپ کے اندر اطلاعات خودکار طور پر فعال ہیں۔"
+    "notify_native_auto": "ایپ کے اندر اطلاعات خودکار طور پر فعال ہیں۔",
+    "delivery_today": "آج ڈیلیوری",
+    "delivery_tomorrow": "کل ڈیلیوری",
+    "delivery_in_days_other": "ڈیلیوری میں {{count}} دن باقی"
   },
   "my_orders": {
     "title": "میرے آرڈرز",

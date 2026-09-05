@@ -12,20 +12,27 @@
  * Native-only by design (mirrors pushNotificationsCapacitor.ts): a browser
  * visitor to /track/:token already gets a working page with no "my orders"
  * concept, and doesn't need this list.
+ *
+ * IMPORTANT: never return a Capacitor plugin object as the resolved value
+ * of an async function (e.g. `async function get() { return Preferences; }`).
+ * Capacitor's native plugin objects are Proxies that answer ANY property
+ * access, including `.then` -- so returning one through a promise boundary
+ * makes the JS engine's own promise-resolution procedure treat it as a
+ * thenable and call `Preferences.then(...)`, which throws
+ * `"Preferences.then() is not implemented on android"` (confirmed live on
+ * device: this hung every call below indefinitely before this fix, since
+ * the resulting rejection escaped as an unhandled promise rejection rather
+ * than reaching the try/catch here). Always inline the dynamic import at
+ * the call site instead.
  */
 import { Capacitor } from '@capacitor/core';
 
 const STORAGE_KEY = 'seen_tracked_orders';
 
-async function getPreferencesPlugin() {
-  const { Preferences } = await import('@capacitor/preferences');
-  return Preferences;
-}
-
 export async function getSavedTrackingTokens(): Promise<string[]> {
   if (!Capacitor.isNativePlatform()) return [];
   try {
-    const Preferences = await getPreferencesPlugin();
+    const { Preferences } = await import('@capacitor/preferences');
     const { value } = await Preferences.get({ key: STORAGE_KEY });
     if (!value) return [];
     const parsed = JSON.parse(value);
@@ -39,7 +46,7 @@ export async function getSavedTrackingTokens(): Promise<string[]> {
 export async function addTrackingToken(token: string): Promise<boolean> {
   if (!Capacitor.isNativePlatform() || !token) return false;
   try {
-    const Preferences = await getPreferencesPlugin();
+    const { Preferences } = await import('@capacitor/preferences');
     const tokens = await getSavedTrackingTokens();
     if (tokens.includes(token)) return false;
     tokens.push(token);
@@ -53,7 +60,7 @@ export async function addTrackingToken(token: string): Promise<boolean> {
 export async function removeTrackingToken(token: string): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
   try {
-    const Preferences = await getPreferencesPlugin();
+    const { Preferences } = await import('@capacitor/preferences');
     const tokens = await getSavedTrackingTokens();
     const next = tokens.filter((t) => t !== token);
     await Preferences.set({ key: STORAGE_KEY, value: JSON.stringify(next) });

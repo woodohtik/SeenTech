@@ -2803,7 +2803,13 @@
     "step_cutting": "قص القماش",
     "step_sewing": "قيد الخياطة",
     "step_preparing": "التجهيز والتغليف",
-    "notify_native_auto": "الإشعارات مفعّلة تلقائياً داخل التطبيق."
+    "notify_native_auto": "الإشعارات مفعّلة تلقائياً داخل التطبيق.",
+    "delivery_today": "التسليم اليوم",
+    "delivery_tomorrow": "التسليم غدًا",
+    "delivery_in_days_two": "متبقّي يومان للتسليم",
+    "delivery_in_days_few": "متبقّي {{count}} أيام للتسليم",
+    "delivery_in_days_many": "متبقّي {{count}} يومًا للتسليم",
+    "delivery_in_days_other": "متبقّي {{count}} يوم للتسليم"
   },
   "my_orders": {
     "title": "طلباتي",

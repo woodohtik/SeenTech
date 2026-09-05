@@ -16,15 +16,20 @@
  * contract is IDENTICAL either way: POST /api/staff/push-subscribe with
  * { fcmToken }, stored in staff_push_subscriptions exactly as a browser
  * token would be. No server or database change for this at all.
+ *
+ * IMPORTANT: never return a Capacitor plugin object as the resolved value
+ * of an async function -- Capacitor's native plugin objects are Proxies
+ * that answer ANY property access, including `.then`, so returning one
+ * through a promise boundary makes the JS engine's own promise-resolution
+ * procedure treat it as a thenable and call `PushNotifications.then(...)`,
+ * which throws `"PushNotifications.then() is not implemented on android"`
+ * (confirmed live on device for the identical pattern in
+ * pushNotificationsCapacitorCustomer.ts -- this hangs the whole init
+ * indefinitely rather than throwing somewhere catchable). Always inline
+ * the dynamic import at the call site instead.
  */
 import { Capacitor } from '@capacitor/core';
 import { supabase } from './supabase/client';
-
-/** Only ever import/call this from a place already gated by isNativePlatform(). */
-async function getPushNotificationsPlugin() {
-  const { PushNotifications } = await import('@capacitor/push-notifications');
-  return PushNotifications;
-}
 
 async function sendTokenToServer(fcmToken: string): Promise<void> {
   try {
@@ -53,7 +58,7 @@ export async function initNativePushNotifications(): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
 
   try {
-    const PushNotifications = await getPushNotificationsPlugin();
+    const { PushNotifications } = await import('@capacitor/push-notifications');
 
     const permission = await PushNotifications.requestPermissions();
     if (permission.receive !== 'granted') return;

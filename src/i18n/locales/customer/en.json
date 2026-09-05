@@ -19,7 +19,10 @@
     "step_cutting": "Cutting fabric",
     "step_sewing": "Sewing in progress",
     "step_preparing": "Finishing & packaging",
-    "notify_native_auto": "Notifications are enabled automatically inside the app."
+    "notify_native_auto": "Notifications are enabled automatically inside the app.",
+    "delivery_today": "Delivery today",
+    "delivery_tomorrow": "Delivery tomorrow",
+    "delivery_in_days_other": "{{count}} days until delivery"
   },
   "my_orders": {
     "title": "My Orders",

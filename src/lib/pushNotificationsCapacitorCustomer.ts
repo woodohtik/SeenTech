@@ -13,15 +13,19 @@
  * row keyed by that order's tracking_token
  * (POST /api/public/order-tracking/:token/subscribe) -- no server or
  * database change either way.
+ *
+ * IMPORTANT: never return a Capacitor plugin object as the resolved value
+ * of an async function -- Capacitor's native plugin objects are Proxies
+ * that answer ANY property access, including `.then`, so returning one
+ * through a promise boundary makes the JS engine's own promise-resolution
+ * procedure treat it as a thenable and call `PushNotifications.then(...)`,
+ * which throws `"PushNotifications.then() is not implemented on android"`
+ * (confirmed live on device -- this hung every call below indefinitely).
+ * Always inline the dynamic import at the call site instead.
  */
 import { Capacitor } from '@capacitor/core';
 import { getSavedTrackingTokens } from './trackedOrders';
 import { apiUrl } from './apiBase';
-
-async function getPushNotificationsPlugin() {
-  const { PushNotifications } = await import('@capacitor/push-notifications');
-  return PushNotifications;
-}
 
 async function subscribeTokenToAllTrackedOrders(fcmToken: string): Promise<void> {
   const trackingTokens = await getSavedTrackingTokens();
@@ -44,7 +48,7 @@ export async function initCustomerPushNotifications(): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
 
   try {
-    const PushNotifications = await getPushNotificationsPlugin();
+    const { PushNotifications } = await import('@capacitor/push-notifications');
 
     const permission = await PushNotifications.requestPermissions();
     if (permission.receive !== 'granted') return;
@@ -88,7 +92,7 @@ export async function initCustomerPushNotifications(): Promise<void> {
 export async function reRegisterPushForTrackedOrders(): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
   try {
-    const PushNotifications = await getPushNotificationsPlugin();
+    const { PushNotifications } = await import('@capacitor/push-notifications');
     await PushNotifications.register();
   } catch (e) {
     console.warn('[pushNotificationsCapacitorCustomer] re-register failed (non-fatal):', e);

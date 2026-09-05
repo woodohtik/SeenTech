@@ -4,5 +4,92 @@
  * leaflet.css and driver.css for the admin app's map/onboarding-tour
  * features, neither of which the customer app (inline-styled screens
  * only) has any use for.
+ *
+ * Design tokens for OrderTracking.tsx/MyOrdersHome.tsx live here as CSS
+ * custom properties (seen-customer-app-design-upgrade-task.md, Phase 2)
+ * so dark mode needs zero JS: components reference var(--c-*) inside
+ * inline style objects (via src/lib/customerAppTheme.ts), and the browser
+ * re-resolves them on its own when prefers-color-scheme changes -- no
+ * media-query listener, no re-render.
  */
 @import "tailwindcss";
+
+:root {
+  --c-bg: #F4F6F9;
+  --c-surface: #FFFFFF;
+  --c-surface-muted: #EEF1F5;
+  --c-text: #1A1A1A;
+  --c-text-muted: #6B7280;
+  --c-border: #E5E7EB;
+  --c-navy: #1F3A5F;
+  --c-blue: #2E75B6;
+  --c-accent-text: #2E75B6;
+  --c-success-bg: #DCFCE7;
+  --c-success-text: #16A34A;
+  --c-danger-bg: #FEE2E2;
+  --c-danger-text: #DC2626;
+  --c-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  --c-skeleton-base: #E5E7EB;
+  --c-skeleton-highlight: #F3F4F6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-bg: #0F1720;
+    --c-surface: #1A2634;
+    --c-surface-muted: #22303F;
+    --c-text: #F1F5F9;
+    --c-text-muted: #94A3B8;
+    --c-border: #2A3644;
+    --c-navy: #9DC3F0;
+    --c-blue: #2E75B6;
+    --c-accent-text: #7FB0E8;
+    --c-success-bg: #123522;
+    --c-success-text: #4ADE80;
+    --c-danger-bg: #3A1518;
+    --c-danger-text: #F87171;
+    --c-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --c-skeleton-base: #22303F;
+    --c-skeleton-highlight: #2E3D4E;
+  }
+}
+
+body {
+  background: var(--c-bg);
+  color: var(--c-text);
+}
+
+@keyframes seen-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.seen-skeleton {
+  background: linear-gradient(90deg, var(--c-skeleton-base) 25%, var(--c-skeleton-highlight) 50%, var(--c-skeleton-base) 75%);
+  background-size: 200% 100%;
+  animation: seen-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes seen-pulse-once {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.seen-celebrate {
+  animation: seen-pulse-once 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes seen-spin {
+  to { transform: rotate(360deg); }
+}
+
+.seen-spin {
+  animation: seen-spin 0.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seen-skeleton { animation: none; }
+  .seen-celebrate { animation: none; }
+  .seen-spin { animation: none; }
+}
