@@ -55,6 +55,11 @@ app.use('/api/public', (req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // helmet's default Cross-Origin-Resource-Policy: same-origin blocks a
+  // cross-origin fetch's response from being read by the page even when
+  // CORS headers above allow it -- CORP is enforced independently of CORS.
+  // Override it for this same public-by-design surface only.
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   if (req.method === 'OPTIONS') {
     res.status(204).end();
     return;
