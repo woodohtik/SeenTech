@@ -261,6 +261,22 @@ function AppContent() {
     }
   }, [user, isApproved]);
 
+  // Native push registration (seen-companion-app-android-task.md) -- a
+  // pure no-op on the regular web build, since initNativePushNotifications
+  // itself checks Capacitor.isNativePlatform() before doing anything. Only
+  // meaningful once the staff Android wrapper actually runs this code.
+  // Not gated on isSaaSStaff: staff_push_subscriptions is keyed by
+  // staff_id (from the authenticated session server-side), and a SaaS
+  // admin has no staff row to begin with, so registration harmlessly
+  // no-ops server-side for that audience regardless.
+  useEffect(() => {
+    if (user && isApproved) {
+      import('./lib/pushNotificationsCapacitor')
+        .then(({ initNativePushNotifications }) => initNativePushNotifications())
+        .catch((err) => console.warn('[NativePush] init failed:', err));
+    }
+  }, [user, isApproved]);
+
   const handleResolveConflict = resolveConflict;
   const handleRejectConflict = rejectConflict;
 
