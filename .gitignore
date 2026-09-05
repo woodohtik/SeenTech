@@ -1,4 +1,5 @@
 dist/
+dist-customer/
 node_modules/
 coverage/
 .DS_Store

@@ -1,0 +1,39 @@
+{
+  "public_tracking": {
+    "brand_mark": "سِين",
+    "expected_delivery": "التسليم المتوقّع: {{date}}",
+    "load_failed": "تعذّر تحميل حالة الطلب حالياً.",
+    "loading": "جارٍ التحميل…",
+    "order_cancelled": "تم إلغاء هذا الطلب.",
+    "order_not_found": "لم نعثر على هذا الطلب. تأكّد من الرابط.",
+    "order_number": "طلب رقم #{{number}}",
+    "powered_by": "مدعوم بنظام «سين» لإدارة محلات التفصيل",
+    "rate_limited": "محاولات كثيرة جداً. انتظر دقيقة ثم أعد المحاولة.",
+    "title": "تتبّع طلبك",
+    "enable_notifications": "فعّل إشعارات حالة الطلب",
+    "notify_loading": "جارٍ التفعيل…",
+    "notify_granted": "تم التفعيل — راح تصلك إشعارات عند تغيّر حالة الطلب.",
+    "notify_denied": "تم رفض إذن الإشعارات من المتصفح.",
+    "notify_unavailable": "الإشعارات غير مدعومة في هذا المتصفح حالياً.",
+    "step_received": "تم استلام الطلب",
+    "step_cutting": "قص القماش",
+    "step_sewing": "قيد الخياطة",
+    "step_preparing": "التجهيز والتغليف",
+    "notify_native_auto": "الإشعارات مفعّلة تلقائياً داخل التطبيق."
+  },
+  "my_orders": {
+    "title": "طلباتي",
+    "loading": "جارٍ التحميل…",
+    "empty_title": "لا توجد طلبات محفوظة بعد",
+    "empty_hint": "افتح رابط تتبّع الطلب اللي وصلك على واتساب من المحل، وراح يُضاف هنا تلقائياً.",
+    "add_manual_button": "إضافة طلب برمز التتبّع",
+    "manual_placeholder": "أدخل رمز التتبّع",
+    "manual_add": "إضافة",
+    "manual_cancel": "إلغاء",
+    "manual_not_found": "لم نعثر على طلب بهذا الرمز.",
+    "refresh": "تحديث"
+  },
+  "common": {
+    "status_ready": "جاهز للاستلام"
+  }
+}

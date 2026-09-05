@@ -23,7 +23,7 @@ import { Staff } from '../types';
 import { cn } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { subscribeStaffToNewOrderNotifications } from '../lib/pushNotifications';
+import { subscribeStaffToNewOrderNotifications } from '../lib/pushNotificationsStaff';
 
 import { isRtlLang, changeAppLanguage } from '../lib/direction';
 

@@ -16,8 +16,12 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Capacitor } from '@capacitor/core';
 import { useDirection } from '../../lib/direction';
 import { subscribeToOrderNotifications, type SubscribeResult } from '../../lib/pushNotifications';
+import { addTrackingToken } from '../../lib/trackedOrders';
+import { reRegisterPushForTrackedOrders } from '../../lib/pushNotificationsCapacitorCustomer';
+import { apiUrl } from '../../lib/apiBase';
 
 const NOTIFY_STORAGE_PREFIX = 'seen_tracking_notify_';
 
@@ -90,7 +94,7 @@ export default function OrderTracking({ token }: { token: string }) {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`/api/public/order-tracking/${token}`);
+        const response = await fetch(apiUrl(`/api/public/order-tracking/${token}`));
         if (!alive) return;
         if (response.status === 429) {
           setError(t('public_tracking.rate_limited'));
@@ -99,6 +103,12 @@ export default function OrderTracking({ token }: { token: string }) {
         } else {
           const row = await response.json();
           setOrder(row as PublicOrder);
+          // Inside the customer Capacitor app only (no-ops in a plain
+          // browser tab) -- this is what makes an opened tracking link
+          // show up in "My Orders" without any manual step.
+          addTrackingToken(token).then((added) => {
+            if (added) void reRegisterPushForTrackedOrders();
+          });
         }
       } catch (e) {
         if (alive) setError(t('public_tracking.load_failed'));
@@ -150,7 +160,16 @@ export default function OrderTracking({ token }: { token: string }) {
 
             {order.status !== 'cancelled' && order.status !== 'delivered' && (
               <div style={styles.notifyBox}>
-                {notifyState === 'idle' && (
+                {Capacitor.isNativePlatform() ? (
+                  // Inside the customer Capacitor app, push is already
+                  // registered automatically for every tracked order
+                  // (pushNotificationsCapacitorCustomer.ts) -- the manual
+                  // web-push button below is browser-only (it registers a
+                  // service worker, which this native shell has no
+                  // reliable use for) and would just be a confusing
+                  // duplicate opt-in here.
+                  <p style={styles.notifySuccess}>{t('public_tracking.notify_native_auto')}</p>
+                ) : notifyState === 'idle' && (
                   <button style={styles.notifyButton} onClick={handleEnableNotifications}>
                     {t('public_tracking.enable_notifications')}
                   </button>

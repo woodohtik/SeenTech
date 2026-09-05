@@ -1,17 +1,19 @@
 /**
- * pushNotifications.ts — FCM Web Push opt-in, for two distinct audiences
- * (seen-companion-app-task_1.md):
- * - Phase 2: the customer on the public order-tracking page. No account,
- *   no identity -- the device token is registered against the order's
- *   tracking_token only (POST /api/public/order-tracking/:token/subscribe).
- * - Phase 3: a signed-in staff member, opting in from their own
- *   preferences menu, for "new order arrived" pushes when the app is
- *   closed. The device token is registered against their own staff_id,
- *   derived server-side from their auth session, never sent by the client
- *   (POST /api/staff/push-subscribe).
+ * pushNotifications.ts — FCM Web Push opt-in for the customer on the
+ * public order-tracking page (seen-companion-app-task_1.md, Phase 2). No
+ * account, no identity -- the device token is registered against the
+ * order's tracking_token only (POST /api/public/order-tracking/:token/subscribe).
+ *
+ * The staff equivalent (Phase 3, signed-in staff member) lives in
+ * pushNotificationsStaff.ts instead of here, specifically so this module
+ * never imports the Supabase client -- OrderTracking.tsx (which imports
+ * this file) ships in the standalone customer Android app build
+ * (seen-companion-app-android-task.md, Track B), and that build must not
+ * bundle the Supabase client or any shop-side auth machinery it has no
+ * use for (it only ever talks to the public, unauthenticated tracking
+ * endpoints).
  */
 import { app, finalConfig } from './firebase';
-import { supabase } from './supabase/client';
 
 export type SubscribeResult = 'granted' | 'denied' | 'unsupported' | 'error';
 
@@ -44,7 +46,7 @@ async function getMessagingInstance() {
  * by both the customer and staff opt-in flows below -- only what happens
  * with the resulting token (which endpoint it's POSTed to) differs.
  */
-async function acquireFcmToken(): Promise<{ token: string } | { denied: true } | { unsupported: true } | { error: true }> {
+export async function acquireFcmToken(): Promise<{ token: string } | { denied: true } | { unsupported: true } | { error: true }> {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('Notification' in window)) {
     return { unsupported: true };
   }
@@ -104,31 +106,6 @@ export async function subscribeToOrderNotifications(trackingToken: string): Prom
     return res.ok ? 'granted' : 'error';
   } catch (e) {
     console.error('[pushNotifications] subscribe failed:', e);
-    return 'error';
-  }
-}
-
-export async function subscribeStaffToNewOrderNotifications(): Promise<SubscribeResult> {
-  try {
-    const acquired = await acquireFcmToken();
-    if ('unsupported' in acquired) return 'unsupported';
-    if ('denied' in acquired) return 'denied';
-    if ('error' in acquired) return 'error';
-
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) return 'error';
-
-    const res = await fetch('/api/staff/push-subscribe', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({ fcmToken: acquired.token }),
-    });
-    return res.ok ? 'granted' : 'error';
-  } catch (e) {
-    console.error('[pushNotifications] staff subscribe failed:', e);
     return 'error';
   }
 }

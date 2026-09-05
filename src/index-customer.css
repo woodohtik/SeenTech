@@ -1,0 +1,8 @@
+/**
+ * Minimal CSS entry for the customer app build (vite.customer.config.ts).
+ * Deliberately NOT index.css -- that file unconditionally pulls in
+ * leaflet.css and driver.css for the admin app's map/onboarding-tour
+ * features, neither of which the customer app (inline-styled screens
+ * only) has any use for.
+ */
+@import "tailwindcss";

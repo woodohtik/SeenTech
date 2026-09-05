@@ -2798,7 +2798,24 @@
     "notify_loading": "Enabling…",
     "notify_granted": "Enabled — you'll get notified when your order status changes.",
     "notify_denied": "Notification permission was denied by the browser.",
-    "notify_unavailable": "Notifications aren't supported in this browser right now."
+    "notify_unavailable": "Notifications aren't supported in this browser right now.",
+    "step_received": "Order received",
+    "step_cutting": "Cutting fabric",
+    "step_sewing": "Sewing in progress",
+    "step_preparing": "Finishing & packaging",
+    "notify_native_auto": "Notifications are enabled automatically inside the app."
+  },
+  "my_orders": {
+    "title": "My Orders",
+    "loading": "Loading…",
+    "empty_title": "No saved orders yet",
+    "empty_hint": "Open the order tracking link the shop sent you on WhatsApp, and it'll be added here automatically.",
+    "add_manual_button": "Add order by tracking code",
+    "manual_placeholder": "Enter tracking code",
+    "manual_add": "Add",
+    "manual_cancel": "Cancel",
+    "manual_not_found": "We couldn't find an order with this code.",
+    "refresh": "Refresh"
   },
   "reconciliation": {
     "actual": "Actual Quantity",

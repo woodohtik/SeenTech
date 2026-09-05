@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx server.ts",
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "build:customer": "vite build --config vite.customer.config.ts && node -e \"require('fs').renameSync('dist-customer/index.customer.html','dist-customer/index.html')\"",
     "start": "node dist/server.cjs",
     "preview": "vite preview",
     "clean": "rm -rf dist",
@@ -19,8 +20,10 @@
     "@ai-sdk/groq": "^4.0.33",
     "@ai-sdk/openai": "^4.0.47",
     "@capacitor/android": "^8.5.1",
+    "@capacitor/app": "^8.1.1",
     "@capacitor/cli": "^8.5.1",
     "@capacitor/core": "^8.5.1",
+    "@capacitor/preferences": "^8.0.1",
     "@capacitor/push-notifications": "^8.1.2",
     "@google/genai": "^1.29.0",
     "@headlessui/react": "^2.2.10",
