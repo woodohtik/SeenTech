@@ -2810,11 +2810,12 @@
     "loading": "Loading…",
     "empty_title": "No saved orders yet",
     "empty_hint": "Open the order tracking link the shop sent you on WhatsApp, and it'll be added here automatically.",
-    "add_manual_button": "Add order by tracking code",
-    "manual_placeholder": "Enter tracking code",
+    "add_manual_button": "Add order by invoice number",
+    "manual_order_number_placeholder": "Invoice number",
+    "manual_phone_last4_placeholder": "Last 4 digits of your phone",
     "manual_add": "Add",
     "manual_cancel": "Cancel",
-    "manual_not_found": "We couldn't find an order with this code.",
+    "manual_not_found": "We couldn't find an order with these details. Check the invoice number and phone digits.",
     "refresh": "Refresh"
   },
   "reconciliation": {

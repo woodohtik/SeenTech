@@ -14,6 +14,7 @@ import { useDirection } from '../../lib/direction';
 import { getSavedTrackingTokens, addTrackingToken } from '../../lib/trackedOrders';
 import { reRegisterPushForTrackedOrders } from '../../lib/pushNotificationsCapacitorCustomer';
 import { apiUrl } from '../../lib/apiBase';
+import { lookupOrderByInvoiceAndPhone } from '../../lib/orderLookup';
 
 type PublicStatus =
   | 'measurements_taken' | 'cutting' | 'sewing' | 'embroidery'
@@ -45,7 +46,8 @@ export default function MyOrdersHome() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<TrackedOrder[] | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [manualToken, setManualToken] = useState('');
+  const [manualOrderNumber, setManualOrderNumber] = useState('');
+  const [manualPhoneLast4, setManualPhoneLast4] = useState('');
   const [manualBusy, setManualBusy] = useState(false);
   const [manualError, setManualError] = useState<string | null>(null);
 
@@ -71,19 +73,21 @@ export default function MyOrdersHome() {
   }, [loadOrders]);
 
   const handleAddManual = async () => {
-    const token = manualToken.trim();
-    if (!token) return;
+    const orderNumber = manualOrderNumber.trim();
+    const phoneLast4 = manualPhoneLast4.trim();
+    if (!orderNumber || phoneLast4.length !== 4) return;
     setManualBusy(true);
     setManualError(null);
     try {
-      const res = await fetch(apiUrl(`/api/public/order-tracking/${token}`));
-      if (!res.ok) {
+      const token = await lookupOrderByInvoiceAndPhone(orderNumber, phoneLast4);
+      if (!token) {
         setManualError(t('my_orders.manual_not_found'));
         return;
       }
       const added = await addTrackingToken(token);
       if (added) void reRegisterPushForTrackedOrders();
-      setManualToken('');
+      setManualOrderNumber('');
+      setManualPhoneLast4('');
       setShowAddForm(false);
       await loadOrders();
     } catch {
@@ -143,9 +147,19 @@ export default function MyOrdersHome() {
         <div style={styles.addForm}>
           <input
             style={styles.input}
-            value={manualToken}
-            onChange={(e) => setManualToken(e.target.value)}
-            placeholder={t('my_orders.manual_placeholder')}
+            value={manualOrderNumber}
+            onChange={(e) => setManualOrderNumber(e.target.value.replace(/[^0-9]/g, ''))}
+            placeholder={t('my_orders.manual_order_number_placeholder')}
+            inputMode="numeric"
+            disabled={manualBusy}
+          />
+          <input
+            style={{ ...styles.input, marginTop: 10 }}
+            value={manualPhoneLast4}
+            onChange={(e) => setManualPhoneLast4(e.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
+            placeholder={t('my_orders.manual_phone_last4_placeholder')}
+            inputMode="numeric"
+            maxLength={4}
             disabled={manualBusy}
           />
           {manualError && <p style={styles.error}>{manualError}</p>}
@@ -153,7 +167,11 @@ export default function MyOrdersHome() {
             <button style={styles.secondaryButton} onClick={() => { setShowAddForm(false); setManualError(null); }} disabled={manualBusy}>
               {t('my_orders.manual_cancel')}
             </button>
-            <button style={styles.primaryButton} onClick={handleAddManual} disabled={manualBusy || !manualToken.trim()}>
+            <button
+              style={styles.primaryButton}
+              onClick={handleAddManual}
+              disabled={manualBusy || !manualOrderNumber.trim() || manualPhoneLast4.length !== 4}
+            >
               {t('my_orders.manual_add')}
             </button>
           </div>

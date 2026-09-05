@@ -228,6 +228,62 @@ app.get("/api/public/order-tracking/:token", asyncHandler(async (req, res) => {
   });
 }));
 
+// بديل يدوي عن كتابة tracking_token (رمز UUID طويل، غير عملي لإعادة كتابته
+// يدوياً) لتطبيق "طلباتي" في تطبيق العميل -- seen-companion-app-android-task.md
+// Track B. يعيد الآلية الأمنية نفسها بشكل مختلف: بدل token عشوائي واحد،
+// يتطلّب معرفة رقمي الطلب معاً (order_number + آخر 4 أرقام من جوال
+// العميل المسجَّل على الطلب) -- بها فقط، بلا مصادقة، تماماً كأنظمة تتبّع
+// الشحن التجارية (رقم الشحنة + الرمز البريدي). عمداً لا يقبل order_number
+// وحده: هذا رقم صغير قابل للتخمين/التسلسل، وربطه بآخر 4 أرقام من الجوال
+// (10,000 احتمال) يرفع تكلفة التخمين العشوائي بشكل كافٍ خلف نفس تحديد
+// المعدّل بالأسفل. يعيد tracking_token نفسه عند النجاح فقط -- هذا الاستثناء
+// الوحيد المتعمَّد لإرجاع التوكِن من السيرفر، لأن الطالب أثبت للتو معرفته
+// بسرّين معاً لا سرّاً واحداً مخمَّناً.
+const ORDER_LOOKUP_NUMBER_RE = /^[0-9]{1,10}$/;
+const PHONE_LAST4_RE = /^[0-9]{4}$/;
+
+app.post("/api/public/order-lookup", asyncHandler(async (req, res) => {
+  const orderNumberRaw = (req.body || {}).orderNumber;
+  const phoneLast4 = (req.body || {}).phoneLast4;
+  const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+
+  const orderNumber = typeof orderNumberRaw === 'string' || typeof orderNumberRaw === 'number'
+    ? String(orderNumberRaw).trim()
+    : '';
+
+  if (!ORDER_LOOKUP_NUMBER_RE.test(orderNumber) || typeof phoneLast4 !== 'string' || !PHONE_LAST4_RE.test(phoneLast4)) {
+    return res.status(400).json({ error: 'Invalid input' });
+  }
+
+  const { allowed, recordFailure } = await checkTrackingRateLimit(supabaseAdmin, clientIp(req));
+  if (!allowed) {
+    return res.status(429).json({ error: 'محاولات كثيرة جداً. انتظر دقيقة ثم أعد المحاولة.' });
+  }
+
+  const { data: candidates } = await supabaseAdmin
+    .from('orders')
+    .select('order_number, status, status_key, delivery_date, tracking_token, tenant:tenants(name, logo_url), customer:customers(phone)')
+    .eq('order_number', Number(orderNumber));
+
+  const orderData = (candidates || []).find((o: any) => (o.customer?.phone || '').endsWith(phoneLast4));
+
+  if (!orderData) {
+    await recordFailure();
+    return res.status(404).json({ error: 'Order not found' });
+  }
+
+  const tenantData = (orderData as any).tenant;
+
+  res.json({
+    tracking_token: orderData.tracking_token,
+    order_number: orderData.order_number,
+    status: (orderData as any).status_key || orderData.status,
+    shop_name: tenantData?.name || '',
+    shop_logo_url: tenantData?.logo_url || null,
+    delivery_date: orderData.delivery_date,
+  });
+}));
+
 // تفعيل إشعارات Push من صفحة التتبّع العامة نفسها -- بلا حساب، الاشتراك
 // مربوط بـ tracking_token فقط (انظر 20260904000000_order_push_subscriptions.sql).
 app.post("/api/public/order-tracking/:token/subscribe", asyncHandler(async (req, res) => {

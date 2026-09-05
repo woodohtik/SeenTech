@@ -2810,11 +2810,12 @@
     "loading": "جارٍ التحميل…",
     "empty_title": "لا توجد طلبات محفوظة بعد",
     "empty_hint": "افتح رابط تتبّع الطلب اللي وصلك على واتساب من المحل، وراح يُضاف هنا تلقائياً.",
-    "add_manual_button": "إضافة طلب برمز التتبّع",
-    "manual_placeholder": "أدخل رمز التتبّع",
+    "add_manual_button": "إضافة طلب برقم الفاتورة",
+    "manual_order_number_placeholder": "رقم الفاتورة",
+    "manual_phone_last4_placeholder": "آخر 4 أرقام من جوالك",
     "manual_add": "إضافة",
     "manual_cancel": "إلغاء",
-    "manual_not_found": "لم نعثر على طلب بهذا الرمز.",
+    "manual_not_found": "لم نعثر على طلب بهذه البيانات. تأكّد من رقم الفاتورة وآخر 4 أرقام من الجوال.",
     "refresh": "تحديث"
   },
   "reconciliation": {
