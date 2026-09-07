@@ -96,7 +96,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
   // string -- the invoice share message must match what they configured.
   const buildWhatsAppInvoiceText = (order: Order, phone?: string) => buildWhatsAppMessage(getWhatsAppTemplate(), {
     customerName: order.customerName,
-    orderId: order.invoiceNumber || order.orderNumber || order.id.slice(-6).toUpperCase(),
+    orderId: String(order.invoiceNumber || order.orderNumber || order.id.slice(-6).toUpperCase()),
     totalAmount: order.totalAmount,
     customerPhone: phone,
     storeName: tenantInfo?.name,

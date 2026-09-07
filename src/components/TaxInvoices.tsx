@@ -16,7 +16,6 @@ import DateTimeDisplay from './DateTimeDisplay';
 import { downloadInvoicePDF, shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
 import { useToast } from '../contexts/ToastContext';
 import { buildWhatsAppMessage, getWhatsAppTemplate } from '../utils/whatsapp';
-import { formatSaudiPhone } from '../utils/phoneUtils';
 
 import { isRtlLang } from '../lib/direction';
 
@@ -349,33 +348,29 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
   };
 
   const handleShareWhatsApp = async () => {
-    const knownPhone = order.customerPhone ? formatSaudiPhone(order.customerPhone).replace('+', '') : '';
+    // TaxInvoice carries no customer phone field at all -- this modal's
+    // order comes from src/types/index.ts's camelCase TaxInvoice, which
+    // (unlike the Order type used elsewhere for POS/Orders/SalesRecord)
+    // never had one, matching the original blank-recipient behavior below.
     // The user's own customizable template (WhatsAppSettings), not a fixed
     // string -- the invoice share message must match what they configured.
     const text = buildWhatsAppMessage(getWhatsAppTemplate(), {
       customerName: order.customerName,
-      orderId: order.invoiceNumber || order.id,
+      orderId: String(order.invoiceNumber || order.id),
       totalAmount: totalIncVat.toFixed(2),
-      customerPhone: knownPhone || undefined,
       storeName: tenant.name,
     });
     const filename = `Invoice-${order.invoiceNumber || order.id}.pdf`;
 
-    // Native share (text + file together) is tried first regardless of
-    // whether the customer's phone is already known -- wa.me/
-    // api.whatsapp.com links can only ever carry text, never a file, so
-    // that path can't send both together no matter what.
+    // Native share (text + file together) is the only way a web app can
+    // hand both to WhatsApp at once -- wa.me/api.whatsapp.com links can
+    // only ever carry text, never a file.
     const result = await shareOrDownloadInvoicePDF('print-area', filename, text);
     if (result === 'shared') return;
 
     // Native share isn't available on this device/browser -- the PDF was
     // downloaded instead (ready to attach manually).
-    window.open(
-      knownPhone
-        ? `https://api.whatsapp.com/send?phone=${knownPhone}&text=${encodeURIComponent(text)}`
-        : `https://wa.me/?text=${encodeURIComponent(text)}`,
-      '_blank'
-    );
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
   
   // Use pre-computed QR, or fallback logic

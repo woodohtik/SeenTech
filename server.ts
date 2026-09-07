@@ -1133,27 +1133,20 @@ app.post("/api/tenant/settings", authenticate, authorize(['owner', 'admin']), as
 // error thrown mid-iteration can still produce a real error response (JSON if
 // nothing was written yet, or a visible in-band message if streaming already
 // started).
-async function streamTextOrError(result: any, res: any) {
-  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-  let wroteAny = false;
-  try {
-    for await (const chunk of result.textStream) {
-      wroteAny = true;
-      res.write(chunk);
-    }
-    res.end();
-  } catch (err: any) {
-    console.error('Assistant stream error:', err);
-    if (!wroteAny && !res.headersSent) {
-      res.status(502).json({ error: err.message || 'Assistant model call failed' });
-    } else {
-      res.write(`\n\n[${err.message || 'حدث خطأ أثناء توليد الرد'}]`);
-      res.end();
-    }
-  }
-}
-
 const ASSISTANT_FRIENDLY_ERROR = 'حدث خطأ أثناء التواصل مع المساعد، حاول مرة أخرى.';
+
+// يستخرج السقف الفعلي المسموح به لـ max_tokens من رسالة خطأ المزوّد، مثل
+// رسالة Groq: "`max_tokens` must be less than or equal to `512`, the
+// maximum value for `max_tokens` is less than the `context_window` for
+// this model". لا يمكن تخمين سقف ثابت لكل نموذج مسبقاً لأن اسم النموذج
+// حقل نص حر يكتبه السوبر أدمن (انظر SaaSAssistantSettings.tsx) وليس قائمة
+// مغلقة، فبعض النماذج (خصوصاً معاينات Groq الصغيرة) تفرض سقف إخراج أقل
+// بكثير من نافذة السياق الفعلية.
+function extractMaxTokensCeiling(message: string | undefined): number | null {
+  if (!message) return null;
+  const match = message.match(/max_tokens.*?(?:less than or equal to|<=)\s*`?(\d+)`?/i);
+  return match ? parseInt(match[1], 10) : null;
+}
 
 // كتلة ثابتة (لا تتغيّر لكل طلب) تُضاف قبل system_prompt القابل للتعديل من
 // السوبر أدمن: الشخصية، خريطة كاملة بأقسام النظام (لتكون الإجابات على "كيف
@@ -1183,7 +1176,7 @@ const ASSISTANT_PERSONA_AND_KNOWLEDGE = `أنت "مساعد سين الذكي"،
 3) إذا وافق المستخدم لاحقاً بالنص على عرض سابق (نعم / تمام / أكيد / لو سمحت...)، استدعِ guidedTour مرة أخرى بنفس الـ topic و action="start" لتشغيل الجولة فوراً.
 لا تستخدم guidedTour إطلاقاً لموضوع لم تشرحه للمستخدم للتو في نفس المحادثة.`;
 
-// نسخة موسّعة من streamTextOrError لمحادثة /api/chat التي تستخدم أدوات
+// مسؤولة عن محادثة /api/chat التي تستخدم أدوات
 // (tools) وتدعم عدة مزوّدين مع ترتيب احتياطي (Fallback): بروتوكول NDJSON
 // بسيط (سطر JSON واحد لكل جزء) بدل النص الخام، حتى يستطيع العميل تمييز نص
 // الرد عن نتائج الأدوات ويعرضها كبطاقات/جداول بدل نص خام، ويعرض مؤشر "جارِ
@@ -1200,7 +1193,7 @@ const ASSISTANT_PERSONA_AND_KNOWLEDGE = `أنت "مساعد سين الذكي"،
 // بأمان منتصف رد بدأ استلامه -- نتوقف برسالة خطأ مفهومة بدل ذلك.
 async function streamAssistantReply(
   candidates: Array<{ providerKey: string; modelName: string; apiKey: string }>,
-  buildResult: (model: any) => any,
+  buildResult: (model: any, maxOutputTokensOverride?: number) => any,
   res: any,
   onFallback: (failedProviderKey: string, reason: string, nextProviderKey: string | null) => Promise<void>,
 ) {
@@ -1209,46 +1202,62 @@ async function streamAssistantReply(
 
   for (let i = 0; i < candidates.length; i++) {
     const candidate = candidates[i];
-    let wroteAny = false;
-    try {
-      const model = await buildModelForProvider(candidate.providerKey, candidate.modelName, candidate.apiKey);
-      const result = buildResult(model);
-      for await (const part of result.fullStream) {
-        if (part.type === 'text-delta') {
-          wroteAny = true;
-          res.write(JSON.stringify({ t: 'text', v: part.text }) + '\n');
-        } else if (part.type === 'tool-call') {
-          wroteAny = true;
-          res.write(JSON.stringify({ t: 'status', name: part.toolName }) + '\n');
-        } else if (part.type === 'tool-result') {
-          wroteAny = true;
-          res.write(JSON.stringify({ t: 'tool', name: part.toolName, result: part.output }) + '\n');
-        } else if (part.type === 'tool-error') {
-          wroteAny = true;
-          console.error('[assistant-tool-error]', part.toolName, part.error);
-          res.write(JSON.stringify({ t: 'tool-error', name: part.toolName, message: 'تعذّر تنفيذ الأداة' }) + '\n');
-        } else if (part.type === 'error') {
-          throw part.error instanceof Error ? part.error : new Error(String(part.error));
+    // محاولتان لنفس المرشّح كحد أقصى: الثانية فقط إن كشف خطأ المحاولة
+    // الأولى سقف max_tokens فعلي أقل مما هو مُعدّ (انظر extractMaxTokensCeiling) --
+    // المفتاح والنموذج سليمان في هذه الحالة، فالانتقال لمزوّد آخر بالكامل
+    // غير ضروري، يكفي تخفيض ميزانية الإخراج المطلوبة لهذا الطلب فقط.
+    let maxOutputTokensOverride: number | undefined;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      let wroteAny = false;
+      try {
+        const model = await buildModelForProvider(candidate.providerKey, candidate.modelName, candidate.apiKey);
+        const result = buildResult(model, maxOutputTokensOverride);
+        for await (const part of result.fullStream) {
+          if (part.type === 'text-delta') {
+            wroteAny = true;
+            res.write(JSON.stringify({ t: 'text', v: part.text }) + '\n');
+          } else if (part.type === 'tool-call') {
+            wroteAny = true;
+            res.write(JSON.stringify({ t: 'status', name: part.toolName }) + '\n');
+          } else if (part.type === 'tool-result') {
+            wroteAny = true;
+            res.write(JSON.stringify({ t: 'tool', name: part.toolName, result: part.output }) + '\n');
+          } else if (part.type === 'tool-error') {
+            wroteAny = true;
+            console.error('[assistant-tool-error]', part.toolName, part.error);
+            res.write(JSON.stringify({ t: 'tool-error', name: part.toolName, message: 'تعذّر تنفيذ الأداة' }) + '\n');
+          } else if (part.type === 'error') {
+            throw part.error instanceof Error ? part.error : new Error(String(part.error));
+          }
         }
-      }
-      res.end();
-      return;
-    } catch (err: any) {
-      // المستخدم النهائي (Admin/Cashier في الـ Widget) لا يرى تفاصيل الخطأ
-      // البرمجي أبداً (رسائل SDK/مزوّد الذكاء الاصطناعي الخام مثل quota/rate
-      // limit) -- فقط سجل الخادم يحتفظ بها لأغراض التشخيص.
-      console.error(`Assistant stream error [provider=${candidate.providerKey}]:`, err);
-
-      if (wroteAny) {
-        // بدأ العميل بالفعل يستلم جزءاً من الرد -- لا تبديل ممكن الآن.
-        res.write(JSON.stringify({ t: 'text', v: `\n\n${ASSISTANT_FRIENDLY_ERROR}` }) + '\n');
         res.end();
         return;
-      }
+      } catch (err: any) {
+        // المستخدم النهائي (Admin/Cashier في الـ Widget) لا يرى تفاصيل الخطأ
+        // البرمجي أبداً (رسائل SDK/مزوّد الذكاء الاصطناعي الخام مثل quota/rate
+        // limit) -- فقط سجل الخادم يحتفظ بها لأغراض التشخيص.
+        console.error(`Assistant stream error [provider=${candidate.providerKey}, attempt=${attempt}]:`, err);
 
-      const nextCandidate = candidates[i + 1];
-      await onFallback(candidate.providerKey, err.message || 'unknown error', nextCandidate?.providerKey || null);
-      // لم يُكتب شيء للعميل بعد -- آمن للمتابعة للمرشّح التالي في الحلقة.
+        if (wroteAny) {
+          // بدأ العميل بالفعل يستلم جزءاً من الرد -- لا تبديل ممكن الآن.
+          res.write(JSON.stringify({ t: 'text', v: `\n\n${ASSISTANT_FRIENDLY_ERROR}` }) + '\n');
+          res.end();
+          return;
+        }
+
+        if (attempt === 0) {
+          const ceiling = extractMaxTokensCeiling(err.message);
+          if (ceiling !== null) {
+            maxOutputTokensOverride = ceiling;
+            continue; // نفس المرشّح، محاولة ثانية بسقف مخفَّض
+          }
+        }
+
+        const nextCandidate = candidates[i + 1];
+        await onFallback(candidate.providerKey, err.message || 'unknown error', nextCandidate?.providerKey || null);
+        // لم يُكتب شيء للعميل بعد -- آمن للمتابعة للمرشّح التالي في الحلقة الخارجية.
+        break;
+      }
     }
   }
 
@@ -1565,16 +1574,45 @@ app.post("/api/super-admin/assistant-settings/test", authenticate, authorize(['s
 
     const { streamText } = await import('ai');
     const model = await buildModelForProvider(providerKey, String(modelName || PROVIDERS[providerKey].defaultModels[0]), effectiveApiKey);
+    const effectiveModelName = String(modelName || PROVIDERS[providerKey].defaultModels[0]);
+    const requestedMaxTokens = Math.max(1, parseInt(maxTokens, 10) || 500);
 
     const result = streamText({
       model,
       system: String(systemPrompt || ''),
       messages: [{ role: 'user', content: message }],
       temperature: Math.min(1, Math.max(0, Number(temperature) || 0.7)),
-      maxOutputTokens: Math.max(1, parseInt(maxTokens, 10) || 500),
+      maxOutputTokens: requestedMaxTokens,
     });
 
-    await streamTextOrError(result, res);
+    // نسخة مخصّصة من streamTextOrError هنا تحديداً (لا الدالة المشتركة):
+    // زر "اختبار" الغرض منه بالذات كشف مشاكل الإعداد قبل الاعتماد عليها
+    // فعلياً، فخطأ سقف max_tokens (شائع مع نماذج Groq الصغيرة/التجريبية،
+    // انظر extractMaxTokensCeiling) يجب أن يظهر للسوبر أدمن بوضوح ليصحّح
+    // الإعداد، لا أن يُخفى أو يُستبدَل صامتاً كما في محادثة الإنتاج.
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    let wroteAny = false;
+    try {
+      for await (const chunk of result.textStream) {
+        wroteAny = true;
+        res.write(chunk);
+      }
+      res.end();
+    } catch (streamErr: any) {
+      console.error('Assistant test stream error:', streamErr);
+      if (wroteAny) {
+        res.write(`\n\n[${streamErr.message || 'حدث خطأ أثناء توليد الرد'}]`);
+        res.end();
+        return;
+      }
+      const ceiling = extractMaxTokensCeiling(streamErr.message);
+      if (ceiling !== null) {
+        return res.status(400).json({
+          error: `النموذج "${effectiveModelName}" يسمح بحد أقصى ${ceiling} توكن للإخراج، لكن "الحد الأقصى للتوكنز" هنا مضبوط على ${requestedMaxTokens}. قلّل القيمة إلى ${ceiling} أو أقل ثم أعد الاختبار.`,
+        });
+      }
+      return res.status(502).json({ error: streamErr.message || 'Assistant model call failed' });
+    }
   } catch (err: any) {
     console.error("Error in POST /api/super-admin/assistant-settings/test:", err);
     if (!res.headersSent) {
@@ -1680,12 +1718,12 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
 
     await streamAssistantReply(
       candidates,
-      (model) => streamText({
+      (model, maxOutputTokensOverride) => streamText({
         model,
         system: contextualSystemPrompt,
         messages: conversationMessages,
         temperature: settings.temperature,
-        maxOutputTokens: settings.max_tokens,
+        maxOutputTokens: maxOutputTokensOverride ?? settings.max_tokens,
         tools,
         stopWhen: stepCountIs(5),
       }),
