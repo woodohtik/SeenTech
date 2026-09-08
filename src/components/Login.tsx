@@ -291,11 +291,9 @@ export default function Login() {
     setLoading(true);
     setError(null);
     try {
-      console.log("[DEBUG] Starting Login for:", loginId);
       let emailToUse = loginId;
       if (!loginId.includes('@')) {
         const formattedPhone = formatSaudiPhone(loginId);
-        console.log("[DEBUG] Phone login detected, formatting:", formattedPhone);
 
         try {
           // بحث خادمي (لا استعلام مباشر من المتصفح) -- RLS على staff/
@@ -324,11 +322,8 @@ export default function Login() {
         }
       }
 
-      console.log("[DEBUG] Triggering signInWithPassword...");
       const { error: signInErr } = await supabase.auth.signInWithPassword({ email: emailToUse, password });
       if (signInErr) throw signInErr;
-
-      console.log("[DEBUG] Supabase Auth Success - Redirecting via App.tsx state change");
 
       if (rememberMe) {
         localStorage.setItem('rememberedUser', loginId);

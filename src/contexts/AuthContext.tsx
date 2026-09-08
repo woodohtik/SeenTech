@@ -147,17 +147,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [dbUser, setDbUser] = useState<DbUser | null>(null);
     const [loading, setLoading] = useState(true);
     const [conflictUser, setConflictUser] = useState<ConflictState | null>(null);
-    const [appState, setAppState] = useState<ResolvedAppState>(() => ({
-        isApproved: localStorage.getItem('setup_complete') === 'true',
-        userRole: (localStorage.getItem('user_role') as UserRole) || null,
-        tenantId: localStorage.getItem('tenant_id') && localStorage.getItem('tenant_id') !== 'null'
-            ? localStorage.getItem('tenant_id') : null,
+    // لا تُبذَر isApproved/userRole/tenantId من localStorage هنا -- loading
+    // يبدأ true وAppContent (App.tsx ~457) يعرض MainSkeleton طالما loading
+    // true، فلا يقرأ أي مكوّن appState قبل أن يُحسَم فعلياً عبر
+    // resolveIdentity أدناه. البذر من localStorage كان يترك حالة قديمة (دور/
+    // مستأجر من جلسة سابقة على نفس المتصفح) جاهزة في React state، فيومض
+    // ظرفياً قبل أن يستبدلها resolveIdentity بالحالة الحقيقية.
+    const [appState, setAppState] = useState<ResolvedAppState>({
+        isApproved: false,
+        userRole: null,
+        tenantId: null,
         onboardingStep: 0,
         hasStaffWithPin: null,
         currentUserStaff: null,
         hasNoProfile: false,
         resolveError: null,
-    }));
+    });
     const [impersonationTenantId, setImpersonationTenantId] = useState<string | null>(
         localStorage.getItem('impersonatedTenantId') !== 'null' ? localStorage.getItem('impersonatedTenantId') : null
     );

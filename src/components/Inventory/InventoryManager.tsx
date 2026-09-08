@@ -3144,70 +3144,38 @@ const OpeningBalanceModal = ({ onClose, tenantId, branches, items }: any) => {
     if (!selectedBranch) return;
     setLoading(true);
     try {
-      // 1. Fetch existing entries for the active branch to decide inserts vs updates
+      // 1. Fetch existing quantities to compute a real delta per item -- the
+      // previous version wrote entry.quantity as an absolute value (racy
+      // under concurrency, item 4.2) and logged every single row as a
+      // ledger "addition" regardless of whether it was actually a decrease
+      // (item 4.1). apply_stock_movement (via adjustStock) fixes both: it
+      // locks the row, derives the real previous/new/change from the actual
+      // data, and picks the correct ledger direction itself.
       const { data: existingInventory, error: fetchErr } = await supabase
         .from("branch_inventory")
         .select("item_id, quantity")
         .eq("branch_id", selectedBranch);
-      
+
       if (fetchErr) throw fetchErr;
 
-      const existingMap = new Map((existingInventory || []).map(row => [row.item_id, row]));
-
-      const inserts: any[] = [];
-      const updates: any[] = [];
+      const existingMap = new Map((existingInventory || []).map(row => [row.item_id, Number(row.quantity) || 0]));
+      const batchId = crypto.randomUUID();
 
       for (const entry of stockEntries) {
-        if (existingMap.has(entry.itemId)) {
-          updates.push(entry);
-        } else {
-          inserts.push({
-            branch_id: selectedBranch,
-            item_id: entry.itemId,
-            quantity: entry.quantity,
-            tenant_id: tenantId,
-            updated_at: new Date().toISOString(),
-          });
-        }
+        const currentQty = existingMap.get(entry.itemId) || 0;
+        const delta = entry.quantity - currentQty;
+        if (delta === 0) continue;
+        await adjustStock({
+          branchId: selectedBranch,
+          itemId: entry.itemId,
+          quantity: delta,
+          reason: "opening_balance_import",
+          type: delta > 0 ? "in" : "out",
+          staffId: currentStaff?.id || null,
+          tenantId,
+          operationId: `opening-balance:${batchId}:${entry.itemId}`,
+        });
       }
-
-      // 3. Perform insert and updates
-      if (inserts.length > 0) {
-        const { error: insertErr } = await supabase
-          .from("branch_inventory")
-          .insert(inserts);
-        if (insertErr) throw insertErr;
-      }
-
-      for (const entry of updates) {
-        const { error: updateErr } = await supabase
-          .from("branch_inventory")
-          .update({
-            quantity: entry.quantity,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("branch_id", selectedBranch)
-          .eq("item_id", entry.itemId);
-        if (updateErr) throw updateErr;
-      }
-
-      const ledgerEntries = stockEntries.map((entry) => ({
-        item_id: entry.itemId,
-        branch_id: selectedBranch,
-        type: "addition",
-        previous_quantity: 0,
-        new_quantity: entry.quantity,
-        change: entry.quantity,
-        staff_id: currentStaff?.id || "",
-        staff_name: currentStaff?.name || "Staff",
-        tenant_id: tenantId,
-        created_at: new Date().toISOString(),
-      }));
-
-      const { error: ledgerError } = await supabase
-        .from("stock_ledger")
-        .insert(ledgerEntries);
-      if (ledgerError) throw ledgerError;
 
       toastSuccess(t("inventory.opening_balance_success"));
       onClose();

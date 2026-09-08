@@ -341,12 +341,20 @@ app.post("/api/public/order-lookup", asyncHandler(async (req, res) => {
     .select('order_number, status, status_key, delivery_date, tracking_token, tenant:tenants(name, logo_url), customer:customers(phone)')
     .eq('order_number', Number(orderNumber));
 
-  const orderData = (candidates || []).find((o: any) => (o.customer?.phone || '').endsWith(phoneLast4));
+  // order_number مُتسلسِل لكل مستأجر على حدة، لا فريد على مستوى المنصّة
+  // كلها -- والاستعلام أعلاه بلا أي تقييد بمستأجر (لا يوجد سياق مستأجر
+  // معروف في تطبيق العميل أصلاً). تصادم نادر لكن حقيقي: مستأجران مختلفان
+  // كلاهما لديه order_number مطابق، وصدفةً عميلان مختلفان لكل منهما جوال
+  // ينتهي بنفس 4 أرقام -- match() القديمة كانت تأخذ أول نتيجة تصادف
+  // مطابقتها فتُسرِّب بيانات طلب مستأجر آخر للعميل الخطأ. أكثر من نتيجة
+  // مطابقة = حالة ملتبسة تُرفَض بدل تخمين الأقرب.
+  const matches = (candidates || []).filter((o: any) => (o.customer?.phone || '').endsWith(phoneLast4));
 
-  if (!orderData) {
+  if (matches.length !== 1) {
     await recordFailure();
     return res.status(404).json({ error: 'Order not found' });
   }
+  const orderData = matches[0];
 
   const tenantData = (orderData as any).tenant;
 
