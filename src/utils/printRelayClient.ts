@@ -169,8 +169,26 @@ export async function pairWithStation(pairCode: string): Promise<RelayStation> {
   return data.station as RelayStation;
 }
 
-/** إلغاء الاقتران على هذا الجهاز فقط (لا يؤثر على الوسيط ولا الأجهزة الأخرى). */
-export function unpairStation(): void {
+/**
+ * إلغاء الاقتران: يُبطل client_token فعلياً في قاعدة البيانات أولاً (2.5،
+ * seen-comprehensive-review-fixes-task.md -- قبل هذا كان الإلغاء يمسح
+ * التخزين المحلي فقط، فالرمز القديم يبقى صالحاً للأبد لأي جهاز آخر يحمله).
+ * يمسح التخزين المحلي في كل الأحوال حتى لو فشل الطلب (مثلاً بلا اتصال)،
+ * لأن الأولوية أن لا يبقى هذا الجهاز بالذات معتقداً أنه ما زال مقترناً.
+ */
+export async function unpairStation(): Promise<void> {
+  const binding = getRelayBinding();
+  if (binding) {
+    try {
+      await fetch(`/api/print/station/${encodeURIComponent(binding.stationId)}/unpair`, {
+        method: 'POST',
+        headers: jsonHeaders,
+        body: JSON.stringify({ clientToken: binding.clientToken }),
+      });
+    } catch {
+      /* بلا اتصال أو فشل خادم -- التخزين المحلي يُمسح رغم ذلك أدناه */
+    }
+  }
   setRelayBinding(null);
 }
 

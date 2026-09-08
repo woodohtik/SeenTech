@@ -301,8 +301,8 @@ export default function PrinterSettings() {
     }
   };
 
-  const handleUnpair = () => {
-    unpairStation();
+  const handleUnpair = async () => {
+    await unpairStation();
     setStation(null);
     setRelayError(null);
     // إزالة طابعات الوسيط من القائمة لأنها لم تعد قابلة للاستخدام

@@ -627,6 +627,45 @@ export function registerPrintRelay(app: Express): void {
   });
 
   /**
+   * POST /api/print/station/:stationId/unpair
+   * الطلب: { clientToken } (نفس الرمز الحالي المخزَّن على هذا الجهاز)
+   *
+   * (2.5، seen-comprehensive-review-fixes-task.md): زر "إلغاء الإقران" كان
+   * يمسح فقط التخزين المحلي على هذا الجهاز -- client_token يبقى صالحاً في
+   * قاعدة البيانات إلى الأبد، فأي جهاز آخر (أو نسخة مسروقة من الرمز) يبقى
+   * قادراً على إرسال مهام طباعة لنفس المحطة. هذا المسار يُبطل client_token
+   * (ويولّد pair_code جديداً أيضاً، لمنع إعادة استخدام رمز الاقتران القديم)
+   * فعلياً في قاعدة البيانات، فتفقد كل الأجهزة المقترنة سابقاً صلاحيتها فوراً
+   * ويحتاج أي جهاز (بما فيه هذا الجهاز) اقتراناً جديداً بالرمز الجديد.
+   */
+  app.post('/api/print/station/:stationId/unpair', async (req: Request, res: Response) => {
+    try {
+      const station = await fetchStationById(String(req.params.stationId || ''));
+      const token = String((req.body || {}).clientToken || req.headers['x-seen-client-token'] || '');
+
+      if (!station || !safeEqual(token, station.client_token)) {
+        return res.status(404).json({ ok: false, error: 'محطة غير معروفة أو رمز غير صحيح.' });
+      }
+
+      let newPairCode = '';
+      for (let attempt = 0; attempt < 5; attempt++) {
+        newPairCode = randomPairCode();
+        const { error } = await supabaseAdmin
+          .from('print_stations')
+          .update({ client_token: newToken(), pair_code: newPairCode })
+          .eq('id', station.id);
+        if (!error) break;
+        if (attempt === 4) throw error;
+      }
+
+      res.json({ ok: true });
+    } catch (e: any) {
+      console.error('[print-relay] /unpair:', e?.message || e);
+      res.status(500).json({ ok: false, error: 'تعذر إلغاء الاقتران. حاول مرة أخرى.' });
+    }
+  });
+
+  /**
    * GET /api/print/station/:stationId?clientToken=...
    * حالة المحطة وقائمة طابعاتها — للعرض في إعدادات الطابعة.
    */
