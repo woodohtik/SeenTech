@@ -39,10 +39,11 @@ export async function isPinUnique(tenantId: string, pin: string): Promise<boolea
 
 /**
  * Stored and compared as a plain 4-digit string, not bcrypt-hashed — per
- * explicit product decision, so an admin can look a staff member's PIN back
- * up (GET /api/staff/pins) to hand it out or resolve a "PIN doesn't work"
- * report. Kept as an async function so every call site set up for the old
- * hashing step didn't need to change.
+ * explicit product decision (reaffirmed 2026-09-08), so the tenant owner can
+ * look a staff member's PIN back up (GET /api/staff/pins, restricted to
+ * owner/super_admin — not admin/manager) to hand it out or resolve a "PIN
+ * doesn't work" report. Kept as an async function so every call site set up
+ * for the old hashing step didn't need to change.
  */
 export async function hashPin(pin: string): Promise<string> {
   return pin.trim();

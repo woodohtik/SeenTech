@@ -945,14 +945,16 @@ app.post("/api/staff/verify-pin", authenticate, async (req: any, res) => {
   }
 });
 
-// Returns every active staff member's plain-text PIN for this tenant, so an
-// admin/owner can look one up to hand out or resolve a "PIN doesn't work"
-// report. Restricted to admin-level roles server-side: the `staff` table's
+// Returns every active staff member's plain-text PIN for this tenant, so the
+// owner can look one up to hand out or resolve a "PIN doesn't work" report.
+// Restricted to 'owner'/'super_admin' server-side (not admin/manager, per
+// explicit product decision on 2026-09-08 -- plaintext PIN storage stays,
+// but exposure is narrowed to the tenant owner only): the `staff` table's
 // RLS only scopes SELECT by tenant, not by role, so a plain client-side
 // query (or any staff member with devtools) would otherwise let any staff
 // member -- down to a cashier -- read every coworker's, and the owner's,
 // login PIN directly.
-app.get("/api/staff/pins", authenticate, authorize(['super_admin', 'owner', 'admin', 'manager']), async (req: any, res) => {
+app.get("/api/staff/pins", authenticate, authorize(['super_admin', 'owner']), async (req: any, res) => {
   try {
     const tenantId = req.user?.tenantId;
     if (!tenantId) {

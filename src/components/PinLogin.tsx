@@ -77,11 +77,13 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
     setIsVerifying(true);
     setError(null);
     try {
-      // The PIN is verified server-side against every active staff member's
-      // bcrypt hash for this tenant — never fetched to the browser, which
-      // used to let any staff member read a coworker's/owner's pin_hash from
-      // the network response and brute-force the tiny 4-digit keyspace
-      // offline.
+      // Verified server-side against every active staff member's PIN for
+      // this tenant — never fetched to the browser, which used to let any
+      // staff member read a coworker's/owner's pin_hash from the network
+      // response and brute-force the tiny 4-digit keyspace offline. PINs are
+      // stored as plain text, not hashed — see staffService.ts's hashPin()
+      // for the product decision behind that and server.ts's
+      // GET /api/staff/pins for who is allowed to read one back.
       const attemptVerify = async () => {
         const { data: { session } } = await supabase.auth.getSession();
         return fetch('/api/staff/verify-pin', {

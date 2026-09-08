@@ -249,9 +249,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // see supabase/migrations for the one-time seed script.
 
             // 1. Resolve profile: staff -> saas_users -> tailor_requests
-            const [staffRes, requestRes] = await Promise.all([
+            const [staffRes, requestRes, saasOverrideRes] = await Promise.all([
                 supabase.from('staff').select('id, uid, name, email, phone, role, role_id, branch_id, status, must_change_pin, is_test, tenant_id, created_at, updated_at, commission_type, commission_value, has_seen_onboarding, commission_balance, has_pin, tenant:tenants(*)').eq('uid', uid).maybeSingle(),
-                supabase.from('tailor_requests').select('*').eq('uid', uid).maybeSingle()
+                supabase.from('tailor_requests').select('*').eq('uid', uid).maybeSingle(),
+                supabase.from('saas_users').select('role').eq('uid', uid).maybeSingle()
             ]);
 
             let staffData: any = staffRes.data;
@@ -264,7 +265,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
 
             if (staffData) {
-                const role = staffData.role as UserRole;
+                // saas_users takes precedence over the tenant staff role,
+                // mirroring resolveDbUser's priority above (~line 124) --
+                // otherwise a `staff.role` column holding a platform-level
+                // value (super_admin, support_tech, billing_admin) would be
+                // trusted directly for every super_admin guard app-wide,
+                // without ever being backed by a real saas_users row.
+                const role = (saasOverrideRes.data?.role ?? staffData.role) as UserRole;
 
                 // The `tenant:tenants(*)` embed above can come back null on a
                 // cold PostgREST read right after login (RLS on the embedded
