@@ -74,7 +74,7 @@ export default function SubscriptionRequestsAdminManager() {
     }
     setProcessingId(req.id);
     try {
-      await approveSubscriptionRequest(req.id, req.tenant_id, req.plan_id);
+      await approveSubscriptionRequest(req.id);
       showToast(t('subscription.requests.approve_success', { plan: req.plan_name }));
       await loadRequests();
     } catch (err: any) {

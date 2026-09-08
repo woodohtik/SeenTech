@@ -1,4 +1,3 @@
-import i18n from 'i18next';
 import { supabase } from '../lib/supabase/client';
 
 export interface SubscriptionRequest {
@@ -19,205 +18,73 @@ export interface SubscriptionRequest {
   rejection_reason?: string | null;
 }
 
-const STORAGE_KEY = 'seen_subscription_requests';
-
-function getLocalRequests(): SubscriptionRequest[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    console.error('Failed to parse local subscription requests:', e);
-    return [];
-  }
-}
-
-function saveLocalRequests(requests: SubscriptionRequest[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
-    window.dispatchEvent(new Event('subscription_request_updated'));
-  } catch (e) {
-    console.error('Failed to save local subscription requests:', e);
-  }
+function mapRow(d: any): SubscriptionRequest {
+  return {
+    id: d.id,
+    tenant_id: d.tenant_id,
+    tenant_name: d.tenant_name || undefined,
+    tenant_email: d.tenant_email || undefined,
+    plan_id: d.plan_id,
+    plan_name: d.plan_name,
+    amount: Number(d.amount) || 0,
+    payment_method: d.payment_method,
+    proof_url: d.proof_url,
+    reference_no: d.reference_no,
+    status: d.status,
+    notes: d.notes,
+    created_at: d.created_at,
+    updated_at: d.updated_at,
+    rejection_reason: d.rejection_reason,
+  };
 }
 
 export async function createSubscriptionRequest(
   data: Omit<SubscriptionRequest, 'id' | 'status' | 'created_at'>
 ): Promise<SubscriptionRequest> {
-  const newReq: SubscriptionRequest = {
-    ...data,
-    id: `SUB-REQ-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-    status: 'pending',
-    created_at: new Date().toISOString(),
-  };
+  const { data: row, error } = await supabase
+    .from('subscription_requests')
+    .insert({
+      tenant_id: data.tenant_id,
+      tenant_name: data.tenant_name || null,
+      tenant_email: data.tenant_email || null,
+      plan_id: data.plan_id,
+      plan_name: data.plan_name,
+      amount: data.amount,
+      payment_method: data.payment_method,
+      proof_url: data.proof_url || null,
+      reference_no: data.reference_no || null,
+      notes: data.notes || null,
+    })
+    .select()
+    .single();
 
-  // 1. Save to localStorage
-  const local = getLocalRequests();
-  local.unshift(newReq);
-  saveLocalRequests(local);
-
-  // 2. Try saving to Supabase payments table for durability across devices
-  try {
-    const notePayload = `[SUB_REQ] ${JSON.stringify({
-      req_id: newReq.id,
-      plan_id: newReq.plan_id,
-      plan_name: newReq.plan_name,
-      tenant_name: newReq.tenant_name,
-      tenant_email: newReq.tenant_email,
-      proof_url: newReq.proof_url || null,
-      status: 'pending',
-      notes: newReq.notes || ''
-    })}`;
-
-    await supabase.from('payments').insert({
-      tenant_id: newReq.tenant_id,
-      amount: newReq.amount,
-      method: newReq.payment_method,
-      reference: newReq.reference_no || newReq.id,
-      received_at: newReq.created_at,
-      notes: notePayload,
-    });
-  } catch (err) {
-    console.warn('Could not insert subscription request to Supabase payments table:', err);
-  }
-
-  return newReq;
+  if (error) throw error;
+  return mapRow(row);
 }
 
 export async function fetchSubscriptionRequests(): Promise<SubscriptionRequest[]> {
-  const localRequests = getLocalRequests();
-  const requestsMap = new Map<string, SubscriptionRequest>();
+  const { data, error } = await supabase
+    .from('subscription_requests')
+    .select('*')
+    .order('created_at', { ascending: false });
 
-  localRequests.forEach(req => requestsMap.set(req.id, req));
-
-  // Also try fetching from Supabase payments
-  try {
-    const { data: dbPayments } = await supabase
-      .from('payments')
-      .select('*, tenants(name, owner_email)')
-      .order('received_at', { ascending: false });
-
-    if (dbPayments) {
-      dbPayments.forEach((pay: any) => {
-        if (pay.notes && typeof pay.notes === 'string' && pay.notes.startsWith('[SUB_REQ]')) {
-          try {
-            const rawJson = pay.notes.replace('[SUB_REQ]', '').trim();
-            const parsed = JSON.parse(rawJson);
-            const reqId = parsed.req_id || pay.id;
-
-            // If local request has newer or updated status, keep local update; otherwise use DB
-            if (!requestsMap.has(reqId)) {
-              requestsMap.set(reqId, {
-                id: reqId,
-                tenant_id: pay.tenant_id,
-                tenant_name: parsed.tenant_name || pay.tenants?.name || i18n.t('saas.default_subscriber_name'),
-                tenant_email: parsed.tenant_email || pay.tenants?.owner_email || '',
-                plan_id: parsed.plan_id || 'basic',
-                plan_name: parsed.plan_name || i18n.t('billing.plans.basic.name'),
-                amount: Number(pay.amount) || 599,
-                payment_method: pay.method || 'bank_transfer',
-                proof_url: parsed.proof_url || null,
-                reference_no: pay.reference || null,
-                status: parsed.status || 'pending',
-                notes: parsed.notes || null,
-                created_at: pay.received_at || new Date().toISOString(),
-                rejection_reason: parsed.rejection_reason || null,
-              });
-            }
-          } catch (e) {
-            // Ignore non-json sub_req notes
-          }
-        }
-      });
-    }
-  } catch (err) {
-    console.warn('Error fetching subscription requests from Supabase:', err);
-  }
-
-  const result = Array.from(requestsMap.values()).sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
-
-  return result;
+  if (error) throw error;
+  return (data || []).map(mapRow);
 }
 
-export async function approveSubscriptionRequest(
-  requestId: string,
-  tenantId: string,
-  planId: 'free' | 'basic'
-): Promise<boolean> {
-  const local = getLocalRequests();
-  const reqIndex = local.findIndex(r => r.id === requestId);
-  const req = local[reqIndex];
-
-  const now = new Date();
-  const nextYear = new Date(now);
-  nextYear.setFullYear(now.getFullYear() + 1);
-
-  // 1. Update Tenant in Supabase
-  try {
-    await supabase
-      .from('tenants')
-      .update({
-        plan_id: planId,
-        status: 'active',
-        subscription_end_date: nextYear.toISOString(),
-        updated_at: now.toISOString(),
-      })
-      .eq('id', tenantId);
-
-    // Record official completed payment
-    if (planId === 'basic') {
-      await supabase.from('payments').insert({
-        tenant_id: tenantId,
-        amount: 599,
-        method: req?.payment_method || 'bank_transfer',
-        received_at: now.toISOString(),
-        notes: `سداد وتفعيل اشتراك الباقة الأساسية (معتمد من السوبر أدمن)`,
-        reference: req?.reference_no || `APPROVED-${Date.now().toString().slice(-6)}`,
-      });
-    }
-  } catch (err) {
-    console.error('Failed to update tenant subscription in DB:', err);
-  }
-
-  // 2. Update request status in local storage
-  if (reqIndex !== -1) {
-    local[reqIndex].status = 'approved';
-    local[reqIndex].updated_at = now.toISOString();
-    saveLocalRequests(local);
-  } else {
-    // If request wasn't local, add it as approved
-    local.unshift({
-      id: requestId,
-      tenant_id: tenantId,
-      plan_id: planId,
-      plan_name: planId === 'basic' ? i18n.t('billing.plans.basic.name') : i18n.t('billing.plans.free.short_name'),
-      amount: planId === 'basic' ? 599 : 0,
-      payment_method: 'bank_transfer',
-      status: 'approved',
-      created_at: now.toISOString(),
-      updated_at: now.toISOString(),
-    });
-    saveLocalRequests(local);
-  }
-
-  return true;
+/** Atomic via approve_subscription_request RPC -- locks the request row and
+ * only proceeds if it's still 'pending', which is what actually prevents two
+ * admins on different devices from both approving (and double-crediting)
+ * the same request. See supabase/migrations/20260908050000_subscription_requests_table.sql. */
+export async function approveSubscriptionRequest(requestId: string): Promise<void> {
+  const { error } = await supabase.rpc('approve_subscription_request', { p_request_id: requestId });
+  if (error) throw error;
 }
 
-export async function rejectSubscriptionRequest(
-  requestId: string,
-  reason?: string
-): Promise<boolean> {
-  const local = getLocalRequests();
-  const reqIndex = local.findIndex(r => r.id === requestId);
-  const now = new Date().toISOString();
-
-  if (reqIndex !== -1) {
-    local[reqIndex].status = 'rejected';
-    local[reqIndex].rejection_reason = reason || i18n.t('subscription.request_rejected_by_admin');
-    local[reqIndex].updated_at = now;
-    saveLocalRequests(local);
-  }
-
-  return true;
+export async function rejectSubscriptionRequest(requestId: string, reason?: string): Promise<void> {
+  const { error } = await supabase.rpc('reject_subscription_request', {
+    p_request_id: requestId,
+    p_reason: reason || null,
+  });
+  if (error) throw error;
 }
