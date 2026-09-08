@@ -111,6 +111,15 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
       toastError(t('credit_notes.invalid_amount', 'المبلغ المسترجع غير صحيح'));
       return;
     }
+    // فحص أولي في العميل لتجربة استخدام أفضل فقط -- المرجع الحقيقي هو
+    // trigger check_sales_return_total على مستوى القاعدة (يمنع السباق فعلياً).
+    const priorRefunded = creditNotes
+      .filter(cn => cn.originalInvoiceId === selectedInvoice.id)
+      .reduce((sum, cn) => sum + Number(cn.refundedAmount || 0), 0);
+    if (priorRefunded + refundAmount > selectedInvoice.totalAmount) {
+      toastError(t('credit_notes.exceeds_invoice_total', 'مجموع الإشعارات الدائنة لهذه الفاتورة سيتجاوز إجماليها الأصلي'));
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -137,7 +146,14 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
         .select()
         .single();
       
-      if (noteError) throw noteError;
+      if (noteError) {
+        if ((noteError as any).code === '23514') {
+          toastError(t('credit_notes.exceeds_invoice_total', 'مجموع الإشعارات الدائنة لهذه الفاتورة سيتجاوز إجماليها الأصلي'));
+          setIsSubmitting(false);
+          return;
+        }
+        throw noteError;
+      }
 
       await logEmployeeAction(
         tenantId,

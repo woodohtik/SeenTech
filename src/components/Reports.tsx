@@ -92,6 +92,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [shiftPayouts, setShiftPayouts] = useState<{ amount: number; occurred_at: string; reason: string }[]>([]);
+  const [salesReturns, setSalesReturns] = useState<{ refunded_amount: number; returned_at: string }[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Filters
@@ -115,7 +116,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
       if (!tenantId) return;
       setLoading(true);
       try {
-        const [ordersRes, customersRes, inventoryRes, staffRes, rolesRes, purchaseOrdersRes, suppliersRes, shiftEntriesRes] = await Promise.all([
+        const [ordersRes, customersRes, inventoryRes, staffRes, rolesRes, purchaseOrdersRes, suppliersRes, shiftEntriesRes, salesReturnsRes] = await Promise.all([
           supabase.from('orders').select('*').eq('tenant_id', tenantId).order('order_date', { ascending: false }),
           supabase.from('customers').select('*').eq('tenant_id', tenantId),
           supabase.from('inventory_items').select('*').eq('tenant_id', tenantId),
@@ -125,7 +126,8 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           supabase.from('roles').select('*').or(`tenant_id.is.null,tenant_id.eq.${tenantId}`),
           supabase.from('purchase_orders').select('*, purchase_order_items(*)').eq('tenant_id', tenantId),
           supabase.from('suppliers').select('*').eq('tenant_id', tenantId),
-          supabase.from('shift_entries').select('amount, occurred_at, reason').eq('tenant_id', tenantId).eq('entry_type', 'payout')
+          supabase.from('shift_entries').select('amount, occurred_at, reason').eq('tenant_id', tenantId).eq('entry_type', 'payout'),
+          supabase.from('sales_returns').select('refunded_amount, returned_at').eq('tenant_id', tenantId)
         ]);
 
         if (ordersRes.error) throw ordersRes.error;
@@ -182,6 +184,10 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
         if (shiftEntriesRes.data) {
           setShiftPayouts(shiftEntriesRes.data);
+        }
+
+        if (salesReturnsRes.data) {
+          setSalesReturns(salesReturnsRes.data);
         }
 
         // Map snake_case to camelCase for the UI
@@ -373,6 +379,16 @@ export default function Reports({ tenantId }: { tenantId: string }) {
     });
   }, [shiftPayouts, dateRange]);
 
+  // Sales returns / credit notes issued within the selected date range --
+  // used to net their VAT portion out of output VAT below (item 1.9:
+  // outputVat previously ignored refunds entirely, overstating VAT owed).
+  const filteredSalesReturns = useMemo(() => {
+    return salesReturns.filter(r => {
+      const d = r.returned_at?.split('T')[0];
+      return (!dateRange.start || d >= dateRange.start) && (!dateRange.end || d <= dateRange.end);
+    });
+  }, [salesReturns, dateRange]);
+
   // Profit & Loss: unlike the "simplified" netProfit above (revenue minus
   // tax only), this estimates real cost of goods sold from the weighted
   // average purchase cost of what was actually sold -- ready-made items by
@@ -458,14 +474,16 @@ export default function Reports({ tenantId }: { tenantId: string }) {
   // VAT is estimated the same way the rest of the app treats order totals --
   // VAT-inclusive at 15% (see SalesRecord.tsx's subtotal/VAT split).
   const vatStats = useMemo(() => {
-    const outputVat = financialStats.totalTax;
+    const totalRefunded = filteredSalesReturns.reduce((sum, r) => sum + Number(r.refunded_amount || 0), 0);
+    const refundedVat = totalRefunded - (totalRefunded / 1.15);
+    const outputVat = financialStats.totalTax - refundedVat;
     const inputVatOnPurchases = supplierStats.totalPurchases - (supplierStats.totalPurchases / 1.15);
     const inputVatOnReturns = supplierStats.totalPurchaseReturns - (supplierStats.totalPurchaseReturns / 1.15);
     const netInputVat = inputVatOnPurchases - inputVatOnReturns;
     const netVatDue = outputVat - netInputVat;
 
     return { outputVat, inputVat: netInputVat, netVatDue };
-  }, [financialStats, supplierStats]);
+  }, [financialStats, supplierStats, filteredSalesReturns]);
 
   // Order Stats
   const orderStats = useMemo(() => {

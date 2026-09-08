@@ -68,6 +68,7 @@ import Branding from "../Branding";
 import Select, { SmartSelect } from "../ui/SmartSelect";
 import { useToast } from "../../contexts/ToastContext";
 import { decodeInventoryDescription, encodeInventoryDescription } from "../../utils/b2bHelper";
+import { adjustStock } from "../../services/inventoryService";
 import { Menu, Transition } from "@headlessui/react";
 import { Fragment } from "react";
 import { useRealtimeSync } from "../../hooks/useRealtimeSync";
@@ -2690,69 +2691,49 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Get current quantity for ledger
-      const { data: currentStock } = await supabase
-        .from("branch_inventory")
-        .select("quantity")
-        .eq("branch_id", branch.id)
-        .eq("item_id", item.id)
-        .maybeSingle();
+      // Was: read branch_inventory.quantity -> compute finalQuantity in JS
+      // -> absolute write, then a separately-inserted (never verified
+      // against the real row) ledger entry -- the exact race
+      // ManualConversionModal right below this in the same file already
+      // fixed via record_uom_conversion. Unified on the same style of
+      // fix here: one transactional apply_stock_movement call (via
+      // adjustStock) with a relative delta, negative-guarded and
+      // ledgered from the real before/after values inside the database.
+      let delta: number;
+      if (mode === "add") {
+        delta = addQuantity;
+      } else {
+        // "set to an absolute value" still needs a current read to turn it
+        // into a delta -- apply_stock_movement only accepts relative
+        // deltas by design (see its own comment: that's what makes
+        // concurrent operations serialize safely). A concurrent change in
+        // the brief window between this read and the RPC call is still
+        // possible for this specific "set" mode, same as
+        // ManualConversionModal's own resolved_quantity calculation.
+        const { data: currentStock } = await supabase
+          .from("branch_inventory")
+          .select("quantity")
+          .eq("branch_id", branch.id)
+          .eq("item_id", item.id)
+          .maybeSingle();
+        delta = newQuantity - (currentStock?.quantity || 0);
+      }
 
-      const currentQty = currentStock?.quantity || 0;
-      const finalQuantity =
-        mode === "add" ? currentQty + addQuantity : newQuantity;
-
-      if (finalQuantity < 0) {
-        toastError(t("inventory.negative_stock_error"));
+      if (delta === 0) {
         setLoading(false);
+        onClose();
         return;
       }
 
-      // Update Stock (Insert or Update check)
-      let upsertError;
-      if (currentStock) {
-        const { error } = await supabase
-          .from("branch_inventory")
-          .update({
-            quantity: finalQuantity,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("branch_id", branch.id)
-          .eq("item_id", item.id);
-        upsertError = error;
-      } else {
-        const { error } = await supabase
-          .from("branch_inventory")
-          .insert({
-            branch_id: branch.id,
-            item_id: item.id,
-            quantity: finalQuantity,
-            tenant_id: tenantId,
-            updated_at: new Date().toISOString(),
-          });
-        upsertError = error;
-      }
-
-      if (upsertError) throw upsertError;
-
-      // Create Ledger Entry
-      const ledgerEntry: any = {
-        item_id: item.id,
-        branch_id: branch.id,
-        type: mode === "add" ? "addition" : "adjustment",
-        previous_quantity: currentQty,
-        new_quantity: finalQuantity,
-        change: finalQuantity - currentQty,
-        staff_id: currentStaff?.id || "",
-        staff_name: currentStaff?.name || "Staff",
-        tenant_id: tenantId,
-        created_at: new Date().toISOString(),
-      };
-
-      const { error: ledgerError } = await supabase
-        .from("stock_ledger")
-        .insert(ledgerEntry);
-      if (ledgerError) throw ledgerError;
+      await adjustStock({
+        branchId: branch.id,
+        itemId: item.id,
+        quantity: delta,
+        reason: mode === "add" ? "addition" : "adjustment",
+        type: delta > 0 ? "in" : "out",
+        staffId: currentStaff?.id || null,
+        tenantId,
+      });
 
       toastSuccess(t("inventory.adjustment_success"));
       onClose();

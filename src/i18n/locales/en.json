@@ -520,6 +520,7 @@
     "credit_note_no": "Credit Note No",
     "date": "Date",
     "error_issued": "Error during credit note issue",
+    "exceeds_invoice_total": "Total credit notes for this invoice would exceed its original amount",
     "invalid_amount": "Refund amount is invalid",
     "invoice_not_found": "No invoice found with this number",
     "issue_btn": "Issue Credit Note",

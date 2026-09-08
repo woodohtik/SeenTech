@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase/client';
 import { Supplier, PurchaseOrder, InventoryItem, PurchaseOrderItem } from '../types';
 import { cn } from '../lib/utils';
 import { addSupplierTransaction } from '../services/supplierAccountsService';
+import { adjustStock } from '../services/inventoryService';
 import { SmartSelect } from './ui/SmartSelect';
 import { PriceDisplay } from './PriceDisplay';
 import { useTranslation } from 'react-i18next';
@@ -255,7 +256,22 @@ export default function PurchaseOrders({
         throw new Error(t('procurement.no_branch_for_stock'));
       }
 
-      // 3. Loop and perform atomic stock, ledger updates
+      // 3. Perform atomic stock, ledger updates
+      //
+      // Was: read quantity from inventory_items -> compute in JS -> write
+      // absolute value, then the SAME read-compute-write again for
+      // branch_inventory -- two independently racy tables, no negative
+      // guard, and a ledger row inserted unconditionally after both. Two
+      // staff confirming the same purchase order concurrently (or one
+      // retrying after a timeout) would each read the same starting
+      // quantity and overwrite each other's stock addition.
+      //
+      // Now: one transactional apply_stock_movement call per item (the
+      // already-fixed pattern used by adjustStock elsewhere in this
+      // project) -- relative delta, >= 0 enforced in the database, and a
+      // ledger row derived from the real before/after values. Idempotent
+      // per order+item via operationId, so a retried confirmation can't
+      // double-apply.
       for (const item of orderItems) {
         // Skip updating inventory for custom items that don't have a database inventory reference
         if (!item.item_id) {
@@ -263,99 +279,20 @@ export default function PurchaseOrders({
           continue;
         }
 
-        // Fetch current stock from inventory_items
-        const { data: invItem, error: invErr } = await supabase
-          .from('inventory_items')
-          .select('quantity')
-          .eq('id', item.item_id)
-          .single();
-        
-        if (invErr) {
-          console.error(`Error fetching inventory item for item ID ${item.item_id}:`, invErr);
-          throw new Error(t('procurement.item_not_in_inventory', { name: item.name }));
-        }
-
-        const currentQty = Number(invItem.quantity || 0);
         const baseQty = Number(item.base_quantity || item.quantity || 0);
+        const delta = finalOrderType === 'purchase' ? baseQty : -baseQty;
 
-        let newQty = currentQty;
-        if (finalOrderType === 'purchase') {
-          newQty = currentQty + baseQty;
-        } else if (finalOrderType === 'return') {
-          newQty = currentQty - baseQty;
-        }
-
-        // Update central inventory_items
-        const { error: updInvErr } = await supabase
-          .from('inventory_items')
-          .update({
-            quantity: newQty,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', item.item_id);
-        
-        if (updInvErr) throw updInvErr;
-
-        // Update branch_inventory
-        const { data: bInv } = await supabase
-          .from('branch_inventory')
-          .select('quantity')
-          .eq('branch_id', activeBranchId)
-          .eq('item_id', item.item_id)
-          .maybeSingle();
-
-        const currentBranchQty = Number(bInv?.quantity || 0);
-        let newBranchQty = currentBranchQty;
-        if (finalOrderType === 'purchase') {
-          newBranchQty = currentBranchQty + baseQty;
-        } else if (finalOrderType === 'return') {
-          newBranchQty = currentBranchQty - baseQty;
-        }
-
-        if (bInv) {
-          const { error: updBInvErr } = await supabase
-            .from('branch_inventory')
-            .update({
-              quantity: newBranchQty,
-              updated_at: new Date().toISOString()
-            })
-            .eq('branch_id', activeBranchId)
-            .eq('item_id', item.item_id);
-
-          if (updBInvErr) throw updBInvErr;
-        } else {
-          const { error: insBInvErr } = await supabase
-            .from('branch_inventory')
-            .insert({
-              branch_id: activeBranchId,
-              item_id: item.item_id,
-              quantity: newBranchQty,
-              tenant_id: tenantId,
-              updated_at: new Date().toISOString()
-            });
-
-          if (insBInvErr) throw insBInvErr;
-        }
-
-        // Insert into stock_ledger log
-        const { error: ledgerErr } = await supabase.from('stock_ledger').insert({
-          item_id: item.item_id,
-          branch_id: activeBranchId,
-          type: finalOrderType === 'purchase' ? 'addition' : 'deduction',
-          previous_quantity: currentBranchQty,
-          new_quantity: newBranchQty,
-          change: finalOrderType === 'purchase' ? baseQty : -baseQty,
-          reference_id: order.id,
-          reference_type: finalOrderType === 'purchase' ? 'purchase' : 'return',
-          staff_id: currentStaff?.id || null,
-          staff_name: currentStaff?.name || 'Staff',
-          tenant_id: tenantId,
-          created_at: new Date().toISOString()
+        await adjustStock({
+          branchId: activeBranchId,
+          itemId: item.item_id,
+          quantity: delta,
+          reason: finalOrderType === 'purchase' ? 'purchase' : 'return',
+          type: finalOrderType === 'purchase' ? 'in' : 'out',
+          staffId: currentStaff?.id || null,
+          tenantId,
+          operationId: `po:${order.id}:item:${item.item_id}`,
+          referenceId: order.id,
         });
-
-        if (ledgerErr) {
-          console.warn('Could not write into stock ledger log:', ledgerErr);
-        }
       }
 
       // 4. Update Supplier balance and write to transaction ledger

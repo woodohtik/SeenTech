@@ -9,19 +9,21 @@ import { PriceDisplay } from './PriceDisplay';
 import { SmartSelect } from './ui/SmartSelect';
 import { useTranslation } from 'react-i18next';
 import { adjustStock } from '../services/inventoryService';
+import { useStaff } from '../contexts/StaffContext';
 
-export default function PurchaseReturns({ 
-  tenantId, 
-  suppliers, 
-  purchaseReturns, 
-  inventory 
-}: { 
-  tenantId: string, 
-  suppliers: Supplier[], 
+export default function PurchaseReturns({
+  tenantId,
+  suppliers,
+  purchaseReturns,
+  inventory
+}: {
+  tenantId: string,
+  suppliers: Supplier[],
   purchaseReturns: PurchaseReturn[],
   inventory: InventoryItem[]
 }) {
   const { t } = useTranslation();
+  const { currentStaff } = useStaff();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
@@ -68,6 +70,11 @@ export default function PurchaseReturns({
 
   const handleCreateReturn = async () => {
     if (!selectedSupplier || items.length === 0) return;
+    const branchId = currentStaff?.branchId;
+    if (!branchId) {
+      handleError(new Error('No branch assigned to current staff'), OperationType.WRITE, 'purchaseReturns');
+      return;
+    }
     setIsSubmitting(true);
     try {
       const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
@@ -79,7 +86,7 @@ export default function PurchaseReturns({
           purchase_order_id: 'manual', // Can be linked to specific PO later
           supplier_id: selectedSupplier,
           tenant_id: tenantId,
-          branch_id: 'main',
+          branch_id: branchId,
           items,
           total_amount: totalAmount,
           reason,
@@ -87,18 +94,37 @@ export default function PurchaseReturns({
           created_by: 'system',
           created_at: new Date().toISOString()
         });
-      
+
       if (returnError) throw returnError;
 
-      // 2. Reduce Supplier Balance & write ledger transaction
+      // 2. Deduct inventory FIRST -- if any item fails, throw immediately
+      // so the supplier balance debit below never runs. Previously this
+      // ran the balance debit before inventory, then swallowed a stock
+      // failure with console.error only: the supplier ledger showed the
+      // return as settled while the stock it was supposedly for was
+      // never actually deducted.
+      for (const item of items) {
+        await adjustStock({
+          branchId,
+          itemId: item.itemId,
+          quantity: -item.baseQuantity,
+          reason: `مرتجع مشتريات - ${reason}`,
+          type: 'out',
+          staffId: currentStaff?.id || null,
+          tenantId
+        });
+      }
+
+      // 3. Reduce Supplier Balance & write ledger transaction -- only
+      // once every item's stock deduction above succeeded.
       const { data: supplier, error: sErr } = await supabase
         .from('suppliers')
         .select('balance')
         .eq('id', selectedSupplier)
         .single();
-      
+
       const currentBalance = (!sErr && supplier) ? Number(supplier.balance || 0) : 0;
-      
+
       await addSupplierTransaction(
         tenantId,
         {
@@ -113,23 +139,6 @@ export default function PurchaseReturns({
         },
         currentBalance
       );
-
-      // 3. Deduct Inventory
-      for (const item of items) {
-        try {
-          await adjustStock({
-            branchId: 'main',
-            itemId: item.itemId,
-            quantity: -item.baseQuantity,
-            reason: `مرتجع مشتريات - ${reason}`,
-            type: 'out',
-            staffId: null,
-            tenantId
-          });
-        } catch (stockError) {
-          console.error('Error updating stock for return:', stockError);
-        }
-      }
 
       setIsModalOpen(false);
       setItems([]);

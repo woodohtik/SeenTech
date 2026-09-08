@@ -145,12 +145,21 @@ export async function addSupplierTransaction(
   
   localStorage.setItem(localKey, JSON.stringify(updatedTransactions));
 
-  // 3. Update the matching Supplier's balance column in the database
+  // 3. Update the matching Supplier's balance column in the database --
+  // atomic relative delta via increment_supplier_balance (the RPC applies
+  // `balance = balance + delta` inside the database), not the absolute
+  // newBalance computed above from a currentBalance the caller read
+  // separately. Two concurrent transactions for the same supplier (a
+  // purchase order + a payment voucher within the same second) used to
+  // each read the same starting balance and overwrite one another; the
+  // delta-based RPC serializes them correctly regardless of what this
+  // call thought the starting balance was.
   try {
-    const { error: updateErr } = await supabase
-      .from('suppliers')
-      .update({ balance: Number(newBalance.toFixed(2)) })
-      .eq('id', fullTransaction.supplier_id);
+    const delta = isDebit ? -transaction.debit : transaction.credit;
+    const { error: updateErr } = await supabase.rpc('increment_supplier_balance', {
+      p_supplier_id: fullTransaction.supplier_id,
+      p_delta: delta,
+    });
 
     if (updateErr) {
       console.error('Failed to update supplier balance in Supabase:', updateErr);

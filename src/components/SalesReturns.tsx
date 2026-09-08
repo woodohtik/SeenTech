@@ -176,7 +176,19 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
           created_at: new Date().toISOString()
         });
 
-      if (returnError) throw returnError;
+      if (returnError) {
+        // 23505 = unique_violation على sales_returns_order_id_unique --
+        // نافذة/تبويب آخر أنجز استرجاع هذه الفاتورة بالفعل (سباق تزامن، لا
+        // يعني هذا خللاً حقيقياً يستحق رسالة الخطأ العامة).
+        if ((returnError as any).code === '23505') {
+          toastError(t('sales_returns.already_returned'));
+          setOrder(null);
+          setSearchResults([]);
+          setSearchQuery('');
+          return;
+        }
+        throw returnError;
+      }
 
       // 3. For each ready_made item, return quantity back to stock
       for (const item of readyMadeItems) {
@@ -211,18 +223,27 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
         }
       }
 
-      // 4. Update the order row to cancelled
-      const { error: orderUpdateError } = await supabase
-        .from('orders')
-        .update({
-          status: 'cancelled',
-          updated_at: new Date().toISOString(),
-          items: order.items || [],
-          history: [...(order.history || []), historyEntry]
-        })
-        .eq('id', order.id);
+      // 4. refundTotalAmount above only ever covers ready_made items -- if
+      // the order also has custom items still in progress (and paid for),
+      // this return only settles the ready-made portion. Cancelling the
+      // WHOLE order here would silently drop those custom items from
+      // their normal workflow despite never being returned. Only when the
+      // order was fully ready-made (no custom items at all) does a full
+      // return correctly mean the order itself is done -> cancelled.
+      const orderHasCustomItems = (order.items || []).some((item: any) => item.type === 'custom');
+      if (!orderHasCustomItems) {
+        const { error: orderUpdateError } = await supabase
+          .from('orders')
+          .update({
+            status: 'cancelled',
+            updated_at: new Date().toISOString(),
+            items: order.items || [],
+            history: [...(order.history || []), historyEntry]
+          })
+          .eq('id', order.id);
 
-      if (orderUpdateError) throw orderUpdateError;
+        if (orderUpdateError) throw orderUpdateError;
+      }
 
       // 5. Audit trail
       await logEmployeeAction(

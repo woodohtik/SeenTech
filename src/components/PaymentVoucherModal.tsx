@@ -4,6 +4,7 @@ import { X, CheckCircle, Printer, DollarSign, FileText, Calendar, Building, Help
 import { addSupplierTransaction } from '../services/supplierAccountsService';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import { useStaff } from '../contexts/StaffContext';
+import { supabase } from '../lib/supabase/client';
 import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
 import { DatePicker } from './ui/DatePicker';
@@ -73,9 +74,41 @@ export default function PaymentVoucherModal({
         supplier.balance
       );
 
-      // Save into shift entries if paid cash to make cash register balances correct
-      if (paymentMethod === 'cash') {
-        // Log shift entry if we are inside a shift, handles out-of-pocket drawer logs
+      // Save into shift entries if paid cash to make cash register balances correct.
+      // Was a dead comment with no actual write -- every cash payment to a
+      // supplier looked like an unexplained cash shortfall in every
+      // subsequent shift closing, since the drawer's real cash-out was
+      // never logged. Only writes when the current staff actually has an
+      // open shift (matches the "if we are inside a shift" framing --
+      // this modal can also be opened outside a POS shift context).
+      if (paymentMethod === 'cash' && currentStaff) {
+        try {
+          const { data: openShift } = await supabase
+            .from('shifts')
+            .select('id')
+            .eq('tenant_id', tenantId)
+            .eq('staff_id', currentStaff.id)
+            .eq('status', 'open')
+            .maybeSingle();
+
+          if (openShift) {
+            await supabase.from('shift_entries').insert({
+              id: crypto.randomUUID(),
+              tenant_id: tenantId,
+              shift_id: openShift.id,
+              entry_type: 'payout',
+              amount: payAmt,
+              reason: reasonLabel,
+              occurred_at: new Date().toISOString(),
+              created_by: currentStaff.id,
+              created_at: new Date().toISOString(),
+            });
+          }
+        } catch (shiftEntryErr) {
+          // Non-fatal: the voucher/ledger transaction above already
+          // succeeded -- don't fail the whole payment over the shift log.
+          console.error('[PaymentVoucherModal] Failed to write shift entry:', shiftEntryErr);
+        }
       }
 
       // Log employee action audit trail
