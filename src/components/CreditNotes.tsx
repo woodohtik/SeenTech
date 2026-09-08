@@ -65,6 +65,7 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
         }));
         
         const invoiceMap = new Map((invoicesData || []).map(inv => [inv.id, inv.invoice_number]));
+        const invoiceTaxRateMap = new Map((invoicesData || []).map(inv => [inv.id, Number(inv.tax_rate) || 15]));
         
         const { data: notesData, error: notesError } = await supabase
           .from('sales_returns')
@@ -75,6 +76,7 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
 
         const formattedNotes = (notesData || []).map(d => {
           const invNumber = invoiceMap.get(d.invoice_id) || 'N/A';
+          const invTaxRate = invoiceTaxRateMap.get(d.invoice_id) ?? 15;
           return {
             id: d.id,
             creditNoteNumber: d.return_number,
@@ -83,7 +85,7 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
             tenantId: d.tenant_id,
             reason: d.reason || '',
             refundedAmount: Number(d.refunded_amount),
-            refundedTax: d.refunded_amount ? (Number(d.refunded_amount) - (Number(d.refunded_amount) / (1 + (15 / 100)))) : 0,
+            refundedTax: d.refunded_amount ? (Number(d.refunded_amount) - (Number(d.refunded_amount) / (1 + (invTaxRate / 100)))) : 0,
             issuedAt: d.returned_at || d.created_at || new Date().toISOString(),
             createdBy: 'System'
           } as CreditNote;

@@ -1947,12 +1947,19 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
     const handlePayment = async () => {
       if (amount <= 0) return;
-      
+      // لا سقف على الدفعة الجزئية سابقاً -- مبلغ أكبر من المتبقي كان يُقبَل
+      // بصمت (newRemainingAmount يُقفَل عند 0 عبر Math.max) فيضيع الفرق الزائد
+      // بلا أي تتبّع أو استرجاع.
+      if (amount > (order.remainingAmount || 0)) {
+        toastError(t('orders.payment_exceeds_remaining', 'المبلغ أكبر من المتبقي على الطلب'));
+        return;
+      }
+
       setIsProcessing(true);
       try {
         const newPaidAmount = (order.paidAmount || 0) + amount;
         const newRemainingAmount = Math.max(0, (order.totalAmount || 0) - newPaidAmount);
-        
+
         const historyEntry: OrderHistory = {
           status: order.status,
           updatedAt: new Date().toISOString(),
@@ -1961,39 +1968,41 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           notes: t('orders.payment_completed_note', { amount, method: t(`common.payment_methods.${method}`, method), remaining: newRemainingAmount })
         };
 
-        const updatedHistory = [...(order.history || []), historyEntry];
+        // تحديث واحد ذرّي بدل تحديثَين منفصلَين (paid_amount ثم status) --
+        // فشل الشبكة بينهما كان يترك الطلب بحالة متناقضة: دفعة مكتملة بلا
+        // تقدّم في الحالة.
+        const willComplete = newRemainingAmount === 0 && pendingStatusUpdate;
+        const updatedHistory = willComplete
+          ? [
+              ...(order.history || []),
+              historyEntry,
+              {
+                status: pendingStatusUpdate.status,
+                updatedAt: new Date().toISOString(),
+                updatedBy: currentStaff?.name || t('common.owner'),
+                updatedByUid: currentStaff?.id || currentAuthUser?.id,
+                notes: t('orders.remaining_paid_delivered_note')
+              } as OrderHistory,
+            ]
+          : [...(order.history || []), historyEntry];
+
+        const updatePayload: Record<string, any> = {
+          paid_amount: newPaidAmount,
+          payment_method: method,
+          history: updatedHistory,
+          items: order.items || []
+        };
+        if (willComplete) {
+          updatePayload.status = legacyOrderStatusFor(pendingStatusUpdate.status, workflowStages);
+          updatePayload.status_key = pendingStatusUpdate.status;
+        }
 
         await supabase
           .from('orders')
-          .update({
-            paid_amount: newPaidAmount,
-            payment_method: method,
-            history: updatedHistory,
-            items: order.items || []
-          })
+          .update(updatePayload)
           .eq('id', order.id);
 
-        if (newRemainingAmount === 0 && pendingStatusUpdate) {
-          const finalHistoryEntry: OrderHistory = {
-            status: pendingStatusUpdate.status,
-            updatedAt: new Date().toISOString(),
-            updatedBy: currentStaff?.name || t('common.owner'),
-            updatedByUid: currentStaff?.id || currentAuthUser?.id,
-            notes: t('orders.remaining_paid_delivered_note')
-          };
-
-          const finalHistory = [...(order.history || []), historyEntry, finalHistoryEntry];
-
-          await supabase
-            .from('orders')
-            .update({
-              status: legacyOrderStatusFor(pendingStatusUpdate.status, workflowStages),
-              status_key: pendingStatusUpdate.status,
-              history: finalHistory,
-              items: order.items || []
-            })
-            .eq('id', order.id);
-
+        if (willComplete) {
           // Track Order Delivered
           analytics.track(AnalyticsEvent.ORDER_DELIVERED, {
             order_id: order.id,

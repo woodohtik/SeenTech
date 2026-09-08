@@ -1475,21 +1475,23 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                             </>
                           )}
 
-                          <button 
-                            onClick={() => {
-                              toggleStatus(member);
-                              setActiveDropdown(null);
-                            }}
-                            className={cn(
-                              "w-full text-right px-3 py-2 text-xs font-black rounded-xl transition-colors flex items-center gap-2 cursor-pointer",
-                              member.status === 'active' 
-                                ? "text-danger hover:bg-danger/5" 
-                                : "text-success hover:bg-success/5"
-                            )}
-                          >
-                            <CheckCircle size={14} className={member.status === 'active' ? "text-danger" : "text-success"} />
-                            <span>{member.status === 'active' ? t('staff.deactivate_account') : t('staff.activate_account')}</span>
-                          </button>
+                          {canEdit && (
+                            <button
+                              onClick={() => {
+                                toggleStatus(member);
+                                setActiveDropdown(null);
+                              }}
+                              className={cn(
+                                "w-full text-right px-3 py-2 text-xs font-black rounded-xl transition-colors flex items-center gap-2 cursor-pointer",
+                                member.status === 'active'
+                                  ? "text-danger hover:bg-danger/5"
+                                  : "text-success hover:bg-success/5"
+                              )}
+                            >
+                              <CheckCircle size={14} className={member.status === 'active' ? "text-danger" : "text-success"} />
+                              <span>{member.status === 'active' ? t('staff.deactivate_account') : t('staff.activate_account')}</span>
+                            </button>
+                          )}
 
                           {canDelete && (
                             <div className="border-t border-border/40 my-1 pt-1">

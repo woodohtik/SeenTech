@@ -37,6 +37,37 @@ function isAdminRole(role: string): boolean {
   return ADMIN_ROLES.has(role);
 }
 
+// (3، seen-comprehensive-review-fixes-task.md): معظم أدوات القراءة هنا كانت
+// بلا أي فحص دور -- أي موظف مسجَّل دخول (حتى لو دوره لا يملك orders.view/
+// customers.view/inventory.view عبر واجهة النظام العادية) كان يقدر يطلب من
+// المساعد نفس البيانات ويحصل عليها، متجاوزاً نظام الصلاحيات بالكامل. الإداري
+// (isAdminRole) يمر دائماً؛ غير ذلك يُقرَأ من جدول roles الفعلي لهذا
+// المستأجر (نفس الجدول الذي يحرّره RolePermissionsSettings.tsx)، تفضيلاً
+// لنسخة المستأجر المخصَّصة على القالب العام (tenant_id IS NULL) إن وُجدت
+// كلتاهما.
+async function hasOperationalPermission(ctx: AssistantToolContext, permKey: string): Promise<boolean> {
+  if (isAdminRole(ctx.userRole)) return true;
+  try {
+    const { data } = await supabaseAdmin
+      .from('roles')
+      .select('permissions, tenant_id')
+      .eq('role_key', ctx.userRole)
+      .or(`tenant_id.is.null,tenant_id.eq.${ctx.tenantId}`);
+    if (!data || data.length === 0) return false;
+    const tenantRow = data.find((r: any) => r.tenant_id === ctx.tenantId) || data[0];
+    return !!tenantRow?.permissions?.[permKey];
+  } catch {
+    return false;
+  }
+}
+
+// يزيل الأحرف ذات المعنى الخاص في صياغة PostgREST لـ.or() (فاصلة، أقواس)
+// قبل تضمين مُدخَل المستخدم (عبر نموذج اللغة) مباشرة في نص الفلتر -- بلا هذا
+// كانت قيمة تحتوي فاصلة/قوس تقدر تكسر بنية الفلتر أو تُضيف شرطاً غير مقصود.
+function sanitizeForOrFilter(value: string): string {
+  return value.replace(/[,()]/g, '').slice(0, 200);
+}
+
 async function logToolCall(
   ctx: AssistantToolContext,
   toolName: string,
@@ -122,6 +153,10 @@ export async function buildAssistantTools(ctx: AssistantToolContext) {
       endDate: z.string().optional().describe('تاريخ النهاية YYYY-MM-DD'),
     }),
     execute: async ({ customerName, orderNumber, startDate, endDate }) => {
+      if (!(await hasOperationalPermission(ctx, 'orders.view'))) {
+        await logToolCall(ctx, 'searchInvoices', { customerName, orderNumber, startDate, endDate }, true, 'insufficient_permission');
+        return { denied: true, message: DENIED_ROLE_MESSAGE };
+      }
       await logToolCall(ctx, 'searchInvoices', { customerName, orderNumber, startDate, endDate }, false);
 
       let q = supabaseAdmin
@@ -151,14 +186,19 @@ export async function buildAssistantTools(ctx: AssistantToolContext) {
       itemName: z.string().describe('اسم الصنف أو رمز SKU للبحث عنه'),
     }),
     execute: async ({ itemName }) => {
+      if (!(await hasOperationalPermission(ctx, 'inventory.view'))) {
+        await logToolCall(ctx, 'getInventoryStatus', { itemName }, true, 'insufficient_permission');
+        return { denied: true, message: DENIED_ROLE_MESSAGE };
+      }
       await logToolCall(ctx, 'getInventoryStatus', { itemName }, false);
 
+      const safeName = sanitizeForOrFilter(itemName);
       const { data: items, error } = await supabaseAdmin
         .from('inventory_items')
         .select('id, name, sku, unit, min_threshold, price_per_unit')
         .eq('tenant_id', ctx.tenantId)
         .neq('is_test', true)
-        .or(`name.ilike.%${itemName}%,sku.ilike.%${itemName}%,barcode.eq.${itemName}`)
+        .or(`name.ilike.%${safeName}%,sku.ilike.%${safeName}%,barcode.eq.${safeName}`)
         .limit(10);
       if (error) throw new Error(error.message);
       if (!items || items.length === 0) return { found: false, items: [] };
@@ -193,6 +233,10 @@ export async function buildAssistantTools(ctx: AssistantToolContext) {
     description: 'قائمة الأصناف التي وصلت أو اقتربت من حد النفاد (الكمية الحالية <= الحد الأدنى المحدد للصنف).',
     inputSchema: z.object({}),
     execute: async () => {
+      if (!(await hasOperationalPermission(ctx, 'inventory.view'))) {
+        await logToolCall(ctx, 'getLowStockAlerts', {}, true, 'insufficient_permission');
+        return { denied: true, message: DENIED_ROLE_MESSAGE };
+      }
       await logToolCall(ctx, 'getLowStockAlerts', {}, false);
       const { data, error } = await supabaseAdmin.rpc('assistant_get_low_stock_alerts', {
         p_tenant_id: ctx.tenantId, p_limit: 50,
@@ -209,6 +253,10 @@ export async function buildAssistantTools(ctx: AssistantToolContext) {
       endDate: z.string().describe('تاريخ النهاية YYYY-MM-DD'),
     }),
     execute: async ({ startDate, endDate }) => {
+      if (!(await hasOperationalPermission(ctx, 'reports.view'))) {
+        await logToolCall(ctx, 'getTopSellingItems', { startDate, endDate }, true, 'insufficient_permission');
+        return { denied: true, message: DENIED_ROLE_MESSAGE };
+      }
       const { start, end } = clampDateRange(startDate, endDate);
       await logToolCall(ctx, 'getTopSellingItems', { startDate: start, endDate: end }, false);
       const { data, error } = await supabaseAdmin.rpc('assistant_get_top_selling_items', {
@@ -225,13 +273,18 @@ export async function buildAssistantTools(ctx: AssistantToolContext) {
       nameOrPhone: z.string().describe('اسم العميل أو رقم جواله'),
     }),
     execute: async ({ nameOrPhone }) => {
+      if (!(await hasOperationalPermission(ctx, 'customers.view'))) {
+        await logToolCall(ctx, 'getCustomerHistory', { nameOrPhone }, true, 'insufficient_permission');
+        return { denied: true, message: DENIED_ROLE_MESSAGE };
+      }
       await logToolCall(ctx, 'getCustomerHistory', { nameOrPhone }, false);
 
+      const safeQuery = sanitizeForOrFilter(nameOrPhone);
       const { data: customers, error: custErr } = await supabaseAdmin
         .from('customers')
         .select('id, name, phone')
         .eq('tenant_id', ctx.tenantId)
-        .or(`name.ilike.%${nameOrPhone}%,phone.ilike.%${nameOrPhone}%`)
+        .or(`name.ilike.%${safeQuery}%,phone.ilike.%${safeQuery}%`)
         .limit(5);
       if (custErr) throw new Error(custErr.message);
       if (!customers || customers.length === 0) return { found: false, customers: [] };
@@ -262,6 +315,10 @@ export async function buildAssistantTools(ctx: AssistantToolContext) {
     description: 'طلبات التفصيل الجارية غير المكتملة/غير المُسلَّمة (كل الحالات ما عدا "تم التسليم" و"ملغي"). يرجع حتى 50 طلباً.',
     inputSchema: z.object({}),
     execute: async () => {
+      if (!(await hasOperationalPermission(ctx, 'orders.view'))) {
+        await logToolCall(ctx, 'getPendingOrders', {}, true, 'insufficient_permission');
+        return { denied: true, message: DENIED_ROLE_MESSAGE };
+      }
       await logToolCall(ctx, 'getPendingOrders', {}, false);
       const { data, error } = await supabaseAdmin
         .from('orders')

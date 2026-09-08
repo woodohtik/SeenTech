@@ -298,28 +298,23 @@ export default function Login() {
         console.log("[DEBUG] Phone login detected, formatting:", formattedPhone);
 
         try {
-          // Check requests first
-          const { data: reqSnap } = await supabase
-            .from('tailor_requests')
-            .select('email')
-            .eq('phone', formattedPhone)
-            .maybeSingle();
+          // بحث خادمي (لا استعلام مباشر من المتصفح) -- RLS على staff/
+          // tailor_requests تمنع القراءة غير المُصادَق عليها أصلاً، فهذا
+          // البحث يحتاج supabaseAdmin على السيرفر (محدود المعدّل هناك).
+          // انظر /api/auth/lookup-email-by-phone في server.ts.
+          const lookupRes = await fetch('/api/auth/lookup-email-by-phone', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: formattedPhone }),
+          });
+          const lookupData = await lookupRes.json().catch(() => null);
 
-          if (reqSnap) {
-            emailToUse = reqSnap.email;
+          if (lookupRes.ok && lookupData?.email) {
+            emailToUse = lookupData.email;
+          } else if (lookupRes.status === 429) {
+            throw new Error(lookupData?.error || t('login.errors.too_many_attempts', 'محاولات كثيرة جداً. انتظر دقيقة ثم أعد المحاولة.'));
           } else {
-            // Check staff table
-            const { data: staffSnap } = await supabase
-              .from('staff')
-              .select('email')
-              .eq('phone', formattedPhone)
-              .maybeSingle();
-
-            if (staffSnap) {
-              emailToUse = staffSnap.email;
-            } else {
-              throw new Error(t('login.errors.phone_not_registered'));
-            }
+            throw new Error(t('login.errors.phone_not_registered'));
           }
         } catch (fetchErr: any) {
              if (fetchErr instanceof TypeError && fetchErr.message === 'Failed to fetch') {

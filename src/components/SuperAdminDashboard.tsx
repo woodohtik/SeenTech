@@ -427,6 +427,10 @@ export default function SuperAdminDashboard() {
       return;
     }
     try {
+      // الدخول الخفي كان يتابع حتى لو فشل سجل التدقيق الخاص به بالكامل
+      // (المسار الأساسي والبديل معاً) -- دخول بلا أي أثر تدقيقي إطلاقاً.
+      // الآن: فشل تسجيل التدقيق يمنع المتابعة صراحة بدل تجاهله بصمت.
+      let logged = false;
       try {
         const { error } = await supabase.from('support_sessions').insert({
           tenant_id: tenantId,
@@ -435,7 +439,9 @@ export default function SuperAdminDashboard() {
           access_type: 'stealth',
           started_at: new Date().toISOString()
         });
-        if (error && (error.code === 'PGRST205' || error.message?.includes('cache') || error.message?.includes('relation'))) {
+        if (!error) {
+          logged = true;
+        } else if (error.code === 'PGRST205' || error.message?.includes('cache') || error.message?.includes('relation')) {
           // Fallback to saas_settings
           const { data: setting } = await supabase
             .from('saas_settings')
@@ -451,14 +457,20 @@ export default function SuperAdminDashboard() {
             access_type: 'stealth',
             started_at: new Date().toISOString()
           });
-          await supabase.from('saas_settings').upsert({
+          const { error: fallbackError } = await supabase.from('saas_settings').upsert({
             key: 'support_sessions',
             value: existingSessions,
             updated_at: new Date().toISOString()
           });
+          if (!fallbackError) logged = true;
         }
       } catch (err) {
-        console.warn('Stealth audit logging fallback:', err);
+        console.error('Stealth audit logging failed:', err);
+      }
+
+      if (!logged) {
+        toastError(t('saas.tenants.stealth_audit_log_failed', 'تعذّر تسجيل عملية الدخول الخفي في سجل التدقيق -- لا يمكن المتابعة بلا سجل'));
+        return;
       }
 
       setImpersonationTenantId(tenantId);

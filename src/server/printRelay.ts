@@ -149,6 +149,10 @@ const CONFIG = {
   maxJobBytes: 8 * 1024 * 1024,
   /** أقصى عدد محاولات اقتران خاطئة لكل عنوان IP في الدقيقة */
   pairAttemptsPerMinute: 10,
+  /** مهمة تبقى queued (لم يستقصِ عنها أي وسيط) أطول من هذه المدة تُعتبر
+   *  فاشلة -- بدون هذا تبقى "قيد الانتظار" للأبد إن كانت المحطة غير متصلة
+   *  أو غير موجودة أصلاً (3، seen-comprehensive-review-fixes-task.md). */
+  queuedJobTimeoutMs: 30 * 60_000,
 };
 
 /* ============================ أدوات ============================ */
@@ -264,6 +268,17 @@ const sweep = async () => {
       })
       .eq('status', 'sent')
       .lt('updated_at', stuckCutoff);
+
+    const queuedCutoff = new Date(nowMs() - CONFIG.queuedJobTimeoutMs).toISOString();
+    await supabaseAdmin
+      .from('print_jobs')
+      .update({
+        status: 'failed',
+        error: 'لم يستلم وسيط الطباعة هذه المهمة خلال مدة معقولة (المحطة غير متصلة على الأرجح).',
+        updated_at: nowIso(),
+      })
+      .eq('status', 'queued')
+      .lt('created_at', queuedCutoff);
 
     const stationCutoff = new Date(nowMs() - CONFIG.stationTtlMs).toISOString();
     await supabaseAdmin.from('print_stations').delete().lt('last_seen_at', stationCutoff);

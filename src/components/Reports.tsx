@@ -113,7 +113,11 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!tenantId) return;
+      // كان يجلب كل البيانات المالية بلا شرط، والحماية تحدث فقط عند العرض
+      // (canViewReports أدناه ~718) -- موظف بلا صلاحية reports.view يصل
+      // لهذا المكوّن يحصل فعلياً على كل البيانات في حالة React/الشبكة حتى
+      // لو ظهرت له شاشة "الوصول مرفوض" بعد ذلك.
+      if (!tenantId || permsLoading || !canViewReports) { setLoading(false); return; }
       setLoading(true);
       try {
         const [ordersRes, customersRes, inventoryRes, staffRes, rolesRes, purchaseOrdersRes, suppliersRes, shiftEntriesRes, salesReturnsRes] = await Promise.all([
@@ -256,7 +260,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
     };
 
     fetchData();
-  }, [tenantId]);
+  }, [tenantId, permsLoading, canViewReports]);
 
   // Filtered Data
   const filteredOrders = useMemo(() => {

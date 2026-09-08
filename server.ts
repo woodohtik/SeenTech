@@ -212,6 +212,58 @@ async function checkTrackingRateLimit(
   };
 }
 
+// بحث الجوال قبل تسجيل الدخول (Login.tsx، دخول برقم الجوال بدل البريد):
+// كان استعلاماً مباشراً من المتصفح على staff/tailor_requests بلا جلسة --
+// RLS على الجدولين تشترط app_current_uid() غير NULL على SELECT، فالاستعلام
+// غير المُصادَق عليه كان يُرجع صفراً صفوف دائماً (تسجيل الدخول بالجوال معطَّل
+// فعلياً)، لا "تسريب حصر أرقام" كما افترض ملف المراجعة -- لكن حلّها الصحيح
+// نفسه: بحث خادمي واحد عبر supabaseAdmin (يتجاوز RLS بأمان) بمعدّل محدود،
+// بدل فتح RLS للقراءة العامة بالجوال (وهذا كان سيُنشئ فعلاً ثغرة حصر أرقام
+// حقيقية لم تكن موجودة).
+const PHONE_LOOKUP_ATTEMPTS_PER_MINUTE = 10;
+
+async function checkPhoneLookupRateLimit(
+  supabaseAdmin: any,
+  ip: string
+): Promise<{ allowed: boolean; recordFailure: () => Promise<void> }> {
+  const { data: rec } = await supabaseAdmin.from('auth_phone_lookup_attempts').select('*').eq('ip', ip).maybeSingle();
+  const recActive = !!rec && new Date(rec.reset_at).getTime() > Date.now();
+  const allowed = !(recActive && rec.count >= PHONE_LOOKUP_ATTEMPTS_PER_MINUTE);
+  return {
+    allowed,
+    recordFailure: async () => {
+      await supabaseAdmin.rpc('increment_auth_phone_lookup_attempt', { p_ip: ip });
+    },
+  };
+}
+
+app.post("/api/auth/lookup-email-by-phone", asyncHandler(async (req, res) => {
+  const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+  const phone = String((req.body || {}).phone || '').trim();
+
+  if (!phone) {
+    return res.status(400).json({ ok: false, error: 'رقم جوال مطلوب' });
+  }
+
+  const { allowed, recordFailure } = await checkPhoneLookupRateLimit(supabaseAdmin, clientIp(req));
+  if (!allowed) {
+    return res.status(429).json({ ok: false, error: 'محاولات كثيرة جداً. انتظر دقيقة ثم أعد المحاولة.' });
+  }
+
+  const { data: reqRow } = await supabaseAdmin.from('tailor_requests').select('email').eq('phone', phone).maybeSingle();
+  if (reqRow?.email) {
+    return res.json({ ok: true, email: reqRow.email });
+  }
+
+  const { data: staffRow } = await supabaseAdmin.from('staff').select('email').eq('phone', phone).maybeSingle();
+  if (staffRow?.email) {
+    return res.json({ ok: true, email: staffRow.email });
+  }
+
+  await recordFailure();
+  res.status(404).json({ ok: false, error: 'لا يوجد حساب مرتبط بهذا الرقم' });
+}));
+
 app.get("/api/public/order-tracking/:token", asyncHandler(async (req, res) => {
   const { token } = req.params;
   const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
@@ -827,19 +879,17 @@ app.post("/api/staff/create-account", authenticate, authorize(['super_admin', 'o
 // this an authenticated attacker (any staff member's own session, since the
 // endpoint only requires being logged in as *someone* on the tenant) could
 // brute-force another staff member's PIN via straightforward scripted
-// requests. In-memory counter keyed by tenant+caller, same pattern as
-// pairAttempts in src/server/printRelay.ts: 5 failed attempts locks out for
-// an escalating window (1, 2, 4, 8, capped at 15 minutes), reset entirely on
-// a successful match.
-const verifyPinAttempts = new Map<string, { failCount: number; lockUntil: number; lockMinutes: number }>();
+// requests. 5 failed attempts locks out for an escalating window (1, 2, 4,
+// 8, capped at 15 minutes), reset entirely on a successful match.
+//
+// (3، seen-comprehensive-review-fixes-task.md): كان هذا Map في الذاكرة --
+// غير فعّال عبر نسخ Vercel Functions المتعددة (نفس درس printRelay.ts أعلى
+// هذا الملف). انتقل لجدول pin_verify_attempts (نفس نمط tracking_attempts/
+// print_pair_attempts)، عبر RPCين ذرّيين: record_pin_verify_failure يزيد
+// العدّاد ويطبِّق القفل المتصاعد، وreset_pin_verify_attempts يصفّره عند
+// نجاح المطابقة.
 const VERIFY_PIN_MAX_ATTEMPTS = 5;
 const VERIFY_PIN_MAX_LOCK_MINUTES = 15;
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, rec] of verifyPinAttempts) {
-    if (now > rec.lockUntil && rec.failCount === 0) verifyPinAttempts.delete(key);
-  }
-}, 5 * 60_000);
 
 // PINs are intentionally stored and compared as plain 4-digit strings (not
 // bcrypt-hashed) per explicit product decision -- the admin needs to be able
@@ -858,21 +908,21 @@ app.post("/api/staff/verify-pin", authenticate, async (req: any, res) => {
       return res.status(400).json({ error: 'pin is required' });
     }
 
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+
     // check-unique (used while an admin sets someone else's PIN, not a
     // login attempt) is exempt from this limiter -- it's not a path an
     // attacker could use to brute-force their way into another account.
     const attemptKey = mode === 'check-unique' ? null : `${tenantId}:${req.user?.uid}`;
     if (attemptKey) {
-      const rec = verifyPinAttempts.get(attemptKey);
-      if (rec && Date.now() < rec.lockUntil) {
+      const { data: rec } = await supabaseAdmin.from('pin_verify_attempts').select('lock_until').eq('attempt_key', attemptKey).maybeSingle();
+      if (rec?.lock_until && new Date(rec.lock_until).getTime() > Date.now()) {
         return res.status(429).json({
           error: 'محاولات كثيرة جداً. يرجى الانتظار قبل إعادة المحاولة.',
-          retryAfterSeconds: Math.ceil((rec.lockUntil - Date.now()) / 1000),
+          retryAfterSeconds: Math.ceil((new Date(rec.lock_until).getTime() - Date.now()) / 1000),
         });
       }
     }
-
-    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
 
     const [{ data: staffData }, { data: rolesData }] = await Promise.all([
       supabaseAdmin.from('staff').select('*').eq('tenant_id', tenantId).eq('status', 'active'),
@@ -895,14 +945,11 @@ app.post("/api/staff/verify-pin", authenticate, async (req: any, res) => {
 
     if (!matched) {
       if (attemptKey) {
-        const rec = verifyPinAttempts.get(attemptKey) || { failCount: 0, lockUntil: 0, lockMinutes: 1 };
-        rec.failCount += 1;
-        if (rec.failCount >= VERIFY_PIN_MAX_ATTEMPTS) {
-          rec.lockUntil = Date.now() + rec.lockMinutes * 60_000;
-          rec.lockMinutes = Math.min(rec.lockMinutes * 2, VERIFY_PIN_MAX_LOCK_MINUTES);
-          rec.failCount = 0;
-        }
-        verifyPinAttempts.set(attemptKey, rec);
+        await supabaseAdmin.rpc('record_pin_verify_failure', {
+          p_key: attemptKey,
+          p_max_attempts: VERIFY_PIN_MAX_ATTEMPTS,
+          p_max_lock_minutes: VERIFY_PIN_MAX_LOCK_MINUTES,
+        });
       }
 
       // A PIN activated before PINs switched from bcrypt hashes to plain
@@ -915,7 +962,7 @@ app.post("/api/staff/verify-pin", authenticate, async (req: any, res) => {
       return res.status(404).json({ matched: false, hasLegacyPins: hasLegacyHash });
     }
 
-    if (attemptKey) verifyPinAttempts.delete(attemptKey);
+    if (attemptKey) await supabaseAdmin.rpc('reset_pin_verify_attempts', { p_key: attemptKey });
 
     const actualRole = matched.role_id ? (rolesMap.get(matched.role_id) || matched.role) : matched.role;
     res.json({

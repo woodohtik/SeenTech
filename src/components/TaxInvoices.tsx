@@ -383,7 +383,7 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
     name: item.type === 'custom' ? item.garmentType || t('orders.custom_thobe') : item.name || t('orders.ready_made'),
     quantity: Number(item.quantity || 0),
     unitPrice: Number(item.price || item.unitPrice || 0),
-    vatAmount: Number((item.price || item.unitPrice || 0) * item.quantity - ((item.price || item.unitPrice || 0) * item.quantity) / 1.15),
+    vatAmount: Number((item.price || item.unitPrice || 0) * item.quantity - ((item.price || item.unitPrice || 0) * item.quantity) / (1 + vatRate / 100)),
     total: Number((item.price || item.unitPrice || 0) * item.quantity)
   }));
 

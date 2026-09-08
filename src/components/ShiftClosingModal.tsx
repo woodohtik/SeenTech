@@ -58,8 +58,11 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
     discounts: 0
   });
 
-  useEffect(() => {
-    const fetchShiftData = async () => {
+  // مستخرَجة من useEffect لتُستدعى مجدداً قبل الكتابة الفعلية عند الإغلاق
+  // (handleSubmit) -- كانت totals تُحسَب مرة واحدة فقط عند فتح النافذة، فأي
+  // بيعة تتم أثناء بقاء نافذة الإغلاق مفتوحة (وردية مشتركة، أو الكاشير أخذ
+  // وقته قبل الضغط على تأكيد) تُستبعَد بصمت من إجمالي الوردية المُغلَقة.
+  const fetchShiftData = async (): Promise<ShiftTotals> => {
       try {
         const { data: orders, error } = await supabase
           .from('orders')
@@ -138,7 +141,7 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
         const expenses = dynamicPayouts.reduce((sum, p) => sum + p.amount, 0) || 0;
         const totalDeposits = dynamicDeposits.reduce((sum, d) => sum + d.amount, 0) || 0;
 
-        setTotals({
+        const fresh: ShiftTotals = {
           cash,
           card,
           bank_transfer,
@@ -155,15 +158,18 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
           orderCount,
           itemsSoldCount,
           productBreakdown
-        });
+        };
+        setTotals(fresh);
+        return fresh;
       } catch (error) {
         handleError(error as any, OperationType.GET, 'orders');
-      } finally {
-        setLoading(false);
+        return totals;
       }
-    };
+  };
 
-    fetchShiftData();
+  useEffect(() => {
+    setLoading(true);
+    fetchShiftData().finally(() => setLoading(false));
   }, [shift.id, tenantId]);
 
   const expectedCash = shift.openingBalance + totals.cash + totals.totalDeposits - totals.cashReturns - totals.expenses;
@@ -180,15 +186,28 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
 
     setIsSubmitting(true);
     try {
+      // إعادة جلب طازجة قبل الكتابة مباشرة -- totals المعروضة على الشاشة
+      // قُرِئت عند فتح النافذة فقط، وقد تفوتها بيعة تمت أثناء بقاء النافذة
+      // مفتوحة (راجع تعليق fetchShiftData أعلاه).
+      const freshTotals = await fetchShiftData();
+      const freshExpectedCash = shift.openingBalance + freshTotals.cash + freshTotals.totalDeposits - freshTotals.cashReturns - freshTotals.expenses;
+      const freshDiscrepancy = Number(actualCash) - freshExpectedCash;
+      const freshHasDiscrepancy = freshDiscrepancy !== 0;
+      if (freshHasDiscrepancy && !reason) {
+        toastError(t('shift_closing.reason_required'));
+        setIsSubmitting(false);
+        return;
+      }
+
       const endTime = new Date().toISOString();
       const closedData: any = {
         status: 'closed' as const,
         end_time: endTime,
         actual_cash: Number(actualCash),
-        expected_cash: expectedCash,
-        discrepancy,
-        discrepancy_reason: hasDiscrepancy ? reason : '',
-        totals,
+        expected_cash: freshExpectedCash,
+        discrepancy: freshDiscrepancy,
+        discrepancy_reason: freshHasDiscrepancy ? reason : '',
+        totals: freshTotals,
         updated_at: new Date().toISOString()
       };
 
@@ -198,14 +217,14 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
         .eq('id', shift.id);
 
       if (error) throw error;
-      
+
       // Audit Log
       await logEmployeeAction(
         shift.tenantId,
         shift.staffId,
         shift.staffName,
         'close_shift',
-        `إغلاق وردية بصافي نقدي فعلي ${actualCash} متوقع ${expectedCash}، العجز/الزيادة: ${discrepancy}`
+        `إغلاق وردية بصافي نقدي فعلي ${actualCash} متوقع ${freshExpectedCash}، العجز/الزيادة: ${freshDiscrepancy}`
       );
 
       // Keep data for the report view
@@ -214,10 +233,10 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
         status: 'closed',
         endTime,
         actualCash: Number(actualCash),
-        expectedCash,
-        discrepancy,
-        discrepancyReason: hasDiscrepancy ? reason : '',
-        totals
+        expectedCash: freshExpectedCash,
+        discrepancy: freshDiscrepancy,
+        discrepancyReason: freshHasDiscrepancy ? reason : '',
+        totals: freshTotals
       });
     } catch (error) {
       handleError(error as any, OperationType.UPDATE, 'shifts');
