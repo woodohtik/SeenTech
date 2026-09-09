@@ -21,22 +21,89 @@ const app = express();
 // يمرّ عبر قفزة وكيل واحدة موثوقة قبل الوصول لدالة السيرفر.
 app.set('trust proxy', 1);
 
-// E-2 (security-fix-tasklist.md): baseline HTTP security headers and a
-// general per-IP rate limit, on top of the endpoint-specific limiter added
-// for /api/staff/verify-pin (E-1) and the pre-existing pairAttempts one in
-// printRelay.ts. CSP is left disabled for now -- this app pulls in Google
-// OAuth/Identity Services, Moyasar (payments), and web fonts, all of which
-// need to be allowlisted deliberately and tested before turning on a strict
-// CSP; shipping a default-restrictive CSP without that pass would silently
-// break login/payment for real users.
+// E-2 (security-fix-tasklist.md) / seen-master-backlog-and-structure.md P4:
+// CSP allowlist below is the result of a full repo survey of every external
+// origin the client actually loads scripts/styles/fonts/images from, or
+// connects to (fetch/XHR/WebSocket) -- Google Identity Services (login),
+// Firebase Auth + FCM (still used for auth/push, not Firestore/Storage),
+// Supabase (REST + Realtime WebSocket + Storage), Google Fonts, OpenStreetMap
+// (address picker in onboarding), and api.ipify.org. Moyasar (payments) is
+// server-side only today (paymentService.ts calls it directly from Node,
+// never from the browser) so it deliberately has no browser CSP entry yet --
+// add one if a client-side Moyasar widget is ever introduced.
 //
+// script-src has no 'unsafe-inline': confirmed both index.html and the built
+// dist/index.html only ever load external <script src="..."> tags, never an
+// inline block. style-src keeps 'unsafe-inline' -- auditing every React
+// inline style={} usage across the whole app to remove it isn't proportional
+// here, and inline *style* injection is a far lower-severity CSP gap than
+// inline *script* injection (which this policy does fully close).
+//
+// VITE_SUPABASE_URL/VITE_FIREBASE_AUTH_DOMAIN are read from the same .env
+// dotenv already loads above -- Vite only *filters* which VITE_-prefixed
+// vars reach the browser bundle, it doesn't hide them from plain Node
+// process.env, so the server can derive the exact project host instead of
+// hardcoding it.
+const supabaseHost = (() => {
+  try { return new URL(process.env.VITE_SUPABASE_URL || '').host; } catch { return ''; }
+})();
+const firebaseAuthDomain = process.env.VITE_FIREBASE_AUTH_DOMAIN || '';
+
 // crossOriginOpenerPolicy is explicitly relaxed to same-origin-allow-popups
 // (Google's own recommendation for Identity Services): helmet's default
 // same-origin COOP isolates the Google Sign-In popup from window.opener,
 // breaking the postMessage-based credential handoff Login.tsx relies on.
 app.use(helmet({
-  contentSecurityPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", 'https://accounts.google.com', 'https://www.gstatic.com'],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+      imgSrc: [
+        "'self'", 'data:', 'blob:',
+        ...(supabaseHost ? [`https://${supabaseHost}`] : []),
+        'https://*.tile.openstreetmap.org',
+        'https://firebasestorage.googleapis.com',
+      ],
+      connectSrc: [
+        "'self'",
+        ...(supabaseHost ? [`https://${supabaseHost}`, `wss://${supabaseHost}`] : []),
+        'https://accounts.google.com',
+        'https://oauth2.googleapis.com',
+        'https://identitytoolkit.googleapis.com',
+        'https://securetoken.googleapis.com',
+        'https://fcmregistrations.googleapis.com',
+        'https://fcm.googleapis.com',
+        'https://firebaseinstallations.googleapis.com',
+        'https://api.ipify.org',
+        'https://nominatim.openstreetmap.org',
+        // Sentry stays a no-op until VITE_SENTRY_DSN is set (src/lib/logger.ts)
+        // -- pre-allowing its ingest hosts now means turning monitoring on
+        // later needs no CSP follow-up.
+        'https://*.ingest.sentry.io',
+        'https://*.ingest.us.sentry.io',
+        'https://*.ingest.de.sentry.io',
+      ],
+      frameSrc: [
+        "'self'",
+        'https://accounts.google.com',
+        ...(firebaseAuthDomain ? [`https://${firebaseAuthDomain}`] : []),
+      ],
+      workerSrc: ["'self'", 'https://www.gstatic.com'],
+      manifestSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+    },
+  },
   crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+  // Same reasoning as COOP above: helmet's default require-corp COEP has its
+  // own known conflicts with Google Identity Services' cross-origin iframe/
+  // script -- left disabled since nothing here asked for it and getting it
+  // wrong risks the exact same login breakage this whole CSP pass is trying
+  // to avoid.
+  crossOriginEmbedderPolicy: false,
 }));
 app.use(rateLimit({ windowMs: 60_000, max: 120 }));
 
