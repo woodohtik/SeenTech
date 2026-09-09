@@ -26,8 +26,16 @@ export function formatCurrency(amount: number) {
 }
 
 export function generateOrderNumber() {
-  // Use a hybrid approach: Timestamp (seconds) + 2 random digits for pseudo-sequential uniqueness
-  const now = Math.floor(Date.now() / 1000);
-  const suffix = Math.floor(10 + Math.random() * 90);
-  return Number(`${now % 1000000}${suffix}`);
+  // Client-side, non-atomic, no retry-on-collision at any call site
+  // (seen-master-backlog-and-structure.md P2 item 11) -- the previous
+  // seconds-resolution timestamp + 2-digit suffix gave two orders created
+  // within the same second (plausible with multiple cashiers/branches
+  // active at once) a real 1-in-90 chance of landing on the same number.
+  // Millisecond resolution + a wider random suffix shrinks that window from
+  // "same second" to "same millisecond", which two independent user actions
+  // essentially cannot hit, without changing the return shape (still a
+  // Number) or touching any of the four call sites.
+  const now = Date.now() % 10000000;
+  const suffix = Math.floor(100 + Math.random() * 900);
+  return Number(`${now}${suffix}`);
 }

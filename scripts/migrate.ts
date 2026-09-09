@@ -457,10 +457,15 @@ async function runMigration() {
       }
       
       if (data.items && Array.isArray(data.items)) {
-         data.items.forEach((item: any) => {
+         data.items.forEach((item: any, itemIndex: number) => {
             const mappedItemId = toUUID(item.itemId);
             ordersItemRows.push({
-               id: toUUID(item.id) || toUUID(Math.random().toString(36).substr(2, 9)),
+               // Math.random() here used to mint a fresh id every run for an
+               // item with no id of its own, breaking idempotency: re-running
+               // this script after a partial failure would insert duplicate
+               // rows instead of the same ones. Derived from order id + the
+               // item's position, so a re-run produces identical ids.
+               id: toUUID(item.id) || toUUID(`${doc.id}:item:${itemIndex}`),
                tenant_id: tId,
                order_id: toUUID(doc.id),
                type: item.type || 'custom',

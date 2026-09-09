@@ -41,8 +41,11 @@ export const logSaaSSecurityEvent = async (action: string, details: string) => {
 };
 
 export const verifySaaSStaff = async (email: string): Promise<boolean> => {
-  // Only official company emails allowed
-  const officialDomains = ['seen.system', 'gmail.com']; 
+  // Only official company emails allowed -- gmail.com used to be listed here
+  // too, which would have treated any random gmail.com signup as official
+  // platform staff the moment this (currently uncalled) function got wired
+  // up to gate anything (seen-master-backlog-and-structure.md P1 item 6).
+  const officialDomains = ['seen.system'];
   const domain = email.split('@')[1];
   return officialDomains.includes(domain);
 };

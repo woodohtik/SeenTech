@@ -1443,27 +1443,29 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
               <AlertTriangle size={15} />
               {t('dashboard.delete_test_data')}
             </button>
-            <div className="bg-surface p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border border-border flex items-center gap-2 sm:gap-3 shadow-sm shrink-0">
-              <div className="p-1 sm:p-1.5 bg-success/10 text-success rounded-lg sm:rounded-xl">
-                <TrendingUp size={16} />
-              </div>
-              <div>
-                <p className="text-[8px] sm:text-[10px] font-bold text-content-muted uppercase leading-none">
-                  {t('dashboard.growth_rate')} {getComparisonLabelShort()}
-                </p>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-1 mt-0.5 sm:mt-1">
-                  <p className={cn(
-                    "text-xs sm:text-sm font-black leading-none",
-                    growthRate >= 0 ? "text-success" : "text-danger"
-                  )}>
-                    {growthRate >= 0 ? '+' : ''}{growthRate}%
+            {hasRevenuePermission && (
+              <div className="bg-surface p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border border-border flex items-center gap-2 sm:gap-3 shadow-sm shrink-0">
+                <div className="p-1 sm:p-1.5 bg-success/10 text-success rounded-lg sm:rounded-xl">
+                  <TrendingUp size={16} />
+                </div>
+                <div>
+                  <p className="text-[8px] sm:text-[10px] font-bold text-content-muted uppercase leading-none">
+                    {t('dashboard.growth_rate')} {getComparisonLabelShort()}
                   </p>
-                  <span className="text-[8px] sm:text-[10px] text-content-muted font-bold whitespace-nowrap">
-                    ({t('dashboard.prev_label')} <PriceDisplay amount={stats.prevRevenue} />)
-                  </span>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 mt-0.5 sm:mt-1">
+                    <p className={cn(
+                      "text-xs sm:text-sm font-black leading-none",
+                      growthRate >= 0 ? "text-success" : "text-danger"
+                    )}>
+                      {growthRate >= 0 ? '+' : ''}{growthRate}%
+                    </p>
+                    <span className="text-[8px] sm:text-[10px] text-content-muted font-bold whitespace-nowrap">
+                      ({t('dashboard.prev_label')} <PriceDisplay amount={stats.prevRevenue} />)
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
             <div className="relative shrink-0">
               <button 
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}

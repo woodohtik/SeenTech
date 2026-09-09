@@ -43,7 +43,6 @@ export const SYSTEM_PERMISSIONS: Permission[] = [
 
   // Orders
   definePermission('orders.create', 'orders.orders_create', 'permissions.categories.orders'),
-  definePermission('orders.view', 'orders.orders_view', 'permissions.categories.orders'),
   definePermission('orders.view_details', 'orders.orders_view_details', 'permissions.categories.orders'),
   definePermission('orders.update_status', 'orders.orders_update_status', 'permissions.categories.orders'),
   definePermission('orders.edit', 'orders.orders_edit', 'permissions.categories.orders'),
@@ -58,36 +57,30 @@ export const SYSTEM_PERMISSIONS: Permission[] = [
   definePermission('shifts.manage', 'financial.shifts_manage', 'permissions.categories.financial'),
 
   // Inventory
-  definePermission('inventory.view', 'inventory.inventory_view', 'permissions.categories.inventory'),
   definePermission('inventory.manage', 'inventory.inventory_manage', 'permissions.categories.inventory'),
   definePermission('inventory.create', 'inventory.inventory_create', 'permissions.categories.inventory'),
   definePermission('inventory.edit', 'inventory.inventory_edit', 'permissions.categories.inventory'),
   definePermission('inventory.delete', 'inventory.inventory_delete', 'permissions.categories.inventory'),
   definePermission('inventory.reconcile', 'inventory.inventory_reconcile', 'permissions.categories.inventory'),
   definePermission('inventory.transfer', 'inventory.inventory_transfer', 'permissions.categories.inventory'),
-  definePermission('suppliers.manage', 'inventory.suppliers_manage', 'permissions.categories.inventory'),
 
   // Customers
   definePermission('customers.create', 'customers.customers_create', 'permissions.categories.customers'),
-  definePermission('customers.view', 'customers.customers_view', 'permissions.categories.customers'),
   definePermission('customers.edit', 'customers.customers_edit', 'permissions.categories.customers'),
   definePermission('customers.delete', 'customers.customers_delete', 'permissions.categories.customers'),
 
   // Dashboard
-  definePermission('dashboard.view', 'dashboard.dashboard_view', 'permissions.categories.dashboard'),
   definePermission('dashboard.revenue', 'dashboard.dashboard_revenue', 'permissions.categories.dashboard'),
   definePermission('dashboard.orders', 'dashboard.dashboard_orders', 'permissions.categories.dashboard'),
   definePermission('dashboard.inventory', 'dashboard.dashboard_inventory', 'permissions.categories.dashboard'),
   definePermission('dashboard.customers', 'dashboard.dashboard_customers', 'permissions.categories.dashboard'),
 
   // Reports
-  definePermission('reports.view', 'reports.reports_view', 'permissions.categories.reports'),
   definePermission('reports.financial', 'reports.reports_financial', 'permissions.categories.reports'),
   definePermission('reports.tax', 'reports.reports_tax', 'permissions.categories.reports'),
   definePermission('reports.export', 'reports.reports_export', 'permissions.categories.reports'),
 
   // Staff & Settings
-  definePermission('settings.view', 'settings.settings_view', 'permissions.categories.settings'),
   definePermission('settings.edit', 'settings.settings_edit', 'permissions.categories.settings'),
   definePermission('settings.manage', 'settings.settings_manage', 'permissions.categories.settings'),
   definePermission('settings.billing', 'settings.settings_billing', 'permissions.categories.settings'),

@@ -165,8 +165,20 @@ function AppContent() {
   const { currentStaff, setCurrentStaff } = useStaff();
   const {
     user, isApproved, userRole, tenantId, onboardingStep, hasStaffWithPin, currentUserStaff, hasNoProfile, resolveError,
-    loading, conflictUser, resolveConflict, rejectConflict, impersonationTenantId, logout, refreshDbUser,
+    loading, conflictUser, resolveConflict, rejectConflict, impersonationTenantId, logout: authLogout, refreshDbUser,
   } = useAuth();
+
+  // AuthContext.logout() clears the auth session but has no access to
+  // StaffContext (AuthProvider wraps StaffProvider, not the other way
+  // around), so currentStaff used to survive logout untouched -- a
+  // different user logging into the same browser tab right after could
+  // briefly render with the previous user's stale staff data (name,
+  // branchId, permissions) until their own staff row loaded
+  // (seen-master-backlog-and-structure.md P2 item 8).
+  const logout = React.useCallback(() => {
+    setCurrentStaff(null);
+    return authLogout();
+  }, [authLogout, setCurrentStaff]);
 
   // "Not approved" briefly flashes true on some logins before a fresh
   // resolveIdentity pass corrects it (session restore firing before a
