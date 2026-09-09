@@ -23,6 +23,9 @@ jobs:
       - name: Type check
         run: npm run lint
 
+      - name: Unit tests
+        run: npm run test
+
       - name: Build (main app)
         run: npm run build
 

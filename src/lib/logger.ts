@@ -1,35 +1,23 @@
 import i18n from 'i18next';
+import * as Sentry from '@sentry/react';
 import { OperationType } from './firebase';
 
 /**
- * 
- * ==============================================================
- * 🚀 CENTRALIZED ERROR LOGGING (SENTRY / CRASHLYTICS)
- * ==============================================================
- * 
- * To implement a robust error tracking system like Sentry, 
- * follow these steps:
- * 
- * 1. Install Sentry: `npm install @sentry/react @sentry/tracing`
- * 2. Uncomment the initialization code below and add your DSN.
- * 3. Replace simple `console.error` calls with `Sentry.captureException`.
- * 4. Optionally, you can use Firebase Crashlytics on the web by logging 
- *    issues into a specific Firestore collection, but Sentry is the industry
- *    standard for React Web Apps.
+ * Sentry activates only once VITE_SENTRY_DSN is actually set (Vercel env
+ * var / local .env) -- no DSN means Sentry.init() is simply never called,
+ * so this stays a safe no-op until the user creates a Sentry project and
+ * sets the var (seen-master-backlog-and-structure.md P3: Sentry not
+ * installed). Call this once from main.tsx before rendering.
  */
-
-// import * as Sentry from '@sentry/react';
-// import { BrowserTracing } from '@sentry/tracing';
-
-// export const initLogger = () => {
-//   if (import.meta.env.PROD) {
-//     Sentry.init({
-//       dsn: "YOUR_SENTRY_DSN_HERE",
-//       integrations: [new BrowserTracing()],
-//       tracesSampleRate: 1.0,
-//     });
-//   }
-// };
+export const initLogger = () => {
+  const dsn = import.meta.env.VITE_SENTRY_DSN;
+  if (!dsn || !import.meta.env.PROD) return;
+  Sentry.init({
+    dsn,
+    integrations: [Sentry.browserTracingIntegration()],
+    tracesSampleRate: 0.2,
+  });
+};
 
 export const logError = (error: any, context?: any) => {
   if (!error) return;
@@ -60,27 +48,24 @@ export const logError = (error: any, context?: any) => {
   }
   console.warn('[Logger] Error:', errorMsg, ctxStr);
 
-
-  // Example Sentry integration:
-  // if (import.meta.env.PROD) {
-  //   Sentry.withScope((scope) => {
-  //     if (context) {
-  //       Object.keys(context).forEach(key => {
-  //         scope.setExtra(key, context[key]);
-  //       });
-  //     }
-  //     Sentry.captureException(error);
-  //   });
-  // }
+  if (import.meta.env.VITE_SENTRY_DSN && import.meta.env.PROD) {
+    Sentry.withScope((scope) => {
+      if (context) {
+        Object.keys(context).forEach(key => {
+          scope.setExtra(key, context[key]);
+        });
+      }
+      Sentry.captureException(error instanceof Error ? error : new Error(String(errorMsg)));
+    });
+  }
 };
 
 export const logMessage = (message: string, level: 'info' | 'warn' | 'error' | 'debug' = 'info') => {
   console[level](`[Logger: ${level.toUpperCase()}] ${message}`);
-  
-  // Example Sentry integration:
-  // if (import.meta.env.PROD) {
-  //   Sentry.captureMessage(message, level as Sentry.SeverityLevel);
-  // }
+
+  if (import.meta.env.VITE_SENTRY_DSN && import.meta.env.PROD) {
+    Sentry.captureMessage(message, level === 'warn' ? 'warning' : level);
+  }
 };
 
 export const getFriendlyErrorMessage = (error: any): string => {
