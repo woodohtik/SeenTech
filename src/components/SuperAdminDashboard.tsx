@@ -639,16 +639,20 @@ export default function SuperAdminDashboard() {
               t('saas.tenants.access_request_approved')
             );
             
-            // Record explicit session
+            // Record explicit session -- نفس إصلاح handleStealthSupportLogin
+            // (~429-473): لا انتحال بلا سجل تدقيق ناجح فعلياً، بدل المتابعة
+            // بصمت لو فشل الإدراج الأساسي والبديل معاً.
+            let logged = false;
             try {
               if (!isFallback) {
-                await supabase.from('support_sessions').insert({
+                const { error: sessErrRes } = await supabase.from('support_sessions').insert({
                   tenant_id: tenantId,
                   saas_user_id: dbUser!.id,
                   saas_user_name: dbUser?.display_name || dbUser?.email || 'Support Representative',
                   access_type: 'explicit',
                   started_at: new Date().toISOString()
                 });
+                if (!sessErrRes) logged = true;
               } else {
                 const { data: setting } = await supabase
                   .from('saas_settings')
@@ -664,14 +668,21 @@ export default function SuperAdminDashboard() {
                   access_type: 'explicit',
                   started_at: new Date().toISOString()
                 });
-                await supabase.from('saas_settings').upsert({
+                const { error: fallbackErr } = await supabase.from('saas_settings').upsert({
                   key: 'support_sessions',
                   value: existingSessions,
                   updated_at: new Date().toISOString()
                 });
+                if (!fallbackErr) logged = true;
               }
             } catch (sessErr) {
-              console.warn('Session recording failed:', sessErr);
+              console.error('Session recording failed:', sessErr);
+            }
+
+            if (!logged) {
+              toastHandleError(null, t('saas.tenants.stealth_audit_log_failed', 'تعذّر تسجيل عملية الدخول الخفي في سجل التدقيق -- لا يمكن المتابعة بلا سجل'));
+              setSupportModalTenant(null);
+              return;
             }
 
             setImpersonationTenantId(tenantId);

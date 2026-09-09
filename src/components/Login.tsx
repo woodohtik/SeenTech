@@ -140,7 +140,10 @@ export default function Login() {
       const [tenantRes, requestRes, staffRes, saasRes] = await Promise.all([
         supabase.from('tenants').select('*').eq('owner_email', email).maybeSingle(),
         supabase.from('tailor_requests').select('*').eq('uid', uid).maybeSingle(),
-        supabase.from('staff').select('*').or(`uid.eq.${uid},email.eq.${email}`).maybeSingle(),
+        // pin_hash intentionally excluded -- SELECT on it is revoked for
+        // authenticated/anon at the DB level (see rls-audit fix migration);
+        // only used for its truthiness below anyway.
+        supabase.from('staff').select('id').or(`uid.eq.${uid},email.eq.${email}`).maybeSingle(),
         supabase.from('saas_users').select('role').eq('uid', uid).maybeSingle()
       ]);
 

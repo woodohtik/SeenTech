@@ -450,8 +450,10 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
             .select('*')
             .or(`tenant_id.is.null,tenant_id.eq.${tenantId}`),
           // Presence-only check (never the hash itself) so the UI can show
-          // "PIN configured" without ever fetching pin_hash values.
-          supabase.from('staff').select('id').eq('tenant_id', tenantId).not('pin_hash', 'is', null),
+          // "PIN configured" without ever fetching pin_hash values -- via RPC
+          // since SELECT on pin_hash (including filtering by it) is revoked
+          // for anon/authenticated at the DB level now.
+          supabase.rpc('staff_ids_with_pin_set', { p_tenant_id: tenantId }).then(({ data }) => ({ data: (data || []).map((id: string) => ({ id })) })),
         ]);
         const rolesMap = new Map(rolesData?.map(r => [r.id, r.role_key]) || []);
         const hasPinSet = new Set((pinRows || []).map((r: any) => r.id));

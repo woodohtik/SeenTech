@@ -87,23 +87,41 @@ export async function addSupplierTransaction(
   currentBalance: number
 ): Promise<SupplierTransaction> {
   const transactionId = crypto.randomUUID();
-  
-  // Calculate new running balance: Outstanding = Total Credit - Total Debit
-  // credit: we owe supplier more (+ balance)
-  // debit: we pay supplier (- balance)
+
+  // credit: we owe supplier more (+ balance); debit: we pay supplier (- balance)
   const isDebit = transaction.debit > 0;
-  const newBalance = isDebit 
-    ? currentBalance - transaction.debit 
-    : currentBalance + transaction.credit;
+  const delta = isDebit ? -transaction.debit : transaction.credit;
+
+  // Call the atomic RPC FIRST and use its authoritative returned balance for
+  // the ledger row -- computing running_balance from the currentBalance
+  // parameter (read separately, before this call) used to leave the ledger
+  // silently diverging from the real suppliers.balance under concurrency:
+  // two near-simultaneous transactions for the same supplier both apply
+  // their delta correctly via the RPC, but each ledger row still recorded
+  // its own stale pre-update snapshot as running_balance.
+  let authoritativeBalance = currentBalance + delta;
+  try {
+    const { data: newBalance, error: updateErr } = await supabase.rpc('increment_supplier_balance', {
+      p_supplier_id: transaction.supplier_id,
+      p_delta: delta,
+    });
+
+    if (updateErr) {
+      console.error('Failed to update supplier balance in Supabase:', updateErr);
+    } else if (typeof newBalance === 'number') {
+      authoritativeBalance = newBalance;
+    }
+  } catch (err) {
+    console.error('Exception updating supplier balance in Supabase:', err);
+  }
 
   const fullTransaction: SupplierTransaction = {
     ...transaction,
     id: transactionId,
-    running_balance: Number(newBalance.toFixed(2)),
+    running_balance: Number(authoritativeBalance.toFixed(2)),
   };
 
   // 1. Attempt to store in Supabase
-  let storedInDb = false;
   try {
     const { error } = await supabase
       .from('supplier_transactions')
@@ -120,8 +138,8 @@ export async function addSupplierTransaction(
         notes: fullTransaction.notes,
       });
 
-    if (!error) {
-      storedInDb = true;
+    if (error) {
+      console.warn('Could not insert transaction to Supabase table, falling back to localStorage:', error);
     }
   } catch (err) {
     console.warn('Could not insert transaction to Supabase table, falling back to localStorage:', err);
@@ -135,38 +153,15 @@ export async function addSupplierTransaction(
     '',
     currentBalance
   );
-  
+
   // Keep all transactions including seeded/mock history to preserve full mathematical coherence
   const activeTransactions = existing;
-  
+
   const updatedTransactions = [...activeTransactions, fullTransaction].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
-  
+
   localStorage.setItem(localKey, JSON.stringify(updatedTransactions));
-
-  // 3. Update the matching Supplier's balance column in the database --
-  // atomic relative delta via increment_supplier_balance (the RPC applies
-  // `balance = balance + delta` inside the database), not the absolute
-  // newBalance computed above from a currentBalance the caller read
-  // separately. Two concurrent transactions for the same supplier (a
-  // purchase order + a payment voucher within the same second) used to
-  // each read the same starting balance and overwrite one another; the
-  // delta-based RPC serializes them correctly regardless of what this
-  // call thought the starting balance was.
-  try {
-    const delta = isDebit ? -transaction.debit : transaction.credit;
-    const { error: updateErr } = await supabase.rpc('increment_supplier_balance', {
-      p_supplier_id: fullTransaction.supplier_id,
-      p_delta: delta,
-    });
-
-    if (updateErr) {
-      console.error('Failed to update supplier balance in Supabase:', updateErr);
-    }
-  } catch (err) {
-    console.error('Exception updating supplier balance in Supabase:', err);
-  }
 
   return fullTransaction;
 }

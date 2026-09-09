@@ -55,7 +55,33 @@ async function hasOperationalPermission(ctx: AssistantToolContext, permKey: stri
       .or(`tenant_id.is.null,tenant_id.eq.${ctx.tenantId}`);
     if (!data || data.length === 0) return false;
     const tenantRow = data.find((r: any) => r.tenant_id === ctx.tenantId) || data[0];
-    return !!tenantRow?.permissions?.[permKey];
+    let allowed = !!tenantRow?.permissions?.[permKey];
+
+    // getEffectivePermissions (permissionService.ts) merges a per-staff
+    // override on top of the role default -- an owner can revoke (or grant)
+    // a single permission for one specific staff member via
+    // RolePermissionsSettings without touching the role itself. Without
+    // this, the assistant would ignore that override and keep using
+    // whatever the role's default happened to be (ultra-review finding).
+    const { data: staffRow } = await supabaseAdmin
+      .from('staff')
+      .select('id')
+      .eq('uid', ctx.userId)
+      .eq('tenant_id', ctx.tenantId)
+      .eq('status', 'active')
+      .maybeSingle();
+    if (staffRow?.id) {
+      const { data: overrideRow } = await supabaseAdmin
+        .from('user_permission_overrides')
+        .select('overrides')
+        .eq('staff_id', staffRow.id)
+        .maybeSingle();
+      if (overrideRow?.overrides && permKey in overrideRow.overrides) {
+        allowed = !!overrideRow.overrides[permKey];
+      }
+    }
+
+    return allowed;
   } catch {
     return false;
   }

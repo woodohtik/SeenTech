@@ -313,12 +313,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
                 let staffPinCount = false;
                 try {
-                    const { count } = await supabase
-                        .from('staff')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('tenant_id', staffData.tenant_id)
-                        .not('pin_hash', 'is', null);
-                    staffPinCount = !!count;
+                    // pin_hash نفسها لم تعد قابلة للقراءة عبر PostgREST مباشرة
+                    // (SELECT على العمود مسحوب من anon/authenticated) -- هذا
+                    // فحص "وجود فقط" عبر RPC مخصَّص، لا يُرجع القيمة إطلاقاً.
+                    const { data: pinIds } = await supabase.rpc('staff_ids_with_pin_set', { p_tenant_id: staffData.tenant_id });
+                    staffPinCount = !!(pinIds && pinIds.length > 0);
                 } catch (e) { console.error('Error checking staff pins:', e); }
 
                 const mappedStaff = {

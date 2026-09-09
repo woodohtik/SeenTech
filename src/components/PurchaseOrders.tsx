@@ -85,9 +85,11 @@ export default function PurchaseOrders({
         // Fetch current user details
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          // pin_hash intentionally excluded -- SELECT on it is revoked for
+          // authenticated/anon at the DB level (see rls-audit fix migration).
           const { data: staff } = await supabase
             .from('staff')
-            .select('*')
+            .select('id, tenant_id, uid, name, email, phone, role, role_id, branch_id, status, must_change_pin, is_test, commission_type, commission_value, has_seen_onboarding, created_at, updated_at')
             .eq('user_id', user.id)
             .maybeSingle();
           if (staff) {

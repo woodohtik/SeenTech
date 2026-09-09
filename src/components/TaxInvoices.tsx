@@ -295,8 +295,12 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
   const totalIncVat = order.totalAmount || 0;
   const vatAmount = order.taxAmount || 0;
   const totalExcVat = order.subTotal || (totalIncVat - vatAmount);
+  // order.taxRate || 15 كان يستبدل 0% (فاتورة معفاة) بـ15% خطأً لأن 0 قيمة
+  // falsy في JS.
   // @ts-ignore
-  const vatRate = order.taxRate || 15;
+  const vatRate = (order.taxRate !== null && order.taxRate !== undefined && Number.isFinite(Number(order.taxRate)))
+    ? Number(order.taxRate)
+    : 15;
 
   const invoiceDate = new Date(order.issuedAt || new Date().toISOString());
 

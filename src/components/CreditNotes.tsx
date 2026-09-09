@@ -65,7 +65,16 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
         }));
         
         const invoiceMap = new Map((invoicesData || []).map(inv => [inv.id, inv.invoice_number]));
-        const invoiceTaxRateMap = new Map((invoicesData || []).map(inv => [inv.id, Number(inv.tax_rate) || 15]));
+        // Number(...) || 15 كان يستبدل 0% (فاتورة معفاة/بلا ضريبة، قيمة
+        // حقيقية) بـ15% خطأً لأن 0 قيمة falsy في JS. الفحص هنا يميّز بين
+        // "القيمة 0 فعلياً" و"القيمة غير موجودة أصلاً" (null/undefined)،
+        // اللذين ينتجان كلاهما 0 عبر Number() المجرَّدة.
+        const invoiceTaxRateMap = new Map((invoicesData || []).map(inv => {
+          const raw = inv.tax_rate;
+          const num = Number(raw);
+          const rate = (raw !== null && raw !== undefined && Number.isFinite(num)) ? num : 15;
+          return [inv.id, rate];
+        }));
         
         const { data: notesData, error: notesError } = await supabase
           .from('sales_returns')
