@@ -1,0 +1,25 @@
+-- =============================================================================
+--  إغلاق عاجل: remap_user_uid كان قابلاً للاستدعاء من anon وauthenticated
+--  (seen-master-backlog-and-structure.md، P0 بند 1 -- أخطر ثغرة في كامل هذه
+--  الجلسة/المشروع)
+--  ------------------------------------------------------------------------
+--  remap_user_uid (20260815_remap_user_uid_function.sql) دالة SECURITY
+--  DEFINER تُعيد ربط هوية مستخدم كاملة عبر كل الجداول (tenants.owner_uid،
+--  staff.uid، saas_users.uid، ...) بمعاملين نصّيين حرّين بلا أي تحقق مطلقاً
+--  من علاقة المستدعي بأي من المعرّفين. الملف نفسه يقول صراحة في تعليقه:
+--  "Only the service-role (migration script) may call this -- never expose
+--  to anon/authenticated" وطبَّق `REVOKE ALL ... FROM PUBLIC` +
+--  `GRANT ... TO service_role` -- لكن هذا بالضبط نفس الخطأ المكتشف مراراً
+--  هذه الجلسة: REVOKE FROM PUBLIC لا يسحب صلاحيات EXECUTE الافتراضية التي
+--  يمنحها Supabase تلقائياً لـanon/authenticated (منفصلان تماماً عن PUBLIC
+--  pseudo-role)، وGRANT TO service_role إضافي لا حصري.
+--
+--  فحص حي (information_schema.routine_privileges، هذه الجلسة) أكّد: الدالة
+--  كانت قابلة للاستدعاء المباشر من anon (بلا أي تسجيل دخول إطلاقاً) عبر
+--  supabase.rpc('remap_user_uid', {p_old_uid: '<أي uid>', p_new_uid:
+--  '<uid المهاجم>'}) -- بما أنها SECURITY DEFINER تتجاوز RLS بالكامل على كل
+--  جدول تلمسه، فهذا استيلاء كامل على هوية أي مستخدم/مالك مستأجر في المنصّة
+--  كلها، بلا أي مصادقة حتى.
+-- =============================================================================
+
+REVOKE EXECUTE ON FUNCTION public.remap_user_uid(text, text) FROM anon, authenticated;
