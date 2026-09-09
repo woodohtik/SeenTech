@@ -169,7 +169,7 @@ app.get("/api/public/invoices/:id", async (req, res) => {
 // الحقول المسموحة فقط يدوياً -- لا استعلام عام مباشر من المتصفح على
 // orders، ولا RPC معرَّض لـanon (تفادياً للاعتماد على رؤية IP الحقيقي
 // للعميل داخل Postgres خلف مجمِّع الاتصالات). التفاصيل الكاملة في
-// PUBLIC_TRACKING_SPEC.md.
+// docs/reports/PUBLIC_TRACKING_SPEC.md.
 //
 // تحديد معدّل: جدول tracking_attempts (نفس نمط print_pair_attempts في
 // printRelay.ts) يعدّ محاولات كل IP، ويُزاد فقط عند عدم إيجاد طلب -- حتى لا
@@ -436,7 +436,7 @@ async function sendPushAndPruneDeadTokens(
 }
 
 // نص عربي مبسّط لحالات الخياطة الرجالية القديمة (mens_tailoring) فقط --
-// نفس فجوة STEPS الموثّقة في PUBLIC_TRACKING_SPEC.md: مستأجرو القطاعات
+// نفس فجوة STEPS الموثّقة في docs/reports/PUBLIC_TRACKING_SPEC.md: مستأجرو القطاعات
 // الأخرى (status_key حر حسب vertical) يحصلون على نص الحالة الخام بدل تسمية
 // عربية مترجمة إلى أن يُعمَّم هذا حسب vertical كل تاجر.
 const ORDER_STATUS_LABELS_AR: Record<string, string> = {
@@ -525,7 +525,7 @@ app.post("/api/staff/push-subscribe", authenticate, asyncHandler(async (req: any
 // فعلياً أبداً). تقريب متعمَّد لصلاحية orders.view الفعلية بدل حساب الأدوار
 // المخصّصة الكاملة (roles_permissions/role overrides) هنا؛ الموظف أصلاً
 // اختار التفعيل بنفسه من إعداداته، وهذا الفحص طبقة أمان إضافية لا الوحيدة.
-// موثَّق كتبسيط معروف في PUBLIC_TRACKING_SPEC.md.
+// موثَّق كتبسيط معروف في docs/reports/PUBLIC_TRACKING_SPEC.md.
 const ORDERS_VIEW_ROLES = ['super_admin', 'owner', 'admin', 'manager', 'branch_manager', 'accountant', 'warehouse_manager', 'cashier', 'tailor'];
 
 // يُستدعى من العميل فور نجاح إنشاء طلب جديد (Orders.tsx، POS.tsx --

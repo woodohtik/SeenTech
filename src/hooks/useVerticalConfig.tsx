@@ -6,7 +6,9 @@
  * مرة واحدة عند تحميل التطبيق، وتوفّرها عبر Context بدل استدعاء verticalService
  * من كل مكوّن على حدة (كل استدعاء كان سيكرّر نفس الجلبات الثلاث).
  *
- * SQL: MIGRATION_extensibility_stage1/2/3.sql. الخدمة: services/verticalService.ts.
+ * SQL: supabase/migrations/20260910060000_backfill_extensibility_verticals.sql
+ * (original one-time setup archived at supabase/legacy-setup/MIGRATION_extensibility_stage1/2/3.sql).
+ * الخدمة: services/verticalService.ts.
  *
  * ملاحظة توافق: `isLegacyVertical` (true فقط لـ mens_tailoring، النشاط
  * الافتراضي والوحيد المُستخدَم فعلياً في الإنتاج حتى الآن) هي علامة يستخدمها

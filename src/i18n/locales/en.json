@@ -1441,7 +1441,7 @@
       "popup_closed": "Login window closed before completion",
       "too_many_attempts": "Too many attempts. Wait a minute and try again.",
       "reset_failed": "Could not send the email; check that the address is correct",
-      "rls_permission_issue": "Database permission problem (RLS). Please run the allow-all-rls.sql file in the Supabase console so you can register.",
+      "rls_permission_issue": "Database permission problem (RLS). Please contact support to resolve this.",
       "unknown": "An unknown error occurred",
       "weak_password": "Password is too weak"
     },
@@ -1622,7 +1622,7 @@
       "logo_invalid_type": "Unsupported file format. Please upload a JPG, PNG, GIF, or WebP image only",
       "logo_size_error": "File size must be less than 2MB",
       "logo_upload_error": "Logo upload failed. Please try again.",
-      "rls_permission_error": "Database permissions issue (RLS). Please open the Supabase SQL Editor and run the contents of the file: allow-all-rls.sql or fix-rls.sql so you can create accounts.",
+      "rls_permission_error": "Database permissions issue (RLS). Please contact support to resolve this.",
       "success": "Setup completed successfully!",
       "tenant_not_found": "No store linked to this account was found",
       "validation_failed": "Please verify your data: "

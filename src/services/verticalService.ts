@@ -1,7 +1,8 @@
 /**
  * verticalService — قراءة طبقة المجال من الـconfig بدل القيم الثابتة (enums).
  * يجعل الواجهة تتكيّف مع نشاط المحل (رجالي/نسائي/أثاث) بلا كود لكل نشاط.
- * SQL: MIGRATION_extensibility_stage1.sql + stage2.sql.
+ * SQL: supabase/migrations/20260910060000_backfill_extensibility_verticals.sql
+ * (original one-time setup archived at supabase/legacy-setup/MIGRATION_extensibility_stage1.sql + stage2.sql).
  */
 
 import { supabase } from '../lib/supabase/client';

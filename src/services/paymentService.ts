@@ -77,7 +77,7 @@ const paymobProvider: PaymentProvider = {
   name: 'paymob',
   async createPayment(_input) {
     // TODO(PAYMOB): تدفّق PayMob = auth token -> order -> payment key -> iframe/redirect.
-    throw new Error('PayMob adapter not implemented yet. See PLG_FLOW_README.md.');
+    throw new Error('PayMob adapter not implemented yet. See docs/reports/PLG_FLOW_README.md.');
   },
   async fetchPayment(_id) {
     throw new Error('PayMob adapter not implemented yet.');

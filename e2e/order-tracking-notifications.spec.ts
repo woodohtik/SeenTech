@@ -1,7 +1,7 @@
 /**
  * order-tracking-notifications.spec.ts
  * ---------------------------------------------------------------------
- * seen-companion-app-task_1.md Phase 5.2 scenario: a customer opens a
+ * docs/tasks/seen-companion-app-task_1.md Phase 5.2 scenario: a customer opens a
  * tracking link, enables notifications, a staff member changes the
  * order's status, and the customer receives a notification (simulated).
  *
@@ -104,7 +104,7 @@ test.describe('Public order tracking (customer side)', () => {
     await enableButton.click();
 
     // Success requires VITE_FIREBASE_VAPID_KEY to be configured on this
-    // deploy (a manual step, see PUBLIC_TRACKING_SPEC.md); until then the
+    // deploy (a manual step, see docs/reports/PUBLIC_TRACKING_SPEC.md); until then the
     // code fails closed with a graceful message instead of crashing --
     // either outcome is a passing, meaningful assertion here.
     await expect(

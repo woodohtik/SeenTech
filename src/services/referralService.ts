@@ -3,7 +3,8 @@
  * --------------------------------------------
  * رابط إحالة لكل عميل · 300 ر.س تُمنَح عند اشتراك المُحال (لا مجرد تسجيله) وخلال 30 يوماً من تسجيله.
  * سحب عند تجاوز 1000 (مراجعة يدوية في داشبورد سين).
- * SQL المطلوب: REFERRAL_program.sql.
+ * SQL: supabase/migrations/20260910050000_backfill_referral_program.sql
+ * (الأصل المؤرشَف في supabase/legacy-setup/REFERRAL_program.sql).
  */
 
 import { supabase } from '../lib/supabase/client';

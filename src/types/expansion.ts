@@ -1,6 +1,7 @@
 /**
  * أنواع طبقة التوسّع — الأنشطة (verticals)، الموديولات، الـconfig، والماركت بليس.
- * تُقابل: MIGRATION_extensibility_stage1/2.sql و MARKETPLACE_foundation.sql.
+ * تُقابل: supabase/migrations/20260910060000_backfill_extensibility_verticals.sql
+ * و supabase/legacy-setup/MARKETPLACE_foundation.sql (غير مُفعَّلة حالياً في الواجهة).
  */
 
 export type VerticalKey = 'mens_tailoring' | 'womens_tailoring' | 'furniture' | string;

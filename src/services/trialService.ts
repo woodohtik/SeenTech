@@ -4,7 +4,9 @@
  * يربط تدفّق التسجيل بنظام التجربة: بدء التجربة، زرع بيانات تجريبية للـ tenant،
  * التقاط الـ lead، وحساب حالة التجربة للعرض في الواجهة.
  *
- * SQL المطلوب: PLG_trial_lifecycle.sql (الدوال start_tenant_trial / activate_tenant_subscription).
+ * SQL: supabase/migrations/20260910040000_backfill_plg_trial_lifecycle.sql
+ * (الدوال start_tenant_trial / activate_tenant_subscription؛ الأصل المؤرشَف
+ * في supabase/legacy-setup/PLG_trial_lifecycle.sql).
  */
 
 import i18n from 'i18next';
