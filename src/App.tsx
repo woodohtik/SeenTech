@@ -74,6 +74,8 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { ConfirmProvider } from './contexts/ConfirmContext';
 import { analytics, AnalyticsEvent } from './services/analyticsService';
+import { startConnectivityMonitor } from './lib/offline/connectivity';
+import { initOutboxSync } from './lib/offline/outbox';
 import { useTranslation } from 'react-i18next';
 import { useDirection, localeOf } from './lib/direction';
 
@@ -185,6 +187,15 @@ function AppContent() {
   // read-after-write is fully visible, a cold PostgREST embed, etc.) --
   // AccountIssueScreen only earns its interruption once that state has
   // actually stuck around for a moment, not on every such flash.
+  // Offline sync engine (seen-offline-sync-architecture-task.md Phase 3):
+  // one real-connectivity monitor + outbox drain loop for the whole app,
+  // not per-screen -- a sale queued while on POS must still sync once the
+  // cashier has navigated elsewhere and connectivity actually returns.
+  useEffect(() => {
+    startConnectivityMonitor();
+    initOutboxSync();
+  }, []);
+
   const [showAccountIssue, setShowAccountIssue] = useState(false);
   useEffect(() => {
     if (user && !isApproved && !loading) {

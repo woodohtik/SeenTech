@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { refreshCustomersCache, refreshInventoryCache, refreshBranchStockCache } from '../lib/offline/cacheSync';
+import { enqueuePosSale, isNetworkFailure } from '../lib/offline/outbox';
 import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
 import { Combobox, Transition, Dialog } from '@headlessui/react';
 import { Customer, InventoryItem, OrderItem, Order, PaymentMethod, OrderStatus } from '../types';
@@ -992,7 +993,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
          -------------------------------------------------------------------- */
       const operationId = globalThis.crypto.randomUUID();
 
-      const { data: saleResult, error: saleError } = await supabase.rpc('create_pos_sale', {
+      const salePayload = {
         p_operation_id: operationId,
         p_order: {
           branch_id: (currentStaff?.branchId && isUuid(currentStaff.branchId)) ? currentStaff.branchId : null,
@@ -1052,12 +1053,33 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
             createdBy: currentStaff?.name || 'System'
           })
         }
-      });
+      };
 
-      if (saleError) throw saleError;
+      let queuedOffline = false;
 
-      const newOrder = { id: saleResult.order_id as string };
-      void notifyNewOrderForStaff(newOrder.id);
+      const { error: saleError } = await supabase.rpc('create_pos_sale', salePayload);
+
+      if (saleError) {
+        /* --------------------------------------------------------------
+           seen-offline-sync-architecture-task.md Phase 3: only a real
+           network failure (not a legitimate rejection like insufficient
+           stock, which must still fail loudly) falls back to the outbox.
+           Standard B2B invoices are explicitly excluded from offline
+           queueing (owner decision, Phase 1) -- ZATCA requires live
+           clearance for those, so they must block outright instead.
+           -------------------------------------------------------------- */
+        if (!isNetworkFailure(saleError)) throw saleError;
+        if (isB2B) {
+          throw new Error(t('pos.b2b_requires_connection', 'الفواتير الضريبية القياسية (B2B) تتطلب اتصالاً حياً بالإنترنت — لا يمكن إصدارها أوفلاين.'));
+        }
+        await enqueuePosSale(operationId, salePayload);
+        queuedOffline = true;
+      }
+
+      const newOrder = { id: operationId };
+      if (!queuedOffline) {
+        void notifyNewOrderForStaff(newOrder.id);
+      }
 
       setCart([]);
       setSelectedCustomer(null);
@@ -1090,8 +1112,17 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       } catch (err) {
         console.error('Failed to trigger fetchCashDrawerBalance after order:', err);
       }
-      router.refresh();
-      toastSuccess(t('pos.tax_invoice_issued'));
+      if (!queuedOffline) {
+        router.refresh();
+      }
+      if (queuedOffline) {
+        toastSuccess(
+          t('pos.sale_queued_offline_title', 'سُجِّلت الفاتورة محلياً'),
+          t('pos.sale_queued_offline_desc', 'لا يوجد اتصال حالياً — ستُرسَل تلقائياً للخادم فور عودة الإنترنت.')
+        );
+      } else {
+        toastSuccess(t('pos.tax_invoice_issued'));
+      }
       
       if (isAutoPrintEnabled) {
         flushSync(() => {
