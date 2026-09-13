@@ -1,20 +1,9 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Users, 
-  ShoppingBag, 
-  Settings, 
+import {
   LogOut,
-  Shield,
-  Scissors,
   ChevronLeft,
   ChevronRight,
-  Home,
-  UserCircle,
-  Package,
-  Briefcase,
-  BarChart3,
   Lock,
   Building2,
   ArrowRightLeft,
@@ -23,19 +12,11 @@ import {
   Moon,
   LayoutGrid,
   List,
-  Monitor,
   Menu,
   X as XIcon,
-  Store,
-  FileText,
-  MapPin,
-  Palette,
-  Printer,
-  Bell,
-  MessageSquare,
-  CreditCard,
-  Database
+  AlertCircle
 } from 'lucide-react';
+import { Icon, type IconName } from './ui/Icon';
 import { supabase } from '../lib/supabase/client';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -43,7 +24,6 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
-import { AlertCircle } from 'lucide-react';
 
 import { UserRole, Staff as StaffType, PermissionKey } from '../types';
 import { getFilteredNavItems } from '../config/navigation';
@@ -193,18 +173,18 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
   const canViewBilling = hasPermission('settings.billing');
   const canViewNotifications = hasPermission('settings.notifications');
 
-  const settingsSubTabs = [
-    { id: 'profile', label: t('settings_page.tabs.profile'), icon: Store, visible: true },
-    { id: 'tax', label: t('settings_page.tabs.tax'), icon: FileText, visible: canEdit },
-    { id: 'branches', label: t('settings_page.tabs.branches'), icon: MapPin, visible: hasPermission('branches.manage') },
-    { id: 'appearance', label: t('settings_page.tabs.appearance'), icon: Palette, visible: true },
-    { id: 'invoice', label: t('settings_page.tabs.invoice'), icon: FileText, visible: true },
-    { id: 'printer', label: t('settings_page.tabs.printer'), icon: Printer, visible: true },
-    { id: 'notifications', label: t('settings_page.tabs.notifications'), icon: Bell, visible: canViewNotifications },
-    { id: 'whatsapp', label: t('settings_page.tabs.whatsapp'), icon: MessageSquare, visible: canViewWhatsApp },
-    { id: 'staff', label: t('settings_page.tabs.staff'), icon: Shield, visible: hasPermission('staff.manage') },
-    { id: 'billing', label: t('settings_page.tabs.billing'), icon: CreditCard, visible: canViewBilling },
-    { id: 'data', label: t('settings_page.tabs.data'), icon: Database, visible: currentStaff?.role === 'owner' || currentStaff?.role === 'super_admin' },
+  const settingsSubTabs: Array<{ id: string; label: string; icon: IconName; visible: boolean }> = [
+    { id: 'profile', label: t('settings_page.tabs.profile'), icon: 'store', visible: true },
+    { id: 'tax', label: t('settings_page.tabs.tax'), icon: 'file-text', visible: canEdit },
+    { id: 'branches', label: t('settings_page.tabs.branches'), icon: 'map-pin', visible: hasPermission('branches.manage') },
+    { id: 'appearance', label: t('settings_page.tabs.appearance'), icon: 'palette', visible: true },
+    { id: 'invoice', label: t('settings_page.tabs.invoice'), icon: 'file-text', visible: true },
+    { id: 'printer', label: t('settings_page.tabs.printer'), icon: 'printer', visible: true },
+    { id: 'notifications', label: t('settings_page.tabs.notifications'), icon: 'bell', visible: canViewNotifications },
+    { id: 'whatsapp', label: t('settings_page.tabs.whatsapp'), icon: 'message-square', visible: canViewWhatsApp },
+    { id: 'staff', label: t('settings_page.tabs.staff'), icon: 'shield', visible: hasPermission('staff.manage') },
+    { id: 'billing', label: t('settings_page.tabs.billing'), icon: 'credit-card', visible: canViewBilling },
+    { id: 'data', label: t('settings_page.tabs.data'), icon: 'database', visible: currentStaff?.role === 'owner' || currentStaff?.role === 'super_admin' },
   ].filter(t => t.visible);
 
   // Stable identities for the guided tour, so its internal memoization holds
@@ -428,7 +408,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
                   >
                     {({ isActive }) => (
                       <>
-                        <item.icon size={20} className={cn("shrink-0", !isActive && "group-hover:scale-110 transition-transform")} />
+                        <Icon name={item.icon} className={cn("shrink-0", !isActive && "group-hover:scale-110 transition-transform")} />
                         {(!isCollapsed || isMobileMenuOpen) && <span className={cn("truncate flex-grow", isRtl ? "text-right" : "text-left")}>{item.label}</span>}
                         {isSettings && (!isCollapsed || isMobileMenuOpen) && (
                           isRtl ? (
@@ -475,7 +455,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
                                 : "text-content-muted hover:bg-surface-muted hover:text-content"
                             )}
                           >
-                            <subTab.icon size={15} className="shrink-0" />
+                            <Icon name={subTab.icon} size={15} className="shrink-0" />
                             <span className="truncate">{subTab.label}</span>
                           </NavLink>
                         );
@@ -655,7 +635,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
                       className="bg-surface p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-2xl hover:shadow-brand/10 hover:-translate-y-1 active:scale-95 active:translate-y-0 active:shadow-sm transition-all duration-300 flex flex-col items-center justify-center gap-3 sm:gap-4 lg:gap-5 group border border-border"
                     >
                       <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-xl sm:rounded-2xl bg-brand/5 flex items-center justify-center text-brand transition-transform duration-300 group-hover:scale-110">
-                        <item.icon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10" strokeWidth={1.5} />
+                        <Icon name={item.icon} className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10" strokeWidth={1.5} />
                       </div>
                       <span className="text-sm sm:text-base lg:text-xl font-bold text-content text-center">{item.label}</span>
                     </button>

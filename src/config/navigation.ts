@@ -1,16 +1,4 @@
-import { 
-  Home, 
-  Monitor, 
-  UserCircle, 
-  ShoppingBag, 
-  Package, 
-  Briefcase, 
-  BarChart3, 
-  Settings, 
-  LayoutDashboard, 
-  Users,
-  LucideIcon 
-} from 'lucide-react';
+import { type IconName } from '../components/ui/Icon';
 import { UserRole } from '../types/supabase';
 
 export interface NavItemConfig {
@@ -19,7 +7,7 @@ export interface NavItemConfig {
   labelKey: string;
   /** Optional non-localized fallback; nav labels are resolved from `labelKey` at the render site. */
   defaultLabel?: string;
-  icon: LucideIcon;
+  icon: IconName;
   allowedRoles: Array<UserRole | 'tenant_admin'>;
   permission?: string;
   permissions?: string[];
@@ -50,7 +38,7 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
     id: 'saas_dashboard',
     to: '/admin/dashboard',
     labelKey: 'saas.cloud_dashboard',
-    icon: LayoutDashboard,
+    icon: 'layout-dashboard',
     allowedRoles: ['super_admin', 'support_tech', 'billing_admin'],
     group: 'saas'
   },
@@ -58,7 +46,7 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
     id: 'saas_subscribers',
     to: '/admin/tailors',
     labelKey: 'saas.menu_tenants',
-    icon: Users,
+    icon: 'users',
     allowedRoles: ['super_admin', 'support_tech'],
     group: 'saas'
   },
@@ -70,7 +58,7 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
     id: 'dashboard',
     to: '/dashboard',
     labelKey: 'common.dashboard',
-    icon: Home,
+    icon: 'home',
     allowedRoles: ['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'branch_manager'],
     permission: 'dashboard.view',
     group: 'tenant'
@@ -79,7 +67,7 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
     id: 'sales',
     to: '/sales',
     labelKey: 'common.sales',
-    icon: Monitor,
+    icon: 'monitor',
     allowedRoles: ['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'cashier', 'branch_manager'],
     permission: 'sales.view',
     group: 'tenant'
@@ -88,7 +76,7 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
     id: 'orders',
     to: '/orders',
     labelKey: 'common.orders',
-    icon: ShoppingBag,
+    icon: 'shopping-bag',
     allowedRoles: ['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'cashier', 'tailor', 'branch_manager'],
     permission: 'orders.view',
     group: 'tenant'
@@ -97,7 +85,7 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
     id: 'customers',
     to: '/customers',
     labelKey: 'common.customers',
-    icon: UserCircle,
+    icon: 'user-circle',
     allowedRoles: ['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'cashier', 'branch_manager'],
     permission: 'customers.view',
     group: 'tenant'
@@ -106,7 +94,7 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
     id: 'inventory',
     to: '/inventory',
     labelKey: 'common.inventory',
-    icon: Package,
+    icon: 'package',
     allowedRoles: ['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'warehouse_manager', 'branch_manager'],
     permission: 'inventory.view',
     group: 'tenant'
@@ -115,7 +103,7 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
     id: 'suppliers',
     to: '/suppliers',
     labelKey: 'common.suppliers',
-    icon: Briefcase,
+    icon: 'briefcase',
     allowedRoles: ['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'accountant'],
     permission: 'suppliers.manage',
     group: 'tenant'
@@ -124,7 +112,7 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
     id: 'reports',
     to: '/reports',
     labelKey: 'common.reports',
-    icon: BarChart3,
+    icon: 'bar-chart-3',
     allowedRoles: ['super_admin', 'tenant_admin', 'owner', 'admin', 'manager', 'accountant'],
     permission: 'reports.view',
     group: 'tenant'
@@ -133,7 +121,7 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
     id: 'settings',
     to: '/settings',
     labelKey: 'common.settings',
-    icon: Settings,
+    icon: 'settings',
     allowedRoles: ['super_admin', 'tenant_admin', 'owner', 'admin'],
     permission: 'settings.view',
     group: 'tenant'

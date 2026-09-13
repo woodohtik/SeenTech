@@ -17,10 +17,7 @@ import {
   ExternalLink,
   FileSpreadsheet,
   Store,
-  Scissors,
   Calendar,
-  Layers,
-  BarChart3,
   ChevronRight,
   ChevronDown
 } from 'lucide-react';
@@ -1104,23 +1101,23 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
 
   const gridItems = [
     { 
-      title: t('dashboard.grid.tailoring', 'خياطة وتفصيل'), 
-      detail: t('dashboard.grid.tailoring_desc', '{{count}} طلب قيد التنفيذ', { count: activeOrdersCount }), 
-      icon: Scissors, 
+      title: t('dashboard.grid.tailoring', 'خياطة وتفصيل'),
+      detail: t('dashboard.grid.tailoring_desc', '{{count}} طلب قيد التنفيذ', { count: activeOrdersCount }),
+      icon: 'scissors' as const,
       color: 'bg-brand',
       onClick: () => navigate('/orders?filter=tailoring') 
     },
     { 
       title: t('dashboard.grid.measurements', 'مواعيد القياس'), 
-      detail: t('dashboard.grid.measurements_desc', '{{count}} مواعيد اليوم', { count: measurementsCount }), 
-      icon: Calendar, 
+      detail: t('dashboard.grid.measurements_desc', '{{count}} مواعيد اليوم', { count: measurementsCount }),
+      icon: 'calendar' as const,
       color: 'bg-info',
       onClick: () => navigate('/orders?filter=measurements')
     },
     { 
       title: t('dashboard.grid.inventory', 'إدارة المخزون'), 
-      detail: t('dashboard.grid.inventory_desc', '{{count}} مواد ناقصة', { count: stats.lowStock }), 
-      icon: Layers, 
+      detail: t('dashboard.grid.inventory_desc', '{{count}} مواد ناقصة', { count: stats.lowStock }),
+      icon: 'layers' as const,
       color: 'bg-warning',
       onClick: () => navigate('/inventory')
     },
@@ -1131,8 +1128,8 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
           <span>{t('dashboard.income_label', 'الدخل')}:</span>
           <PriceDisplay amount={stats.revenue} />
         </span>
-      ) : t('dashboard.grid.finance_desc_empty', 'مراجعة أداء الشهر'), 
-      icon: BarChart3, 
+      ) : t('dashboard.grid.finance_desc_empty', 'مراجعة أداء الشهر'),
+      icon: 'bar-chart-3' as const,
       color: 'bg-success',
       onClick: () => navigate('/reports')
     }

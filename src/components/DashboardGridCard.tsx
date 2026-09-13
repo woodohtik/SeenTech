@@ -1,13 +1,13 @@
 import React from 'react';
 import { cn } from '../lib/utils';
-import { LucideIcon } from 'lucide-react';
+import { Icon, type IconName } from './ui/Icon';
 import { useTranslation } from 'react-i18next';
 import { isRtlLang } from '../lib/direction';
 
 interface DashboardGridCardProps {
   title: string;
   detail: string | React.ReactNode;
-  icon: LucideIcon;
+  icon: IconName;
   color: string; // Tailwind class for icon color
   isActive?: boolean;
   onClick?: () => void;
@@ -16,7 +16,7 @@ interface DashboardGridCardProps {
 export default function DashboardGridCard({
   title,
   detail,
-  icon: Icon,
+  icon,
   color,
   isActive = true,
   onClick
@@ -39,7 +39,7 @@ export default function DashboardGridCard({
     >
       <div className="flex items-center justify-between mb-3 sm:mb-4 w-full">
         <div className={cn(color, "p-3 sm:p-4 rounded-xl sm:rounded-2xl text-white shadow-lg shadow-current/20 group-hover:scale-110 transition-transform")}>
-          <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
+          <Icon name={icon} className="w-5 h-5 sm:w-6 sm:h-6" />
         </div>
         {isActive && (
           <span className="text-[10px] font-black px-2 py-1 rounded-lg bg-success/10 text-success">
