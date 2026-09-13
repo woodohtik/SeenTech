@@ -34,6 +34,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
+import { refreshCustomersCache, refreshInventoryCache, refreshBranchStockCache } from '../lib/offline/cacheSync';
 import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
 import { Combobox, Transition, Dialog } from '@headlessui/react';
 import { Customer, InventoryItem, OrderItem, Order, PaymentMethod, OrderStatus } from '../types';
@@ -430,6 +431,13 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
           });
         }
         setBranchStock(stockMap);
+
+        // Warm the offline read cache in the background (Phase 2 of
+        // seen-offline-sync-architecture-task.md) -- non-blocking, POS
+        // stays fully usable if this fails or is still running.
+        refreshCustomersCache(tenantId, mapCustomer).catch(() => {});
+        refreshInventoryCache(tenantId, mapInventoryItem).catch(() => {});
+        refreshBranchStockCache(tenantId).catch(() => {});
 
         const { data: tenantData } = await supabase
           .from('tenants')

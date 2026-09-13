@@ -17,6 +17,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { Icon } from './ui/Icon';
+import IOSInstallBanner from './IOSInstallBanner';
 import { supabase } from '../lib/supabase/client';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -253,6 +254,9 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
           </motion.div>
         )}
       </AnimatePresence>
+      <div className={cn("fixed left-0 right-0 z-[190]", impersonationTenantId ? "top-12" : "top-0")}>
+        <IOSInstallBanner />
+      </div>
       {/* Mobile Drawer Overlay */}
       {isMobileMenuOpen && (
         <div 
