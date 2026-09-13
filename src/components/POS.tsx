@@ -47,8 +47,6 @@ import { useStaff } from '../contexts/StaffContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../contexts/ConfirmContext';
-import { logEmployeeAction } from '../services/employeeAuditService';
-import { adjustStock } from '../services/inventoryService';
 import { notifyNewOrderForStaff } from '../utils/orderNotify';
 import { generateZatcaQR } from '../lib/zatca';
 import VisualMeasurements from './VisualMeasurements';
@@ -964,183 +962,94 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       
       qrCodeBase64 = generateZatcaQR(sellerName, trn, timestamp, totalAmount.toFixed(2), taxAmount.toFixed(2));
 
-      const isUuid = (val: string | undefined | null) => 
+      const isUuid = (val: string | undefined | null) =>
         val ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val) : false;
 
-      const orderData = {
-        order_number: orderNumber,
-        customer_id: (selectedCustomer?.id && isUuid(selectedCustomer.id)) ? selectedCustomer.id : null,
-        customer_name: selectedCustomer?.name || 'عميل نقدي',
-        tenant_id: tenantId,
-        shift_id: (shiftId && isUuid(shiftId)) ? shiftId : null,
-        branch_id: (currentStaff?.branchId && isUuid(currentStaff.branchId)) ? currentStaff.branchId : null,
-        total_amount: Number(totalAmount) >= 0 ? Number(totalAmount) : 0,
-        paid_amount: Number(paidAmount) >= 0 ? Number(paidAmount) : 0,
-        discount_amount: Number(calculatedDiscountAmount) >= 0 ? Number(calculatedDiscountAmount) : 0,
-        payment_method: paymentMethod,
-        status: orderStatus,
-        order_date: timestamp,
-        delivery_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-        created_by: (currentStaff?.id && isUuid(currentStaff.id)) ? currentStaff.id : null,
-        tax_amount: Number(taxAmount) >= 0 ? Number(taxAmount) : 0,
-        tax_rate: 0.15,
-        notes: encodeOrderB2BNotes(isB2B ? b2bCompanyName : '', isB2B ? b2bTRN : ''),
-        qr_code: qrCodeBase64,
-        created_at: timestamp,
-        // For the supabase interceptor (Orders.tsx compat)
-        items: cart,
-        history: [{
+      const customerId = (selectedCustomer?.id && isUuid(selectedCustomer.id)) ? selectedCustomer.id : null;
+      const customerName = selectedCustomer?.name || 'عميل نقدي';
+      const invoiceNumber = `INV-${orderNumber}`;
+
+      /* --------------------------------------------------------------------
+         Was: 6 separate writes with no shared transaction (orders ->
+         order_items -> order_history -> tax_invoices -> audit log -> a
+         per-item stock deduction loop whose failures were only
+         console.error'd). Any interruption mid-sequence left an order with
+         no items, no invoice, or silently un-deducted stock.
+
+         One atomic, idempotent RPC instead (seen-offline-sync-architecture
+         -task.md Phase 0) -- operationId doubles as the new order's id, so
+         a retried submission after a dropped connection can never create
+         the sale twice, and any failure (including insufficient stock)
+         rolls back the whole sale instead of leaving it half-written.
+         -------------------------------------------------------------------- */
+      const operationId = globalThis.crypto.randomUUID();
+
+      const { data: saleResult, error: saleError } = await supabase.rpc('create_pos_sale', {
+        p_operation_id: operationId,
+        p_order: {
+          branch_id: (currentStaff?.branchId && isUuid(currentStaff.branchId)) ? currentStaff.branchId : null,
+          shift_id: (shiftId && isUuid(shiftId)) ? shiftId : null,
+          customer_id: customerId,
+          customer_name: customerName,
+          order_number: orderNumber,
           status: orderStatus,
-          updatedAt: timestamp,
-          updatedBy: currentStaff?.name || 'System',
-          updatedByUid: currentStaff?.id || currentAuthUser?.id,
-          notes: 'إنشاء الطلب عبر نقطة البيع'
-        }]
-      };
-
-      const { data: newOrder, error: orderError } = await supabase
-        .from('orders')
-        .insert(orderData)
-        .select()
-        .single();
-
-      if (orderError) throw orderError;
-
-      void notifyNewOrderForStaff(newOrder.id);
-
-      // Insert into order_items
-      const VALID_INVENTORY_UNITS = ['meter', 'yard', 'roll', 'bolt', 'piece', 'spool', 'box'];
-      const VALID_CLOSURE_TYPES = ['zipper', 'buttons'];
-      const VALID_CLOSURE_VISIBILITIES = ['hidden', 'visible'];
-      const VALID_COLLAR_PADDINGS = ['hard', 'soft'];
-
-      const orderItemsData = cart.map(item => ({
-        tenant_id: tenantId,
-        order_id: newOrder.id,
-        type: item.type,
-        status: item.type === 'custom' ? orderStatus : null,
-        item_id: (item.type === 'ready_made' && item.itemId && isUuid(item.itemId)) ? item.itemId : null,
-        name: item.name || item.garmentType || 'منتج مخصص',
-        garment_type: item.garmentType || null,
-        fabric: item.fabric || null,
-        fabric_id: (item.type === 'custom' && item.fabricId && isUuid(item.fabricId)) ? item.fabricId : null,
-        quantity: Number(item.quantity) > 0 ? Number(item.quantity) : 1,
-        selected_unit: (item.selectedUnit && VALID_INVENTORY_UNITS.includes(item.selectedUnit)) ? item.selectedUnit : null,
-        consumed_meters: item.consumedMeters ? Number(item.consumedMeters) : null,
-        price: Number(item.price) >= 0 ? Number(item.price) : 0,
-        closure_type: (item.closureType && VALID_CLOSURE_TYPES.includes(item.closureType)) ? item.closureType : null,
-        closure_visibility: (item.closureVisibility && VALID_CLOSURE_VISIBILITIES.includes(item.closureVisibility)) ? item.closureVisibility : null,
-        collar_type: item.collarType || null,
-        cuff_type: item.cuffType || null,
-        pocket_type: item.pocketType || null,
-        chest_style: item.chestStyle || null,
-        collar_padding: (item.collarPadding && VALID_COLLAR_PADDINGS.includes(item.collarPadding)) ? item.collarPadding : null,
-        additions: item.additions || null,
-        embroidery: item.embroidery || null,
-        measurements: (item as any).measurements || {}
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItemsData);
-
-      if (itemsError) throw itemsError;
-
-      // Insert into order_history
-      await supabase.from('order_history').insert({
-        tenant_id: tenantId,
-        order_id: newOrder.id,
-        status: orderStatus,
-        notes: 'إنشاء الطلب عبر نقطة البيع',
-        updated_by_staff: (currentStaff?.id && isUuid(currentStaff.id)) ? currentStaff.id : null,
-        updated_by_name: currentStaff?.name || 'System',
-        updated_at: timestamp
-      });
-
-      // Generate Invoice entry
-      const { error: invoiceError } = await supabase
-        .from('tax_invoices')
-        .insert({
-          invoice_number: `INV-${orderNumber}`,
-          order_id: newOrder.id,
-          tenant_id: tenantId,
-          customer_id: orderData.customer_id,
-          customer_name: orderData.customer_name,
-          subtotal: Number(subTotalAmount) >= 0 ? Number(subTotalAmount) : 0,
+          payment_method: paymentMethod,
+          total_amount: Number(totalAmount) >= 0 ? Number(totalAmount) : 0,
+          paid_amount: Number(paidAmount) >= 0 ? Number(paidAmount) : 0,
           tax_rate: 0.15,
           tax_amount: Number(taxAmount) >= 0 ? Number(taxAmount) : 0,
           discount_amount: Number(calculatedDiscountAmount) >= 0 ? Number(calculatedDiscountAmount) : 0,
-          paid_amount: Number(paidAmount) >= 0 ? Number(paidAmount) : 0,
-          total_amount: Number(totalAmount) >= 0 ? Number(totalAmount) : 0,
+          order_date: timestamp,
+          delivery_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          qr_code: qrCodeBase64,
+          notes: encodeOrderB2BNotes(isB2B ? b2bCompanyName : '', isB2B ? b2bTRN : ''),
+        },
+        p_items: cart.map(item => ({
+          type: item.type,
+          status: item.type === 'custom' ? orderStatus : null,
+          item_id: (item.type === 'ready_made' && item.itemId && isUuid(item.itemId)) ? item.itemId : null,
+          name: item.name || item.garmentType || 'منتج مخصص',
+          garment_type: item.garmentType || null,
+          fabric: item.fabric || null,
+          fabric_id: (item.type === 'custom' && item.fabricId) ? item.fabricId : null,
+          quantity: Number(item.quantity) > 0 ? Number(item.quantity) : 1,
+          selected_unit: item.selectedUnit || null,
+          consumed_meters: item.consumedMeters ? Number(item.consumedMeters) : null,
+          price: Number(item.price) >= 0 ? Number(item.price) : 0,
+          closure_type: item.closureType || null,
+          closure_visibility: item.closureVisibility || null,
+          collar_type: item.collarType || null,
+          cuff_type: item.cuffType || null,
+          pocket_type: item.pocketType || null,
+          chest_style: item.chestStyle || null,
+          collar_padding: item.collarPadding || null,
+          additions: item.additions || null,
+          embroidery: item.embroidery || null,
+          measurements: (item as any).measurements || {}
+        })),
+        p_invoice: {
+          invoice_number: invoiceNumber,
+          subtotal: Number(subTotalAmount) >= 0 ? Number(subTotalAmount) : 0,
           vat_number: b2bTRN || null,
-          qr_payload: qrCodeBase64,
-          issued_at: timestamp,
-          created_at: timestamp,
-          status: 'issued',
           notes: encodeInvoiceExtendedNotes({
             invoiceType: invoiceType,
             isB2B: invoiceType === 'standard_b2b',
             b2bCompanyName: isB2B ? b2bCompanyName : undefined,
-            items: cart.map(item => ({ 
-              name: item.name || item.garmentType || 'منتج مخصص', 
-              quantity: Number(item.quantity) > 0 ? Number(item.quantity) : 1, 
+            items: cart.map(item => ({
+              name: item.name || item.garmentType || 'منتج مخصص',
+              quantity: Number(item.quantity) > 0 ? Number(item.quantity) : 1,
               price: Number(item.price) >= 0 ? Number(item.price) : 0,
               type: item.type
             })),
             createdBy: currentStaff?.name || 'System'
           })
-        });
-
-      if (invoiceError) throw invoiceError;
-
-      // Audit Log
-      await logEmployeeAction(
-        tenantId,
-        currentStaff?.id || 'system',
-        currentStaff?.name || 'System',
-        'create_invoice',
-        `تم إنشاء فاتورة جديدة بقيمة ${totalAmount} للعميل ${orderData.customer_name}`
-      );
-
-      // Deduct inventory for ready-made items and reserved fabric
-      for (const item of cart) {
-        if (item.type === 'ready_made' && item.itemId && isUuid(item.itemId)) {
-          // Update branch_inventory
-          const branchId = currentStaff?.branchId || '';
-          if (branchId) {
-            try {
-              await adjustStock({
-                branchId,
-                itemId: item.itemId,
-                quantity: -item.quantity,
-                reason: `بيع في نقطة البيع - فاتورة ${orderNumber}`,
-                type: 'out',
-                staffId: (currentStaff?.id && isUuid(currentStaff.id)) ? currentStaff.id : null,
-                tenantId
-              });
-            } catch (stockError) {
-              console.error('Stock adjustment error:', stockError);
-            }
-          }
-        } else if (item.type === 'custom' && item.fabricId && item.fabricId !== 'custom' && isUuid(item.fabricId) && item.consumedMeters) {
-          const branchId = currentStaff?.branchId || '';
-          if (branchId) {
-            try {
-              await adjustStock({
-                branchId,
-                itemId: item.fabricId,
-                quantity: -item.consumedMeters,
-                reason: `استهلاك قماش تفصيل - فاتورة ${orderNumber}`,
-                type: 'out',
-                staffId: (currentStaff?.id && isUuid(currentStaff.id)) ? currentStaff.id : null,
-                tenantId
-              });
-            } catch (stockError) {
-              console.error('Fabric adjustment error:', stockError);
-            }
-          }
         }
-      }
+      });
+
+      if (saleError) throw saleError;
+
+      const newOrder = { id: saleResult.order_id as string };
+      void notifyNewOrderForStaff(newOrder.id);
 
       setCart([]);
       setSelectedCustomer(null);
@@ -1149,14 +1058,14 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       setPaidAmount(0);
       setCompletedOrder({
          id: newOrder.id,
-         invoiceNumber: `INV-${orderNumber}`,
+         invoiceNumber,
          invoiceType,
          paymentMethod: paymentMethod,
          total: totalAmount,
          subTotal: subTotalAmount,
          taxAmount: taxAmount,
          discountAmount: calculatedDiscountAmount,
-         customerName: orderData.customer_name,
+         customerName,
          customerPhone: selectedCustomer?.phone,
          customerVat: b2bTRN,
          items: cart.map(item => ({
