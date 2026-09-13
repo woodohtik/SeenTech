@@ -26,6 +26,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import Branding from './Branding';
 import { IconInput } from './ui/IconInput';
 import { Button } from './ui/Button';
+import { SeenWordmark } from './ui/SeenWordmark';
 import { getAuthErrorMessage } from '../utils/authErrorUtils';
 
 type ViewMode = 'login' | 'register' | 'forgot-password' | 'reset-sent';
@@ -618,22 +619,16 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Left Side - Visual: the same workshop photography used on the
-          marketing page (src/components/LandingPage.html), not a generic
-          solid-color panel + centered icon
-          (seen-design-professionalization-task.md Phase 2 #6) -- repeats
-          Seen's actual visual identity instead of an imported template. */}
-      <div
-        className="hidden lg:flex lg:w-1/2 p-12 items-end relative overflow-hidden bg-cover bg-center"
-        style={{ backgroundImage: "url(/assets/men-tailor.jpg)" }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-brand/30" />
+      {/* Left Side - Visual: solid brand color + Seen's own wordmark, not a
+          photo or a generic icon-in-a-box template. */}
+      <div className="hidden lg:flex lg:w-1/2 bg-brand p-12 items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full translate-x-1/2 translate-y-1/2 blur-3xl" />
+        </div>
 
-        <div className="relative z-10 text-white max-w-lg">
-          <div className="inline-flex items-center gap-2 mb-6 text-white/80 font-bold">
-            <Scissors size={22} />
-            <span>{t('login.brand_tagline', 'سِين')}</span>
-          </div>
+        <div className="relative z-10 text-white max-w-lg text-center">
+          <SeenWordmark className="h-16 w-auto mx-auto mb-10" />
           <h1 className="text-4xl font-black mb-4 leading-tight">{t('login.title')}</h1>
           <p className="text-lg text-white/85 font-medium leading-relaxed">
             {t('login.subtitle')}
