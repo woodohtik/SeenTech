@@ -26,7 +26,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import Branding from './Branding';
 import { IconInput } from './ui/IconInput';
 import { Button } from './ui/Button';
-import { SeenWordmark } from './ui/SeenWordmark';
 import { getAuthErrorMessage } from '../utils/authErrorUtils';
 
 type ViewMode = 'login' | 'register' | 'forgot-password' | 'reset-sent';
@@ -628,7 +627,9 @@ export default function Login() {
         </div>
 
         <div className="relative z-10 text-white max-w-lg text-center">
-          <SeenWordmark className="h-16 w-auto mx-auto mb-10" />
+          <div className="inline-block bg-white rounded-[2rem] px-10 py-8 shadow-xl mb-10">
+            <img src="/Logo.svg" alt="سين" className="h-14 w-auto" />
+          </div>
           <h1 className="text-4xl font-black mb-4 leading-tight">{t('login.title')}</h1>
           <p className="text-lg text-white/85 font-medium leading-relaxed">
             {t('login.subtitle')}
