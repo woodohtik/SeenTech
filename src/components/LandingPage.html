@@ -989,43 +989,14 @@ footer{background:#08202f;color:#9fc2da;padding:46px 0 30px}
   </a>
 </div>
 
-<script>
-const langToggle=document.getElementById('langToggle');
-if (langToggle) {
-  langToggle.addEventListener('click', () => {
-    const currentLang = document.documentElement.getAttribute('lang') || 'ar';
-    const nextLang = currentLang === 'ar' ? 'en' : 'ar';
-    const nextDir = nextLang === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.setAttribute('lang', nextLang);
-    document.documentElement.setAttribute('dir', nextDir);
-    localStorage.setItem('landing-lang', nextLang);
-  });
-}
-const savedLang = localStorage.getItem('landing-lang');
-if (savedLang) {
-  document.documentElement.setAttribute('lang', savedLang);
-  document.documentElement.setAttribute('dir', savedLang === 'ar' ? 'rtl' : 'ltr');
-}
-
-const burger=document.getElementById('burger'),nav=document.getElementById('nav');
-burger&&burger.addEventListener('click',()=>{const o=nav.classList.toggle('open');burger.setAttribute('aria-expanded',o)});
-nav&&nav.querySelectorAll('.nav-links a').forEach(a=>a.addEventListener('click',()=>{nav.classList.remove('open');burger.setAttribute('aria-expanded',false)}));
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-  anchor.addEventListener('click', function (e) {
-    e.preventDefault();
-    const targetId = this.getAttribute('href');
-    if (targetId === '#top') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      const targetElement = document.querySelector(targetId);
-      if (targetElement) {
-        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }
-  });
-});
-const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.14});
-document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+<!-- External file, not inline: the page's CSP (script-src 'self', no
+     'unsafe-inline' -- server.ts) applies to this srcDoc iframe too, since
+     srcDoc documents inherit their parent's CSP. An inline <script> block
+     here was silently blocked on every real deployment (reveal-on-scroll,
+     language toggle, mobile nav, and smooth-scroll anchors never ran) even
+     though nothing failed loudly -- moved to a same-origin external file so
+     'self' actually covers it. -->
+<script src="assets/landing-behaviors.js"></script>
 const form=document.getElementById('leadForm');
 form&&form.addEventListener('submit',function(ev){ev.preventDefault();let ok=true;
   const set=(i,bad)=>{i.closest('.field').classList.toggle('invalid',bad);if(bad)ok=false;};

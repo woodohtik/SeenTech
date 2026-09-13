@@ -16,7 +16,7 @@ import {
   X as XIcon,
   AlertCircle
 } from 'lucide-react';
-import { Icon, type IconName } from './ui/Icon';
+import { Icon } from './ui/Icon';
 import { supabase } from '../lib/supabase/client';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -173,18 +173,18 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
   const canViewBilling = hasPermission('settings.billing');
   const canViewNotifications = hasPermission('settings.notifications');
 
-  const settingsSubTabs: Array<{ id: string; label: string; icon: IconName; visible: boolean }> = [
-    { id: 'profile', label: t('settings_page.tabs.profile'), icon: 'store', visible: true },
-    { id: 'tax', label: t('settings_page.tabs.tax'), icon: 'file-text', visible: canEdit },
-    { id: 'branches', label: t('settings_page.tabs.branches'), icon: 'map-pin', visible: hasPermission('branches.manage') },
-    { id: 'appearance', label: t('settings_page.tabs.appearance'), icon: 'palette', visible: true },
-    { id: 'invoice', label: t('settings_page.tabs.invoice'), icon: 'file-text', visible: true },
-    { id: 'printer', label: t('settings_page.tabs.printer'), icon: 'printer', visible: true },
-    { id: 'notifications', label: t('settings_page.tabs.notifications'), icon: 'bell', visible: canViewNotifications },
-    { id: 'whatsapp', label: t('settings_page.tabs.whatsapp'), icon: 'message-square', visible: canViewWhatsApp },
-    { id: 'staff', label: t('settings_page.tabs.staff'), icon: 'shield', visible: hasPermission('staff.manage') },
-    { id: 'billing', label: t('settings_page.tabs.billing'), icon: 'credit-card', visible: canViewBilling },
-    { id: 'data', label: t('settings_page.tabs.data'), icon: 'database', visible: currentStaff?.role === 'owner' || currentStaff?.role === 'super_admin' },
+  const settingsSubTabs = [
+    { id: 'profile', label: t('settings_page.tabs.profile'), icon: 'store' as const, visible: true },
+    { id: 'tax', label: t('settings_page.tabs.tax'), icon: 'file-text' as const, visible: canEdit },
+    { id: 'branches', label: t('settings_page.tabs.branches'), icon: 'map-pin' as const, visible: hasPermission('branches.manage') },
+    { id: 'appearance', label: t('settings_page.tabs.appearance'), icon: 'palette' as const, visible: true },
+    { id: 'invoice', label: t('settings_page.tabs.invoice'), icon: 'file-text' as const, visible: true },
+    { id: 'printer', label: t('settings_page.tabs.printer'), icon: 'printer' as const, visible: true },
+    { id: 'notifications', label: t('settings_page.tabs.notifications'), icon: 'bell' as const, visible: canViewNotifications },
+    { id: 'whatsapp', label: t('settings_page.tabs.whatsapp'), icon: 'message-square' as const, visible: canViewWhatsApp },
+    { id: 'staff', label: t('settings_page.tabs.staff'), icon: 'shield' as const, visible: hasPermission('staff.manage') },
+    { id: 'billing', label: t('settings_page.tabs.billing'), icon: 'credit-card' as const, visible: canViewBilling },
+    { id: 'data', label: t('settings_page.tabs.data'), icon: 'database' as const, visible: currentStaff?.role === 'owner' || currentStaff?.role === 'super_admin' },
   ].filter(t => t.visible);
 
   // Stable identities for the guided tour, so its internal memoization holds

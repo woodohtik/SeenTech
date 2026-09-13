@@ -22,28 +22,13 @@ export default function LandingPage() {
     return () => window.removeEventListener('message', handleMessage);
   }, [navigate]);
 
+  // External file, not an inline block: srcDoc iframes inherit the parent
+  // document's CSP, and script-src has no 'unsafe-inline' (server.ts) --
+  // an inline <script> here would be silently blocked on every real
+  // deployment, same issue fixed for LandingPage.html's own inline script.
   const modifiedHtml = htmlContent.replace(
     '</body>',
-    `<script>
-      document.addEventListener('click', function(e) {
-        const link = e.target.closest('a');
-        if (link) {
-          const href = link.getAttribute('href');
-          if (href && href.startsWith('/')) {
-            e.preventDefault();
-            // NOTE: srcDoc documents report window.location.origin as the
-            // literal string "null" (about:srcdoc quirk in Chromium-based
-            // browsers), which would make postMessage's targetOrigin check
-            // never match the real parent origin and silently drop the
-            // message. '*' is safe here: the payload is just a relative
-            // in-app path (no sensitive data), and the parent-side listener
-            // already verifies event.source is this exact iframe before
-            // acting on it.
-            window.parent.postMessage({ type: 'NAVIGATE', path: href }, '*');
-          }
-        }
-      });
-    </script></body>`
+    `<script src="assets/landing-bridge.js"></script></body>`
   );
 
   return (
