@@ -13,7 +13,6 @@ import {
   User,
   ArrowRight,
   AlertCircle,
-  Loader2,
   Globe,
   Home,
   Terminal,
@@ -26,6 +25,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import Branding from './Branding';
 import { IconInput } from './ui/IconInput';
+import { Button } from './ui/Button';
 import { getAuthErrorMessage } from '../utils/authErrorUtils';
 
 type ViewMode = 'login' | 'register' | 'forgot-password' | 'reset-sent';
@@ -618,23 +618,24 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Left Side - Visual */}
-      <div className="hidden lg:flex lg:w-1/2 bg-brand p-12 items-center justify-center relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-96 h-96 bg-surface rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-brand/40 rounded-full translate-x-1/2 translate-y-1/2 blur-3xl" />
-        </div>
+      {/* Left Side - Visual: the same workshop photography used on the
+          marketing page (src/components/LandingPage.html), not a generic
+          solid-color panel + centered icon
+          (seen-design-professionalization-task.md Phase 2 #6) -- repeats
+          Seen's actual visual identity instead of an imported template. */}
+      <div
+        className="hidden lg:flex lg:w-1/2 p-12 items-end relative overflow-hidden bg-cover bg-center"
+        style={{ backgroundImage: "url(/assets/men-tailor.jpg)" }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-brand/30" />
 
-        <div className="relative z-10 text-white max-w-lg text-center">
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="inline-block p-6 bg-white/10 backdrop-blur-xl rounded-[2.5rem] mb-8"
-          >
-            <Scissors size={80} className="text-white" />
-          </motion.div>
-          <h1 className="text-5xl font-black mb-6 leading-tight">{t('login.title')}</h1>
-          <p className="text-xl text-white/80 font-medium leading-relaxed">
+        <div className="relative z-10 text-white max-w-lg">
+          <div className="inline-flex items-center gap-2 mb-6 text-white/80 font-bold">
+            <Scissors size={22} />
+            <span>{t('login.brand_tagline', 'سِين')}</span>
+          </div>
+          <h1 className="text-4xl font-black mb-4 leading-tight">{t('login.title')}</h1>
+          <p className="text-lg text-white/85 font-medium leading-relaxed">
             {t('login.subtitle')}
           </p>
         </div>
@@ -754,14 +755,9 @@ export default function Login() {
                   <label htmlFor="remember" className="text-sm font-bold text-content-muted cursor-pointer">{t('login.remember_me')}</label>
                 </div>
 
-                <button
-                  disabled={loading}
-                  type="submit"
-                  className="w-full bg-brand text-white py-4 rounded-2xl font-bold text-lg hover:bg-brand/90 transition-all shadow-xl shadow-brand/10 flex items-center justify-center gap-2 disabled:opacity-70"
-                >
-                  {loading ? <Loader2 className="animate-spin" /> : null}
-                  <span>{t('login.login_button')}</span>
-                </button>
+                <Button type="submit" loading={loading} className="w-full h-14 text-lg">
+                  {t('login.login_button')}
+                </Button>
 
                 <div className="relative py-4">
                   <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border"></div></div>
@@ -885,14 +881,10 @@ export default function Login() {
                   </>
                 )}
 
-                <button
-                  disabled={loading}
-                  type="submit"
-                  className="w-full bg-brand text-white py-4 rounded-2xl font-bold text-lg hover:bg-brand/90 transition-all shadow-xl shadow-brand/10 flex items-center justify-center gap-2 disabled:opacity-70 mt-4"
-                >
-                  {loading ? <Loader2 className="animate-spin" /> : <Send size={20} />}
-                  <span>{t('login.register_button')}</span>
-                </button>
+                <Button type="submit" loading={loading} className="w-full h-14 text-lg mt-4">
+                  {!loading && <Send size={20} />}
+                  {t('login.register_button')}
+                </Button>
 
                 <p className="text-center text-content-muted font-medium">
                   {t('login.have_account')}{' '}
@@ -950,22 +942,18 @@ export default function Login() {
                   wrapperClassName="h-11"
                 />
 
-                <button
-                  disabled={loading}
-                  type="submit"
-                  className="w-full bg-brand text-white py-4 rounded-2xl font-bold text-lg hover:bg-brand/90 transition-all shadow-xl shadow-brand/10 flex items-center justify-center gap-2 disabled:opacity-70"
-                >
-                  {loading ? <Loader2 className="animate-spin" /> : null}
-                  <span>{t('login.send_reset_link')}</span>
-                </button>
+                <Button type="submit" loading={loading} className="w-full h-14 text-lg">
+                  {t('login.send_reset_link')}
+                </Button>
 
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() => setView('login')}
-                  className="w-full text-content-muted font-bold hover:text-brand transition-colors"
+                  className="w-full"
                 >
                   {t('login.cancel_and_back')}
-                </button>
+                </Button>
               </motion.form>
             )}
 
@@ -979,13 +967,9 @@ export default function Login() {
                 <div className="inline-flex items-center justify-center w-20 h-20 bg-success/10 text-success rounded-full">
                   <CheckCircle size={40} />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setView('login')}
-                  className="w-full bg-brand text-white py-4 rounded-2xl font-bold text-lg hover:bg-brand/90 transition-all shadow-xl shadow-brand/10 flex items-center justify-center gap-2"
-                >
+                <Button type="button" onClick={() => setView('login')} className="w-full h-14 text-lg">
                   {t('login.login_button')}
-                </button>
+                </Button>
               </motion.div>
             )}
           </AnimatePresence>

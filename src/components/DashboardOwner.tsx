@@ -1899,14 +1899,13 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={chartData} margin={{ top: 15, right: 10, left: 10, bottom: 5 }}>
                     <defs>
+                      {/* The revenue area's fade-to-transparent is this screen's one deliberate
+                          gradient (seen-design-professionalization-task.md Phase 2 #5); the
+                          orders bar below uses a flat fill instead of a second gradient. */}
                       <linearGradient id="colorRevenueGlow" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="var(--brand)" stopOpacity={0.4}/>
                         <stop offset="50%" stopColor="var(--brand)" stopOpacity={0.12}/>
                         <stop offset="100%" stopColor="var(--brand)" stopOpacity={0.0}/>
-                      </linearGradient>
-                      <linearGradient id="colorOrdersBar" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--info)" stopOpacity={0.8}/>
-                        <stop offset="100%" stopColor="var(--info)" stopOpacity={0.3}/>
                       </linearGradient>
                     </defs>
                     
@@ -2025,9 +2024,10 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                       <Bar 
                         yAxisId="right"
                         name={t('dashboard.orders', 'الطلبات')}
-                        dataKey="ordersCount" 
-                        fill="url(#colorOrdersBar)" 
-                        radius={[6, 6, 0, 0]} 
+                        dataKey="ordersCount"
+                        fill="var(--info)"
+                        fillOpacity={0.75}
+                        radius={[6, 6, 0, 0]}
                         barSize={18}
                       />
                     )}

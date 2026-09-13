@@ -10,8 +10,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ink:#0E2A42; --ink-2:#16395a; --brand:#34BBED; --brand-d:#1192c4; --sky-soft:#e7f7fe;
-  --cta:#0BA06B; --cta-press:#08855a;
+  /* --brand/--cta used to be two different, unrelated colors (a lighter
+     landing-page-only blue #34BBED, and a green #0BA06B for the primary
+     CTA) neither of which matched the real app's --primary (#1C8FFF,
+     src/index.css:36) -- three competing "primary" colors on one page.
+     Both now resolve to the app's actual primary blue
+     (seen-design-professionalization-task.md Phase 1 #1). */
+  --ink:#0E2A42; --ink-2:#16395a; --brand:#1C8FFF; --brand-d:#0A6FD1; --sky-soft:#e7f7fe;
+  --cta:#1C8FFF; --cta-press:#0A6FD1;
   --surface:#fff; --surface-2:#f5f8fb; --gray:#5b6b7b; --line:#e3eaf1; --line-2:#cfdae6;
   --r:16px; --r-lg:24px; --shadow:0 10px 30px rgba(14,42,66,.10); --shadow-lg:0 24px 60px rgba(14,42,66,.16);
   --ease:cubic-bezier(.22,.61,.36,1); --maxw:1180px; --fs-h2:clamp(1.7rem,4vw,2.7rem);
@@ -40,8 +46,8 @@ a{color:inherit;text-decoration:none} img{max-width:100%;display:block}
 .sec-head h2{font-size:var(--fs-h2);margin-bottom:14px}.sec-head p{font-size:clamp(16px,2vw,18.5px);color:var(--gray)}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;font-family:'Tajawal';font-weight:700;font-size:1.05rem;padding:15px 28px;border-radius:999px;border:0;cursor:pointer;transition:transform .25s var(--ease),box-shadow .25s var(--ease),background .2s}
-.btn-cta{background:var(--cta);color:#fff;box-shadow:0 10px 24px rgba(11,160,107,.34)}
-.btn-cta:hover{background:var(--cta-press);transform:translateY(-2px);box-shadow:0 16px 32px rgba(11,160,107,.42)}
+.btn-cta{background:var(--cta);color:#fff;box-shadow:0 10px 24px rgba(28,143,255,.34)}
+.btn-cta:hover{background:var(--cta-press);transform:translateY(-2px);box-shadow:0 16px 32px rgba(10,111,209,.42)}
 .btn-ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
 .btn-ghost.on-dark{color:#fff;border-color:rgba(255,255,255,.45)}
 .btn-ghost.on-dark:hover{border-color:#fff;background:rgba(255,255,255,.10)}
@@ -86,14 +92,29 @@ header{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.88);backdro
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:24px;transition:transform .3s var(--ease),box-shadow .3s var(--ease),border-color .3s}
 .card:hover{transform:translateY(-5px);box-shadow:var(--shadow);border-color:#cfe7f2}
 .card .ic{width:48px;height:48px;border-radius:13px;display:grid;place-items:center;font-size:1.4rem;margin-bottom:14px}
-.ic.warn{background:#fff1ec;color:#e2613b}.ic.sky{background:var(--sky-soft);color:var(--brand-d)}
+.ic.sky{background:var(--sky-soft);color:var(--brand-d)}
 .card h3{font-size:1.1rem;margin-bottom:7px}.card p{font-size:.95rem;color:var(--gray)}
+
+/* PROBLEM section: deliberately a different visual grammar from .card/.ic
+   above (large numerals, no icon boxes, a plain divided list) instead of
+   the exact same icon-card template reused with only the icon/color
+   swapped for SOLUTION below it
+   (seen-design-professionalization-task.md Phase 2 #4) -- so a reader
+   feels a real shift from "stark problem" to "organized solution" instead
+   of the same box repainted. */
+.problem-list{max-width:800px;margin:0 auto;border-top:1px solid var(--line)}
+.problem-item{display:flex;align-items:flex-start;gap:26px;padding:26px 4px;border-bottom:1px solid var(--line)}
+.problem-item .pnum{flex:none;width:64px;font-family:'Tajawal';font-weight:800;font-size:2.1rem;color:var(--line-2);line-height:1}
+.problem-item .ptext h3{font-size:1.15rem;margin-bottom:5px}
+.problem-item .ptext p{font-size:.95rem;color:var(--gray)}
 
 .dash-sec{background:var(--surface-2)}
 .dash-shell{max-width:980px;margin:0 auto;padding:0 4px}
 
-/* MID CTA */
-.midcta{background:linear-gradient(135deg,var(--sky-soft),#fff);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+/* MID CTA -- flat surface instead of a repeated decorative gradient; the
+   hero's gradient text is this page's one deliberate gradient touch
+   (seen-design-professionalization-task.md Phase 1 #2). */
+.midcta{background:var(--surface-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .midcta .inner{text-align:center;padding:clamp(46px,7vw,72px) 0}
 .midcta h2{font-size:var(--fs-h2);margin-bottom:20px}
 
@@ -115,7 +136,7 @@ header{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.88);backdro
 /* STEPS — مرتبة تحت بعض */
 .steps{display:flex;flex-direction:column;gap:18px;max-width:760px;margin:0 auto}
 .step{display:flex;gap:18px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px 24px}
-.step .sn{width:54px;height:54px;flex:none;border-radius:50%;background:#fff;border:2px solid var(--brand);color:var(--ink);font-family:'Tajawal';font-weight:800;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(52,187,237,.25)}
+.step .sn{width:54px;height:54px;flex:none;border-radius:50%;background:#fff;border:2px solid var(--brand);color:var(--ink);font-family:'Tajawal';font-weight:800;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(28,143,255,.25)}
 .step h3{font-size:19px;font-weight:700;margin-bottom:6px}.step p{color:var(--gray);font-size:15px}
 
 .trust{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:8px}
@@ -134,7 +155,6 @@ header{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.88);backdro
 .q .a{padding:0 22px 20px;color:var(--gray)}
 
 .cta-band{background:var(--ink);color:#fff;border-radius:var(--r-lg);padding:clamp(34px,5vw,60px);position:relative;overflow:hidden}
-.cta-band::before{content:"";position:absolute;inset-block-start:-40%;inset-inline-end:-10%;width:480px;height:480px;background:radial-gradient(circle,rgba(52,187,237,.22),transparent 65%)}
 .cta-grid{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
 .cta-grid h2{font-size:var(--fs-h2);margin-bottom:14px}.cta-grid p{color:#bcd3e4;font-size:1.1rem}
 .form{background:#fff;border-radius:var(--r);padding:26px;box-shadow:var(--shadow-lg)}
@@ -318,34 +338,42 @@ footer{background:#08202f;color:#9fc2da;padding:46px 0 30px}
         <span class="lang-en">Every lost order or incorrect measurement is a customer who might not return — and wasted time cannot be recovered.</span>
       </p>
     </div>
-    <div class="grid-4">
-      <div class="card reveal">
-        <div class="ic warn">📋</div>
-        <h3 class="lang-ar">ضياع الطلبات</h3>
-        <h3 class="lang-en">Lost Orders</h3>
-        <p class="lang-ar">طلبات على ورق ومحادثات واتساب — يسهل أن تُنسى أو تتأخر.</p>
-        <p class="lang-en">Orders on paper and WhatsApp chats — easy to forget or delay.</p>
+    <div class="problem-list reveal">
+      <div class="problem-item">
+        <div class="pnum">01</div>
+        <div class="ptext">
+          <h3 class="lang-ar">ضياع الطلبات</h3>
+          <h3 class="lang-en">Lost Orders</h3>
+          <p class="lang-ar">طلبات على ورق ومحادثات واتساب — يسهل أن تُنسى أو تتأخر.</p>
+          <p class="lang-en">Orders on paper and WhatsApp chats — easy to forget or delay.</p>
+        </div>
       </div>
-      <div class="card reveal">
-        <div class="ic warn">📏</div>
-        <h3 class="lang-ar">أخطاء المقاسات</h3>
-        <h3 class="lang-en">Measurement Errors</h3>
-        <p class="lang-ar">مقاس واحد غلط = إعادة تفصيل وخسارة قماش وزبون غاضب.</p>
-        <p class="lang-en">One wrong measurement = re-tailoring, wasted fabric, and an angry customer.</p>
+      <div class="problem-item">
+        <div class="pnum">02</div>
+        <div class="ptext">
+          <h3 class="lang-ar">أخطاء المقاسات</h3>
+          <h3 class="lang-en">Measurement Errors</h3>
+          <p class="lang-ar">مقاس واحد غلط = إعادة تفصيل وخسارة قماش وزبون غاضب.</p>
+          <p class="lang-en">One wrong measurement = re-tailoring, wasted fabric, and an angry customer.</p>
+        </div>
       </div>
-      <div class="card reveal">
-        <div class="ic warn">🧾</div>
-        <h3 class="lang-ar">ضغط فوترة زاتكا</h3>
-        <h3 class="lang-en">ZATKA Stress</h3>
-        <p class="lang-ar">فواتير يدوية ومتطلبات متغيّرة تستهلك وقتك وتعرّضك للمخالفات.</p>
-        <p class="lang-en">Manual invoices and changing compliance requirements waste time and expose you to penalties.</p>
+      <div class="problem-item">
+        <div class="pnum">03</div>
+        <div class="ptext">
+          <h3 class="lang-ar">ضغط فوترة زاتكا</h3>
+          <h3 class="lang-en">ZATKA Stress</h3>
+          <p class="lang-ar">فواتير يدوية ومتطلبات متغيّرة تستهلك وقتك وتعرّضك للمخالفات.</p>
+          <p class="lang-en">Manual invoices and changing compliance requirements waste time and expose you to penalties.</p>
+        </div>
       </div>
-      <div class="card reveal">
-        <div class="ic warn">📦</div>
-        <h3 class="lang-ar">فوضى المخزون</h3>
-        <h3 class="lang-en">Inventory Chaos</h3>
-        <p class="lang-ar">لا تعرف كم متر باقٍ من كل لفّة إلا بعد أن ينفد أمام الزبون.</p>
-        <p class="lang-en">You don't know how many meters are left in each roll until it runs out in front of the customer.</p>
+      <div class="problem-item">
+        <div class="pnum">04</div>
+        <div class="ptext">
+          <h3 class="lang-ar">فوضى المخزون</h3>
+          <h3 class="lang-en">Inventory Chaos</h3>
+          <p class="lang-ar">لا تعرف كم متر باقٍ من كل لفّة إلا بعد أن ينفد أمام الزبون.</p>
+          <p class="lang-en">You don't know how many meters are left in each roll until it runs out in front of the customer.</p>
+        </div>
       </div>
     </div>
   </div>
@@ -413,14 +441,20 @@ footer{background:#08202f;color:#9fc2da;padding:46px 0 30px}
                 <span class="lang-ar">المبيعات الأسبوعية</span>
                 <span class="lang-en" style="font-family:system-ui, sans-serif;">Weekly Sales</span>
               </div>
+              <!-- Flat two-tone bars instead of a per-bar gradient (the exact
+                   "default Recharts-style gradient" pattern
+                   seen-design-professionalization-task.md Phase 1 #2 calls
+                   out) -- light tint for regular days, solid brand blue for
+                   the two peak days, so the chart still highlights something
+                   real instead of shading every bar identically. -->
               <div style="height:120px;display:flex;align-items:flex-end;gap:9px">
-                <div style="flex:1;height:58px;transform-origin:bottom;background:linear-gradient(180deg,#7FD0EE,#3FA8DC);border-radius:6px 6px 0 0;animation:seenBar 3.2s ease-in-out infinite"></div>
-                <div style="flex:1;height:82px;transform-origin:bottom;background:linear-gradient(180deg,#7FD0EE,#3FA8DC);border-radius:6px 6px 0 0;animation:seenBar 3.6s ease-in-out infinite;animation-delay:.2s"></div>
-                <div style="flex:1;height:66px;transform-origin:bottom;background:linear-gradient(180deg,#7FD0EE,#3FA8DC);border-radius:6px 6px 0 0;animation:seenBar 3s ease-in-out infinite;animation-delay:.4s"></div>
-                <div style="flex:1;height:100px;transform-origin:bottom;background:linear-gradient(180deg,#39C0F2,#1E9FD6);border-radius:6px 6px 0 0;animation:seenBar 3.4s ease-in-out infinite;animation-delay:.1s"></div>
-                <div style="flex:1;height:74px;transform-origin:bottom;background:linear-gradient(180deg,#7FD0EE,#3FA8DC);border-radius:6px 6px 0 0;animation:seenBar 3.8s ease-in-out infinite;animation-delay:.5s"></div>
-                <div style="flex:1;height:112px;transform-origin:bottom;background:linear-gradient(180deg,#39C0F2,#1683C0);border-radius:6px 6px 0 0;animation:seenBar 3.1s ease-in-out infinite;animation-delay:.3s"></div>
-                <div style="flex:1;height:92px;transform-origin:bottom;background:linear-gradient(180deg,#7FD0EE,#3FA8DC);border-radius:6px 6px 0 0;animation:seenBar 3.5s ease-in-out infinite;animation-delay:.15s"></div>
+                <div style="flex:1;height:58px;transform-origin:bottom;background:#BFE0FF;border-radius:6px 6px 0 0;animation:seenBar 3.2s ease-in-out infinite"></div>
+                <div style="flex:1;height:82px;transform-origin:bottom;background:#BFE0FF;border-radius:6px 6px 0 0;animation:seenBar 3.6s ease-in-out infinite;animation-delay:.2s"></div>
+                <div style="flex:1;height:66px;transform-origin:bottom;background:#BFE0FF;border-radius:6px 6px 0 0;animation:seenBar 3s ease-in-out infinite;animation-delay:.4s"></div>
+                <div style="flex:1;height:100px;transform-origin:bottom;background:#1C8FFF;border-radius:6px 6px 0 0;animation:seenBar 3.4s ease-in-out infinite;animation-delay:.1s"></div>
+                <div style="flex:1;height:74px;transform-origin:bottom;background:#BFE0FF;border-radius:6px 6px 0 0;animation:seenBar 3.8s ease-in-out infinite;animation-delay:.5s"></div>
+                <div style="flex:1;height:112px;transform-origin:bottom;background:#1C8FFF;border-radius:6px 6px 0 0;animation:seenBar 3.1s ease-in-out infinite;animation-delay:.3s"></div>
+                <div style="flex:1;height:92px;transform-origin:bottom;background:#BFE0FF;border-radius:6px 6px 0 0;animation:seenBar 3.5s ease-in-out infinite;animation-delay:.15s"></div>
               </div>
             </div>
           </div>
