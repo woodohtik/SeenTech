@@ -58,14 +58,21 @@ export interface CachedCustomer extends Customer {
  * network response (see server.ts's /api/staff/verify-pin comment). This
  * cache only ever grows one entry at a time, each written at the exact
  * moment its own owner typed it correctly against the real server.
- * `pinHashHex` is a client-side SHA-256 of the PIN -- there's no legitimate
- * reason to ever read the plaintext back out of this particular cache, so
- * it isn't stored plaintext here even though the server itself does.
+ * `pinHashHex` is a client-side PBKDF2-SHA256 derivation of the PIN with a
+ * random per-entry `saltHex`, not a plain SHA-256 digest and not the
+ * server's own plaintext storage. The salt alone isn't the real defense --
+ * a 4-digit PIN is only 10,000 combinations, cheap enough to recompute
+ * fresh per salt in milliseconds with plain SHA-256. What actually matters
+ * is PBKDF2's iteration count (`iterations`): it makes each of those 10,000
+ * guesses meaningfully slow (hundreds of ms) instead of instant, turning a
+ * sub-second brute force into one that takes minutes. See offlinePinAuth.ts.
  */
 export interface CachedStaffAuth {
   staffId: string;
   tenantId: string;
   pinHashHex: string;
+  saltHex: string;
+  iterations: number;
   staff: unknown;
   cachedAt: number;
 }

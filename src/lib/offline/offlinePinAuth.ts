@@ -1,4 +1,4 @@
-import { offlineDb } from './db';
+import { offlineDb, type CachedStaffAuth } from './db';
 
 /**
  * Offline PIN fallback (seen-offline-sync-architecture-task.md Phase 5,
@@ -16,20 +16,53 @@ import { offlineDb } from './db';
  * device try all 10,000 combinations in a tight loop in under a second --
  * an offline device is not a lower-stakes target, so it gets the same
  * lockout shape (mirrored client-side since there's no server to ask).
+ *
+ * That lockout only stops someone going through the normal lock-screen UI.
+ * It cannot stop someone with actual DevTools console access to an unlocked
+ * device from reading cachedStaffAuth directly and hashing candidates
+ * themselves, bypassing tryOfflinePinVerify entirely -- a security review
+ * confirmed this (see docs/reports for the session's security-review
+ * output). Salted PBKDF2 (below) is the mitigation for THAT path: it can't
+ * stop a determined attacker with a hash cracker, but it raises the direct
+ * -DB-access brute force from "under a second" to "minutes", which matters
+ * because it's the only lever available once the attacker has already
+ * stepped outside the UI this lockout actually gates.
  */
 
 const MAX_ATTEMPTS = 5;
 const LOCK_MINUTES_SCHEDULE = [1, 2, 4, 8, 15]; // capped at 15, matches the server's own cap
 
-async function sha256Hex(value: string): Promise<string> {
-  const bytes = new TextEncoder().encode(value);
-  const digest = await crypto.subtle.digest('SHA-256', bytes);
-  return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+const PBKDF2_ITERATIONS = 210_000; // OWASP's 2023 baseline for PBKDF2-HMAC-SHA256
+const SALT_BYTES = 16;
+
+function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function hexToBytes(hex: string): Uint8Array {
+  const out = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  return out;
+}
+
+async function derivePinHash(pin: string, salt: Uint8Array, iterations: number): Promise<string> {
+  const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(pin), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: salt as BufferSource, iterations, hash: 'SHA-256' }, keyMaterial, 256);
+  return bytesToHex(new Uint8Array(bits));
 }
 
 export async function cacheStaffPinAfterOnlineVerify(tenantId: string, staffId: string, pin: string, staff: unknown): Promise<void> {
-  const pinHashHex = await sha256Hex(pin);
-  await offlineDb.cachedStaffAuth.put({ staffId, tenantId, pinHashHex, staff, cachedAt: Date.now() });
+  const salt = crypto.getRandomValues(new Uint8Array(SALT_BYTES));
+  const pinHashHex = await derivePinHash(pin, salt, PBKDF2_ITERATIONS);
+  await offlineDb.cachedStaffAuth.put({
+    staffId,
+    tenantId,
+    pinHashHex,
+    saltHex: bytesToHex(salt),
+    iterations: PBKDF2_ITERATIONS,
+    staff,
+    cachedAt: Date.now(),
+  });
   // A real online verify is a strong signal this device/session pairing is
   // legitimate -- don't leave a stale offline lockout (e.g. from someone
   // else's earlier failed guesses) blocking this tenant's next genuine
@@ -59,8 +92,19 @@ export async function tryOfflinePinVerify(tenantId: string, pin: string): Promis
     return { outcome: 'no_cache' };
   }
 
-  const pinHashHex = await sha256Hex(pin);
-  const match = cachedEntries.find(entry => entry.pinHashHex === pinHashHex);
+  let match: CachedStaffAuth | undefined;
+  for (const entry of cachedEntries) {
+    // Entries cached before this file switched from bare SHA-256 to salted
+    // PBKDF2 have no saltHex -- skip them rather than fall back to the
+    // weaker scheme; they self-heal the next time that staff member logs
+    // in online, which re-caches them in the new format.
+    if (!entry.saltHex) continue;
+    const candidateHash = await derivePinHash(pin, hexToBytes(entry.saltHex), entry.iterations || PBKDF2_ITERATIONS);
+    if (candidateHash === entry.pinHashHex) {
+      match = entry;
+      break;
+    }
+  }
 
   if (match) {
     await offlineDb.offlinePinLockout.delete(tenantId);
