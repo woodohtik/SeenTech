@@ -618,8 +618,7 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Left Side - Visual: solid brand color + Seen's own wordmark, not a
-          photo or a generic icon-in-a-box template. */}
+      {/* Left Side - Visual: solid brand color, no photo or logo mark. */}
       <div className="hidden lg:flex lg:w-1/2 bg-brand p-12 items-center justify-center relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
@@ -627,9 +626,6 @@ export default function Login() {
         </div>
 
         <div className="relative z-10 text-white max-w-lg text-center">
-          <div className="inline-block bg-white rounded-[2rem] px-10 py-8 shadow-xl mb-10">
-            <img src="/Logo.svg" alt="سين" className="h-14 w-auto" />
-          </div>
           <h1 className="text-4xl font-black mb-4 leading-tight">{t('login.title')}</h1>
           <p className="text-lg text-white/85 font-medium leading-relaxed">
             {t('login.subtitle')}
