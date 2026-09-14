@@ -19,6 +19,7 @@ import {
 import { Icon } from './ui/Icon';
 import IOSInstallBanner from './IOSInstallBanner';
 import OfflineStatusIndicator from './OfflineStatusIndicator';
+import UpdateAvailableBanner from './UpdateAvailableBanner';
 import { supabase } from '../lib/supabase/client';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -259,6 +260,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
         <IOSInstallBanner />
       </div>
       <OfflineStatusIndicator tenantId={tenantId || undefined} />
+      <UpdateAvailableBanner />
       {/* Mobile Drawer Overlay */}
       {isMobileMenuOpen && (
         <div 
