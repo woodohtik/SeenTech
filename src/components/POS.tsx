@@ -1057,7 +1057,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
 
       let queuedOffline = false;
 
-      const { error: saleError } = await supabase.rpc('create_pos_sale', salePayload);
+      const { data: saleResult, error: saleError } = await supabase.rpc('create_pos_sale', salePayload);
 
       if (saleError) {
         /* --------------------------------------------------------------
@@ -1119,6 +1119,16 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         toastSuccess(
           t('pos.sale_queued_offline_title', 'سُجِّلت الفاتورة محلياً'),
           t('pos.sale_queued_offline_desc', 'لا يوجد اتصال حالياً — ستُرسَل تلقائياً للخادم فور عودة الإنترنت.')
+        );
+      } else if (saleResult?.stock_conflicts > 0) {
+        /* Phase 4: a stock deduction lost the race against another
+           (likely offline) device selling the same item -- the sale
+           itself still succeeded and must not be hidden as a failure,
+           but the cashier needs to know a line needs manual stock
+           reconciliation. */
+        toastError(
+          t('pos.stock_conflict_title', 'الفاتورة صدرت، لكن يوجد تعارض مخزون'),
+          t('pos.stock_conflict_desc', 'صنف واحد أو أكثر بِيع أكثر من المتاح فعلياً (على الأرجح جهاز آخر باع نفس القطعة). راجع المخزون يدوياً.')
         );
       } else {
         toastSuccess(t('pos.tax_invoice_issued'));

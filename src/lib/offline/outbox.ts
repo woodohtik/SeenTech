@@ -14,6 +14,24 @@ import { onConnectivityChange, checkConnectivityNow } from './connectivity';
 
 const MAX_AUTO_RETRIES = 5;
 
+/* --------------------------------------------------------------------------
+   Phase 4 needs a synchronous "how many are pending right now" read for the
+   `beforeunload` handler below -- that event can't await a Dexie query and
+   still block the unload, so a plain in-memory count is kept in step with
+   the real table instead. The live UI badge (OfflineStatusIndicator) reads
+   the table itself via dexie-react-hooks' useLiveQuery and doesn't need
+   this; this cache exists only for the synchronous check.
+   -------------------------------------------------------------------------- */
+let cachedPendingCount = 0;
+
+async function refreshCachedPendingCount(): Promise<void> {
+  cachedPendingCount = await getPendingOutboxCount();
+}
+
+export function getCachedPendingCount(): number {
+  return cachedPendingCount;
+}
+
 /** Same "was this actually a network failure" check already used in
  *  Login.tsx's handleEmailLogin/handleRegister -- kept consistent rather
  *  than inventing a second heuristic for the same problem. */
@@ -48,6 +66,7 @@ export async function enqueuePosSale(operationId: string, payload: {
     // persistent storage speculatively on page load.
     void requestPersistentStorage();
   }
+  await refreshCachedPendingCount();
 }
 
 async function syncEntry(entry: OutboxEntry): Promise<'synced' | 'failed'> {
@@ -96,6 +115,7 @@ export async function drainOutbox(): Promise<{ synced: number; failed: number }>
       if (result === 'synced') synced++; else failed++;
     }
   } finally {
+    await refreshCachedPendingCount();
     draining = false;
   }
   return { synced, failed };
@@ -105,14 +125,46 @@ export async function getPendingOutboxCount(): Promise<number> {
   return offlineDb.outbox.where('status').anyOf('pending', 'syncing', 'failed').count();
 }
 
+/**
+ * Phase 4's ZATCA clock: a simplified (B2C) invoice must reach the "فاتورة"
+ * platform within 24 hours of issuance. That 24-hour clock starts at the
+ * moment the sale was made (this entry's createdAt, generated client-side
+ * at checkout) -- not whenever it eventually reaches the server -- so this
+ * has to be computed from the local outbox, not from anything server-side.
+ * `hoursThreshold` defaults to 20h, leaving a 4-hour buffer before the
+ * actual legal deadline instead of warning exactly as it's missed.
+ */
+export async function getZatcaApproachingEntries(hoursThreshold = 20): Promise<OutboxEntry[]> {
+  const cutoff = Date.now() - hoursThreshold * 60 * 60 * 1000;
+  const entries = await offlineDb.outbox.where('status').anyOf('pending', 'syncing', 'failed').toArray();
+  return entries.filter(entry => entry.createdAt <= cutoff);
+}
+
 let initialized = false;
 
 /** Call once at app startup (App.tsx). Idempotent. */
 export function initOutboxSync(): void {
   if (initialized) return;
   initialized = true;
+  void refreshCachedPendingCount();
   onConnectivityChange(online => {
     if (online) void drainOutbox();
   });
   void drainOutbox();
+
+  /* --------------------------------------------------------------------
+     Phase 4: warn before closing/reloading the tab while sales are still
+     unsynced. Browsers ignore any custom string here and show their own
+     generic "leave site?" dialog regardless (a long-standing, deliberate
+     browser security restriction, not something to work around) -- the
+     task only asks that this fire *conditionally*, only while the queue
+     is actually non-empty, which is what the synchronous cached count
+     below is for.
+     -------------------------------------------------------------------- */
+  window.addEventListener('beforeunload', (e) => {
+    if (getCachedPendingCount() > 0) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
 }
