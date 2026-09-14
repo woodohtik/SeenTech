@@ -47,6 +47,7 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+  const [hoveredVertical, setHoveredVertical] = useState<null | 'clothing' | 'tailoring' | 'upholstery'>(null);
 
   // Form States
   const [loginId, setLoginId] = useState(''); // Email or Phone
@@ -621,35 +622,106 @@ export default function Login() {
       </div>
 
       {/* Left Side - Visual: solid brand color + floating icons naming the
-          actual businesses سين serves (tailoring, clothing, upholstery) --
-          not a generic icon-in-a-box or stock photo. */}
+          actual businesses سين serves (tailoring, clothing, upholstery).
+          A dashed "stitch" path connects the three -- a literal nod to
+          tailoring (a running stitch) that also visually ties them into one
+          motif instead of three unrelated floating badges. Its two straight
+          legs (15,15)-(84,21) and (15,15)-(21,84), in viewBox percent, sit
+          near the panel's top/left edges matching the badges below; the
+          third leg is bowed out toward the bottom-right corner (control
+          point 95,95) specifically so it doesn't cut across the centered
+          title/subtitle text. Keep in sync if a badge's position changes. */}
       <div className="hidden lg:flex lg:w-1/2 bg-brand p-12 items-center justify-center relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full translate-x-1/2 translate-y-1/2 blur-3xl" />
         </div>
 
-        <motion.div
-          animate={{ y: [0, -12, 0] }}
-          transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute top-[14%] left-[14%] w-16 h-16 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 flex items-center justify-center shadow-xl"
-        >
-          <Shirt size={28} className="text-white" />
-        </motion.div>
-        <motion.div
-          animate={{ y: [0, 12, 0] }}
-          transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
-          className="absolute top-[20%] right-[16%] w-20 h-20 bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 flex items-center justify-center shadow-xl"
-        >
-          <Scissors size={34} className="text-white" />
-        </motion.div>
-        <motion.div
-          animate={{ y: [0, -10, 0] }}
-          transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-          className="absolute bottom-[16%] left-[20%] w-20 h-20 bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 flex items-center justify-center shadow-xl"
-        >
-          <Sofa size={34} className="text-white" />
-        </motion.div>
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <motion.path
+            d="M 15 15 L 84 21 Q 95 95 21 84 L 15 15"
+            fill="none"
+            stroke="white"
+            strokeOpacity={0.35}
+            strokeWidth={0.4}
+            strokeDasharray="2 2"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1, strokeDashoffset: [0, -8] }}
+            transition={{
+              pathLength: { duration: 1.5, ease: 'easeOut' },
+              strokeDashoffset: { duration: 3, repeat: Infinity, ease: 'linear', delay: 1.5 },
+            }}
+          />
+        </svg>
+
+        <div className="absolute top-[10%] left-[10%] flex flex-col items-center gap-2">
+          <motion.div
+            animate={{ y: [0, -14, 0] }}
+            whileHover={{ scale: 1.15, rotate: -6, transition: { duration: 0.2 } }}
+            onHoverStart={() => setHoveredVertical('clothing')}
+            onHoverEnd={() => setHoveredVertical(null)}
+            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+            className={cn(
+              "w-24 h-24 bg-white/15 backdrop-blur-xl rounded-3xl border border-white/30 flex items-center justify-center shadow-2xl cursor-pointer transition-shadow duration-300",
+              hoveredVertical === 'clothing' && "shadow-[0_0_30px_rgba(255,255,255,0.4)]"
+            )}
+          >
+            <Shirt size={40} strokeWidth={1.75} className="text-white" />
+          </motion.div>
+          <motion.span
+            animate={{ opacity: hoveredVertical === 'clothing' ? 1 : 0, y: hoveredVertical === 'clothing' ? 0 : 4 }}
+            transition={{ duration: 0.2 }}
+            className="text-white text-xs font-bold bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full whitespace-nowrap pointer-events-none"
+          >
+            {t('login.vertical_clothing')}
+          </motion.span>
+        </div>
+
+        <div className="absolute top-[15%] right-[10%] flex flex-col items-center gap-2">
+          <motion.div
+            animate={{ y: [0, 14, 0] }}
+            whileHover={{ scale: 1.15, rotate: 6, transition: { duration: 0.2 } }}
+            onHoverStart={() => setHoveredVertical('tailoring')}
+            onHoverEnd={() => setHoveredVertical(null)}
+            transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+            className={cn(
+              "w-28 h-28 bg-white/15 backdrop-blur-xl rounded-3xl border border-white/30 flex items-center justify-center shadow-2xl cursor-pointer transition-shadow duration-300",
+              hoveredVertical === 'tailoring' && "shadow-[0_0_30px_rgba(255,255,255,0.4)]"
+            )}
+          >
+            <Scissors size={48} strokeWidth={1.75} className="text-white" />
+          </motion.div>
+          <motion.span
+            animate={{ opacity: hoveredVertical === 'tailoring' ? 1 : 0, y: hoveredVertical === 'tailoring' ? 0 : 4 }}
+            transition={{ duration: 0.2 }}
+            className="text-white text-xs font-bold bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full whitespace-nowrap pointer-events-none"
+          >
+            {t('login.vertical_tailoring')}
+          </motion.span>
+        </div>
+
+        <div className="absolute bottom-[10%] left-[15%] flex flex-col items-center gap-2">
+          <motion.div
+            animate={{ y: [0, -12, 0] }}
+            whileHover={{ scale: 1.15, rotate: -6, transition: { duration: 0.2 } }}
+            onHoverStart={() => setHoveredVertical('upholstery')}
+            onHoverEnd={() => setHoveredVertical(null)}
+            transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+            className={cn(
+              "w-28 h-28 bg-white/15 backdrop-blur-xl rounded-3xl border border-white/30 flex items-center justify-center shadow-2xl cursor-pointer transition-shadow duration-300",
+              hoveredVertical === 'upholstery' && "shadow-[0_0_30px_rgba(255,255,255,0.4)]"
+            )}
+          >
+            <Sofa size={48} strokeWidth={1.75} className="text-white" />
+          </motion.div>
+          <motion.span
+            animate={{ opacity: hoveredVertical === 'upholstery' ? 1 : 0, y: hoveredVertical === 'upholstery' ? 0 : 4 }}
+            transition={{ duration: 0.2 }}
+            className="text-white text-xs font-bold bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full whitespace-nowrap pointer-events-none"
+          >
+            {t('login.vertical_upholstery')}
+          </motion.span>
+        </div>
 
         <div className="relative z-10 text-white max-w-lg text-center">
           <h1 className="text-4xl font-black mb-4 leading-tight">{t('login.title')}</h1>

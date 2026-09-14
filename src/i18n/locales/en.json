@@ -1519,6 +1519,9 @@
     "tailor_name": "Full Name",
     "title": "Seen System",
     "verifying_pin": "Verifying...",
+    "vertical_clothing": "Clothing",
+    "vertical_tailoring": "Tailoring",
+    "vertical_upholstery": "Upholstery",
     "welcome_back": "Welcome Back"
   },
   "measurements": {
