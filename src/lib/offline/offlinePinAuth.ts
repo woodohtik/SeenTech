@@ -52,22 +52,35 @@ async function derivePinHash(pin: string, salt: Uint8Array, iterations: number):
 }
 
 export async function cacheStaffPinAfterOnlineVerify(tenantId: string, staffId: string, pin: string, staff: unknown): Promise<void> {
-  const salt = crypto.getRandomValues(new Uint8Array(SALT_BYTES));
-  const pinHashHex = await derivePinHash(pin, salt, PBKDF2_ITERATIONS);
-  await offlineDb.cachedStaffAuth.put({
-    staffId,
-    tenantId,
-    pinHashHex,
-    saltHex: bytesToHex(salt),
-    iterations: PBKDF2_ITERATIONS,
-    staff,
-    cachedAt: Date.now(),
-  });
-  // A real online verify is a strong signal this device/session pairing is
-  // legitimate -- don't leave a stale offline lockout (e.g. from someone
-  // else's earlier failed guesses) blocking this tenant's next genuine
-  // offline attempt.
-  await offlineDb.offlinePinLockout.delete(tenantId);
+  // This is a best-effort background write, called fire-and-forget right
+  // after a successful login (PinLogin.tsx/LockScreen.tsx don't await it,
+  // so the user is already past this screen by the time it runs) -- it must
+  // never surface as an unhandled rejection. The top-level ErrorBoundary
+  // listens for exactly that on window and shows a full-page crash screen,
+  // which would turn "the offline cache failed to warm" into "login looks
+  // broken" for a step the user has already moved past. A real login
+  // failure is caught and shown by PinLogin/LockScreen's own try/catch
+  // further up the call stack; this one guards a pure side effect.
+  try {
+    const salt = crypto.getRandomValues(new Uint8Array(SALT_BYTES));
+    const pinHashHex = await derivePinHash(pin, salt, PBKDF2_ITERATIONS);
+    await offlineDb.cachedStaffAuth.put({
+      staffId,
+      tenantId,
+      pinHashHex,
+      saltHex: bytesToHex(salt),
+      iterations: PBKDF2_ITERATIONS,
+      staff,
+      cachedAt: Date.now(),
+    });
+    // A real online verify is a strong signal this device/session pairing is
+    // legitimate -- don't leave a stale offline lockout (e.g. from someone
+    // else's earlier failed guesses) blocking this tenant's next genuine
+    // offline attempt.
+    await offlineDb.offlinePinLockout.delete(tenantId);
+  } catch (err) {
+    console.error('[offlinePinAuth] Failed to cache PIN for offline use (non-fatal):', err);
+  }
 }
 
 /** Call after a successful online PIN change (PinLogin's mustChangePin flow) so a stale cached hash can't outlive the change on this device. */

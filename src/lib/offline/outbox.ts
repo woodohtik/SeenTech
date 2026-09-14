@@ -64,7 +64,7 @@ export async function enqueuePosSale(operationId: string, payload: {
     // Called from within the checkout button's own click handler -- a real
     // user interaction, matching Phase 2's requirement not to ask for
     // persistent storage speculatively on page load.
-    void requestPersistentStorage();
+    void requestPersistentStorage().catch(() => {});
   }
   await refreshCachedPendingCount();
 }
@@ -114,8 +114,15 @@ export async function drainOutbox(): Promise<{ synced: number; failed: number }>
       const result = await syncEntry(entry);
       if (result === 'synced') synced++; else failed++;
     }
+  } catch (err) {
+    // Every call site here is fire-and-forget (`void drainOutbox()` at app
+    // startup and on every connectivity-change tick) -- an exception
+    // escaping this function becomes an unhandled rejection, which the
+    // top-level ErrorBoundary turns into a full-page crash for the whole
+    // app, for what should be a background sync attempt failing once.
+    console.error('[outbox] drainOutbox failed (will retry on next connectivity check):', err);
   } finally {
-    await refreshCachedPendingCount();
+    await refreshCachedPendingCount().catch(() => {});
     draining = false;
   }
   return { synced, failed };
@@ -146,7 +153,7 @@ let initialized = false;
 export function initOutboxSync(): void {
   if (initialized) return;
   initialized = true;
-  void refreshCachedPendingCount();
+  void refreshCachedPendingCount().catch(() => {});
   onConnectivityChange(online => {
     if (online) void drainOutbox();
   });
