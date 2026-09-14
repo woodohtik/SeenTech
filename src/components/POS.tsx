@@ -34,7 +34,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
-import { refreshCustomersCache, refreshInventoryCache, refreshBranchStockCache } from '../lib/offline/cacheSync';
+import { refreshCustomersCache, refreshInventoryCache, refreshBranchStockCache, getCachedCustomers, getCachedInventory, getCachedBranchStock } from '../lib/offline/cacheSync';
 import { enqueuePosSale, isNetworkFailure } from '../lib/offline/outbox';
 import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
 import { Combobox, Transition, Dialog } from '@headlessui/react';
@@ -405,23 +405,31 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
 
   useEffect(() => {
     const fetchData = async () => {
+      let customersLoaded = false;
+      let inventoryLoaded = false;
+      let branchStockLoaded = false;
       try {
-        const { data: custData } = await supabase
+        const { data: custData, error: custError } = await supabase
           .from('customers')
           .select('*')
           .eq('tenant_id', tenantId);
+        if (custError) throw custError;
         setCustomers((custData || []).map(mapCustomer));
+        customersLoaded = true;
 
-        const { data: invData } = await supabase
+        const { data: invData, error: invError } = await supabase
           .from('inventory_items')
           .select('*')
           .eq('tenant_id', tenantId);
+        if (invError) throw invError;
         setInventory((invData || []).map(mapInventoryItem));
+        inventoryLoaded = true;
 
-        const { data: stockData } = await supabase
+        const { data: stockData, error: stockError } = await supabase
           .from('branch_inventory')
           .select('*')
           .eq('tenant_id', tenantId);
+        if (stockError) throw stockError;
 
         const stockMap: Record<string, number> = {};
         if (stockData) {
@@ -432,6 +440,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
           });
         }
         setBranchStock(stockMap);
+        branchStockLoaded = true;
 
         // Warm the offline read cache in the background (Phase 2 of
         // seen-offline-sync-architecture-task.md) -- non-blocking, POS
@@ -467,6 +476,30 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         }
       } catch (error) {
         console.error('Error fetching POS data:', error);
+
+        // Offline (or otherwise unreachable) fallback: reuse whatever
+        // getCachedInventory/getCachedCustomers/getCachedBranchStock last
+        // stored via refreshInventoryCache/refreshCustomersCache/
+        // refreshBranchStockCache above, so a page reload mid-outage
+        // doesn't strand the cashier on empty product/customer lists even
+        // though the cache actually holds real data from the last time
+        // this tenant was online. Only takes over for whichever of the
+        // three queries didn't finish -- a partial failure keeps whatever
+        // already loaded successfully.
+        if (isNetworkFailure(error)) {
+          if (!customersLoaded) {
+            const cached = await getCachedCustomers(tenantId).catch(() => []);
+            if (cached.length) setCustomers(cached);
+          }
+          if (!inventoryLoaded) {
+            const cached = await getCachedInventory(tenantId).catch(() => []);
+            if (cached.length) setInventory(cached);
+          }
+          if (!branchStockLoaded && currentStaff?.branchId) {
+            const cached = await getCachedBranchStock(tenantId, currentStaff.branchId).catch(() => ({}));
+            if (Object.keys(cached).length) setBranchStock(cached);
+          }
+        }
       }
     };
     fetchData();
