@@ -24,6 +24,8 @@ import {
 import { supabase } from '../lib/supabase/client';
 import { deleteTestDataForTenant } from '../services/trialService';
 import { auth, handleFirestoreError, OperationType } from '../lib/firebase';
+import { saveLastKnown, getLastKnown } from '../lib/offline/lastKnownCache';
+import { isNetworkFailure } from '../lib/offline/outbox';
 import { Customer, Order, InventoryItem, AppNotification, OrderStatus, Tenant, BranchInventory } from '../types';
 import { STATUS_CONFIG, getOrderStatusDisplay } from './Orders';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
@@ -446,7 +448,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
           createdAt: d.created_at
         }) as unknown as Customer);
 
-        let orders = (ordersRes.data || []).map(d => ({
+        const allOrdersUnfiltered = (ordersRes.data || []).map(d => ({
           ...d,
           // status_key (نص حر لأي نشاط) يتقدّم على status (enum قديم) متى وُجد — انظر Orders.tsx.
           status: d.status_key || d.status,
@@ -462,9 +464,9 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
           updatedAt: d.updated_at
         }) as unknown as Order);
 
-        if (selectedBranchId !== 'all') {
-          orders = orders.filter(o => o.branchId === selectedBranchId);
-        }
+        const orders = selectedBranchId !== 'all'
+          ? allOrdersUnfiltered.filter(o => o.branchId === selectedBranchId)
+          : allOrdersUnfiltered;
 
         const inventory = (inventoryRes.data || []).map(d => ({
           id: d.id,
@@ -487,8 +489,25 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         setAllCustomers(customers);
         setBranchInventory(bInv);
         setIsLoading(false);
+
+        // Cached last-known snapshot for the fallback below -- this tab
+        // doesn't need real offline writes (no financial operation happens
+        // here while disconnected), just an honest "stale data" notice
+        // instead of a blank dashboard on a failed refresh.
+        saveLastKnown(tenantId, 'dashboard_stats', { customers, orders: allOrdersUnfiltered, inventory, bInv });
       } catch (error) {
         console.error('Dashboard Stats Error:', error);
+
+        if (isNetworkFailure(error)) {
+          const cached = getLastKnown<{ customers: Customer[]; orders: Order[]; inventory: InventoryItem[]; bInv: BranchInventory[] }>(tenantId, 'dashboard_stats');
+          if (cached) {
+            setAllCustomers(cached.data.customers);
+            setAllOrders(selectedBranchId !== 'all' ? cached.data.orders.filter(o => o.branchId === selectedBranchId) : cached.data.orders);
+            setAllInventory(cached.data.inventory);
+            setBranchInventory(cached.data.bInv);
+            setToast({ message: t('offline.showing_cached_dashboard', 'يتم عرض بيانات مخزَّنة من آخر اتصال، قد لا تكون محدَّثة.'), type: 'info' });
+          }
+        }
         setIsLoading(false);
       }
     };

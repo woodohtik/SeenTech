@@ -47,6 +47,8 @@ import {
 } from "lucide-react";
 import { supabase } from "../../lib/supabase/client";
 import { handleFirestoreError, OperationType } from "../../lib/firebase";
+import { getCachedInventory } from "../../lib/offline/cacheSync";
+import { isNetworkFailure } from "../../lib/offline/outbox";
 import { useAuth } from "../../contexts/AuthContext";
 import {
   InventoryItem,
@@ -97,7 +99,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
   const { t } = useTranslation();
   const { currentStaff } = useStaff();
   const { hasPermission } = usePermissions(currentStaff);
-  const { error: toastError, success: toastSuccess, handleError } = useToast();
+  const { error: toastError, success: toastSuccess, warning: toastWarning, handleError } = useToast();
   const { inventoryCategories, isLegacyVertical } = useVerticalConfig();
   // خريطة category_key -> label_ar جاهزة من إعدادات النشاط، لعرض فئات
   // الأنشطة الجديدة (لا يوجد لها مفتاح ترجمة inventory.category_* أصلاً).
@@ -206,15 +208,28 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
 
     const fetchItems = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("inventory_items")
-        .select("*")
-        .eq("tenant_id", tenantId);
+      try {
+        const { data, error } = await supabase
+          .from("inventory_items")
+          .select("*")
+          .eq("tenant_id", tenantId);
 
-      if (error) {
-        handleFirestoreError(error, OperationType.LIST, "inventory");
-      } else {
+        if (error) throw error;
         setItems(data.map(mapInventoryData));
+      } catch (err) {
+        // Offline (or otherwise unreachable) fallback: cachedInventoryItems
+        // is already warmed by POS.tsx's own refreshInventoryCache on every
+        // successful load there, so this tab reuses that same read cache
+        // instead of keeping its own separate copy in sync.
+        if (isNetworkFailure(err)) {
+          const cached = await getCachedInventory(tenantId).catch(() => []);
+          if (cached.length) {
+            setItems(cached);
+            toastWarning(t('offline.showing_cached_inventory', 'يتم عرض المخزون المخزَّن من آخر اتصال، قد لا يكون محدَّثاً.'));
+          }
+        } else {
+          handleFirestoreError(err, OperationType.LIST, "inventory");
+        }
       }
       setLoading(false);
     };

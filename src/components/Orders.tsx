@@ -45,6 +45,8 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { handleFirestoreError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
+import { refreshOrdersCache, getCachedOrders } from '../lib/offline/cacheSync';
+import { isNetworkFailure } from '../lib/offline/outbox';
 import { Order, Customer, OrderStatus, OrderHistory, InventoryItem, PaymentMethod, OrderItem, Staff, Tenant, Measurements } from '../types';
 import { cn, generateOrderNumber } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
@@ -529,6 +531,16 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     } as Order;
   }, []);
 
+  const applyOrders = useCallback((allOrders: Order[]) => {
+    const trackingOrders = allOrders.filter(order =>
+      !order.items || order.items.length === 0 || order.items.some((item: any) => !item.type || item.type === 'custom')
+    );
+    setOrders(trackingOrders);
+
+    const unpaid = allOrders.filter(o => o.remainingAmount > 0 && o.status !== 'cancelled');
+    setUnpaidOrders(unpaid);
+  }, []);
+
   const fetchOrders = useCallback(async () => {
     if (!tenantId) return;
     try {
@@ -537,23 +549,30 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         .select('*')
         .eq('tenant_id', tenantId)
         .order('order_date', { ascending: false });
-      
-      if (error) {
-        handleFirestoreError(error, OperationType.LIST, 'orders');
-      } else {
-        const allOrders = (data || []).map(mapOrderData);
-        const trackingOrders = allOrders.filter(order => 
-          !order.items || order.items.length === 0 || order.items.some((item: any) => !item.type || item.type === 'custom')
-        );
-        setOrders(trackingOrders);
 
-        const unpaid = allOrders.filter(o => o.remainingAmount > 0 && o.status !== 'cancelled');
-        setUnpaidOrders(unpaid);
-      }
+      if (error) throw error;
+
+      const allOrders = (data || []).map(mapOrderData);
+      applyOrders(allOrders);
+      refreshOrdersCache(tenantId, allOrders).catch(() => {});
     } catch (err) {
       console.error('Error fetching orders:', err);
+
+      // Offline (or otherwise unreachable) fallback: show the last orders
+      // list refreshOrdersCache stored the last time this tenant loaded
+      // successfully, with an honest heads-up, instead of silently leaving
+      // the screen on whatever (possibly empty) state it was already in.
+      if (isNetworkFailure(err)) {
+        const cached = await getCachedOrders(tenantId).catch(() => []);
+        if (cached.length) {
+          applyOrders(cached);
+          toastWarning(t('offline.showing_cached_orders', 'يتم عرض الطلبات المخزَّنة من آخر اتصال، قد لا تكون محدَّثة.'));
+        }
+      } else {
+        handleFirestoreError(err, OperationType.LIST, 'orders');
+      }
     }
-  }, [tenantId, mapOrderData]);
+  }, [tenantId, mapOrderData, applyOrders, toastWarning, t]);
 
   useRealtimeSync('orders', tenantId, (payload) => {
     if (payload.eventType === 'INSERT' && payload.new) {

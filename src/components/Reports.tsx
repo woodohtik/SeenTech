@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
+import { saveLastKnown, getLastKnown } from '../lib/offline/lastKnownCache';
+import { isNetworkFailure } from '../lib/offline/outbox';
 import { Order, Customer, InventoryItem, Staff, Shift, Role, PurchaseOrder, Supplier } from '../types';
 import { 
   BarChart, 
@@ -195,7 +197,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
         }
 
         // Map snake_case to camelCase for the UI
-        setOrders((ordersRes.data || []).map(o => ({
+        const mappedOrders = (ordersRes.data || []).map(o => ({
           ...o,
           customerId: o.customer_id,
           customerName: o.customer_name,
@@ -216,18 +218,20 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           paymentMethod: o.payment_method,
           customerPhone: o.customer_phone,
           isTest: o.is_test
-        } as Order)));
+        } as Order));
+        setOrders(mappedOrders);
 
-        setCustomers((customersRes.data || []).map(c => ({
+        const mappedCustomers = (customersRes.data || []).map(c => ({
           ...c,
           tenantId: c.tenant_id,
           companyName: c.company_name,
           isB2B: c.is_b2b,
           isTest: c.is_test,
           createdAt: c.created_at
-        } as Customer)));
+        } as Customer));
+        setCustomers(mappedCustomers);
 
-        setInventory((inventoryRes.data || []).map(i => ({
+        const mappedInventory = (inventoryRes.data || []).map(i => ({
           ...i,
           nameEn: i.name_en,
           minThreshold: i.min_threshold,
@@ -242,18 +246,44 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           chestStyle: i.chest_style,
           isTest: i.is_test,
           updatedAt: i.updated_at
-        } as InventoryItem)));
+        } as InventoryItem));
+        setInventory(mappedInventory);
 
-        setStaff((staffRes.data || []).map(s => ({
+        const mappedStaff = (staffRes.data || []).map(s => ({
           ...s,
           tenantId: s.tenant_id,
           branchId: s.branch_id,
           createdAt: s.created_at
-        } as Staff)));
+        } as Staff));
+        setStaff(mappedStaff);
 
+        // This tab doesn't need real offline writes (it's read-only), just
+        // the last known figures instead of a blank report on a failed
+        // refresh -- the four core datasets only, not every secondary
+        // enrichment (purchase orders/suppliers/payouts/roles) below.
+        saveLastKnown(tenantId, 'reports_data', {
+          orders: mappedOrders,
+          customers: mappedCustomers,
+          inventory: mappedInventory,
+          staff: mappedStaff,
+        });
       } catch (error) {
         console.error('Error fetching report data:', error);
-        handleError(error, OperationType.LIST, 'reports');
+
+        if (isNetworkFailure(error)) {
+          const cached = getLastKnown<{ orders: Order[]; customers: Customer[]; inventory: InventoryItem[]; staff: Staff[] }>(tenantId, 'reports_data');
+          if (cached) {
+            setOrders(cached.data.orders);
+            setCustomers(cached.data.customers);
+            setInventory(cached.data.inventory);
+            setStaff(cached.data.staff);
+            toastWarning(t('offline.showing_cached_reports', 'يتم عرض بيانات مخزَّنة من آخر اتصال، قد لا تكون محدَّثة.'));
+          } else {
+            handleError(error, OperationType.LIST, 'reports');
+          }
+        } else {
+          handleError(error, OperationType.LIST, 'reports');
+        }
       } finally {
         setLoading(false);
       }

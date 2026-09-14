@@ -5,6 +5,8 @@ import { formatSaudiPhone } from '../utils/phoneUtils';
 import { Store, MapPin, Phone, Globe, Bell, Shield, CreditCard, MessageSquare, CheckCircle2, AlertCircle, AlertTriangle, ChevronRight, ExternalLink, Zap, Upload, X as CloseIcon, Database, Trash2, ShieldCheck, Palette, FileText, HelpCircle, Layout, Mail, Printer } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
+import { saveLastKnown, getLastKnown } from '../lib/offline/lastKnownCache';
+import { isNetworkFailure } from '../lib/offline/outbox';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
@@ -41,7 +43,7 @@ type TabType = 'profile' | 'appearance' | 'invoice' | 'printer' | 'tax' | 'branc
 
 export default function Settings({ tenantId }: SettingsProps) {
   const { t, i18n } = useTranslation();
-  const { error: toastError } = useToast();
+  const { error: toastError, warning: toastWarning } = useToast();
   const isRtl = isRtlLang(i18n.language);
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -183,6 +185,7 @@ export default function Settings({ tenantId }: SettingsProps) {
             notificationSettings: loadedData.notificationSettings
           });
           setLogoPreview(loadedData.logoUrl || null);
+          saveLastKnown(tenantId, 'settings', loadedData);
           return;
         }
 
@@ -240,9 +243,42 @@ export default function Settings({ tenantId }: SettingsProps) {
           if (data.owner_email) {
             setUserEmail(prev => prev || data.owner_email || '');
           }
+          saveLastKnown(tenantId, 'settings', {
+            name: data.name || '',
+            phone: data.phone || '',
+            address: data.address || '',
+            logoUrl: data.logo_url || '',
+            taxSettings: loadedTaxSettings,
+            notificationSettings: loadedNotificationSettings
+          });
         }
       } catch (error) {
-        handleError(error, OperationType.GET, 'tenants');
+        // This tab doesn't need real offline writes (settings changes
+        // still require a live save) -- just showing the last known values
+        // on load instead of a blank form when the fetch itself fails.
+        if (isNetworkFailure(error)) {
+          const cached = getLastKnown<{
+            name: string; phone: string; address: string; logoUrl: string;
+            taxSettings: unknown; notificationSettings: unknown;
+          }>(tenantId, 'settings');
+          if (cached) {
+            reset({
+              name: cached.data.name || '',
+              phone: cached.data.phone || '',
+              address: cached.data.address || '',
+              inventoryStrategy: 'decentralized',
+              logoUrl: cached.data.logoUrl || '',
+              taxSettings: cached.data.taxSettings as any,
+              notificationSettings: cached.data.notificationSettings as any
+            });
+            setLogoPreview(cached.data.logoUrl || null);
+            toastWarning(t('offline.showing_cached_settings', 'يتم عرض الإعدادات المخزَّنة من آخر اتصال، قد لا تكون محدَّثة. أي حفظ الآن يتطلب اتصالاً فعلياً.'));
+          } else {
+            handleError(error, OperationType.GET, 'tenants');
+          }
+        } else {
+          handleError(error, OperationType.GET, 'tenants');
+        }
       } finally {
         setLoading(false);
       }

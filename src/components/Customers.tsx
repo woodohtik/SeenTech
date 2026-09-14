@@ -46,6 +46,8 @@ import * as XLSX from 'xlsx';
 
 import { supabase } from '../lib/supabase/client';
 import { handleFirestoreError, OperationType } from '../lib/firebase';
+import { getCachedCustomers } from '../lib/offline/cacheSync';
+import { isNetworkFailure } from '../lib/offline/outbox';
 import { Customer, Measurements, Styles, Order, ThobeMeasurements } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { useForm, Controller } from 'react-hook-form';
@@ -76,7 +78,7 @@ interface CustomersProps {
 export default function Customers({ tenantId }: CustomersProps) {
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
-  const { error: toastError, success: toastSuccess, handleError } = useToast();
+  const { error: toastError, success: toastSuccess, warning: toastWarning, handleError } = useToast();
   const { confirm } = useConfirm();
   const [isLoading, setIsLoading] = useState(true);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -195,15 +197,15 @@ export default function Customers({ tenantId }: CustomersProps) {
   const fetchCustomers = React.useCallback(async (showLoading = true) => {
     if (!tenantId) return;
     if (showLoading) setIsLoading(true);
-    const { data, error } = await supabase
-      .from('customers')
-      .select('*')
-      .eq('tenant_id', tenantId)
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      handleFirestoreError(error, OperationType.LIST, 'customers');
-    } else {
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
       const mapped = (data || []).map(c => ({
         ...c,
         isTest: c.is_test,
@@ -222,12 +224,12 @@ export default function Customers({ tenantId }: CustomersProps) {
           .select('customer_id, remaining_amount, total_amount')
           .eq('tenant_id', tenantId)
           .neq('status', 'cancelled');
-        
+
         if (!ordersError && ordersData) {
           const balances: Record<string, number> = {};
           const counts: Record<string, number> = {};
           const purchases: Record<string, number> = {};
-          
+
           ordersData.forEach(o => {
             if (o.customer_id) {
               balances[o.customer_id] = (balances[o.customer_id] || 0) + (Number(o.remaining_amount) || 0);
@@ -242,9 +244,24 @@ export default function Customers({ tenantId }: CustomersProps) {
       } catch (err) {
         console.error('Error fetching customer balances and order counts:', err);
       }
+    } catch (err) {
+      console.error('Error fetching customers:', err);
+
+      // Offline (or otherwise unreachable) fallback: same cachedCustomers
+      // POS.tsx already warms via refreshCustomersCache -- reused here as a
+      // read-only fallback instead of a separate cache of the same data.
+      if (isNetworkFailure(err)) {
+        const cached = await getCachedCustomers(tenantId).catch(() => []);
+        if (cached.length) {
+          setCustomers(cached);
+          toastWarning(t('offline.showing_cached_customers', 'يتم عرض العملاء المخزَّنين من آخر اتصال، قد لا يكونون محدَّثين.'));
+        }
+      } else {
+        handleFirestoreError(err, OperationType.LIST, 'customers');
+      }
     }
     if (showLoading) setIsLoading(false);
-  }, [tenantId]);
+  }, [tenantId, toastWarning, t]);
 
   useEffect(() => {
     if (!tenantId) return;

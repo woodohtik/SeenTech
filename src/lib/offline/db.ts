@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import type { InventoryItem, Customer } from '../../types';
+import type { InventoryItem, Customer, Order } from '../../types';
 
 /**
  * Local persistent store (seen-offline-sync-architecture-task.md Phase 2).
@@ -48,6 +48,10 @@ export interface CachedCustomer extends Customer {
   cachedAt: number;
 }
 
+export interface CachedOrder extends Order {
+  cachedAt: number;
+}
+
 /**
  * One staff member's own PIN, cached locally only after THEY successfully
  * verified it online at least once on this specific device (Phase 5) --
@@ -90,6 +94,7 @@ class SeenOfflineDatabase extends Dexie {
   cachedCustomers!: Table<CachedCustomer, string>;
   cachedStaffAuth!: Table<CachedStaffAuth, string>;
   offlinePinLockout!: Table<OfflinePinLockout, string>;
+  cachedOrders!: Table<CachedOrder, string>;
 
   constructor() {
     super('seen-offline');
@@ -102,6 +107,9 @@ class SeenOfflineDatabase extends Dexie {
     this.version(2).stores({
       cachedStaffAuth: 'staffId, tenantId',
       offlinePinLockout: 'tenantId',
+    });
+    this.version(3).stores({
+      cachedOrders: 'id, tenantId, orderDate',
     });
   }
 }

@@ -1,6 +1,6 @@
 import { supabase } from '../supabase/client';
-import { offlineDb, type CachedInventoryItem, type CachedBranchStock, type CachedCustomer } from './db';
-import type { InventoryItem, Customer } from '../../types';
+import { offlineDb, type CachedInventoryItem, type CachedBranchStock, type CachedCustomer, type CachedOrder } from './db';
+import type { InventoryItem, Customer, Order } from '../../types';
 
 /**
  * Pulls fresh reads into the local cache while online, so POS.tsx has
@@ -89,4 +89,25 @@ export async function getCachedBranchStock(tenantId: string, branchId: string): 
 
 export async function getCachedCustomers(tenantId: string): Promise<CachedCustomer[]> {
   return offlineDb.cachedCustomers.where('tenantId').equals(tenantId).toArray();
+}
+
+/**
+ * Unlike refreshInventoryCache/refreshCustomersCache/refreshBranchStockCache
+ * above, this takes the already-fetched-and-mapped Order[] directly instead
+ * of querying Supabase itself: Orders.tsx's own mapping (decodeOrderRow)
+ * handles JSON-encoded items/history and is non-trivial enough that
+ * re-implementing it here risked drifting out of sync with the real one.
+ */
+export async function refreshOrdersCache(tenantId: string, orders: Order[]): Promise<void> {
+  const now = Date.now();
+  const rows: CachedOrder[] = orders.map(order => ({ ...order, cachedAt: now }));
+
+  await offlineDb.transaction('rw', offlineDb.cachedOrders, async () => {
+    await offlineDb.cachedOrders.where('tenantId').equals(tenantId).delete();
+    await offlineDb.cachedOrders.bulkPut(rows);
+  });
+}
+
+export async function getCachedOrders(tenantId: string): Promise<CachedOrder[]> {
+  return offlineDb.cachedOrders.where('tenantId').equals(tenantId).toArray();
 }

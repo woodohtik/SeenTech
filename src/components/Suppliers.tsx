@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
+import { saveLastKnown, getLastKnown } from '../lib/offline/lastKnownCache';
+import { isNetworkFailure } from '../lib/offline/outbox';
 import { Supplier, PurchaseOrder, PurchaseReturn, InventoryItem } from '../types';
 import { decodeInventoryDescription } from '../utils/b2bHelper';
 
@@ -46,6 +48,7 @@ import { useTranslation } from 'react-i18next';
 
 export default function Suppliers({ tenantId }: { tenantId: string }) {
   const { t } = useTranslation();
+  const { warning: toastWarning } = useToast();
   const { confirm } = useConfirm();
   const { currentStaff } = useStaff();
 
@@ -144,21 +147,37 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
     if (!tenantId) return;
 
     const fetchSuppliers = async () => {
-      const { data, error } = await supabase
-        .from('suppliers')
-        .select('*')
-        .eq('tenant_id', tenantId);
-      if (error) {
-        handleError(error, OperationType.LIST, 'suppliers');
-      } else {
-        setSuppliers((data || []).map(d => ({
+      try {
+        const { data, error } = await supabase
+          .from('suppliers')
+          .select('*')
+          .eq('tenant_id', tenantId);
+        if (error) throw error;
+
+        const mapped = (data || []).map(d => ({
           ...d,
           contactPerson: d.contact_person,
           taxNumber: d.tax_number,
           createdAt: d.created_at,
           updatedAt: d.updated_at,
           tenantId: d.tenant_id
-        }) as Supplier));
+        }) as Supplier);
+        setSuppliers(mapped);
+        saveLastKnown(tenantId, 'suppliers', mapped);
+      } catch (err) {
+        // This tab doesn't need real offline writes (no financial operation
+        // happens here while disconnected) -- just the last known list
+        // instead of an indefinite loading state or a silently empty one.
+        if (isNetworkFailure(err)) {
+          const cached = getLastKnown<Supplier[]>(tenantId, 'suppliers');
+          if (cached) {
+            setSuppliers(cached.data);
+            toastWarning(t('offline.showing_cached_suppliers', 'يتم عرض الموردين المخزَّنين من آخر اتصال، قد لا يكونون محدَّثين.'));
+          }
+        } else {
+          handleError(err, OperationType.LIST, 'suppliers');
+        }
+      } finally {
         setLoading(false);
       }
     };
