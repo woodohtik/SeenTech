@@ -16,7 +16,9 @@ import {
   Globe,
   Home,
   Terminal,
-  Shield
+  Shield,
+  Shirt,
+  Sofa
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -618,12 +620,36 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Left Side - Visual: solid brand color, no photo or logo mark. */}
+      {/* Left Side - Visual: solid brand color + floating icons naming the
+          actual businesses سين serves (tailoring, clothing, upholstery) --
+          not a generic icon-in-a-box or stock photo. */}
       <div className="hidden lg:flex lg:w-1/2 bg-brand p-12 items-center justify-center relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full translate-x-1/2 translate-y-1/2 blur-3xl" />
         </div>
+
+        <motion.div
+          animate={{ y: [0, -12, 0] }}
+          transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute top-[14%] left-[14%] w-16 h-16 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 flex items-center justify-center shadow-xl"
+        >
+          <Shirt size={28} className="text-white" />
+        </motion.div>
+        <motion.div
+          animate={{ y: [0, 12, 0] }}
+          transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+          className="absolute top-[20%] right-[16%] w-20 h-20 bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 flex items-center justify-center shadow-xl"
+        >
+          <Scissors size={34} className="text-white" />
+        </motion.div>
+        <motion.div
+          animate={{ y: [0, -10, 0] }}
+          transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+          className="absolute bottom-[16%] left-[20%] w-20 h-20 bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 flex items-center justify-center shadow-xl"
+        >
+          <Sofa size={34} className="text-white" />
+        </motion.div>
 
         <div className="relative z-10 text-white max-w-lg text-center">
           <h1 className="text-4xl font-black mb-4 leading-tight">{t('login.title')}</h1>
