@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabase/client';
 import { Staff } from '../types';
 import { cn } from '../lib/utils';
 import { hashPin } from '../services/staffService';
+import { isNetworkFailure } from '../lib/offline/outbox';
+import { cacheStaffPinAfterOnlineVerify, tryOfflinePinVerify, updateCachedStaffPin } from '../lib/offline/offlinePinAuth';
 import { useDirection } from '../lib/direction';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import { getAuthErrorMessage } from '../utils/authErrorUtils';
@@ -96,16 +98,38 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
         });
       };
 
-      let res = await attemptVerify();
-
-      // A missing/expired session access token gets rejected by the server
-      // with the same shape as a genuinely wrong PIN (no `matched` field) --
-      // that used to show "incorrect PIN" for a correctly-typed one whenever
-      // the token had simply gone stale. Refresh the session once and retry
-      // before concluding the PIN itself was wrong.
-      if (res.status === 401) {
-        await supabase.auth.refreshSession();
+      let res: Response;
+      try {
         res = await attemptVerify();
+        // A missing/expired session access token gets rejected by the server
+        // with the same shape as a genuinely wrong PIN (no `matched` field) --
+        // that used to show "incorrect PIN" for a correctly-typed one whenever
+        // the token had simply gone stale. Refresh the session once and retry
+        // before concluding the PIN itself was wrong.
+        if (res.status === 401) {
+          await supabase.auth.refreshSession();
+          res = await attemptVerify();
+        }
+      } catch (networkErr) {
+        // seen-offline-sync-architecture-task.md Phase 5, explicit owner
+        // decision: the request never reached the server at all (offline) --
+        // fall back to a PIN this device already verified successfully
+        // online before, instead of leaving the cashier locked out of a
+        // terminal they were just using seconds ago.
+        if (!isNetworkFailure(networkErr)) throw networkErr;
+        const offlineResult = await tryOfflinePinVerify(tenantId, pin);
+        if (offlineResult.outcome === 'matched') {
+          onLogin(offlineResult.staff as Staff);
+        } else if (offlineResult.outcome === 'locked') {
+          setError(t('login.pin_locked_offline', 'محاولات كثيرة جداً. انتظر {{minutes}} دقيقة ثم أعد المحاولة.', { minutes: Math.ceil(offlineResult.retryAfterSeconds / 60) }));
+          setPin('');
+          setIsVerifying(false);
+        } else {
+          setError(t('login.pin_offline_no_match', 'لا يوجد اتصال بالإنترنت، والرمز المُدخَل غير مطابق لآخر دخول ناجح على هذا الجهاز.'));
+          setPin('');
+          setIsVerifying(false);
+        }
+        return;
       }
 
       if (res.status !== 404 && !res.ok) {
@@ -124,8 +148,9 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
           setIsVerifying(false);
         } else {
           // Success Path - Immediate Action
+          void cacheStaffPinAfterOnlineVerify(tenantId, matchedStaff.id, pin, matchedStaff);
           onLogin(matchedStaff);
-          
+
           // Log in background
           logEmployeeAction(
             tenantId,
@@ -134,7 +159,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
             'login',
             `تسجيل الدخول للنظام (PIN)`
           ).catch(() => {});
-          
+
           // Note: we don't necessarily need setIsVerifying(false) here if unmounting
         }
       } else {
@@ -236,13 +261,19 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
         .eq('id', mustChangePin.id);
 
       if (updateError) throw updateError;
-      
+
+      const updatedStaff = { ...mustChangePin, pin: undefined, mustChangePin: false };
+      // Keep this device's own offline PIN cache in step with the change --
+      // otherwise the old PIN would keep working offline on this device
+      // until some later online login overwrote it.
+      void updateCachedStaffPin(mustChangePin.id, tenantId, newPin, updatedStaff);
+
       // Trigger global refresh
       if ((window as any).refreshAuthData) {
         (window as any).refreshAuthData();
       }
 
-      onLogin({ ...mustChangePin, pin: undefined, mustChangePin: false });
+      onLogin(updatedStaff);
     } catch (err) {
       setError(t('login.pin_update_failed'));
     } finally {

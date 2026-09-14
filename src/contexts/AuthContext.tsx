@@ -12,6 +12,8 @@ import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase/client';
 import { setCurrentAuthSessionInfo } from '../lib/firebase';
 import { getDeviceSessionId } from '../utils/session';
+import { getIsOnline } from '../lib/offline/connectivity';
+import { cacheIdentitySnapshot, getCachedIdentitySnapshot } from '../lib/offline/identityCache';
 import type { Database } from '../types/supabase';
 import type { UserRole, Staff as StaffType } from '../types';
 
@@ -215,6 +217,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const uid = user.id;
         const email = user.email?.toLowerCase().trim() || '';
 
+        /* --------------------------------------------------------------
+           seen-offline-sync-architecture-task.md Phase 5: a genuinely
+           persisted session (persistSession: true) restores from
+           localStorage synchronously even while offline, so `user` above
+           is real -- but every lookup below needs the network. Without
+           this, reloading the app mid-outage got stuck behind `loading`
+           forever instead of getting back to a usable POS screen. Display
+           only: setAppState below is the exact same call a real resolution
+           makes, so nothing downstream can tell the difference, but every
+           write this session performs still goes through the same
+           server-side RLS check it always did regardless of what's
+           sitting here locally.
+           -------------------------------------------------------------- */
+        if (!getIsOnline()) {
+            const cached = getCachedIdentitySnapshot(uid);
+            if (cached) {
+                setAppState({
+                    isApproved: cached.isApproved,
+                    userRole: cached.userRole as UserRole | null,
+                    tenantId: cached.tenantId,
+                    onboardingStep: cached.onboardingStep,
+                    hasStaffWithPin: cached.hasStaffWithPin,
+                    currentUserStaff: cached.currentUserStaff as StaffType | null,
+                    hasNoProfile: false,
+                    resolveError: null,
+                });
+                setLoading(false);
+                return;
+            }
+        }
+
         try {
             const next = await fetchDbUser(uid, email);
             setDbUser(next);
@@ -361,6 +394,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     currentUserStaff: mappedStaff as any,
                     hasNoProfile: false,
                     resolveError: null,
+                });
+
+                // Phase 5: snapshot for the offline-reload fallback above.
+                cacheIdentitySnapshot(uid, {
+                    isApproved: approved,
+                    userRole: role,
+                    tenantId: staffData.tenant_id,
+                    onboardingStep: step,
+                    hasStaffWithPin: staffPinCount,
+                    currentUserStaff: mappedStaff,
                 });
 
                 if (staffData.tenant_id && approved) {
@@ -520,6 +563,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // device" session - it must never be torn down by the
             // multi-device conflict check while the user is mid-reset.
             if (window.location.pathname === '/reset-password') return;
+            // seen-offline-sync-architecture-task.md Phase 5: this used to
+            // fire every 5s regardless of connectivity, failing silently
+            // (the catch below) for as long as the device stayed offline --
+            // a real check happens the moment connectivity actually returns
+            // anyway (the interval's own next tick).
+            if (!getIsOnline()) return;
             try {
                 const { data: userRow } = await supabase.from('users').select('photo_url').eq('id', uid).maybeSingle();
                 if (userRow?.photo_url && userRow.photo_url !== currentSessionId) {

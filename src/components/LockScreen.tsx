@@ -7,6 +7,8 @@ import { useTranslation } from 'react-i18next';
 import { useDirection } from '../lib/direction';
 import { supabase } from '../lib/supabase/client';
 import { logEmployeeAction } from '../services/employeeAuditService';
+import { isNetworkFailure } from '../lib/offline/outbox';
+import { cacheStaffPinAfterOnlineVerify, tryOfflinePinVerify } from '../lib/offline/offlinePinAuth';
 
 interface LockScreenProps {
   currentStaff: Staff | null;
@@ -79,14 +81,43 @@ export default function LockScreen({ currentStaff, onUnlock, tenantId, onUnlockW
             });
           };
 
-          let res = await attemptVerify();
-
-          // A missing/expired session access token is rejected with the same
-          // shape as a wrong PIN -- refresh once and retry before blaming a
-          // correctly-typed PIN for a stale token.
-          if (res.status === 401) {
-            await supabase.auth.refreshSession();
+          let res: Response;
+          try {
             res = await attemptVerify();
+            // A missing/expired session access token is rejected with the same
+            // shape as a wrong PIN -- refresh once and retry before blaming a
+            // correctly-typed PIN for a stale token.
+            if (res.status === 401) {
+              await supabase.auth.refreshSession();
+              res = await attemptVerify();
+            }
+          } catch (networkErr) {
+            // seen-offline-sync-architecture-task.md Phase 5: the lock
+            // screen is exactly the "keep POS usable immediately on
+            // disconnect" case the offline PIN fallback exists for -- a
+            // cashier who was already using this device a moment ago must
+            // not get stuck behind a lock screen just because the network
+            // dropped in between.
+            if (!isNetworkFailure(networkErr)) throw networkErr;
+            const effectiveTenantId = tenantId || currentStaff?.tenantId || '';
+            const offlineResult = await tryOfflinePinVerify(effectiveTenantId, pin);
+            if (offlineResult.outcome === 'matched') {
+              const matched = offlineResult.staff as Staff;
+              if (currentStaff && matched.id === currentStaff.id) {
+                onUnlock();
+              } else if (onUnlockWithStaff) {
+                onUnlockWithStaff(matched);
+              } else {
+                onUnlock();
+              }
+            } else if (offlineResult.outcome === 'locked') {
+              setError(t('login.pin_locked_offline', 'محاولات كثيرة جداً. انتظر {{minutes}} دقيقة ثم أعد المحاولة.', { minutes: Math.ceil(offlineResult.retryAfterSeconds / 60) }));
+              setPin('');
+            } else {
+              setError(t('login.pin_offline_no_match', 'لا يوجد اتصال بالإنترنت، والرمز المُدخَل غير مطابق لآخر دخول ناجح على هذا الجهاز.'));
+              setPin('');
+            }
+            return;
           }
 
           if (res.status !== 404 && !res.ok) {
@@ -99,6 +130,7 @@ export default function LockScreen({ currentStaff, onUnlock, tenantId, onUnlockW
           const matchedStaff: Staff | null = payload?.matched ? (payload.staff as Staff) : null;
 
           if (matchedStaff) {
+            void cacheStaffPinAfterOnlineVerify(tenantId || matchedStaff.tenantId || '', matchedStaff.id, pin, matchedStaff);
             if (currentStaff && matchedStaff.id === currentStaff.id) {
               onUnlock();
             } else {
