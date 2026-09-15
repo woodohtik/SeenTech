@@ -1736,6 +1736,8 @@
     "notification_new_order_title": "نیا سیلز آرڈر",
     "order_added_success": "آرڈر کامیابی سے شامل ہو گیا",
     "order_cancelled_low_stock": "اسٹاک کی کمی کی وجہ سے آرڈر شامل کرنا منسوخ کر دیا گیا",
+    "order_queued_offline_desc": "فی الحال انٹرنیٹ کنکشن نہیں ہے — انٹرنیٹ واپس آتے ہی خودکار طور پر سرور پر اپ لوڈ ہو جائے گا۔",
+    "order_queued_offline_title": "آرڈر مقامی طور پر محفوظ ہو گیا",
     "order_created_note": "آرڈر بنا دیا گیا",
     "order_deleted_success": "آرڈر کامیابی سے حذف ہو گیا",
     "order_delivered_closed_note": "آرڈر ڈیلیور اور بند کر دیا گیا",

@@ -47,7 +47,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase/client';
 import { handleFirestoreError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
 import { refreshOrdersCache, getCachedOrders } from '../lib/offline/cacheSync';
-import { isNetworkFailure } from '../lib/offline/outbox';
+import { isNetworkFailure, enqueueOrderCreate } from '../lib/offline/outbox';
+import { getIsOnline } from '../lib/offline/connectivity';
 import { Order, Customer, OrderStatus, OrderHistory, InventoryItem, PaymentMethod, OrderItem, Staff, Tenant, Measurements } from '../types';
 import { cn, generateOrderNumber } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
@@ -1148,44 +1149,70 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     };
 
     try {
-      // 1. Check Stock Availability
-      const { available, missingItems } = await checkStockAvailability(
-        data.items,
-        currentStaff?.branchId || '',
-        tenantId,
-        tenantStrategy
-      );
+      // 1. Check Stock Availability -- skipped entirely while offline: it's
+      // a network call itself (branches + per-item inventory_items
+      // lookups), so it can't actually be verified right now, and letting
+      // it run would show a misleading "المستودع الرئيسي غير موجود" stock
+      // -shortage prompt when the real problem is just connectivity.
+      if (getIsOnline()) {
+        const { available, missingItems } = await checkStockAvailability(
+          data.items,
+          currentStaff?.branchId || '',
+          tenantId,
+          tenantStrategy
+        );
 
-      if (!available) {
-        if (!(await confirm(t('orders.stock_shortage_confirm', { items: missingItems.join(', ') })))) {
-          toastWarning(t('orders.order_cancelled_low_stock'));
-          return;
+        if (!available) {
+          if (!(await confirm(t('orders.stock_shortage_confirm', { items: missingItems.join(', ') })))) {
+            toastWarning(t('orders.order_cancelled_low_stock'));
+            return;
+          }
         }
       }
 
-      const { data: newOrder, error } = await supabase
-        .from('orders')
-        .insert(orderData)
-        .select()
-        .single();
-      
-      if (error) throw error;
+      // Client-generated id (seen-offline-coverage-and-performance-task.md
+      // follow-up): included in orderData itself so a later offline-queued
+      // insert is idempotent the same way POS.tsx's operation_id is -- a
+      // retried sync after a dropped response hits a primary-key conflict
+      // instead of creating a duplicate order (see enqueueOrderCreate).
+      const orderId = globalThis.crypto.randomUUID();
+      (orderData as any).id = orderId;
 
-      void notifyNewOrderForStaff(newOrder.id);
+      let queuedOffline = false;
+      let newOrder: any;
 
-      // Insert order notification
       try {
-        await supabase.from('notifications').insert({
-          tenant_id: tenantId,
-          title: t('orders.notification_new_order_title'),
-          message: t('orders.notification_new_order_message', { number: newOrder.order_number || '', customer: newOrder.customer_name || t('pos.walk_in_customer'), amount: newOrder.total_amount || 0 }),
-          type: 'order',
-          status: 'unread',
-          created_at: new Date().toISOString(),
-          metadata: { order_id: newOrder.id }
-        });
-      } catch (notifErr) {
-        console.warn('Failed to insert order notification:', notifErr);
+        const { data: insertedOrder, error } = await supabase
+          .from('orders')
+          .insert(orderData)
+          .select()
+          .single();
+        if (error) throw error;
+        newOrder = insertedOrder;
+      } catch (insertErr) {
+        if (!isNetworkFailure(insertErr)) throw insertErr;
+        await enqueueOrderCreate(orderId, orderData);
+        queuedOffline = true;
+        newOrder = orderData;
+      }
+
+      if (!queuedOffline) {
+        void notifyNewOrderForStaff(newOrder.id);
+
+        // Insert order notification
+        try {
+          await supabase.from('notifications').insert({
+            tenant_id: tenantId,
+            title: t('orders.notification_new_order_title'),
+            message: t('orders.notification_new_order_message', { number: newOrder.order_number || '', customer: newOrder.customer_name || t('pos.walk_in_customer'), amount: newOrder.total_amount || 0 }),
+            type: 'order',
+            status: 'unread',
+            created_at: new Date().toISOString(),
+            metadata: { order_id: newOrder.id }
+          });
+        } catch (notifErr) {
+          console.warn('Failed to insert order notification:', notifErr);
+        }
       }
 
       const mappedNewOrder = mapOrderData(newOrder);
@@ -1195,7 +1222,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       if (mappedNewOrder.remainingAmount > 0 && mappedNewOrder.status !== 'cancelled') {
         setUnpaidOrders(prev => [mappedNewOrder, ...prev.filter(o => o.id !== mappedNewOrder.id)]);
       }
-      
+
       // Track Order Created
       analytics.track(AnalyticsEvent.ORDER_CREATED, {
         order_id: newOrder.id,
@@ -1215,8 +1242,19 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       }
 
       handleCloseModal();
-      router.refresh();
-      toastSuccess(t('orders.order_added_success'));
+      if (queuedOffline) {
+        toastSuccess(
+          t('orders.order_queued_offline_title', 'سُجِّل الطلب محلياً'),
+          t('orders.order_queued_offline_desc', 'لا يوجد اتصال حالياً — سيُرفَع تلقائياً للخادم فور عودة الإنترنت.')
+        );
+        // Printing doesn't need the server round trip -- handlePrintOrder
+        // only reads local order data, so the cashier gets a receipt in
+        // hand immediately instead of waiting for connectivity to return.
+        void handlePrintOrder(mappedNewOrder);
+      } else {
+        router.refresh();
+        toastSuccess(t('orders.order_added_success'));
+      }
     } catch (error: any) {
       console.error('Order submission error:', error);
       handleFirestoreError(error, OperationType.WRITE, 'orders');

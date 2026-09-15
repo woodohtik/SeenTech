@@ -1027,7 +1027,22 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
 
       let queuedOffline = false;
 
-      const { data: saleResult, error: saleError } = await supabase.rpc('create_pos_sale', salePayload);
+      // Wrapped in its own try/catch: postgrest-js normally resolves with
+      // {error} even on a network failure, but that's an implementation
+      // detail of the library, not a guarantee -- a thrown exception here
+      // must reach the exact same isNetworkFailure/enqueuePosSale fallback
+      // below instead of skipping straight to the outer catch, which
+      // previously showed a generic "connection failed" toast with no
+      // print and nothing queued.
+      let saleResult: any = null;
+      let saleError: any = null;
+      try {
+        const res = await supabase.rpc('create_pos_sale', salePayload);
+        saleResult = res.data;
+        saleError = res.error;
+      } catch (rpcThrow) {
+        saleError = rpcThrow;
+      }
 
       if (saleError) {
         /* --------------------------------------------------------------

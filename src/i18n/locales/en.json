@@ -1736,6 +1736,8 @@
     "notification_new_order_title": "New Sales Order",
     "order_added_success": "Order added successfully",
     "order_cancelled_low_stock": "Order creation cancelled due to insufficient stock",
+    "order_queued_offline_desc": "No connection right now — it will upload to the server automatically once the internet is back.",
+    "order_queued_offline_title": "Order saved locally",
     "order_created_note": "Order created",
     "order_deleted_success": "Order deleted successfully",
     "order_delivered_closed_note": "Order delivered and closed",

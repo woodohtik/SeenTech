@@ -1736,6 +1736,8 @@
     "notification_new_order_title": "طلب مبيعات جديد",
     "order_added_success": "تم إضافة الطلب بنجاح",
     "order_cancelled_low_stock": "تم إلغاء إضافة الطلب بسبب نقص المخزون",
+    "order_queued_offline_desc": "لا يوجد اتصال حالياً — سيُرفَع تلقائياً للخادم فور عودة الإنترنت.",
+    "order_queued_offline_title": "سُجِّل الطلب محلياً",
     "order_created_note": "تم إنشاء الطلب",
     "order_deleted_success": "تم حذف الطلب بنجاح",
     "order_delivered_closed_note": "تم تسليم الطلب وإغلاقه",

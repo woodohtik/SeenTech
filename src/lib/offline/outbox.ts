@@ -6,10 +6,11 @@ import { onConnectivityChange, checkConnectivityNow } from './connectivity';
 /**
  * The outbox queue (seen-offline-sync-architecture-task.md Phase 3).
  *
- * Only `pos_sale` is a recognized entry type -- Phase 1's own scope decision
- * limits what's safe to queue offline to simplified (B2C) POS sales;
- * standard B2B invoices are explicitly excluded (owner decision, see the
- * task file) and must never reach this queue.
+ * `pos_sale` and `order_create` are the two recognized entry types.
+ * Standard B2B invoices are explicitly excluded from `pos_sale` (owner
+ * decision, see the task file: ZATCA requires live clearance for those)
+ * and must never reach this queue -- `order_create` (a tailoring/service
+ * order, not a point-of-sale tax invoice) has no such restriction.
  */
 
 const MAX_AUTO_RETRIES = 5;
@@ -34,12 +35,26 @@ export function getCachedPendingCount(): number {
 
 /** Same "was this actually a network failure" check already used in
  *  Login.tsx's handleEmailLogin/handleRegister -- kept consistent rather
- *  than inventing a second heuristic for the same problem. */
+ *  than inventing a second heuristic for the same problem.
+ *
+ *  navigator.onLine is checked first and short-circuits everything else:
+ *  when the browser itself reports no network, whatever error a Supabase
+ *  call surfaced is a network failure regardless of its exact message
+ *  text -- message-substring matching alone is fragile (it depends on
+ *  which browser/JS engine worded the underlying fetch rejection, and on
+ *  every layer this error passed through -- e.g. postgrest-js wraps a raw
+ *  fetch TypeError into a plain error OBJECT whose .message is prefixed
+ *  with the original error's name, not a TypeError instance itself, so
+ *  `err instanceof TypeError` never actually matches it in practice). */
 export function isNetworkFailure(err: any): boolean {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return true;
   return (
     (err instanceof TypeError && (err.message?.includes('fetch') || err.message?.includes('Network'))) ||
     !!err?.message?.includes('Failed to fetch') ||
-    !!err?.message?.includes('NetworkError')
+    !!err?.message?.includes('NetworkError') ||
+    !!err?.message?.includes('Load failed') ||
+    !!err?.message?.includes('ERR_INTERNET_DISCONNECTED') ||
+    !!err?.message?.includes('ERR_NETWORK')
   );
 }
 
@@ -69,6 +84,33 @@ export async function enqueuePosSale(operationId: string, payload: {
   await refreshCachedPendingCount();
 }
 
+/**
+ * A tailoring/service order (Orders.tsx), not a point-of-sale tax invoice --
+ * no ZATCA live-clearance restriction applies, unlike pos_sale/B2B. `orderId`
+ * is generated client-side (crypto.randomUUID()) and included as `id` inside
+ * `orderData` itself, so replaying this insert is idempotent the same way
+ * pos_sale's operation_id is: a retried sync after a dropped response hits a
+ * primary-key conflict server-side instead of creating a duplicate order
+ * (see syncEntry below).
+ */
+export async function enqueueOrderCreate(orderId: string, orderData: Record<string, unknown>): Promise<void> {
+  const isFirstEver = (await offlineDb.outbox.count()) === 0;
+
+  await offlineDb.outbox.put({
+    id: orderId,
+    type: 'order_create',
+    payload: { orderData },
+    createdAt: Date.now(),
+    status: 'pending',
+    retries: 0,
+  });
+
+  if (isFirstEver) {
+    void requestPersistentStorage().catch(() => {});
+  }
+  await refreshCachedPendingCount();
+}
+
 async function syncEntry(entry: OutboxEntry): Promise<'synced' | 'failed'> {
   await offlineDb.outbox.update(entry.id, { status: 'syncing' });
   try {
@@ -76,6 +118,14 @@ async function syncEntry(entry: OutboxEntry): Promise<'synced' | 'failed'> {
       const payload = entry.payload as { p_operation_id: string; p_order: unknown; p_items: unknown; p_invoice: unknown };
       const { error } = await supabase.rpc('create_pos_sale', payload);
       if (error) throw error;
+    } else if (entry.type === 'order_create') {
+      const payload = entry.payload as { orderData: Record<string, unknown> };
+      const { error } = await supabase.from('orders').insert(payload.orderData);
+      // 23505 = unique_violation on the client-generated id -- an earlier
+      // sync attempt already succeeded server-side even though its response
+      // never made it back here (e.g. the connection dropped mid-response).
+      // That's a success, not a failure to retry.
+      if (error && (error as any).code !== '23505') throw error;
     }
     await offlineDb.outbox.delete(entry.id);
     return 'synced';
