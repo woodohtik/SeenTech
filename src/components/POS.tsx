@@ -154,7 +154,6 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   // Cash Drawer State
   const [cashDrawerBalance, setCashDrawerBalance] = useState<number>(0);
   const [showCashDrawerDetails, setShowCashDrawerDetails] = useState<boolean>(false);
-  const [activeShiftData, setActiveShiftData] = useState<any | null>(null);
   const [cashDrawerBreakdown, setCashDrawerBreakdown] = useState({
     opening: 0,
     sales: 0,
@@ -164,100 +163,34 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     total: 0
   });
 
+  // Phase 4 of seen-offline-coverage-and-performance-task.md: this used to
+  // download the full shifts row, every shift_entries row, and EVERY order
+  // for the shift (select('*'), no limit) just to sum a handful of numbers
+  // -- and re-ran that full download on every single realtime event on
+  // those three tables, so the download grew with every sale made during
+  // the shift. get_shift_cash_balance computes the same five numbers
+  // (opening/sales/deposits/withdrawals/returns/total) in Postgres --
+  // see supabase/migrations/20260916000000_get_shift_cash_balance_rpc.sql
+  // for the exact formula, unchanged from what this function used to do.
   const fetchCashDrawerBalance = useCallback(async () => {
     if (!shiftId) return;
     try {
-      // 1. Fetch current shift
-      const { data: shift, error: shiftErr } = await supabase
-        .from('shifts')
-        .select('*')
-        .eq('id', shiftId)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc('get_shift_cash_balance', { p_shift_id: shiftId });
+      if (error) throw error;
 
-      if (shiftErr) throw shiftErr;
-      if (!shift) return;
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row) return;
 
-      // Fetch shift entries
-      const { data: entries, error: entriesErr } = await supabase
-        .from('shift_entries')
-        .select('*')
-        .eq('shift_id', shiftId);
-
-      if (!entriesErr && entries) {
-        shift.deposits = entries
-          .filter((e: any) => e.entry_type === 'deposit')
-          .map((e: any) => ({ id: e.id, amount: Number(e.amount), reason: e.reason, time: e.occurred_at }));
-
-        shift.payouts = entries
-          .filter((e: any) => e.entry_type === 'payout')
-          .map((e: any) => ({ id: e.id, amount: Number(e.amount), reason: e.reason, time: e.occurred_at }));
-      }
-
-      setActiveShiftData(shift);
-
-      // 2. Fetch all orders for this shift
-      const { data: orders, error: ordersErr } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('shift_id', shiftId);
-
-      if (ordersErr) throw ordersErr;
-
-      let cashSales = 0;
-      let cashReturns = 0;
-
-      (orders || []).forEach(order => {
-        if (order.status === 'cancelled') {
-          if (order.payment_method === 'cash') {
-            cashReturns += (order.paid_amount || 0);
-          }
-        } else {
-          if (order.payment_method === 'cash') {
-            cashSales += (order.paid_amount || 0);
-          }
-        }
-      });
-
-      // Calculate totals
-      const opening = Number(shift.opening_balance || 0);
-      
-      // Calculate deposits from shift.deposits
-      let customDeposits = 0;
-      if (Array.isArray(shift.deposits)) {
-        customDeposits = shift.deposits.reduce((sum: number, d: any) => sum + Number(d.amount || 0), 0);
-      } else if (typeof shift.deposits === 'string') {
-        try {
-          const parsed = JSON.parse(shift.deposits);
-          if (Array.isArray(parsed)) {
-            customDeposits = parsed.reduce((sum: number, d: any) => sum + Number(d.amount || 0), 0);
-          }
-        } catch (_) {}
-      }
-
-      // Calculate payouts/expenses from shift.payouts
-      let customPayouts = 0;
-      if (Array.isArray(shift.payouts)) {
-        customPayouts = shift.payouts.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
-      } else if (typeof shift.payouts === 'string') {
-        try {
-          const parsed = JSON.parse(shift.payouts);
-          if (Array.isArray(parsed)) {
-            customPayouts = parsed.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
-          }
-        } catch (_) {}
-      }
-
-      const totalInDrawer = opening + cashSales + customDeposits - cashReturns - customPayouts;
-
-      setCashDrawerBalance(totalInDrawer);
-      setCashDrawerBreakdown({
-        opening,
-        sales: cashSales,
-        deposits: customDeposits,
-        withdrawals: customPayouts,
-        returns: cashReturns,
-        total: totalInDrawer
-      });
+      const breakdown = {
+        opening: Number(row.opening || 0),
+        sales: Number(row.sales || 0),
+        deposits: Number(row.deposits || 0),
+        withdrawals: Number(row.withdrawals || 0),
+        returns: Number(row.returns || 0),
+        total: Number(row.total || 0),
+      };
+      setCashDrawerBalance(breakdown.total);
+      setCashDrawerBreakdown(breakdown);
     } catch (err) {
       console.error('Error calculating cash drawer balance:', err);
     }
