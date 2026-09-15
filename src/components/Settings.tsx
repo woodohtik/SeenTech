@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { formatSaudiPhone } from '../utils/phoneUtils';
@@ -41,11 +42,21 @@ interface SettingsProps {
 
 type TabType = 'profile' | 'appearance' | 'invoice' | 'printer' | 'tax' | 'branches' | 'staff' | 'whatsapp' | 'billing' | 'support' | 'notifications' | 'data';
 
+interface SettingsData {
+  name: string;
+  phone: string;
+  address: string;
+  logoUrl: string;
+  taxSettings: unknown;
+  notificationSettings: unknown;
+  ownerEmail?: string;
+}
+
 export default function Settings({ tenantId }: SettingsProps) {
   const { t, i18n } = useTranslation();
   const { error: toastError, warning: toastWarning } = useToast();
   const isRtl = isRtlLang(i18n.language);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = (searchParams.get('tab') as TabType) || 'profile';
   const setActiveTab = (tab: TabType) => {
@@ -149,142 +160,147 @@ export default function Settings({ tenantId }: SettingsProps) {
   const taxEnabled = watch('taxSettings.enabled');
   const tailoringTaxType = watch('taxSettings.tailoringTaxType') || 'exclusive';
 
-  useEffect(() => {
-    const fetchTenant = async () => {
-      if (!tenantId || tenantId === 'saas_management') {
-        setLoading(false);
-        return;
+  // Phase 3 of seen-offline-coverage-and-performance-task.md: the fetch
+  // itself is now a useQuery, with initialData seeded synchronously from
+  // the same lastKnownCache (localStorage) snapshot Phase 2 already wrote
+  // here -- same pattern as Suppliers.tsx/Reports.tsx. staleTime is
+  // Infinity (not the usual 30s) specifically because this is a FORM: a
+  // background revalidation calling reset() mid-edit would silently wipe
+  // whatever the owner is typing. The query only ever (re)fetches on mount
+  // or after an explicit invalidate (the settings-save handler below does
+  // that itself once it knows the new values, rather than relying on a
+  // stale-triggered refetch).
+  const settingsQuery = useQuery<SettingsData | null>({
+    queryKey: ['tenant_settings', tenantId],
+    queryFn: async (): Promise<SettingsData | null> => {
+      // Try to load via backend API endpoint (bypasses direct database restrictions securely)
+      const { data: { session } } = await supabase.auth.getSession();
+      const idToken = session?.access_token;
+      const headers: HeadersInit = {};
+      if (idToken) {
+        headers['Authorization'] = `Bearer ${idToken}`;
       }
+
+      let loadedData: any = null;
       try {
-        // Try to load via backend API endpoint (bypasses direct database restrictions securely)
-        const { data: { session } } = await supabase.auth.getSession();
-        const idToken = session?.access_token;
-        const headers: HeadersInit = {};
-        if (idToken) {
-          headers['Authorization'] = `Bearer ${idToken}`;
+        const apiRes = await fetch('/api/tenant/settings', { headers });
+        if (apiRes.ok) {
+          loadedData = await apiRes.json();
         }
-        
-        let loadedData: any = null;
-        try {
-          const apiRes = await fetch('/api/tenant/settings', { headers });
-          if (apiRes.ok) {
-            loadedData = await apiRes.json();
-          }
-        } catch (apiErr) {
-          console.warn('[Settings] Failed to fetch settings via API, falling back to direct Supabase:', apiErr);
-        }
-
-        if (loadedData) {
-          reset({
-            name: loadedData.name || '',
-            phone: loadedData.phone || '',
-            address: loadedData.address || '',
-            inventoryStrategy: 'decentralized',
-            logoUrl: loadedData.logoUrl || '',
-            taxSettings: loadedData.taxSettings,
-            notificationSettings: loadedData.notificationSettings
-          });
-          setLogoPreview(loadedData.logoUrl || null);
-          saveLastKnown(tenantId, 'settings', loadedData);
-          return;
-        }
-
-        const { data, error } = await supabase
-          .from('tenants')
-          .select('*')
-          .eq('id', tenantId)
-          .single();
-
-        if (data && !error) {
-          const hasVat = Boolean(data.vat_number && data.vat_number.trim().length > 0);
-          let rawTax = data.tax_settings as any;
-          if (!rawTax) {
-            try {
-              const fallback = localStorage.getItem(`tenant_tax_settings_${tenantId}`);
-              if (fallback) {
-                rawTax = JSON.parse(fallback);
-              }
-            } catch (e) {
-              console.error('Failed to load tax_settings from localStorage:', e);
-            }
-          }
-          const loadedTaxSettings = rawTax ? {
-            ...rawTax,
-            enabled: rawTax.enabled ?? (hasVat || Boolean(rawTax.trn)),
-            trn: rawTax.trn || data.vat_number || '',
-            legalName: rawTax.legalName || data.name || '',
-            vatRate: rawTax.vatRate ?? 15,
-            tailoringTaxType: rawTax.tailoringTaxType || 'exclusive'
-          } : {
-            enabled: hasVat,
-            trn: data.vat_number || '',
-            legalName: data.name || '',
-            vatRate: 15,
-            tailoringTaxType: 'exclusive'
-          };
-
-          const loadedNotificationSettings = rawTax?.notificationSettings || {
-            lowStock: true,
-            newOrder: true,
-            dailyClose: true,
-            tomorrowDelivery: true
-          };
-
-          reset({
-            name: data.name || '',
-            phone: data.phone || '',
-            address: data.address || '',
-            inventoryStrategy: 'decentralized',
-            logoUrl: data.logo_url || '',
-            taxSettings: loadedTaxSettings,
-            notificationSettings: loadedNotificationSettings
-          });
-          setLogoPreview(data.logo_url || null);
-          if (data.owner_email) {
-            setUserEmail(prev => prev || data.owner_email || '');
-          }
-          saveLastKnown(tenantId, 'settings', {
-            name: data.name || '',
-            phone: data.phone || '',
-            address: data.address || '',
-            logoUrl: data.logo_url || '',
-            taxSettings: loadedTaxSettings,
-            notificationSettings: loadedNotificationSettings
-          });
-        }
-      } catch (error) {
-        // This tab doesn't need real offline writes (settings changes
-        // still require a live save) -- just showing the last known values
-        // on load instead of a blank form when the fetch itself fails.
-        if (isNetworkFailure(error)) {
-          const cached = getLastKnown<{
-            name: string; phone: string; address: string; logoUrl: string;
-            taxSettings: unknown; notificationSettings: unknown;
-          }>(tenantId, 'settings');
-          if (cached) {
-            reset({
-              name: cached.data.name || '',
-              phone: cached.data.phone || '',
-              address: cached.data.address || '',
-              inventoryStrategy: 'decentralized',
-              logoUrl: cached.data.logoUrl || '',
-              taxSettings: cached.data.taxSettings as any,
-              notificationSettings: cached.data.notificationSettings as any
-            });
-            setLogoPreview(cached.data.logoUrl || null);
-            toastWarning(t('offline.showing_cached_settings', 'يتم عرض الإعدادات المخزَّنة من آخر اتصال، قد لا تكون محدَّثة. أي حفظ الآن يتطلب اتصالاً فعلياً.'));
-          } else {
-            handleError(error, OperationType.GET, 'tenants');
-          }
-        } else {
-          handleError(error, OperationType.GET, 'tenants');
-        }
-      } finally {
-        setLoading(false);
+      } catch (apiErr) {
+        console.warn('[Settings] Failed to fetch settings via API, falling back to direct Supabase:', apiErr);
       }
-    };
-    fetchTenant();
-  }, [tenantId, reset]);
+
+      if (loadedData) {
+        const result: SettingsData = {
+          name: loadedData.name || '',
+          phone: loadedData.phone || '',
+          address: loadedData.address || '',
+          logoUrl: loadedData.logoUrl || '',
+          taxSettings: loadedData.taxSettings,
+          notificationSettings: loadedData.notificationSettings,
+        };
+        saveLastKnown(tenantId, 'settings', result);
+        return result;
+      }
+
+      const { data, error } = await supabase
+        .from('tenants')
+        .select('*')
+        .eq('id', tenantId)
+        .single();
+      if (error) throw error;
+      if (!data) return null;
+
+      const hasVat = Boolean(data.vat_number && data.vat_number.trim().length > 0);
+      let rawTax = data.tax_settings as any;
+      if (!rawTax) {
+        try {
+          const fallback = localStorage.getItem(`tenant_tax_settings_${tenantId}`);
+          if (fallback) {
+            rawTax = JSON.parse(fallback);
+          }
+        } catch (e) {
+          console.error('Failed to load tax_settings from localStorage:', e);
+        }
+      }
+      const loadedTaxSettings = rawTax ? {
+        ...rawTax,
+        enabled: rawTax.enabled ?? (hasVat || Boolean(rawTax.trn)),
+        trn: rawTax.trn || data.vat_number || '',
+        legalName: rawTax.legalName || data.name || '',
+        vatRate: rawTax.vatRate ?? 15,
+        tailoringTaxType: rawTax.tailoringTaxType || 'exclusive'
+      } : {
+        enabled: hasVat,
+        trn: data.vat_number || '',
+        legalName: data.name || '',
+        vatRate: 15,
+        tailoringTaxType: 'exclusive'
+      };
+
+      const loadedNotificationSettings = rawTax?.notificationSettings || {
+        lowStock: true,
+        newOrder: true,
+        dailyClose: true,
+        tomorrowDelivery: true
+      };
+
+      const result: SettingsData = {
+        name: data.name || '',
+        phone: data.phone || '',
+        address: data.address || '',
+        logoUrl: data.logo_url || '',
+        taxSettings: loadedTaxSettings,
+        notificationSettings: loadedNotificationSettings,
+        ownerEmail: data.owner_email || undefined,
+      };
+      saveLastKnown(tenantId, 'settings', result);
+      return result;
+    },
+    enabled: !!tenantId && tenantId !== 'saas_management',
+    staleTime: Infinity,
+    initialData: () => tenantId ? getLastKnown<SettingsData>(tenantId, 'settings')?.data : undefined,
+  });
+  const loading = settingsQuery.isLoading;
+
+  useEffect(() => {
+    const d = settingsQuery.data;
+    if (!d) return;
+    reset({
+      name: d.name,
+      phone: d.phone,
+      address: d.address,
+      inventoryStrategy: 'decentralized',
+      logoUrl: d.logoUrl,
+      taxSettings: d.taxSettings as any,
+      notificationSettings: d.notificationSettings as any
+    });
+    setLogoPreview(d.logoUrl || null);
+    if (d.ownerEmail) {
+      setUserEmail(prev => prev || d.ownerEmail || '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settingsQuery.data]);
+
+  useEffect(() => {
+    if (!settingsQuery.error) return;
+    // This tab doesn't need real offline writes (settings changes still
+    // require a live save) -- just showing the last known values on load
+    // instead of a blank form when the fetch itself fails. The reset()
+    // above already ran off initialData/a previous successful fetch if
+    // one exists; this just decides which message to show.
+    if (isNetworkFailure(settingsQuery.error)) {
+      if (settingsQuery.data) {
+        toastWarning(t('offline.showing_cached_settings', 'يتم عرض الإعدادات المخزَّنة من آخر اتصال، قد لا تكون محدَّثة. أي حفظ الآن يتطلب اتصالاً فعلياً.'));
+      } else {
+        handleError(settingsQuery.error, OperationType.GET, 'tenants');
+      }
+    } else {
+      handleError(settingsQuery.error, OperationType.GET, 'tenants');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settingsQuery.error]);
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -377,6 +393,23 @@ export default function Settings({ tenantId }: SettingsProps) {
 
         if (error) throw error;
       }
+
+      // Keep the query cache and lastKnownCache in step with what was just
+      // saved -- staleTime is Infinity above specifically so nothing
+      // auto-refetches and clobbers in-progress edits, so this is the only
+      // thing that updates them after the initial load.
+      const savedSettings: SettingsData = {
+        name: data.name,
+        phone: data.phone || '',
+        address: data.address || '',
+        logoUrl: data.logoUrl || '',
+        taxSettings: data.taxSettings,
+        notificationSettings: data.notificationSettings,
+      };
+      queryClient.setQueryData(['tenant_settings', tenantId], (prev?: SettingsData | null) =>
+        prev ? { ...prev, ...savedSettings } : savedSettings
+      );
+      saveLastKnown(tenantId, 'settings', savedSettings);
 
       setSaveSuccess(true);
       window.dispatchEvent(new CustomEvent('tenant_settings_updated'));
