@@ -45,6 +45,7 @@ import {
   Layout as LayoutIcon,
   ClipboardList,
 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase/client";
 import { handleFirestoreError, OperationType } from "../../lib/firebase";
 import { getCachedInventory } from "../../lib/offline/cacheSync";
@@ -108,12 +109,11 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
     [inventoryCategories]
   );
 
-  const [items, setItems] = useState<InventoryItem[]>([]);
+  const queryClient = useQueryClient();
   const [branches, setBranches] = useState<Branch[]>([]);
   const [branchStock, setBranchStock] = useState<
     Record<string, BranchInventory[]>
   >({});
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
@@ -145,18 +145,6 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
   const [lowStockItems, setLowStockItems] = useState<any[]>([]);
   const [isLowStockOnly, setIsLowStockOnly] = useState(false);
 
-  useEffect(() => {
-    const lowStock = items.filter((item) => {
-      const totalStock = (
-        Object.values(branchStock).flat() as BranchInventory[]
-      )
-        .filter((bi) => bi.itemId === item.id)
-        .reduce((sum, bi) => sum + bi.quantity, 0);
-      return totalStock <= (item.minThreshold || 0);
-    });
-    setLowStockItems(lowStock);
-  }, [items, branchStock]);
-
   // Fetch Master Catalog
   const mapInventoryData = useCallback((d: any) => {
     const meta = decodeInventoryDescription(d.description);
@@ -183,13 +171,59 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
     };
   }, []);
 
+  // Phase 3 of seen-offline-coverage-and-performance-task.md: items now
+  // come from react-query. getCachedInventory is async (Dexie/IndexedDB),
+  // so it can't seed a synchronous `initialData`; the effect below seeds
+  // it via setQueryData as soon as that resolves, and the realtime
+  // subscription below patches the same query cache directly instead of a
+  // local setItems, so a single INSERT/UPDATE/DELETE payload still updates
+  // the screen instantly with no extra network round trip.
+  const inventoryQueryKey = ['inventory_items', tenantId, refreshCounter];
+  const itemsQuery = useQuery<InventoryItem[]>({
+    queryKey: inventoryQueryKey,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("inventory_items")
+        .select("*")
+        .eq("tenant_id", tenantId);
+      if (error) throw error;
+      return data.map(mapInventoryData) as InventoryItem[];
+    },
+    enabled: !!tenantId,
+    staleTime: 30_000,
+  });
+  const items = itemsQuery.data ?? [];
+  const loading = itemsQuery.isLoading;
+
+  useEffect(() => {
+    if (!tenantId || queryClient.getQueryData(inventoryQueryKey)) return;
+    getCachedInventory(tenantId).then(cached => {
+      if (cached.length && !queryClient.getQueryData(inventoryQueryKey)) {
+        queryClient.setQueryData(inventoryQueryKey, cached);
+      }
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantId, refreshCounter]);
+
+  useEffect(() => {
+    if (!itemsQuery.error) return;
+    if (isNetworkFailure(itemsQuery.error)) {
+      if (items.length) {
+        toastWarning(t('offline.showing_cached_inventory', 'يتم عرض المخزون المخزَّن من آخر اتصال، قد لا يكون محدَّثاً.'));
+      }
+    } else {
+      handleFirestoreError(itemsQuery.error, OperationType.LIST, "inventory");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemsQuery.error]);
+
   useRealtimeSync("inventory_items", tenantId, (payload) => {
     if (payload.eventType === "INSERT") {
       const newItem = mapInventoryData(payload.new);
-      setItems((prev) => [newItem, ...prev]);
+      queryClient.setQueryData(inventoryQueryKey, (prev: InventoryItem[] = []) => [newItem, ...prev]);
     } else if (payload.eventType === "UPDATE") {
       const updatedItem = mapInventoryData(payload.new);
-      setItems((prev) => {
+      queryClient.setQueryData(inventoryQueryKey, (prev: InventoryItem[] = []) => {
         const index = prev.findIndex((i) => i.id === updatedItem.id);
         if (index >= 0) {
           const arr = [...prev];
@@ -199,43 +233,21 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
         return [updatedItem, ...prev];
       });
     } else if (payload.eventType === "DELETE") {
-      setItems((prev) => prev.filter((i) => i.id !== payload.old.id));
+      queryClient.setQueryData(inventoryQueryKey, (prev: InventoryItem[] = []) => prev.filter((i) => i.id !== payload.old.id));
     }
   });
 
   useEffect(() => {
-    if (!tenantId) return;
-
-    const fetchItems = async () => {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from("inventory_items")
-          .select("*")
-          .eq("tenant_id", tenantId);
-
-        if (error) throw error;
-        setItems(data.map(mapInventoryData));
-      } catch (err) {
-        // Offline (or otherwise unreachable) fallback: cachedInventoryItems
-        // is already warmed by POS.tsx's own refreshInventoryCache on every
-        // successful load there, so this tab reuses that same read cache
-        // instead of keeping its own separate copy in sync.
-        if (isNetworkFailure(err)) {
-          const cached = await getCachedInventory(tenantId).catch(() => []);
-          if (cached.length) {
-            setItems(cached);
-            toastWarning(t('offline.showing_cached_inventory', 'يتم عرض المخزون المخزَّن من آخر اتصال، قد لا يكون محدَّثاً.'));
-          }
-        } else {
-          handleFirestoreError(err, OperationType.LIST, "inventory");
-        }
-      }
-      setLoading(false);
-    };
-
-    fetchItems();
-  }, [tenantId, mapInventoryData, refreshCounter]);
+    const lowStock = items.filter((item) => {
+      const totalStock = (
+        Object.values(branchStock).flat() as BranchInventory[]
+      )
+        .filter((bi) => bi.itemId === item.id)
+        .reduce((sum, bi) => sum + bi.quantity, 0);
+      return totalStock <= (item.minThreshold || 0);
+    });
+    setLowStockItems(lowStock);
+  }, [items, branchStock]);
 
   // Fetch Branches
   useEffect(() => {

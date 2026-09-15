@@ -1,9 +1,22 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
 import { saveLastKnown, getLastKnown } from '../lib/offline/lastKnownCache';
 import { isNetworkFailure } from '../lib/offline/outbox';
 import { Order, Customer, InventoryItem, Staff, Shift, Role, PurchaseOrder, Supplier } from '../types';
+
+interface ReportsData {
+  orders: Order[];
+  customers: Customer[];
+  inventory: InventoryItem[];
+  staff: Staff[];
+  roles: Role[];
+  purchaseOrders: PurchaseOrder[];
+  suppliers: Supplier[];
+  shiftPayouts: { amount: number; occurred_at: string; reason: string }[];
+  salesReturns: { refunded_amount: number; returned_at: string }[];
+}
 import { 
   BarChart, 
   Bar, 
@@ -86,17 +99,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
   const canExportReports = hasPermission('reports.export');
 
   const [activeTab, setActiveTab] = useState<ReportTab>('general');
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [staff, setStaff] = useState<Staff[]>([]);
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [shiftPayouts, setShiftPayouts] = useState<{ amount: number; occurred_at: string; reason: string }[]>([]);
-  const [salesReturns, setSalesReturns] = useState<{ refunded_amount: number; returned_at: string }[]>([]);
-  const [loading, setLoading] = useState(true);
-  
+
   // Filters
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [selectedStaff, setSelectedStaff] = useState('all');
@@ -113,184 +116,179 @@ export default function Reports({ tenantId }: { tenantId: string }) {
   const [dailyZData, setDailyZData] = useState<any | null>(null);
   const [loadingZ, setLoadingZ] = useState(false);
 
+  // Phase 3 of seen-offline-coverage-and-performance-task.md: the whole
+  // 9-query bundle below is now one react-query query instead of 9
+  // setState calls scattered through a manual try/catch -- initialData
+  // seeds synchronously from the same lastKnownCache (localStorage)
+  // snapshot Phase 2 already wrote here, so a full reload still shows the
+  // last known report instantly; react-query's own cache (staleTime) then
+  // covers revisits within the session without a localStorage round-trip.
+  const reportsQuery = useQuery({
+    queryKey: ['reports_data', tenantId],
+    queryFn: async (): Promise<ReportsData> => {
+      const [ordersRes, customersRes, inventoryRes, staffRes, rolesRes, purchaseOrdersRes, suppliersRes, shiftEntriesRes, salesReturnsRes] = await Promise.all([
+        supabase.from('orders').select('*').eq('tenant_id', tenantId).order('order_date', { ascending: false }),
+        supabase.from('customers').select('*').eq('tenant_id', tenantId),
+        supabase.from('inventory_items').select('*').eq('tenant_id', tenantId),
+        // pin_hash intentionally excluded — never expose bcrypt PIN hashes
+        // in a multi-row listing (see security note in Staff.tsx).
+        supabase.from('staff').select('id, tenant_id, uid, name, email, phone, role, role_id, branch_id, status, must_change_pin, is_test, commission_type, commission_value, has_seen_onboarding, created_at, updated_at').eq('tenant_id', tenantId),
+        supabase.from('roles').select('*').or(`tenant_id.is.null,tenant_id.eq.${tenantId}`),
+        supabase.from('purchase_orders').select('*, purchase_order_items(*)').eq('tenant_id', tenantId),
+        supabase.from('suppliers').select('*').eq('tenant_id', tenantId),
+        supabase.from('shift_entries').select('amount, occurred_at, reason').eq('tenant_id', tenantId).eq('entry_type', 'payout'),
+        supabase.from('sales_returns').select('refunded_amount, returned_at').eq('tenant_id', tenantId)
+      ]);
+
+      if (ordersRes.error) throw ordersRes.error;
+      if (customersRes.error) throw customersRes.error;
+      if (inventoryRes.error) throw inventoryRes.error;
+      if (staffRes.error) throw staffRes.error;
+
+      const supplierNameMap = new Map<string, string>();
+      (suppliersRes.data || []).forEach((s: any) => {
+        if (s.id && s.name) supplierNameMap.set(s.id, s.name);
+      });
+
+      const mappedPurchaseOrders = (purchaseOrdersRes.data || []).map((d: any) => ({
+        ...d,
+        supplierId: d.supplier_id,
+        supplierName: supplierNameMap.get(d.supplier_id) || t('common.unknown_supplier'),
+        poNumber: d.po_number,
+        tenantId: d.tenant_id,
+        branchId: d.branch_id,
+        totalAmount: d.total_amount,
+        paidAmount: d.paid_amount,
+        remainingAmount: d.remaining_amount,
+        orderDate: d.order_date,
+        orderType: d.po_number?.startsWith('RET') ? 'return' : 'purchase',
+        createdBy: d.created_by,
+        createdAt: d.created_at,
+        updatedAt: d.updated_at,
+        items: (d.purchase_order_items || []).map((item: any) => ({
+          itemId: item.item_id,
+          name: item.name,
+          quantity: Number(item.quantity),
+          unit: item.unit,
+          conversionRate: Number(item.conversion_rate || 1),
+          baseQuantity: Number(item.base_quantity || item.quantity),
+          pricePerUnit: Number(item.price_per_unit || 0),
+          total: Number(item.total || 0)
+        }))
+      })) as unknown as PurchaseOrder[];
+
+      const mappedSuppliers = (suppliersRes.data || []).map((s: any) => ({
+        ...s,
+        tenantId: s.tenant_id,
+        isTest: s.is_test,
+        createdAt: s.created_at
+      })) as unknown as Supplier[];
+
+      // Map snake_case to camelCase for the UI
+      const mappedOrders = (ordersRes.data || []).map(o => ({
+        ...o,
+        customerId: o.customer_id,
+        customerName: o.customer_name,
+        tenantId: o.tenant_id,
+        branchId: o.branch_id,
+        shiftId: o.shift_id,
+        totalAmount: o.total_amount,
+        paidAmount: o.paid_amount,
+        remainingAmount: o.remaining_amount,
+        taxAmount: o.tax_amount,
+        taxRate: o.tax_rate,
+        orderDate: o.order_date,
+        deliveryDate: o.delivery_date,
+        createdBy: o.created_by,
+        subTotalAmount: o.subtotal_amount,
+        discountAmount: o.discount_amount,
+        orderNumber: o.order_number,
+        paymentMethod: o.payment_method,
+        customerPhone: o.customer_phone,
+        isTest: o.is_test
+      } as Order));
+
+      const mappedCustomers = (customersRes.data || []).map(c => ({
+        ...c,
+        tenantId: c.tenant_id,
+        companyName: c.company_name,
+        isB2B: c.is_b2b,
+        isTest: c.is_test,
+        createdAt: c.created_at
+      } as Customer));
+
+      const mappedInventory = (inventoryRes.data || []).map(i => ({
+        ...i,
+        nameEn: i.name_en,
+        minThreshold: i.min_threshold,
+        pricePerUnit: i.price_per_unit,
+        taxType: 'exclusive',
+        supplierId: i.supplier_id,
+        tenantId: i.tenant_id,
+        mainImage: (Array.isArray(i.images) && i.images.length > 0) ? (i.images[0]?.url || i.images[0]) : undefined,
+        collarType: i.collar_type,
+        cuffType: i.cuff_type,
+        pocketType: i.pocket_type,
+        chestStyle: i.chest_style,
+        isTest: i.is_test,
+        updatedAt: i.updated_at
+      } as InventoryItem));
+
+      const mappedStaff = (staffRes.data || []).map(s => ({
+        ...s,
+        tenantId: s.tenant_id,
+        branchId: s.branch_id,
+        createdAt: s.created_at
+      } as Staff));
+
+      const result: ReportsData = {
+        orders: mappedOrders,
+        customers: mappedCustomers,
+        inventory: mappedInventory,
+        staff: mappedStaff,
+        roles: rolesRes.data || [],
+        purchaseOrders: mappedPurchaseOrders,
+        suppliers: mappedSuppliers,
+        shiftPayouts: shiftEntriesRes.data || [],
+        salesReturns: salesReturnsRes.data || [],
+      };
+      saveLastKnown(tenantId, 'reports_data', result);
+      return result;
+    },
+    // كان يجلب كل البيانات المالية بلا شرط، والحماية تحدث فقط عند العرض
+    // (canViewReports أدناه ~718) -- موظف بلا صلاحية reports.view يصل
+    // لهذا المكوّن يحصل فعلياً على كل البيانات في حالة React/الشبكة حتى
+    // لو ظهرت له شاشة "الوصول مرفوض" بعد ذلك.
+    enabled: !!tenantId && !permsLoading && canViewReports,
+    staleTime: 30_000,
+    initialData: () => tenantId ? getLastKnown<ReportsData>(tenantId, 'reports_data')?.data : undefined,
+  });
+
+  const orders = reportsQuery.data?.orders ?? [];
+  const customers = reportsQuery.data?.customers ?? [];
+  const inventory = reportsQuery.data?.inventory ?? [];
+  const staff = reportsQuery.data?.staff ?? [];
+  const roles = reportsQuery.data?.roles ?? [];
+  const purchaseOrders = reportsQuery.data?.purchaseOrders ?? [];
+  const suppliers = reportsQuery.data?.suppliers ?? [];
+  const shiftPayouts = reportsQuery.data?.shiftPayouts ?? [];
+  const salesReturns = reportsQuery.data?.salesReturns ?? [];
+  const loading = reportsQuery.isLoading;
+
   useEffect(() => {
-    const fetchData = async () => {
-      // كان يجلب كل البيانات المالية بلا شرط، والحماية تحدث فقط عند العرض
-      // (canViewReports أدناه ~718) -- موظف بلا صلاحية reports.view يصل
-      // لهذا المكوّن يحصل فعلياً على كل البيانات في حالة React/الشبكة حتى
-      // لو ظهرت له شاشة "الوصول مرفوض" بعد ذلك.
-      if (!tenantId || permsLoading || !canViewReports) { setLoading(false); return; }
-      setLoading(true);
-      try {
-        const [ordersRes, customersRes, inventoryRes, staffRes, rolesRes, purchaseOrdersRes, suppliersRes, shiftEntriesRes, salesReturnsRes] = await Promise.all([
-          supabase.from('orders').select('*').eq('tenant_id', tenantId).order('order_date', { ascending: false }),
-          supabase.from('customers').select('*').eq('tenant_id', tenantId),
-          supabase.from('inventory_items').select('*').eq('tenant_id', tenantId),
-          // pin_hash intentionally excluded — never expose bcrypt PIN hashes
-          // in a multi-row listing (see security note in Staff.tsx).
-          supabase.from('staff').select('id, tenant_id, uid, name, email, phone, role, role_id, branch_id, status, must_change_pin, is_test, commission_type, commission_value, has_seen_onboarding, created_at, updated_at').eq('tenant_id', tenantId),
-          supabase.from('roles').select('*').or(`tenant_id.is.null,tenant_id.eq.${tenantId}`),
-          supabase.from('purchase_orders').select('*, purchase_order_items(*)').eq('tenant_id', tenantId),
-          supabase.from('suppliers').select('*').eq('tenant_id', tenantId),
-          supabase.from('shift_entries').select('amount, occurred_at, reason').eq('tenant_id', tenantId).eq('entry_type', 'payout'),
-          supabase.from('sales_returns').select('refunded_amount, returned_at').eq('tenant_id', tenantId)
-        ]);
-
-        if (ordersRes.error) throw ordersRes.error;
-        if (customersRes.error) throw customersRes.error;
-        if (inventoryRes.error) throw inventoryRes.error;
-        if (staffRes.error) throw staffRes.error;
-
-        if (rolesRes.data) {
-          setRoles(rolesRes.data);
-        }
-
-        const supplierNameMap = new Map<string, string>();
-        (suppliersRes.data || []).forEach((s: any) => {
-          if (s.id && s.name) supplierNameMap.set(s.id, s.name);
-        });
-
-        if (purchaseOrdersRes.data) {
-          setPurchaseOrders(purchaseOrdersRes.data.map((d: any) => ({
-            ...d,
-            supplierId: d.supplier_id,
-            supplierName: supplierNameMap.get(d.supplier_id) || t('common.unknown_supplier'),
-            poNumber: d.po_number,
-            tenantId: d.tenant_id,
-            branchId: d.branch_id,
-            totalAmount: d.total_amount,
-            paidAmount: d.paid_amount,
-            remainingAmount: d.remaining_amount,
-            orderDate: d.order_date,
-            orderType: d.po_number?.startsWith('RET') ? 'return' : 'purchase',
-            createdBy: d.created_by,
-            createdAt: d.created_at,
-            updatedAt: d.updated_at,
-            items: (d.purchase_order_items || []).map((item: any) => ({
-              itemId: item.item_id,
-              name: item.name,
-              quantity: Number(item.quantity),
-              unit: item.unit,
-              conversionRate: Number(item.conversion_rate || 1),
-              baseQuantity: Number(item.base_quantity || item.quantity),
-              pricePerUnit: Number(item.price_per_unit || 0),
-              total: Number(item.total || 0)
-            }))
-          })) as unknown as PurchaseOrder[]);
-        }
-
-        if (suppliersRes.data) {
-          setSuppliers(suppliersRes.data.map((s: any) => ({
-            ...s,
-            tenantId: s.tenant_id,
-            isTest: s.is_test,
-            createdAt: s.created_at
-          })) as unknown as Supplier[]);
-        }
-
-        if (shiftEntriesRes.data) {
-          setShiftPayouts(shiftEntriesRes.data);
-        }
-
-        if (salesReturnsRes.data) {
-          setSalesReturns(salesReturnsRes.data);
-        }
-
-        // Map snake_case to camelCase for the UI
-        const mappedOrders = (ordersRes.data || []).map(o => ({
-          ...o,
-          customerId: o.customer_id,
-          customerName: o.customer_name,
-          tenantId: o.tenant_id,
-          branchId: o.branch_id,
-          shiftId: o.shift_id,
-          totalAmount: o.total_amount,
-          paidAmount: o.paid_amount,
-          remainingAmount: o.remaining_amount,
-          taxAmount: o.tax_amount,
-          taxRate: o.tax_rate,
-          orderDate: o.order_date,
-          deliveryDate: o.delivery_date,
-          createdBy: o.created_by,
-          subTotalAmount: o.subtotal_amount,
-          discountAmount: o.discount_amount,
-          orderNumber: o.order_number,
-          paymentMethod: o.payment_method,
-          customerPhone: o.customer_phone,
-          isTest: o.is_test
-        } as Order));
-        setOrders(mappedOrders);
-
-        const mappedCustomers = (customersRes.data || []).map(c => ({
-          ...c,
-          tenantId: c.tenant_id,
-          companyName: c.company_name,
-          isB2B: c.is_b2b,
-          isTest: c.is_test,
-          createdAt: c.created_at
-        } as Customer));
-        setCustomers(mappedCustomers);
-
-        const mappedInventory = (inventoryRes.data || []).map(i => ({
-          ...i,
-          nameEn: i.name_en,
-          minThreshold: i.min_threshold,
-          pricePerUnit: i.price_per_unit,
-          taxType: 'exclusive',
-          supplierId: i.supplier_id,
-          tenantId: i.tenant_id,
-          mainImage: (Array.isArray(i.images) && i.images.length > 0) ? (i.images[0]?.url || i.images[0]) : undefined,
-          collarType: i.collar_type,
-          cuffType: i.cuff_type,
-          pocketType: i.pocket_type,
-          chestStyle: i.chest_style,
-          isTest: i.is_test,
-          updatedAt: i.updated_at
-        } as InventoryItem));
-        setInventory(mappedInventory);
-
-        const mappedStaff = (staffRes.data || []).map(s => ({
-          ...s,
-          tenantId: s.tenant_id,
-          branchId: s.branch_id,
-          createdAt: s.created_at
-        } as Staff));
-        setStaff(mappedStaff);
-
-        // This tab doesn't need real offline writes (it's read-only), just
-        // the last known figures instead of a blank report on a failed
-        // refresh -- the four core datasets only, not every secondary
-        // enrichment (purchase orders/suppliers/payouts/roles) below.
-        saveLastKnown(tenantId, 'reports_data', {
-          orders: mappedOrders,
-          customers: mappedCustomers,
-          inventory: mappedInventory,
-          staff: mappedStaff,
-        });
-      } catch (error) {
-        console.error('Error fetching report data:', error);
-
-        if (isNetworkFailure(error)) {
-          const cached = getLastKnown<{ orders: Order[]; customers: Customer[]; inventory: InventoryItem[]; staff: Staff[] }>(tenantId, 'reports_data');
-          if (cached) {
-            setOrders(cached.data.orders);
-            setCustomers(cached.data.customers);
-            setInventory(cached.data.inventory);
-            setStaff(cached.data.staff);
-            toastWarning(t('offline.showing_cached_reports', 'يتم عرض بيانات مخزَّنة من آخر اتصال، قد لا تكون محدَّثة.'));
-          } else {
-            handleError(error, OperationType.LIST, 'reports');
-          }
-        } else {
-          handleError(error, OperationType.LIST, 'reports');
-        }
-      } finally {
-        setLoading(false);
+    if (!reportsQuery.error) return;
+    console.error('Error fetching report data:', reportsQuery.error);
+    if (isNetworkFailure(reportsQuery.error)) {
+      if (reportsQuery.data) {
+        toastWarning(t('offline.showing_cached_reports', 'يتم عرض بيانات مخزَّنة من آخر اتصال، قد لا تكون محدَّثة.'));
+      } else {
+        handleError(reportsQuery.error, OperationType.LIST, 'reports');
       }
-    };
-
-    fetchData();
-  }, [tenantId, permsLoading, canViewReports]);
+    } else {
+      handleError(reportsQuery.error, OperationType.LIST, 'reports');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reportsQuery.error]);
 
   // Filtered Data
   const filteredOrders = useMemo(() => {

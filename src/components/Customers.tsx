@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase/client';
 import { handleFirestoreError, OperationType } from '../lib/firebase';
 import { getCachedCustomers } from '../lib/offline/cacheSync';
@@ -80,8 +81,7 @@ export default function Customers({ tenantId }: CustomersProps) {
   const isRtl = isRtlLang(i18n.language);
   const { error: toastError, success: toastSuccess, warning: toastWarning, handleError } = useToast();
   const { confirm } = useConfirm();
-  const [isLoading, setIsLoading] = useState(true);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'date_asc' | 'name' | 'balance_desc'>('date');
   const [filter, setFilter] = useState<'all' | 'measurements' | 'recent' | 'test' | 'b2b' | 'b2c'>('all');
@@ -134,7 +134,7 @@ export default function Customers({ tenantId }: CustomersProps) {
         setIsModalOpen(false);
         setEditingCustomer(null);
         reset();
-        fetchCustomers(false);
+        queryClient.invalidateQueries({ queryKey: ['customers', tenantId] });
       }
     }
   );
@@ -148,7 +148,7 @@ export default function Customers({ tenantId }: CustomersProps) {
       successMessage: t('customers.delete_success'),
       errorMessage: t('customers.delete_fail'),
       onSuccess: () => {
-        fetchCustomers(false);
+        queryClient.invalidateQueries({ queryKey: ['customers', tenantId] });
       }
     }
   );
@@ -194,19 +194,25 @@ export default function Customers({ tenantId }: CustomersProps) {
 
   const watchMeasurements = watch('measurements');
 
-  const fetchCustomers = React.useCallback(async (showLoading = true) => {
-    if (!tenantId) return;
-    if (showLoading) setIsLoading(true);
-    try {
+  // Phase 3 of seen-offline-coverage-and-performance-task.md: the customer
+  // list itself is owned by react-query now (instant display on revisit +
+  // it keeps the last successful list showing through a failed refetch on
+  // its own). getCachedCustomers is Dexie/IndexedDB, which is async and so
+  // can't seed a synchronous `initialData` the way Suppliers.tsx's
+  // localStorage-backed lastKnownCache does -- the effect below seeds it
+  // via setQueryData as soon as that resolves instead, before the network
+  // fetch (usually) has a chance to.
+  const customersQuery = useQuery({
+    queryKey: ['customers', tenantId],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('customers')
         .select('*')
         .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false });
-
       if (error) throw error;
 
-      const mapped = (data || []).map(c => ({
+      return (data || []).map(c => ({
         ...c,
         isTest: c.is_test,
         isB2B: !!c.company_name,
@@ -215,9 +221,41 @@ export default function Customers({ tenantId }: CustomersProps) {
         createdAt: c.created_at,
         tenantId: c.tenant_id
       }) as unknown as Customer);
-      setCustomers(mapped);
+    },
+    enabled: !!tenantId,
+    staleTime: 30_000,
+  });
+  const customers = customersQuery.data ?? [];
+  const isLoading = customersQuery.isLoading;
 
-      // Fetch balances, counts, and purchases (all non-cancelled orders for the tenant)
+  useEffect(() => {
+    if (!tenantId || queryClient.getQueryData(['customers', tenantId])) return;
+    getCachedCustomers(tenantId).then(cached => {
+      if (cached.length && !queryClient.getQueryData(['customers', tenantId])) {
+        queryClient.setQueryData(['customers', tenantId], cached);
+      }
+    }).catch(() => {});
+  }, [tenantId, queryClient]);
+
+  useEffect(() => {
+    if (!customersQuery.error) return;
+    if (isNetworkFailure(customersQuery.error)) {
+      if (customers.length) {
+        toastWarning(t('offline.showing_cached_customers', 'يتم عرض العملاء المخزَّنين من آخر اتصال، قد لا يكونون محدَّثين.'));
+      }
+    } else {
+      handleFirestoreError(customersQuery.error, OperationType.LIST, 'customers');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customersQuery.error]);
+
+  // Balances/counts/purchases are a derived side-fetch, not part of the
+  // customers query itself -- reruns every time a fresh customer list
+  // actually lands (dataUpdatedAt), same as it did inside the old
+  // fetchCustomers on every one of its own successful calls.
+  useEffect(() => {
+    if (!tenantId || !customersQuery.isSuccess) return;
+    (async () => {
       try {
         const { data: ordersData, error: ordersError } = await supabase
           .from('orders')
@@ -244,43 +282,29 @@ export default function Customers({ tenantId }: CustomersProps) {
       } catch (err) {
         console.error('Error fetching customer balances and order counts:', err);
       }
-    } catch (err) {
-      console.error('Error fetching customers:', err);
-
-      // Offline (or otherwise unreachable) fallback: same cachedCustomers
-      // POS.tsx already warms via refreshCustomersCache -- reused here as a
-      // read-only fallback instead of a separate cache of the same data.
-      if (isNetworkFailure(err)) {
-        const cached = await getCachedCustomers(tenantId).catch(() => []);
-        if (cached.length) {
-          setCustomers(cached);
-          toastWarning(t('offline.showing_cached_customers', 'يتم عرض العملاء المخزَّنين من آخر اتصال، قد لا يكونون محدَّثين.'));
-        }
-      } else {
-        handleFirestoreError(err, OperationType.LIST, 'customers');
-      }
-    }
-    if (showLoading) setIsLoading(false);
-  }, [tenantId, toastWarning, t]);
+    })();
+  }, [tenantId, customersQuery.isSuccess, customersQuery.dataUpdatedAt]);
 
   useEffect(() => {
     if (!tenantId) return;
 
-    fetchCustomers(true);
-
-    // Subscribe to customer changes
+    // Customers themselves are owned by the useQuery above -- these
+    // channels just invalidate its cache instead of re-fetching by hand.
     const channel = supabase
       .channel('customers-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'customers', filter: `tenant_id=eq.${tenantId}` }, () => {
-        fetchCustomers(false);
+        queryClient.invalidateQueries({ queryKey: ['customers', tenantId] });
       })
       .subscribe();
 
-    // Subscribe to order changes to keep balances in sync in real time
+    // Subscribe to order changes to keep balances in sync in real time --
+    // the balances effect above reruns whenever the customers query
+    // refetches, so this also invalidates that same query rather than
+    // fetching orders directly itself.
     const ordersChannel = supabase
       .channel('customers-orders-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `tenant_id=eq.${tenantId}` }, () => {
-        fetchCustomers(false);
+        queryClient.invalidateQueries({ queryKey: ['customers', tenantId] });
       })
       .subscribe();
 
@@ -288,7 +312,7 @@ export default function Customers({ tenantId }: CustomersProps) {
       supabase.removeChannel(channel);
       supabase.removeChannel(ordersChannel);
     };
-  }, [tenantId, fetchCustomers]);
+  }, [tenantId, queryClient]);
 
   const fetchCustomerOrders = async (customerId: string) => {
     try {
@@ -609,7 +633,7 @@ export default function Customers({ tenantId }: CustomersProps) {
       toastSuccess(t('customers.bulk_delete_success', { count: selectedCustomerIds.length }));
       setSelectedCustomerIds([]);
       setIsBulkDeleteModalOpen(false);
-      fetchCustomers(false);
+      queryClient.invalidateQueries({ queryKey: ['customers', tenantId] });
     } catch (error) {
       handleError(error as any, t('customers.bulk_delete_fail'));
     }
