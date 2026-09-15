@@ -625,11 +625,19 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
     const fetchData = async () => {
       try {
-        const { data: custData } = await supabase
-          .from('customers')
-          .select('*')
-          .eq('tenant_id', tenantId);
-        
+        // Phase 5 of seen-offline-coverage-and-performance-task.md: none
+        // of these four reads depends on another's result -- they were
+        // fetched sequentially before, adding three extra network round
+        // trips before this screen could finish loading.
+        const [{ data: custData }, { data: invData }, { data: staffData }, { data: tenantData }] = await Promise.all([
+          supabase.from('customers').select('*').eq('tenant_id', tenantId),
+          supabase.from('inventory_items').select('*').eq('tenant_id', tenantId).eq('category', 'fabric'),
+          // pin_hash intentionally excluded — never expose bcrypt PIN hashes
+          // in a multi-row listing (see security note in Staff.tsx).
+          supabase.from('staff').select('id, tenant_id, uid, name, email, phone, role, role_id, branch_id, status, must_change_pin, is_test, commission_type, commission_value, has_seen_onboarding, created_at, updated_at').eq('tenant_id', tenantId),
+          supabase.from('tenants').select('*').eq('id', tenantId).maybeSingle(),
+        ]);
+
         const mappedCusts = (custData || []).map(c => ({
           ...c,
           isTest: c.is_test,
@@ -639,26 +647,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         }) as unknown as Customer);
         setCustomers(mappedCusts);
 
-        const { data: invData } = await supabase
-          .from('inventory_items')
-          .select('*')
-          .eq('tenant_id', tenantId)
-          .eq('category', 'fabric');
         setInventory(invData as InventoryItem[] || []);
 
-        // pin_hash intentionally excluded — never expose bcrypt PIN hashes
-        // in a multi-row listing (see security note in Staff.tsx).
-        const { data: staffData } = await supabase
-          .from('staff')
-          .select('id, tenant_id, uid, name, email, phone, role, role_id, branch_id, status, must_change_pin, is_test, commission_type, commission_value, has_seen_onboarding, created_at, updated_at')
-          .eq('tenant_id', tenantId);
         setStaff((staffData as unknown as Staff[]) || []);
 
-        const { data: tenantData } = await supabase
-          .from('tenants')
-          .select('*')
-          .eq('id', tenantId)
-          .maybeSingle();
         if (tenantData) {
           const hasVat = Boolean(tenantData.vat_number && tenantData.vat_number.trim().length > 0);
           const rawTax = tenantData.tax_settings;

@@ -189,19 +189,16 @@ export default function Sales({ tenantId }: { tenantId: string }) {
     if (!activeShift?.id) return;
 
     const fetchShift = async () => {
-      const { data, error } = await supabase
-        .from('shifts')
-        .select('*')
-        .eq('id', activeShift.id)
-        .single();
-      
-      if (data && !error) {
-        // Also fetch entries
-        const { data: entries } = await supabase
-          .from('shift_entries')
-          .select('*')
-          .eq('shift_id', activeShift.id);
+      // Phase 5 of seen-offline-coverage-and-performance-task.md: the
+      // entries filter (activeShift.id) is already known before the shift
+      // query even starts, so both can fire together -- entries is simply
+      // unused below if the shift row itself didn't come back.
+      const [{ data, error }, { data: entries }] = await Promise.all([
+        supabase.from('shifts').select('*').eq('id', activeShift.id).single(),
+        supabase.from('shift_entries').select('*').eq('shift_id', activeShift.id),
+      ]);
 
+      if (data && !error) {
         const deposits = (entries || [])
           .filter((e: any) => e.entry_type === 'deposit')
           .map((e: any) => ({ id: e.id, amount: Number(e.amount), reason: e.reason, time: e.occurred_at }));

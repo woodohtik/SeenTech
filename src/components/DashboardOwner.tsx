@@ -481,11 +481,19 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
 
     const fetchTenantData = async () => {
       try {
-        const { data: tenantData } = await supabase
-          .from('tenants')
-          .select('*')
-          .eq('id', tenantId)
-          .single();
+        // Phase 5 of seen-offline-coverage-and-performance-task.md: tenants
+        // and branches are independent reads (neither depends on the
+        // other's result) -- were fetched sequentially before, adding a
+        // whole extra network round trip to the first screen after login
+        // for no reason. Promise.all matches the pattern already used a
+        // few lines below in fetchStats.
+        const [tenantRes, branchesRes] = await Promise.all([
+          supabase.from('tenants').select('*').eq('id', tenantId).single(),
+          supabase.from('branches').select('*').eq('tenant_id', tenantId),
+        ]);
+        const { data: tenantData } = tenantRes;
+        const { data: branchesData } = branchesRes;
+
         if (tenantData) {
           setTenant({
             id: tenantData.id,
@@ -505,10 +513,6 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
           } as any);
         }
 
-        const { data: branchesData } = await supabase
-          .from('branches')
-          .select('*')
-          .eq('tenant_id', tenantId);
         if (branchesData) {
           setBranches(branchesData.map(b => ({
             id: b.id,

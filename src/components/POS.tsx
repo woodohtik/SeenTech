@@ -337,102 +337,106 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   });
 
   useEffect(() => {
+    // Phase 5 of seen-offline-coverage-and-performance-task.md: these four
+    // reads are independent (none uses another's result) -- were fetched
+    // sequentially before. Each is wrapped so a thrown network error
+    // resolves as {data:null, error} instead of rejecting the whole
+    // Promise.all, which preserves Phase 1's per-query fallback
+    // granularity: one query failing must not block the other three from
+    // loading (previously, a customers-fetch failure meant the
+    // inventory/branch-stock/tenant queries never even ran).
+    const settleQuery = <T,>(p: PromiseLike<{ data: T | null; error: any }>): Promise<{ data: T | null; error: any }> =>
+      Promise.resolve(p).then(r => r, (error) => ({ data: null, error }));
+
     const fetchData = async () => {
+      const [custResult, invResult, stockResult, tenantResult] = await Promise.all([
+        settleQuery(supabase.from('customers').select('*').eq('tenant_id', tenantId)),
+        settleQuery(supabase.from('inventory_items').select('*').eq('tenant_id', tenantId)),
+        settleQuery(supabase.from('branch_inventory').select('*').eq('tenant_id', tenantId)),
+        settleQuery(supabase.from('tenants').select('*').eq('id', tenantId).maybeSingle()),
+      ]);
+
       let customersLoaded = false;
       let inventoryLoaded = false;
       let branchStockLoaded = false;
-      try {
-        const { data: custData, error: custError } = await supabase
-          .from('customers')
-          .select('*')
-          .eq('tenant_id', tenantId);
-        if (custError) throw custError;
-        setCustomers((custData || []).map(mapCustomer));
+
+      if (!custResult.error) {
+        setCustomers((custResult.data || []).map(mapCustomer));
         customersLoaded = true;
+      } else {
+        console.error('Error fetching POS customers:', custResult.error);
+      }
 
-        const { data: invData, error: invError } = await supabase
-          .from('inventory_items')
-          .select('*')
-          .eq('tenant_id', tenantId);
-        if (invError) throw invError;
-        setInventory((invData || []).map(mapInventoryItem));
+      if (!invResult.error) {
+        setInventory((invResult.data || []).map(mapInventoryItem));
         inventoryLoaded = true;
+      } else {
+        console.error('Error fetching POS inventory:', invResult.error);
+      }
 
-        const { data: stockData, error: stockError } = await supabase
-          .from('branch_inventory')
-          .select('*')
-          .eq('tenant_id', tenantId);
-        if (stockError) throw stockError;
-
+      if (!stockResult.error) {
         const stockMap: Record<string, number> = {};
-        if (stockData) {
-          stockData.forEach((item: any) => {
-            if (!currentStaff?.branchId || item.branch_id === currentStaff.branchId) {
-              stockMap[item.item_id] = Number(item.quantity || 0);
-            }
-          });
-        }
+        (stockResult.data || []).forEach((item: any) => {
+          if (!currentStaff?.branchId || item.branch_id === currentStaff.branchId) {
+            stockMap[item.item_id] = Number(item.quantity || 0);
+          }
+        });
         setBranchStock(stockMap);
         branchStockLoaded = true;
+      } else {
+        console.error('Error fetching POS branch stock:', stockResult.error);
+      }
 
+      if (customersLoaded && inventoryLoaded && branchStockLoaded) {
         // Warm the offline read cache in the background (Phase 2 of
         // seen-offline-sync-architecture-task.md) -- non-blocking, POS
         // stays fully usable if this fails or is still running.
         refreshCustomersCache(tenantId, mapCustomer).catch(() => {});
         refreshInventoryCache(tenantId, mapInventoryItem).catch(() => {});
         refreshBranchStockCache(tenantId).catch(() => {});
+      }
 
-        const { data: tenantData } = await supabase
-          .from('tenants')
-          .select('*')
-          .eq('id', tenantId)
-          .maybeSingle();
-        
-        if (tenantData) {
-          const hasVat = Boolean(tenantData.vat_number && tenantData.vat_number.trim().length > 0);
-          const rawTax = tenantData.tax_settings;
-          const resolvedTax = rawTax ? {
-            ...rawTax,
-            enabled: rawTax.enabled ?? (hasVat || Boolean(rawTax.trn)),
-            trn: rawTax.trn || tenantData.vat_number || '',
-            legalName: rawTax.legalName || tenantData.name || '',
-            vatRate: rawTax.vatRate ?? 15,
-            tailoringTaxType: rawTax.tailoringTaxType || 'exclusive'
-          } : {
-            enabled: hasVat,
-            trn: tenantData.vat_number || '',
-            legalName: tenantData.name || '',
-            vatRate: 15,
-            tailoringTaxType: 'exclusive'
-          };
-          setTaxSettings(resolvedTax);
-        }
-      } catch (error) {
-        console.error('Error fetching POS data:', error);
+      if (!tenantResult.error && tenantResult.data) {
+        const tenantData = tenantResult.data;
+        const hasVat = Boolean(tenantData.vat_number && tenantData.vat_number.trim().length > 0);
+        const rawTax = tenantData.tax_settings;
+        const resolvedTax = rawTax ? {
+          ...rawTax,
+          enabled: rawTax.enabled ?? (hasVat || Boolean(rawTax.trn)),
+          trn: rawTax.trn || tenantData.vat_number || '',
+          legalName: rawTax.legalName || tenantData.name || '',
+          vatRate: rawTax.vatRate ?? 15,
+          tailoringTaxType: rawTax.tailoringTaxType || 'exclusive'
+        } : {
+          enabled: hasVat,
+          trn: tenantData.vat_number || '',
+          legalName: tenantData.name || '',
+          vatRate: 15,
+          tailoringTaxType: 'exclusive'
+        };
+        setTaxSettings(resolvedTax);
+      }
 
-        // Offline (or otherwise unreachable) fallback: reuse whatever
-        // getCachedInventory/getCachedCustomers/getCachedBranchStock last
-        // stored via refreshInventoryCache/refreshCustomersCache/
-        // refreshBranchStockCache above, so a page reload mid-outage
-        // doesn't strand the cashier on empty product/customer lists even
-        // though the cache actually holds real data from the last time
-        // this tenant was online. Only takes over for whichever of the
-        // three queries didn't finish -- a partial failure keeps whatever
-        // already loaded successfully.
-        if (isNetworkFailure(error)) {
-          if (!customersLoaded) {
-            const cached = await getCachedCustomers(tenantId).catch(() => []);
-            if (cached.length) setCustomers(cached);
-          }
-          if (!inventoryLoaded) {
-            const cached = await getCachedInventory(tenantId).catch(() => []);
-            if (cached.length) setInventory(cached);
-          }
-          if (!branchStockLoaded && currentStaff?.branchId) {
-            const cached = await getCachedBranchStock(tenantId, currentStaff.branchId).catch(() => ({}));
-            if (Object.keys(cached).length) setBranchStock(cached);
-          }
-        }
+      // Offline (or otherwise unreachable) fallback: reuse whatever
+      // getCachedInventory/getCachedCustomers/getCachedBranchStock last
+      // stored via refreshInventoryCache/refreshCustomersCache/
+      // refreshBranchStockCache above, so a page reload mid-outage doesn't
+      // strand the cashier on empty product/customer lists even though the
+      // cache actually holds real data from the last time this tenant was
+      // online. Only takes over for whichever of the three queries didn't
+      // finish -- a partial failure keeps whatever already loaded
+      // successfully.
+      if (!customersLoaded && isNetworkFailure(custResult.error)) {
+        const cached = await getCachedCustomers(tenantId).catch(() => []);
+        if (cached.length) setCustomers(cached);
+      }
+      if (!inventoryLoaded && isNetworkFailure(invResult.error)) {
+        const cached = await getCachedInventory(tenantId).catch(() => []);
+        if (cached.length) setInventory(cached);
+      }
+      if (!branchStockLoaded && isNetworkFailure(stockResult.error) && currentStaff?.branchId) {
+        const cached = await getCachedBranchStock(tenantId, currentStaff.branchId).catch(() => ({}));
+        if (Object.keys(cached).length) setBranchStock(cached);
       }
     };
     fetchData();

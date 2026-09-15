@@ -212,10 +212,14 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
       .subscribe();
 
     const fetchPO = async () => {
-      const { data: supsData } = await supabase
-        .from('suppliers')
-        .select('id, name')
-        .eq('tenant_id', tenantId);
+      // Phase 5 of seen-offline-coverage-and-performance-task.md: neither
+      // query depends on the other's result (supsMap is only consulted
+      // once both are back, when mapping purchase orders for display) --
+      // ran sequentially before, adding an extra network round trip.
+      const [{ data: supsData }, { data }] = await Promise.all([
+        supabase.from('suppliers').select('id, name').eq('tenant_id', tenantId),
+        supabase.from('purchase_orders').select('*, purchase_order_items(*)').eq('tenant_id', tenantId),
+      ]);
 
       const supsMap = new Map();
       if (supsData) {
@@ -226,10 +230,6 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
         });
       }
 
-      const { data } = await supabase
-        .from('purchase_orders')
-        .select('*, purchase_order_items(*)')
-        .eq('tenant_id', tenantId);
       if (data) {
         setPurchaseOrders(data.map(d => {
           const sId = (d.supplier_id || '').toLowerCase().trim();

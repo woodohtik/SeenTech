@@ -360,26 +360,16 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
   const confirmDelete = async () => {
     try {
       if (isBulkDeleteConfirm) {
-        // Delete related stock_ledger rows
-        await supabase
-          .from("stock_ledger")
-          .delete()
-          .in("item_id", selectedItemIds)
-          .eq("tenant_id", tenantId);
-
-        // Delete related stock_transfer_items rows
-        await supabase
-          .from("stock_transfer_items")
-          .delete()
-          .in("item_id", selectedItemIds)
-          .eq("tenant_id", tenantId);
-
-        // Delete related inventory_reconciliations rows
-        await supabase
-          .from("inventory_reconciliations")
-          .delete()
-          .in("item_id", selectedItemIds)
-          .eq("tenant_id", tenantId);
+        // Phase 5 of seen-offline-coverage-and-performance-task.md: these
+        // three child-table cleanups are independent of each other (none
+        // reads another's result) -- only the final inventory_items delete
+        // below genuinely has to wait, since it removes the parent row
+        // these reference.
+        await Promise.all([
+          supabase.from("stock_ledger").delete().in("item_id", selectedItemIds).eq("tenant_id", tenantId),
+          supabase.from("stock_transfer_items").delete().in("item_id", selectedItemIds).eq("tenant_id", tenantId),
+          supabase.from("inventory_reconciliations").delete().in("item_id", selectedItemIds).eq("tenant_id", tenantId),
+        ]);
 
         const { error } = await supabase
           .from("inventory_items")
@@ -391,26 +381,13 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
         setIsBulkDeleteConfirm(false);
         toastSuccess(t("inventory.bulk_delete_success", "Selected items deleted successfully"));
       } else if (deleteConfirmId) {
-        // Delete related stock_ledger rows
-        await supabase
-          .from("stock_ledger")
-          .delete()
-          .eq("item_id", deleteConfirmId)
-          .eq("tenant_id", tenantId);
-
-        // Delete related stock_transfer_items rows
-        await supabase
-          .from("stock_transfer_items")
-          .delete()
-          .eq("item_id", deleteConfirmId)
-          .eq("tenant_id", tenantId);
-
-        // Delete related inventory_reconciliations rows
-        await supabase
-          .from("inventory_reconciliations")
-          .delete()
-          .eq("item_id", deleteConfirmId)
-          .eq("tenant_id", tenantId);
+        // Same independent-child-table cleanup as the bulk-delete branch
+        // above.
+        await Promise.all([
+          supabase.from("stock_ledger").delete().eq("item_id", deleteConfirmId).eq("tenant_id", tenantId),
+          supabase.from("stock_transfer_items").delete().eq("item_id", deleteConfirmId).eq("tenant_id", tenantId),
+          supabase.from("inventory_reconciliations").delete().eq("item_id", deleteConfirmId).eq("tenant_id", tenantId),
+        ]);
 
         const { error } = await supabase
           .from("inventory_items")
