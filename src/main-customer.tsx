@@ -5,14 +5,19 @@ import AppCustomer from './AppCustomer.tsx';
 import ErrorBoundary from './components/ErrorBoundary';
 import { initLogger } from './lib/logger';
 import './index-customer.css';
-import './i18n/config-customer';
+import { ready as i18nReady } from './i18n/config-customer';
 
 initLogger();
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <ErrorBoundary>
-      <AppCustomer />
-    </ErrorBoundary>
-  </StrictMode>,
-);
+// Resolves on the same tick (config-customer.ts loads its resources
+// eagerly) -- awaited for symmetry with main.tsx and in case that ever
+// changes, not because this build actually waits on a network fetch.
+i18nReady.then(() => {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <ErrorBoundary>
+        <AppCustomer />
+      </ErrorBoundary>
+    </StrictMode>,
+  );
+});

@@ -3,12 +3,24 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig} from 'vite';
 import {VitePWA} from 'vite-plugin-pwa';
+import {visualizer} from 'rollup-plugin-visualizer';
 
 export default defineConfig(({mode}) => {
   return {
     plugins: [
       react(),
       tailwindcss(),
+      // Bundle composition report (seen-offline-coverage-and-performance-
+      // task.md Phase 6) -- opt-in via `ANALYZE=true npm run build` rather
+      // than every build, since it's a diagnostic tool, not something a
+      // normal deploy needs. Writes dist/stats.html, a treemap of what's
+      // actually inside each chunk.
+      process.env.ANALYZE === 'true' && visualizer({
+        filename: 'dist/stats.html',
+        gzipSize: true,
+        brotliSize: true,
+        template: 'treemap',
+      }),
       // installability only (seen-companion-app-task_1.md Phase 2/4) --
       // FCM background push is a SEPARATE, independently-registered service
       // worker (public/firebase-messaging-sw.js, registered on-demand from
@@ -37,10 +49,11 @@ export default defineConfig(({mode}) => {
           // precache -- it's fetched/registered separately, and Workbox
           // would otherwise try to precache it as a navigable asset.
           globIgnores: ['**/firebase-messaging-sw.js'],
-          // This app's main bundle is already ~2.2MB (a pre-existing
-          // code-splitting gap, out of this task's scope) -- Workbox's
-          // 2MiB default precache limit fails the build entirely rather
-          // than just skipping the oversized file. Raised, not disabled.
+          // Even after seen-offline-coverage-and-performance-task.md Phase
+          // 6 (lazy-loaded locale files, vendor chunk splitting) the
+          // largest chunks are still over Workbox's 2MiB default precache
+          // limit, which fails the build entirely rather than just
+          // skipping the oversized file. Raised, not disabled.
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
           // A POS terminal realistically stays open on one tab for a whole
           // shift with no reload. Without these, a new service worker
@@ -66,6 +79,26 @@ export default defineConfig(({mode}) => {
     build: {
       outDir: 'dist',
       emptyOutDir: true,
+      rollupOptions: {
+        output: {
+          // Phase 6 of seen-offline-coverage-and-performance-task.md:
+          // splits the heaviest vendor libraries out of the app's own
+          // entry chunk into their own files. This doesn't shrink total
+          // bytes on a cold first visit, but these barely change between
+          // deploys (unlike src/**), so a returning visitor's browser
+          // reuses its cached copy instead of re-downloading React/
+          // Supabase/motion/Dexie on every single release.
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return undefined;
+            if (/[\\/]node_modules[\\/](react|react-dom|scheduler|react-router)[\\/]/.test(id)) return 'vendor-react';
+            if (/[\\/]node_modules[\\/]@supabase[\\/]/.test(id)) return 'vendor-supabase';
+            if (/[\\/]node_modules[\\/](@firebase|firebase)[\\/]/.test(id)) return 'vendor-firebase';
+            if (/[\\/]node_modules[\\/](motion|framer-motion|motion-dom|motion-utils)[\\/]/.test(id)) return 'vendor-motion';
+            if (/[\\/]node_modules[\\/]dexie[\\/]/.test(id)) return 'vendor-dexie';
+            return undefined;
+          },
+        },
+      },
     },
     resolve: {
       alias: {

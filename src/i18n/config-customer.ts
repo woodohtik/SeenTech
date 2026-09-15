@@ -10,4 +10,9 @@ import ar from './locales/customer/ar.json';
 import en from './locales/customer/en.json';
 import ur from './locales/customer/ur.json';
 
-export default createI18n({ ar, en, ur });
+// Eager/synchronous, unlike config.ts -- these trimmed customer-app locale
+// files are ~2-3KB each, not worth the lazy-loading treatment.
+const { i18n, ready } = createI18n({ ar, en, ur });
+
+export { ready };
+export default i18n;
