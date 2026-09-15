@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
   Users, 
   ShoppingBag, 
@@ -27,6 +28,13 @@ import { auth, handleFirestoreError, OperationType } from '../lib/firebase';
 import { saveLastKnown, getLastKnown } from '../lib/offline/lastKnownCache';
 import { isNetworkFailure } from '../lib/offline/outbox';
 import { Customer, Order, InventoryItem, AppNotification, OrderStatus, Tenant, BranchInventory } from '../types';
+
+interface DashboardStatsData {
+  customers: Customer[];
+  orders: Order[];
+  inventory: InventoryItem[];
+  bInv: BranchInventory[];
+}
 import { STATUS_CONFIG, getOrderStatusDisplay } from './Orders';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import { cn } from '../lib/utils';
@@ -217,7 +225,6 @@ const DrillDownModal = ({
 
 export default function DashboardOwner({ tenantId }: DashboardProps) {
   const { t, i18n } = useTranslation();
-  const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
     customers: 0,
     customersGrowthRate: 0,
@@ -238,10 +245,6 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
     retentionRate: 0
   });
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
-  const [allOrders, setAllOrders] = useState<Order[]>([]);
-  const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
-  const [allInventory, setAllInventory] = useState<InventoryItem[]>([]);
-  const [branchInventory, setBranchInventory] = useState<BranchInventory[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
   const [chartViewMode, setChartViewMode] = useState<'both' | 'revenue' | 'orders'>('both');
   const [statusDistribution, setStatusDistribution] = useState<any[]>([]);
@@ -260,6 +263,104 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [trialDays, setTrialDays] = useState<number | null>(null);
   const [isTrialPlan, setIsTrialPlan] = useState<boolean>(true);
+
+  const queryClient = useQueryClient();
+  // Phase 3 of seen-offline-coverage-and-performance-task.md: dashboard
+  // stats now come from react-query. initialData seeds synchronously from
+  // the same lastKnownCache (localStorage) snapshot Phase 2 already wrote
+  // here -- same pattern as Suppliers.tsx/Reports.tsx. The cache always
+  // stores orders UNfiltered by branch (see queryFn below) so switching
+  // branches can reuse it too, applying the same filter on the way out.
+  const isUuidTenantId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId || '');
+  const dashboardStatsQuery = useQuery<DashboardStatsData>({
+    queryKey: ['dashboard_stats', tenantId, selectedBranchId],
+    queryFn: async () => {
+      const [customersRes, ordersRes, inventoryRes, branchInvRes] = await Promise.all([
+        supabase.from('customers').select('*').eq('tenant_id', tenantId),
+        supabase.from('orders').select('*').eq('tenant_id', tenantId),
+        supabase.from('inventory_items').select('*').eq('tenant_id', tenantId),
+        supabase.from('branch_inventory').select('*').eq('tenant_id', tenantId)
+      ]);
+
+      if (customersRes.error) console.error('Customers query error:', customersRes.error);
+      if (ordersRes.error) console.error('Orders query error:', ordersRes.error);
+      if (inventoryRes.error) console.error('Inventory query error:', inventoryRes.error);
+      if (branchInvRes.error) console.error('Branch Inventory query error:', branchInvRes.error);
+
+      const customers = (customersRes.data || []).map(d => ({
+        ...d,
+        tenantId: d.tenant_id,
+        createdAt: d.created_at
+      }) as unknown as Customer);
+
+      const allOrdersUnfiltered = (ordersRes.data || []).map(d => ({
+        ...d,
+        // status_key (نص حر لأي نشاط) يتقدّم على status (enum قديم) متى وُجد — انظر Orders.tsx.
+        status: d.status_key || d.status,
+        customerId: d.customer_id || '',
+        customerName: d.customer_name || '',
+        orderDate: d.order_date || new Date().toISOString(),
+        totalAmount: d.total_amount || 0,
+        paidAmount: d.paid_amount || 0,
+        remainingAmount: d.remaining_amount || 0,
+        branchId: d.branch_id || '',
+        orderNumber: d.order_number || '',
+        createdAt: d.created_at,
+        updatedAt: d.updated_at
+      }) as unknown as Order);
+
+      const orders = selectedBranchId !== 'all'
+        ? allOrdersUnfiltered.filter(o => o.branchId === selectedBranchId)
+        : allOrdersUnfiltered;
+
+      const inventory = (inventoryRes.data || []).map(d => ({
+        id: d.id,
+        name: d.name,
+        minThreshold: d.min_threshold || 0,
+        tenantId: d.tenant_id,
+        quantity: d.quantity || 0
+      } as InventoryItem));
+
+      const bInv = (branchInvRes.data || []).map(d => ({
+        id: d.id,
+        itemId: d.item_id,
+        branchId: d.branch_id,
+        quantity: d.quantity || 0,
+        tenantId: d.tenant_id
+      } as BranchInventory));
+
+      // This tab doesn't need real offline writes (no financial operation
+      // happens here while disconnected), just an honest "stale data"
+      // notice instead of a blank dashboard on a failed refresh.
+      saveLastKnown(tenantId, 'dashboard_stats', { customers, orders: allOrdersUnfiltered, inventory, bInv });
+      return { customers, orders, inventory, bInv };
+    },
+    enabled: !!tenantId && isUuidTenantId,
+    staleTime: 30_000,
+    initialData: () => {
+      if (!tenantId) return undefined;
+      const cached = getLastKnown<DashboardStatsData>(tenantId, 'dashboard_stats')?.data;
+      if (!cached) return undefined;
+      return {
+        ...cached,
+        orders: selectedBranchId !== 'all' ? cached.orders.filter(o => o.branchId === selectedBranchId) : cached.orders,
+      };
+    },
+  });
+  const allCustomers = dashboardStatsQuery.data?.customers ?? [];
+  const allOrders = dashboardStatsQuery.data?.orders ?? [];
+  const allInventory = dashboardStatsQuery.data?.inventory ?? [];
+  const branchInventory = dashboardStatsQuery.data?.bInv ?? [];
+  const isLoading = dashboardStatsQuery.isLoading;
+
+  useEffect(() => {
+    if (!dashboardStatsQuery.error) return;
+    console.error('Dashboard Stats Error:', dashboardStatsQuery.error);
+    if (isNetworkFailure(dashboardStatsQuery.error) && dashboardStatsQuery.data) {
+      setToast({ message: t('offline.showing_cached_dashboard', 'يتم عرض بيانات مخزَّنة من آخر اتصال، قد لا تكون محدَّثة.'), type: 'info' });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dashboardStatsQuery.error]);
 
   const markAsRead = async (id: string) => {
     try {
@@ -375,7 +476,6 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
 
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId);
     if (!isUuid) {
-      setIsLoading(false);
       return;
     }
 
@@ -426,91 +526,10 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
     };
     fetchTenantData();
 
-    const fetchStats = async () => {
-      if (!tenantId) return;
-      setIsLoading(true);
-      try {
-        const [customersRes, ordersRes, inventoryRes, branchInvRes] = await Promise.all([
-          supabase.from('customers').select('*').eq('tenant_id', tenantId),
-          supabase.from('orders').select('*').eq('tenant_id', tenantId),
-          supabase.from('inventory_items').select('*').eq('tenant_id', tenantId),
-          supabase.from('branch_inventory').select('*').eq('tenant_id', tenantId)
-        ]);
-
-        if (customersRes.error) console.error('Customers query error:', customersRes.error);
-        if (ordersRes.error) console.error('Orders query error:', ordersRes.error);
-        if (inventoryRes.error) console.error('Inventory query error:', inventoryRes.error);
-        if (branchInvRes.error) console.error('Branch Inventory query error:', branchInvRes.error);
-
-        const customers = (customersRes.data || []).map(d => ({
-          ...d,
-          tenantId: d.tenant_id,
-          createdAt: d.created_at
-        }) as unknown as Customer);
-
-        const allOrdersUnfiltered = (ordersRes.data || []).map(d => ({
-          ...d,
-          // status_key (نص حر لأي نشاط) يتقدّم على status (enum قديم) متى وُجد — انظر Orders.tsx.
-          status: d.status_key || d.status,
-          customerId: d.customer_id || '',
-          customerName: d.customer_name || '',
-          orderDate: d.order_date || new Date().toISOString(),
-          totalAmount: d.total_amount || 0,
-          paidAmount: d.paid_amount || 0,
-          remainingAmount: d.remaining_amount || 0,
-          branchId: d.branch_id || '',
-          orderNumber: d.order_number || '',
-          createdAt: d.created_at,
-          updatedAt: d.updated_at
-        }) as unknown as Order);
-
-        const orders = selectedBranchId !== 'all'
-          ? allOrdersUnfiltered.filter(o => o.branchId === selectedBranchId)
-          : allOrdersUnfiltered;
-
-        const inventory = (inventoryRes.data || []).map(d => ({
-          id: d.id,
-          name: d.name,
-          minThreshold: d.min_threshold || 0,
-          tenantId: d.tenant_id,
-          quantity: d.quantity || 0
-        } as InventoryItem));
-
-        const bInv = (branchInvRes.data || []).map(d => ({
-          id: d.id,
-          itemId: d.item_id,
-          branchId: d.branch_id,
-          quantity: d.quantity || 0,
-          tenantId: d.tenant_id
-        } as BranchInventory));
-
-        setAllOrders(orders);
-        setAllInventory(inventory);
-        setAllCustomers(customers);
-        setBranchInventory(bInv);
-        setIsLoading(false);
-
-        // Cached last-known snapshot for the fallback below -- this tab
-        // doesn't need real offline writes (no financial operation happens
-        // here while disconnected), just an honest "stale data" notice
-        // instead of a blank dashboard on a failed refresh.
-        saveLastKnown(tenantId, 'dashboard_stats', { customers, orders: allOrdersUnfiltered, inventory, bInv });
-      } catch (error) {
-        console.error('Dashboard Stats Error:', error);
-
-        if (isNetworkFailure(error)) {
-          const cached = getLastKnown<{ customers: Customer[]; orders: Order[]; inventory: InventoryItem[]; bInv: BranchInventory[] }>(tenantId, 'dashboard_stats');
-          if (cached) {
-            setAllCustomers(cached.data.customers);
-            setAllOrders(selectedBranchId !== 'all' ? cached.data.orders.filter(o => o.branchId === selectedBranchId) : cached.data.orders);
-            setAllInventory(cached.data.inventory);
-            setBranchInventory(cached.data.bInv);
-            setToast({ message: t('offline.showing_cached_dashboard', 'يتم عرض بيانات مخزَّنة من آخر اتصال، قد لا تكون محدَّثة.'), type: 'info' });
-          }
-        }
-        setIsLoading(false);
-      }
-    };
+    // Dashboard stats themselves are owned by the useQuery above; the three
+    // call sites below just invalidate its cache instead of re-running a
+    // local fetch function.
+    const invalidateStats = () => queryClient.invalidateQueries({ queryKey: ['dashboard_stats', tenantId, selectedBranchId] });
 
     const fetchRecentOrders = async () => {
       if (!hasPermission('orders.view') && !hasPermission('dashboard.orders')) return;
@@ -621,7 +640,8 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
     };
 
     if (hasPermission('dashboard.view') || hasPermission('orders.view') || hasPermission('dashboard.orders')) {
-      fetchStats();
+      // Stats themselves are already fetched declaratively by the useQuery
+      // above (enabled/queryKey) -- no manual call needed here.
       fetchRecentOrders();
       fetchNotifications();
     }
@@ -630,7 +650,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
     const ordersSubscription = supabase
       .channel('dashboard_updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `tenant_id=eq.${tenantId}` }, () => {
-        fetchStats();
+        invalidateStats();
         fetchRecentOrders();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `tenant_id=eq.${tenantId}` }, () => {
@@ -639,7 +659,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       .subscribe();
 
     const handleDataCleared = () => {
-      fetchStats();
+      invalidateStats();
       fetchRecentOrders();
       fetchNotifications();
     };
@@ -1197,7 +1217,9 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
 
         // Optimistically clean local state immediately
         setRecentOrders(prev => prev.filter(o => !(o as any).isTest && !(o as any).is_test));
-        setAllOrders(prev => prev.filter(o => !(o as any).isTest && !(o as any).is_test));
+        queryClient.setQueryData(['dashboard_stats', tenantId, selectedBranchId], (prev?: DashboardStatsData) =>
+          prev ? { ...prev, orders: prev.orders.filter(o => !(o as any).isTest && !(o as any).is_test) } : prev
+        );
         setNotifications(prev => prev.filter(n => !(n as any).isTest && !(n as any).is_test));
 
         // Notify app components to refresh data without forcing a full page reload
