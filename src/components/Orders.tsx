@@ -43,6 +43,7 @@ import {
   Edit2,
   Check
 } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase/client';
 import { handleFirestoreError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
 import { refreshOrdersCache, getCachedOrders } from '../lib/offline/cacheSync';
@@ -284,6 +285,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const { settings: branding } = useBranding();
   const { error: toastError, success: toastSuccess, warning: toastWarning, handleError } = useToast();
   const { confirm } = useConfirm();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -541,72 +543,80 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     setUnpaidOrders(unpaid);
   }, []);
 
-  const fetchOrders = useCallback(async () => {
-    if (!tenantId) return;
-    try {
+  // Phase 3 of seen-offline-coverage-and-performance-task.md. Orders.tsx
+  // keeps a deliberately lighter touch than the other six tabs: `orders`/
+  // `unpaidOrders` stay plain useState, patched directly by five separate
+  // optimistic-update call sites after the user's own mutations (create,
+  // two status-update paths, delete, payment recording) -- those are left
+  // completely untouched here, since retargeting five financially/
+  // operationally sensitive call sites at a shared query cache carried far
+  // more regression risk than this task's benefit justifies. Only the FETCH
+  // itself moves to react-query: this query owns the raw, unfiltered order
+  // list, and an effect below feeds every successful fetch through the same
+  // applyOrders() the old fetchOrders used, so the two derived views end up
+  // identical to before.
+  const ordersQueryKey = ['orders', tenantId];
+  const ordersQuery = useQuery<Order[]>({
+    queryKey: ordersQueryKey,
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
         .select('*')
         .eq('tenant_id', tenantId)
         .order('order_date', { ascending: false });
-
       if (error) throw error;
 
       const allOrders = (data || []).map(mapOrderData);
-      applyOrders(allOrders);
       refreshOrdersCache(tenantId, allOrders).catch(() => {});
-    } catch (err) {
-      console.error('Error fetching orders:', err);
+      return allOrders;
+    },
+    enabled: !!tenantId,
+    staleTime: 30_000,
+  });
 
-      // Offline (or otherwise unreachable) fallback: show the last orders
-      // list refreshOrdersCache stored the last time this tenant loaded
-      // successfully, with an honest heads-up, instead of silently leaving
-      // the screen on whatever (possibly empty) state it was already in.
-      if (isNetworkFailure(err)) {
-        const cached = await getCachedOrders(tenantId).catch(() => []);
-        if (cached.length) {
-          applyOrders(cached);
-          toastWarning(t('offline.showing_cached_orders', 'يتم عرض الطلبات المخزَّنة من آخر اتصال، قد لا تكون محدَّثة.'));
-        }
-      } else {
-        handleFirestoreError(err, OperationType.LIST, 'orders');
+  useEffect(() => {
+    if (ordersQuery.data) applyOrders(ordersQuery.data);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ordersQuery.data]);
+
+  useEffect(() => {
+    if (!tenantId || queryClient.getQueryData(ordersQueryKey)) return;
+    getCachedOrders(tenantId).then(cached => {
+      if (cached.length && !queryClient.getQueryData(ordersQueryKey)) {
+        queryClient.setQueryData(ordersQueryKey, cached);
       }
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantId]);
+
+  useEffect(() => {
+    if (!ordersQuery.error) return;
+    console.error('Error fetching orders:', ordersQuery.error);
+    // Offline (or otherwise unreachable) fallback: getCachedOrders/
+    // ordersQuery.data already cover showing the last known list (either
+    // via the seed effect above or react-query's own retained data) -- this
+    // just decides whether that deserves a "may be stale" notice or a real
+    // error.
+    if (isNetworkFailure(ordersQuery.error)) {
+      if (ordersQuery.data?.length) {
+        toastWarning(t('offline.showing_cached_orders', 'يتم عرض الطلبات المخزَّنة من آخر اتصال، قد لا تكون محدَّثة.'));
+      }
+    } else {
+      handleFirestoreError(ordersQuery.error, OperationType.LIST, 'orders');
     }
-  }, [tenantId, mapOrderData, applyOrders, toastWarning, t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ordersQuery.error]);
 
-  useRealtimeSync('orders', tenantId, (payload) => {
-    if (payload.eventType === 'INSERT' && payload.new) {
-      const newOrder = mapOrderData(payload.new);
-      setOrders(prev => [newOrder, ...prev.filter(o => o.id !== newOrder.id)]);
-      if (newOrder.remainingAmount > 0 && newOrder.status !== 'cancelled') {
-        setUnpaidOrders(prev => [newOrder, ...prev.filter(o => o.id !== newOrder.id)]);
-      }
-    } else if (payload.eventType === 'UPDATE' && payload.new) {
-      const updatedOrder = mapOrderData(payload.new);
-      setOrders(prev => {
-        const index = prev.findIndex(o => o.id === updatedOrder.id);
-        if (index >= 0) {
-          const arr = [...prev];
-          arr[index] = updatedOrder;
-          return arr;
-        }
-        return [updatedOrder, ...prev];
-      });
-      setUnpaidOrders(prev => {
-        const filtered = prev.filter(o => o.id !== updatedOrder.id);
-        if (updatedOrder.remainingAmount > 0 && updatedOrder.status !== 'cancelled') {
-          return [updatedOrder, ...filtered];
-        }
-        return filtered;
-      });
-    } else if (payload.eventType === 'DELETE' && payload.old) {
-      const deletedId = payload.old.id;
-      if (deletedId) {
-        setOrders(prev => prev.filter(o => o.id !== deletedId));
-        setUnpaidOrders(prev => prev.filter(o => o.id !== deletedId));
-      }
-    }
+  // fetchOrders keeps its old name/signature so the two call sites below
+  // (a realtime event, and a manual "refresh everything" effect) don't need
+  // to change at all -- it's now a thin wrapper around the query's own
+  // refetch instead of a standalone fetch+setState implementation.
+  const fetchOrders = useCallback(async () => {
+    await ordersQuery.refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ordersQuery.refetch]);
 
+  useRealtimeSync('orders', tenantId, () => {
     fetchOrders();
   });
 
