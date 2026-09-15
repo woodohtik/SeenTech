@@ -20,6 +20,7 @@ import {
   User,
   FileText
 } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
 import { saveLastKnown, getLastKnown } from '../lib/offline/lastKnownCache';
@@ -51,6 +52,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
   const { warning: toastWarning } = useToast();
   const { confirm } = useConfirm();
   const { currentStaff } = useStaff();
+  const queryClient = useQueryClient();
 
   // Centralized Mutations for Suppliers (Strict Persistence)
   const saveSupplierMutation = useSafeMutation(
@@ -93,6 +95,11 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
         setEditingSupplier(null);
         reset();
         setSupplierReloadTrigger(prev => prev + 1);
+        // Don't wait on the suppliers-changes realtime channel below for
+        // this tab's own write to show up -- invalidate right away, same
+        // immediacy the old direct fetchSuppliers() call after a mutation
+        // used to give for free.
+        queryClient.invalidateQueries({ queryKey: ['suppliers', tenantId] });
       }
     }
   );
@@ -109,16 +116,15 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
       successMessage: t('procurement.delete_success') || 'تم حذف المورد بنجاح',
       onSuccess: () => {
         setSupplierReloadTrigger(prev => prev + 1);
+        queryClient.invalidateQueries({ queryKey: ['suppliers', tenantId] });
       }
     }
   );
 
   const [activeTab, setActiveTab] = useState<'suppliers' | 'purchase_orders'>('suppliers');
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [purchaseReturns, setPurchaseReturns] = useState<PurchaseReturn[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -143,50 +149,65 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
     }
   });
 
+  // Phase 3 trial of seen-offline-coverage-and-performance-task.md: this is
+  // the one query converted to react-query first, before generalizing to
+  // the rest. initialData seeds instantly from the same lastKnownCache
+  // Phase 2 already wrote to (survives a full reload); once mounted,
+  // react-query's own cache does the same job in-session (staleTime below)
+  // without needing that localStorage round-trip on every tab revisit.
+  const suppliersQuery = useQuery({
+    queryKey: ['suppliers', tenantId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('suppliers')
+        .select('*')
+        .eq('tenant_id', tenantId);
+      if (error) throw error;
+
+      const mapped = (data || []).map(d => ({
+        ...d,
+        contactPerson: d.contact_person,
+        taxNumber: d.tax_number,
+        createdAt: d.created_at,
+        updatedAt: d.updated_at,
+        tenantId: d.tenant_id
+      }) as Supplier);
+      saveLastKnown(tenantId, 'suppliers', mapped);
+      return mapped;
+    },
+    enabled: !!tenantId,
+    staleTime: 30_000,
+    initialData: () => tenantId ? getLastKnown<Supplier[]>(tenantId, 'suppliers')?.data : undefined,
+  });
+  const suppliers = suppliersQuery.data ?? [];
+  const loading = suppliersQuery.isLoading;
+
+  useEffect(() => {
+    if (!suppliersQuery.error) return;
+    // Same isNetworkFailure split as every other Phase 2 fallback: a real
+    // query/permission error still surfaces normally, a network failure
+    // just keeps showing whatever react-query/lastKnownCache already had
+    // (suppliersQuery.data never goes empty on its own here) with a notice.
+    if (isNetworkFailure(suppliersQuery.error)) {
+      if (suppliers.length) {
+        toastWarning(t('offline.showing_cached_suppliers', 'يتم عرض الموردين المخزَّنين من آخر اتصال، قد لا يكونون محدَّثين.'));
+      }
+    } else {
+      handleError(suppliersQuery.error, OperationType.LIST, 'suppliers');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suppliersQuery.error]);
+
   useEffect(() => {
     if (!tenantId) return;
 
-    const fetchSuppliers = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('suppliers')
-          .select('*')
-          .eq('tenant_id', tenantId);
-        if (error) throw error;
-
-        const mapped = (data || []).map(d => ({
-          ...d,
-          contactPerson: d.contact_person,
-          taxNumber: d.tax_number,
-          createdAt: d.created_at,
-          updatedAt: d.updated_at,
-          tenantId: d.tenant_id
-        }) as Supplier);
-        setSuppliers(mapped);
-        saveLastKnown(tenantId, 'suppliers', mapped);
-      } catch (err) {
-        // This tab doesn't need real offline writes (no financial operation
-        // happens here while disconnected) -- just the last known list
-        // instead of an indefinite loading state or a silently empty one.
-        if (isNetworkFailure(err)) {
-          const cached = getLastKnown<Supplier[]>(tenantId, 'suppliers');
-          if (cached) {
-            setSuppliers(cached.data);
-            toastWarning(t('offline.showing_cached_suppliers', 'يتم عرض الموردين المخزَّنين من آخر اتصال، قد لا يكونون محدَّثين.'));
-          }
-        } else {
-          handleError(err, OperationType.LIST, 'suppliers');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSuppliers();
+    // Suppliers themselves are now owned by the useQuery above -- this
+    // channel just tells react-query its cached list is stale instead of
+    // re-fetching by hand.
     const suppliersChannel = supabase
       .channel('suppliers-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'suppliers', filter: `tenant_id=eq.${tenantId}` }, () => {
-        fetchSuppliers();
+        queryClient.invalidateQueries({ queryKey: ['suppliers', tenantId] });
       })
       .subscribe();
 
