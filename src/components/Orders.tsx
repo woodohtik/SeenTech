@@ -48,7 +48,7 @@ import { supabase } from '../lib/supabase/client';
 import { handleFirestoreError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
 import { refreshOrdersCache, getCachedOrders } from '../lib/offline/cacheSync';
 import { isNetworkFailure, enqueueOrderCreate } from '../lib/offline/outbox';
-import { getIsOnline } from '../lib/offline/connectivity';
+import { checkConnectivityNow } from '../lib/offline/connectivity';
 import { Order, Customer, OrderStatus, OrderHistory, InventoryItem, PaymentMethod, OrderItem, Staff, Tenant, Measurements } from '../types';
 import { cn, generateOrderNumber } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
@@ -573,6 +573,18 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     },
     enabled: !!tenantId,
     staleTime: 30_000,
+    // react-query's default refetchOnReconnect (true, never overridden in
+    // App.tsx's QueryClient) would race drainOutbox() on the exact same
+    // connectivity-restored event: a refetch that lands before the outbox
+    // finishes syncing a just-created offline order returns the
+    // server's list WITHOUT it yet, and the effect below applies that
+    // fetch verbatim -- wiping a just-printed order from view until the
+    // next refetch. Off here specifically because this is the one query
+    // with real offline writes queued against it; the realtime
+    // subscription's own invalidateQueries and the 30s staleTime both
+    // still keep it fresh for every other case (another device's
+    // changes while this one was offline).
+    refetchOnReconnect: false,
   });
 
   useEffect(() => {
@@ -1154,7 +1166,12 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       // lookups), so it can't actually be verified right now, and letting
       // it run would show a misleading "المستودع الرئيسي غير موجود" stock
       // -shortage prompt when the real problem is just connectivity.
-      if (getIsOnline()) {
+      // A fresh ping (not the up-to-20s-stale cached connectivity flag)
+      // -- checkStockAvailability itself swallows its own network errors
+      // into that exact misleading "not found" result rather than
+      // throwing, so there's no way to distinguish the two after the
+      // fact; this has to be caught before calling it.
+      if (await checkConnectivityNow()) {
         const { available, missingItems } = await checkStockAvailability(
           data.items,
           currentStaff?.branchId || '',

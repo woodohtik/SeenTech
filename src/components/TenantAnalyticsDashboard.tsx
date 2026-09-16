@@ -187,7 +187,19 @@ export default function TenantAnalyticsDashboard() {
           score,
           ordersCount,
           plan: tenant.plan_id || 'Free Trial',
-          expiresAt: tenant.subscription_end_date || new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
+          // tenants has no subscription_end_date column (confirmed absent
+          // live, see 20260822090400_tenants_owner_update_and_plan_guard
+          // .sql) -- code review finding: this always fell back to a
+          // fabricated "one month from today" date, recalculated fresh on
+          // every load, which looked like a real expiry to SaaS staff
+          // viewing this dashboard. trial_ends_at is the one real date
+          // this schema actually stores; paid tenants with no trial row
+          // still have no true expiry date to show here (subscription
+          // lifecycle is state-based -- subscription_status -- not a
+          // stored end date), so this keeps the same fallback for that
+          // case rather than leaving `expiresAt` (typed as a required
+          // string) empty.
+          expiresAt: tenant.trial_ends_at || new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
           churnRisk
         }
       });

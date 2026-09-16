@@ -369,18 +369,28 @@ function AppContent() {
 
   if (user && !isSaaSStaff && tenant) {
     const now = new Date();
-    
-    // 1. Check if they have an active paid subscription (subscription_end_date is in the future)
-    const subscriptionEndDate = tenant.subscription_end_date ? new Date(tenant.subscription_end_date) : null;
-    const hasActiveSubscription = subscriptionEndDate ? (subscriptionEndDate > now) : false;
 
-    // 2. Check if they are currently on an active trial (trial_ends_at is in the future)
+    // 1. Check if they are currently on an active trial (trial_ends_at is in the future)
     const trialEndsAt = tenant.trial_ends_at ? new Date(tenant.trial_ends_at) : null;
     const hasActiveTrial = trialEndsAt ? (trialEndsAt > now) : false;
 
-    // 3. Determine if the plan is free or trial
+    // 2. Determine if the plan is free or trial
     const planId = tenant.plan_id || '';
     const isFreePlan = !planId || planId === 'free' || planId.includes('trial');
+
+    // 3. Paid-subscription lifecycle lives in subscription_status
+    // (trial/active/locked/purge_pending, see computeTrialStatus in
+    // trialService.ts) -- tenants has no subscription_end_date column at
+    // all (confirmed absent live, see
+    // 20260822090400_tenants_owner_update_and_plan_guard.sql), and
+    // tenant.status is a *different* column (tenant_status:
+    // active/inactive/pending) that never actually holds 'locked' or
+    // 'suspended'. A prior version of this check read both of those, so a
+    // paid tenant whose subscription_status the billing-enforcement sweep
+    // set to 'locked' was never actually locked out here -- always fell
+    // through to full access.
+    const hasActiveSubscription = !isFreePlan && tenant.subscription_status === 'active';
+    const isLockedOrPurging = tenant.subscription_status === 'locked' || tenant.subscription_status === 'purge_pending';
 
     if (!hasActiveSubscription && !hasActiveTrial) {
       if (isFreePlan) {
@@ -397,16 +407,8 @@ function AppContent() {
             isTrialExpired = true;
           }
         }
-      } else {
-        // Paid plan (like 'basic' or others): expired if subscription_end_date is past
-        if (subscriptionEndDate && subscriptionEndDate <= now) {
-          isSubscriptionExpired = true;
-        } else if (!subscriptionEndDate) {
-          // If they have a paid plan but no subscription_end_date is set, assume active unless status is inactive or suspended
-          if (tenant.status === 'inactive' || tenant.status === 'suspended' || tenant.status === 'locked') {
-            isSubscriptionExpired = true;
-          }
-        }
+      } else if (isLockedOrPurging) {
+        isSubscriptionExpired = true;
       }
     }
   }
