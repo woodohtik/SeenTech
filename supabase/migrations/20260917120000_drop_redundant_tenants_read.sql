@@ -1,0 +1,23 @@
+-- Cleans up the dead clause found while verifying tenants_owner_update
+-- and tenants_read on 2026-09-17.
+--
+-- tenants_read's live condition was:
+--   app_is_super_admin() OR id = app_current_tenant_id()
+--   OR owner_uid = current_setting('app.current_uid', true)   -- dead: nothing
+--                                                                 sets this
+--                                                                 session GUC
+--                                                                 anymore, so
+--                                                                 this clause
+--                                                                 is always
+--                                                                 false.
+--
+-- Its two live conditions are already a strict subset of tenants_read_own
+-- (added in 20260824090000_tenants_onboarding_insert_policy.sql):
+--   app_is_super_admin() OR owner_uid = app_current_uid() OR id = app_current_tenant_id()
+--
+-- Postgres RLS OR-combines every policy for the same command, so
+-- tenants_read has granted nothing that tenants_read_own doesn't already
+-- grant since that policy was added. Dropping it removes the dead clause
+-- without changing SELECT access on tenants at all -- verified by
+-- comparing both policies' live definitions before this change.
+DROP POLICY IF EXISTS tenants_read ON tenants;
