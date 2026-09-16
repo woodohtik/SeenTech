@@ -2341,6 +2341,8 @@
     "subtotal": "Subtotal",
     "tailoring": "Custom Tailor Thobe",
     "tax_invoice_issued": "Tax invoice issued successfully",
+    "tax_settings_required_desc": "Enter your real trade name and VAT number in Settings before issuing any invoice.",
+    "tax_settings_required_title": "Complete tax settings first",
     "total": "Total",
     "total_required": "Total Due:",
     "trn_label": "VAT Number:",

@@ -935,10 +935,27 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
          invoiceType = 'standard_b2b';
       }
 
+      // ZATCA Phase 0 (seen-zatca-readiness-task.md): this used to fall
+      // back to a placeholder trade name/TRN ("مؤسسة وضوح الشاملة" --
+      // literally a leftover from the "wdooh" template this app was built
+      // on -- and TRN 300000000000003) whenever a tenant hadn't filled in
+      // real tax settings yet, silently printing a fake business name and
+      // tax number on a real customer-facing tax invoice with no warning.
+      // Blocked outright now instead: no invoice may be issued under a
+      // fabricated identity.
+      if (!taxSettings?.trn || !taxSettings?.legalName) {
+        toastError(
+          t('pos.tax_settings_required_title', 'أكمل إعدادات الضريبة أولاً'),
+          t('pos.tax_settings_required_desc', 'يجب إدخال الاسم التجاري والرقم الضريبي الحقيقيين في الإعدادات قبل إصدار أي فاتورة.')
+        );
+        setLoading(false);
+        return;
+      }
+
       const timestamp = new Date().toISOString();
-      const sellerName = taxSettings?.legalName || 'مؤسسة وضوح الشاملة';
-      const trn = taxSettings?.trn || '300000000000003';
-      
+      const sellerName = taxSettings.legalName;
+      const trn = taxSettings.trn;
+
       qrCodeBase64 = generateZatcaQR(sellerName, trn, timestamp, totalAmount.toFixed(2), taxAmount.toFixed(2));
 
       const isUuid = (val: string | undefined | null) =>
@@ -1446,8 +1463,12 @@ const invoiceData: InvoiceData | null = completedOrder ? {
   issueDate: completedOrder.issuedAt,
   paymentMethod: completedOrder.paymentMethod || 'cash',
   seller: {
-    name: brandingSettings?.storeName || 'مؤسسة وضوح الشاملة',
-    vatNumber: taxSettings?.trn || '300000000000003',
+    // No fake fallback here either (ZATCA Phase 0) -- by the time
+    // completedOrder exists, handleCheckout's own guard above has already
+    // confirmed taxSettings.trn/legalName are real, so this only ever
+    // renders genuine tenant data.
+    name: brandingSettings?.storeName || taxSettings?.legalName || '',
+    vatNumber: taxSettings?.trn || '',
   },
   customer: {
     name: completedOrder.customerName || 'عميل نقدي',
