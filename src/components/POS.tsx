@@ -1,5 +1,5 @@
 import { ThermalInvoice, StandardInvoice, InvoiceData } from "./printing/InvoiceReceipt";
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { formatSaudiPhone } from '../utils/phoneUtils';
 import { flushSync } from 'react-dom';
 import { 
@@ -634,13 +634,13 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     }
   };
 
-  const filteredInventory = inventory.filter(item => 
+  const filteredInventory = useMemo(() => inventory.filter(item =>
     item.showInPos !== false &&
     (selectedCategory === 'all' || item.category === selectedCategory) &&
-    (item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-     item.barcode?.includes(searchQuery) || 
+    (item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+     item.barcode?.includes(searchQuery) ||
      item.sku?.includes(searchQuery))
-  );
+  ), [inventory, selectedCategory, searchQuery]);
 
   const handleScan = (decodedText: string) => {
     const item = inventory.find(i => i.barcode === decodedText || i.sku === decodedText);

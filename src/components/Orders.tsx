@@ -1471,31 +1471,44 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     }
   };
 
-  const filteredOrders = orders.filter(o => {
+  const filteredOrders = useMemo(() => orders.filter(o => {
     const searchLower = search.toLowerCase();
     const orderNumberStr = o.orderNumber ? o.orderNumber.toString() : '';
     // Handle potential invoice number inside the order object if it exists
     const invoiceNumberStr = (o as any).invoiceNumber ? String((o as any).invoiceNumber).toLowerCase() : '';
-    
+
     // Support scanning the full URL QR code by checking if the search string contains the ID
-    const matchesSearch = (o.customerName || '').toLowerCase().includes(searchLower) || 
+    const matchesSearch = (o.customerName || '').toLowerCase().includes(searchLower) ||
                          o.id.toLowerCase().includes(searchLower) ||
                          searchLower.includes(o.id.toLowerCase()) ||
                          orderNumberStr.includes(searchLower) ||
                          invoiceNumberStr.includes(searchLower) ||
                          searchLower.includes(invoiceNumberStr);
     const matchesStatus = !statusFilter || o.status === statusFilter;
-    
+
     // Date comparison
     const orderDate = (o.orderDate || '').split('T')[0];
-    const matchesDate = (!startDate || orderDate >= startDate) && 
+    const matchesDate = (!startDate || orderDate >= startDate) &&
                        (!endDate || orderDate <= endDate);
-    
+
     // Tab filtering
     const matchesTab = activeTab === 'active' ? o.status !== 'delivered' : o.status === 'delivered';
-    
+
     return matchesSearch && matchesStatus && matchesDate && matchesTab;
-  });
+  }), [orders, search, statusFilter, startDate, endDate, activeTab]);
+
+  // Groups unpaidOrders by customerId once (O(n)) instead of re-filtering
+  // the whole unpaidOrders array for every row rendered below (was O(n*m)
+  // per render -- one full unpaidOrders scan per visible order).
+  const unpaidOrdersByCustomer = useMemo(() => {
+    const map = new Map<string, Order[]>();
+    for (const o of unpaidOrders) {
+      if (!o.customerId) continue;
+      const list = map.get(o.customerId);
+      if (list) list.push(o); else map.set(o.customerId, [o]);
+    }
+    return map;
+  }, [unpaidOrders]);
 
   const buildOrderWhatsAppMessage = (order: Order, phone: string) => {
     const orderNum = (order.orderNumber?.toString() || order.id).slice(-6).toUpperCase();
@@ -2454,7 +2467,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           </div>
         ) : (
           filteredOrders.map((order, index) => {
-            const customerUnpaid = unpaidOrders.filter(o => o.customerId === order.customerId);
+            const customerUnpaid = order.customerId ? (unpaidOrdersByCustomer.get(order.customerId) || []) : [];
             const totalUnpaid = customerUnpaid.reduce((sum, o) => sum + (o.remainingAmount || 0), 0);
             const statusDisplay = getOrderStatusDisplay(order.status, workflowStages);
 

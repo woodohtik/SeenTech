@@ -4,7 +4,6 @@ import { supabase } from '../lib/supabase/client';
 import { Download, ShoppingBag, Loader2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { generateZatcaQR } from '../services/zatcaService';
-import html2pdf from 'html2pdf.js';
 import { CurrencySymbol } from '../components/CurrencySymbol';
 import { useDirection } from '../lib/direction';
 
@@ -99,6 +98,7 @@ export default function PublicInvoice() {
       };
       
       try {
+        const { default: html2pdf } = await import('html2pdf.js');
         await html2pdf().from(element).set(opt).save();
       } catch (err) {
         console.error('Error generating PDF', err);

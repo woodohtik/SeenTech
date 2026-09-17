@@ -411,7 +411,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
     }
   };
 
-  const filteredItems = items.filter((item) => {
+  const filteredItems = useMemo(() => items.filter((item) => {
     const totalStock = getTotalStock(item.id);
     const isLowStock = totalStock <= (item.minThreshold || 0);
 
@@ -424,7 +424,9 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
       selectedCategory === "all" ||
       (isLegacyVertical ? item.category : item.category_key) === selectedCategory;
     return matchesSearch && matchesCategory;
-  });
+    // getTotalStock reads branchStock via closure -- depend on branchStock
+    // directly rather than the function reference, which is recreated every render.
+  }), [items, branchStock, isLowStockOnly, searchTerm, selectedCategory, isLegacyVertical]);
 
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">

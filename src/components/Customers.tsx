@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import DateTimeDisplay from './DateTimeDisplay';
@@ -639,7 +639,7 @@ export default function Customers({ tenantId }: CustomersProps) {
     }
   };
 
-  const filteredCustomers = customers
+  const filteredCustomers = useMemo(() => customers
     .filter(c => {
       // Search filter
       const searchLower = search.toLowerCase().trim();
@@ -689,7 +689,7 @@ export default function Customers({ tenantId }: CustomersProps) {
         return balB - balA;
       }
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    });
+    }), [customers, search, filter, balanceFilter, customerBalances, sortBy]);
 
 
 

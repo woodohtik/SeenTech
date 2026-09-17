@@ -72,12 +72,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ tenantId }) => {
       setLoading(true);
 
       try {
-        // 1. Fetch Orders for Financials & Monthly Charts
-        const { data: orders } = await supabase
-          .from('orders')
-          .select('*')
-          .eq('tenant_id', tenantId);
+        // These four queries are all independent (each only filters by
+        // tenant_id, none depends on another's result), so they run in
+        // parallel instead of four sequential round-trips.
+        const [
+          { data: orders },
+          { data: expensesData },
+          { data: inventory },
+          { data: staffList }
+        ] = await Promise.all([
+          supabase.from('orders').select('*').eq('tenant_id', tenantId),
+          supabase.from('expenses').select('amount').eq('tenant_id', tenantId),
+          supabase.from('inventory_items').select('*').eq('tenant_id', tenantId),
+          supabase.from('staff').select('id, name, role').eq('tenant_id', tenantId).eq('role', 'tailor')
+        ]);
 
+        // 1. Financials & Monthly Charts
         const list = orders || [];
         const completedSales = list
           .filter(o => o.status !== 'cancelled')
@@ -87,21 +97,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ tenantId }) => {
           .filter(o => o.status !== 'cancelled')
           .reduce((sum, o) => sum + (Number(o.tax_amount) || Number(o.vat) || 0), 0);
 
-        // 2. Fetch Expenses
-        const { data: expensesData } = await supabase
-          .from('expenses')
-          .select('amount')
-          .eq('tenant_id', tenantId);
-
+        // 2. Expenses
         const totalExp = (expensesData || []).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
         const estProfit = Math.max(0, completedSales - totalExp - vat);
 
-        // 3. Fetch Fabric Inventory Alerts
-        const { data: inventory } = await supabase
-          .from('inventory_items')
-          .select('*')
-          .eq('tenant_id', tenantId);
-
+        // 3. Fabric Inventory Alerts
         const alerts: FabricAlert[] = (inventory || [])
           .filter((i: any) => Number(i.quantity) <= Number(i.min_threshold || 10))
           .map((i: any) => ({
@@ -112,12 +112,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ tenantId }) => {
             unit: i.unit || t('inventory.unit_meter')
           }));
 
-        // 4. Fetch Staff & Tailor Performance
-        const { data: staffList } = await supabase
-          .from('staff')
-          .select('id, name, role')
-          .eq('tenant_id', tenantId)
-          .eq('role', 'tailor');
+        // 4. Staff & Tailor Performance
 
         if (staffList && staffList.length > 0) {
           // Count completed items per tailor from order history or items
