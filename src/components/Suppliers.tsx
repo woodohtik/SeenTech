@@ -122,7 +122,6 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
   );
 
   const [activeTab, setActiveTab] = useState<'suppliers' | 'purchase_orders'>('suppliers');
-  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [purchaseReturns, setPurchaseReturns] = useState<PurchaseReturn[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -182,6 +181,85 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
   const suppliers = suppliersQuery.data ?? [];
   const loading = suppliersQuery.isLoading;
 
+  // Pilot #2 for seen-comprehensive-review-fixes-task.md's react-query gap
+  // finding (PurchaseOrders.tsx) -- purchaseOrders itself is fetched here
+  // in the parent (PurchaseOrders.tsx only receives it as a prop), so this
+  // is where the actual gap lives. Follows suppliersQuery's exact pattern
+  // right above. supsMap is only needed once both queries are back (to
+  // resolve supplierName for display), so it's fetched again here rather
+  // than reading from suppliersQuery.data -- keeps this query independently
+  // cacheable/invalidatable without coupling its correctness to whatever
+  // shape suppliersQuery happens to be in at the time.
+  const purchaseOrdersQuery = useQuery({
+    queryKey: ['purchase_orders', tenantId],
+    queryFn: async () => {
+      const [{ data: supsData }, { data }] = await Promise.all([
+        supabase.from('suppliers').select('id, name').eq('tenant_id', tenantId),
+        supabase.from('purchase_orders').select('*, purchase_order_items(*)').eq('tenant_id', tenantId),
+      ]);
+
+      const supsMap = new Map();
+      if (supsData) {
+        supsData.forEach(s => {
+          if (s.id && s.name) {
+            supsMap.set(s.id.toLowerCase().trim(), s.name);
+          }
+        });
+      }
+
+      const mapped = (data || []).map(d => {
+        const sId = (d.supplier_id || '').toLowerCase().trim();
+        return {
+          ...d,
+          supplierId: d.supplier_id,
+          supplierName: supsMap.get(sId) || d.supplier_name || t('common.unknown_supplier'),
+          poNumber: d.po_number,
+          tenantId: d.tenant_id,
+          branchId: d.branch_id,
+          totalAmount: d.total_amount,
+          paidAmount: d.paid_amount,
+          remainingAmount: d.remaining_amount,
+          orderDate: d.order_date,
+          orderType: d.po_number?.startsWith('RET') ? 'return' : 'purchase',
+          expectedDate: d.expected_date,
+          receivedDate: d.received_date,
+          createdBy: d.created_by,
+          createdAt: d.created_at,
+          updatedAt: d.updated_at,
+          items: (d.purchase_order_items || []).map((item: any) => ({
+            itemId: item.item_id,
+            name: item.name,
+            quantity: Number(item.quantity),
+            unit: item.unit,
+            conversionRate: Number(item.conversion_rate || 1),
+            baseQuantity: Number(item.base_quantity || item.quantity),
+            pricePerUnit: Number(item.price_per_unit || 0),
+            total: Number(item.total || 0)
+          }))
+        };
+      }) as unknown as PurchaseOrder[];
+
+      saveLastKnown(tenantId, 'purchase_orders', mapped);
+      return mapped;
+    },
+    enabled: !!tenantId,
+    staleTime: 30_000,
+    initialData: () => tenantId ? getLastKnown<PurchaseOrder[]>(tenantId, 'purchase_orders')?.data : undefined,
+  });
+  const purchaseOrders = purchaseOrdersQuery.data ?? [];
+
+  useEffect(() => {
+    if (!purchaseOrdersQuery.error) return;
+    if (isNetworkFailure(purchaseOrdersQuery.error)) {
+      if (purchaseOrders.length) {
+        toastWarning(t('offline.showing_cached_purchase_orders', 'يتم عرض أوامر الشراء المخزَّنة من آخر اتصال، قد لا تكون محدَّثة.'));
+      }
+    } else {
+      handleError(purchaseOrdersQuery.error, OperationType.LIST, 'purchase_orders');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [purchaseOrdersQuery.error]);
+
   useEffect(() => {
     if (!suppliersQuery.error) return;
     // Same isNetworkFailure split as every other Phase 2 fallback: a real
@@ -211,64 +289,12 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
       })
       .subscribe();
 
-    const fetchPO = async () => {
-      // Phase 5 of seen-offline-coverage-and-performance-task.md: neither
-      // query depends on the other's result (supsMap is only consulted
-      // once both are back, when mapping purchase orders for display) --
-      // ran sequentially before, adding an extra network round trip.
-      const [{ data: supsData }, { data }] = await Promise.all([
-        supabase.from('suppliers').select('id, name').eq('tenant_id', tenantId),
-        supabase.from('purchase_orders').select('*, purchase_order_items(*)').eq('tenant_id', tenantId),
-      ]);
-
-      const supsMap = new Map();
-      if (supsData) {
-        supsData.forEach(s => {
-          if (s.id && s.name) {
-            supsMap.set(s.id.toLowerCase().trim(), s.name);
-          }
-        });
-      }
-
-      if (data) {
-        setPurchaseOrders(data.map(d => {
-          const sId = (d.supplier_id || '').toLowerCase().trim();
-          return {
-            ...d,
-            supplierId: d.supplier_id,
-            supplierName: supsMap.get(sId) || d.supplier_name || t('common.unknown_supplier'),
-            poNumber: d.po_number,
-            tenantId: d.tenant_id,
-            branchId: d.branch_id,
-            totalAmount: d.total_amount,
-            paidAmount: d.paid_amount,
-            remainingAmount: d.remaining_amount,
-            orderDate: d.order_date,
-            orderType: d.po_number?.startsWith('RET') ? 'return' : 'purchase',
-            expectedDate: d.expected_date,
-            receivedDate: d.received_date,
-            createdBy: d.created_by,
-            createdAt: d.created_at,
-            updatedAt: d.updated_at,
-            items: (d.purchase_order_items || []).map((item: any) => ({
-              itemId: item.item_id,
-              name: item.name,
-              quantity: Number(item.quantity),
-              unit: item.unit,
-              conversionRate: Number(item.conversion_rate || 1),
-              baseQuantity: Number(item.base_quantity || item.quantity),
-              pricePerUnit: Number(item.price_per_unit || 0),
-              total: Number(item.total || 0)
-            }))
-          };
-        }) as unknown as PurchaseOrder[]);
-      }
-    };
-    fetchPO();
+    // purchase_orders itself is now owned by purchaseOrdersQuery above --
+    // this channel just invalidates its cache instead of re-fetching by hand.
     const poChannel = supabase
       .channel('po-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'purchase_orders', filter: `tenant_id=eq.${tenantId}` }, () => {
-        fetchPO();
+        queryClient.invalidateQueries({ queryKey: ['purchase_orders', tenantId] });
       })
       .subscribe();
 
@@ -566,7 +592,14 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
           purchaseOrders={purchaseOrders}
           inventory={inventory}
           defaultTypeFilter="all"
-          onRefresh={() => setSupplierReloadTrigger(prev => prev + 1)}
+          onRefresh={() => {
+            // Still bumps the reload trigger for returns/inventory/tenant
+            // details, which stay on the old effect-driven fetch in this
+            // pilot. purchase_orders itself needs an explicit invalidate
+            // too since its query key doesn't depend on that trigger.
+            setSupplierReloadTrigger(prev => prev + 1);
+            queryClient.invalidateQueries({ queryKey: ['purchase_orders', tenantId] });
+          }}
         />
       )}
 
