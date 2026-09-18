@@ -144,17 +144,13 @@ Copy-Item .\dist\seen-print-agent.exe ..\public\downloads\seen-print-agent.exe -
 
 ---
 
-## ⚠️ ملاحظة نشر مهمة
+## ✅ ملاحظة نشر (مُحدَّثة)
 
-طابور المهام في السيرفر **مخزَّن في الذاكرة**، وطلبات الانتظار (long-poll) تحتاج عملية طويلة العمر. هذا يناسب نمط تشغيل هذا المشروع:
+**تم الإصلاح فعلياً.** كان طابور المهام قديماً مخزَّناً في الذاكرة داخل `src/server/printRelay.ts`، وهو ما لا يعمل على Vercel Serverless Functions (كل طلب قد يصل لنسخة منفصلة من الدالة، فتتبدد الحالة المخزَّنة في ذاكرتها). حدث هذا فعلياً مرة: 8 محطات وهمية بالتوازي نجح منها اقتران واحد فقط بسبب تعدد نسخ الدالة.
 
-```bash
-npm start   # node dist/server.cjs → app.listen
-```
+الحل الحالي: `printRelay.ts` يخزّن `stations`/`jobs`/`pair attempts` في جداول Supabase (`print_stations`, `print_jobs`, `print_pair_attempts`) بدل الذاكرة، و`/agent/poll` يستخدم استقصاء قصير (short-polling) بدل long-poll طويل العمر. هذا يعمل بشكل صحيح على Vercel Functions اليوم — `api/index.js` هو نقطة الدخول الفعلية في الإنتاج، ولا حاجة لمستضيف عمليات طويلة (Railway/Render/Fly.io/VPS) لهذا الجزء تحديداً.
 
-**لا يعمل على Vercel Serverless Functions** (كل طلب في نسخة منفصلة، ومهلة التنفيذ قصيرة). إن نشرت الواجهة على Vercel فيجب أن يعمل `server.ts` على مستضيف يدعم العمليات الطويلة — مثل Railway أو Render أو Fly.io أو VPS — وأن يشير رابط الوسيط لذلك المستضيف.
-
-للنشر على بيئة serverless متعددة النسخ، استبدل مخزن `stations`/`jobs` في `src/server/printRelay.ts` بجدولين في Supabase، وحوّل `/agent/poll` إلى استقصاء قصير. الواجهة معزولة لهذا الغرض.
+`npm start` (`node dist/server.cjs → app.listen`) يبقى صالحاً للتطوير المحلي فقط.
 
 ---
 

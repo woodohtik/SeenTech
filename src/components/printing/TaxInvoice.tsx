@@ -62,6 +62,8 @@ export interface TaxInvoiceProps {
   showCustomerName?: boolean;
   logoBorder?: boolean;
   showMeasurements?: boolean;
+  /** Fraction (e.g. 0.15 for 15%), not a percentage. Defaults to 0.15 (KSA standard rate). */
+  vatRate?: number;
 }
 
 export default function TaxInvoice({
@@ -81,6 +83,7 @@ export default function TaxInvoice({
   showCustomerName = true,
   logoBorder = true,
   showMeasurements = false,
+  vatRate = 0.15,
 }: TaxInvoiceProps) {
   const { t } = useTranslation();
   const [layoutSettings] = React.useState(() => {
@@ -107,7 +110,7 @@ export default function TaxInvoice({
 
     items.forEach((item) => {
       const itemTotalInc = item.unitPrice * item.quantity;
-      const itemTotalExc = itemTotalInc / 1.15;
+      const itemTotalExc = itemTotalInc / (1 + vatRate);
       const itemVat = itemTotalInc - itemTotalExc;
 
       grandTotal += itemTotalInc;
@@ -325,8 +328,8 @@ export default function TaxInvoice({
             <tbody className="divide-y divide-slate-100 font-medium">
               {items.map((item, index) => {
                 const itemTotalInc = item.unitPrice * item.quantity;
-                const itemTotalExc = itemTotalInc / 1.15;
-                const itemUnitExc = item.unitPrice / 1.15;
+                const itemTotalExc = itemTotalInc / (1 + vatRate);
+                const itemUnitExc = item.unitPrice / (1 + vatRate);
                 const itemVat = itemTotalInc - itemTotalExc;
 
                 return (
@@ -345,7 +348,7 @@ export default function TaxInvoice({
                       <td className="p-2.5 text-center font-bold font-mono text-slate-800">{item.quantity}</td>
                       <td className="p-2.5 font-mono text-slate-600">{itemUnitExc.toFixed(2)}</td>
                       <td className="p-2.5 font-mono text-slate-600">{itemTotalExc.toFixed(2)}</td>
-                      <td className="p-2.5 text-center font-bold text-slate-500 font-mono text-[10px]">15%</td>
+                      <td className="p-2.5 text-center font-bold text-slate-500 font-mono text-[10px]">{Math.round(vatRate * 100)}%</td>
                       <td className="p-2.5 font-mono text-slate-600">{itemVat.toFixed(2)}</td>
                       <td className="p-2.5 font-mono font-black text-slate-900 bg-slate-50/50">{itemTotalInc.toFixed(2)}</td>
                     </tr>

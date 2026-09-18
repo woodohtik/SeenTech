@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { CloudOff, AlertTriangle, ChevronUp, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { offlineDb } from '../lib/offline/db';
-import { getZatcaApproachingEntries } from '../lib/offline/outbox';
+import { getZatcaApproachingEntries, getExhaustedOutboxEntries } from '../lib/offline/outbox';
 import { getStockConflictCount } from '../lib/offline/stockConflicts';
 import { cn } from '../lib/utils';
 
@@ -20,6 +20,7 @@ export default function OfflineStatusIndicator({ tenantId }: { tenantId?: string
   const [expanded, setExpanded] = useState(false);
   const [zatcaWarningCount, setZatcaWarningCount] = useState(0);
   const [stockConflictCount, setStockConflictCount] = useState(0);
+  const [exhaustedCount, setExhaustedCount] = useState(0);
 
   const pendingEntries = useLiveQuery(
     () => offlineDb.outbox.where('status').anyOf('pending', 'syncing', 'failed').toArray(),
@@ -33,6 +34,8 @@ export default function OfflineStatusIndicator({ tenantId }: { tenantId?: string
     const check = async () => {
       const zatcaEntries = await getZatcaApproachingEntries();
       if (!cancelled) setZatcaWarningCount(zatcaEntries.length);
+      const exhausted = await getExhaustedOutboxEntries();
+      if (!cancelled) setExhaustedCount(exhausted.length);
       if (tenantId) {
         const conflicts = await getStockConflictCount(tenantId);
         if (!cancelled) setStockConflictCount(conflicts);
@@ -46,7 +49,7 @@ export default function OfflineStatusIndicator({ tenantId }: { tenantId?: string
   const hasAttention = pendingCount > 0 || stockConflictCount > 0;
   if (!hasAttention) return null;
 
-  const hasUrgent = zatcaWarningCount > 0 || stockConflictCount > 0;
+  const hasUrgent = zatcaWarningCount > 0 || stockConflictCount > 0 || exhaustedCount > 0;
 
   return (
     <div className="fixed bottom-6 start-6 z-40 flex flex-col items-start gap-2">
@@ -56,6 +59,14 @@ export default function OfflineStatusIndicator({ tenantId }: { tenantId?: string
             <div className="flex items-center justify-between gap-2">
               <span className="text-content-muted font-bold">{t('offline.pending_sync', 'عمليات بانتظار المزامنة')}</span>
               <span className="font-black text-content">{pendingCount}</span>
+            </div>
+          )}
+          {exhaustedCount > 0 && (
+            <div className="flex items-start gap-2 text-danger font-bold bg-danger/10 rounded-xl p-2.5">
+              <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+              <span>
+                {t('offline.exhausted_warning', '{{count}} عملية فشلت في المزامنة نهائياً ولن تُعاد محاولتها تلقائياً — تحتاج مراجعة يدوية.', { count: exhaustedCount })}
+              </span>
             </div>
           )}
           {zatcaWarningCount > 0 && (

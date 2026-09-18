@@ -298,9 +298,15 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
   // order.taxRate || 15 كان يستبدل 0% (فاتورة معفاة) بـ15% خطأً لأن 0 قيمة
   // falsy في JS.
   // @ts-ignore
-  const vatRate = (order.taxRate !== null && order.taxRate !== undefined && Number.isFinite(Number(order.taxRate)))
+  const rawTaxRate = (order.taxRate !== null && order.taxRate !== undefined && Number.isFinite(Number(order.taxRate)))
     ? Number(order.taxRate)
     : 15;
+  // tax_rate is stored inconsistently depending on which code path created
+  // the row: POS.tsx's create_pos_sale hardcodes a fraction (0.15), while
+  // Orders.tsx writes the tenant's configured percentage (e.g. 15) directly.
+  // Normalize to percentage here since the rest of this component already
+  // assumes that scale (see the vatRate/100 usage below).
+  const vatRate = rawTaxRate > 1 ? rawTaxRate : rawTaxRate * 100;
 
   const invoiceDate = new Date(order.issuedAt || new Date().toISOString());
 
@@ -486,6 +492,7 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
               qrCodeBase64={qrCodeBase64}
               orderId={order.orderId || order.id}
               hidePrintButton={true}
+              vatRate={vatRate / 100}
             />
           ) : (
             <SimplifiedTaxInvoice
@@ -506,6 +513,7 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
               hidePrintButton={true}
               branchName={order.branchName}
               sellerName={order.createdBy}
+              vatRate={vatRate / 100}
             />
           )}
         </div>

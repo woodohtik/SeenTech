@@ -48,7 +48,21 @@ export default defineConfig(({mode}) => {
           // firebase-messaging-sw.js must never be swept into this SW's own
           // precache -- it's fetched/registered separately, and Workbox
           // would otherwise try to precache it as a navigable asset.
-          globIgnores: ['**/firebase-messaging-sw.js'],
+          // The SaaS/SuperAdmin-only chunks are excluded too: Workbox's
+          // default globPatterns sweeps every JS/CSS in dist/ regardless of
+          // whether a regular tenant user will ever visit those routes, so
+          // every client was downloading the whole admin surface area in
+          // the background after first load for no benefit (2026-09-17
+          // full-team review, performance-reviewer). They still load
+          // normally via React.lazy on demand for the few accounts that
+          // actually use them -- this only removes them from the
+          // background precache.
+          globIgnores: [
+            '**/firebase-messaging-sw.js',
+            '**/assets/SaaS*.js',
+            '**/assets/SuperAdminDashboard-*.js',
+            '**/assets/AdminTailors-*.js',
+          ],
           // Even after seen-offline-coverage-and-performance-task.md Phase
           // 6 (lazy-loaded locale files, vendor chunk splitting) the
           // largest chunks are still over Workbox's 2MiB default precache

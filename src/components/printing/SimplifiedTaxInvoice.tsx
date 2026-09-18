@@ -52,6 +52,8 @@ export interface SimplifiedTaxInvoiceProps {
   showCustomerName?: boolean;
   logoBorder?: boolean;
   showMeasurements?: boolean;
+  /** Fraction (e.g. 0.15 for 15%), not a percentage. Defaults to 0.15 (KSA standard rate). */
+  vatRate?: number;
 }
 
 export default function SimplifiedTaxInvoice({
@@ -72,6 +74,7 @@ export default function SimplifiedTaxInvoice({
   showCustomerName = true,
   logoBorder = true,
   showMeasurements = false,
+  vatRate = 0.15,
 }: SimplifiedTaxInvoiceProps) {
   const { t } = useTranslation();
   const [fontSizeScale, setFontSizeScale] = React.useState<number>(100);
@@ -101,7 +104,7 @@ export default function SimplifiedTaxInvoice({
 
     items.forEach((item) => {
       const itemTotalInc = item.unitPrice * item.quantity;
-      const itemTotalExc = itemTotalInc / 1.15;
+      const itemTotalExc = itemTotalInc / (1 + vatRate);
       const itemVat = itemTotalInc - itemTotalExc;
 
       grandTotal += itemTotalInc;

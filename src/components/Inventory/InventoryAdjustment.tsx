@@ -34,6 +34,7 @@ import { cn } from "../../lib/utils";
 import { SmartSelect } from "../ui/SmartSelect";
 import { Branch, InventoryItem, BranchInventory } from "../../types";
 import { motion, AnimatePresence } from "motion/react";
+import { computeAdjustmentLine } from "../../services/inventoryService";
 
 // Dynamic types representing the database schemas for proper TypeScript validation
 export interface InventoryAdjustmentHeader {
@@ -455,9 +456,8 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
 
         const bookQty = getBookStock(itemId);
         const actualQty = actualCounts[itemId] ?? 0;
-        const varianceQty = actualQty - bookQty;
         const costPrice = unitCosts[itemId] ?? getUnitCost(itemObj);
-        const totalVarianceCost = varianceQty * costPrice;
+        const { varianceQty, totalVarianceCost } = computeAdjustmentLine(bookQty, actualQty, costPrice);
         const rowReason = itemReasons[itemId] || "";
 
         detailsPayloads.push({

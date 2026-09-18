@@ -17,6 +17,25 @@ export function convertToMeters(quantity: number, unit: string): number {
   return quantity * rate;
 }
 
+export interface AdjustmentLineResult {
+  varianceQty: number;
+  totalVarianceCost: number;
+}
+
+/** Physical-count reconciliation math (InventoryAdjustment.tsx) -- pulled
+ * out so it's testable independent of the component. */
+export function computeAdjustmentLine(
+  bookQty: number,
+  actualQty: number,
+  unitCost: number
+): AdjustmentLineResult {
+  const varianceQty = actualQty - bookQty;
+  return {
+    varianceQty,
+    totalVarianceCost: varianceQty * unitCost,
+  };
+}
+
 export async function checkStockAvailability(
   items: any[],
   branchId: string,

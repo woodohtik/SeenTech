@@ -795,10 +795,11 @@ export default function Settings({ tenantId }: SettingsProps) {
                         >
                           <div className="space-y-2">
                             <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em] px-1">{t('settings_page.tax.trn', 'الرقم الضريبي (TRN - 15 خانة)')}</label>
-                            <input 
-                              type="text" 
+                            <input
+                              type="text"
                               maxLength={15}
                               placeholder="300000000000003"
+                              required
                               {...register('taxSettings.trn')}
                               onChange={(e) => {
                                 const val = e.target.value.replace(/\D/g, '').slice(0, 15);
@@ -814,8 +815,9 @@ export default function Settings({ tenantId }: SettingsProps) {
                           </div>
                           <div className="space-y-2">
                             <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em] px-1">{t('settings_page.tax.legal_name', 'اسم المكلف القانوني')}</label>
-                            <input 
-                              type="text" 
+                            <input
+                              type="text"
+                              required
                               {...register('taxSettings.legalName')}
                               className={cn(
                                 "w-full bg-surface border border-border rounded-xl p-3 font-semibold outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content text-sm",

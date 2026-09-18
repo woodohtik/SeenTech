@@ -153,7 +153,15 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
         .eq('order_id', order.id)
         .maybeSingle();
 
-      const invoiceId = invoiceData?.id || order.id;
+      if (!invoiceData?.id) {
+        // sales_returns.invoice_id is NOT NULL + FK to tax_invoices(id) --
+        // falling back to order.id here would just fail with a raw
+        // foreign-key violation once the insert below runs. Fail early
+        // with a clear message instead.
+        toastError(t('sales_returns.no_tax_invoice_for_order'));
+        return;
+      }
+      const invoiceId = invoiceData.id;
 
       // 2. Insert into sales_returns
       const salesReturnId = crypto.randomUUID();

@@ -154,6 +154,11 @@ export const ThermalInvoice = ({
     remainingAmount: data.remainingAmount !== undefined ? data.remainingAmount : 0,
   };
 
+  // InvoiceData only carries absolute amounts, not a rate -- derive it from
+  // the actual totals so the per-line VAT breakdown stays consistent with
+  // them (was previously hardcoded to 15% regardless of these totals).
+  const vatRate = totals.subtotal > 0 ? totals.vatAmount / totals.subtotal : 0.15;
+
   const formattedItems = (data.items || []).map((item) => ({
     name: item.name,
     quantity: item.quantity,
@@ -184,6 +189,7 @@ export const ThermalInvoice = ({
       showCustomerName={showCustomerName}
       logoBorder={logoBorder}
       showMeasurements={showMeasurements}
+      vatRate={vatRate}
     />
   );
 };
@@ -237,6 +243,9 @@ export const StandardInvoice = ({
     grandTotal: data.grandTotal || 0,
   };
 
+  // See ThermalInvoice above -- same derivation, same reason.
+  const vatRate = totals.subtotal > 0 ? totals.vatAmount / totals.subtotal : 0.15;
+
   const formattedItems = (data.items || []).map((item) => ({
     name: item.name,
     quantity: item.quantity,
@@ -269,11 +278,12 @@ export const StandardInvoice = ({
       showCustomerName={showCustomerName}
       logoBorder={logoBorder}
       showMeasurements={showMeasurements}
+      vatRate={vatRate}
     />
   );
 };
 
-export default function InvoiceReceipt({ 
+export default function InvoiceReceipt({
   invoiceData, 
   defaultSize = '80mm' 
 }: { 

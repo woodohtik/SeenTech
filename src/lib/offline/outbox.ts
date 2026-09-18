@@ -183,6 +183,21 @@ export async function getPendingOutboxCount(): Promise<number> {
 }
 
 /**
+ * Entries that hit MAX_AUTO_RETRIES: drainOutbox() will never pick these up
+ * again (its query filters retries < MAX_AUTO_RETRIES), but they were still
+ * counted the same as an actively-retrying entry by getPendingOutboxCount()
+ * with no way to tell them apart in the UI. A financial record stuck here
+ * needs a human to look at it, not just another automatic retry that will
+ * never come.
+ */
+export async function getExhaustedOutboxEntries(): Promise<OutboxEntry[]> {
+  return offlineDb.outbox
+    .where('status').equals('failed')
+    .and(entry => entry.retries >= MAX_AUTO_RETRIES)
+    .toArray();
+}
+
+/**
  * Phase 4's ZATCA clock: a simplified (B2C) invoice must reach the "فاتورة"
  * platform within 24 hours of issuance. That 24-hour clock starts at the
  * moment the sale was made (this entry's createdAt, generated client-side

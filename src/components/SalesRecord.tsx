@@ -425,15 +425,25 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                 logoUrl: '',
               };
 
+              // tax_rate is stored inconsistently depending on which code path
+              // created the order: POS.tsx's create_pos_sale hardcodes a
+              // fraction (0.15), Orders.tsx writes the tenant's configured
+              // percentage (e.g. 15) directly -- normalize defensively rather
+              // than assume either scale.
+              const rawTaxRate = Number((selectedOrder as any).taxRate);
+              const vatRateFraction = Number.isFinite(rawTaxRate) && rawTaxRate > 0
+                ? (rawTaxRate > 1 ? rawTaxRate / 100 : rawTaxRate)
+                : 0.15;
+
               const formattedItems = (selectedOrder.items || []).map((item: any) => ({
                 name: item.type === 'custom' ? item.garmentType || t('orders.custom_thobe', 'تفصيل ثوب') : item.name || t('orders.ready_made', 'صنف جاهز'),
                 quantity: Number(item.quantity || 0),
                 unitPrice: Number(item.price || item.unitPrice || 0),
-                vatAmount: Number((item.price || item.unitPrice || 0) * item.quantity - ((item.price || item.unitPrice || 0) * item.quantity) / 1.15),
+                vatAmount: Number((item.price || item.unitPrice || 0) * item.quantity - ((item.price || item.unitPrice || 0) * item.quantity) / (1 + vatRateFraction)),
                 total: Number((item.price || item.unitPrice || 0) * item.quantity)
               }));
 
-              const subtotalExcVat = selectedOrder.totalAmount / 1.15;
+              const subtotalExcVat = selectedOrder.totalAmount / (1 + vatRateFraction);
               const vatAmt = selectedOrder.totalAmount - subtotalExcVat;
 
               const totals = {
@@ -478,6 +488,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                       totals={totals}
                       qrCodeBase64={qrCodeBase64}
                       hidePrintButton={true}
+                      vatRate={vatRateFraction}
                     />
                   ) : (
                     <SimplifiedTaxInvoice
@@ -496,6 +507,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                       qrCodeBase64={qrCodeBase64}
                       hidePrintButton={true}
                       sellerName={selectedOrder.createdBy || t('common.system')}
+                      vatRate={vatRateFraction}
                     />
                   )}
                 </div>

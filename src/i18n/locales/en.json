@@ -3498,6 +3498,7 @@
     "method_network_mada": "Card / Mada",
     "multiple_found": "Several invoices were found for the phone number entered:",
     "no_returnable_items": "No ready-made items available to return",
+    "no_tax_invoice_for_order": "No tax invoice is linked to this order -- a return can't be recorded",
     "non_returnable": "Custom - Non-returnable",
     "order_details": "Selected Invoice Details",
     "partial_return_warning_msg": "This invoice has both custom-tailored and ready-made items. Only the ready-made items will be returned and their quantity added back to the warehouse, for an amount of",
