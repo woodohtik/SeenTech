@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { 
   TrendingUp, 
   DollarSign, 
@@ -24,6 +25,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase/client';
 import { useDirection } from '../../lib/direction';
 import { PriceDisplay } from '../PriceDisplay';
+import { saveLastKnown, getLastKnown } from '../../lib/offline/lastKnownCache';
 
 interface AdminDashboardProps {
   tenantId: string;
@@ -51,157 +53,172 @@ interface FabricAlert {
   unit: string;
 }
 
+interface MonthlyChartPoint {
+  month: string;
+  mbi3at: number;
+  arbah: number;
+}
+
+interface AdminDashboardData {
+  financials: Financials;
+  topTailor: TopTailor | null;
+  fabricAlerts: FabricAlert[];
+  monthlyChartData: MonthlyChartPoint[];
+}
+
+const isUuid = (v?: string) => !!v && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ tenantId }) => {
   const { t } = useTranslation();
   const { dir } = useDirection();
-  const [loading, setLoading] = useState(true);
-  const [financials, setFinancials] = useState<Financials>({
-    totalSales: 0,
-    netProfit: 0,
-    expenses: 0,
-    vatDue: 0
+
+  // Pilot for seen-comprehensive-review-fixes-task.md's react-query gap
+  // finding -- same pattern as DashboardOwner.tsx's dashboardStatsQuery
+  // (Promise.all queryFn, saveLastKnown/getLastKnown for an offline "stale
+  // data" fallback instead of a blank dashboard). This screen is read-only
+  // (no mutation ever originates here), which is exactly why it was picked
+  // to try the pattern on first.
+  const dashboardQuery = useQuery<AdminDashboardData>({
+    queryKey: ['admin_dashboard', tenantId],
+    queryFn: async () => {
+      // These four queries are all independent (each only filters by
+      // tenant_id, none depends on another's result), so they run in
+      // parallel instead of four sequential round-trips.
+      const [
+        { data: orders },
+        { data: expensesData },
+        { data: inventory },
+        { data: staffList }
+      ] = await Promise.all([
+        supabase.from('orders').select('*').eq('tenant_id', tenantId),
+        supabase.from('expenses').select('amount').eq('tenant_id', tenantId),
+        supabase.from('inventory_items').select('*').eq('tenant_id', tenantId),
+        supabase.from('staff').select('id, name, role').eq('tenant_id', tenantId).eq('role', 'tailor')
+      ]);
+
+      // 1. Financials & Monthly Charts
+      const list = orders || [];
+      const completedSales = list
+        .filter(o => o.status !== 'cancelled')
+        .reduce((sum, o) => sum + (Number(o.total_amount) || Number(o.total) || 0), 0);
+
+      const vat = list
+        .filter(o => o.status !== 'cancelled')
+        .reduce((sum, o) => sum + (Number(o.tax_amount) || Number(o.vat) || 0), 0);
+
+      // 2. Expenses
+      const totalExp = (expensesData || []).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+      const estProfit = Math.max(0, completedSales - totalExp - vat);
+
+      // 3. Fabric Inventory Alerts
+      const alerts: FabricAlert[] = (inventory || [])
+        .filter((i: any) => Number(i.quantity) <= Number(i.min_threshold || 10))
+        .map((i: any) => ({
+          id: i.id,
+          name: i.name || t('dashboard.admin.default_fabric_name'),
+          quantity: Number(i.quantity) || 0,
+          minThreshold: Number(i.min_threshold) || 10,
+          unit: i.unit || t('inventory.unit_meter')
+        }));
+
+      // 4. Staff & Tailor Performance
+      let topTailor: TopTailor | null = null;
+      if (staffList && staffList.length > 0) {
+        // Count completed items per tailor from order history or items
+        const tailorStats = staffList.map(st => {
+          const assignedOrders = list.filter(o =>
+            o.tailor_id === st.id ||
+            (Array.isArray(o.items) && o.items.some((it: any) => it.tailorId === st.id))
+          );
+          const count = assignedOrders.filter(o => o.status === 'delivered' || o.status === 'ready').length;
+          const comm = assignedOrders.reduce((sum, o) => sum + (Number(o.commission) || 0), 0);
+          return {
+            id: st.id,
+            name: st.name,
+            completedItems: count,
+            commissionEarned: comm
+          };
+        });
+
+        tailorStats.sort((a, b) => b.completedItems - a.completedItems);
+        // Only set top tailor if there is at least one tailor with completed items
+        topTailor = tailorStats.length > 0 && tailorStats[0].completedItems > 0 ? tailorStats[0] : null;
+      }
+
+      // Calculate actual last 6 months sales and estimated profit chart
+      const monthsNames = [
+        t('common.months.january'),
+        t('common.months.february'),
+        t('common.months.march'),
+        t('common.months.april'),
+        t('common.months.may'),
+        t('common.months.june'),
+        t('common.months.july'),
+        t('common.months.august'),
+        t('common.months.september'),
+        t('common.months.october'),
+        t('common.months.november'),
+        t('common.months.december'),
+      ];
+
+      const chart: MonthlyChartPoint[] = [];
+      const now = new Date();
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const mIndex = d.getMonth();
+        const year = d.getFullYear();
+
+        const monthOrders = list.filter(o => {
+          if (o.status === 'cancelled') return false;
+          const orderDateStr = o.order_date || o.created_at;
+          if (!orderDateStr) return false;
+          const oDate = new Date(orderDateStr);
+          return oDate.getMonth() === mIndex && oDate.getFullYear() === year;
+        });
+
+        const monthlySales = monthOrders.reduce((sum, o) => sum + (Number(o.total_amount) || Number(o.total) || 0), 0);
+        const monthlyVat = monthOrders.reduce((sum, o) => sum + (Number(o.tax_amount) || Number(o.vat) || 0), 0);
+        const monthlyProfit = Math.max(0, monthlySales - monthlyVat);
+
+        chart.push({
+          month: monthsNames[mIndex],
+          mbi3at: Math.round(monthlySales),
+          arbah: Math.round(monthlyProfit)
+        });
+      }
+
+      const result: AdminDashboardData = {
+        financials: { totalSales: completedSales, netProfit: estProfit, expenses: totalExp, vatDue: vat },
+        topTailor,
+        fabricAlerts: alerts,
+        monthlyChartData: chart
+      };
+
+      // No live financial operation happens on this screen while offline --
+      // this cache just avoids a blank dashboard on a failed refresh.
+      saveLastKnown(tenantId, 'admin_dashboard', result);
+      return result;
+    },
+    enabled: isUuid(tenantId),
+    staleTime: 30_000,
+    initialData: () => {
+      if (!isUuid(tenantId)) return undefined;
+      return getLastKnown<AdminDashboardData>(tenantId, 'admin_dashboard')?.data;
+    },
   });
-  const [topTailor, setTopTailor] = useState<TopTailor | null>(null);
-  const [fabricAlerts, setFabricAlerts] = useState<FabricAlert[]>([]);
-  const [monthlyChartData, setMonthlyChartData] = useState<any[]>([]);
 
   useEffect(() => {
-    let isMounted = true;
-    async function fetchAdminData() {
-      if (!tenantId) return;
-      setLoading(true);
-
-      try {
-        // These four queries are all independent (each only filters by
-        // tenant_id, none depends on another's result), so they run in
-        // parallel instead of four sequential round-trips.
-        const [
-          { data: orders },
-          { data: expensesData },
-          { data: inventory },
-          { data: staffList }
-        ] = await Promise.all([
-          supabase.from('orders').select('*').eq('tenant_id', tenantId),
-          supabase.from('expenses').select('amount').eq('tenant_id', tenantId),
-          supabase.from('inventory_items').select('*').eq('tenant_id', tenantId),
-          supabase.from('staff').select('id, name, role').eq('tenant_id', tenantId).eq('role', 'tailor')
-        ]);
-
-        // 1. Financials & Monthly Charts
-        const list = orders || [];
-        const completedSales = list
-          .filter(o => o.status !== 'cancelled')
-          .reduce((sum, o) => sum + (Number(o.total_amount) || Number(o.total) || 0), 0);
-
-        const vat = list
-          .filter(o => o.status !== 'cancelled')
-          .reduce((sum, o) => sum + (Number(o.tax_amount) || Number(o.vat) || 0), 0);
-
-        // 2. Expenses
-        const totalExp = (expensesData || []).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-        const estProfit = Math.max(0, completedSales - totalExp - vat);
-
-        // 3. Fabric Inventory Alerts
-        const alerts: FabricAlert[] = (inventory || [])
-          .filter((i: any) => Number(i.quantity) <= Number(i.min_threshold || 10))
-          .map((i: any) => ({
-            id: i.id,
-            name: i.name || t('dashboard.admin.default_fabric_name'),
-            quantity: Number(i.quantity) || 0,
-            minThreshold: Number(i.min_threshold) || 10,
-            unit: i.unit || t('inventory.unit_meter')
-          }));
-
-        // 4. Staff & Tailor Performance
-
-        if (staffList && staffList.length > 0) {
-          // Count completed items per tailor from order history or items
-          const tailorStats = staffList.map(st => {
-            const assignedOrders = list.filter(o => 
-              o.tailor_id === st.id || 
-              (Array.isArray(o.items) && o.items.some((it: any) => it.tailorId === st.id))
-            );
-            const count = assignedOrders.filter(o => o.status === 'delivered' || o.status === 'ready').length;
-            const comm = assignedOrders.reduce((sum, o) => sum + (Number(o.commission) || 0), 0);
-            return {
-              id: st.id,
-              name: st.name,
-              completedItems: count,
-              commissionEarned: comm
-            };
-          });
-
-          tailorStats.sort((a, b) => b.completedItems - a.completedItems);
-          // Only set top tailor if there is at least one tailor with completed items
-          setTopTailor(tailorStats.length > 0 && tailorStats[0].completedItems > 0 ? tailorStats[0] : null);
-        } else {
-          setTopTailor(null);
-        }
-
-        // Calculate actual last 6 months sales and estimated profit chart
-        const monthsNames = [
-          t('common.months.january'),
-          t('common.months.february'),
-          t('common.months.march'),
-          t('common.months.april'),
-          t('common.months.may'),
-          t('common.months.june'),
-          t('common.months.july'),
-          t('common.months.august'),
-          t('common.months.september'),
-          t('common.months.october'),
-          t('common.months.november'),
-          t('common.months.december'),
-        ];
-
-        const chart = [];
-        const now = new Date();
-        for (let i = 5; i >= 0; i--) {
-          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-          const mIndex = d.getMonth();
-          const year = d.getFullYear();
-          
-          const monthOrders = list.filter(o => {
-            if (o.status === 'cancelled') return false;
-            const orderDateStr = o.order_date || o.created_at;
-            if (!orderDateStr) return false;
-            const oDate = new Date(orderDateStr);
-            return oDate.getMonth() === mIndex && oDate.getFullYear() === year;
-          });
-
-          const monthlySales = monthOrders.reduce((sum, o) => sum + (Number(o.total_amount) || Number(o.total) || 0), 0);
-          const monthlyVat = monthOrders.reduce((sum, o) => sum + (Number(o.tax_amount) || Number(o.vat) || 0), 0);
-          const monthlyProfit = Math.max(0, monthlySales - monthlyVat);
-
-          chart.push({
-            month: monthsNames[mIndex],
-            mbi3at: Math.round(monthlySales),
-            arbah: Math.round(monthlyProfit)
-          });
-        }
-
-        if (isMounted) {
-          setFinancials({
-            totalSales: completedSales,
-            netProfit: estProfit,
-            expenses: totalExp,
-            vatDue: vat
-          });
-          setFabricAlerts(alerts);
-          setMonthlyChartData(chart);
-        }
-      } catch (err) {
-        console.error('Error loading admin dashboard metrics:', err);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
+    if (dashboardQuery.error) {
+      console.error('Error loading admin dashboard metrics:', dashboardQuery.error);
     }
+  }, [dashboardQuery.error]);
 
-    fetchAdminData();
-    return () => { isMounted = false; };
-  }, [tenantId, t]);
+  const financials = dashboardQuery.data?.financials ?? { totalSales: 0, netProfit: 0, expenses: 0, vatDue: 0 };
+  const topTailor = dashboardQuery.data?.topTailor ?? null;
+  const fabricAlerts = dashboardQuery.data?.fabricAlerts ?? [];
+  const monthlyChartData = dashboardQuery.data?.monthlyChartData ?? [];
 
-  if (loading) {
+  if (dashboardQuery.isLoading) {
     return <AdminDashboardSkeleton />;
   }
 
