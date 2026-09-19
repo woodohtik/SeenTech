@@ -29,9 +29,20 @@ export function formatCurrency(amount: number) {
 // browser tab never collide even if Date.now() hasn't ticked over between
 // them (a real gap the first version of this fix missed -- caught by
 // src/lib/utils.test.ts finding a ~14% duplicate rate across 500 calls in a
-// tight loop). Cross-tab/cross-device collisions still rely on millisecond
-// timing, which real, human-triggered order creation essentially never hits.
-let orderNumberCounter = 0;
+// tight loop).
+//
+// Randomized starting offset (not a fixed 0): two different tabs/devices
+// that happen to load at the same millisecond used to *also* both start
+// this counter at 0, so a same-millisecond cross-device collision was
+// still possible on each device's first call after a fresh load despite
+// the counter fixing the same-tab case. A random start means two fresh
+// tabs essentially never begin at the same offset, while a single tab's
+// own sequence stays strictly incrementing (the same-tab guarantee above
+// is unaffected). Still not a hard guarantee -- true cross-device
+// atomicity would need a server-assigned number, which conflicts with
+// this being callable while fully offline -- but cuts the realistic
+// collision window substantially for the same code size.
+let orderNumberCounter = Math.floor(Math.random() * 1000);
 
 export function generateOrderNumber() {
   // Client-side, non-atomic, no retry-on-collision at any call site

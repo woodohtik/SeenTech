@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { cn, formatCurrency, generateOrderNumber } from './utils';
 
 describe('generateOrderNumber', () => {
@@ -19,6 +19,26 @@ describe('generateOrderNumber', () => {
       numbers.add(generateOrderNumber());
     }
     expect(numbers.size).toBeGreaterThan(495);
+  });
+
+  it('starts its per-tab counter at a random offset, not always 0', async () => {
+    // Regression check: two different devices/tabs loading at the exact
+    // same millisecond used to also both start this module's counter at a
+    // fixed 0, so their very first call after a fresh load could collide
+    // despite the same-tab counter otherwise preventing duplicates. Each
+    // fresh module instance (simulating a fresh tab) should get its own
+    // random starting point instead of a shared fixed one.
+    const startingSuffixes = new Set<number>();
+    for (let i = 0; i < 20; i++) {
+      vi.resetModules();
+      const fresh = await import('./utils');
+      const n = fresh.generateOrderNumber();
+      startingSuffixes.add(n % 1000);
+    }
+    // With a random 0-999 start, 20 fresh instances landing on the exact
+    // same first suffix every time would be a ~1000^19-to-1 fluke -- a
+    // real fixed-0 regression would make this set have size 1.
+    expect(startingSuffixes.size).toBeGreaterThan(1);
   });
 });
 
