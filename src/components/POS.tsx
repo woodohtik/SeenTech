@@ -943,7 +943,15 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       // tax number on a real customer-facing tax invoice with no warning.
       // Blocked outright now instead: no invoice may be issued under a
       // fabricated identity.
-      if (!hasValidTaxSettings(taxSettings)) {
+      //
+      // Only enforced when tax invoicing is actually enabled (isTaxEnabled)
+      // or the sale itself is marked B2B (a standard tax invoice always
+      // needs the seller's own TRN, regardless of the tenant-wide toggle).
+      // A merchant who hasn't turned isTaxEnabled on (the default) has no
+      // TRN/legal-name fields in Settings at all, so this used to block
+      // every sale, plain B2C included, with no way out of the app's own UI
+      // (found live via /qa-test on staging: 2026-09-20).
+      if ((isTaxEnabled || isB2B) && !hasValidTaxSettings(taxSettings)) {
         toastError(
           t('pos.tax_settings_required_title', 'أكمل إعدادات الضريبة أولاً'),
           t('pos.tax_settings_required_desc', 'يجب إدخال الاسم التجاري والرقم الضريبي الحقيقيين في الإعدادات قبل إصدار أي فاتورة.')
@@ -953,10 +961,10 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       }
 
       const timestamp = new Date().toISOString();
-      const sellerName = taxSettings.legalName;
-      const trn = taxSettings.trn;
+      const sellerName = taxSettings?.legalName;
+      const trn = taxSettings?.trn;
 
-      qrCodeBase64 = generateZatcaQR(sellerName, trn, timestamp, totalAmount.toFixed(2), taxAmount.toFixed(2));
+      qrCodeBase64 = (isTaxEnabled || isB2B) ? generateZatcaQR(sellerName, trn, timestamp, totalAmount.toFixed(2), taxAmount.toFixed(2)) : "";
 
       const isUuid = (val: string | undefined | null) =>
         val ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val) : false;

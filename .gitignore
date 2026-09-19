@@ -26,3 +26,4 @@ print-agent/dist/
 /test-results/
 /playwright-report/
 /playwright/.cache/
+/playwright/.auth/
