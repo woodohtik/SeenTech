@@ -1,60 +1,67 @@
-# نظام الخياط الذكي (Smart Tailor System)
+# سِين (Seen)
 
-نظام كاشير سحابي (SaaS) متكامل للخياطين لإدارة العملاء والطلبات والقياسات، مع لوحة تحكم متقدمة للمشرف العام لمراقبة أداء المنصة والمشتركين.
+نظام كاشير سحابي (SaaS) متعدد المستأجرين لمحلات التفصيل والأقمشة في السعودية والخليج — نقطة بيع، إدارة طلبات وقياسات، مخزون، موردين، فوترة ضريبية متوافقة مع زاتكا (قيد الإنجاز)، ومزامنة أوفلاين كاملة.
 
-## المميزات
-- **لوحة تحكم المشرف العام:** إدارة طلبات الانضمام، تفعيل الاشتراكات، ومراقبة الإحصائيات العامة.
-- **إدارة العملاء:** تسجيل بيانات العملاء وقياساتهم بدقة.
-- **إدارة الطلبات:** تتبع حالة الطلبات من "قيد التنفيذ" إلى "تم التسليم".
-- **إدارة المخزون:** تنبيهات عند نقص المواد والمستلزمات.
-- **نظام الإشعارات:** تنبيهات فورية للطلبات الجديدة وحالات المخزون.
+- **staging:** https://staging.seentech.io
+- **production:** https://www.seentech.io
 
-## المتطلبات التقنية
-- **Node.js** (إصدار 18 أو أحدث)
-- **Firebase** (Firestore & Authentication)
-- **Vite** (كأداة بناء وتطوير)
+## البنية التقنية الفعلية
 
-## طريقة التشغيل محلياً
+- **الواجهة:** React 19 + TypeScript + Vite + Tailwind CSS v4.
+- **الخادم:** Express (`server.ts`) — يعمل محلياً عبر `tsx`، ويُبنى ويُنشر على Vercel كـ Serverless Function (`api/index.js`) في الإنتاج.
+- **قاعدة البيانات:** Supabase (Postgres + Auth + Realtime + Storage)، عبر ملفات `supabase/migrations/`.
+- **المصادقة:** Supabase Auth أساساً، مع مسار احتياطي مؤقت لـFirebase Auth أثناء فترة انتقالية (يُزال لاحقاً — راجع تعليقات `authMiddleware.ts`).
+- **الأوفلاين:** Dexie (IndexedDB) لتخزين مؤقت وطابور مزامنة (`src/lib/offline/`) — البيع والطلبات تعمل بلا اتصال وتُزامَن تلقائياً عند عودته.
+- **التطبيقات الأصلية:** Capacitor — تطبيق الموظفين (`android/`) وتطبيق العملاء (`capacitor-customer/`).
+- **الطباعة:** وسيط طباعة صامتة على جهاز الكاشير (`print-agent/`) + وضع kiosk للطباعة الكاملة المقاسات (`kiosk-print/`).
 
-1. **تثبيت التبعيات:**
+للتفاصيل الكاملة حول بناء ونشر كل هدف من هذه الأهداف، راجع **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
+
+## التشغيل محلياً
+
+1. **التبعيات:**
    ```bash
    npm install
    ```
 
-2. **إعداد Firebase:**
-   - قم بإنشاء مشروع جديد في [Firebase Console](https://console.firebase.google.com/).
-   - قم بتفعيل **Firestore Database** و **Authentication** (Google Login).
-   - انسخ إعدادات المشروع (Config) وضعها في ملف باسم `firebase-applet-config.json` في المجلد الرئيسي للمشروع بالتنسيق التالي:
-     ```json
-     {
-       "apiKey": "YOUR_API_KEY",
-       "authDomain": "YOUR_AUTH_DOMAIN",
-       "projectId": "YOUR_PROJECT_ID",
-       "storageBucket": "YOUR_STORAGE_BUCKET",
-       "messagingSenderId": "YOUR_SENDER_ID",
-       "appId": "YOUR_APP_ID",
-       "firestoreDatabaseId": "(default)"
-     }
-     ```
+2. **متغيرات البيئة:** انسخ `.env.example` إلى `.env.local` واملأ القيم الحقيقية (تعليقات كل متغير توضح من أين تُستخرَج ومتى تكون ضرورية فعلاً).
+   ```bash
+   cp .env.example .env.local
+   ```
 
-3. **قواعد الحماية (Firestore Rules):**
-   - انسخ المحتوى الموجود في ملف `firestore.rules` والصقه في تبويب **Rules** في Firestore Console.
-
-4. **تشغيل المشروع:**
+3. **تشغيل الخادم (يشمل الواجهة عبر Vite في وضع Middleware):**
    ```bash
    npm run dev
    ```
 
-## الرفع إلى GitHub
-1. قم بإنشاء مستودع (Repository) جديد على GitHub.
-2. اتبع الأوامر التالية في جهازك:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git branch -M main
-   git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
-   git push -u origin main
-   ```
+## الأوامر الرئيسية
 
-**ملاحظة:** تم استثناء ملف `firebase-applet-config.json` من الرفع التلقائي لحماية بياناتك السرية. تأكد من إضافته يدوياً في بيئات التشغيل الأخرى.
+| الأمر | الوصف |
+|---|---|
+| `npm run dev` | تشغيل محلي (`tsx server.ts`، يخدم الواجهة عبر Vite middleware) |
+| `npm run build` | بناء تطبيق الموظفين + حزم `server.ts` لنشر Vercel |
+| `npm run build:customer` | بناء تطبيق العملاء (لتضمينه في `capacitor-customer/`) |
+| `npm run lint` | فحص الأنواع (`tsc --noEmit`) — هذا **ليس** ESLint فعلياً |
+| `npm run test` | اختبارات الوحدة (Vitest) |
+| `npm run test:e2e` | اختبارات Playwright |
+| `npm run db:migrate` | سكربت ترحيل بيانات مرحلة 2 (Firebase → Supabase)، لتشغيل المُشغِّل يدوياً فقط، ليس جزءاً من التشغيل العادي |
+
+## سير العمل والنشر
+
+- **الفرع `staging`** → `staging.seentech.io` (كل عمل تطويري جديد يُدفع هنا أولاً).
+- **الفرع `main`** → `www.seentech.io` (الإنتاج — لا يُنشر عليه إلا بطلب صريح).
+- CI (`.github/workflows/ci.yml`) يعمل على كل push/PR لكلا الفرعين: فحص أنواع، اختبارات وحدة، بناء التطبيقين، واختبارات Playwright.
+
+## هيكل المستودع (مختصر)
+
+```
+src/               تطبيق الموظفين (React) — المكوّنات، الخدمات، الأوفلاين
+server.ts          خادم Express (API + وسيط الطباعة + تكامل المساعد الذكي)
+api/index.js       نقطة دخول Vercel Function (تُحمّل dist/server.cjs المبني)
+supabase/          ترحيلات قاعدة البيانات (migrations/) والملفات القديمة (legacy-setup/)
+android/           تطبيق الموظفين Capacitor (WebView حي على staging/production)
+capacitor-customer/ تطبيق العملاء Capacitor (حزمة مضمَّنة، متجر Google Play)
+print-agent/       وسيط الطباعة الصامتة (Windows/عبر منصات)
+kiosk-print/       وضع الطباعة الكاملة المقاسات بلا نافذة طباعة
+docs/DEPLOYMENT.md دليل النشر الكامل لكل الأهداف أعلاه
+```
