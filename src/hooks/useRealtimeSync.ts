@@ -19,8 +19,17 @@ export function useRealtimeSync(table: string, tenantId: string | undefined, onU
   useEffect(() => {
     if (!tenantId) return;
 
-    // Create a uniquely named channel for this table and tenant
-    const channelName = `realtime:${table}:${tenantId}:${Date.now()}`;
+    // Create a uniquely named channel for this table and tenant.
+    // Date.now() alone isn't unique enough: if multiple components mount
+    // (and this effect fires) within the same millisecond -- now much more
+    // likely since currentStaff/tenantId are available on the very first
+    // render instead of arriving a few renders later -- two channels get
+    // the identical name, Supabase's client returns the SAME already-
+    // subscribed channel object for the second one, and calling .on() on
+    // an already-subscribed channel throws ("cannot add postgres_changes
+    // callbacks ... after subscribe()"), crashing the whole app. Confirmed
+    // live on staging. crypto.randomUUID() removes the collision entirely.
+    const channelName = `realtime:${table}:${tenantId}:${crypto.randomUUID()}`;
 
     // Tenant isolation is enforced by Postgres RLS itself -- Supabase
     // Realtime's postgres_changes only ever delivers rows the connected
