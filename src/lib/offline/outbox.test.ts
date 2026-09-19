@@ -6,6 +6,7 @@ import {
   getZatcaApproachingEntries,
   getExhaustedOutboxEntries,
   getPendingOutboxCount,
+  decidePosSaleFailureAction,
 } from './outbox';
 
 const HOUR = 60 * 60 * 1000;
@@ -147,5 +148,40 @@ describe('getZatcaApproachingEntries', () => {
     const conflictEntry = makeEntry({ status: 'conflict' as any, createdAt: Date.now() - 30 * HOUR });
     await offlineDb.outbox.put(conflictEntry);
     expect(await getZatcaApproachingEntries()).toEqual([]);
+  });
+});
+
+describe('decidePosSaleFailureAction', () => {
+  // Extracted from POS.tsx's handleCheckout -- this is the exact branching
+  // that decides whether a failed sale gets queued for offline retry,
+  // blocked outright (B2B), or surfaced as a real error to the cashier.
+  const originalNavigator = globalThis.navigator;
+  beforeEach(() => {
+    vi.stubGlobal('navigator', { onLine: true });
+  });
+  afterAll(() => {
+    vi.stubGlobal('navigator', originalNavigator);
+  });
+
+  it('rethrows a genuine business-logic rejection (e.g. insufficient stock) instead of queueing it', () => {
+    const stockError = new Error('لا يوجد رصيد لهذا الصنف في هذا الفرع');
+    expect(decidePosSaleFailureAction(stockError, false)).toEqual({ kind: 'rethrow' });
+    expect(decidePosSaleFailureAction(stockError, true)).toEqual({ kind: 'rethrow' });
+  });
+
+  it('queues a B2C sale offline on a real network failure', () => {
+    const networkError = new Error('Failed to fetch');
+    expect(decidePosSaleFailureAction(networkError, false)).toEqual({ kind: 'queue_offline' });
+  });
+
+  it('blocks a B2B sale outright on a network failure instead of queueing it (ZATCA needs live clearance)', () => {
+    const networkError = new Error('Failed to fetch');
+    expect(decidePosSaleFailureAction(networkError, true)).toEqual({ kind: 'b2b_offline_blocked' });
+  });
+
+  it('treats navigator.onLine === false as a network failure even with an unrelated error message', () => {
+    vi.stubGlobal('navigator', { onLine: false });
+    const genericError = new Error('some opaque RPC error');
+    expect(decidePosSaleFailureAction(genericError, false)).toEqual({ kind: 'queue_offline' });
   });
 });

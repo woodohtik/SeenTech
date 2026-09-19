@@ -35,7 +35,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { refreshCustomersCache, refreshInventoryCache, refreshBranchStockCache, getCachedCustomers, getCachedInventory, getCachedBranchStock } from '../lib/offline/cacheSync';
-import { enqueuePosSale, isNetworkFailure } from '../lib/offline/outbox';
+import { enqueuePosSale, isNetworkFailure, decidePosSaleFailureAction } from '../lib/offline/outbox';
 import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
 import { Combobox, Transition, Dialog } from '@headlessui/react';
 import { Customer, InventoryItem, OrderItem, Order, PaymentMethod, OrderStatus } from '../types';
@@ -43,7 +43,7 @@ import { cn, generateOrderNumber } from '../lib/utils';
 import { SmartSelect } from './ui/SmartSelect';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { PriceDisplay } from './PriceDisplay';
-import { decodeInventoryDescription, calculateItemTax } from '../utils/b2bHelper';
+import { decodeInventoryDescription, calculateItemTax, hasValidTaxSettings } from '../utils/b2bHelper';
 import { QRCodeSVG } from 'qrcode.react';
 import { useStaff } from '../contexts/StaffContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -943,7 +943,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       // tax number on a real customer-facing tax invoice with no warning.
       // Blocked outright now instead: no invoice may be issued under a
       // fabricated identity.
-      if (!taxSettings?.trn || !taxSettings?.legalName) {
+      if (!hasValidTaxSettings(taxSettings)) {
         toastError(
           t('pos.tax_settings_required_title', 'أكمل إعدادات الضريبة أولاً'),
           t('pos.tax_settings_required_desc', 'يجب إدخال الاسم التجاري والرقم الضريبي الحقيقيين في الإعدادات قبل إصدار أي فاتورة.')
@@ -1062,16 +1062,9 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       }
 
       if (saleError) {
-        /* --------------------------------------------------------------
-           seen-offline-sync-architecture-task.md Phase 3: only a real
-           network failure (not a legitimate rejection like insufficient
-           stock, which must still fail loudly) falls back to the outbox.
-           Standard B2B invoices are explicitly excluded from offline
-           queueing (owner decision, Phase 1) -- ZATCA requires live
-           clearance for those, so they must block outright instead.
-           -------------------------------------------------------------- */
-        if (!isNetworkFailure(saleError)) throw saleError;
-        if (isB2B) {
+        const failureAction = decidePosSaleFailureAction(saleError, isB2B);
+        if (failureAction.kind === 'rethrow') throw saleError;
+        if (failureAction.kind === 'b2b_offline_blocked') {
           throw new Error(t('pos.b2b_requires_connection', 'الفواتير الضريبية القياسية (B2B) تتطلب اتصالاً حياً بالإنترنت — لا يمكن إصدارها أوفلاين.'));
         }
         await enqueuePosSale(operationId, salePayload);

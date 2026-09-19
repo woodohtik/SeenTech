@@ -120,6 +120,20 @@ export function decodeInventoryDescription(descStr: string | null): InventoryMet
   return { costPrice: 0, taxType: 'exclusive', originalDescription: descStr };
 }
 
+/**
+ * ZATCA Phase 0 (seen-zatca-readiness-task.md): a tax invoice may never be
+ * issued under a fabricated trade name/TRN. POS.tsx used to fall back to a
+ * placeholder ("مؤسسة وضوح الشاملة" / TRN 300000000000003 -- a leftover
+ * from the "wdooh" template this app was built on) whenever a tenant
+ * hadn't filled in real tax settings yet, silently printing a fake
+ * business identity on a real customer-facing invoice. Extracted as a
+ * pure predicate so a regression here (the guard silently disappearing
+ * again) is caught by a test instead of only by reading the code.
+ */
+export function hasValidTaxSettings(taxSettings: { trn?: string | null; legalName?: string | null } | null | undefined): boolean {
+  return !!(taxSettings?.trn && taxSettings?.legalName);
+}
+
 export interface TaxCalculationResult {
   basePrice: number;    // Price without tax
   taxAmount: number;    // Calculated VAT amount

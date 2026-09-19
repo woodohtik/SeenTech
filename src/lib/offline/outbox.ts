@@ -58,6 +58,28 @@ export function isNetworkFailure(err: any): boolean {
   );
 }
 
+export type PosSaleFailureAction =
+  | { kind: 'rethrow' }
+  | { kind: 'b2b_offline_blocked' }
+  | { kind: 'queue_offline' };
+
+/**
+ * seen-offline-sync-architecture-task.md Phase 3: only a real network
+ * failure (not a legitimate rejection like insufficient stock, which must
+ * still fail loudly) falls back to the outbox. Standard B2B invoices are
+ * explicitly excluded from offline queueing (owner decision, Phase 1) --
+ * ZATCA requires live clearance for those, so they must block outright
+ * instead. Extracted from POS.tsx's handleCheckout as a pure decision so
+ * this exact branching (the actual mechanism deciding whether a failed
+ * sale gets queued, blocked, or surfaced as a real error) is unit-testable
+ * without needing to render POS.tsx.
+ */
+export function decidePosSaleFailureAction(saleError: unknown, isB2B: boolean): PosSaleFailureAction {
+  if (!isNetworkFailure(saleError)) return { kind: 'rethrow' };
+  if (isB2B) return { kind: 'b2b_offline_blocked' };
+  return { kind: 'queue_offline' };
+}
+
 export async function enqueuePosSale(operationId: string, payload: {
   p_operation_id: string;
   p_order: unknown;
