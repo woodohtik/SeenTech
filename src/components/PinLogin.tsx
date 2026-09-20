@@ -282,7 +282,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-surface flex items-center justify-center overflow-hidden font-sans" dir={dir}>
+    <div className="fixed inset-0 z-[100] bg-surface flex items-center justify-center overflow-y-auto font-sans" dir={dir}>
       <div className="flex w-full h-full">
         {/* Right Side: PIN Login Form */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-surface-muted/50">

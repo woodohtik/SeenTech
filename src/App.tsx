@@ -23,8 +23,6 @@ const LandingRedirect = () => {
   return <LandingPage />;
 };
 import { logError } from './lib/logger';
-import { supabase } from './lib/supabase/client';
-import { setGlobalCurrencySymbol } from './lib/utils';
 import Layout from './components/Layout';
 import LockScreen from './components/LockScreen';
 import Login from './components/Login';
@@ -309,31 +307,14 @@ function AppContent() {
     document.documentElement.lang = i18n.language;
   }, [i18n.language]);
 
-  useEffect(() => {
-    if (!tenantId) return;
-    
-    const fetchTenantSettings = async () => {
-      if (!tenantId) return;
-      try {
-        const { data: tenant, error } = await supabase
-          .from('tenants')
-          .select('currency')
-          .eq('id', tenantId)
-          .maybeSingle();
-
-        if (tenant && !error) {
-          setGlobalCurrencySymbol(tenant.currency || '﷼');
-        }
-      } catch (err) {
-        console.warn("Failed to fetch tenant settings from Supabase:", err);
-      }
-    };
-
-    fetchTenantSettings();
-    // currentUserStaff gets a fresh reference every time AuthContext re-resolves
-    // identity (including via window.refreshAuthData()), so it doubles as the
-    // "re-fetch on auth refresh" trigger that a syncTrigger counter used to be.
-  }, [tenantId, currentUserStaff]);
+  // A per-tenant currency symbol was never actually implemented: `tenants`
+  // has no currency/currency_symbol column on staging (confirmed live --
+  // information_schema.columns lists none), Settings.tsx's `currencySymbol`
+  // form field is never persisted anywhere, and getCurrencySymbol()'s
+  // module-level default ('﷼') is the only value this ever produced. The
+  // Supabase query that used to sit here (select('currency')) failed with
+  // 42703 on every single page load for that reason (found live via
+  // /qa-test on staging: 2026-09-20) without ever changing the result.
 
   // Auth-state resolution (device-session conflict, role, tenant, onboarding
   // step) is now entirely owned by AuthContext (see resolveIdentity there) —
