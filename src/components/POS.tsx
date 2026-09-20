@@ -891,6 +891,14 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   totalAmountRef.current = totalAmount;
 
   const handleCheckout = async () => {
+    // Explicit re-entrancy guard: the checkout button's disabled={loading}
+    // only takes effect after React re-renders, which leaves a window for a
+    // second click/Enter-key event already queued before that render to
+    // still reach this function and fire a duplicate sale (found via
+    // /qa-test code review on staging: 2026-09-20 -- not reproduced live,
+    // since reproducing it would have required a real double sale on a live
+    // tenant, but the gap itself is real).
+    if (loading) return;
     if (cart.length === 0) {
       toastError(t('pos.empty_cart'), t('pos.add_products_to_checkout'));
       return;
