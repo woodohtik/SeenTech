@@ -53,6 +53,16 @@ const firebaseAuthDomain = process.env.VITE_FIREBASE_AUTH_DOMAIN || '';
 // (Google's own recommendation for Identity Services): helmet's default
 // same-origin COOP isolates the Google Sign-In popup from window.opener,
 // breaking the postMessage-based credential handoff Login.tsx relies on.
+//
+// IMPORTANT -- this CSP is duplicated in vercel.json's own `headers` block.
+// vercel.json's rewrites send every non-/api/* request straight to the
+// static index.html, bypassing this Express app (and this helmet
+// middleware) entirely -- so THAT copy, not this one, is what actually
+// reaches the browser for real page loads in production/staging on Vercel.
+// This one only governs /api/* responses and local `npm run dev`. Found
+// live (2026-09-27): a style-src fix landed here but not in vercel.json,
+// so production kept serving the old header. Any CSP change here must be
+// mirrored in vercel.json's headers[0].headers, or it never ships.
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
