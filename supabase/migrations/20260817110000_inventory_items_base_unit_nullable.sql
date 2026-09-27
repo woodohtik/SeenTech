@@ -5,4 +5,18 @@
 -- causing "null value in column base_unit violates not-null constraint" here.
 -- Relaxing the constraint mirrors production's actual behavior (no
 -- constraint at all) until the fabric/UOM feature is finished and wired up.
-ALTER TABLE inventory_items ALTER COLUMN base_unit DROP NOT NULL;
+--
+-- Guarded with IF EXISTS (added 2026-09-28, after this file had already run
+-- on staging): running the full migration backlog against production for
+-- the first time ever hit exactly the divergence this comment already
+-- described -- the bare ALTER fails outright with "column base_unit of
+-- relation inventory_items does not exist" instead of being a no-op there.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'inventory_items' AND column_name = 'base_unit'
+  ) THEN
+    ALTER TABLE inventory_items ALTER COLUMN base_unit DROP NOT NULL;
+  END IF;
+END $$;
