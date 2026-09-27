@@ -997,17 +997,5 @@ footer{background:#08202f;color:#9fc2da;padding:46px 0 30px}
      though nothing failed loudly -- moved to a same-origin external file so
      'self' actually covers it. -->
 <script src="assets/landing-behaviors.js"></script>
-const form=document.getElementById('leadForm');
-form&&form.addEventListener('submit',function(ev){ev.preventDefault();let ok=true;
-  const set=(i,bad)=>{i.closest('.field').classList.toggle('invalid',bad);if(bad)ok=false;};
-  set(form.name,!form.name.value.trim());
-  set(form.phone,!/^05\d{8}$/.test(form.phone.value.trim().replace(/\s/g,'')));
-  set(form.activity,!form.activity.value);
-  if(!ok)return;
-  document.getElementById('formFields').style.display='none';
-  document.getElementById('success').classList.add('show');
-});
-form&&form.querySelectorAll('input,select').forEach(i=>i.addEventListener('input',()=>i.closest('.field').classList.remove('invalid')));
-</script>
 </body>
 </html>
