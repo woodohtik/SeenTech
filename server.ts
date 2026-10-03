@@ -1885,6 +1885,208 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
   }
 });
 
+// =============================================================================
+// ZATCA real onboarding (seen-zatca-real-onboarding-task.md), Phase ب step 6:
+// called by POS.tsx right after create_pos_sale succeeds, for every sale.
+// A complete no-op (the common case today -- no tenant has a production
+// zatca_credentials row yet) until a tenant actually finishes real ZATCA
+// onboarding; this endpoint is what activates per-tenant once that happens,
+// with zero code changes needed elsewhere.
+//
+// KNOWN LIMITATION, not yet resolved: create_pos_sale (20260917000000)
+// computes and commits a PLACEHOLDER invoice_hash into the PIH chain
+// (zatca_invoice_chain_state) synchronously, inside the checkout
+// transaction, before this endpoint ever runs -- building and signing the
+// real UBL XML needs Node crypto + a live HTTP round-trip to ZATCA, neither
+// of which belongs inside a Postgres function or the checkout transaction
+// itself. This endpoint recomputes the REAL hash from the actual signed XML
+// and -- synchronously, in this same request, holding the same chain-state
+// row lock create_pos_sale uses -- overwrites both this invoice's stored
+// hash AND the chain tip with it, so the next sale's PIH reference is
+// correct. The real gap: a second concurrent sale for the SAME tenant that
+// lands between create_pos_sale committing (placeholder) and this endpoint
+// committing (real hash) would still chain its own PIH off the placeholder,
+// not the real hash -- a small window, not eliminated here. Safe for a
+// single/few-terminal tailor shop in practice; revisit (e.g. a serialized
+// per-tenant invoice-issuance queue) before any tenant with meaningfully
+// concurrent B2B checkout traffic goes live on this.
+// =============================================================================
+app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any, res) => {
+  const tenantId = req.user?.tenantId;
+  const { orderId } = req.body || {};
+  if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
+  if (typeof orderId !== 'string' || !orderId) return res.status(400).json({ error: 'orderId is required' });
+
+  const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+
+  const { data: prodCreds } = await supabaseAdmin
+    .from('zatca_credentials')
+    .select('certificate, private_key_encrypted, secret_encrypted, request_id')
+    .eq('tenant_id', tenantId)
+    .eq('csid_type', 'production')
+    .maybeSingle();
+
+  // No production CSID for this tenant yet -- the normal case until Phase ج.
+  // zatca_status already defaults to 'not_applicable'; nothing to do.
+  if (!prodCreds) {
+    return res.json({ ok: true, status: 'not_applicable' });
+  }
+
+  const { data: order } = await supabaseAdmin
+    .from('orders')
+    .select('id, tenant_id, customer_name, order_number, total_amount, tax_amount, tax_rate, notes')
+    .eq('id', orderId)
+    .maybeSingle();
+  if (!order || order.tenant_id !== tenantId) {
+    return res.status(404).json({ error: 'Order not found' });
+  }
+
+  const { data: invoice } = await supabaseAdmin
+    .from('tax_invoices')
+    .select('id, invoice_number, subtotal, tax_amount, total_amount, previous_invoice_hash, notes')
+    .eq('order_id', orderId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+  if (!invoice) {
+    return res.status(404).json({ error: 'Invoice not found for this order' });
+  }
+
+  const { data: items } = await supabaseAdmin
+    .from('order_items')
+    .select('name, garment_type, quantity, price')
+    .eq('order_id', orderId)
+    .eq('tenant_id', tenantId);
+
+  const { data: tenant } = await supabaseAdmin
+    .from('tenants')
+    .select('name, vat_number, commercial_register, address')
+    .eq('id', tenantId)
+    .maybeSingle();
+  if (!tenant?.vat_number || !tenant?.name) {
+    // Mirrors POS.tsx's own guard (hasValidTaxSettings) -- should be
+    // unreachable in practice (a tenant can't have a production CSID
+    // without real tax settings), but never submit under a fabricated
+    // seller identity regardless.
+    return res.status(409).json({ error: 'Tenant tax settings incomplete; cannot submit to ZATCA' });
+  }
+
+  const { decryptZatcaSecret } = await import('./src/server/zatcaCrypto.ts');
+  const { signData, sha256Base64 } = await import('./src/server/zatcaSigning.ts');
+  const { buildSimplifiedInvoiceXml, buildStandardInvoiceXml } = await import('./src/server/zatcaInvoiceXml.ts');
+  const { clearInvoice, reportInvoice, ZatcaApiError } = await import('./src/server/zatcaApiClient.ts');
+  const { decodeOrderB2BNotes } = await import('./src/utils/b2bHelper.ts');
+
+  const b2bMeta = decodeOrderB2BNotes(order.notes);
+  const isB2B = !!b2bMeta.isB2B;
+
+  const privateKeyPem = decryptZatcaSecret(prodCreds.private_key_encrypted);
+  const secret = decryptZatcaSecret(prodCreds.secret_encrypted);
+  const auth = { binarySecurityToken: prodCreds.certificate, secret };
+
+  // tax_rate may be stored as a fraction (0.15) or a whole percentage (15)
+  // depending on which write path created this order -- same ambiguity
+  // this project already normalizes for on every READ path (POS.tsx,
+  // Orders.tsx). Treat anything > 1 as already a percentage.
+  const rawRate = Number(order.tax_rate) || 15;
+  const vatPercent = rawRate > 1 ? rawRate : rawRate * 100;
+
+  const now = new Date();
+  const lines = (items || []).map((item: any, i: number) => {
+    const qty = Number(item.quantity) > 0 ? Number(item.quantity) : 1;
+    const unitPrice = Number(item.price) || 0;
+    const lineExtensionAmount = qty * unitPrice;
+    return {
+      id: String(i + 1),
+      itemName: item.name || item.garment_type || 'منتج',
+      quantity: qty,
+      unitPrice,
+      lineExtensionAmount,
+      taxPercent: vatPercent,
+      taxAmount: lineExtensionAmount * (vatPercent / 100),
+    };
+  });
+
+  const commonInput = {
+    invoiceNumber: invoice.invoice_number,
+    uuid: crypto.randomUUID(),
+    issueDateIso: now.toISOString().slice(0, 10),
+    issueTimeIso: now.toISOString().slice(11, 19),
+    seller: {
+      legalName: tenant.name,
+      vatNumber: tenant.vat_number,
+      crn: tenant.commercial_register || undefined,
+      street: tenant.address || undefined,
+      countryCode: 'SA',
+    },
+    paymentMeansCode: '10',
+    lines,
+    subtotal: Number(invoice.subtotal) || 0,
+    taxAmount: Number(invoice.tax_amount) || 0,
+    totalWithTax: Number(invoice.total_amount) || 0,
+    previousInvoiceHash: invoice.previous_invoice_hash,
+    invoiceHash: '', // filled in on the second (signed) pass below
+  };
+
+  // Two-pass build: hash the unsigned XML first (what gets signed), then
+  // rebuild with the real signature embedded -- buildXxxInvoiceXml only
+  // includes the UBLDocumentSignatures block when signatureBase64 is set.
+  const buildXml = isB2B
+    ? () => buildStandardInvoiceXml({ ...commonInput, buyer: { legalName: b2bMeta.b2bCompanyName || '', vatNumber: b2bMeta.b2bTRN || '' } })
+    : () => buildSimplifiedInvoiceXml(commonInput);
+
+  const unsignedXml = buildXml();
+  const invoiceHash = sha256Base64(unsignedXml);
+  const signatureBase64 = signData(invoiceHash, privateKeyPem);
+  const signedXml = isB2B
+    ? buildStandardInvoiceXml({ ...commonInput, invoiceHash, signatureBase64, buyer: { legalName: b2bMeta.b2bCompanyName || '', vatNumber: b2bMeta.b2bTRN || '' } })
+    : buildSimplifiedInvoiceXml({ ...commonInput, invoiceHash, signatureBase64 });
+  const invoiceBase64 = Buffer.from(signedXml, 'utf8').toString('base64');
+
+  const submission = { invoiceHash, uuid: commonInput.uuid, invoiceBase64 };
+
+  try {
+    const result = isB2B
+      ? await clearInvoice(submission, auth, 'production')
+      : await reportInvoice(submission, auth, 'production');
+
+    // Chain-tip swap: placeholder -> real hash, locked the same way
+    // create_pos_sale locks it. See the KNOWN LIMITATION note above this
+    // route for the concurrency window this does NOT close.
+    await supabaseAdmin.rpc('zatca_advance_chain_with_real_hash', {
+      p_tenant_id: tenantId,
+      p_order_id: orderId,
+      p_real_hash: invoiceHash,
+    });
+
+    await supabaseAdmin
+      .from('tax_invoices')
+      .update({
+        invoice_hash: invoiceHash,
+        zatca_status: isB2B ? 'cleared' : 'reported',
+        zatca_response: result.raw,
+        zatca_submitted_at: now.toISOString(),
+      })
+      .eq('id', invoice.id);
+
+    res.json({ ok: true, status: isB2B ? 'cleared' : 'reported' });
+  } catch (err: any) {
+    const isZatcaError = err instanceof ZatcaApiError;
+    await supabaseAdmin
+      .from('tax_invoices')
+      .update({
+        zatca_status: 'rejected',
+        zatca_response: isZatcaError ? err.body : { message: String(err?.message || err) },
+        zatca_submitted_at: now.toISOString(),
+      })
+      .eq('id', invoice.id);
+
+    console.error('[zatca/submit-invoice]', err);
+    // B2B rejection must never look like success to the caller -- POS.tsx
+    // surfaces this to the cashier instead of treating the sale as done.
+    res.status(502).json({ error: 'ZATCA rejected or failed to process this invoice', status: 'rejected', isB2B });
+  }
+}));
+
 // شبكة أمان أخيرة لما يفلت من كل شيء أعلاه (تسجيل فقط، بلا رد على العميل --
 // الطلب الأصلي يبقى معلّقًا حتى وقت دالة Vercel). لا تستدعِ process.exit() في
 // unhandledRejection/uncaughtException -- هذا التطبيق يعمل كدالة Vercel

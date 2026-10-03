@@ -50,6 +50,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../contexts/ConfirmContext';
 import { notifyNewOrderForStaff } from '../utils/orderNotify';
+import { submitZatcaInvoice } from '../utils/zatcaSubmit';
 import { generateZatcaQR } from '../lib/zatca';
 import VisualMeasurements from './VisualMeasurements';
 import ThobeMeasurementSelector from './ThobeMeasurementSelector';
@@ -1090,6 +1091,21 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       const newOrder = { id: operationId };
       if (!queuedOffline) {
         void notifyNewOrderForStaff(newOrder.id);
+        // ZATCA real onboarding (seen-zatca-real-onboarding-task.md Phase ب
+        // step 6): a complete no-op server-side for every tenant without a
+        // production CSID yet (the normal case today) -- never blocks the
+        // receipt. Only once a tenant actually finishes real ZATCA
+        // onboarding does this start mattering; B2B rejection by ZATCA is
+        // surfaced as a follow-up warning rather than undoing the already-
+        // committed local sale (no reversal flow exists for that yet).
+        submitZatcaInvoice(newOrder.id, isB2B).then(result => {
+          if (isB2B && result.status === 'rejected') {
+            toastError(
+              t('pos.zatca_clearance_rejected_title', 'رفضت زاتكا الفاتورة'),
+              t('pos.zatca_clearance_rejected_desc', 'تم تسجيل البيع محلياً، لكن زاتكا رفضت اعتماد الفاتورة الضريبية. راجع الفاتورة في سجل الفواتير الضريبية.')
+            );
+          }
+        });
       }
 
       setCart([]);
