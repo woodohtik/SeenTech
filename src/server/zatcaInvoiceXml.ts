@@ -1,10 +1,11 @@
 import { create } from 'xmlbuilder2';
 
 /**
- * ZATCA Phase 2 readiness (seen-zatca-readiness-task.md): builds a UBL 2.1
- * "Simplified Tax Invoice" XML document, the type ZATCA requires for B2C
- * sales (Reporting flow, 24h window) -- matching what POS.tsx currently
- * issues as a QR-only Phase 1 receipt.
+ * ZATCA Phase 2 readiness (seen-zatca-readiness-task.md, extended by
+ * seen-zatca-real-onboarding-task.md Phase ب step 4): builds UBL 2.1 tax
+ * invoice XML -- "Simplified" for B2C sales (Reporting flow, 24h window)
+ * and "Standard" for B2B sales (synchronous Clearance flow) -- matching
+ * what POS.tsx currently issues as a QR-only Phase 1 receipt.
  *
  * CONFIDENCE LEVELS (read before trusting any part of this against a real
  * ZATCA submission):
@@ -18,8 +19,8 @@ import { create } from 'xmlbuilder2';
  *    namespaces for UBLDocumentSignatures, not plain UBL). Both are
  *    implemented here to the best of available knowledge but have NOT
  *    been checked against ZATCA's actual XSD or a real compliance
- *    response, because there is no way to do that without a real
- *    Compliance CSID (Phase 1 -- a business-side task, see the task file).
+ *    response -- that only happens the first time a built invoice is
+ *    actually submitted via zatcaApiClient.ts's submitComplianceInvoice().
  *    Cross-check both specifically against ZATCA's own published technical
  *    implementation guideline and reference examples before relying on
  *    this for a real submission.
@@ -42,22 +43,23 @@ export interface ZatcaInvoiceLine {
   taxAmount: number;
 }
 
-export interface ZatcaSimplifiedInvoiceInput {
+export interface ZatcaParty {
+  legalName: string;
+  vatNumber: string;
+  crn?: string; // Commercial Registration number, if available -- seller only
+  street?: string;
+  city?: string;
+  postalCode?: string;
+  countryCode?: string; // ISO 3166-1 alpha-2, e.g. "SA"
+}
+
+interface ZatcaInvoiceInputCommon {
   invoiceNumber: string;
   /** A UUID identifying this specific invoice instance (distinct from invoiceNumber, which is human-facing/sequential). */
   uuid: string;
   issueDateIso: string; // e.g. "2026-09-17"
   issueTimeIso: string; // e.g. "14:32:00"
-  seller: {
-    legalName: string;
-    vatNumber: string;
-    crn?: string; // Commercial Registration number, if available
-    street?: string;
-    city?: string;
-    postalCode?: string;
-    countryCode?: string; // ISO 3166-1 alpha-2, e.g. "SA"
-  };
-  /** ZATCA's own compliance/production request tracking, once Phase 1 exists -- not required for the XML itself. */
+  seller: ZatcaParty;
   paymentMeansCode: string; // UNCL4461, e.g. "10" = cash, "48" = card
   lines: ZatcaInvoiceLine[];
   subtotal: number; // sum of lineExtensionAmount
@@ -65,12 +67,19 @@ export interface ZatcaSimplifiedInvoiceInput {
   totalWithTax: number; // subtotal + taxAmount
   /** The previous-invoice-hash from the PIH chain (create_pos_sale / zatca_invoice_chain_state) -- null only for the very first invoice in a tenant's chain. */
   previousInvoiceHash: string | null;
-  /** This invoice's own hash. Currently the placeholder hash from create_pos_sale (Phase 3) until Phase 2 wires up hashing this actual XML instead. */
+  /** This invoice's own hash. Currently the placeholder hash from create_pos_sale (Phase 3) until this XML is what actually gets hashed instead. */
   invoiceHash: string;
-  /** Base64 XML-DSig signature over invoiceHash, once Phase 2's signing (zatcaSigning.ts) is wired to a real CSID. Omit while there is no real key yet. */
+  /** Base64 XML-DSig signature over invoiceHash, once zatcaSigning.ts is wired to a real CSID. Omit while there is no real key yet. */
   signatureBase64?: string;
   /** Base64 of the signing certificate, embedded in UBLExtensions once available. */
   certificateBase64?: string;
+}
+
+export interface ZatcaSimplifiedInvoiceInput extends ZatcaInvoiceInputCommon {}
+
+export interface ZatcaStandardInvoiceInput extends ZatcaInvoiceInputCommon {
+  /** Required for a standard (B2B) invoice -- absent on a simplified one. */
+  buyer: ZatcaParty;
 }
 
 const NS = {
@@ -82,8 +91,16 @@ const NS = {
   sac: 'urn:oasis:names:specification:ubl:schema:xsd:SignatureAggregateComponents-2',
 };
 
-/** Builds the UBL Simplified Tax Invoice XML as a string. */
-export function buildSimplifiedInvoiceXml(input: ZatcaSimplifiedInvoiceInput): string {
+/**
+ * Shared UBL skeleton for both invoice types -- the two public builders
+ * below only differ in invoiceTypeCode's `name` flag and whether an
+ * AccountingCustomerParty (buyer) block is present, per ZATCA's own
+ * standard/simplified distinction.
+ */
+function buildInvoiceXmlCore(
+  input: ZatcaInvoiceInputCommon & { buyer?: ZatcaParty },
+  invoiceTypeNameFlag: string
+): string {
   const doc = create({ version: '1.0', encoding: 'UTF-8' })
     .ele(NS.invoice, 'Invoice', {
       'xmlns:cac': NS.cac,
@@ -94,8 +111,8 @@ export function buildSimplifiedInvoiceXml(input: ZatcaSimplifiedInvoiceInput): s
   // ext:UBLExtensions -- the digital signature envelope. ZATCA-specific
   // internal structure (sac:UBLDocumentSignatures/.../sig:...); see the
   // module-level confidence note above. Left mostly empty until a real
-  // signature/certificate exist (Phase 1 + Phase 2), so an unsigned
-  // "draft" of this invoice is still well-formed XML on its own.
+  // signature/certificate exist, so an unsigned "draft" of this invoice is
+  // still well-formed XML on its own.
   const ext = doc
     .ele(NS.ext, 'ext:UBLExtensions')
     .ele(NS.ext, 'ext:UBLExtension')
@@ -116,11 +133,11 @@ export function buildSimplifiedInvoiceXml(input: ZatcaSimplifiedInvoiceInput): s
   doc.ele(NS.cbc, 'cbc:UUID').txt(input.uuid).up();
   doc.ele(NS.cbc, 'cbc:IssueDate').txt(input.issueDateIso).up();
   doc.ele(NS.cbc, 'cbc:IssueTime').txt(input.issueTimeIso).up();
-  // "0200000": simplified tax invoice, no third-party billing/nominal
-  // supply/export/summary/self-billing flags set -- see the module-level
-  // confidence note; verify this exact digit string against ZATCA's own
-  // guideline once you can.
-  doc.ele(NS.cbc, 'cbc:InvoiceTypeCode', { name: '0200000' }).txt('388').up();
+  // See the module-level confidence note; verify this exact digit string
+  // against ZATCA's own guideline once you can. "0200000" = simplified,
+  // "0100000" = standard, no third-party billing/nominal supply/export/
+  // summary/self-billing flags set in either case.
+  doc.ele(NS.cbc, 'cbc:InvoiceTypeCode', { name: invoiceTypeNameFlag }).txt('388').up();
   doc.ele(NS.cbc, 'cbc:DocumentCurrencyCode').txt('SAR').up();
   doc.ele(NS.cbc, 'cbc:TaxCurrencyCode').txt('SAR').up();
 
@@ -159,6 +176,28 @@ export function buildSimplifiedInvoiceXml(input: ZatcaSimplifiedInvoiceInput): s
     .ele(NS.cbc, 'cbc:RegistrationName').txt(input.seller.legalName).up()
     .up();
   supplierParty.up().up();
+
+  if (input.buyer) {
+    const buyerParty = doc.ele(NS.cac, 'cac:AccountingCustomerParty').ele(NS.cac, 'cac:Party');
+    if (input.buyer.street || input.buyer.city || input.buyer.countryCode) {
+      const address = buyerParty.ele(NS.cac, 'cac:PostalAddress');
+      if (input.buyer.street) address.ele(NS.cbc, 'cbc:StreetName').txt(input.buyer.street).up();
+      if (input.buyer.city) address.ele(NS.cbc, 'cbc:CityName').txt(input.buyer.city).up();
+      if (input.buyer.postalCode) address.ele(NS.cbc, 'cbc:PostalZone').txt(input.buyer.postalCode).up();
+      address.ele(NS.cac, 'cac:Country').ele(NS.cbc, 'cbc:IdentificationCode').txt(input.buyer.countryCode || 'SA').up().up();
+      address.up();
+    }
+    buyerParty
+      .ele(NS.cac, 'cac:PartyTaxScheme')
+      .ele(NS.cbc, 'cbc:CompanyID').txt(input.buyer.vatNumber).up()
+      .ele(NS.cac, 'cac:TaxScheme').ele(NS.cbc, 'cbc:ID').txt('VAT').up().up()
+      .up();
+    buyerParty
+      .ele(NS.cac, 'cac:PartyLegalEntity')
+      .ele(NS.cbc, 'cbc:RegistrationName').txt(input.buyer.legalName).up()
+      .up();
+    buyerParty.up().up();
+  }
 
   doc
     .ele(NS.cac, 'cac:PaymentMeans')
@@ -208,4 +247,14 @@ export function buildSimplifiedInvoiceXml(input: ZatcaSimplifiedInvoiceInput): s
   }
 
   return doc.end({ prettyPrint: false });
+}
+
+/** Builds the UBL Simplified Tax Invoice XML (B2C, Reporting flow) as a string. */
+export function buildSimplifiedInvoiceXml(input: ZatcaSimplifiedInvoiceInput): string {
+  return buildInvoiceXmlCore(input, '0200000');
+}
+
+/** Builds the UBL Standard Tax Invoice XML (B2B, synchronous Clearance flow) as a string. */
+export function buildStandardInvoiceXml(input: ZatcaStandardInvoiceInput): string {
+  return buildInvoiceXmlCore(input, '0100000');
 }

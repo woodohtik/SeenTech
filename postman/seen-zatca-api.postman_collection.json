@@ -1,0 +1,204 @@
+{
+  "info": {
+    "name": "سِين — ZATCA Phase 2 API",
+    "description": "مجموعة Postman لواجهات زاتكا (فوترة إلكترونية، المرحلة الثانية) — الربط الحقيقي بعد وصول السجل التجاري.\n\nمصادر البناء: دليل زاتكا التقني الرسمي + منتدى مطوّري فاتورة + كود مشروع سِين نفسه (src/services/zatcaPhase2Service.ts) الذي يستخدم نفس المسارات الثلاثة (developer-portal/simulation/core).\n\n⚠️ قبل أول تشغيل حقيقي: راجع آخر نسخة من دليل زاتكا التقني الرسمي — بعض التفاصيل الدقيقة (مثل حقول طلب فواتير الامتثال الستة: فاتورة قياسية/مبسّطة × عادية/دائن/مدين) قد تحتاج تعديلاً بسيطاً حسب نسخة الـAPI الحالية وقت التنفيذ.\n\nترتيب التشغيل: Compliance CSID → Compliance Invoices (كل الأنواع) → Production CSID → بعدها Reporting/Clearance الحقيقيان.\n\nالـOTP صالح ساعة واحدة فقط من بوابة فاتورة — لا تولّده إلا بعد التأكد أن باقي الطلبات هنا صحيحة شكلاً (جرّبها أولاً على بيئة sandbox ببيانات وهمية).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://gw-fatoora.zatca.gov.sa/e-invoicing/developer-portal", "type": "string" },
+    { "key": "otp", "value": "", "type": "string", "description": "من بوابة فاتورة (Fatoora Portal) — صالح ساعة واحدة فقط" },
+    { "key": "csr", "value": "", "type": "string", "description": "CSR بصيغة base64 (PKCS#10) يولّده كود سِين — src/server/zatcaSigning.ts" },
+    { "key": "complianceBinarySecurityToken", "value": "", "type": "string", "description": "يُملأ تلقائياً من رد Compliance CSID" },
+    { "key": "complianceSecret", "value": "", "type": "string", "description": "يُملأ تلقائياً من رد Compliance CSID" },
+    { "key": "complianceRequestId", "value": "", "type": "string", "description": "يُملأ تلقائياً من رد Compliance CSID (requestID)" },
+    { "key": "productionBinarySecurityToken", "value": "", "type": "string", "description": "يُملأ تلقائياً من رد Production CSID" },
+    { "key": "productionSecret", "value": "", "type": "string", "description": "يُملأ تلقائياً من رد Production CSID" },
+    { "key": "invoiceHash", "value": "", "type": "string", "description": "base64(SHA-256) للفاتورة الموقَّعة — من computeInvoiceHash في الكود" },
+    { "key": "invoiceUuid", "value": "", "type": "string", "description": "UUID v4 للفاتورة" },
+    { "key": "invoiceBase64", "value": "", "type": "string", "description": "الفاتورة الموقَّعة (UBL XML) بصيغة base64" }
+  ],
+  "item": [
+    {
+      "name": "١) الانضمام (Onboarding)",
+      "description": "خطوات لمرة واحدة لكل تاجر: الحصول على شهادة Compliance ثم Production. رتّب التنفيذ بالضبط بهذا الترتيب.",
+      "item": [
+        {
+          "name": "Compliance CSID — طلب شهادة الامتثال",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Version", "value": "V2" },
+              { "key": "OTP", "value": "{{otp}}", "description": "من بوابة فاتورة — صالح ساعة واحدة فقط، لا تطلب هذا الـrequest إلا بعد التأكد من صحة الـCSR" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"csr\": \"{{csr}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/compliance",
+              "host": ["{{baseUrl}}"],
+              "path": ["compliance"]
+            },
+            "description": "يُرجع binarySecurityToken (الشهادة) وsecret وrequestID — السكربت أدناه يحفظهم تلقائياً كمتغيرات compliance* للطلبات التالية."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  if (data.binarySecurityToken) pm.collectionVariables.set('complianceBinarySecurityToken', data.binarySecurityToken);",
+                  "  if (data.secret) pm.collectionVariables.set('complianceSecret', data.secret);",
+                  "  if (data.requestID) pm.collectionVariables.set('complianceRequestId', String(data.requestID));",
+                  "  pm.test('Compliance CSID received', () => pm.expect(data.binarySecurityToken).to.exist);",
+                  "} else {",
+                  "  pm.test('Compliance CSID failed — راجع الرد كاملاً قبل أي إعادة محاولة', () => pm.expect(pm.response.code).to.eql(200));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Compliance Invoices — اختبار الامتثال (كرّر لكل نوع فاتورة)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Version", "value": "V2" },
+              { "key": "Accept-Language", "value": "en" }
+            ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{complianceBinarySecurityToken}}" },
+                { "key": "password", "value": "{{complianceSecret}}" }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"invoiceHash\": \"{{invoiceHash}}\",\n  \"uuid\": \"{{invoiceUuid}}\",\n  \"invoice\": \"{{invoiceBase64}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/compliance/invoices",
+              "host": ["{{baseUrl}}"],
+              "path": ["compliance", "invoices"]
+            },
+            "description": "⚠️ زاتكا تتطلّب تمرير فواتير اختبار من كل الأنواع قبل قبول طلب Production CSID — عادة: فاتورة قياسية (B2B)، فاتورة مبسّطة (B2C)، وإشعار دائن/مدين لكل منهما إن كان النظام يصدرها. كرّر هذا الـrequest بفاتورة موقَّعة مختلفة (invoiceHash/invoiceUuid/invoiceBase64) لكل نوع — راجع دليل زاتكا التقني الرسمي لقائمة الأنواع الإلزامية الحالية بدقة قبل الاعتماد على هذا وحده."
+          }
+        },
+        {
+          "name": "Production CSID — طلب شهادة الإنتاج",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Version", "value": "V2" }
+            ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{complianceBinarySecurityToken}}" },
+                { "key": "password", "value": "{{complianceSecret}}" }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"compliance_request_id\": \"{{complianceRequestId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/production/csids",
+              "host": ["{{baseUrl}}"],
+              "path": ["production", "csids"]
+            },
+            "description": "لا تُطلَب إلا بعد نجاح كل طلبات Compliance Invoices أعلاه. يُرجع binarySecurityToken/secret جديدين — هذه الشهادة النهائية المستخدَمة لكل فاتورة حقيقية بعدها."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  if (data.binarySecurityToken) pm.collectionVariables.set('productionBinarySecurityToken', data.binarySecurityToken);",
+                  "  if (data.secret) pm.collectionVariables.set('productionSecret', data.secret);",
+                  "  pm.test('Production CSID received', () => pm.expect(data.binarySecurityToken).to.exist);",
+                  "} else {",
+                  "  pm.test('Production CSID failed', () => pm.expect(pm.response.code).to.eql(200));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "٢) الفواتير الحقيقية (بعد Production CSID فقط)",
+      "description": "لا تُستخدَم هذه إلا بعد نجاح الانضمام بالكامل والحصول على شهادة Production حقيقية.",
+      "item": [
+        {
+          "name": "Invoice Reporting — فاتورة مبسّطة B2C",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Version", "value": "V2" },
+              { "key": "Accept-Language", "value": "en" }
+            ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{productionBinarySecurityToken}}" },
+                { "key": "password", "value": "{{productionSecret}}" }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"invoiceHash\": \"{{invoiceHash}}\",\n  \"uuid\": \"{{invoiceUuid}}\",\n  \"invoice\": \"{{invoiceBase64}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/invoices/reporting/single",
+              "host": ["{{baseUrl}}"],
+              "path": ["invoices", "reporting", "single"]
+            },
+            "description": "نافذة الإبلاغ: ٢٤ ساعة من وقت إصدار الفاتورة (قرار سِين: الفواتير المبسّطة فقط هي المؤهَّلة للتأجيل/المزامنة الأوفلاين)."
+          }
+        },
+        {
+          "name": "Invoice Clearance — فاتورة قياسية B2B",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Version", "value": "V2" },
+              { "key": "Accept-Language", "value": "en" },
+              { "key": "Clearance-Status", "value": "1" }
+            ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{productionBinarySecurityToken}}" },
+                { "key": "password", "value": "{{productionSecret}}" }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"invoiceHash\": \"{{invoiceHash}}\",\n  \"uuid\": \"{{invoiceUuid}}\",\n  \"invoice\": \"{{invoiceBase64}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/invoices/clearance/single",
+              "host": ["{{baseUrl}}"],
+              "path": ["invoices", "clearance", "single"]
+            },
+            "description": "يجب أن تنتظر موافقة زاتكا (Clearance) قبل اعتبار البيع مكتملاً — فاتورة B2B مرفوضة هنا لا تُعتبر فاتورة منتهية في نظام سِين (قرار محسوم سابقاً)."
+          }
+        }
+      ]
+    }
+  ]
+}

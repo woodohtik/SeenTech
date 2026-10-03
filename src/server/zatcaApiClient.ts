@@ -73,6 +73,171 @@ export interface ComplianceCsidResult {
   raw: unknown;
 }
 
+/** The Basic Auth credential pair ZATCA issues with any CSID (Compliance or Production). */
+export interface ZatcaCsidAuth {
+  binarySecurityToken: string;
+  secret: string;
+}
+
+function basicAuthHeader(auth: ZatcaCsidAuth): string {
+  return `Basic ${Buffer.from(`${auth.binarySecurityToken}:${auth.secret}`).toString('base64')}`;
+}
+
+export interface ZatcaInvoiceSubmission {
+  invoiceHash: string;
+  uuid: string;
+  /** The signed UBL invoice XML, base64-encoded. */
+  invoiceBase64: string;
+}
+
+export interface ZatcaInvoiceResponse {
+  /** 'CLEARED' | 'REPORTED' | 'NOT_CLEARED' etc, per ZATCA's own status vocabulary -- treat anything other than a successful clear/report as a rejection. */
+  status: string;
+  raw: unknown;
+}
+
+/**
+ * Compliance Invoices -- the mandatory test submissions (matches postman/
+ * seen-zatca-api.postman_collection.json exactly: same path, same headers,
+ * same Basic Auth convention) that must all pass before ZATCA will issue a
+ * Production CSID. Call once per required invoice type (simplified,
+ * standard, and any credit/debit note variants ZATCA's current guideline
+ * requires) with that invoice's own hash/uuid/signed XML.
+ */
+export async function submitComplianceInvoice(
+  submission: ZatcaInvoiceSubmission,
+  complianceAuth: ZatcaCsidAuth,
+  env: ZatcaEnvironment = 'sandbox'
+): Promise<ZatcaInvoiceResponse> {
+  const url = `${ZATCA_BASE_URL[env]}/compliance/invoices`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept-Version': 'V2',
+      'Accept-Language': 'en',
+      Authorization: basicAuthHeader(complianceAuth),
+    },
+    body: JSON.stringify({
+      invoiceHash: submission.invoiceHash,
+      uuid: submission.uuid,
+      invoice: submission.invoiceBase64,
+    }),
+  });
+  const body = await parseJsonOrText(res);
+  if (!res.ok) {
+    throw new ZatcaApiError(`ZATCA Compliance Invoice submission failed (${res.status})`, res.status, body);
+  }
+  const data = body as any;
+  return { status: String(data?.clearanceStatus ?? data?.reportingStatus ?? data?.status ?? 'UNKNOWN'), raw: body };
+}
+
+/**
+ * Production CSID -- requested once, after every required Compliance
+ * Invoice type has passed. Authenticated with the COMPLIANCE CSID's own
+ * credentials (not the taxpayer's OTP again), per
+ * postman/seen-zatca-api.postman_collection.json.
+ */
+export async function requestProductionCsid(
+  complianceRequestId: string,
+  complianceAuth: ZatcaCsidAuth,
+  env: ZatcaEnvironment = 'sandbox'
+): Promise<ComplianceCsidResult> {
+  const url = `${ZATCA_BASE_URL[env]}/production/csids`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept-Version': 'V2',
+      Authorization: basicAuthHeader(complianceAuth),
+    },
+    body: JSON.stringify({ compliance_request_id: complianceRequestId }),
+  });
+  const body = await parseJsonOrText(res);
+  if (!res.ok) {
+    throw new ZatcaApiError(`ZATCA Production CSID request failed (${res.status})`, res.status, body);
+  }
+  const data = body as any;
+  if (!data?.binarySecurityToken || !data?.secret) {
+    throw new ZatcaApiError('ZATCA Production CSID response missing binarySecurityToken/secret', res.status, body);
+  }
+  return {
+    binarySecurityToken: data.binarySecurityToken,
+    secret: data.secret,
+    requestId: String(data.requestID ?? data.requestId ?? ''),
+    raw: body,
+  };
+}
+
+/**
+ * Reporting -- for simplified (B2C) invoices, within ZATCA's 24h window.
+ * Authenticated with the PRODUCTION CSID. A non-2xx response here must
+ * never be treated as a successfully issued invoice by the caller.
+ */
+export async function reportInvoice(
+  submission: ZatcaInvoiceSubmission,
+  productionAuth: ZatcaCsidAuth,
+  env: ZatcaEnvironment = 'production'
+): Promise<ZatcaInvoiceResponse> {
+  const url = `${ZATCA_BASE_URL[env]}/invoices/reporting/single`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept-Version': 'V2',
+      'Accept-Language': 'en',
+      Authorization: basicAuthHeader(productionAuth),
+    },
+    body: JSON.stringify({
+      invoiceHash: submission.invoiceHash,
+      uuid: submission.uuid,
+      invoice: submission.invoiceBase64,
+    }),
+  });
+  const body = await parseJsonOrText(res);
+  if (!res.ok) {
+    throw new ZatcaApiError(`ZATCA Reporting failed (${res.status})`, res.status, body);
+  }
+  const data = body as any;
+  return { status: String(data?.reportingStatus ?? data?.status ?? 'UNKNOWN'), raw: body };
+}
+
+/**
+ * Clearance -- for standard (B2B) invoices. Synchronous: ZATCA must accept
+ * the invoice before the sale may be considered complete (this project's
+ * own prior decision -- a B2B sale rejected here is not queued/offline-
+ * deferred like a B2C sale, it's a hard failure the cashier sees
+ * immediately). Authenticated with the PRODUCTION CSID.
+ */
+export async function clearInvoice(
+  submission: ZatcaInvoiceSubmission,
+  productionAuth: ZatcaCsidAuth,
+  env: ZatcaEnvironment = 'production'
+): Promise<ZatcaInvoiceResponse> {
+  const url = `${ZATCA_BASE_URL[env]}/invoices/clearance/single`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept-Version': 'V2',
+      'Accept-Language': 'en',
+      'Clearance-Status': '1',
+      Authorization: basicAuthHeader(productionAuth),
+    },
+    body: JSON.stringify({
+      invoiceHash: submission.invoiceHash,
+      uuid: submission.uuid,
+      invoice: submission.invoiceBase64,
+    }),
+  });
+  const body = await parseJsonOrText(res);
+  if (!res.ok) {
+    throw new ZatcaApiError(`ZATCA Clearance failed (${res.status})`, res.status, body);
+  }
+  const data = body as any;
+  return { status: String(data?.clearanceStatus ?? data?.status ?? 'UNKNOWN'), raw: body };
+}
+
 /**
  * Requests a Compliance CSID: submits the CSR (zatcaCsr.ts) plus the OTP
  * generated from the Fatoora Portal, gets back a certificate + API secret

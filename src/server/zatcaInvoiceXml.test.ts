@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { create } from 'xmlbuilder2';
-import { buildSimplifiedInvoiceXml, type ZatcaSimplifiedInvoiceInput } from './zatcaInvoiceXml';
+import {
+  buildSimplifiedInvoiceXml,
+  buildStandardInvoiceXml,
+  type ZatcaSimplifiedInvoiceInput,
+  type ZatcaStandardInvoiceInput,
+} from './zatcaInvoiceXml';
 
 // These tests verify the XML this module produces is well-formed and
 // contains the fields it was given in the expected places -- NOT that
@@ -106,5 +111,49 @@ describe('buildSimplifiedInvoiceXml', () => {
     const xml = buildSimplifiedInvoiceXml(sampleInput({ subtotal: 100, taxAmount: 15, totalWithTax: 115 }));
     expect(xml).toContain('<cbc:PayableAmount currencyID="SAR">115.00</cbc:PayableAmount>');
     expect(xml).toContain('<cbc:TaxAmount currencyID="SAR">15.00</cbc:TaxAmount>');
+  });
+});
+
+function sampleStandardInput(overrides: Partial<ZatcaStandardInvoiceInput> = {}): ZatcaStandardInvoiceInput {
+  return {
+    ...sampleInput(),
+    buyer: {
+      legalName: 'شركة المشتري التجارية',
+      vatNumber: '399999999900003',
+      city: 'جدة',
+      countryCode: 'SA',
+    },
+    ...overrides,
+  };
+}
+
+describe('buildStandardInvoiceXml', () => {
+  it('produces well-formed XML (re-parses without throwing)', () => {
+    const xml = buildStandardInvoiceXml(sampleStandardInput());
+    expect(() => create(xml)).not.toThrow();
+  });
+
+  it('uses the standard (B2B) invoice type flag, not the simplified one', () => {
+    const xml = buildStandardInvoiceXml(sampleStandardInput());
+    expect(xml).toContain('name="0100000"');
+    expect(xml).not.toContain('name="0200000"');
+  });
+
+  it('includes an AccountingCustomerParty block with the buyer name and VAT number', () => {
+    const xml = buildStandardInvoiceXml(sampleStandardInput());
+    expect(xml).toContain('cac:AccountingCustomerParty');
+    expect(xml).toContain('<cbc:RegistrationName>شركة المشتري التجارية</cbc:RegistrationName>');
+    expect(xml).toContain('<cbc:CompanyID>399999999900003</cbc:CompanyID>');
+  });
+
+  it('omits AccountingCustomerParty on a simplified invoice (no buyer field at all)', () => {
+    const xml = buildSimplifiedInvoiceXml(sampleInput());
+    expect(xml).not.toContain('cac:AccountingCustomerParty');
+  });
+
+  it('still includes the seller and invoice lines, same as the simplified builder', () => {
+    const xml = buildStandardInvoiceXml(sampleStandardInput());
+    expect(xml).toContain('<cbc:CompanyID>310000000000003</cbc:CompanyID>'); // seller VAT
+    expect(xml).toContain('<cac:InvoiceLine>');
   });
 });
