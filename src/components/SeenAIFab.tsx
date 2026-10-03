@@ -185,7 +185,21 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
 
   return (
     <>
-      <div id="tour-ai-fab" data-tour="ai-fab" className={`fixed bottom-6 ${isRtl ? 'left-6' : 'right-6'} z-50 flex flex-col items-center gap-2`}>
+      {/* POS.tsx's mobile cart FAB (POS.tsx ~1794) is pinned at a hardcoded
+          bottom-6 left-6, not RTL-aware -- below lg this button used to land
+          on the exact same corner in RTL (Arabic, the app's primary
+          language), overlapping it. Forcing right-6 below lg keeps this
+          button on the opposite corner from the cart FAB regardless of
+          language; lg+ has no cart FAB in play, so the original RTL-aware
+          placement resumes there. */}
+      <div
+        id="tour-ai-fab"
+        data-tour="ai-fab"
+        className={cn(
+          "fixed bottom-6 right-6 z-50 flex flex-col items-center gap-2",
+          isRtl && "lg:left-6 lg:right-auto"
+        )}
+      >
         <button
           onClick={() => setIsOpen(true)}
           className="w-14 h-14 bg-brand rounded-2xl shadow-lg flex items-center justify-center text-white hover:shadow-xl hover:scale-105 transition-all relative group"
@@ -201,7 +215,8 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
           <div className="fixed inset-0 z-50" dir={dir}>
             {/* موبايل: خلفية معتمة + ورقة سفلية بعرض الشاشة. سطح المكتب: طبقة شفافة
                 لإغلاق النافذة بالنقر خارجها فقط، بلا تعتيم — النافذة ترتكز بجانب
-                الزر العائم نفسه (أسفل اليسار عربي/أردو، أسفل اليمين إنجليزي). */}
+                الزر العائم نفسه (يمين الشاشة دوماً دون lg لمطابقة موضع الزر
+                نفسه، ثم يسار عربي/أردو أو يمين إنجليزي عند lg+). */}
             <div
               className="absolute inset-0 bg-black/60 backdrop-blur-sm sm:bg-transparent sm:backdrop-blur-none"
               onClick={() => setIsOpen(false)}
@@ -213,8 +228,8 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
               onClick={(e) => e.stopPropagation()}
               className={cn(
                 "absolute inset-x-0 bottom-0 bg-surface w-full h-[85vh] rounded-t-3xl shadow-2xl overflow-hidden border border-border flex flex-col",
-                "sm:inset-x-auto sm:bottom-24 sm:h-[600px] sm:w-full sm:max-w-sm sm:rounded-3xl",
-                isRtl ? "sm:left-6" : "sm:right-6"
+                "sm:inset-x-auto sm:bottom-24 sm:h-[600px] sm:w-full sm:max-w-sm sm:rounded-3xl sm:right-6",
+                isRtl && "lg:left-6 lg:right-auto"
               )}
             >
               <div className="p-4 border-b border-border flex justify-between items-center bg-gradient-to-br from-brand/10 via-brand/5 to-transparent shrink-0">

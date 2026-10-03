@@ -668,7 +668,11 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
           زر إعادة تحميل صغير) بدل إسقاط الصفحة المحيطة بالكامل. الغلاف
           fixed هنا يضمن أن بطاقة الخطأ الصغيرة تظهر بنفس زاوية الودجت
           حتى لو SeenAIFab نفسه لم يُتح فرصة لعرض موضعه الداخلي fixed. */}
-      <div className={cn("fixed bottom-6 z-50", isRtl ? "left-6" : "right-6")}>
+      {/* POS.tsx's mobile cart FAB sits at a hardcoded bottom-6 left-6 below
+          lg -- kept in sync with SeenAIFab.tsx's own internal positioning
+          (right-6 below lg regardless of direction, RTL-aware only at lg+)
+          so the crash-fallback position here never lands on top of it. */}
+      <div className={cn("fixed bottom-6 right-6 z-50", isRtl && "lg:left-6 lg:right-auto")}>
         <ErrorBoundary variant="inline" inlineLabel={t('errors.assistant_unavailable')}>
           <SeenAIFab
             tenantId={tenantId}
