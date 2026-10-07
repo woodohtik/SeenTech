@@ -6,7 +6,7 @@ import { cn } from '../lib/utils';
 import { decodeInvoiceExtendedNotes } from '../utils/b2bHelper';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import { PriceDisplay } from './PriceDisplay';
-import { FileText, Download, User, Calendar, CreditCard, ShoppingBag, Eye, X, Printer, CheckCircle2, Share2 } from 'lucide-react';
+import { FileText, Download, User, Calendar, CreditCard, ShoppingBag, Eye, X, Printer, CheckCircle2, Share2, Paperclip } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { generateZatcaQR } from '../services/zatcaService';
 import { useTranslation } from 'react-i18next';
@@ -69,7 +69,7 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
 
         const [{ data: branchesData }, { data: ordersData }, { data: staffData }] = await Promise.all([
           supabase.from('branches').select('*').eq('tenant_id', tenantId),
-          supabase.from('orders').select('id, branch_id').eq('tenant_id', tenantId),
+          supabase.from('orders').select('id, branch_id, tracking_token').eq('tenant_id', tenantId),
           supabase.from('staff').select('id, name')
         ]);
 
@@ -88,12 +88,18 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
         }
 
         const orderBranchMap = new Map<string, string>();
-        if (ordersData && branchesData) {
+        // seen-whatsapp-instant-send-task.md follow-up: the WhatsApp
+        // invoice link needs the order's real tracking_token (/track/:token)
+        // -- fetched upfront here, not lazily on click, so opening WhatsApp
+        // stays synchronous/instant.
+        const orderTrackingTokenMap = new Map<string, string>();
+        if (ordersData) {
           ordersData.forEach(o => {
-            const bName = branchMap.get(o.branch_id);
-            if (bName && o.id) {
-              orderBranchMap.set(o.id, bName);
+            if (branchesData) {
+              const bName = branchMap.get(o.branch_id);
+              if (bName && o.id) orderBranchMap.set(o.id, bName);
             }
+            if (o.id && o.tracking_token) orderTrackingTokenMap.set(o.id, o.tracking_token);
           });
         }
 
@@ -131,7 +137,8 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
             status: d.status === 'issued' ? 'valid' : 'cancelled',
             paidAmount: d.paid_amount !== undefined && d.paid_amount !== null ? Number(d.paid_amount) : Number(d.total_amount),
             remainingAmount: Math.max(0, Number(d.total_amount) - (d.paid_amount !== undefined && d.paid_amount !== null ? Number(d.paid_amount) : Number(d.total_amount))),
-            branchName: d.order_id ? (orderBranchMap.get(d.order_id) || t('common.main_branch')) : t('common.main_branch')
+            branchName: d.order_id ? (orderBranchMap.get(d.order_id) || t('common.main_branch')) : t('common.main_branch'),
+            trackingToken: d.order_id ? orderTrackingTokenMap.get(d.order_id) : undefined
           } as TaxInvoice;
         });
 
@@ -357,30 +364,43 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
     }
   };
 
-  const handleShareWhatsApp = async () => {
-    // TaxInvoice carries no customer phone field at all -- this modal's
-    // order comes from src/types/index.ts's camelCase TaxInvoice, which
-    // (unlike the Order type used elsewhere for POS/Orders/SalesRecord)
-    // never had one, matching the original blank-recipient behavior below.
-    // The user's own customizable template (WhatsAppSettings), not a fixed
-    // string -- the invoice share message must match what they configured.
-    const text = buildWhatsAppMessage(getWhatsAppTemplate(), {
-      customerName: order.customerName,
-      orderId: String(order.invoiceNumber || order.id),
-      totalAmount: totalIncVat.toFixed(2),
-      storeName: tenant.name,
-    });
+  // TaxInvoice carries no customer phone field at all -- this modal's
+  // order comes from src/types/index.ts's camelCase TaxInvoice, which
+  // (unlike the Order type used elsewhere for POS/Orders/SalesRecord)
+  // never had one, matching the original blank-recipient behavior below.
+  // The user's own customizable template (WhatsAppSettings), not a fixed
+  // string -- the invoice share message must match what they configured.
+  // Uses /track/:token (the real, working, no-auth public tracking page)
+  // -- /order/:id is not a route at all (confirmed in App.tsx: any
+  // unmatched path redirects to "/").
+  const buildTaxInvoiceWhatsAppText = () => buildWhatsAppMessage(getWhatsAppTemplate(), {
+    customerName: order.customerName,
+    orderId: String(order.invoiceNumber || order.id),
+    totalAmount: totalIncVat.toFixed(2),
+    invoiceUrl: order.trackingToken ? `${window.location.origin}/track/${order.trackingToken}` : undefined,
+    storeName: tenant.name,
+  });
+
+  // seen-whatsapp-instant-send-task.md: used to await
+  // shareOrDownloadInvoicePDF BEFORE opening WhatsApp -- by the time it
+  // resolved, the click's "user activation" window had often already
+  // expired, so Chrome/Edge silently blocked the window.open as an
+  // unwanted popup with no visible error. Now opens WhatsApp immediately,
+  // synchronously, in the same click handler. Attaching the invoice as an
+  // actual PDF file is a separate, explicit, optional action now
+  // (handleAttachInvoicePdf below).
+  const handleShareWhatsApp = () => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(buildTaxInvoiceWhatsAppText())}`, '_blank');
+  };
+
+  // The optional "attach as PDF too" step split out of handleShareWhatsApp
+  // above -- native share (text + file together) is the only way a web
+  // app can hand both to WhatsApp at once; falls back to downloading the
+  // PDF so it's ready to attach manually. Never blocks or precedes
+  // opening WhatsApp itself.
+  const handleAttachInvoicePdf = async () => {
     const filename = `Invoice-${order.invoiceNumber || order.id}.pdf`;
-
-    // Native share (text + file together) is the only way a web app can
-    // hand both to WhatsApp at once -- wa.me/api.whatsapp.com links can
-    // only ever carry text, never a file.
-    const result = await shareOrDownloadInvoicePDF('print-area', filename, text);
-    if (result === 'shared') return;
-
-    // Native share isn't available on this device/browser -- the PDF was
-    // downloaded instead (ready to attach manually).
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    await shareOrDownloadInvoicePDF('print-area', filename, buildTaxInvoiceWhatsAppText());
   };
   
   // Use pre-computed QR, or fallback logic
@@ -458,11 +478,17 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
             >
               <Download size={16} /> {t('sales_record.download_pdf')}
             </button>
-            <button 
+            <button
               onClick={handleShareWhatsApp}
               className="px-4 py-2 bg-[#25D366] text-white rounded-xl font-bold flex items-center gap-2 hover:bg-[#20ba56] transition-all shadow-sm cursor-pointer text-xs"
             >
               <Share2 size={16} /> {t('sales_record.share_whatsapp')}
+            </button>
+            <button
+              onClick={() => void handleAttachInvoicePdf()}
+              className="px-4 py-2 bg-surface border border-border text-content-muted hover:text-content rounded-xl font-bold flex items-center gap-2 transition-all cursor-pointer text-xs"
+            >
+              <Paperclip size={16} /> {t('tax_invoices.attach_pdf', 'إرفاق PDF أيضاً')}
             </button>
             <button
               onClick={handlePrint}

@@ -579,6 +579,8 @@ export interface TaxInvoice {
   paidAmount?: number;
   remainingAmount?: number;
   branchName?: string;
+  /** The underlying order's tracking_token (orders table) -- for building a /track/:token WhatsApp link. */
+  trackingToken?: string;
 }
 
 export interface CreditNote {

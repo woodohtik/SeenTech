@@ -31,7 +31,8 @@ import {
   Printer,
   Download,
   Share2,
-  AlertTriangle
+  AlertTriangle,
+  Paperclip
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { refreshCustomersCache, refreshInventoryCache, refreshBranchStockCache, getCachedCustomers, getCachedInventory, getCachedBranchStock } from '../lib/offline/cacheSync';
@@ -1089,6 +1090,13 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       }
 
       const newOrder = { id: operationId };
+      // Only available when the sale actually reached the server (not
+      // queued offline) -- create_pos_sale returns the order's real
+      // tracking_token (seen-whatsapp-instant-send-task.md follow-up:
+      // needed for the WhatsApp invoice link, /track/:token -- the public,
+      // no-auth customer tracking page, not the nonexistent /order/:id
+      // this used to build).
+      const trackingToken: string | undefined = !queuedOffline ? saleResult?.tracking_token : undefined;
       if (!queuedOffline) {
         void notifyNewOrderForStaff(newOrder.id);
         // ZATCA real onboarding (seen-zatca-real-onboarding-task.md Phase ب
@@ -1115,6 +1123,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       setPaidAmount(0);
       setCompletedOrder({
          id: newOrder.id,
+         trackingToken,
          invoiceNumber,
          invoiceType,
          paymentMethod: paymentMethod,
@@ -1515,11 +1524,24 @@ const invoiceData: InvoiceData | null = completedOrder ? {
 
   // The user's own customizable template (WhatsAppSettings), not a fixed
   // string -- the invoice share message must match what they configured.
+  // invoiceUrl was missing entirely here (seen-whatsapp-instant-send-
+  // task.md) -- the default template's {invoice_url} tag resolved to an
+  // empty string on every message sent from this, the single most-used
+  // WhatsApp send point in the whole system (it appears right after every
+  // POS sale). Uses /track/:token (the real, working, no-auth public
+  // tracking page) -- NOT /order/:id, which doesn't exist as a route at
+  // all (confirmed in App.tsx: any unmatched path just redirects to "/"),
+  // despite that being the pattern Orders.tsx's own buildOrderWhatsAppMessage
+  // used. trackingToken is only known once the sale actually reached the
+  // server (create_pos_sale's return value) -- absent for a queued-offline
+  // sale, in which case the link is simply omitted rather than built from
+  // a dead route.
   const buildInvoiceMessage = (phone?: string) => buildWhatsAppMessage(getWhatsAppTemplate(), {
     customerName: completedOrder?.customerName,
     orderId: completedOrder?.invoiceNumber,
     totalAmount: completedOrder?.total,
     customerPhone: phone,
+    invoiceUrl: completedOrder?.trackingToken ? `${window.location.origin}/track/${completedOrder.trackingToken}` : undefined,
     storeName: brandingSettings?.storeName || t('pos.store_default'),
   });
 
@@ -1528,29 +1550,34 @@ const invoiceData: InvoiceData | null = completedOrder ? {
     setWhatsappModalOpen(false);
   };
 
-  const handleShareWhatsApp = async () => {
+  // seen-whatsapp-instant-send-task.md: used to await
+  // shareOrDownloadInvoicePDF (a full html-to-image render) BEFORE opening
+  // WhatsApp -- by the time it resolved, the click's "user activation"
+  // window had often already expired, so Chrome/Edge silently blocked the
+  // window.open as an unwanted popup with no visible error. Now opens
+  // WhatsApp immediately, synchronously, in the same click handler.
+  // Attaching the invoice as an actual PDF file is a separate, explicit,
+  // optional action now (handleAttachInvoicePdf below).
+  const handleShareWhatsApp = () => {
     if (!completedOrder) return;
-    const filename = `Invoice-${completedOrder.invoiceNumber}.pdf`;
     const knownPhone = completedOrder.customerPhone ? formatSaudiPhone(completedOrder.customerPhone).replace('+', '') : '';
-    const text = buildInvoiceMessage(knownPhone || undefined);
-
-    // Native share (text + file together) is tried first regardless of
-    // whether the customer's phone is already known -- wa.me/
-    // api.whatsapp.com links can only ever carry text, never a file, so
-    // that path can't send both together no matter what. The tradeoff:
-    // the staff member picks the WhatsApp contact themselves in the OS
-    // share sheet instead of it being pre-filled from a known number.
-    const result = await shareOrDownloadInvoicePDF('pos-invoice-print-area', filename, text);
-    if (result === 'shared') return;
-
-    // Native share isn't available on this device/browser -- the PDF was
-    // downloaded instead (ready to attach manually). Known phone -> open
-    // the chat directly; otherwise ask for a number.
     if (knownPhone) {
       proceedToWhatsApp(knownPhone);
       return;
     }
     setWhatsappModalOpen(true);
+  };
+
+  // The optional "attach as PDF too" step split out of handleShareWhatsApp
+  // above -- tries the OS share sheet (text + file together) and falls
+  // back to downloading the PDF so it's ready to attach manually. Never
+  // blocks or precedes opening WhatsApp itself.
+  const handleAttachInvoicePdf = async () => {
+    if (!completedOrder) return;
+    const filename = `Invoice-${completedOrder.invoiceNumber}.pdf`;
+    const knownPhone = completedOrder.customerPhone ? formatSaudiPhone(completedOrder.customerPhone).replace('+', '') : '';
+    const text = buildInvoiceMessage(knownPhone || undefined);
+    await shareOrDownloadInvoicePDF('pos-invoice-print-area', filename, text);
   };
 
   return (
@@ -1905,7 +1932,14 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       <span className="text-sm font-bold">{t('pos.share_whatsapp')}</span>
                     </button>
                   </div>
-                  
+                  <button
+                    onClick={() => void handleAttachInvoicePdf()}
+                    className="w-full flex items-center justify-center gap-2 text-content-muted hover:text-content text-sm font-bold py-2 transition-colors"
+                  >
+                    <Paperclip size={14} />
+                    <span>{t('pos.attach_invoice_pdf', 'إرفاق الفاتورة كملف PDF أيضاً')}</span>
+                  </button>
+
                   <button
                     onClick={() => {
                        setCompletedOrder(null);

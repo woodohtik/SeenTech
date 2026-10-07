@@ -17,7 +17,8 @@ import {
   Clock,
   ChevronDown,
   Share2,
-  MessageCircle
+  MessageCircle,
+  Paperclip
 } from 'lucide-react';
 import { CurrencySymbol } from './CurrencySymbol';
 import { getSupplierTransactions } from '../services/supplierAccountsService';
@@ -186,27 +187,30 @@ export default function SupplierLedger({
     setWhatsappModalOpen(false);
   };
 
-  const handleWhatsAppShare = async () => {
-    const filename = t('procurement.ledger_pdf_filename', { name: supplier.name.replace(/\s+/g, '_') });
+  // seen-whatsapp-instant-send-task.md: used to await
+  // shareOrDownloadInvoicePDF BEFORE opening WhatsApp -- by the time it
+  // resolved, the click's "user activation" window had often already
+  // expired, so Chrome/Edge silently blocked the window.open as an
+  // unwanted popup with no visible error. Now opens WhatsApp immediately,
+  // synchronously, in the same click handler. Attaching the statement as
+  // an actual PDF file is a separate, explicit, optional action now
+  // (handleAttachLedgerPdf below).
+  const handleWhatsAppShare = () => {
     const knownPhone = supplier.phone ? formatSaudiPhone(supplier.phone).replace('+', '') : '';
-
-    // Native share (text + file together) is tried first regardless of
-    // whether the supplier's phone is already known -- wa.me/
-    // api.whatsapp.com links can only ever carry text, never a file, so
-    // that path can't send both together no matter what. The tradeoff:
-    // whoever's sending picks the WhatsApp contact themselves in the OS
-    // share sheet instead of it being pre-filled from a known number.
-    const result = await shareOrDownloadInvoicePDF('supplier-ledger-pdf-capture', filename, buildLedgerWhatsAppMessage());
-    if (result === 'shared') return;
-
-    // Native share isn't available on this device/browser -- the PDF was
-    // downloaded instead (ready to attach manually). Known phone -> open
-    // the chat directly; otherwise ask for a number.
     if (knownPhone) {
       proceedToWhatsApp(knownPhone);
       return;
     }
     setWhatsappModalOpen(true);
+  };
+
+  // The optional "attach as PDF too" step split out of handleWhatsAppShare
+  // above -- tries the OS share sheet (text + file together) and falls
+  // back to downloading the PDF so it's ready to attach manually. Never
+  // blocks or precedes opening WhatsApp itself.
+  const handleAttachLedgerPdf = async () => {
+    const filename = t('procurement.ledger_pdf_filename', { name: supplier.name.replace(/\s+/g, '_') });
+    await shareOrDownloadInvoicePDF('supplier-ledger-pdf-capture', filename, buildLedgerWhatsAppMessage());
   };
 
   return (
@@ -237,6 +241,13 @@ export default function SupplierLedger({
           >
             <MessageCircle size={16} />
             <span>{t('procurement.send_whatsapp_pdf', 'إرسال كشف الحساب عبر واتساب')}</span>
+          </button>
+          <button
+            onClick={() => void handleAttachLedgerPdf()}
+            className="h-10 px-4 py-2 bg-surface border border-border text-content-muted hover:text-content rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer"
+          >
+            <Paperclip size={16} />
+            <span>{t('procurement.attach_ledger_pdf', 'إرفاق كملف PDF أيضاً')}</span>
           </button>
 
           <button

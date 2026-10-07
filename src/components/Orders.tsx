@@ -41,7 +41,8 @@ import {
   Shield,
   FileSpreadsheet,
   Edit2,
-  Check
+  Check,
+  Paperclip
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase/client';
@@ -1512,7 +1513,13 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
   const buildOrderWhatsAppMessage = (order: Order, phone: string) => {
     const orderNum = (order.orderNumber?.toString() || order.id).slice(-6).toUpperCase();
-    const invoiceUrl = `${window.location.origin}/order/${order.id}`;
+    // seen-whatsapp-instant-send-task.md follow-up: /order/:id was never a
+    // real route (confirmed in App.tsx -- any unmatched path redirects to
+    // "/"), so every invoice message built here sent a dead link despite
+    // this being the task's own cited "working" reference implementation.
+    // /track/:token is the real, no-auth public tracking page -- same one
+    // buildTrackingMessage/sendTrackingLink below already use correctly.
+    const invoiceUrl = order.trackingToken ? `${window.location.origin}/track/${order.trackingToken}` : undefined;
 
     return buildWhatsAppMessage(getWhatsAppTemplate(), {
       customerName: order.customerName,
@@ -1571,32 +1578,31 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     setWhatsappModalOpen(true);
   };
 
-  // Same as sendToWhatsApp, but used from inside the open InvoiceModal
-  // (where #order-invoice-print-area is actually rendered) so the invoice
-  // can go out as an attached PDF. Native share (text + file together) is
-  // tried first regardless of whether the phone is already known --
-  // wa.me/api.whatsapp.com links can only ever carry text, never a file,
-  // so a known number alone can never get both to WhatsApp at once. The
-  // tradeoff: the staff member picks the WhatsApp contact themselves in
-  // the OS share sheet instead of it being pre-filled.
-  const handleInvoiceModalWhatsApp = async (order: Order) => {
+  // seen-whatsapp-instant-send-task.md: this used to await
+  // shareOrDownloadInvoicePDF (a full html-to-image render, half a second
+  // to 2+ on a real cashier device) BEFORE opening WhatsApp at all -- by
+  // the time it resolved, the click's "user activation" window had often
+  // already expired, so Chrome/Edge silently blocked the window.open as an
+  // unwanted popup with no visible error. Now identical to sendToWhatsApp:
+  // opens WhatsApp immediately, synchronously, in the same click handler.
+  // Attaching the invoice as an actual PDF file is a separate, explicit,
+  // optional action now (handleAttachInvoicePdf below) -- WhatsApp text
+  // links can never carry a file regardless, so this was always a second
+  // step in practice, just one that used to block the first.
+  const handleInvoiceModalWhatsApp = (order: Order) => {
+    sendToWhatsApp(order);
+  };
+
+  // The optional "attach as PDF too" step split out of
+  // handleInvoiceModalWhatsApp above -- tries the OS share sheet (text +
+  // file together) and falls back to downloading the PDF so it's ready to
+  // attach manually. Never blocks or precedes opening WhatsApp itself.
+  const handleAttachInvoicePdf = async (order: Order) => {
     const customer = customers.find(c => c.id === order.customerId);
     const phone = customer?.phone || order.customerPhone || '';
     const filename = `Invoice-${order.orderNumber || order.id.slice(-6).toUpperCase()}.pdf`;
     const text = buildOrderWhatsAppMessage(order, phone);
-
-    const result = await shareOrDownloadInvoicePDF('order-invoice-print-area', filename, text);
-    if (result === 'shared') return;
-
-    // Native share isn't available on this device/browser -- the PDF was
-    // downloaded instead (ready to attach manually). Known phone -> open
-    // the chat directly; otherwise ask for a number.
-    if (phone) {
-      sendWhatsAppMessage(phone, text);
-      return;
-    }
-    setPendingWhatsAppOrder(order);
-    setWhatsappModalOpen(true);
+    await shareOrDownloadInvoicePDF('order-invoice-print-area', filename, text);
   };
 
   /**
@@ -2307,6 +2313,13 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               <span>{t('orders.whatsapp')}</span>
             </button>
           </div>
+          <button
+            onClick={() => void handleAttachInvoicePdf(order)}
+            className="w-full flex items-center justify-center gap-2 text-content-muted hover:text-content text-sm font-bold py-2 transition-colors"
+          >
+            <Paperclip size={14} />
+            <span>{t('orders.attach_invoice_pdf', 'إرفاق الفاتورة كملف PDF أيضاً')}</span>
+          </button>
         </div>
       </motion.div>
     </div>

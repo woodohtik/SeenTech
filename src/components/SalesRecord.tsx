@@ -6,7 +6,7 @@ import { cn } from '../lib/utils';
 import { decodeOrderB2BNotes } from '../utils/b2bHelper';
 import { decodeOrderRow } from '../utils/orderHistoryHelper';
 import { PriceDisplay } from './PriceDisplay';
-import { FileText, Eye, X, Download, Package, Scissors, User, Calendar, CreditCard, ShoppingBag, Clock, Printer, Share2, AlertTriangle } from 'lucide-react';
+import { FileText, Eye, X, Download, Package, Scissors, User, Calendar, CreditCard, ShoppingBag, Clock, Printer, Share2, AlertTriangle, Paperclip } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { downloadInvoicePDF, shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
 import { buildWhatsAppMessage, getWhatsAppTemplate } from '../utils/whatsapp';
@@ -94,37 +94,50 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
 
   // The user's own customizable template (WhatsAppSettings), not a fixed
   // string -- the invoice share message must match what they configured.
+  // invoiceUrl was missing here too (seen-whatsapp-instant-send-task.md
+  // only called out POS.tsx by name, but this is the exact same gap: the
+  // default template's {invoice_url} tag resolved to an empty string).
+  // Uses /track/:token (the real, working, no-auth public tracking page)
+  // -- /order/:id is not a route at all (confirmed in App.tsx: any
+  // unmatched path redirects to "/"), despite being the pattern
+  // Orders.tsx's own reference implementation had been using too.
   const buildWhatsAppInvoiceText = (order: Order, phone?: string) => buildWhatsAppMessage(getWhatsAppTemplate(), {
     customerName: order.customerName,
     orderId: String(order.invoiceNumber || order.orderNumber || order.id.slice(-6).toUpperCase()),
     totalAmount: order.totalAmount,
     customerPhone: phone,
+    invoiceUrl: order.trackingToken ? `${window.location.origin}/track/${order.trackingToken}` : undefined,
     storeName: tenantInfo?.name,
   });
 
-  const handleShareWhatsApp = async () => {
+  // seen-whatsapp-instant-send-task.md: used to await
+  // shareOrDownloadInvoicePDF BEFORE opening WhatsApp -- by the time it
+  // resolved, the click's "user activation" window had often already
+  // expired, so Chrome/Edge silently blocked the window.open as an
+  // unwanted popup with no visible error. Now opens WhatsApp immediately,
+  // synchronously, in the same click handler. Attaching the invoice as an
+  // actual PDF file is a separate, explicit, optional action now
+  // (handleAttachInvoicePdf below).
+  const handleShareWhatsApp = () => {
     if (!selectedOrder) return;
-    const filename = `Invoice-${selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase()}.pdf`;
     const knownPhone = selectedOrder.customerPhone ? formatSaudiPhone(selectedOrder.customerPhone).replace('+', '') : '';
-    const text = buildWhatsAppInvoiceText(selectedOrder, knownPhone || undefined);
-
-    // Native share (text + file together) is tried first regardless of
-    // whether the customer's phone is already known -- wa.me/
-    // api.whatsapp.com links can only ever carry text, never a file, so
-    // that path can't send both together no matter what. The tradeoff:
-    // the staff member picks the WhatsApp contact themselves in the OS
-    // share sheet instead of it being pre-filled from a known number.
-    const result = await shareOrDownloadInvoicePDF('sales-record-print-area', filename, text);
-    if (result === 'shared') return;
-
-    // Native share isn't available on this device/browser -- the PDF was
-    // downloaded instead (ready to attach manually). Known phone -> open
-    // the chat directly; otherwise ask for a number.
     if (knownPhone) {
       proceedToWhatsApp(knownPhone);
       return;
     }
     setWhatsappModalOpen(true);
+  };
+
+  // The optional "attach as PDF too" step split out of handleShareWhatsApp
+  // above -- tries the OS share sheet (text + file together) and falls
+  // back to downloading the PDF so it's ready to attach manually. Never
+  // blocks or precedes opening WhatsApp itself.
+  const handleAttachInvoicePdf = async () => {
+    if (!selectedOrder) return;
+    const filename = `Invoice-${selectedOrder.orderNumber || selectedOrder.id.slice(-6).toUpperCase()}.pdf`;
+    const knownPhone = selectedOrder.customerPhone ? formatSaudiPhone(selectedOrder.customerPhone).replace('+', '') : '';
+    const text = buildWhatsAppInvoiceText(selectedOrder, knownPhone || undefined);
+    await shareOrDownloadInvoicePDF('sales-record-print-area', filename, text);
   };
 
   const proceedToWhatsApp = (phone: string) => {
@@ -199,6 +212,10 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
           customerId: decoded.customer_id || decoded.customerId,
           customerName: decoded.customer_name || decoded.customerName,
           customerPhone: (decoded.customer_id && customerPhoneMap[decoded.customer_id]) || decoded.customer_phone || decoded.customerPhone,
+          // seen-whatsapp-instant-send-task.md follow-up: needed for the
+          // WhatsApp invoice link (/track/:token), same mapping Orders.tsx
+          // already does.
+          trackingToken: decoded.tracking_token ?? decoded.trackingToken,
           tenantId: decoded.tenant_id || decoded.tenantId,
           shiftId: decoded.shift_id || decoded.shiftId,
           subtotalAmount: decoded.subtotal_amount || decoded.subtotalAmount,
@@ -522,14 +539,21 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                 <Download size={16} />
                 {t('sales_record.download_pdf', 'تحميل PDF')}
               </button>
-              <button 
+              <button
                 onClick={handleShareWhatsApp}
                 className="flex-1 min-w-[110px] bg-[#25D366] text-white py-2.5 px-3 rounded-xl font-bold text-xs shadow-md hover:bg-[#20ba56] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Share2 size={16} />
                 {t('sales_record.whatsapp', 'واتساب')}
               </button>
-              <button 
+              <button
+                onClick={() => void handleAttachInvoicePdf()}
+                className="flex-1 min-w-[110px] bg-surface border border-border text-content-muted hover:text-content py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Paperclip size={16} />
+                {t('sales_record.attach_invoice_pdf', 'إرفاق PDF أيضاً')}
+              </button>
+              <button
                 onClick={handlePrint}
                 className="flex-1 min-w-[90px] bg-content text-surface py-2.5 px-3 rounded-xl font-bold text-xs shadow-md hover:bg-content/90 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
