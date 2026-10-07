@@ -12,11 +12,13 @@ import {
   Bar
 } from 'recharts';
 import { useTranslation } from 'react-i18next';
+import { useToast } from '../contexts/ToastContext';
 
 import { isRtlLang } from '../lib/direction';
 
 export default function SaaSReports() {
   const { t, i18n } = useTranslation();
+  const { handleError } = useToast();
   const isRtl = isRtlLang(i18n.language);
 
   const [data, setData] = useState<{
@@ -46,7 +48,14 @@ export default function SaaSReports() {
         supabase.from('plans').select('id, price')
       ]);
 
-      if (!tenants || !orders || !plans) return;
+      if (!tenants || !orders || !plans) {
+        // Postgrest resolves with {data: null, error} rather than throwing --
+        // this used to leave `loading` stuck true forever (an endless
+        // spinner with no explanation) instead of reaching the catch below.
+        setData(prev => ({ ...prev, loading: false }));
+        handleError(new Error('tenants/orders/plans query returned null'), t('saas.reports_load_failed', 'تعذّر تحميل تقارير وتحليلات النظام'));
+        return;
+      }
 
       const activeTenants = tenants.filter(t => t.status === 'active');
       const mrr = activeTenants.reduce((acc, t) => {
@@ -80,6 +89,7 @@ export default function SaaSReports() {
     } catch (err) {
       console.error("Error fetching report data:", err);
       setData(prev => ({ ...prev, loading: false }));
+      handleError(err, t('saas.reports_load_failed', 'تعذّر تحميل تقارير وتحليلات النظام'));
     }
   };
 

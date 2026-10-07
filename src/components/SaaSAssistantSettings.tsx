@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
+import { getFriendlyErrorMessage } from '../lib/firebase';
 import { isRtlLang } from '../lib/direction';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../contexts/ConfirmContext';
@@ -159,7 +160,7 @@ export default function SaaSAssistantSettings() {
       }
     } catch (err: any) {
       console.error('Provider test failed:', err);
-      toastError(err.message || t('saas.assistant_settings.save_error'));
+      toastError(getFriendlyErrorMessage(err));
     } finally {
       setProviderTesting((prev) => ({ ...prev, [providerKey]: false }));
     }
@@ -235,7 +236,7 @@ export default function SaaSAssistantSettings() {
       toastSuccess(t('saas.assistant_settings.saved_success'));
     } catch (err: any) {
       console.error('Failed to save assistant settings:', err);
-      toastError(err.message || t('saas.assistant_settings.save_error'));
+      toastError(getFriendlyErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -277,7 +278,7 @@ export default function SaaSAssistantSettings() {
     } catch (err: any) {
       console.error('Assistant live preview failed:', err);
       setPreviewReply('');
-      toastError(err.message || t('saas.assistant_settings.save_error'));
+      toastError(getFriendlyErrorMessage(err));
     } finally {
       setPreviewLoading(false);
     }

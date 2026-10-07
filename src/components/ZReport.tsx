@@ -9,6 +9,7 @@ import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import { toPng } from 'html-to-image';
 import { useTranslation } from 'react-i18next';
+import { useToast } from '../contexts/ToastContext';
 
 import { isRtlLang, localeOf } from '../lib/direction';
 
@@ -31,6 +32,7 @@ interface ZReportProps {
 
 export default function ZReport({ data, onClose }: ZReportProps) {
   const { t, i18n } = useTranslation();
+  const { handleError } = useToast();
   const isRtl = isRtlLang(i18n.language);
   const isDaily = 'type' in data && data.type === 'daily';
   
@@ -97,6 +99,7 @@ export default function ZReport({ data, onClose }: ZReportProps) {
       setWhatsappModalOpen(true);
     } catch (err) {
       console.error('Failed to export Z-Report to PDF:', err);
+      handleError(err, t('z_report.export_failed', 'تعذّر تصدير تقرير إغلاق اليوم — لم يُحفَظ الملف'));
     } finally {
       setExportingPdf(false);
     }

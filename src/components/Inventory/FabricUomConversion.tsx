@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase/client';
 import { useTranslation } from 'react-i18next';
+import { getFriendlyErrorMessage } from '../../lib/firebase';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { useStaff } from '../../contexts/StaffContext';
@@ -277,7 +278,7 @@ const FabricUomConversion: React.FC<FabricUomConversionProps> = ({ tenantId }) =
       setRefreshCounter(prev => prev + 1);
     } catch (err: any) {
       console.error('Error performing conversion:', err);
-      setErrorMessage(err.message || t('errors.system_error'));
+      setErrorMessage(getFriendlyErrorMessage(err));
     } finally {
       setProcessing(false);
     }
@@ -336,7 +337,7 @@ const FabricUomConversion: React.FC<FabricUomConversionProps> = ({ tenantId }) =
       setRefreshCounter(prev => prev + 1);
     } catch (err: any) {
       console.error('Error updating UOM settings:', err);
-      setErrorMessage(err.message || t('errors.system_error'));
+      setErrorMessage(getFriendlyErrorMessage(err));
     } finally {
       setProcessing(false);
     }

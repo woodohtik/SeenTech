@@ -20,6 +20,8 @@ import { Supplier } from '../types';
 import { PriceDisplay } from './PriceDisplay';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
+import { useToast } from '../contexts/ToastContext';
+import { AlertTriangle } from 'lucide-react';
 
 interface SuppliersRegistryProps {
   suppliers: Supplier[];
@@ -41,13 +43,22 @@ export default function SuppliersRegistry({
   onDelete,
 }: SuppliersRegistryProps) {
   const { t } = useTranslation();
+  const { handleError } = useToast();
   // Store computed aggregates for each supplier to populate Total Purchases and Total Paid columns
   const [aggregates, setAggregates] = useState<Record<string, { totalPurchases: number; totalPaid: number }>>({});
+  // Suppliers whose aggregate computation actually failed (as opposed to
+  // legitimately having none yet) -- the table shows a distinct warning
+  // indicator for these instead of silently falling back to a number that
+  // looks like a real total (seen-error-messages-task.md: a supplier used
+  // to be able to show "nothing owed" purely because the calculation
+  // failed, not because it was actually zero).
+  const [failedSupplierIds, setFailedSupplierIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const computeAggregatesForSuppliers = async () => {
       const result: Record<string, { totalPurchases: number; totalPaid: number }> = {};
-      
+      const failed = new Set<string>();
+
       for (const supplier of suppliers) {
         try {
           const txs = await getSupplierTransactions(
@@ -56,16 +67,24 @@ export default function SuppliersRegistry({
             supplier.name,
             supplier.balance
           );
-          
+
           const totalPurchases = txs.reduce((sum, tx) => sum + Number(tx.credit || 0), 0);
           const totalPaid = txs.reduce((sum, tx) => sum + Number(tx.debit || 0), 0);
-          
+
           result[supplier.id] = { totalPurchases, totalPaid };
         } catch (err) {
           console.error(`Error computing aggregates for supplier ${supplier.id}:`, err);
+          failed.add(supplier.id);
         }
       }
       setAggregates(result);
+      setFailedSupplierIds(failed);
+      if (failed.size > 0) {
+        handleError(
+          new Error(`Failed to compute aggregates for ${failed.size} supplier(s)`),
+          t('procurement.supplier_aggregates_failed', 'تعذّر حساب إجمالي المشتريات/المسدَّد لبعض الموردين — الأرقام المعروضة لهم قد لا تكون دقيقة')
+        );
+      }
     };
 
     if (suppliers.length > 0) {
@@ -138,7 +157,17 @@ export default function SuppliersRegistry({
 
                   {/* Total Credit - Purchases */}
                   <td className="p-4 text-center font-mono font-extrabold text-content">
-                    <PriceDisplay amount={totalPurchases} />
+                    {failedSupplierIds.has(supaId) ? (
+                      <span
+                        className="inline-flex items-center gap-1 text-warning"
+                        title={t('procurement.supplier_aggregate_failed_tooltip', 'تعذّر حساب هذا الرقم — قد لا يكون دقيقاً')}
+                      >
+                        <AlertTriangle size={14} />
+                        <PriceDisplay amount={totalPurchases} />
+                      </span>
+                    ) : (
+                      <PriceDisplay amount={totalPurchases} />
+                    )}
                   </td>
 
                   {/* Total Debit - Paid money */}
@@ -279,7 +308,11 @@ export default function SuppliersRegistry({
               <div className="grid grid-cols-3 gap-2 bg-surface p-2.5 rounded-xl border border-border/40 text-center">
                 <div className="flex flex-col gap-0.5">
                   <span className="text-[9px] text-content-muted font-bold">{t('procurement.purchases_label', 'المشتريات')}</span>
-                  <span className="font-mono font-extrabold text-xs text-content">
+                  <span
+                    className={cn("font-mono font-extrabold text-xs flex items-center justify-center gap-1", failedSupplierIds.has(supaId) ? "text-warning" : "text-content")}
+                    title={failedSupplierIds.has(supaId) ? t('procurement.supplier_aggregate_failed_tooltip', 'تعذّر حساب هذا الرقم — قد لا يكون دقيقاً') : undefined}
+                  >
+                    {failedSupplierIds.has(supaId) && <AlertTriangle size={11} />}
                     <PriceDisplay amount={totalPurchases} />
                   </span>
                 </div>

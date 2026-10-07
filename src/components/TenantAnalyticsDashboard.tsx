@@ -20,6 +20,7 @@ import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { useDirection } from '../lib/direction';
 import { PriceDisplay } from './PriceDisplay';
+import { useToast } from '../contexts/ToastContext';
 
 interface AnalyticsData {
   tenant: any;
@@ -49,6 +50,7 @@ export default function TenantAnalyticsDashboard() {
   const { tenantId } = useParams();
   const { t } = useTranslation();
   const { locale } = useDirection();
+  const { handleError } = useToast();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<AnalyticsData | null>(null);
 
@@ -206,6 +208,7 @@ export default function TenantAnalyticsDashboard() {
 
     } catch (error) {
       console.error('Error fetching tenant analytics:', error);
+      handleError(error, t('saas.tenant_analytics_load_failed', 'تعذّر تحميل تحليلات هذا المستأجر'));
     } finally {
       setLoading(false);
     }

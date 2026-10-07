@@ -135,6 +135,20 @@ export const getFriendlyErrorMessage = (error: any): string => {
   if (errorMsg.toLowerCase().includes('quota-exceeded')) {
     return i18n.t('errors.daily_quota_exceeded');
   }
+  // seen-error-messages-task.md: project-specific Postgres/Supabase errors
+  // that used to fall through to the raw technical string (if short enough)
+  // or a fully generic message -- these are common enough in this app
+  // (every RLS-protected table, every unique constraint) to deserve their
+  // own real Arabic message instead of either.
+  if (errorMsg.toLowerCase().includes('row-level security policy') || code === '42501') {
+    return i18n.t('errors.rls_denied');
+  }
+  if (errorMsg.toLowerCase().includes('duplicate key value violates unique constraint') || code === '23505') {
+    return i18n.t('errors.duplicate_entry');
+  }
+  if (errorMsg.toLowerCase().includes('zatca')) {
+    return i18n.t('errors.zatca_submission_failed');
+  }
 
   const finalMsg = errorMsg && errorMsg.length < 100 ? `${errorMsg}` : i18n.t('errors.system_generic');
   return finalMsg;

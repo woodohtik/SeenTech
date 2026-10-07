@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getFriendlyErrorMessage } from '../lib/firebase';
 import { cn } from '../lib/utils';
 import { 
   CreditCard, 
@@ -232,7 +233,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
       setNotes('');
       await fetchRealBillingData();
     } catch (err: any) {
-      toastError(t('billing.request_submit_error', { error: err.message || err }));
+      toastError(t('billing.request_submit_error', { error: getFriendlyErrorMessage(err) }));
     } finally {
       setSubmitting(false);
     }

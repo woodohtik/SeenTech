@@ -195,6 +195,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       setCashDrawerBreakdown(breakdown);
     } catch (err) {
       console.error('Error calculating cash drawer balance:', err);
+      handleError(err, t('pos.cash_drawer_balance_failed', 'تعذّر حساب رصيد الدرج النقدي'));
     }
   }, [shiftId]);
 

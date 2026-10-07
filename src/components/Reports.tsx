@@ -75,6 +75,7 @@ import { downloadInvoicePDF } from '../utils/pdfGenerator';
 import { useStaff } from '../contexts/StaffContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { useDirection } from '../lib/direction';
+import { getFriendlyErrorMessage } from '../lib/firebase';
 
 // First four map to this app's semantic tokens (brand/success/warning/danger); the
 // remaining three are purely categorical (purple/pink/cyan) with no matching token --
@@ -726,7 +727,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
       toastSuccess(t('reports.z_report_success', 'تم توليد التقرير المالي المجمع بنجاح'));
     } catch (error: any) {
       console.error('Error fetching Z-report:', error);
-      toastError(error.message || t('reports.z_report_error', 'حدث خطأ أثناء توليد التقرير المالي المجمع'));
+      toastError(error ? getFriendlyErrorMessage(error) : t('reports.z_report_error', 'حدث خطأ أثناء توليد التقرير المالي المجمع'));
     } finally {
       setLoadingZ(false);
     }

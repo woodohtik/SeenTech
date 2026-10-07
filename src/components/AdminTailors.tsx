@@ -33,7 +33,7 @@ import {
   Bot
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
-import { handleError, OperationType } from '../lib/firebase';
+import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { TailorRequest, Tenant, Plan, Order } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
@@ -539,7 +539,7 @@ export default function AdminTailors() {
           showToast(isActive ? t('saas.tenants.account_deactivated') : t('saas.tenants.account_activated'), 'success');
         } catch (error: any) {
           console.error('Error updating status:', error);
-          showToast(t('saas.tenants.status_update_error', { details: error.message || t('orders.unknown_error') }), 'error');
+          showToast(t('saas.tenants.status_update_error', { details: getFriendlyErrorMessage(error) }), 'error');
         } finally {
           setLoading(false);
         }
@@ -675,7 +675,7 @@ export default function AdminTailors() {
           showToast(t('saas.tenants.activate_success'), 'success');
         } catch (err: any) {
           console.error(err);
-          showToast(t('saas.tenants.activate_failed', { details: err.message || t('orders.unknown_error') }), 'error');
+          showToast(t('saas.tenants.activate_failed', { details: getFriendlyErrorMessage(err) }), 'error');
         } finally {
           setLoading(false);
         }

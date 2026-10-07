@@ -14,6 +14,7 @@ import { useDirection } from '../../lib/direction';
 import { supabase } from '../../lib/supabase/client';
 import { useStaff } from '../../contexts/StaffContext';
 import { PriceDisplay } from '../PriceDisplay';
+import { useToast } from '../../contexts/ToastContext';
 
 interface TailorDashboardProps {
   tenantId: string;
@@ -40,6 +41,7 @@ const STAGE_LABEL_KEYS: Record<string, string> = {
 
 export const TailorDashboard: React.FC<TailorDashboardProps> = ({ tenantId }) => {
   const { t, dir } = useDirection();
+  const { handleError } = useToast();
   const navigate = useNavigate();
   const { currentStaff } = useStaff();
   const [loading, setLoading] = useState(true);
@@ -112,6 +114,9 @@ export const TailorDashboard: React.FC<TailorDashboardProps> = ({ tenantId }) =>
         }
       } catch (err) {
         console.error('Error fetching tailor dashboard metrics:', err);
+        if (isMounted) {
+          handleError(err, t('tailors.dashboard_load_failed', 'تعذّر تحميل بيانات لوحة الخياط — الأرقام المعروضة قد تكون غير محدَّثة'));
+        }
       } finally {
         if (isMounted) setLoading(false);
       }

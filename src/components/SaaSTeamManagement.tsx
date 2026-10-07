@@ -19,6 +19,7 @@ import { SmartSelect } from './ui/SmartSelect';
 import { SaasUser, SaasUserRole } from '../types/supabase';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
+import { getFriendlyErrorMessage } from '../lib/firebase';
 
 import { isRtlLang } from '../lib/direction';
 
@@ -211,7 +212,7 @@ export default function SaaSTeamManagement() {
       fetchTeam();
     } catch (error: any) {
       console.error(error);
-      setToast({ message: error.message || t('saas.error_saving', 'حدث خطأ أثناء حفظ البيانات'), type: 'error' });
+      setToast({ message: error ? getFriendlyErrorMessage(error) : t('saas.error_saving', 'حدث خطأ أثناء حفظ البيانات'), type: 'error' });
     } finally {
       setIsSubmitting(false);
     }

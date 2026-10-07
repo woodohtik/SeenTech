@@ -34,6 +34,7 @@ import { DatePicker } from './ui/DatePicker';
 import { SmartSelect } from './ui/SmartSelect';
 import { shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
 import { formatSaudiPhone } from '../utils/phoneUtils';
+import { useToast } from '../contexts/ToastContext';
 
 interface SupplierLedgerProps {
   supplier: {
@@ -59,6 +60,7 @@ export default function SupplierLedger({
   onReloadSupplier,
 }: SupplierLedgerProps) {
   const { t, dir, locale } = useDirection();
+  const { handleError } = useToast();
   const [transactions, setTransactions] = useState<SupplierTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -81,6 +83,7 @@ export default function SupplierLedger({
       setTransactions(data);
     } catch (err) {
       console.error('Failed to load supplier ledger transactions:', err);
+      handleError(err, t('procurement.ledger_load_failed', 'تعذّر تحميل حركات كشف حساب المورد'));
     } finally {
       setLoading(false);
     }

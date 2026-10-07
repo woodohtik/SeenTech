@@ -14,6 +14,7 @@ import {
 import { CurrencySymbol } from './CurrencySymbol';
 import i18n from 'i18next';
 import { useDirection } from '../lib/direction';
+import { useToast } from '../contexts/ToastContext';
 
 // INK/BRAND/CTA/CTA2/MINT/TINT are this feature's own deliberate "premium
 // wallet card" palette (distinct from the app's operational theme) and are
@@ -23,6 +24,7 @@ const INK = '#0E2A42', BRAND = '#34BBED', CTA = '#0BA06B', CTA2 = '#0A8A5C';
 const SURF = 'var(--surface-muted)', GRAY = 'var(--content-muted)', TEXT = '#34404D', LINE = 'var(--border)', MINT = '#E7F7EE', TINT = '#EAF6FD';
 export default function Referral({ tenantId }: { tenantId: string }) {
   const { t, dir } = useDirection();
+  const { handleError } = useToast();
   const [link, setLink] = useState('');
   const [wallet, setWallet] = useState<Wallet>({ balance: 0, total_earned: 0 });
   const [refs, setRefs] = useState<ReferralRow[]>([]);
@@ -40,7 +42,10 @@ export default function Referral({ tenantId }: { tenantId: string }) {
         getWallet(tenantId), listReferrals(tenantId), listMyWithdrawals(tenantId),
       ]);
       setWallet(w); setRefs(r); setWithdrawals(wd);
-    } catch (e) { console.warn('[referral] load failed', e); }
+    } catch (e) {
+      console.warn('[referral] load failed', e);
+      handleError(e, t('referral.load_failed', 'تعذّر تحميل بيانات برنامج الإحالة'));
+    }
     finally { setLoading(false); }
   }
   useEffect(() => { if (tenantId) load(); /* eslint-disable-next-line */ }, [tenantId]);

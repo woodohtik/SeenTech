@@ -915,6 +915,7 @@
     "assistant_unavailable": "The smart assistant couldn't load",
     "back_home": "Back to Home",
     "daily_quota_exceeded": "You have exceeded today's usage quota. Please try again tomorrow.",
+    "duplicate_entry": "This data is already registered in the system (a duplicate value) — check that you're not entering it twice.",
     "error_id": "Error ID: {{id}}",
     "generic_retry": "Something went wrong. Please try again.",
     "generic_title": "Sorry, something went wrong",
@@ -928,13 +929,15 @@
     "permission_denied_check_account": "You do not have permission to perform this action. Please check your account permissions.",
     "permission_error_title": "Permission Error",
     "reload_system": "Reload System",
+    "rls_denied": "Couldn't complete this action — this data isn't available to your current account. Contact support if this keeps happening.",
     "server_connection_failed": "Could not connect to the server. Check your internet connection and try again.",
     "system_error": "System Error",
     "system_generic": "A system error occurred. Please try again later.",
     "unauthorized_action": "You do not have permission to perform this action.",
     "unexpected": "An unexpected error occurred. Please try again.",
     "unknown": "An unknown error occurred.",
-    "updating": "Updating..."
+    "updating": "Updating...",
+    "zatca_submission_failed": "Couldn't submit the invoice to ZATCA. Try again, or contact support if this keeps happening."
   },
   "inventory": {
     "action_bundle_fabric": "Bundle meters into bolts (meters ➜ bolts)",

@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase/client';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { ShieldAlert, Check, X, Shield } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { SupportAccessRequest } from '../types/supabase';
+import { useToast } from '../contexts/ToastContext';
 
 interface Props {
   tenantId: string;
@@ -12,8 +13,13 @@ interface Props {
 
 export default function SupportConsentModal({ tenantId }: Props) {
   const { t } = useTranslation();
+  const { handleError } = useToast();
   const [requests, setRequests] = useState<SupportAccessRequest[]>([]);
   const { dbUser } = useAuth();
+  // fetchPendingRequests polls every 3s -- without this, a sustained outage
+  // would toast the same failure every 3 seconds forever. One toast per
+  // mount is enough to inform the admin without spamming them.
+  const hasWarnedFetchFailureRef = useRef(false);
   const userRole = dbUser?.role;
   
   // This is for tenant owners/admins only
@@ -106,6 +112,10 @@ export default function SupportConsentModal({ tenantId }: Props) {
         }
       } catch (fallbackErr) {
         console.error("Fallback failed as well:", fallbackErr);
+        if (!hasWarnedFetchFailureRef.current) {
+          hasWarnedFetchFailureRef.current = true;
+          handleError(fallbackErr, t('support_consent.fetch_requests_failed', 'تعذّر تحميل طلبات صلاحية الدعم'));
+        }
       }
     }
   };
@@ -158,6 +168,7 @@ export default function SupportConsentModal({ tenantId }: Props) {
         }
       } catch (fallbackErr) {
         console.error("Fallback response failed:", fallbackErr);
+        handleError(fallbackErr, t('support_consent.respond_failed', 'تعذّر تسجيل ردّك على طلب صلاحية الدعم — حاول مرة أخرى'));
       }
     }
   };

@@ -12,6 +12,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { generateSecurePin, hashPin } from '../services/staffService';
 import { Listbox, Transition } from '@headlessui/react';
 import { useDirection } from '../lib/direction';
+import { getFriendlyErrorMessage } from '../lib/firebase';
 
 const IconInput = forwardRef<HTMLInputElement, any>(({ icon: Icon, error, type = 'text', rightElement, dir, className, ...props }, ref) => {
   return (
@@ -335,7 +336,7 @@ export default function AddEmployeeModal({
 
     } catch (error: any) {
       console.error('Error adding employee:', JSON.stringify(error));
-      setErrorMsg(error.message || t('errors.unexpected'));
+      setErrorMsg(getFriendlyErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }

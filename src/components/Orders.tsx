@@ -946,7 +946,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         resetCust();
       } catch (error: any) {
         console.error(error);
-        toastError(error?.message || t('orders.customer_add_failed'));
+        toastError(error ? getFriendlyErrorMessage(error) : t('orders.customer_add_failed'));
       }
     };
 

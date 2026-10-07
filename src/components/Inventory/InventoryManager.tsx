@@ -64,6 +64,7 @@ import ProductImageUploader from "./ProductImageUploader";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useStaff } from "../../contexts/StaffContext";
 import { useTranslation } from "react-i18next";
+import { getFriendlyErrorMessage } from "../../lib/firebase";
 import { useDirection } from "../../lib/direction";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../../lib/utils";
@@ -407,7 +408,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
       }
       router.refresh();
     } catch (err: any) {
-      toastError(err.message || "Failed to delete item(s)");
+      toastError(getFriendlyErrorMessage(err));
     }
   };
 

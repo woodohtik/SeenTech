@@ -21,6 +21,7 @@ import { useDirection } from '../lib/direction';
 import { supabase } from '../lib/supabase/client';
 import { useStaff } from '../contexts/StaffContext';
 import { PriceDisplay } from './PriceDisplay';
+import { useToast } from '../contexts/ToastContext';
 
 interface CashierDashboardProps {
   tenantId: string;
@@ -50,6 +51,7 @@ interface OrderItem {
 
 export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) => {
   const { t, dir, locale } = useDirection();
+  const { handleError } = useToast();
   const navigate = useNavigate();
   const { currentStaff } = useStaff();
   const [loading, setLoading] = useState(true);
@@ -156,6 +158,9 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
         }
       } catch (err) {
         console.error('Error loading cashier dashboard:', err);
+        if (isMounted) {
+          handleError(err, t('dashboard.cashier_load_failed', 'تعذّر تحميل بيانات لوحة الكاشير — الأرقام المعروضة قد تكون غير محدَّثة'));
+        }
       } finally {
         if (isMounted) setLoading(false);
       }

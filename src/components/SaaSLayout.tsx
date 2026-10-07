@@ -33,6 +33,7 @@ import { logSaaSSecurityEvent } from '../services/saasSecurityService';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase/client';
 import { useTranslation } from 'react-i18next';
+import { getFriendlyErrorMessage } from '../lib/firebase';
 import UserPreferencesMenu from './UserPreferencesMenu';
 
 import { IconInput } from './ui/IconInput';
@@ -196,7 +197,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
       await logSaaSSecurityEvent('saas_password_changed', 'User successfully replaced temporary password');
     } catch (err: any) {
       console.error(err);
-      let errorMsg = err.message || t('saas.error_updating_password');
+      let errorMsg = getFriendlyErrorMessage(err);
       if (err.message === 'Invalid login credentials') {
         errorMsg = t('saas.wrong_current_password');
       }

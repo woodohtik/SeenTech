@@ -705,7 +705,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       setToast({ message: t('settings_page.staff.delete_success'), type: 'success' });
     } catch (error: any) {
       console.error('Error deleting staff:', error);
-      setToast({ message: t('settings_page.staff.delete_failed', { message: error?.message || t('errors.unknown') }), type: 'error' });
+      setToast({ message: t('settings_page.staff.delete_failed', { message: getFriendlyErrorMessage(error) }), type: 'error' });
     }
   };
 
@@ -719,7 +719,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       setToast({ message: t('settings_page.staff.status_update_success'), type: 'success' });
     } catch (error: any) {
       console.error('Error toggling staff status:', error);
-      setToast({ message: t('settings_page.staff.status_update_failed', { message: error?.message || t('errors.unknown') }), type: 'error' });
+      setToast({ message: t('settings_page.staff.status_update_failed', { message: getFriendlyErrorMessage(error) }), type: 'error' });
     }
   };
 
@@ -779,7 +779,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       setPinDisableTarget(null);
     } catch (error: any) {
       console.error('Error disabling staff pin:', error);
-      setToast({ message: t('settings_page.staff.pin_update_failed', { message: error?.message || t('errors.unknown') }), type: 'error' });
+      setToast({ message: t('settings_page.staff.pin_update_failed', { message: getFriendlyErrorMessage(error) }), type: 'error' });
     } finally {
       setPinDisableSubmitting(false);
     }
@@ -836,7 +836,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       setPinModalTarget(null);
     } catch (error: any) {
       console.error('Error activating staff pin:', error);
-      setPinModalError(error?.message || t('errors.unknown'));
+      setPinModalError(getFriendlyErrorMessage(error));
     } finally {
       setPinModalSubmitting(false);
     }
@@ -1003,7 +1003,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
       setRoleToDelete(null);
     } catch (err: any) {
       console.warn("Error deleting role:", err);
-      setToast({ message: err?.message || t('settings_page.staff.permissions.delete_failed'), type: 'error' });
+      setToast({ message: err ? getFriendlyErrorMessage(err) : t('settings_page.staff.permissions.delete_failed'), type: 'error' });
     } finally {
       setIsSavingPermissions(false);
       setTimeout(() => setToast(null), 3000);

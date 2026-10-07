@@ -20,6 +20,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { seedGlobalRoles, DEFAULT_ROLES, isSaaSRole, isMerchantRole } from '../services/permissionService';
 import { SYSTEM_PERMISSIONS } from '../constants/permissions';
 import { useTranslation } from 'react-i18next';
+import { getFriendlyErrorMessage } from '../lib/firebase';
 import { useConfirm } from '../contexts/ConfirmContext';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -190,7 +191,7 @@ export default function GlobalRoleManager() {
       await fetchRoles();
     } catch (error: any) {
       console.warn('Error saving role:', error);
-      setToast({ message: t('saas.global_roles.save_failed', { details: error.message || t('orders.unknown_error') }), type: 'error' });
+      setToast({ message: t('saas.global_roles.save_failed', { details: getFriendlyErrorMessage(error) }), type: 'error' });
     } finally {
       setIsSaving(false);
     }
@@ -219,7 +220,7 @@ export default function GlobalRoleManager() {
       setRoleToDelete(null);
     } catch (error: any) {
       console.warn("Error deleting role:", error);
-      setToast({ message: t('saas.global_roles.delete_failed', { details: error.message || t('orders.unknown_error') }), type: "error" });
+      setToast({ message: t('saas.global_roles.delete_failed', { details: getFriendlyErrorMessage(error) }), type: "error" });
     } finally {
       setIsSaving(false);
     }

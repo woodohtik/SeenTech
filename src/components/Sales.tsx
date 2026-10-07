@@ -14,6 +14,7 @@ import { supabase } from '../lib/supabase/client';
 import { Shift } from '../types';
 import { Monitor, FileText, RotateCcw, DollarSign, History, Clock, Wallet, X, Coins, TrendingUp, Plus, TrendingDown } from 'lucide-react';
 import { useStaff } from '../contexts/StaffContext';
+import { useToast } from '../contexts/ToastContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
@@ -25,6 +26,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
   const { currentStaff } = useStaff();
+  const { handleError } = useToast();
   const { hasPermission } = usePermissions(currentStaff);
   const canManageShifts = hasPermission('shifts.manage');
 
@@ -132,6 +134,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
       });
     } catch (err) {
       console.error('Error calculating cash drawer balance in Sales module:', err);
+      handleError(err, t('sales.cash_drawer_balance_failed', 'تعذّر حساب رصيد الدرج النقدي'));
     }
   };
 

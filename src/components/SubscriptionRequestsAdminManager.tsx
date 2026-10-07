@@ -25,6 +25,7 @@ import {
   SubscriptionRequest 
 } from '../services/subscriptionRequestService';
 import { useDirection } from '../lib/direction';
+import { getFriendlyErrorMessage } from '../lib/firebase';
 import { useConfirm } from '../contexts/ConfirmContext';
 
 export default function SubscriptionRequestsAdminManager() {
@@ -78,7 +79,7 @@ export default function SubscriptionRequestsAdminManager() {
       showToast(t('subscription.requests.approve_success', { plan: req.plan_name }));
       await loadRequests();
     } catch (err: any) {
-      showToast(t('subscription.requests.approve_error', { error: err.message || err }));
+      showToast(t('subscription.requests.approve_error', { error: getFriendlyErrorMessage(err) }));
     } finally {
       setProcessingId(null);
     }
@@ -94,7 +95,7 @@ export default function SubscriptionRequestsAdminManager() {
       setRejectionReason('');
       await loadRequests();
     } catch (err: any) {
-      showToast(t('subscription.requests.reject_error', { error: err.message || err }));
+      showToast(t('subscription.requests.reject_error', { error: getFriendlyErrorMessage(err) }));
     } finally {
       setProcessingId(null);
     }

@@ -236,7 +236,7 @@ app.get("/api/public/invoices/:id", async (req, res) => {
     });
   } catch (err) {
     console.error("Error fetching invoice:", err);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'تعذّر تحميل الفاتورة حالياً، حاول بعد قليل أو تواصل مع المتجر' });
   }
 });
 
@@ -476,7 +476,7 @@ app.post("/api/public/order-tracking/:token/subscribe", asyncHandler(async (req,
   );
   if (error) {
     console.error('[order-tracking/subscribe]', error);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    return res.status(500).json({ error: 'تعذّر تفعيل إشعارات تتبّع الطلب حالياً، حاول مرة أخرى لاحقاً' });
   }
 
   res.json({ ok: true });
@@ -589,7 +589,7 @@ app.post("/api/staff/push-subscribe", authenticate, asyncHandler(async (req: any
   );
   if (error) {
     console.error('[staff/push-subscribe]', error);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    return res.status(500).json({ error: 'تعذّر تفعيل إشعارات الموظف حالياً، حاول مرة أخرى لاحقاً' });
   }
 
   res.json({ ok: true });

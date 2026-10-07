@@ -5,6 +5,7 @@ import { uploadImageToSupabase } from '../../lib/supabase/storage';
 import { isAllowedImageFile } from '../../lib/imageValidation';
 import { cn } from '../../lib/utils';
 import { useTranslation } from 'react-i18next';
+import { getFriendlyErrorMessage } from '../../lib/firebase';
 
 interface ProductImageUploaderProps {
   tenantId: string;
@@ -91,7 +92,7 @@ export default function ProductImageUploader({
       setIsUploading(false);
     } catch (err: any) {
       console.error('Upload error:', err);
-      setError(err.message || t('inventory.upload_failed'));
+      setError(err ? getFriendlyErrorMessage(err) : t('inventory.upload_failed'));
       setIsUploading(false);
     }
   }, [tenantId, onUploadComplete, convertToBase64, t]);

@@ -8,6 +8,7 @@ import { adjustStock } from '../services/inventoryService';
 import { SmartSelect } from './ui/SmartSelect';
 import { PriceDisplay } from './PriceDisplay';
 import { useTranslation } from 'react-i18next';
+import { getFriendlyErrorMessage } from '../lib/firebase';
 import { useDirection } from '../lib/direction';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../contexts/ConfirmContext';
@@ -205,7 +206,7 @@ export default function PurchaseOrders({
         onRefresh?.();
       }
     } catch (error: any) {
-      toastError(error.message || t('procurement.failed_to_create_po', 'فشل بناء السند'));
+      toastError(error ? getFriendlyErrorMessage(error) : t('procurement.failed_to_create_po', 'فشل بناء السند'));
     } finally {
       setIsSubmitting(false);
     }
@@ -351,7 +352,7 @@ export default function PurchaseOrders({
       }
     } catch (error: any) {
       console.error('Error in handleConfirmOrder:', error);
-      toastError(error.message || t('procurement.confirm_doc_failed'));
+      toastError(error ? getFriendlyErrorMessage(error) : t('procurement.confirm_doc_failed'));
     } finally {
       setIsConfirming(false);
     }

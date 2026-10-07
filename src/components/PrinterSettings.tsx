@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { isRtlLang } from '../lib/direction';
+import { getFriendlyErrorMessage } from '../lib/firebase';
 import { SmartSelect } from './ui/SmartSelect';
 
 import {
@@ -266,7 +267,7 @@ export default function PrinterSettings() {
         }
       }
     } catch (e: any) {
-      const msg = e?.message || t('settings_page.printer.station_status_failed');
+      const msg = e ? getFriendlyErrorMessage(e) : t('settings_page.printer.station_status_failed');
       setRelayError(msg);
       setStation(null);
       if (announce) setFeedback({ kind: 'error', text: msg });
@@ -293,7 +294,7 @@ export default function PrinterSettings() {
         text: t('settings_page.printer.pair_success', { hostname: s.hostname }),
       });
     } catch (e: any) {
-      const msg = e?.message || t('settings_page.printer.pair_failed');
+      const msg = e ? getFriendlyErrorMessage(e) : t('settings_page.printer.pair_failed');
       setRelayError(msg);
       setFeedback({ kind: 'error', text: msg });
     } finally {
@@ -367,7 +368,7 @@ export default function PrinterSettings() {
         }
       } catch (e: any) {
         setAgentPrinters([]);
-        setFeedback({ kind: 'error', text: e?.message || t('settings_page.printer.agent_read_failed') });
+        setFeedback({ kind: 'error', text: e ? getFriendlyErrorMessage(e) : t('settings_page.printer.agent_read_failed') });
       }
     } finally {
       setAgentBusy(false);
@@ -509,7 +510,7 @@ export default function PrinterSettings() {
           text: t('settings_page.printer.permissions_policy_blocked'),
         });
       } else {
-        setFeedback({ kind: 'error', text: e?.message || t('settings_page.printer.link_device_failed') });
+        setFeedback({ kind: 'error', text: e ? getFriendlyErrorMessage(e) : t('settings_page.printer.link_device_failed') });
       }
     } finally {
       setScanning(null);
@@ -816,7 +817,7 @@ export default function PrinterSettings() {
       console.error('Test print failed:', e);
       setFeedback({
         kind: 'error',
-        text: t('settings_page.printer.test_failed', { message: e?.message || t('orders.unknown_error') }),
+        text: t('settings_page.printer.test_failed', { message: e ? getFriendlyErrorMessage(e) : t('orders.unknown_error') }),
       });
     } finally {
       setBusyId(null);
