@@ -1146,21 +1146,21 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
     { 
       title: t('dashboard.grid.tailoring', 'خياطة وتفصيل'),
       detail: t('dashboard.grid.tailoring_desc', '{{count}} طلب قيد التنفيذ', { count: activeOrdersCount }),
-      icon: 'scissors' as const,
+      icon: 'seen-sewing-machine' as const,
       color: 'bg-brand',
-      onClick: () => navigate('/orders?filter=tailoring') 
+      onClick: () => navigate('/orders?filter=tailoring')
     },
     { 
       title: t('dashboard.grid.measurements', 'مواعيد القياس'), 
       detail: t('dashboard.grid.measurements_desc', '{{count}} مواعيد اليوم', { count: measurementsCount }),
-      icon: 'calendar' as const,
+      icon: 'seen-tape-measure' as const,
       color: 'bg-info',
       onClick: () => navigate('/orders?filter=measurements')
     },
     { 
       title: t('dashboard.grid.inventory', 'إدارة المخزون'), 
       detail: t('dashboard.grid.inventory_desc', '{{count}} مواد ناقصة', { count: stats.lowStock }),
-      icon: 'layers' as const,
+      icon: 'seen-fabric-bolt' as const,
       color: 'bg-warning',
       onClick: () => navigate('/inventory')
     },
@@ -1172,7 +1172,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
           <PriceDisplay amount={stats.revenue} />
         </span>
       ) : t('dashboard.grid.finance_desc_empty', 'مراجعة أداء الشهر'),
-      icon: 'bar-chart-3' as const,
+      icon: 'chart-bar' as const,
       color: 'bg-success',
       onClick: () => navigate('/reports')
     }
