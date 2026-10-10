@@ -3596,7 +3596,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
                     border: "none",
                     boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
                   }}
-                  cursor={{ fill: "rgba(28, 143, 255, 0.05)" }}
+                  cursor={{ fill: "rgba(15, 110, 150, 0.05)" }}
                 />
                 <Bar
                   dataKey="stock"

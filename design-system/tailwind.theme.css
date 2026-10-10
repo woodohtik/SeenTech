@@ -1,0 +1,56 @@
+/**
+ * سين — نظام التصميم v5.1 — tailwind.theme.css
+ * -----------------------------------------------------------------------
+ * أعاد بناء هذا الملف جلسة Cowork بتاريخ 2026-10-10 — لم يكن موجوداً في
+ * الحزمة المرفوعة. مبني على نفس نمط @theme الموجود فعلياً في
+ * src/index.css الحالي (Tailwind v4، إعداد عبر CSS لا ملف تهيئة JS).
+ *
+ * طريقة الدمج المقترحة: استورد tokens.css ثم هذا الملف في src/index.css
+ * بعد `@import "tailwindcss"` وقبل `@theme` الحالي، أو استبدل كتلة
+ * `@theme` ومتغيرات `:root` الحالية بهذه مباشرة إذا كان القرار تبني
+ * نظام التصميم الجديد بالكامل بدل الألوان المؤقتة الحالية
+ * (#1C8FFF الأزرق الحالي، #22C55E الأخضر الحالي — لا علاقة لهما بـv5.1).
+ */
+
+@import "./tokens.css";
+
+@theme {
+  /* يستبدل --font-sans الحالي (Tajawal فقط لكل شيء) بفصل صريح بين
+     العناوين (Tajawal) والمتن (IBM Plex Sans Arabic) حسب DESIGN.md §2 */
+  --font-sans: var(--seen-font-body);
+  --font-heading: var(--seen-font-heading);
+
+  --color-seen-blue: var(--seen-blue-600);
+  --color-seen-blue-press: var(--seen-blue-700);
+  --color-seen-ink: var(--seen-ink-900);
+  --color-seen-ink-card: var(--seen-ink-800);
+  --color-seen-ink-deep: var(--seen-ink-950);
+  --color-seen-sky: var(--seen-sky);
+  --color-seen-paper: var(--seen-neutral-50);
+  --color-seen-surface: var(--seen-surface);
+  --color-seen-border: var(--seen-neutral-200);
+  --color-seen-border-strong: var(--seen-neutral-500);
+  --color-seen-muted: var(--seen-neutral-600);
+  --color-seen-wash: var(--seen-wash);
+
+  --color-seen-success: var(--seen-success-fg);
+  --color-seen-success-bg: var(--seen-success-bg);
+  --color-seen-warning: var(--seen-warning-fg);
+  --color-seen-warning-bg: var(--seen-warning-bg);
+  --color-seen-danger: var(--seen-danger-fg);
+  --color-seen-danger-bg: var(--seen-danger-bg);
+
+  --radius-seen-xs: var(--seen-radius-xs);
+  --radius-seen: var(--seen-radius);
+  --radius-seen-lg: var(--seen-radius-lg);
+  --radius-seen-xl: var(--seen-radius-xl);
+  --radius-seen-pill: var(--seen-radius-pill);
+  --radius-seen-sm: var(--seen-radius-sm);
+
+  --shadow-seen-float: var(--seen-shadow-float);
+  --shadow-seen-modal: var(--seen-shadow-modal);
+}
+
+/* أمثلة استخدام بعد الدمج (فئات Tailwind تُولَّد تلقائياً من @theme أعلاه):
+   bg-seen-blue, text-seen-ink, border-seen-border, rounded-seen-lg,
+   shadow-seen-float, font-heading (للعناوين)، font-sans (للمتن، أصبح IBM Plex) */

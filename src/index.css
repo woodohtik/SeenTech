@@ -2,9 +2,56 @@
 @import "leaflet/dist/leaflet.css";
 @import "driver.js/dist/driver.css";
 @import "./publicTrackingTheme.css";
+@import "../design-system/tokens.css";
+
+/* سين v5.1 (seen-design-system-v5.1-task.md) — الخطوط مستضافة محلياً
+   (public/fonts/) بدل Google Fonts CDN، مهم لشاشة كاشير قد تعمل أوفلاين
+   جزئياً. Tajawal فقط للعناوين والأرقام الكبيرة (700/800/900) — المتن
+   بالكامل أصبح IBM Plex Sans Arabic (400/500/600) بدل Tajawal للكل كما
+   كان سابقاً. */
+@font-face {
+  font-family: "Tajawal";
+  src: url("/fonts/Tajawal-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Tajawal";
+  src: url("/fonts/Tajawal-ExtraBold.ttf") format("truetype");
+  font-weight: 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Tajawal";
+  src: url("/fonts/Tajawal-Black.ttf") format("truetype");
+  font-weight: 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Sans Arabic";
+  src: url("/fonts/IBMPlexSansArabic-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Sans Arabic";
+  src: url("/fonts/IBMPlexSansArabic-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Sans Arabic";
+  src: url("/fonts/IBMPlexSansArabic-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-display: swap;
+}
 
 @theme {
-  --font-sans: "Tajawal", ui-sans-serif, system-ui, sans-serif;
+  /* سين v5.1 §2: IBM Plex Sans Arabic لكل ما يُقرأ (المتن/الواجهة/الأزرار/
+     الحقول/الجداول) — بدل Tajawal للكل كما كان. Tajawal بقي فقط للعناوين
+     والأرقام الكبيرة، عبر --font-heading + محدِّد h1-h6 أدناه. */
+  --font-sans: "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Tajawal", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Tajawal", serif;
   --font-mono: "JetBrains Mono", monospace;
 
@@ -33,22 +80,40 @@
 }
 
 :root {
-  --primary: #1C8FFF; /* Primary Blue */
-  --secondary: #F5F7FA; /* Light Secondary background/button */
-  --accent: #22C55E; /* Bright Green Accent */
-  --dark: #6B7280; /* Gray Dark Text */
-  --light: #FFFFFF; /* White Background */
-  --brand: var(--primary); /* Sync brand with primary */
-  --surface: #FFFFFF;
+  /* سين v5.1 (seen-design-system-v5.1-task.md): القيم أدناه استُبدلت
+     بقيم DESIGN.md الحرفية (design-system/tokens.css) -- أسماء المتغيرات
+     الدلالية نفسها (--primary، --surface، --content...) بقيت كما هي عمداً
+     لأن 85-96 ملف مكوّن يستخدمونها فعلاً عبر فئات Tailwind (bg-brand،
+     text-content، border-border...)، فهذا التبديل وحده يكفي ليُطبَّق
+     النظام الجديد على التطبيق كاملاً فوراً، بلا أي تعديل في أي مكوّن.
+     --accent تحديداً أصبحت تساوي --primary: v5.1 يمنع صراحةً لون تمييز
+     ثانٍ منفصل عن الأزرق الواحد (DESIGN.md §10)، وكانت غير مستخدَمة في
+     أي مكوّن فعلياً أصلاً (0 نتيجة بحث). */
+  --primary: #0F6E96;    /* أزرق سين (seen-blue-600) -- كان #1C8FFF */
+  --secondary: #EBEDEF;  /* الغسلة (seen-wash) -- كان #F5F7FA، يغذّي --surface-muted (534+ استخدام فعلي) */
+  --accent: #0F6E96;     /* v5.1 يمنع لون تمييز ثانٍ -- كان #22C55E، غير مستخدَم في أي مكوّن */
+  --dark: #0E2A42;       /* حبر (seen-ink-900) -- كان #6B7280، يغذّي --content */
+  --light: #FFFFFF;      /* أبيض (seen-surface) -- بلا تغيير */
+  --brand: var(--primary);
+  --surface: #FFFFFF;    /* أبيض (seen-surface) -- بلا تغيير */
   --surface-muted: var(--secondary);
   --content: var(--dark);
-  --content-muted: #555555;
-  --border: #E0E0E0;
-  --success: #22C55E;
-  --danger: #EF4444;
-  --warning: #F59E0B;
+  --content-muted: #686E74; /* نص ثانوي (seen-neutral-600) -- كان #555555 */
+  --border: #D6D9DD;     /* خط رفيع (seen-neutral-200) -- كان #E0E0E0 */
+  --success: #018256;    /* نجاح (seen-success-fg) -- كان #22C55E */
+  --danger: #CE0500;     /* خطأ (seen-danger-fg) -- كان #EF4444 */
+  --warning: #744E00;    /* تحذير (seen-warning-fg) -- كان #F59E0B. ملاحظة: هذا لون نص على خلفية فاتحة بحسب DESIGN.md، لا تعبئة صلبة -- استخدامات bg-warning الصلبة (21 موضعاً، بلا شفافية) ستبدو أغمق/أكثر كتماناً من العنبري السابق، راجعها بصرياً شاشة بشاشة. */
   --info: var(--primary);
   --radius-card: 1.5rem;
+}
+
+/* سين v5.1 §2: العناوين الحقيقية (h1-h6) تستخدم Tajawal تلقائياً في كل
+   الموقع بلا أي تعديل لكل مكوّن على حدة (414 استخدام فعلي عبر 87 ملفاً) --
+   أرقام الـKPI/الإجماليات الكبيرة التي لا تستخدم وسم عنوان حقيقي (غالباً
+   <span>/<div> بفئة font-black) تحتاج font-heading يدوياً، جزء من
+   المراجعة شاشة بشاشة (seen-design-system-v5.1-task.md بند 3). */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
 }
 
 @utility scrollbar-hide {
@@ -158,9 +223,9 @@ select:hover {
 }
 
 select:focus {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%231C8FFF' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%230F6E96' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   outline: none;
-  box-shadow: 0 0 0 4px rgba(28, 143, 255, 0.15), 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 0 0 4px rgba(15, 110, 150, 0.15), 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
   border-color: var(--brand) !important;
   background-color: var(--surface);
   transform: translateY(-1px);
@@ -660,7 +725,7 @@ html, body {
 .driver-popover.seen-tour-popover .driver-popover-progress-text {
   font-size: 0.78rem;
   font-weight: 800;
-  color: var(--brand, #1c8fff);
+  color: var(--brand, #0f6e96);
   background-color: var(--surface-muted, #f8fafc);
   border: 1px solid var(--border, #e2e8f0);
   padding: 0.25rem 0.65rem;
@@ -695,10 +760,10 @@ html, body {
 }
 
 .driver-popover.seen-tour-popover .driver-popover-next-btn {
-  background-color: var(--brand, #1c8fff) !important;
+  background-color: var(--brand, #0f6e96) !important;
   color: #ffffff !important;
   text-shadow: none !important;
-  box-shadow: 0 4px 12px rgba(28, 143, 255, 0.25) !important;
+  box-shadow: 0 4px 12px rgba(15, 110, 150, 0.25) !important;
 }
 
 .driver-popover.seen-tour-popover .driver-popover-next-btn:hover {
@@ -754,7 +819,7 @@ html, body {
 .driver-stage {
   box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.25) !important;
   border-radius: 12px !important;
-  border: 2px solid var(--brand, #1c8fff) !important;
+  border: 2px solid var(--brand, #0f6e96) !important;
 }
 
 /* ---------------------------------------------------------------------------

@@ -12,12 +12,13 @@
 :root{
   /* --brand/--cta used to be two different, unrelated colors (a lighter
      landing-page-only blue #34BBED, and a green #0BA06B for the primary
-     CTA) neither of which matched the real app's --primary (#1C8FFF,
-     src/index.css:36) -- three competing "primary" colors on one page.
-     Both now resolve to the app's actual primary blue
-     (seen-design-professionalization-task.md Phase 1 #1). */
-  --ink:#0E2A42; --ink-2:#16395a; --brand:#1C8FFF; --brand-d:#0A6FD1; --sky-soft:#e7f7fe;
-  --cta:#1C8FFF; --cta-press:#0A6FD1;
+     CTA) neither of which matched the real app's --primary -- three
+     competing "primary" colors on one page. Both now resolve to the
+     app's actual primary blue (seen-design-professionalization-task.md
+     Phase 1 #1), updated again to v5.1's #0F6E96
+     (seen-design-system-v5.1-task.md). */
+  --ink:#0E2A42; --ink-2:#16395a; --brand:#0F6E96; --brand-d:#005E83; --sky-soft:#e7f7fe;
+  --cta:#0F6E96; --cta-press:#005E83;
   --surface:#fff; --surface-2:#f5f8fb; --gray:#5b6b7b; --line:#e3eaf1; --line-2:#cfdae6;
   --r:16px; --r-lg:24px; --shadow:0 10px 30px rgba(14,42,66,.10); --shadow-lg:0 24px 60px rgba(14,42,66,.16);
   --ease:cubic-bezier(.22,.61,.36,1); --maxw:1180px; --fs-h2:clamp(1.7rem,4vw,2.7rem);
@@ -46,7 +47,7 @@ a{color:inherit;text-decoration:none} img{max-width:100%;display:block}
 .sec-head h2{font-size:var(--fs-h2);margin-bottom:14px}.sec-head p{font-size:clamp(16px,2vw,18.5px);color:var(--gray)}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;font-family:'Tajawal';font-weight:700;font-size:1.05rem;padding:15px 28px;border-radius:999px;border:0;cursor:pointer;transition:transform .25s var(--ease),box-shadow .25s var(--ease),background .2s}
-.btn-cta{background:var(--cta);color:#fff;box-shadow:0 10px 24px rgba(28,143,255,.34)}
+.btn-cta{background:var(--cta);color:#fff;box-shadow:0 10px 24px rgba(15,110,150,.34)}
 .btn-cta:hover{background:var(--cta-press);transform:translateY(-2px);box-shadow:0 16px 32px rgba(10,111,209,.42)}
 .btn-ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
 .btn-ghost.on-dark{color:#fff;border-color:rgba(255,255,255,.45)}
@@ -136,7 +137,7 @@ header{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.88);backdro
 /* STEPS — مرتبة تحت بعض */
 .steps{display:flex;flex-direction:column;gap:18px;max-width:760px;margin:0 auto}
 .step{display:flex;gap:18px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px 24px}
-.step .sn{width:54px;height:54px;flex:none;border-radius:50%;background:#fff;border:2px solid var(--brand);color:var(--ink);font-family:'Tajawal';font-weight:800;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(28,143,255,.25)}
+.step .sn{width:54px;height:54px;flex:none;border-radius:50%;background:#fff;border:2px solid var(--brand);color:var(--ink);font-family:'Tajawal';font-weight:800;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(15,110,150,.25)}
 .step h3{font-size:19px;font-weight:700;margin-bottom:6px}.step p{color:var(--gray);font-size:15px}
 
 .trust{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:8px}
@@ -451,9 +452,9 @@ footer{background:#08202f;color:#9fc2da;padding:46px 0 30px}
                 <div style="flex:1;height:58px;transform-origin:bottom;background:#BFE0FF;border-radius:6px 6px 0 0;animation:seenBar 3.2s ease-in-out infinite"></div>
                 <div style="flex:1;height:82px;transform-origin:bottom;background:#BFE0FF;border-radius:6px 6px 0 0;animation:seenBar 3.6s ease-in-out infinite;animation-delay:.2s"></div>
                 <div style="flex:1;height:66px;transform-origin:bottom;background:#BFE0FF;border-radius:6px 6px 0 0;animation:seenBar 3s ease-in-out infinite;animation-delay:.4s"></div>
-                <div style="flex:1;height:100px;transform-origin:bottom;background:#1C8FFF;border-radius:6px 6px 0 0;animation:seenBar 3.4s ease-in-out infinite;animation-delay:.1s"></div>
+                <div style="flex:1;height:100px;transform-origin:bottom;background:#0F6E96;border-radius:6px 6px 0 0;animation:seenBar 3.4s ease-in-out infinite;animation-delay:.1s"></div>
                 <div style="flex:1;height:74px;transform-origin:bottom;background:#BFE0FF;border-radius:6px 6px 0 0;animation:seenBar 3.8s ease-in-out infinite;animation-delay:.5s"></div>
-                <div style="flex:1;height:112px;transform-origin:bottom;background:#1C8FFF;border-radius:6px 6px 0 0;animation:seenBar 3.1s ease-in-out infinite;animation-delay:.3s"></div>
+                <div style="flex:1;height:112px;transform-origin:bottom;background:#0F6E96;border-radius:6px 6px 0 0;animation:seenBar 3.1s ease-in-out infinite;animation-delay:.3s"></div>
                 <div style="flex:1;height:92px;transform-origin:bottom;background:#BFE0FF;border-radius:6px 6px 0 0;animation:seenBar 3.5s ease-in-out infinite;animation-delay:.15s"></div>
               </div>
             </div>

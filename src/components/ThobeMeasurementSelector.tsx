@@ -62,7 +62,7 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
     onChange({ ...values, [part]: numValue });
   };
 
-  const highlightColor = "#1C8FFF";
+  const highlightColor = "#0F6E96";
   const dimColor = "rgba(0, 0, 0, 0.1)";
 
   return (

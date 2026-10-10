@@ -184,7 +184,7 @@ export default function LockScreen({ currentStaff, onUnlock, tenantId, onUnlockW
       >
         {/* Status Indicator */}
         <div className="relative">
-          <div className="w-20 h-20 bg-brand/10 border border-brand/20 rounded-[2rem] flex items-center justify-center text-brand relative shadow-[0_0_50px_-12px_rgba(28,143,255,0.3)]">
+          <div className="w-20 h-20 bg-brand/10 border border-brand/20 rounded-[2rem] flex items-center justify-center text-brand relative shadow-[0_0_50px_-12px_rgba(15,110,150,0.3)]">
             {isVerifying ? (
               <Loader2 className="w-8 h-8 animate-spin" />
             ) : (
@@ -214,11 +214,11 @@ export default function LockScreen({ currentStaff, onUnlock, tenantId, onUnlockW
               key={index}
               animate={{
                 scale: pin.length >= index ? [1, 1.2, 1] : 1,
-                backgroundColor: pin.length >= index ? '#1C8FFF' : 'rgba(255, 255, 255, 0.1)',
-                borderColor: pin.length >= index ? '#1C8FFF' : 'rgba(255, 255, 255, 0.2)'
+                backgroundColor: pin.length >= index ? '#0F6E96' : 'rgba(255, 255, 255, 0.1)',
+                borderColor: pin.length >= index ? '#0F6E96' : 'rgba(255, 255, 255, 0.2)'
               }}
               className="w-4 h-4 rounded-full border transition-all duration-200 shadow-sm"
-              style={{ boxShadow: pin.length >= index ? '0 0 12px #1C8FFF' : 'none' }}
+              style={{ boxShadow: pin.length >= index ? '0 0 12px #0F6E96' : 'none' }}
             />
           ))}
         </div>

@@ -1094,7 +1094,7 @@ export default function AdminTailors() {
                             <div className="flex items-center gap-3">
                               <div className="flex-1 bg-surface-muted h-2.5 rounded-full overflow-hidden border border-border max-w-[120px]">
                                 <div 
-                                  className={cn("h-full rounded-full transition-all duration-700", sub.daysLeft < 7 ? "bg-danger shadow-[0_0_8px_rgba(239,68,68,0.4)]" : "bg-brand shadow-[0_0_8px_rgba(var(--brand-rgb),0.4)]")}
+                                  className={cn("h-full rounded-full transition-all duration-700", sub.daysLeft < 7 ? "bg-danger shadow-[0_0_8px_rgba(206,5,0,0.4)]" : "bg-brand shadow-[0_0_8px_rgba(var(--brand-rgb),0.4)]")}
                                   style={{ width: `${sub.progress}%` }}
                                 />
                               </div>
