@@ -42,12 +42,43 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
   const { t } = useTranslation();
   const { dir, isRtl } = useDirection();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const statusTextRef = useRef<string | null>(null);
   const pendingTourTopicRef = useRef<string | null>(null);
 
   const launchGuidedTour = useCallback((topic: string) => {
     setIsOpen(false);
     window.setTimeout(() => startTargetedTour(topic), 300);
+  }, []);
+
+  // اهتزاز خفيف (جوال) + نغمة قصيرة مولَّدة عبر Web Audio (لا ملف صوتي
+  // جديد) عند اكتمال رد المساعد فعلياً -- لا تُستدعى عند الأخطاء أو رسائل
+  // البانر (403/429/503)، لأنها تُرجِع قبل الوصول لنقطة الاستدعاء.
+  const notifyNewReply = useCallback(() => {
+    try {
+      navigator.vibrate?.(40);
+    } catch {
+      // اهتزاز غير مدعوم (سطح المكتب غالباً) -- تجاهل
+    }
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.15);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.16);
+      osc.onended = () => ctx.close();
+    } catch {
+      // سياسات تشغيل الصوت التلقائي أو AudioContext غير مدعوم -- تجاهل
+    }
   }, []);
 
   useEffect(() => {
@@ -71,6 +102,13 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isSending]);
+
+  // تعطيل الحقل (disabled={isSending} أدناه) يزيل تركيز المتصفح منه قسرياً
+  // فوراً إن كان هو العنصر الذي يحمل التركيز -- لا يُعاد التركيز تلقائياً
+  // حين يُعاد تفعيله، فيضطر المستخدم للنقر يدوياً قبل كل رسالة تالية.
+  useEffect(() => {
+    if (!isSending) inputRef.current?.focus();
+  }, [isSending]);
 
   const sendMessage = useCallback(async (overrideText?: string) => {
     const text = (overrideText ?? input).trim();
@@ -163,6 +201,8 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
         });
       }
 
+      notifyNewReply();
+
       // المستخدم وافق نصياً على جولة تعليمية عُرضت سابقاً — بعد اكتمال رد
       // المساعد كاملاً (النص الختامي مرئي أولاً)، أغلق نافذة الدردشة وابدأ
       // الجولة على الموضوع المطلوب مباشرة.
@@ -179,7 +219,7 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
       statusTextRef.current = null;
       setStatusText(null);
     }
-  }, [input, isSending, messages, userName, userRole, t, launchGuidedTour]);
+  }, [input, isSending, messages, userName, userRole, t, launchGuidedTour, notifyNewReply]);
 
   if (!isEnabled) return null;
 
@@ -229,6 +269,7 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
               className={cn(
                 "absolute inset-x-0 bottom-0 bg-surface w-full h-[85vh] rounded-t-3xl shadow-2xl overflow-hidden border border-border flex flex-col",
                 "sm:inset-x-auto sm:bottom-24 sm:h-[600px] sm:w-full sm:max-w-sm sm:rounded-3xl sm:right-6",
+                "lg:h-[70vh] lg:max-h-[760px] lg:max-w-md",
                 isRtl && "lg:left-6 lg:right-auto"
               )}
             >
@@ -254,8 +295,12 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {messages.length === 0 && !bannerMessage && (
                   <div className="h-full flex flex-col items-center justify-center text-center gap-4 px-4">
-                    <div className="w-16 h-16 bg-brand/10 rounded-full flex items-center justify-center">
-                      <Bot size={32} className="text-brand" />
+                    <div className="relative w-20 h-20 flex items-center justify-center">
+                      <span className="absolute inset-0 rounded-full bg-brand/10 animate-ping [animation-duration:2.5s]" />
+                      <div className="relative w-16 h-16 bg-brand/10 rounded-full flex items-center justify-center">
+                        <Bot size={32} className="text-brand" />
+                        <Sparkles size={14} className="absolute -top-1 -end-1 text-brand/60 animate-pulse" />
+                      </div>
                     </div>
                     <p className="text-content-muted font-bold text-sm">
                       {t('ai.empty_state_greeting', { name: userName || '' })}
@@ -303,10 +348,10 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
 
                 {isSending && statusText && (
                   <div className="flex justify-start rtl:justify-end">
-                    <div className="bg-surface-muted rounded-2xl rounded-tl-md px-4 py-3 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 bg-content-muted rounded-full animate-bounce [animation-delay:-0.3s]" />
-                      <span className="w-1.5 h-1.5 bg-content-muted rounded-full animate-bounce [animation-delay:-0.15s]" />
-                      <span className="w-1.5 h-1.5 bg-content-muted rounded-full animate-bounce" />
+                    <div className="bg-surface-muted rounded-2xl rounded-tl-md px-4 py-3 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-brand/70 rounded-full animate-bounce [animation-delay:-0.3s] [animation-duration:0.9s]" />
+                      <span className="w-2 h-2 bg-brand/70 rounded-full animate-bounce [animation-delay:-0.15s] [animation-duration:0.9s]" />
+                      <span className="w-2 h-2 bg-brand/70 rounded-full animate-bounce [animation-duration:0.9s]" />
                     </div>
                   </div>
                 )}
@@ -323,6 +368,7 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
               <div className="p-3 border-t border-border shrink-0">
                 <div className="flex items-center gap-2 bg-surface-muted rounded-2xl border border-border px-3 py-1 focus-within:ring-2 focus-within:ring-brand/20 focus-within:border-brand transition-all">
                   <input
+                    ref={inputRef}
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
