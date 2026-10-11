@@ -1183,6 +1183,9 @@ app.get("/api/tenant/settings", authenticate, authorize(['owner', 'admin', 'mana
       name: tenant.name || '',
       phone: tenant.phone || '',
       address: tenant.address || '',
+      commercialRegister: tenant.commercial_register || '',
+      city: tenant.city || '',
+      postalCode: tenant.postal_code || '',
       logoUrl: tenant.logo_url || '',
       taxSettings,
       notificationSettings
@@ -1225,6 +1228,9 @@ app.post("/api/tenant/settings", authenticate, authorize(['owner', 'admin']), as
       name: data.name,
       phone: data.phone ? formatSaudiPhone(data.phone) : '',
       address: data.address,
+      commercial_register: data.commercialRegister,
+      city: data.city,
+      postal_code: data.postalCode,
       inventory_strategy: 'decentralized',
       logo_url: data.logoUrl,
       vat_number: data.taxSettings?.trn || '',
@@ -1959,7 +1965,7 @@ app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any
 
   const { data: tenant } = await supabaseAdmin
     .from('tenants')
-    .select('name, vat_number, commercial_register, address')
+    .select('name, vat_number, commercial_register, address, city, postal_code')
     .eq('id', tenantId)
     .maybeSingle();
   if (!tenant?.vat_number || !tenant?.name) {
@@ -2016,6 +2022,8 @@ app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any
       vatNumber: tenant.vat_number,
       crn: tenant.commercial_register || undefined,
       street: tenant.address || undefined,
+      city: tenant.city || undefined,
+      postalCode: tenant.postal_code || undefined,
       countryCode: 'SA',
     },
     paymentMeansCode: '10',
@@ -2084,6 +2092,258 @@ app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any
     // B2B rejection must never look like success to the caller -- POS.tsx
     // surfaces this to the cashier instead of treating the sale as done.
     res.status(502).json({ error: 'ZATCA rejected or failed to process this invoice', status: 'rejected', isB2B });
+  }
+}));
+
+// =============================================================================
+// ZATCA merchant onboarding wizard (seen-zatca-service-process.md) -- the
+// sequence a tenant runs ONCE to actually connect to ZATCA (CSR -> OTP ->
+// Compliance CSID -> compliance tests -> Production CSID). Everything above
+// this point (submit-invoice) only starts working for a tenant once this
+// sequence has completed and a 'production' zatca_credentials row exists.
+// Owner/admin only -- same gate as /api/tenant/settings, since this writes
+// tenant-identifying certificates, not day-to-day sale data.
+// =============================================================================
+
+app.get("/api/zatca/onboarding-status", authenticate, authorize(['owner', 'admin']), asyncHandler(async (req: any, res) => {
+  const tenantId = req.user?.tenantId;
+  if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+  const [{ data: pending }, { data: creds }] = await Promise.all([
+    supabaseAdmin.from('zatca_pending_csr').select('created_at').eq('tenant_id', tenantId).maybeSingle(),
+    supabaseAdmin.from('zatca_credentials').select('csid_type').eq('tenant_id', tenantId),
+  ]);
+
+  res.json({
+    hasPendingCsr: !!pending,
+    hasComplianceCsid: (creds || []).some((c: any) => c.csid_type === 'compliance'),
+    hasProductionCsid: (creds || []).some((c: any) => c.csid_type === 'production'),
+  });
+}));
+
+app.post("/api/zatca/generate-csr", authenticate, authorize(['owner', 'admin']), asyncHandler(async (req: any, res) => {
+  const tenantId = req.user?.tenantId;
+  if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+  const { data: tenant } = await supabaseAdmin
+    .from('tenants')
+    .select('name, vat_number, commercial_register, address, city')
+    .eq('id', tenantId)
+    .maybeSingle();
+
+  // Mirrors the submit-invoice route's own guard: never build a CSR under
+  // an incomplete/fabricated identity. The wizard's own "confirm data" step
+  // (أ) is what should normally catch this before the user even reaches the
+  // "generate CSR" button.
+  if (!tenant?.name || !tenant?.vat_number || !tenant?.commercial_register || !tenant?.address || !tenant?.city) {
+    return res.status(409).json({ error: 'بيانات المنشأة ناقصة (الاسم، الرقم الضريبي، السجل التجاري، العنوان، المدينة) -- أكمِلها من تبويب الملف الشخصي أولاً' });
+  }
+
+  const { generateTestKeyPair: generateEcKeyPair } = await import('./src/server/zatcaSigning.ts');
+  const { generateZatcaCsr } = await import('./src/server/zatcaCsr.ts');
+  const { encryptZatcaSecret } = await import('./src/server/zatcaCrypto.ts');
+
+  const egsSerialNumber = `seen-${String(tenantId).slice(0, 8)}-${Date.now()}`;
+  const { privateKeyPem, publicKeyPem } = generateEcKeyPair();
+  // Phase 4 decision (seen-zatca-service-process.md): one CSID per TENANT,
+  // not per branch -- zatca_credentials has no branch_id, UNIQUE(tenant_id,
+  // csid_type) only. organizationUnitName is set to the tenant's own legal
+  // name rather than a specific branch identifier on purpose; revisit only
+  // if a real tenant explicitly needs per-branch invoice units.
+  const { csrBase64 } = generateZatcaCsr(
+    {
+      countryCode: 'SA',
+      organizationUnitName: tenant.name,
+      organizationName: tenant.vat_number,
+      commonName: `1-Seen|2-SeenPOS|3-${egsSerialNumber}`,
+      vatNumber: tenant.vat_number,
+      egsSerialNumber,
+      location: tenant.city,
+      businessCategory: 'Tailoring and Garment Services',
+    },
+    privateKeyPem,
+    publicKeyPem
+  );
+
+  const { error } = await supabaseAdmin.from('zatca_pending_csr').upsert({
+    tenant_id: tenantId,
+    private_key_encrypted: encryptZatcaSecret(privateKeyPem),
+    csr_base64: csrBase64,
+    egs_serial_number: egsSerialNumber,
+    created_at: new Date().toISOString(),
+  });
+  if (error) return res.status(500).json({ error: error.message });
+
+  res.json({ csrBase64 });
+}));
+
+app.post("/api/zatca/request-compliance-csid", authenticate, authorize(['owner', 'admin']), asyncHandler(async (req: any, res) => {
+  const tenantId = req.user?.tenantId;
+  const otp = typeof req.body?.otp === 'string' ? req.body.otp.trim() : '';
+  if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
+  if (!otp) return res.status(400).json({ error: 'رمز OTP مطلوب' });
+
+  const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+  const { data: pending } = await supabaseAdmin
+    .from('zatca_pending_csr')
+    .select('csr_base64, private_key_encrypted')
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+  if (!pending) return res.status(409).json({ error: 'لا يوجد CSR معلَّق -- ولِّد واحداً أولاً (الخطوة ب)' });
+
+  const { requestComplianceCsid, ZatcaApiError } = await import('./src/server/zatcaApiClient.ts');
+  const { encryptZatcaSecret } = await import('./src/server/zatcaCrypto.ts');
+
+  try {
+    const result = await requestComplianceCsid(pending.csr_base64, otp, 'sandbox');
+    const { error } = await supabaseAdmin.from('zatca_credentials').upsert(
+      {
+        tenant_id: tenantId,
+        csid_type: 'compliance',
+        certificate: result.binarySecurityToken,
+        private_key_encrypted: pending.private_key_encrypted, // already encrypted -- same key pair the CSR was built with
+        secret_encrypted: encryptZatcaSecret(result.secret),
+        request_id: result.requestId,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'tenant_id,csid_type' }
+    );
+    if (error) return res.status(500).json({ error: error.message });
+
+    res.json({ ok: true });
+  } catch (err: any) {
+    console.error('[zatca/request-compliance-csid]', err);
+    if (err instanceof ZatcaApiError) {
+      return res.status(502).json({ error: 'رفضت زاتكا طلب Compliance CSID -- تحقَّق من صحة رمز OTP', details: err.body });
+    }
+    res.status(500).json({ error: err?.message || 'Internal Server Error' });
+  }
+}));
+
+app.post("/api/zatca/run-compliance-tests", authenticate, authorize(['owner', 'admin']), asyncHandler(async (req: any, res) => {
+  const tenantId = req.user?.tenantId;
+  if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+  const [{ data: creds }, { data: tenant }] = await Promise.all([
+    supabaseAdmin.from('zatca_credentials').select('certificate, private_key_encrypted, secret_encrypted').eq('tenant_id', tenantId).eq('csid_type', 'compliance').maybeSingle(),
+    supabaseAdmin.from('tenants').select('name, vat_number, commercial_register, address, city').eq('id', tenantId).maybeSingle(),
+  ]);
+  if (!creds) return res.status(409).json({ error: 'لا توجد شهادة Compliance CSID بعد -- أكمِل خطوة OTP أولاً' });
+
+  const { decryptZatcaSecret } = await import('./src/server/zatcaCrypto.ts');
+  const { signData, sha256Base64 } = await import('./src/server/zatcaSigning.ts');
+  const { buildSimplifiedInvoiceXml, buildStandardInvoiceXml } = await import('./src/server/zatcaInvoiceXml.ts');
+  const { submitComplianceInvoice, ZatcaApiError } = await import('./src/server/zatcaApiClient.ts');
+
+  const privateKeyPem = decryptZatcaSecret(creds.private_key_encrypted);
+  const auth = { binarySecurityToken: creds.certificate, secret: decryptZatcaSecret(creds.secret_encrypted) };
+
+  const now = new Date();
+  const seller = {
+    legalName: tenant?.name || 'Seen Test Merchant',
+    vatNumber: tenant?.vat_number || '399999999900003',
+    crn: tenant?.commercial_register || undefined,
+    street: tenant?.address || undefined,
+    city: tenant?.city || undefined,
+    countryCode: 'SA',
+  };
+  const testLine = { id: '1', itemName: 'Test Item', quantity: 1, unitPrice: 100, lineExtensionAmount: 100, taxPercent: 15, taxAmount: 15 };
+
+  // Submits one simplified (B2C) and one standard (B2B) test invoice -- the
+  // two invoice types this codebase can currently build (zatcaInvoiceXml.ts
+  // has no credit/debit note builder yet, so a full ZATCA compliance
+  // checklist isn't covered here; this is the honest subset, not the whole
+  // required suite).
+  async function runOne(kind: 'simplified' | 'standard') {
+    const common = {
+      invoiceNumber: kind === 'simplified' ? 'TEST-COMPLIANCE-SIMPLIFIED' : 'TEST-COMPLIANCE-STANDARD',
+      uuid: crypto.randomUUID(),
+      issueDateIso: now.toISOString().slice(0, 10),
+      issueTimeIso: now.toISOString().slice(11, 19),
+      seller,
+      paymentMeansCode: '10',
+      lines: [testLine],
+      subtotal: 100,
+      taxAmount: 15,
+      totalWithTax: 115,
+      previousInvoiceHash: null as string | null,
+      invoiceHash: '',
+    };
+    const buyer = { legalName: 'Test Buyer', vatNumber: '399999999900003' };
+    const build = (withSignature: { invoiceHash: string; signatureBase64: string } | null) => {
+      const input = withSignature ? { ...common, ...withSignature } : common;
+      return kind === 'simplified' ? buildSimplifiedInvoiceXml(input) : buildStandardInvoiceXml({ ...input, buyer });
+    };
+    const unsignedXml = build(null);
+    const invoiceHash = sha256Base64(unsignedXml);
+    const signatureBase64 = signData(invoiceHash, privateKeyPem);
+    const signedXml = build({ invoiceHash, signatureBase64 });
+    const invoiceBase64 = Buffer.from(signedXml, 'utf8').toString('base64');
+    const result = await submitComplianceInvoice({ invoiceHash, uuid: common.uuid, invoiceBase64 }, auth, 'sandbox');
+    return { type: kind, status: result.status };
+  }
+
+  const results: { type: string; status?: string; error?: unknown }[] = [];
+  for (const kind of ['simplified', 'standard'] as const) {
+    try {
+      results.push(await runOne(kind));
+    } catch (err: any) {
+      console.error('[zatca/run-compliance-tests]', kind, err);
+      results.push({ type: kind, error: err instanceof ZatcaApiError ? err.body : String(err?.message || err) });
+    }
+  }
+
+  res.json({ ok: results.every(r => !r.error), results });
+}));
+
+app.post("/api/zatca/request-production-csid", authenticate, authorize(['owner', 'admin']), asyncHandler(async (req: any, res) => {
+  const tenantId = req.user?.tenantId;
+  if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+  const { data: creds } = await supabaseAdmin
+    .from('zatca_credentials')
+    .select('certificate, private_key_encrypted, secret_encrypted, request_id')
+    .eq('tenant_id', tenantId)
+    .eq('csid_type', 'compliance')
+    .maybeSingle();
+  if (!creds?.request_id) return res.status(409).json({ error: 'لا يوجد طلب Compliance CSID مكتمل -- أكمِل الخطوات السابقة أولاً' });
+
+  const { decryptZatcaSecret, encryptZatcaSecret } = await import('./src/server/zatcaCrypto.ts');
+  const { requestProductionCsid, ZatcaApiError } = await import('./src/server/zatcaApiClient.ts');
+
+  const auth = { binarySecurityToken: creds.certificate, secret: decryptZatcaSecret(creds.secret_encrypted) };
+
+  try {
+    const result = await requestProductionCsid(creds.request_id, auth, 'sandbox');
+    const { error } = await supabaseAdmin.from('zatca_credentials').upsert(
+      {
+        tenant_id: tenantId,
+        csid_type: 'production',
+        certificate: result.binarySecurityToken,
+        private_key_encrypted: creds.private_key_encrypted, // same key pair throughout -- ZATCA re-certifies the same CSR's key, never a new one
+        secret_encrypted: encryptZatcaSecret(result.secret),
+        request_id: result.requestId,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'tenant_id,csid_type' }
+    );
+    if (error) return res.status(500).json({ error: error.message });
+
+    // Pending CSR row has now been fully promoted (compliance + production
+    // both issued from it) -- nothing left to resume from it.
+    await supabaseAdmin.from('zatca_pending_csr').delete().eq('tenant_id', tenantId);
+
+    res.json({ ok: true });
+  } catch (err: any) {
+    console.error('[zatca/request-production-csid]', err);
+    if (err instanceof ZatcaApiError) {
+      return res.status(502).json({ error: 'رفضت زاتكا طلب Production CSID', details: err.body });
+    }
+    res.status(500).json({ error: err?.message || 'Internal Server Error' });
   }
 }));
 

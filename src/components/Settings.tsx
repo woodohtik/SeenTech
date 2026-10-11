@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { formatSaudiPhone } from '../utils/phoneUtils';
-import { Store, MapPin, Phone, Globe, Bell, Shield, CreditCard, MessageSquare, CheckCircle2, AlertCircle, AlertTriangle, ChevronRight, ExternalLink, Zap, Upload, X as CloseIcon, Database, Trash2, ShieldCheck, Palette, FileText, HelpCircle, Layout, Mail, Printer } from 'lucide-react';
+import { Store, MapPin, Phone, Globe, Bell, Shield, CreditCard, MessageSquare, CheckCircle2, AlertCircle, AlertTriangle, ChevronRight, ExternalLink, Zap, Upload, X as CloseIcon, Database, Trash2, ShieldCheck, Palette, FileText, HelpCircle, Layout, Mail, Printer, Hash } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
 import { saveLastKnown, getLastKnown } from '../lib/offline/lastKnownCache';
@@ -28,6 +28,7 @@ import TenantSupportHistory from './TenantSupportHistory';
 import PrinterSettings from './PrinterSettings';
 import WhatsAppSettings from './WhatsAppSettings';
 import BillingSettings from './BillingSettings';
+import ZatcaOnboardingSettings from './ZatcaOnboardingSettings';
 
 import Branding from './Branding';
 
@@ -40,12 +41,15 @@ interface SettingsProps {
   tenantId: string;
 }
 
-type TabType = 'profile' | 'appearance' | 'invoice' | 'printer' | 'tax' | 'branches' | 'staff' | 'whatsapp' | 'billing' | 'support' | 'notifications' | 'data';
+type TabType = 'profile' | 'appearance' | 'invoice' | 'printer' | 'tax' | 'zatca' | 'branches' | 'staff' | 'whatsapp' | 'billing' | 'support' | 'notifications' | 'data';
 
 interface SettingsData {
   name: string;
   phone: string;
   address: string;
+  commercialRegister: string;
+  city: string;
+  postalCode: string;
   logoUrl: string;
   taxSettings: unknown;
   notificationSettings: unknown;
@@ -137,6 +141,9 @@ export default function Settings({ tenantId }: SettingsProps) {
       name: '',
       phone: '',
       address: '',
+      commercialRegister: '',
+      city: '',
+      postalCode: '',
       currencySymbol: 'SR',
       inventoryStrategy: 'decentralized' as const,
       logoUrl: '',
@@ -196,6 +203,9 @@ export default function Settings({ tenantId }: SettingsProps) {
           name: loadedData.name || '',
           phone: loadedData.phone || '',
           address: loadedData.address || '',
+          commercialRegister: loadedData.commercialRegister || '',
+          city: loadedData.city || '',
+          postalCode: loadedData.postalCode || '',
           logoUrl: loadedData.logoUrl || '',
           taxSettings: loadedData.taxSettings,
           notificationSettings: loadedData.notificationSettings,
@@ -250,6 +260,9 @@ export default function Settings({ tenantId }: SettingsProps) {
         name: data.name || '',
         phone: data.phone || '',
         address: data.address || '',
+        commercialRegister: data.commercial_register || '',
+        city: data.city || '',
+        postalCode: data.postal_code || '',
         logoUrl: data.logo_url || '',
         taxSettings: loadedTaxSettings,
         notificationSettings: loadedNotificationSettings,
@@ -271,6 +284,9 @@ export default function Settings({ tenantId }: SettingsProps) {
       name: d.name,
       phone: d.phone,
       address: d.address,
+      commercialRegister: d.commercialRegister,
+      city: d.city,
+      postalCode: d.postalCode,
       inventoryStrategy: 'decentralized',
       logoUrl: d.logoUrl,
       taxSettings: d.taxSettings as any,
@@ -341,6 +357,9 @@ export default function Settings({ tenantId }: SettingsProps) {
             name: data.name,
             phone: data.phone,
             address: data.address,
+            commercialRegister: data.commercialRegister,
+            city: data.city,
+            postalCode: data.postalCode,
             logoUrl: data.logoUrl,
             taxSettings: data.taxSettings,
             notificationSettings: data.notificationSettings
@@ -359,6 +378,9 @@ export default function Settings({ tenantId }: SettingsProps) {
           name: data.name,
           phone: data.phone ? formatSaudiPhone(data.phone) : '',
           address: data.address,
+          commercial_register: data.commercialRegister,
+          city: data.city,
+          postal_code: data.postalCode,
           inventory_strategy: 'decentralized',
           logo_url: data.logoUrl,
           vat_number: data.taxSettings?.trn || '',
@@ -402,6 +424,9 @@ export default function Settings({ tenantId }: SettingsProps) {
         name: data.name,
         phone: data.phone || '',
         address: data.address || '',
+        commercialRegister: data.commercialRegister || '',
+        city: data.city || '',
+        postalCode: data.postalCode || '',
         logoUrl: data.logoUrl || '',
         taxSettings: data.taxSettings,
         notificationSettings: data.notificationSettings,
@@ -478,6 +503,7 @@ export default function Settings({ tenantId }: SettingsProps) {
   const TABS: { id: TabType; label: string; icon: any; visible: boolean; group: string }[] = [
     { id: 'profile', label: t('settings_page.tabs.profile', 'الملف الشخصي'), icon: Store, visible: true, group: 'business' },
     { id: 'tax', label: t('settings_page.tabs.tax', 'الإعدادات الضريبية'), icon: FileText, visible: canEdit, group: 'business' },
+    { id: 'zatca', label: t('settings_page.tabs.zatca', 'ربط زاتكا'), icon: ShieldCheck, visible: canEdit, group: 'business' },
     { id: 'branches', label: t('settings_page.tabs.branches', 'الفروع والمواقع'), icon: MapPin, visible: hasPermission('branches.manage'), group: 'business' },
     
     { id: 'appearance', label: t('settings_page.tabs.appearance', 'المظهر والسمات'), icon: Palette, visible: true, group: 'system' },
@@ -629,13 +655,64 @@ export default function Settings({ tenantId }: SettingsProps) {
                         <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.email_protected', 'البريد الإلكتروني (غير قابل للتعديل)')}</label>
                         <span className="text-[10px] text-content-muted font-black bg-surface-muted rounded px-2 py-0.5 select-none shrink-0" dir={isRtl ? "rtl" : "ltr"}>{t('settings_page.profile.official_protected', 'رسمي ومحمي')}</span>
                       </div>
-                      <IconInput 
-                        type="email" 
+                      <IconInput
+                        type="email"
                         value={userEmail || ''}
                         readOnly
                         disabled
                         startIcon={Mail}
                         placeholder={t('settings_page.profile.no_email', 'لا يوجد بريد إلكتروني')}
+                      />
+                    </div>
+                    <div className="sm:col-span-2 space-y-1.5">
+                      <div className="flex items-center justify-between px-1">
+                        <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.address', 'العنوان التفصيلي')}</label>
+                        <HelpCircle size={14} className="text-content-muted/40 cursor-help" />
+                      </div>
+                      <IconInput
+                        type="text"
+                        {...register('address')}
+                        placeholder={t('settings_page.profile.address_placeholder', 'الحي، الشارع، رقم المبنى')}
+                        startIcon={MapPin}
+                        error={errors.address?.message}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between px-1">
+                        <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.city', 'المدينة')}</label>
+                        <HelpCircle size={14} className="text-content-muted/40 cursor-help" />
+                      </div>
+                      <IconInput
+                        type="text"
+                        {...register('city')}
+                        startIcon={MapPin}
+                        error={errors.city?.message}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between px-1">
+                        <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.postal_code', 'الرمز البريدي')}</label>
+                        <HelpCircle size={14} className="text-content-muted/40 cursor-help" />
+                      </div>
+                      <IconInput
+                        type="text"
+                        {...register('postalCode')}
+                        startIcon={Hash}
+                        error={errors.postalCode?.message}
+                        dir="ltr"
+                      />
+                    </div>
+                    <div className="sm:col-span-2 space-y-1.5">
+                      <div className="flex items-center justify-between px-1">
+                        <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.commercial_register', 'رقم السجل التجاري (CR)')}</label>
+                        <HelpCircle size={14} className="text-content-muted/40 cursor-help" />
+                      </div>
+                      <IconInput
+                        type="text"
+                        {...register('commercialRegister')}
+                        startIcon={FileText}
+                        error={errors.commercialRegister?.message}
+                        dir="ltr"
                       />
                     </div>
                   </div>
@@ -926,6 +1003,10 @@ export default function Settings({ tenantId }: SettingsProps) {
                     )}
                   </div>
                 </form>
+              )}
+
+              {activeTab === 'zatca' && (
+                <ZatcaOnboardingSettings tenantId={tenantId} />
               )}
 
               {activeTab === 'printer' && (

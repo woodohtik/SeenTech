@@ -263,6 +263,7 @@ export async function requestComplianceCsid(
       'Content-Type': 'application/json',
       Accept: 'application/json',
       'Accept-Version': 'V2',
+      'Accept-Language': 'en',
       OTP: otp,
     },
     body: JSON.stringify({ csr: csrBase64 }),
