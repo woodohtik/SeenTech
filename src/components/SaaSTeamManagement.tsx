@@ -130,6 +130,17 @@ export default function SaaSTeamManagement() {
           .eq('uid', editingUser.uid);
 
         if (error) throw error;
+        if (editingUser.role !== formData.role) {
+          await supabase.from('audit_logs').insert({
+            action: 'تغيير صلاحية موظف SaaS',
+            performed_by: dbUser?.id || null,
+            performed_by_email: dbUser?.email || null,
+            target_tenant_id: null,
+            details: `تم تغيير صلاحية ${editingUser.name || editingUser.email} من ${editingUser.role} إلى ${formData.role}`,
+            occurred_at: new Date().toISOString(),
+            type: 'security'
+          });
+        }
         setToast({ message: t('saas.update_success', 'تم تحديث بيانات الموظف بنجاح'), type: 'success' });
       } else {
         // Add new

@@ -59,7 +59,8 @@ export async function listMyWithdrawals(tenantId: string): Promise<Withdrawal[]>
 
 // ---------- إدارة (داشبورد سين) ----------
 export async function listPendingWithdrawals(): Promise<Withdrawal[]> {
-  const { data } = await supabase.from('withdrawal_requests').select('*').eq('status', 'pending').order('requested_at', { ascending: true });
+  const { data, error } = await supabase.from('withdrawal_requests').select('*').eq('status', 'pending').order('requested_at', { ascending: true });
+  if (error) throw error;
   return (data || []) as Withdrawal[];
 }
 

@@ -40,20 +40,22 @@ export default function SaaSReports() {
     try {
       const [
         { data: tenants },
-        { data: orders },
+        { data: revenueReport, error: revenueError },
         { data: plans }
       ] = await Promise.all([
         supabase.from('tenants').select('id, plan_id, status'),
-        supabase.from('orders').select('total_amount, order_date'),
+        // SUM/GROUP BY تُحسَب في SQL (get_saas_revenue_report) بدل جلب كل
+        // صف من orders (أكبر جدول في المخطط) إلى المتصفح في كل مرة.
+        supabase.rpc('get_saas_revenue_report'),
         supabase.from('plans').select('id, price')
       ]);
 
-      if (!tenants || !orders || !plans) {
+      if (!tenants || !plans || !revenueReport || revenueError) {
         // Postgrest resolves with {data: null, error} rather than throwing --
         // this used to leave `loading` stuck true forever (an endless
         // spinner with no explanation) instead of reaching the catch below.
         setData(prev => ({ ...prev, loading: false }));
-        handleError(new Error('tenants/orders/plans query returned null'), t('saas.reports_load_failed', 'تعذّر تحميل تقارير وتحليلات النظام'));
+        handleError(revenueError || new Error('tenants/revenue/plans query returned null'), t('saas.reports_load_failed', 'تعذّر تحميل تقارير وتحليلات النظام'));
         return;
       }
 
@@ -63,20 +65,13 @@ export default function SaaSReports() {
         return acc + Number(plan?.price || 0);
       }, 0);
 
-      const totalRevenue = orders.reduce((acc, o) => acc + Number(o.total_amount), 0);
+      const totalRevenue = Number(revenueReport.total_revenue) || 0;
       const arpu = activeTenants.length > 0 ? mrr / activeTenants.length : 0;
 
-      // Group by month
-      const monthsMap = new Map();
-      orders.forEach(o => {
-        const date = new Date(o.order_date);
-        const month = date.toLocaleDateString(i18n.language === 'en' ? 'en-US' : isRtl ? 'ar-SA-u-nu-latn' : 'en-US', { month: 'short' });
-        monthsMap.set(month, (monthsMap.get(month) || 0) + Number(o.total_amount));
-      });
-
-      const chartData = Array.from(monthsMap.entries()).map(([month, revenue]) => ({
-        month,
-        revenue
+      const monthly: { month_start: string; revenue: number }[] = revenueReport.monthly || [];
+      const chartData = monthly.map(m => ({
+        month: new Date(m.month_start).toLocaleDateString(i18n.language === 'en' ? 'en-US' : isRtl ? 'ar-SA-u-nu-latn' : 'en-US', { month: 'short' }),
+        revenue: Number(m.revenue) || 0
       })).slice(-6);
 
       setData({

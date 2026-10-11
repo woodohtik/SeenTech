@@ -15,6 +15,7 @@ import { SmartSelect } from './ui/SmartSelect';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
+import { useToast } from '../contexts/ToastContext';
 
 import { isRtlLang } from '../lib/direction';
 
@@ -29,9 +30,41 @@ interface AuditLog {
   timestamp: string;
 }
 
+// audit_logs لديه عمود type صريح (enum: deletion/security/system) -- أدق من
+// تخمين النوع عبر فحص نص action كما تفعل saas_security_logs (لا عمود type
+// حقيقي لها، فقط action نصي حر). بادئة id مختلفة لكل مصدر لأن كلا الجدولين
+// BIGSERIAL مستقل، فقد تتطابق قيم id بينهما بلا هذه البادئة.
+function mapAuditLogRow(d: any): AuditLog {
+  return {
+    id: `audit-${d.id}`,
+    action: d.action,
+    performedBy: d.performed_by,
+    performedByEmail: d.performed_by_email,
+    targetTenantId: d.target_tenant_id,
+    details: d.details,
+    type: d.type === 'security' ? 'security_alert' : d.type === 'deletion' ? 'deletion' : 'update',
+    timestamp: d.occurred_at,
+  };
+}
+
+function mapSecurityLogRow(d: any): AuditLog {
+  return {
+    id: `sec-${d.id}`,
+    action: d.action,
+    performedBy: d.user_id,
+    performedByEmail: d.user_email,
+    details: d.details,
+    type: d.action?.includes('security') ? 'security_alert' :
+          d.action?.includes('delete') ? 'deletion' :
+          d.action?.includes('login') ? 'login' : 'update',
+    timestamp: d.occurred_at,
+  };
+}
+
 export default function SaaSAuditLogs() {
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
+  const { handleError } = useToast();
 
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,47 +72,46 @@ export default function SaaSAuditLogs() {
   const [filterType, setFilterType] = useState<string>('all');
 
   useEffect(() => {
+    // الأفعال الحساسة فعلياً (تعليق/تفعيل تاجر، تبديل المساعد الذكي، أدوار
+    // عامة، صلاحيات موظف SaaS) تُكتَب في audit_logs، بينما الدخول/الخروج
+    // وتغيير كلمة المرور تُكتَب في saas_security_logs منفصل -- قبل هذا
+    // التعديل كانت هذه الشاشة تعرض الثاني فقط، فلا تظهر فيها أهم الأفعال
+    // إطلاقاً رغم كتابتها بنجاح. دمج المصدرين هنا بدل اختيار أحدهما.
     const fetchLogs = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('saas_security_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100);
-      
-      if (data) {
-        setLogs(data.map(log => ({
-          id: log.id,
-          action: log.action,
-          performedBy: log.performed_by_uid,
-          performedByEmail: log.performed_by_email,
-          details: log.details,
-          type: log.action.includes('security') ? 'security_alert' : 
-                log.action.includes('delete') ? 'deletion' :
-                log.action.includes('login') ? 'login' : 'update',
-          timestamp: log.created_at || log.occurred_at
-        } as AuditLog)));
+      const [
+        { data: auditData, error: auditError },
+        { data: securityData, error: securityError }
+      ] = await Promise.all([
+        supabase.from('audit_logs').select('*').order('occurred_at', { ascending: false }).limit(100),
+        supabase.from('saas_security_logs').select('*').order('occurred_at', { ascending: false }).limit(100),
+      ]);
+
+      if (auditError && securityError) {
+        handleError(auditError, t('saas.audit_logs_load_failed', 'تعذّر تحميل سجلات التدقيق'));
+        setLoading(false);
+        return;
       }
+
+      const merged = [
+        ...(auditData || []).map(mapAuditLogRow),
+        ...(securityData || []).map(mapSecurityLogRow),
+      ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, 100);
+
+      setLogs(merged);
       setLoading(false);
     };
 
     fetchLogs();
 
     const channel = supabase
-      .channel('saas_security_logs_changes')
+      .channel('saas_audit_logs_changes')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audit_logs' }, (payload) => {
+        setLogs(prev => [mapAuditLogRow(payload.new as any), ...prev].slice(0, 100));
+      })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'saas_security_logs' }, (payload) => {
-        const newLog = payload.new as any;
-        setLogs(prev => [{
-          id: newLog.id,
-          action: newLog.action,
-          performedBy: newLog.performed_by_uid,
-          performedByEmail: newLog.performed_by_email,
-          details: newLog.details,
-          type: newLog.action.includes('security') ? 'security_alert' : 
-                newLog.action.includes('delete') ? 'deletion' :
-                newLog.action.includes('login') ? 'login' : 'update',
-          timestamp: newLog.created_at || newLog.occurred_at
-        } as AuditLog, ...prev].slice(0, 100));
+        setLogs(prev => [mapSecurityLogRow(payload.new as any), ...prev].slice(0, 100));
       })
       .subscribe();
 

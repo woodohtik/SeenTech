@@ -158,6 +158,15 @@ export default function GlobalRoleManager() {
           .eq('id', editingRole.id);
         
         if (error) throw error;
+        await supabase.from('audit_logs').insert({
+          action: 'تحديث دور عام (Global Role)',
+          performed_by: dbUser?.id || null,
+          performed_by_email: dbUser?.email || null,
+          target_tenant_id: null,
+          details: `تم تحديث الدور العام: ${editingRole.name}`,
+          occurred_at: new Date().toISOString(),
+          type: 'security'
+        });
         setToast({ message: t('settings_page.staff.permissions.role_update_success'), type: 'success' });
         setEditingRole(null);
       } else {
@@ -178,6 +187,15 @@ export default function GlobalRoleManager() {
           });
         
         if (error) throw error;
+        await supabase.from('audit_logs').insert({
+          action: 'إنشاء دور عام (Global Role)',
+          performed_by: dbUser?.id || null,
+          performed_by_email: dbUser?.email || null,
+          target_tenant_id: null,
+          details: `تم إنشاء دور عام جديد: ${roleToSave.name}`,
+          occurred_at: new Date().toISOString(),
+          type: 'security'
+        });
         setToast({ message: t('saas.global_roles.create_success'), type: 'success' });
         setIsAdding(false);
         setNewRole({
@@ -215,6 +233,15 @@ export default function GlobalRoleManager() {
         .delete()
         .eq("id", roleToDelete.id);
       if (error) throw error;
+      await supabase.from('audit_logs').insert({
+        action: 'حذف دور عام (Global Role)',
+        performed_by: dbUser?.id || null,
+        performed_by_email: dbUser?.email || null,
+        target_tenant_id: null,
+        details: `تم حذف الدور العام: ${roleToDelete.name}`,
+        occurred_at: new Date().toISOString(),
+        type: 'deletion'
+      });
       setToast({ message: t('settings_page.staff.permissions.delete_success'), type: "success" });
       await fetchRoles();
       setRoleToDelete(null);

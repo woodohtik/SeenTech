@@ -72,6 +72,21 @@ export async function fetchSubscriptionRequests(): Promise<SubscriptionRequest[]
   return (data || []).map(mapRow);
 }
 
+/** BillingSettings.tsx (صفحة إعدادات تاجر واحد) تحتاج طلباته هو فقط --
+ * فلترة server-side بدل جلب كل طلبات كل التجّار (fetchSubscriptionRequests)
+ * ثم التصفية في المتصفح، وهو ما يُشغِّل مسحاً كاملاً للجدول عبر كل المنصة
+ * في كل مرة يفتح فيها تاجر عادي إعدادات اشتراكه. */
+export async function fetchMySubscriptionRequests(tenantId: string): Promise<SubscriptionRequest[]> {
+  const { data, error } = await supabase
+    .from('subscription_requests')
+    .select('*')
+    .eq('tenant_id', tenantId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data || []).map(mapRow);
+}
+
 /** Atomic via approve_subscription_request RPC -- locks the request row and
  * only proceeds if it's still 'pending', which is what actually prevents two
  * admins on different devices from both approving (and double-crediting)

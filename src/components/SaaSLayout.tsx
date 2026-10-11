@@ -289,15 +289,20 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
+        // لا حاجة لأي تاجر أقدم من 365 يوماً -- أقصى نافذة تُطلِق تنبيهاً هنا
+        // هي انتهاء خطة سنوية (diffDays <= 365)؛ فلترة هذا + أعمدة محدَّدة
+        // بدل select('*') يقطع الحمل المتكرر كل 5 دقائق على كل شاشة إدارية.
+        const oneYearAgo = new Date(Date.now() - 370 * 24 * 60 * 60 * 1000).toISOString();
         const { data: tenantsData, error: tenantsError } = await supabase
           .from('tenants')
-          .select('*');
+          .select('id, name, created_at, status, plan_id')
+          .gte('created_at', oneYearAgo);
 
         if (tenantsError) throw tenantsError;
 
         const { data: plansData } = await supabase
           .from('plans')
-          .select('*');
+          .select('id, name, price');
 
         const newAlerts: SaaSNotification[] = [];
         const now = new Date();

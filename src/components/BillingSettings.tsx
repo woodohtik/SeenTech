@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { PriceDisplay } from './PriceDisplay';
-import { createSubscriptionRequest, fetchSubscriptionRequests, SubscriptionRequest } from '../services/subscriptionRequestService';
+import { createSubscriptionRequest, fetchMySubscriptionRequests, SubscriptionRequest } from '../services/subscriptionRequestService';
 import { useToast } from '../contexts/ToastContext';
 
 import { isRtlLang } from '../lib/direction';
@@ -148,9 +148,8 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
         setPayments(paymentsData);
       }
 
-      // 3. جلب طلبات الاشتراك الخاصة بهذا المشترك
-      const allReqs = await fetchSubscriptionRequests();
-      const myReqs = allReqs.filter(r => r.tenant_id === tenantId);
+      // 3. جلب طلبات الاشتراك الخاصة بهذا المشترك (فلترة server-side)
+      const myReqs = await fetchMySubscriptionRequests(tenantId);
       setUserRequests(myReqs);
     } catch (err) {
       console.error('فشل جلب بيانات الاشتراك:', err);

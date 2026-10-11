@@ -47,6 +47,7 @@ const Sales = React.lazy(() => import('./components/Sales'));
 const Suppliers = React.lazy(() => import('./components/Suppliers'));
 const InventoryManager = React.lazy(() => import('./components/Inventory/InventoryManager'));
 const Reports = React.lazy(() => import('./components/Reports'));
+const Referral = React.lazy(() => import('./components/Referral'));
 const Onboarding = React.lazy(() => import('./components/Onboarding'));
 const ResetPassword = React.lazy(() => import('./components/ResetPassword'));
 const PublicInvoice = React.lazy(() => import('./pages/PublicInvoice'));
@@ -765,6 +766,13 @@ function AppContent() {
                                   </ProtectedRoute>
                                 </RouteBoundary>
                               } />
+                              <Route path="/referral" element={
+                                <RouteBoundary>
+                                  <ProtectedRoute allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin']} permission="settings.view" userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                    <Referral tenantId={effectiveTenantId!} />
+                                  </ProtectedRoute>
+                                </RouteBoundary>
+                              } />
                               <Route path="/403" element={<AccessDenied userRole={effectiveRole} />} />
                               <Route path="*" element={<Navigate to="/" />} />
                             </Routes>
@@ -872,6 +880,13 @@ function AppContent() {
                             <RouteBoundary>
                               <ProtectedRoute permission="settings.view" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
                                 <Settings tenantId={effectiveTenantId!} />
+                              </ProtectedRoute>
+                            </RouteBoundary>
+                          } />
+                          <Route path="/referral" element={
+                            <RouteBoundary>
+                              <ProtectedRoute permission="settings.view" allowedRoles={['super_admin', 'tenant_admin', 'owner', 'admin']} userRole={effectiveRole} staff={currentStaff} isImpersonating={!!impersonationTenantId}>
+                                <Referral tenantId={effectiveTenantId!} />
                               </ProtectedRoute>
                             </RouteBoundary>
                           } />

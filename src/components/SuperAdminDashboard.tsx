@@ -53,6 +53,7 @@ import { PriceDisplay } from './PriceDisplay';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+import { useConfirm } from '../contexts/ConfirmContext';
 import { Trans, useTranslation } from 'react-i18next';
 import { isRtlLang, localeOf } from '../lib/direction';
 
@@ -62,6 +63,7 @@ export default function SuperAdminDashboard() {
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
   const { success: toastSuccess, error: toastError, handleError: toastHandleError } = useToast();
+  const { confirm } = useConfirm();
 
   const { setImpersonationTenantId, dbUser, user: currentAuthUser } = useAuth();
   const userRole = dbUser?.role;
@@ -125,7 +127,7 @@ export default function SuperAdminDashboard() {
         supabase.from('tenants').select('*'),
         supabase.from('orders').select('*').order('order_date', { ascending: false }).limit(200),
         supabase.from('saas_users').select('*').eq('uid', currentAuthUser?.id).single(),
-        supabase.from('audit_logs').select('*').order('timestamp', { ascending: false }).limit(40),
+        supabase.from('audit_logs').select('*').order('occurred_at', { ascending: false }).limit(40),
         supabase.from('employee_activity_logs').select('*').order('occurred_at', { ascending: false }).limit(40),
         supabase.from('plans').select('*')
       ]);
@@ -168,7 +170,17 @@ export default function SuperAdminDashboard() {
         }) as Order));
       }
 
-      if (auditData) setAuditLogs(auditData as any);
+      if (auditData) setAuditLogs(auditData.map(d => ({
+        id: String(d.id),
+        action: d.action,
+        performedBy: d.performed_by,
+        performedByEmail: d.performed_by_email,
+        tenantId: d.tenant_id,
+        targetTenantId: d.target_tenant_id,
+        details: d.details,
+        type: d.type,
+        timestamp: d.occurred_at,
+      }) as AuditLog));
       if (activityData) setActivityLogs(activityData as any);
       
       if (saasUserData) {
@@ -340,8 +352,15 @@ export default function SuperAdminDashboard() {
       toastError(t('saas.unauthorized_action'));
       return;
     }
-    setUpdatingTenantId(tenantId);
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    if (newStatus === 'inactive') {
+      const ok = await confirm({
+        description: t('saas.tenants.suspend_confirm', 'سيتم تعليق هذا التاجر فوراً -- لن يتمكن من الدخول لنظامه حتى تُعيد تفعيله. تابع؟'),
+        danger: true,
+      });
+      if (!ok) return;
+    }
+    setUpdatingTenantId(tenantId);
     try {
       const { error } = await supabase
         .from('tenants')
@@ -356,10 +375,12 @@ export default function SuperAdminDashboard() {
       // Save an audit log of this event
       await supabase.from('audit_logs').insert({
         action: `Toggle status to ${newStatus}`,
-        performedByEmail: currentAuthUser?.email || 'Super Admin',
+        performed_by: dbUser?.id || null,
+        performed_by_email: currentAuthUser?.email || 'Super Admin',
+        target_tenant_id: tenantId,
         details: `Merchant ${tenantId} status changed to ${newStatus}`,
         type: 'security',
-        timestamp: new Date().toISOString()
+        occurred_at: new Date().toISOString()
       });
 
     } catch (err) {
@@ -395,10 +416,12 @@ export default function SuperAdminDashboard() {
 
       await supabase.from('audit_logs').insert({
         action: `Toggle assistant to ${nextEnabled ? 'enabled' : 'disabled'}`,
-        performedByEmail: currentAuthUser?.email || 'Super Admin',
+        performed_by: dbUser?.id || null,
+        performed_by_email: currentAuthUser?.email || 'Super Admin',
+        target_tenant_id: tenantId,
         details: `Merchant ${tenantId} assistant access changed to ${nextEnabled ? 'enabled' : 'disabled'}`,
         type: 'security',
-        timestamp: new Date().toISOString()
+        occurred_at: new Date().toISOString()
       });
     } catch (err) {
       toastHandleError(err, t('saas.tenants.assistant_toggle_failed'));

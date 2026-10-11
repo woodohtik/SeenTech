@@ -20,7 +20,7 @@ const INK = '#0E2A42', CTA = 'var(--success)', GRAY = 'var(--content-muted)', LI
 export default function SaaSWithdrawals() {
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
-  const { promptText } = useConfirm();
+  const { confirm, promptText } = useConfirm();
 
   const [rows, setRows] = useState<Withdrawal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,17 +28,27 @@ export default function SaaSWithdrawals() {
 
   async function load() {
     setLoading(true);
-    try { setRows(await listPendingWithdrawals()); } finally { setLoading(false); }
+    try {
+      setRows(await listPendingWithdrawals());
+    } catch (e: any) {
+      showToast(e?.message || t('saas.failed'), 'error');
+    } finally {
+      setLoading(false);
+    }
   }
   const [toast, setToast] = useState<{message: string, type: 'success'|'error'} | null>(null);
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
-  
+
   useEffect(() => { load(); }, []);
 
   async function act(id: string, approve: boolean) {
+    if (approve) {
+      const ok = await confirm({ description: t('saas.approve_withdrawal_confirm', 'سيتم اعتماد هذا السحب كـ"تم التحويل" -- تأكَّد أنك حوَّلت المبلغ فعلياً قبل المتابعة، فهذا الإجراء لا رجعة فيه.'), danger: true });
+      if (!ok) return;
+    }
     const note = approve
       ? t('saas.success')
       : ((await promptText({ description: t('saas.rejection_reason_prompt') })) || t('saas.rejection_reason_default'));

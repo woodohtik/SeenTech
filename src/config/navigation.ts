@@ -125,6 +125,15 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
     allowedRoles: ['super_admin', 'tenant_admin', 'owner', 'admin'],
     permission: 'settings.view',
     group: 'tenant'
+  },
+  {
+    id: 'referral',
+    to: '/referral',
+    labelKey: 'referral.title',
+    icon: 'seen-riyal',
+    allowedRoles: ['super_admin', 'tenant_admin', 'owner', 'admin'],
+    permission: 'settings.view',
+    group: 'tenant'
   }
 ];
 

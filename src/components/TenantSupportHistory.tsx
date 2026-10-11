@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase/client';
 import { SupportSession } from '../types/supabase';
-import { Shield, Clock, Search, X } from 'lucide-react';
+import { Shield, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface Props {
@@ -29,21 +29,36 @@ export default function TenantSupportHistory({ tenantId }: Props) {
 
     if (!error && data) {
       setSessions(data);
-    } else {
-      // Mock Data if table doesn't exist
-      setSessions([
-        {
-          id: 'mock',
-          tenant_id: tenantId,
-          saas_user_id: 'mock-user',
-          saas_user_name: t('saas.support_history.default_agent_name'),
-          access_type: 'explicit',
-          started_at: new Date().toISOString(),
-          ended_at: null,
-          duration_minutes: null
-        }
-      ] as any);
+      setLoading(false);
+      return;
     }
+
+    // support_sessions الحقيقي قد لا يكون موجوداً في الـschema cache (نفس القيد
+    // الموجود في مسارات الكتابة -- AdminTailors.tsx/SuperAdminDashboard.tsx/
+    // Layout.tsx -- جميعها تتراجع لتخزين الجلسة في saas_settings بمفتاح
+    // support_sessions عند فشل الجدول الحقيقي). اقرأ من نفس المصدر البديل
+    // بدل اختلاق صف وهمي لا علاقة له بأي جلسة دعم حقيقية.
+    const { data: setting } = await supabase
+      .from('saas_settings')
+      .select('*')
+      .eq('key', 'support_sessions')
+      .maybeSingle();
+    const allSessions = setting?.value && Array.isArray(setting.value) ? setting.value : [];
+    const tenantExplicitSessions = allSessions
+      .filter((s: any) => s.tenant_id === tenantId && s.access_type === 'explicit')
+      .map((s: any) => ({
+        id: s.id,
+        tenant_id: s.tenant_id,
+        saas_user_id: s.saas_user_id,
+        saas_user_name: s.saas_user_name,
+        access_type: s.access_type,
+        started_at: s.started_at,
+        ended_at: s.ended_at ?? null,
+        duration_minutes: s.duration_minutes ?? null,
+      } as SupportSession))
+      .sort((a: SupportSession, b: SupportSession) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
+
+    setSessions(tenantExplicitSessions);
     setLoading(false);
   };
 
