@@ -65,6 +65,7 @@ import TailorStatementReport from './TailorStatementReport';
 import Branding from './Branding';
 import Select from './ui/Select';
 import { DatePicker } from './ui/DatePicker';
+import { ResponsiveTable } from './ui/ResponsiveTable';
 import { useToast } from '../contexts/ToastContext';
 import { motion, AnimatePresence } from 'motion/react';
 import * as XLSX from 'xlsx';
@@ -1056,7 +1057,10 @@ export default function Reports({ tenantId }: { tenantId: string }) {
       </div>
 
       {/* Tabs Navigation */}
-      <div id="reports-tabs-nav-container" className="w-full overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div className="relative">
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-surface to-transparent z-10" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-surface to-transparent z-10" />
+        <div id="reports-tabs-nav-container" className="w-full overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <div className="flex items-center gap-1.5 sm:gap-2 bg-surface p-1.5 sm:p-2 rounded-xl sm:rounded-[2rem] border border-border shadow-sm w-max">
           {reportTabs.map((tab) => (
             <button
@@ -1074,6 +1078,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               <span>{tab.label}</span>
             </button>
           ))}
+        </div>
         </div>
       </div>
 
@@ -1405,7 +1410,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                     <BarChart data={inventoryStats.topItems} layout="vertical" margin={{ left: 10, right: 10 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="currentColor" className="text-border" />
                       <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" />
-                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" width={70} />
+                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: 'currentColor' }} className="text-content-muted" width={90} />
                       <Tooltip 
                         cursor={{ fill: 'var(--color-surface-muted)' }}
                         contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
@@ -1437,79 +1442,140 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                   </span>
                 </div>
 
-                <div className="overflow-x-auto whitespace-nowrap -mx-4 sm:-mx-8 px-4 sm:px-8">
-                  <div className="rounded-2xl border border-border overflow-hidden min-w-max">
-                    <table className="w-full text-right min-w-max">
-                      <thead>
-                        <tr className="bg-surface-muted border-b border-border">
-                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('common.employee')}</th>
-                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('common.role')}</th>
-                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('staff.total_tasks')}</th>
-                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('staff.in_progress')}</th>
-                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('staff.completed_tasks')}</th>
-                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.completion_rate')}</th>
-                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('common.details')}</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border">
-                        {staffWithPerformance.map((member) => (
-                          <tr key={member.id} className="hover:bg-surface-muted/50 transition-colors">
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center text-brand font-black">
-                                  {member.name.charAt(0)}
-                                </div>
-                                <span className="font-bold text-content">{member.name}</span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className="text-xs font-bold text-content-muted bg-surface-muted px-2.5 py-1 rounded-full">
+                <div className="rounded-2xl border border-border overflow-hidden">
+                  <ResponsiveTable
+                    breakpoint="sm"
+                    cards={
+                      staffWithPerformance.length === 0 ? (
+                        <div className="text-center py-8 text-content-muted font-bold text-xs sm:text-sm">
+                          {t('reports.no_staff_registered')}
+                        </div>
+                      ) : staffWithPerformance.map((member) => (
+                        <div key={member.id} className="p-4 space-y-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center text-brand font-black shrink-0">
+                              {member.name.charAt(0)}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-bold text-content">{member.name}</div>
+                              <span className="text-xs font-bold text-content-muted bg-surface-muted px-2.5 py-0.5 rounded-full inline-block mt-1">
                                 {member.roleName}
                               </span>
-                            </td>
-                            <td className="px-6 py-4 font-black text-content">{member.totalHandled}</td>
-                            <td className="px-6 py-4 font-black text-brand">{member.active}</td>
-                            <td className="px-6 py-4 font-black text-success">{member.completed}</td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-3 min-w-[140px]">
-                                <div className="flex-1 h-2 bg-surface-muted rounded-full overflow-hidden">
-                                  <div className="h-full bg-brand transition-all" style={{ width: `${member.rate}%` }} />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2 text-xs">
+                            <div>
+                              <div className="text-content-muted font-bold">{t('staff.total_tasks')}</div>
+                              <div className="font-black text-content mt-0.5">{member.totalHandled}</div>
+                            </div>
+                            <div>
+                              <div className="text-content-muted font-bold">{t('staff.in_progress')}</div>
+                              <div className="font-black text-brand mt-0.5">{member.active}</div>
+                            </div>
+                            <div>
+                              <div className="text-content-muted font-bold">{t('staff.completed_tasks')}</div>
+                              <div className="font-black text-success mt-0.5">{member.completed}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1 h-2 bg-surface-muted rounded-full overflow-hidden">
+                              <div className="h-full bg-brand transition-all" style={{ width: `${member.rate}%` }} />
+                            </div>
+                            <span className="text-xs font-black text-brand">{member.rate}%</span>
+                          </div>
+                          <button
+                            onClick={() => setDrillDown({
+                              title: t('reports.staff_orders_title', { name: member.name }),
+                              data: member.ordersToCount,
+                              columns: [
+                                { key: 'orderNumber', label: t('dashboard.cashier.col_order_number') },
+                                { key: 'customerName', label: t('common.customer') },
+                                { key: 'totalAmount', label: t('common.amount'), type: 'currency' },
+                                { key: 'orderDate', label: t('common.date'), type: 'date' },
+                                { key: 'status', label: t('common.status'), type: 'status' }
+                              ]
+                            })}
+                            className="w-full min-h-[44px] bg-brand/10 text-brand hover:bg-brand/20 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <TrendingUp size={14} />
+                            <span>{t('permissions.items.orders.orders_view.name')}</span>
+                          </button>
+                        </div>
+                      ))
+                    }
+                    table={
+                      <table className="w-full text-right min-w-max">
+                        <thead>
+                          <tr className="bg-surface-muted border-b border-border">
+                            <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('common.employee')}</th>
+                            <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('common.role')}</th>
+                            <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('staff.total_tasks')}</th>
+                            <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('staff.in_progress')}</th>
+                            <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('staff.completed_tasks')}</th>
+                            <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.completion_rate')}</th>
+                            <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('common.details')}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {staffWithPerformance.map((member) => (
+                            <tr key={member.id} className="hover:bg-surface-muted/50 transition-colors">
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center text-brand font-black">
+                                    {member.name.charAt(0)}
+                                  </div>
+                                  <span className="font-bold text-content">{member.name}</span>
                                 </div>
-                                <span className="text-xs font-black text-brand">{member.rate}%</span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <button 
-                                onClick={() => setDrillDown({
-                                  title: t('reports.staff_orders_title', { name: member.name }),
-                                  data: member.ordersToCount,
-                                  columns: [
-                                    { key: 'orderNumber', label: t('dashboard.cashier.col_order_number') },
-                                    { key: 'customerName', label: t('common.customer') },
-                                    { key: 'totalAmount', label: t('common.amount'), type: 'currency' },
-                                    { key: 'orderDate', label: t('common.date'), type: 'date' },
-                                    { key: 'status', label: t('common.status'), type: 'status' }
-                                  ]
-                                })}
-                                className="px-3 py-1.5 bg-brand/10 text-brand hover:bg-brand/20 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer"
-                                title={t('reports.view_staff_orders')}
-                              >
-                                <TrendingUp size={14} />
-                                <span>{t('permissions.items.orders.orders_view.name')}</span>
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                        {staffWithPerformance.length === 0 && (
-                          <tr>
-                            <td colSpan={7} className="text-center py-8 text-content-muted font-bold text-xs sm:text-sm">
-                              {t('reports.no_staff_registered')}
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className="text-xs font-bold text-content-muted bg-surface-muted px-2.5 py-1 rounded-full">
+                                  {member.roleName}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 font-black text-content">{member.totalHandled}</td>
+                              <td className="px-6 py-4 font-black text-brand">{member.active}</td>
+                              <td className="px-6 py-4 font-black text-success">{member.completed}</td>
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-3 min-w-[140px]">
+                                  <div className="flex-1 h-2 bg-surface-muted rounded-full overflow-hidden">
+                                    <div className="h-full bg-brand transition-all" style={{ width: `${member.rate}%` }} />
+                                  </div>
+                                  <span className="text-xs font-black text-brand">{member.rate}%</span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <button
+                                  onClick={() => setDrillDown({
+                                    title: t('reports.staff_orders_title', { name: member.name }),
+                                    data: member.ordersToCount,
+                                    columns: [
+                                      { key: 'orderNumber', label: t('dashboard.cashier.col_order_number') },
+                                      { key: 'customerName', label: t('common.customer') },
+                                      { key: 'totalAmount', label: t('common.amount'), type: 'currency' },
+                                      { key: 'orderDate', label: t('common.date'), type: 'date' },
+                                      { key: 'status', label: t('common.status'), type: 'status' }
+                                    ]
+                                  })}
+                                  className="px-3 py-1.5 bg-brand/10 text-brand hover:bg-brand/20 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer"
+                                  title={t('reports.view_staff_orders')}
+                                >
+                                  <TrendingUp size={14} />
+                                  <span>{t('permissions.items.orders.orders_view.name')}</span>
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                          {staffWithPerformance.length === 0 && (
+                            <tr>
+                              <td colSpan={7} className="text-center py-8 text-content-muted font-bold text-xs sm:text-sm">
+                                {t('reports.no_staff_registered')}
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    }
+                  />
                 </div>
               </div>
 
@@ -1671,54 +1737,97 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
               <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
                 <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.sp_supplier_breakdown')}</h3>
-                <div className="overflow-x-auto whitespace-nowrap -mx-4 sm:-mx-8 px-4 sm:px-8">
-                  <div className="rounded-2xl border border-border overflow-hidden min-w-max">
-                    <table className="w-full text-right min-w-max">
-                      <thead>
-                        <tr className="bg-surface-muted border-b border-border">
-                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('procurement.po_supplier', 'المورد')}</th>
-                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.sp_total_purchases')}</th>
-                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.sp_total_returns')}</th>
-                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.sp_net_purchases')}</th>
-                          <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('common.details')}</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border">
-                        {supplierStats.supplierBreakdown.map((s) => (
-                          <tr key={s.id} className="hover:bg-surface-muted/50 transition-colors">
-                            <td className="px-6 py-4 font-bold text-content">{s.name}</td>
-                            <td className="px-6 py-4 font-black text-brand"><PriceDisplay amount={s.purchases} /></td>
-                            <td className="px-6 py-4 font-black text-danger"><PriceDisplay amount={s.returns} /></td>
-                            <td className="px-6 py-4 font-black text-success"><PriceDisplay amount={s.net} /></td>
-                            <td className="px-6 py-4">
-                              <button
-                                onClick={() => setDrillDown({
-                                  title: t('reports.sp_supplier_orders_title', { name: s.name }),
-                                  data: [...supplierStats.purchasesOnly, ...supplierStats.returnsOnly].filter(po => (po.supplierId || (po as any).supplier_id) === s.id),
-                                  columns: [
-                                    { key: 'poNumber', label: t('procurement.po_number', 'رقم السند') },
-                                    { key: 'orderDate', label: t('common.date'), type: 'date' },
-                                    { key: 'totalAmount', label: t('common.amount'), type: 'currency' },
-                                    { key: 'status', label: t('common.status'), type: 'status' }
-                                  ]
-                                })}
-                                className="px-3 py-1.5 bg-brand/10 text-brand hover:bg-brand/20 rounded-xl text-xs font-black transition-all cursor-pointer"
-                              >
-                                {t('common.details')}
-                              </button>
-                            </td>
+                <div className="rounded-2xl border border-border overflow-hidden">
+                  <ResponsiveTable
+                    breakpoint="sm"
+                    cards={
+                      supplierStats.supplierBreakdown.length === 0 ? (
+                        <div className="text-center py-8 text-content-muted font-bold text-xs sm:text-sm">
+                          {t('reports.sp_no_purchases')}
+                        </div>
+                      ) : supplierStats.supplierBreakdown.map((s) => (
+                        <div key={s.id} className="p-4 space-y-3">
+                          <div className="font-bold text-content">{s.name}</div>
+                          <div className="grid grid-cols-3 gap-2 text-xs">
+                            <div>
+                              <div className="text-content-muted font-bold">{t('reports.sp_total_purchases')}</div>
+                              <div className="font-black text-brand mt-0.5"><PriceDisplay amount={s.purchases} /></div>
+                            </div>
+                            <div>
+                              <div className="text-content-muted font-bold">{t('reports.sp_total_returns')}</div>
+                              <div className="font-black text-danger mt-0.5"><PriceDisplay amount={s.returns} /></div>
+                            </div>
+                            <div>
+                              <div className="text-content-muted font-bold">{t('reports.sp_net_purchases')}</div>
+                              <div className="font-black text-success mt-0.5"><PriceDisplay amount={s.net} /></div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => setDrillDown({
+                              title: t('reports.sp_supplier_orders_title', { name: s.name }),
+                              data: [...supplierStats.purchasesOnly, ...supplierStats.returnsOnly].filter(po => (po.supplierId || (po as any).supplier_id) === s.id),
+                              columns: [
+                                { key: 'poNumber', label: t('procurement.po_number', 'رقم السند') },
+                                { key: 'orderDate', label: t('common.date'), type: 'date' },
+                                { key: 'totalAmount', label: t('common.amount'), type: 'currency' },
+                                { key: 'status', label: t('common.status'), type: 'status' }
+                              ]
+                            })}
+                            className="w-full min-h-[44px] bg-brand/10 text-brand hover:bg-brand/20 rounded-xl text-xs font-black transition-all cursor-pointer"
+                          >
+                            {t('common.details')}
+                          </button>
+                        </div>
+                      ))
+                    }
+                    table={
+                      <table className="w-full text-right min-w-max">
+                        <thead>
+                          <tr className="bg-surface-muted border-b border-border">
+                            <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('procurement.po_supplier', 'المورد')}</th>
+                            <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.sp_total_purchases')}</th>
+                            <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.sp_total_returns')}</th>
+                            <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.sp_net_purchases')}</th>
+                            <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('common.details')}</th>
                           </tr>
-                        ))}
-                        {supplierStats.supplierBreakdown.length === 0 && (
-                          <tr>
-                            <td colSpan={5} className="text-center py-8 text-content-muted font-bold text-xs sm:text-sm">
-                              {t('reports.sp_no_purchases')}
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {supplierStats.supplierBreakdown.map((s) => (
+                            <tr key={s.id} className="hover:bg-surface-muted/50 transition-colors">
+                              <td className="px-6 py-4 font-bold text-content">{s.name}</td>
+                              <td className="px-6 py-4 font-black text-brand"><PriceDisplay amount={s.purchases} /></td>
+                              <td className="px-6 py-4 font-black text-danger"><PriceDisplay amount={s.returns} /></td>
+                              <td className="px-6 py-4 font-black text-success"><PriceDisplay amount={s.net} /></td>
+                              <td className="px-6 py-4">
+                                <button
+                                  onClick={() => setDrillDown({
+                                    title: t('reports.sp_supplier_orders_title', { name: s.name }),
+                                    data: [...supplierStats.purchasesOnly, ...supplierStats.returnsOnly].filter(po => (po.supplierId || (po as any).supplier_id) === s.id),
+                                    columns: [
+                                      { key: 'poNumber', label: t('procurement.po_number', 'رقم السند') },
+                                      { key: 'orderDate', label: t('common.date'), type: 'date' },
+                                      { key: 'totalAmount', label: t('common.amount'), type: 'currency' },
+                                      { key: 'status', label: t('common.status'), type: 'status' }
+                                    ]
+                                  })}
+                                  className="px-3 py-1.5 bg-brand/10 text-brand hover:bg-brand/20 rounded-xl text-xs font-black transition-all cursor-pointer"
+                                >
+                                  {t('common.details')}
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                          {supplierStats.supplierBreakdown.length === 0 && (
+                            <tr>
+                              <td colSpan={5} className="text-center py-8 text-content-muted font-bold text-xs sm:text-sm">
+                                {t('reports.sp_no_purchases')}
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    }
+                  />
                 </div>
               </div>
             </div>
@@ -1854,21 +1963,16 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-x-auto whitespace-nowrap p-4 sm:p-8">
-                <div className="bg-surface rounded-2xl border border-border min-w-max">
-                  <table className="w-full text-right min-w-max">
-                    <thead className="bg-surface-muted text-[10px] font-black text-content-muted uppercase tracking-widest">
-                      <tr>
+              <div className="flex-1 overflow-y-auto p-4 sm:p-8">
+                <div className="bg-surface rounded-2xl border border-border overflow-hidden">
+                  <ResponsiveTable
+                    breakpoint="sm"
+                    cards={drillDown.data.map((row, i) => (
+                      <div key={i} className="p-4 space-y-2">
                         {drillDown.columns.map((col, idx) => (
-                          <th key={idx} className="px-6 py-4">{col.label}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {drillDown.data.map((row, i) => (
-                        <tr key={i} className="hover:bg-brand/5 transition-colors">
-                          {drillDown.columns.map((col, idx) => (
-                            <td key={idx} className="px-6 py-4 text-sm font-bold text-content">
+                          <div key={idx} className={cn("flex items-center justify-between gap-3 text-sm", idx === 0 && "font-black text-content")}>
+                            <span className="text-content-muted font-bold text-xs shrink-0">{col.label}</span>
+                            <span className="font-bold text-content text-end">
                               {col.type === 'currency' ? <PriceDisplay amount={row[col.key]} /> :
                                col.type === 'date' ? new Date(row[col.key]).toLocaleDateString(locale) :
                                col.type === 'status' ? (
@@ -1876,12 +1980,40 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                                    {row[col.key]}
                                  </span>
                                ) : row[col.key]}
-                            </td>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                    table={
+                      <table className="w-full text-right min-w-max">
+                        <thead className="bg-surface-muted text-[10px] font-black text-content-muted uppercase tracking-widest">
+                          <tr>
+                            {drillDown.columns.map((col, idx) => (
+                              <th key={idx} className="px-6 py-4">{col.label}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {drillDown.data.map((row, i) => (
+                            <tr key={i} className="hover:bg-brand/5 transition-colors">
+                              {drillDown.columns.map((col, idx) => (
+                                <td key={idx} className="px-6 py-4 text-sm font-bold text-content">
+                                  {col.type === 'currency' ? <PriceDisplay amount={row[col.key]} /> :
+                                   col.type === 'date' ? new Date(row[col.key]).toLocaleDateString(locale) :
+                                   col.type === 'status' ? (
+                                     <span className="px-2 py-1 bg-surface-muted rounded-lg text-[10px] text-content-muted">
+                                       {row[col.key]}
+                                     </span>
+                                   ) : row[col.key]}
+                                </td>
+                              ))}
+                            </tr>
                           ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                        </tbody>
+                      </table>
+                    }
+                  />
                 </div>
               </div>
             </motion.div>

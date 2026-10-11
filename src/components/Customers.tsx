@@ -68,6 +68,7 @@ import { useSafeMutation } from '../hooks/useSafeMutation';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import { PermissionKey } from '../types';
 import { SmartSelect } from './ui/SmartSelect';
+import { ResponsiveTable } from './ui/ResponsiveTable';
 import { cn } from '../lib/utils';
 
 import { isRtlLang, localeOf } from '../lib/direction';
@@ -2210,6 +2211,133 @@ const CustomerStatementModal = ({
     }
   };
 
+  // مستخرَجة لتُستدعى من كل من صف الجدول الموسَّع (سطح المكتب) وبطاقة الجوال
+  // (seen-tablet-mobile-ux-review.md بند 6) -- بلا تكرار منطق الدفع نفسه في
+  // مكانين، خاصة أنه يعالج تحصيل مبلغ مالي حقيقي.
+  const renderLedgerExpandedPanel = (order: Order) => (
+    <div className={cn("grid gap-4", order.remainingAmount > 0 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1")}>
+
+      {/* Order items column */}
+      <div className="space-y-2 text-xs">
+        <h4 className="font-black text-content-muted border-b border-border/40 pb-1 flex items-center gap-1.5">
+          <ShoppingBag size={14} />
+          {t('orders.order_items')}
+        </h4>
+        <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+          {order.items && order.items.length > 0 ? (
+            order.items.map((item: any, idx: number) => (
+              <div key={idx} className="bg-surface p-2.5 rounded-xl border border-border flex justify-between items-center shadow-sm">
+                <div>
+                  <p className="font-bold text-content">{item.name || item.thobeType || t('orders.thobe_custom')}</p>
+                  <p className="text-[10px] text-content-muted">{t('common.quantity')}: {item.quantity || 1}</p>
+                </div>
+                <p className="font-bold text-brand"><PriceDisplay amount={item.price || item.totalPrice} /></p>
+              </div>
+            ))
+          ) : (
+            <p className="text-content-muted italic">{t('orders.no_items_details')}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Pay remaining column */}
+      {order.remainingAmount > 0 && (
+        <div className="bg-surface p-4 rounded-2xl border border-danger/10 space-y-3.5 shadow-sm flex flex-col justify-between">
+          <div>
+            <h4 className="font-black text-danger border-b border-border/40 pb-1 flex items-center gap-1.5 text-xs mb-3">
+              <CreditCard size={14} />
+              {t('orders.pay_remaining_title')}
+            </h4>
+
+            {payingOrderId === order.id ? (
+              <div className="space-y-3.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                {/* Payment Amount Input */}
+                <div className="space-y-1">
+                  <label htmlFor={`pay-amount-${order.id}`} className="text-[10px] font-black text-content-muted uppercase">
+                    {t('orders.pay_amount_now')} (﷼)
+                  </label>
+                  <input
+                    id={`pay-amount-${order.id}`}
+                    type="number"
+                    step="0.01"
+                    max={order.remainingAmount}
+                    value={payAmount === 0 ? '' : payAmount}
+                    onChange={(e) => setPayAmount(e.target.value === '' ? 0 : Math.min(order.remainingAmount, Math.max(0, Number(e.target.value))))}
+                    className="w-full bg-surface border border-border rounded-xl p-2.5 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-xs font-bold text-content"
+                  />
+                </div>
+
+                {/* Payment Method Selection */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-content-muted uppercase">
+                    {t('orders.payment_method')}
+                  </label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[
+                      { id: 'cash', label: t('common.payment_methods.cash_short') },
+                      { id: 'network', label: t('common.payment_methods.network') },
+                      { id: 'cash_on_delivery', label: t('orders.payment_on_delivery_short') }
+                    ].map(m => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => setPayMethod(m.id as any)}
+                        className={cn(
+                          "p-2 rounded-lg border text-[10px] font-bold flex flex-col items-center gap-1 transition-all cursor-pointer",
+                          payMethod === m.id ? "bg-brand border-brand text-white shadow-sm" : "bg-surface-muted border-transparent text-content-muted hover:bg-border/20"
+                        )}
+                      >
+                        <span>{m.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Buttons */}
+                <div className="flex gap-2 pt-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handlePaymentSubmit(order)}
+                    disabled={isPaying || payAmount <= 0}
+                    className="flex-1 bg-success hover:bg-success/90 text-white py-2 rounded-xl font-bold text-xs transition-colors disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer shadow-sm"
+                  >
+                    {isPaying ? t('orders.processing') : t('orders.confirm_payment')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setPayingOrderId(null); setPayAmount(0); }}
+                    className="px-3 py-2 text-content-muted font-bold text-xs hover:bg-surface-muted rounded-xl transition-colors cursor-pointer"
+                  >
+                    {t('common.cancel')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-content-muted font-medium text-xs leading-relaxed">
+                  {t('orders.remaining_warning')} <span className="font-black text-danger"><PriceDisplay amount={order.remainingAmount} /></span>. {t('orders.pay_help_text')}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPayingOrderId(order.id);
+                    setPayAmount(order.remainingAmount);
+                    setPayMethod('cash');
+                  }}
+                  className="w-full bg-brand hover:bg-brand/90 text-white py-2.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                >
+                  <CreditCard size={14} />
+                  {t('orders.pay_remaining')}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+
   return (
     <div className="fixed inset-0 z-[150] flex items-center justify-center p-2 sm:p-6 print:absolute print:inset-0 print:z-[200] print:p-0 print:bg-white">
       {/* Background Overlay */}
@@ -2335,214 +2463,195 @@ const CustomerStatementModal = ({
               {t('customers.detailed_ledger')}
             </h3>
             
-            <div className="overflow-x-auto rounded-2xl border border-border print:border-black">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-surface-muted border-b border-border text-content-muted font-black text-xs print:bg-gray-100 print:text-black print:border-b-2 print:border-black">
-                    <th className="p-3 text-right">{t('orders.order_id')}</th>
-                    <th className="p-3 text-right">{t('common.date')}</th>
-                    <th className="p-3 text-right">{t('orders.total')}</th>
-                    <th className="p-3 text-right">{t('orders.paid')}</th>
-                    <th className="p-3 text-right">{t('common.remaining')}</th>
-                    <th className="p-3 text-right">{t('common.status')}</th>
-                    <th className="p-3 text-center print:hidden">{t('saas.details')}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border print:divide-black">
-                  {orders.length > 0 ? (
+            <div className="rounded-2xl border border-border print:border-black overflow-hidden">
+              <ResponsiveTable
+                className="print:hidden"
+                cards={
+                  orders.length > 0 ? (
                     orders.map((order) => {
                       const isExpanded = expandedOrder === order.id;
                       return (
-                        <React.Fragment key={order.id}>
-                          <tr className={cn(
-                            "hover:bg-brand/5 transition-colors print:hover:bg-transparent",
-                            order.remainingAmount > 0 ? "bg-danger/[0.02]" : ""
-                          )}>
-                            <td className="p-3 font-black text-content print:text-black">
-                              #{order.orderNumber || order.id.slice(-6).toUpperCase()}
-                            </td>
-                            <td className="p-3 text-content-muted print:text-black text-xs">
-                              <DateTimeDisplay date={order.orderDate} showTime={true} size="xs" />
-                            </td>
-                            <td className="p-3 font-bold text-content print:text-black">
-                              <PriceDisplay amount={order.totalAmount} />
-                            </td>
-                            <td className="p-3 font-bold text-success print:text-black">
-                              <PriceDisplay amount={order.paidAmount} />
-                            </td>
-                            <td className={cn(
-                              "p-3 font-bold",
-                              order.remainingAmount > 0 ? "text-danger print:text-black" : "text-content-muted print:text-black"
-                            )}>
-                              <PriceDisplay amount={order.remainingAmount} />
-                            </td>
-                            <td className="p-3">
+                        <div key={order.id} className={cn(order.remainingAmount > 0 ? "bg-danger/[0.02]" : "")}>
+                          <div className="p-4 flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="font-black text-content">#{order.orderNumber || order.id.slice(-6).toUpperCase()}</div>
+                              <div className="text-content-muted text-xs mt-0.5"><DateTimeDisplay date={order.orderDate} showTime={true} size="xs" /></div>
                               <span className={cn(
-                                "text-[10px] font-black px-2.5 py-0.5 rounded-full inline-block",
-                                order.status === 'delivered' 
-                                  ? "bg-success/10 text-success print:bg-transparent print:text-black print:border print:border-black" 
+                                "text-[10px] font-black px-2.5 py-0.5 rounded-full inline-block mt-2",
+                                order.status === 'delivered'
+                                  ? "bg-success/10 text-success"
                                   : order.status === 'cancelled'
-                                    ? "bg-surface-muted text-content-muted print:bg-transparent print:text-black print:border print:border-black"
-                                    : "bg-warning/10 text-warning print:bg-transparent print:text-black print:border print:border-black"
+                                    ? "bg-surface-muted text-content-muted"
+                                    : "bg-warning/10 text-warning"
                               )}>
-                                {order.status === 'delivered' 
-                                  ? t('common.status_delivered') 
+                                {order.status === 'delivered'
+                                  ? t('common.status_delivered')
                                   : order.status === 'cancelled'
                                     ? t('common.status_cancelled')
                                     : t('common.status_in_progress')
                                 }
                               </span>
-                            </td>
-                            <td className="p-3 text-center print:hidden">
-                              <button 
-                                onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
-                                className="p-1 hover:bg-brand/10 text-brand rounded-lg transition-colors cursor-pointer"
-                              >
-                                {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                              </button>
-                            </td>
-                          </tr>
-
-                          {/* Expanded Order Items Row */}
+                            </div>
+                            <button
+                              onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
+                              aria-label={t('saas.details')}
+                              className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-brand/10 text-brand rounded-xl transition-colors cursor-pointer shrink-0"
+                            >
+                              {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                            </button>
+                          </div>
+                          <div className="px-4 pb-4 grid grid-cols-3 gap-2 text-xs">
+                            <div>
+                              <div className="text-content-muted font-bold">{t('orders.total')}</div>
+                              <div className="font-bold text-content mt-0.5"><PriceDisplay amount={order.totalAmount} /></div>
+                            </div>
+                            <div>
+                              <div className="text-content-muted font-bold">{t('orders.paid')}</div>
+                              <div className="font-bold text-success mt-0.5"><PriceDisplay amount={order.paidAmount} /></div>
+                            </div>
+                            <div>
+                              <div className="text-content-muted font-bold">{t('common.remaining')}</div>
+                              <div className={cn("font-bold mt-0.5", order.remainingAmount > 0 ? "text-danger" : "text-content-muted")}>
+                                <PriceDisplay amount={order.remainingAmount} />
+                              </div>
+                            </div>
+                          </div>
                           {isExpanded && (
-                            <tr className="bg-brand/5/20 border-b border-border print:hidden">
-                              <td colSpan={7} className="p-4 bg-brand/[0.01]">
-                                <div className={cn("grid gap-4", order.remainingAmount > 0 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1")}>
-                                  
-                                  {/* Order items column */}
-                                  <div className="space-y-2 text-xs">
-                                    <h4 className="font-black text-content-muted border-b border-border/40 pb-1 flex items-center gap-1.5">
-                                      <ShoppingBag size={14} />
-                                      {t('orders.order_items')}
-                                    </h4>
-                                    <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
-                                      {order.items && order.items.length > 0 ? (
-                                        order.items.map((item: any, idx: number) => (
-                                          <div key={idx} className="bg-surface p-2.5 rounded-xl border border-border flex justify-between items-center shadow-sm">
-                                            <div>
-                                              <p className="font-bold text-content">{item.name || item.thobeType || t('orders.thobe_custom')}</p>
-                                              <p className="text-[10px] text-content-muted">{t('common.quantity')}: {item.quantity || 1}</p>
-                                            </div>
-                                            <p className="font-bold text-brand"><PriceDisplay amount={item.price || item.totalPrice} /></p>
-                                          </div>
-                                        ))
-                                      ) : (
-                                        <p className="text-content-muted italic">{t('orders.no_items_details')}</p>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  {/* Pay remaining column */}
-                                  {order.remainingAmount > 0 && (
-                                    <div className="bg-surface p-4 rounded-2xl border border-danger/10 space-y-3.5 shadow-sm flex flex-col justify-between">
-                                      <div>
-                                        <h4 className="font-black text-danger border-b border-border/40 pb-1 flex items-center gap-1.5 text-xs mb-3">
-                                          <CreditCard size={14} />
-                                          {t('orders.pay_remaining_title')}
-                                        </h4>
-                                        
-                                        {payingOrderId === order.id ? (
-                                          <div className="space-y-3.5 animate-in fade-in slide-in-from-top-2 duration-200">
-                                            {/* Payment Amount Input */}
-                                            <div className="space-y-1">
-                                              <label htmlFor={`pay-amount-${order.id}`} className="text-[10px] font-black text-content-muted uppercase">
-                                                {t('orders.pay_amount_now')} (﷼)
-                                              </label>
-                                              <input
-                                                id={`pay-amount-${order.id}`}
-                                                type="number"
-                                                step="0.01"
-                                                max={order.remainingAmount}
-                                                value={payAmount === 0 ? '' : payAmount}
-                                                onChange={(e) => setPayAmount(e.target.value === '' ? 0 : Math.min(order.remainingAmount, Math.max(0, Number(e.target.value))))}
-                                                className="w-full bg-surface border border-border rounded-xl p-2.5 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-xs font-bold text-content"
-                                              />
-                                            </div>
-
-                                            {/* Payment Method Selection */}
-                                            <div className="space-y-1">
-                                              <label className="text-[10px] font-black text-content-muted uppercase">
-                                                {t('orders.payment_method')}
-                                              </label>
-                                              <div className="grid grid-cols-3 gap-1.5">
-                                                {[
-                                                  { id: 'cash', label: t('common.payment_methods.cash_short') },
-                                                  { id: 'network', label: t('common.payment_methods.network') },
-                                                  { id: 'cash_on_delivery', label: t('orders.payment_on_delivery_short') }
-                                                ].map(m => (
-                                                  <button
-                                                    key={m.id}
-                                                    type="button"
-                                                    onClick={() => setPayMethod(m.id as any)}
-                                                    className={cn(
-                                                      "p-2 rounded-lg border text-[10px] font-bold flex flex-col items-center gap-1 transition-all cursor-pointer",
-                                                      payMethod === m.id ? "bg-brand border-brand text-white shadow-sm" : "bg-surface-muted border-transparent text-content-muted hover:bg-border/20"
-                                                    )}
-                                                  >
-                                                    <span>{m.label}</span>
-                                                  </button>
-                                                ))}
-                                              </div>
-                                            </div>
-
-                                            {/* Buttons */}
-                                            <div className="flex gap-2 pt-1.5">
-                                              <button 
-                                                type="button"
-                                                onClick={() => handlePaymentSubmit(order)}
-                                                disabled={isPaying || payAmount <= 0}
-                                                className="flex-1 bg-success hover:bg-success/90 text-white py-2 rounded-xl font-bold text-xs transition-colors disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer shadow-sm"
-                                              >
-                                                {isPaying ? t('orders.processing') : t('orders.confirm_payment')}
-                                              </button>
-                                              <button 
-                                                type="button"
-                                                onClick={() => { setPayingOrderId(null); setPayAmount(0); }}
-                                                className="px-3 py-2 text-content-muted font-bold text-xs hover:bg-surface-muted rounded-xl transition-colors cursor-pointer"
-                                              >
-                                                {t('common.cancel')}
-                                              </button>
-                                            </div>
-                                          </div>
-                                        ) : (
-                                          <div className="space-y-3">
-                                            <p className="text-content-muted font-medium text-xs leading-relaxed">
-                                              {t('orders.remaining_warning')} <span className="font-black text-danger"><PriceDisplay amount={order.remainingAmount} /></span>. {t('orders.pay_help_text')}
-                                            </p>
-                                            <button 
-                                              type="button"
-                                              onClick={() => {
-                                                setPayingOrderId(order.id);
-                                                setPayAmount(order.remainingAmount);
-                                                setPayMethod('cash');
-                                              }}
-                                              className="w-full bg-brand hover:bg-brand/90 text-white py-2.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
-                                            >
-                                              <CreditCard size={14} />
-                                              {t('orders.pay_remaining')}
-                                            </button>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
-
-                                </div>
-                              </td>
-                            </tr>
+                            <div className="px-4 pb-4 bg-brand/[0.01] border-t border-border pt-4">
+                              {renderLedgerExpandedPanel(order)}
+                            </div>
                           )}
-                        </React.Fragment>
+                        </div>
                       );
                     })
                   ) : (
-                    <tr>
-                      <td colSpan={7} className="p-8 text-center text-content-muted font-bold italic">
-                        {t('customers.no_statement_transactions')}
-                      </td>
+                    <div className="p-8 text-center text-content-muted font-bold italic">
+                      {t('customers.no_statement_transactions')}
+                    </div>
+                  )
+                }
+                table={
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-surface-muted border-b border-border text-content-muted font-black text-xs print:bg-gray-100 print:text-black print:border-b-2 print:border-black">
+                        <th className="p-3 text-right">{t('orders.order_id')}</th>
+                        <th className="p-3 text-right">{t('common.date')}</th>
+                        <th className="p-3 text-right">{t('orders.total')}</th>
+                        <th className="p-3 text-right">{t('orders.paid')}</th>
+                        <th className="p-3 text-right">{t('common.remaining')}</th>
+                        <th className="p-3 text-right">{t('common.status')}</th>
+                        <th className="p-3 text-center print:hidden">{t('saas.details')}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border print:divide-black">
+                      {orders.length > 0 ? (
+                        orders.map((order) => {
+                          const isExpanded = expandedOrder === order.id;
+                          return (
+                            <React.Fragment key={order.id}>
+                              <tr className={cn(
+                                "hover:bg-brand/5 transition-colors print:hover:bg-transparent",
+                                order.remainingAmount > 0 ? "bg-danger/[0.02]" : ""
+                              )}>
+                                <td className="p-3 font-black text-content print:text-black">
+                                  #{order.orderNumber || order.id.slice(-6).toUpperCase()}
+                                </td>
+                                <td className="p-3 text-content-muted print:text-black text-xs">
+                                  <DateTimeDisplay date={order.orderDate} showTime={true} size="xs" />
+                                </td>
+                                <td className="p-3 font-bold text-content print:text-black">
+                                  <PriceDisplay amount={order.totalAmount} />
+                                </td>
+                                <td className="p-3 font-bold text-success print:text-black">
+                                  <PriceDisplay amount={order.paidAmount} />
+                                </td>
+                                <td className={cn(
+                                  "p-3 font-bold",
+                                  order.remainingAmount > 0 ? "text-danger print:text-black" : "text-content-muted print:text-black"
+                                )}>
+                                  <PriceDisplay amount={order.remainingAmount} />
+                                </td>
+                                <td className="p-3">
+                                  <span className={cn(
+                                    "text-[10px] font-black px-2.5 py-0.5 rounded-full inline-block",
+                                    order.status === 'delivered'
+                                      ? "bg-success/10 text-success print:bg-transparent print:text-black print:border print:border-black"
+                                      : order.status === 'cancelled'
+                                        ? "bg-surface-muted text-content-muted print:bg-transparent print:text-black print:border print:border-black"
+                                        : "bg-warning/10 text-warning print:bg-transparent print:text-black print:border print:border-black"
+                                  )}>
+                                    {order.status === 'delivered'
+                                      ? t('common.status_delivered')
+                                      : order.status === 'cancelled'
+                                        ? t('common.status_cancelled')
+                                        : t('common.status_in_progress')
+                                    }
+                                  </span>
+                                </td>
+                                <td className="p-3 text-center print:hidden">
+                                  <button
+                                    onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
+                                    aria-label={t('saas.details')}
+                                    className="min-w-[36px] min-h-[36px] flex items-center justify-center mx-auto hover:bg-brand/10 text-brand rounded-lg transition-colors cursor-pointer"
+                                  >
+                                    {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                  </button>
+                                </td>
+                              </tr>
+
+                              {/* Expanded Order Items Row */}
+                              {isExpanded && (
+                                <tr className="bg-brand/5/20 border-b border-border print:hidden">
+                                  <td colSpan={7} className="p-4 bg-brand/[0.01]">
+                                    {renderLedgerExpandedPanel(order)}
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan={7} className="p-8 text-center text-content-muted font-bold italic">
+                            {t('customers.no_statement_transactions')}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                }
+              />
+              {/* نسخة الطباعة تبقى الجدول الكامل دائماً بلا تفريع بطاقات/جدول */}
+              <div className="hidden print:block">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-100 text-black font-black text-xs border-b-2 border-black">
+                      <th className="p-3 text-right">{t('orders.order_id')}</th>
+                      <th className="p-3 text-right">{t('common.date')}</th>
+                      <th className="p-3 text-right">{t('orders.total')}</th>
+                      <th className="p-3 text-right">{t('orders.paid')}</th>
+                      <th className="p-3 text-right">{t('common.remaining')}</th>
+                      <th className="p-3 text-right">{t('common.status')}</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-black">
+                    {orders.length > 0 ? orders.map((order) => (
+                      <tr key={order.id}>
+                        <td className="p-3 font-black text-black">#{order.orderNumber || order.id.slice(-6).toUpperCase()}</td>
+                        <td className="p-3 text-black text-xs"><DateTimeDisplay date={order.orderDate} showTime={true} size="xs" /></td>
+                        <td className="p-3 font-bold text-black"><PriceDisplay amount={order.totalAmount} /></td>
+                        <td className="p-3 font-bold text-black"><PriceDisplay amount={order.paidAmount} /></td>
+                        <td className="p-3 font-bold text-black"><PriceDisplay amount={order.remainingAmount} /></td>
+                        <td className="p-3 text-black">
+                          {order.status === 'delivered' ? t('common.status_delivered') : order.status === 'cancelled' ? t('common.status_cancelled') : t('common.status_in_progress')}
+                        </td>
+                      </tr>
+                    )) : (
+                      <tr><td colSpan={6} className="p-8 text-center text-black font-bold italic">{t('customers.no_statement_transactions')}</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>

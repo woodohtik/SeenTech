@@ -1216,7 +1216,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         {/* Cart Header */}
         <div className="p-4 sm:px-6 sm:py-5 border-b border-border flex items-center justify-between shrink-0 relative">
           <div className="flex items-center gap-2">
-            {isMobilePanel && <div className="lg:hidden w-10 h-1 bg-border rounded-full absolute top-2 left-1/2 -translate-x-1/2" />}
+            {isMobilePanel && <div className="md:hidden w-10 h-1 bg-border rounded-full absolute top-2 left-1/2 -translate-x-1/2" />}
             <ShoppingCart size={22} className="text-brand" />
             <h2 className="text-base lg:text-lg font-black text-content">
               {t('pos.cart_title')}
@@ -1374,13 +1374,13 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                       </div>
                     )}
                     {item.type === 'ready_made' && (
-                      <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 rounded-lg cursor-pointer transition-opacity">
-                        <Camera size={18} className="text-white" />
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          className="hidden" 
-                          onChange={(e) => handleItemImageUpload(item.id!, e)} 
+                      <label className="absolute -bottom-1 -end-1 w-5 h-5 flex items-center justify-center bg-brand text-white rounded-full cursor-pointer shadow-sm border-2 border-surface transition-transform hover:scale-110">
+                        <Camera size={11} />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleItemImageUpload(item.id!, e)}
                         />
                       </label>
                     )}
@@ -1582,7 +1582,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
   };
 
   return (
-    <div className="h-full flex flex-col lg:flex-row font-sans bg-background text-content overflow-hidden w-full" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="h-full flex flex-col md:flex-row font-sans bg-background text-content overflow-hidden w-full" dir={isRtl ? 'rtl' : 'ltr'}>
       <ScannerModal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} onScan={handleScan} />
       {whatsappModalOpen && completedOrder && (
         <WhatsAppPhoneModal
@@ -1593,7 +1593,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
         />
       )}
       {/* Main Pane (70% width on Desktop) */}
-      <div className="w-full lg:w-[70%] flex flex-col gap-4 lg:gap-5 overflow-x-hidden transition-all duration-300 p-4 sm:p-6 overflow-y-auto h-auto lg:h-full flex-1">
+      <div className="w-full md:w-[70%] flex flex-col gap-4 lg:gap-5 overflow-x-hidden transition-all duration-300 p-4 sm:p-6 overflow-y-auto h-auto md:h-full flex-1">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <div className="group flex-1 flex items-center bg-surface border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand focus-within:border-brand transition-all shadow-sm overflow-hidden h-11">
             <div className="flex items-center justify-center px-3.5 border-e border-border/60 text-content-muted group-focus-within:text-brand h-full shrink-0">
@@ -1798,7 +1798,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
       </div>
 
       {/* Desktop sidebar cart layout (30% width) - Hidden on mobile */}
-      <div className="hidden lg:flex lg:w-[30%] lg:min-w-[360px] lg:max-w-[450px] ltr:border-l rtl:border-r border-border flex-col h-full overflow-hidden shrink-0 shadow-sm">
+      <div className="hidden md:flex md:w-[30%] md:min-w-[360px] md:max-w-[450px] ltr:border-l rtl:border-r border-border flex-col h-full overflow-hidden shrink-0 shadow-sm">
         {renderCartPanel(false)}
       </div>
 
@@ -1811,14 +1811,14 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowCartOnMobile(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[50] lg:hidden"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[50] md:hidden"
             />
             <motion.div
               initial={shouldReduceMotion ? false : { y: '100%' }}
               animate={{ y: 0 }}
               exit={shouldReduceMotion ? undefined : { y: '100%' }}
               transition={shouldReduceMotion ? { duration: 0 } : { type: 'spring', damping: 28, stiffness: 220 }}
-              className="fixed inset-x-0 bottom-0 h-[85vh] rounded-t-[2.5rem] bg-surface flex flex-col shadow-2xl z-[60] lg:hidden overflow-hidden pb-10"
+              className="fixed inset-x-0 bottom-0 h-[85vh] rounded-t-[2.5rem] bg-surface flex flex-col shadow-2xl z-[60] md:hidden overflow-hidden pb-10"
               dir={isRtl ? 'rtl' : 'ltr'}
             >
               {renderCartPanel(true)}
@@ -1835,7 +1835,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setShowCartOnMobile(true)}
-          className="lg:hidden fixed bottom-6 left-6 z-[40] bg-brand text-white p-5 rounded-[2rem] shadow-2xl flex items-center gap-3 transition-all"
+          className="md:hidden fixed bottom-6 left-6 z-[40] bg-brand text-white p-5 rounded-[2rem] shadow-2xl flex items-center gap-3 transition-all"
         >
           <div className="relative">
             <ShoppingCart size={28} />
@@ -2020,7 +2020,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                           <button
                             type="button"
                             className={cn(
-                              "px-3 py-1 text-xs font-bold rounded-md transition-all",
+                              "px-3 py-2.5 min-h-[40px] text-xs font-bold rounded-md transition-all",
                               discountType === 'percent' ? "bg-brand text-white shadow-sm" : "text-content-muted hover:text-content"
                             )}
                             onClick={() => {
@@ -2033,7 +2033,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                           <button
                             type="button"
                             className={cn(
-                              "px-3 py-1 text-xs font-bold rounded-md transition-all",
+                              "px-3 py-2.5 min-h-[40px] text-xs font-bold rounded-md transition-all",
                               discountType === 'fixed' ? "bg-brand text-white shadow-sm" : "text-content-muted hover:text-content"
                             )}
                             onClick={() => setDiscountType('fixed')}
@@ -2042,7 +2042,13 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                           </button>
                         </div>
                       </div>
-                      <div className="relative">
+                      <div className="flex items-center bg-surface border border-border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-brand/20 focus-within:border-brand transition-all" dir="ltr">
+                        <button
+                          type="button"
+                          onClick={() => setDiscountValue(Math.max(0, (discountValue || 0) - 1))}
+                          aria-label={t('pos.decrease_quantity')}
+                          className="w-11 h-11 shrink-0 flex items-center justify-center text-content-muted hover:bg-surface-muted hover:text-content transition-colors"
+                        >-</button>
                         <input
                           type="number"
                           min="0"
@@ -2054,9 +2060,14 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                              setDiscountValue(val);
                           }}
                           placeholder="0"
-                          className="w-full bg-surface border border-border rounded-xl py-3 px-4 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-left tabular-nums font-semibold text-lg"
-                          dir="ltr"
+                          className="w-full min-w-0 flex-1 bg-transparent border-none outline-none focus:ring-0 py-3 px-2 text-center tabular-nums font-semibold text-lg"
                         />
+                        <button
+                          type="button"
+                          onClick={() => setDiscountValue(discountType === 'percent' ? Math.min(100, (discountValue || 0) + 1) : (discountValue || 0) + 1)}
+                          aria-label={t('pos.increase_quantity')}
+                          className="w-11 h-11 shrink-0 flex items-center justify-center text-content-muted hover:bg-surface-muted hover:text-content transition-colors"
+                        >+</button>
                       </div>
                     </div>
 
@@ -2096,15 +2107,28 @@ const invoiceData: InvoiceData | null = completedOrder ? {
 
                     <div className="bg-surface p-4 rounded-2xl border border-border">
                       <label className="block text-sm font-bold text-content mb-3">{t('orders.pay_amount_now')}</label>
-                      <input
-                        type="number"
-                        value={paidAmount === 0 ? '' : paidAmount}
-                        onChange={(e) => setPaidAmount(e.target.value === '' ? 0 : Number(e.target.value))}
-                        className="w-full p-4 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-black text-2xl text-center tabular-nums"
-                        dir="ltr"
-                        min="0"
-                        max={totalAmount}
-                      />
+                      <div className="flex items-center bg-surface border border-border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-brand/20 focus-within:border-brand transition-all" dir="ltr">
+                        <button
+                          type="button"
+                          onClick={() => setPaidAmount(Math.max(0, paidAmount - 10))}
+                          aria-label={t('pos.decrease_quantity')}
+                          className="w-11 h-11 shrink-0 flex items-center justify-center text-content-muted hover:bg-surface-muted hover:text-content transition-colors"
+                        >-</button>
+                        <input
+                          type="number"
+                          value={paidAmount === 0 ? '' : paidAmount}
+                          onChange={(e) => setPaidAmount(e.target.value === '' ? 0 : Number(e.target.value))}
+                          className="w-full min-w-0 flex-1 bg-transparent border-none outline-none focus:ring-0 p-4 font-black text-2xl text-center tabular-nums"
+                          min="0"
+                          max={totalAmount}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setPaidAmount(Math.min(totalAmount, paidAmount + 10))}
+                          aria-label={t('pos.increase_quantity')}
+                          className="w-11 h-11 shrink-0 flex items-center justify-center text-content-muted hover:bg-surface-muted hover:text-content transition-colors"
+                        >+</button>
+                      </div>
                     </div>
 
                   </div>
@@ -2459,12 +2483,26 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   </div>
                   <div>
                     <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">{t('orders.price')}</label>
-                    <input 
-                      type="number" 
-                      value={customItemForm.price || ''}
-                      onChange={(e) => setCustomItemForm({...customItemForm, price: e.target.value === '' ? 0 : Number(e.target.value)})}
-                      className="w-full p-2.5 sm:p-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-sm sm:text-base font-semibold text-content"
-                    />
+                    <div className="flex items-center bg-surface border border-border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-brand/20 focus-within:border-brand transition-all">
+                      <button
+                        type="button"
+                        onClick={() => setCustomItemForm({...customItemForm, price: Math.max(0, (customItemForm.price || 0) - 1)})}
+                        aria-label={t('pos.decrease_quantity')}
+                        className="w-10 h-10 shrink-0 flex items-center justify-center text-content-muted hover:bg-surface-muted hover:text-content transition-colors"
+                      >-</button>
+                      <input
+                        type="number"
+                        value={customItemForm.price || ''}
+                        onChange={(e) => setCustomItemForm({...customItemForm, price: e.target.value === '' ? 0 : Number(e.target.value)})}
+                        className="w-full min-w-0 flex-1 bg-transparent border-none outline-none focus:ring-0 p-2.5 sm:p-3 text-center text-sm sm:text-base font-semibold text-content"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setCustomItemForm({...customItemForm, price: (customItemForm.price || 0) + 1})}
+                        aria-label={t('pos.increase_quantity')}
+                        className="w-10 h-10 shrink-0 flex items-center justify-center text-content-muted hover:bg-surface-muted hover:text-content transition-colors"
+                      >+</button>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">{t('orders.fabric')}</label>
@@ -2488,13 +2526,27 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   </div>
                   <div>
                     <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">{t('common.quantity')}</label>
-                    <input 
-                      type="number" 
-                      value={customItemForm.quantity || ''}
-                      onChange={(e) => setCustomItemForm({...customItemForm, quantity: e.target.value === '' ? 0 : Number(e.target.value)})}
-                      className="w-full p-2.5 sm:p-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-sm sm:text-base font-semibold text-content"
-                      min="1"
-                    />
+                    <div className="flex items-center bg-surface border border-border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-brand/20 focus-within:border-brand transition-all">
+                      <button
+                        type="button"
+                        onClick={() => setCustomItemForm({...customItemForm, quantity: Math.max(1, (customItemForm.quantity || 1) - 1)})}
+                        aria-label={t('pos.decrease_quantity')}
+                        className="w-10 h-10 shrink-0 flex items-center justify-center text-content-muted hover:bg-surface-muted hover:text-content transition-colors"
+                      >-</button>
+                      <input
+                        type="number"
+                        value={customItemForm.quantity || ''}
+                        onChange={(e) => setCustomItemForm({...customItemForm, quantity: e.target.value === '' ? 0 : Number(e.target.value)})}
+                        className="w-full min-w-0 flex-1 bg-transparent border-none outline-none focus:ring-0 p-2.5 sm:p-3 text-center text-sm sm:text-base font-semibold text-content"
+                        min="1"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setCustomItemForm({...customItemForm, quantity: (customItemForm.quantity || 1) + 1})}
+                        aria-label={t('pos.increase_quantity')}
+                        className="w-10 h-10 shrink-0 flex items-center justify-center text-content-muted hover:bg-surface-muted hover:text-content transition-colors"
+                      >+</button>
+                    </div>
                   </div>
                 </div>
 
@@ -2687,8 +2739,8 @@ const invoiceData: InvoiceData | null = completedOrder ? {
       {/* B2B Data Modal */}
       <Dialog open={isB2bModalOpen} onClose={() => setIsB2bModalOpen(false)} className="relative z-[100]" dir={isRtl ? 'rtl' : 'ltr'}>
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" aria-hidden="true" />
-        <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="w-full max-w-md bg-surface p-6 rounded-2xl shadow-xl border border-border">
+        <div className="fixed inset-0 overflow-y-auto flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <Dialog.Panel className="w-full max-w-md bg-surface p-6 rounded-t-3xl sm:rounded-2xl shadow-xl border border-border">
             <div className="flex justify-between items-center mb-6">
               <Dialog.Title className="text-xl font-bold text-content">{t('pos.b2b_data_title')}</Dialog.Title>
               <button onClick={() => setIsB2bModalOpen(false)} aria-label={t('common.close')} className="p-2 hover:bg-surface-muted rounded-full">
@@ -2746,10 +2798,10 @@ const invoiceData: InvoiceData | null = completedOrder ? {
 
       {/* Keyboard Shortcuts Help Modal */}
       <Transition appear show={isShortcutsModalOpen} as={React.Fragment}>
-        <Dialog as="div" className="relative z-[150] flex items-center justify-center" onClose={() => setIsShortcutsModalOpen(false)}>
+        <Dialog as="div" className="relative z-[150] flex items-end sm:items-center justify-center" onClose={() => setIsShortcutsModalOpen(false)}>
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" aria-hidden="true" onClick={() => setIsShortcutsModalOpen(false)} />
-          <div className="fixed inset-0 flex items-center justify-center p-4">
-            <Dialog.Panel className="w-full max-w-lg bg-surface p-6 rounded-3xl shadow-2xl border border-border text-right" dir={isRtl ? 'rtl' : 'ltr'}>
+          <div className="fixed inset-0 overflow-y-auto flex items-end sm:items-center justify-center p-0 sm:p-4">
+            <Dialog.Panel className="w-full max-w-lg bg-surface p-6 rounded-t-3xl sm:rounded-3xl shadow-2xl border border-border text-right" dir={isRtl ? 'rtl' : 'ltr'}>
               <div className="flex justify-between items-center mb-6 border-b border-border pb-4">
                 <Dialog.Title className="text-xl font-black text-content flex items-center gap-2">
                   <Keyboard size={20} />

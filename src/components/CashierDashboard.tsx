@@ -22,6 +22,7 @@ import { supabase } from '../lib/supabase/client';
 import { useStaff } from '../contexts/StaffContext';
 import { PriceDisplay } from './PriceDisplay';
 import { useToast } from '../contexts/ToastContext';
+import { ResponsiveTable } from './ui/ResponsiveTable';
 
 interface CashierDashboardProps {
   tenantId: string;
@@ -347,73 +348,123 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
           </div>
         </div>
 
-        {/* Orders Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-right text-xs">
-            <thead>
-              <tr className="text-content-muted border-b border-border bg-surface-muted/50">
-                <th className="p-3 font-black">{t('dashboard.cashier.col_order_number')}</th>
-                <th className="p-3 font-black">{t('dashboard.cashier.col_customer_name')}</th>
-                <th className="p-3 font-black">{t('dashboard.cashier.col_order_status')}</th>
-                <th className="p-3 font-black">{t('common.total')}</th>
-                <th className="p-3 font-black">{t('dashboard.cashier.col_paid')}</th>
-                <th className="p-3 font-black">{t('common.remaining')}</th>
-                <th className="p-3 font-black text-center">{t('dashboard.cashier.col_action')}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {filteredOrders.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="p-8 text-center text-content-muted font-bold">
-                    <AlertCircle size={24} className="mx-auto mb-2 text-content-muted/50" />
-                    {t('dashboard.cashier.no_matching_orders')}
-                  </td>
-                </tr>
-              ) : (
-                filteredOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-surface-muted/50 transition-colors">
-                    <td className="p-3 font-black text-content dir-ltr text-right">
-                      {order.orderNumber}
-                    </td>
-                    <td className="p-3">
-                      <div className="font-bold text-content">{order.customerName}</div>
+        {/* Orders: cards on mobile/tablet, table on desktop (seen-tablet-mobile-ux-review.md بند 8) */}
+        <ResponsiveTable
+          cards={
+            filteredOrders.length === 0 ? (
+              <div className="p-8 text-center text-content-muted font-bold">
+                <AlertCircle size={24} className="mx-auto mb-2 text-content-muted/50" />
+                {t('dashboard.cashier.no_matching_orders')}
+              </div>
+            ) : (
+              filteredOrders.map((order) => (
+                <div key={order.id} className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-black text-content dir-ltr text-right">{order.orderNumber}</div>
+                      <div className="font-bold text-content mt-1">{order.customerName}</div>
                       {order.customerPhone && (
                         <div className="text-[10px] text-content-muted dir-ltr text-right">{order.customerPhone}</div>
                       )}
-                    </td>
-                    <td className="p-3">
-                      <OrderStatusBadge status={order.status} />
-                    </td>
-                    <td className="p-3 font-bold text-content">
-                      <PriceDisplay amount={order.totalAmount} />
-                    </td>
-                    <td className="p-3 font-bold text-success">
-                      <PriceDisplay amount={order.paidAmount} />
-                    </td>
-                    <td className="p-3 font-black">
+                    </div>
+                    <OrderStatusBadge status={order.status} />
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div>
+                      <div className="text-content-muted font-bold">{t('common.total')}</div>
+                      <div className="font-bold text-content mt-0.5"><PriceDisplay amount={order.totalAmount} /></div>
+                    </div>
+                    <div>
+                      <div className="text-content-muted font-bold">{t('dashboard.cashier.col_paid')}</div>
+                      <div className="font-bold text-success mt-0.5"><PriceDisplay amount={order.paidAmount} /></div>
+                    </div>
+                    <div>
+                      <div className="text-content-muted font-bold">{t('common.remaining')}</div>
                       {order.balanceDue > 0 ? (
-                        <span className="text-warning bg-warning/10 px-2 py-0.5 rounded-md">
-                          <PriceDisplay amount={order.balanceDue} />
-                        </span>
+                        <div className="font-black text-warning mt-0.5"><PriceDisplay amount={order.balanceDue} /></div>
                       ) : (
-                        <span className="text-success font-bold">{t('dashboard.cashier.paid_complete')}</span>
+                        <div className="font-bold text-success mt-0.5">{t('dashboard.cashier.paid_complete')}</div>
                       )}
-                    </td>
-                    <td className="p-3 text-center">
-                      <button
-                        onClick={() => navigate(`/orders`)}
-                        className="px-3 py-1.5 bg-brand/10 text-brand hover:bg-brand hover:text-white font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1 mx-auto"
-                      >
-                        <span>{t('common.view_details')}</span>
-                        <ArrowRight size={14} className="rotate-180" />
-                      </button>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => navigate(`/orders`)}
+                    className="w-full min-h-[44px] bg-brand/10 text-brand hover:bg-brand hover:text-white font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1"
+                  >
+                    <span>{t('common.view_details')}</span>
+                    <ArrowRight size={14} className="rotate-180" />
+                  </button>
+                </div>
+              ))
+            )
+          }
+          table={
+            <table className="w-full text-right text-xs">
+              <thead>
+                <tr className="text-content-muted border-b border-border bg-surface-muted/50">
+                  <th className="p-3 font-black">{t('dashboard.cashier.col_order_number')}</th>
+                  <th className="p-3 font-black">{t('dashboard.cashier.col_customer_name')}</th>
+                  <th className="p-3 font-black">{t('dashboard.cashier.col_order_status')}</th>
+                  <th className="p-3 font-black">{t('common.total')}</th>
+                  <th className="p-3 font-black">{t('dashboard.cashier.col_paid')}</th>
+                  <th className="p-3 font-black">{t('common.remaining')}</th>
+                  <th className="p-3 font-black text-center">{t('dashboard.cashier.col_action')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {filteredOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-content-muted font-bold">
+                      <AlertCircle size={24} className="mx-auto mb-2 text-content-muted/50" />
+                      {t('dashboard.cashier.no_matching_orders')}
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  filteredOrders.map((order) => (
+                    <tr key={order.id} className="hover:bg-surface-muted/50 transition-colors">
+                      <td className="p-3 font-black text-content dir-ltr text-right">
+                        {order.orderNumber}
+                      </td>
+                      <td className="p-3">
+                        <div className="font-bold text-content">{order.customerName}</div>
+                        {order.customerPhone && (
+                          <div className="text-[10px] text-content-muted dir-ltr text-right">{order.customerPhone}</div>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        <OrderStatusBadge status={order.status} />
+                      </td>
+                      <td className="p-3 font-bold text-content">
+                        <PriceDisplay amount={order.totalAmount} />
+                      </td>
+                      <td className="p-3 font-bold text-success">
+                        <PriceDisplay amount={order.paidAmount} />
+                      </td>
+                      <td className="p-3 font-black">
+                        {order.balanceDue > 0 ? (
+                          <span className="text-warning bg-warning/10 px-2 py-0.5 rounded-md">
+                            <PriceDisplay amount={order.balanceDue} />
+                          </span>
+                        ) : (
+                          <span className="text-success font-bold">{t('dashboard.cashier.paid_complete')}</span>
+                        )}
+                      </td>
+                      <td className="p-3 text-center">
+                        <button
+                          onClick={() => navigate(`/orders`)}
+                          className="px-3 py-1.5 bg-brand/10 text-brand hover:bg-brand hover:text-white font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1 mx-auto"
+                        >
+                          <span>{t('common.view_details')}</span>
+                          <ArrowRight size={14} className="rotate-180" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          }
+        />
       </div>
 
       {/* Cashier Shortcuts & Privacy Guarantee Panel */}

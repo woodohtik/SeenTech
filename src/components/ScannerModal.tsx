@@ -91,7 +91,7 @@ export default function ScannerModal({ isOpen, onClose, onScan }: ScannerModalPr
           <button
             onClick={onClose}
             aria-label={t('common.close')}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-muted text-content-muted hover:text-content transition-colors cursor-pointer"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-surface-muted text-content-muted hover:text-content transition-colors cursor-pointer"
           >
             <X size={18} />
           </button>

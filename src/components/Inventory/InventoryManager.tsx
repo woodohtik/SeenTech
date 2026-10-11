@@ -729,7 +729,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
 
           <div className="bg-surface rounded-[2.5rem] border border-border shadow-xl overflow-hidden">
             {/* Bulk Selection Controls for Mobile */}
-            <div className="md:hidden flex items-center justify-between p-4 bg-surface-muted/50 border-b border-border">
+            <div className="lg:hidden flex items-center justify-between p-4 bg-surface-muted/50 border-b border-border">
               <button
                 type="button"
                 onClick={() => {
@@ -751,7 +751,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
             </div>
 
             {/* Mobile View: Cards */}
-            <div className="md:hidden divide-y divide-border">
+            <div className="lg:hidden divide-y divide-border">
               {filteredItems.map((item) => {
                 const totalStock = getTotalStock(item.id);
                 const isLow = totalStock <= item.minThreshold;
@@ -766,7 +766,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                       }
                     >
                       <div className="flex items-center gap-3">
-                        <div onClick={(e) => e.stopPropagation()} className="flex items-center">
+                        <div onClick={(e) => e.stopPropagation()} className="flex items-center justify-center min-w-[40px] min-h-[40px] -m-2.5 p-2.5">
                           <input
                             type="checkbox"
                             checked={selectedItemIds.includes(item.id)}
@@ -777,7 +777,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                 setSelectedItemIds(selectedItemIds.filter(id => id !== item.id));
                               }
                             }}
-                            className="rounded border-border text-brand focus:ring-brand w-5 h-5 cursor-pointer ml-1"
+                            className="rounded border-border text-brand focus:ring-brand w-5 h-5 cursor-pointer"
                           />
                         </div>
                         <div className="p-1 bg-surface border border-border rounded-xl w-14 h-14 flex items-center justify-center shrink-0 shadow-sm">
@@ -1003,10 +1003,10 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                             });
                                             setShowConversionModal(true);
                                           }}
-                                          className="p-1.5 bg-brand/5 text-brand rounded-lg"
+                                          className="min-w-[40px] min-h-[40px] flex items-center justify-center bg-brand/5 text-brand rounded-lg"
                                           title={t("inventory.manual_convert_action", "فك وتحويل يدوي")}
                                         >
-                                          <Scale size={12} />
+                                          <Scale size={14} />
                                         </button>
                                       )}
                                       <button
@@ -1017,9 +1017,9 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                           });
                                           setShowAdjustmentModal(true);
                                         }}
-                                        className="p-1.5 bg-brand/5 text-brand rounded-lg"
+                                        className="min-w-[40px] min-h-[40px] flex items-center justify-center bg-brand/5 text-brand rounded-lg"
                                       >
-                                        <Edit2 size={12} />
+                                        <Edit2 size={14} />
                                       </button>
                                     </div>
                                   </div>
@@ -1036,7 +1036,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
             </div>
 
             {/* Desktop View: Table */}
-            <div className="hidden md:block overflow-x-auto whitespace-nowrap">
+            <div className="hidden lg:block overflow-x-auto whitespace-nowrap">
               <table className="w-full text-left border-collapse min-w-max">
                 <thead>
                   <tr className="bg-surface-muted/50">
@@ -2486,7 +2486,7 @@ const StockTransferModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -2500,7 +2500,7 @@ const StockTransferModal = ({
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
         className="bg-surface w-full max-w-2xl rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col"
       >
-        <div className="p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
+        <div className="p-4 sm:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
           <div className="flex items-center gap-4">
             <div className="p-4 bg-brand text-white rounded-2xl shadow-lg shadow-brand/10">
               <ArrowRightLeft size={24} className="text-white" />
@@ -2522,7 +2522,7 @@ const StockTransferModal = ({
           </button>
         </div>
 
-        <form onSubmit={handleCreateTransfer} className="p-8 space-y-6">
+        <form onSubmit={handleCreateTransfer} className="p-4 sm:p-8 space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
@@ -2588,9 +2588,9 @@ const StockTransferModal = ({
              {formData.items.map((item, idx) => (
               <div
                 key={idx}
-                className="p-4 bg-surface-muted rounded-2xl grid grid-cols-12 gap-4 items-end"
+                className="p-4 bg-surface-muted rounded-2xl grid grid-cols-1 sm:grid-cols-12 gap-4 sm:items-end"
               >
-                <div className="col-span-9 space-y-1">
+                <div className="sm:col-span-9 space-y-1">
                   <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">
                     {t("inventory.item")}
                   </label>
@@ -2620,7 +2620,7 @@ const StockTransferModal = ({
                     className=""
                   />
                 </div>
-                <div className="col-span-2 space-y-1">
+                <div className="sm:col-span-2 space-y-1">
                   <label htmlFor={`transfer-qty-${idx}`} className="text-[10px] font-black text-content-muted uppercase tracking-widest">
                     {t("inventory.qty")}
                   </label>
@@ -2639,7 +2639,7 @@ const StockTransferModal = ({
                     className="w-full px-3 py-2 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-sm text-content"
                   />
                 </div>
-                <div className="col-span-1 flex justify-center pb-2">
+                <div className="sm:col-span-1 flex justify-center sm:pb-2">
                   <button
                     type="button"
                     disabled={submitting || formData.items.length <= 1}
@@ -2649,7 +2649,8 @@ const StockTransferModal = ({
                         items: formData.items.filter((_, i) => i !== idx),
                       })
                     }
-                    className="text-danger hover:text-danger/80 disabled:opacity-30 disabled:cursor-not-allowed"
+                    aria-label={t('common.delete')}
+                    className="min-w-[40px] min-h-[40px] flex items-center justify-center text-danger hover:text-danger/80 disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     <X size={18} />
                   </button>
@@ -2760,7 +2761,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -2774,7 +2775,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
         className="bg-surface w-full max-w-md rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden"
       >
-        <div className="p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
+        <div className="p-4 sm:p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-warning text-white rounded-xl">
               <History size={20} />
@@ -2796,7 +2797,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
           </button>
         </div>
 
-        <form onSubmit={handleAdjust} className="p-6 space-y-6">
+        <form onSubmit={handleAdjust} className="p-4 sm:p-6 space-y-6">
           <div className="flex p-1 bg-surface-muted rounded-2xl">
             <button
               type="button"
@@ -2967,7 +2968,7 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch }: any) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -2979,7 +2980,7 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch }: any) => {
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-surface w-full max-w-md rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden border border-border p-8"
+        className="bg-surface w-full max-w-md rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden border border-border p-4 sm:p-8"
       >
         <button
           onClick={onClose}
@@ -3202,7 +3203,7 @@ const OpeningBalanceModal = ({ onClose, tenantId, branches, items }: any) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -3216,7 +3217,7 @@ const OpeningBalanceModal = ({ onClose, tenantId, branches, items }: any) => {
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
         className="bg-surface w-full max-w-4xl rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
       >
-        <div className="p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
+        <div className="p-4 sm:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
           <div className="flex items-center gap-4">
             <div className="p-4 bg-success text-white rounded-2xl shadow-lg shadow-success/10">
               <Download size={24} />
@@ -3238,7 +3239,7 @@ const OpeningBalanceModal = ({ onClose, tenantId, branches, items }: any) => {
           </button>
         </div>
 
-        <div className="p-8 space-y-8 overflow-y-auto">
+        <div className="p-4 sm:p-8 space-y-8 overflow-y-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-2">
               <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
@@ -4262,11 +4263,11 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
             </button>
           </div>
 
-          <div className="flex justify-end gap-4 pt-6 border-t border-border">
+          <div className="sticky bottom-0 bg-surface -mx-4 sm:-mx-8 -mb-4 sm:-mb-8 px-4 sm:px-8 pb-4 sm:pb-8 flex flex-col sm:flex-row sm:justify-end gap-3 sm:gap-4 pt-6 border-t border-border">
             <button
               type="button"
               onClick={onClose}
-              className="px-8 py-3 bg-surface text-content font-bold rounded-2xl border-2 border-border hover:bg-surface-muted transition-colors"
+              className="w-full sm:w-auto px-8 py-3 bg-surface text-content font-bold rounded-2xl border-2 border-border hover:bg-surface-muted transition-colors order-2 sm:order-1"
             >
               {t("common.cancel")}
             </button>
@@ -4274,7 +4275,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
               type="submit"
               disabled={submitting}
               className={cn(
-                "px-12 py-3 text-white font-bold rounded-2xl shadow-lg transition-all active:scale-95 flex items-center gap-2",
+                "w-full sm:w-auto px-12 py-3 text-white font-bold rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 order-1 sm:order-2",
                 submitting ? "bg-brand/50 cursor-not-allowed shadow-none" : "bg-brand shadow-brand/20 hover:bg-brand/90"
               )}
             >

@@ -471,32 +471,32 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
         {/* Modal Controls */}
         <div className="p-4 border-b border-border flex flex-wrap gap-3 justify-between items-center bg-surface-muted/50 print:hidden shrink-0">
           <h3 className="text-lg font-black text-content">{t('tax_invoices.preview_title')}</h3>
-          <div className="flex flex-wrap gap-2">
-            <button 
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+            <button
               onClick={handleDownloadPDF}
-              className="px-4 py-2 bg-brand text-white rounded-xl font-bold flex items-center gap-2 hover:bg-brand/90 transition-all shadow-sm cursor-pointer text-xs"
+              className="flex-1 min-w-[110px] px-3 py-2.5 bg-brand text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-brand/90 transition-all shadow-sm cursor-pointer text-xs"
             >
               <Download size={16} /> {t('sales_record.download_pdf')}
             </button>
             <button
               onClick={handleShareWhatsApp}
-              className="px-4 py-2 bg-[#25D366] text-white rounded-xl font-bold flex items-center gap-2 hover:bg-[#20ba56] transition-all shadow-sm cursor-pointer text-xs"
+              className="flex-1 min-w-[110px] px-3 py-2.5 bg-[#25D366] text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#20ba56] transition-all shadow-sm cursor-pointer text-xs"
             >
               <Share2 size={16} /> {t('sales_record.share_whatsapp')}
             </button>
             <button
               onClick={() => void handleAttachInvoicePdf()}
-              className="px-4 py-2 bg-surface border border-border text-content-muted hover:text-content rounded-xl font-bold flex items-center gap-2 transition-all cursor-pointer text-xs"
+              className="flex-1 min-w-[110px] px-3 py-2.5 bg-surface border border-border text-content-muted hover:text-content rounded-xl font-bold flex items-center justify-center gap-2 transition-all cursor-pointer text-xs"
             >
               <Paperclip size={16} /> {t('tax_invoices.attach_pdf', 'إرفاق PDF أيضاً')}
             </button>
             <button
               onClick={handlePrint}
-              className="px-4 py-2 bg-content text-surface rounded-xl font-bold flex items-center gap-2 hover:bg-content/90 transition-colors shadow-sm cursor-pointer text-xs"
+              className="flex-1 min-w-[90px] px-3 py-2.5 bg-content text-surface rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-content/90 transition-colors shadow-sm cursor-pointer text-xs"
             >
               <Printer size={16} /> {t('tax_invoices.print')}
             </button>
-            <button onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm text-content-muted cursor-pointer">
+            <button onClick={onClose} aria-label={t('common.close')} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:bg-surface rounded-full transition-colors shadow-sm text-content-muted cursor-pointer">
               <X size={20} />
             </button>
           </div>

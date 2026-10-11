@@ -1809,20 +1809,22 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                               {isEnabled ? t('settings_page.staff.permissions.enabled') : t('settings_page.staff.permissions.disabled')}
                                             </span>
                                             
-                                            <button
-                                              onClick={() => !isReadOnlyRole && handleTogglePermission(selectedRoleForPermissions.id, perm.id as PermissionKey)}
-                                              disabled={isReadOnlyRole}
-                                              className={cn(
-                                                "w-11 h-6 rounded-full relative transition-all duration-300 shrink-0 cursor-pointer",
-                                                isEnabled ? (isReadOnlyRole ? "bg-brand/50" : "bg-brand") : "bg-border",
-                                                isReadOnlyRole && "opacity-50 cursor-not-allowed"
-                                              )}
-                                            >
-                                              <div className={cn(
-                                                "absolute top-1 w-4 h-4 bg-surface rounded-full shadow-sm transition-all duration-300",
-                                                isEnabled ? "right-1" : "right-6"
-                                              )} />
-                                            </button>
+                                            <div className="p-2.5 -m-2.5">
+                                              <button
+                                                onClick={() => !isReadOnlyRole && handleTogglePermission(selectedRoleForPermissions.id, perm.id as PermissionKey)}
+                                                disabled={isReadOnlyRole}
+                                                className={cn(
+                                                  "w-11 h-6 rounded-full relative transition-all duration-300 shrink-0 cursor-pointer",
+                                                  isEnabled ? (isReadOnlyRole ? "bg-brand/50" : "bg-brand") : "bg-border",
+                                                  isReadOnlyRole && "opacity-50 cursor-not-allowed"
+                                                )}
+                                              >
+                                                <div className={cn(
+                                                  "absolute top-1 w-4 h-4 bg-surface rounded-full shadow-sm transition-all duration-300",
+                                                  isEnabled ? "right-1" : "right-6"
+                                                )} />
+                                              </button>
+                                            </div>
                                           </div>
                                         </div>
                                       );
@@ -2045,20 +2047,22 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                                               </button>
                                             )}
 
-                                            <button
-                                              onClick={() => !isOwner && handleToggleStaffOverride(selectedStaffForPermissions.id, perm.id as PermissionKey)}
-                                              disabled={isOwner}
-                                              className={cn(
-                                                "w-11 h-6 rounded-full relative transition-all duration-300 shrink-0 cursor-pointer",
-                                                effectiveValue ? "bg-success" : "bg-border",
-                                                isOwner && "opacity-50 cursor-not-allowed"
-                                              )}
-                                            >
-                                              <div className={cn(
-                                                "absolute top-1 w-4 h-4 bg-surface rounded-full shadow-sm transition-all duration-300",
-                                                effectiveValue ? "right-1" : "right-6"
-                                              )} />
-                                            </button>
+                                            <div className="p-2.5 -m-2.5">
+                                              <button
+                                                onClick={() => !isOwner && handleToggleStaffOverride(selectedStaffForPermissions.id, perm.id as PermissionKey)}
+                                                disabled={isOwner}
+                                                className={cn(
+                                                  "w-11 h-6 rounded-full relative transition-all duration-300 shrink-0 cursor-pointer",
+                                                  effectiveValue ? "bg-success" : "bg-border",
+                                                  isOwner && "opacity-50 cursor-not-allowed"
+                                                )}
+                                              >
+                                                <div className={cn(
+                                                  "absolute top-1 w-4 h-4 bg-surface rounded-full shadow-sm transition-all duration-300",
+                                                  effectiveValue ? "right-1" : "right-6"
+                                                )} />
+                                              </button>
+                                            </div>
                                           </div>
                                         </div>
                                       );
@@ -2258,8 +2262,8 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                 </button>
               </div>
               
-              <div className="p-8 overflow-y-auto space-y-6">
-                <div className="grid grid-cols-3 gap-4">
+              <div className="p-4 sm:p-8 overflow-y-auto space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="bg-surface-muted p-4 rounded-2xl text-center">
                     <p className="text-[10px] text-content-muted font-black uppercase mb-1">{t('staff.total_tasks')}</p>
                     <p className="text-2xl font-black text-content">{selectedStaffForDetails.performance?.totalHandled}</p>

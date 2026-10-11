@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { formatSaudiPhone } from '../utils/phoneUtils';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
@@ -149,8 +149,21 @@ const OrderStepper = ({ currentStatus, stages }: { currentStatus: string; stages
   const activeStages = dynamicStages ?? ORDER_STAGES;
   const currentIdx = activeStages.indexOf(currentStatus === 'partial_delivered' ? 'ready' : currentStatus);
 
+  // شريط المراحل يحتاج تمريراً أفقياً لغاية 7 مراحل (min-w-[600px]) بلا أي
+  // مؤشر على وجود محتوى مخفي -- قد يفوت المستخدم أن الطلب في مرحلة متقدمة
+  // (seen-tablet-mobile-ux-review.md بند 11). يُمرَّر للمرحلة الحالية تلقائياً
+  // عند الفتح، وتُضاف تظليلات حافة (fade) توضّح أن هناك مزيداً يُمكن تمريره.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const activeStageRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    activeStageRef.current?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }, [currentIdx]);
+
   return (
-    <div className="bg-surface p-6 rounded-[2rem] border border-border shadow-sm overflow-x-auto mb-8">
+    <div className="relative bg-surface p-6 rounded-[2rem] border border-border shadow-sm mb-8">
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-surface to-transparent rounded-e-[2rem] z-20" />
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-surface to-transparent rounded-s-[2rem] z-20" />
+      <div ref={scrollRef} className="overflow-x-auto">
       <div className="relative flex justify-between items-start min-w-[600px] px-4">
         {/* Progress Line */}
         <div className="absolute top-5 right-10 left-10 h-0.5 bg-surface-muted -z-0" />
@@ -166,7 +179,7 @@ const OrderStepper = ({ currentStatus, stages }: { currentStatus: string; stages
           const isActive = idx === currentIdx;
 
           return (
-            <div key={status} className="relative flex flex-col items-center gap-3 z-10">
+            <div key={status} ref={isActive ? activeStageRef : undefined} className="relative flex flex-col items-center gap-3 z-10">
               <div className={cn(
                 "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 border-4 border-surface shadow-sm",
                 isCompleted ? "bg-brand text-white" : "bg-surface-muted text-content-muted",
@@ -200,6 +213,7 @@ const OrderStepper = ({ currentStatus, stages }: { currentStatus: string; stages
             </div>
           );
         })}
+      </div>
       </div>
     </div>
   );
@@ -2439,7 +2453,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <div className="min-w-[140px]">
               <DatePicker value={startDate} onChange={setStartDate} placeholder={t('common.from', 'من')} />
             </div>
@@ -2691,27 +2705,27 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           e.stopPropagation();
                           void handlePrintOrder(order);
                         }}
-                        className="p-1.5 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all border border-border/40"
+                        className="min-w-[40px] min-h-[40px] flex items-center justify-center text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all border border-border/40"
                         title={t('orders.quick_print')}
                       >
                         <Printer size={16} />
                       </button>
 
-                      <button 
+                      <button
                         type="button"
-                        onClick={(e) => { 
+                        onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedOrder(order); 
-                          setIsDetailsOpen(true); 
+                          setSelectedOrder(order);
+                          setIsDetailsOpen(true);
                         }}
-                        className="p-1.5 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all border border-border/40"
+                        className="min-w-[40px] min-h-[40px] flex items-center justify-center text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all border border-border/40"
                         title={t('orders.details')}
                       >
                         <Info size={16} />
                       </button>
                     </div>
 
-                    <button 
+                    <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -2719,9 +2733,9 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                       }}
                       disabled={order.status === 'delivered'}
                       className={cn(
-                        "p-1.5 transition-all rounded-xl border border-border/40",
-                        order.status === 'delivered' 
-                          ? "text-content-muted/20 cursor-not-allowed" 
+                        "min-w-[40px] min-h-[40px] flex items-center justify-center ms-2 transition-all rounded-xl border border-border/40",
+                        order.status === 'delivered'
+                          ? "text-content-muted/20 cursor-not-allowed"
                           : "text-content-muted hover:text-danger hover:bg-danger/10 hover:border-danger/20"
                       )}
                       title={t('orders.delete_order')}

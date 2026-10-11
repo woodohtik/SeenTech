@@ -3,6 +3,7 @@ import { Plus, Package, CheckCircle2, Clock, Trash2, X, Search, Eye, Filter, Arr
 import { supabase } from '../lib/supabase/client';
 import { Supplier, PurchaseOrder, InventoryItem, PurchaseOrderItem } from '../types';
 import { cn } from '../lib/utils';
+import { ResponsiveTable } from './ui/ResponsiveTable';
 import { addSupplierTransaction } from '../services/supplierAccountsService';
 import { adjustStock } from '../services/inventoryService';
 import { SmartSelect } from './ui/SmartSelect';
@@ -473,7 +474,7 @@ export default function PurchaseOrders({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-center">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
         {/* Search Input */}
         <div className="lg:col-span-2 flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface rounded-2xl px-4 h-12 transition-all w-full shadow-inner shadow-black/5">
           <Search className="text-content-muted shrink-0" size={18} />
@@ -600,7 +601,7 @@ export default function PurchaseOrders({
                         {poType === 'purchase' && poStatus === 'received' && (
                           <button
                             onClick={() => handleStartReturnFromOrder(po)}
-                            className="p-2 bg-danger/10 text-danger hover:bg-danger hover:text-white rounded-xl transition-all flex items-center justify-center cursor-pointer"
+                            className="min-w-[40px] min-h-[40px] p-2 bg-danger/10 text-danger hover:bg-danger hover:text-white rounded-xl transition-all flex items-center justify-center cursor-pointer"
                             title={t('procurement.return_goods', 'إرجاع بضاعة')}
                           >
                             <RotateCcw size={16} />
@@ -608,7 +609,7 @@ export default function PurchaseOrders({
                         )}
                         <button
                           onClick={() => setSelectedOrder(po)}
-                          className="p-2 bg-brand/10 text-brand hover:bg-brand hover:text-white rounded-xl transition-all flex items-center justify-center cursor-pointer"
+                          className="min-w-[40px] min-h-[40px] p-2 bg-brand/10 text-brand hover:bg-brand hover:text-white rounded-xl transition-all flex items-center justify-center cursor-pointer"
                           title={t('procurement.po_detail_title', 'عرض التفاصيل')}
                         >
                           <Eye size={16} />
@@ -767,27 +768,41 @@ export default function PurchaseOrders({
               )}
 
               {/* Items Table */}
-              <div className="border border-border rounded-2xl overflow-x-auto whitespace-nowrap bg-surface scrollbar-hide">
-                <table className="w-full text-right min-w-max">
-                  <thead className="bg-surface-muted text-content-muted">
-                    <tr>
-                      <th className="p-3 text-xs font-black">{t('procurement.item_name', 'اسم المنتج / الصنف')}</th>
-                      <th className="p-3 text-xs font-black">{t('procurement.quantity', 'الكمية')}</th>
-                      <th className="p-3 text-xs font-black">{t('procurement.price_per_unit', 'السعر للوحدة')}</th>
-                      <th className="p-3 text-xs font-black">{t('procurement.total', 'الإجمالي')}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {(selectedOrder.items || []).map((item, index) => (
-                      <tr key={index} className="hover:bg-surface-muted/20">
-                        <td className="p-3 text-sm font-bold text-content">{item.name}</td>
-                        <td className="p-3 text-sm font-bold text-content">{item.quantity} {item.unit}</td>
-                        <td className="p-3 text-sm font-bold text-content"><PriceDisplay amount={item.pricePerUnit} /></td>
-                        <td className="p-3 text-sm font-black text-brand"><PriceDisplay amount={item.total} /></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="border border-border rounded-2xl bg-surface overflow-hidden">
+                <ResponsiveTable
+                  breakpoint="md"
+                  cards={(selectedOrder.items || []).map((item, index) => (
+                    <div key={index} className="p-3 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-sm font-bold text-content truncate">{item.name}</div>
+                        <div className="text-xs text-content-muted mt-0.5">{item.quantity} {item.unit} &times; <PriceDisplay amount={item.pricePerUnit} /></div>
+                      </div>
+                      <div className="text-sm font-black text-brand shrink-0"><PriceDisplay amount={item.total} /></div>
+                    </div>
+                  ))}
+                  table={
+                    <table className="w-full text-right min-w-max">
+                      <thead className="bg-surface-muted text-content-muted">
+                        <tr>
+                          <th className="p-3 text-xs font-black">{t('procurement.item_name', 'اسم المنتج / الصنف')}</th>
+                          <th className="p-3 text-xs font-black">{t('procurement.quantity', 'الكمية')}</th>
+                          <th className="p-3 text-xs font-black">{t('procurement.price_per_unit', 'السعر للوحدة')}</th>
+                          <th className="p-3 text-xs font-black">{t('procurement.total', 'الإجمالي')}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {(selectedOrder.items || []).map((item, index) => (
+                          <tr key={index} className="hover:bg-surface-muted/20">
+                            <td className="p-3 text-sm font-bold text-content">{item.name}</td>
+                            <td className="p-3 text-sm font-bold text-content">{item.quantity} {item.unit}</td>
+                            <td className="p-3 text-sm font-bold text-content"><PriceDisplay amount={item.pricePerUnit} /></td>
+                            <td className="p-3 text-sm font-black text-brand"><PriceDisplay amount={item.total} /></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  }
+                />
               </div>
             </div>
 
@@ -929,36 +944,58 @@ export default function PurchaseOrders({
               </div>
 
               {items.length > 0 && (
-                <div className="border border-border rounded-2xl overflow-x-auto whitespace-nowrap bg-surface scrollbar-hide">
-                  <table className="w-full text-right min-w-max">
-                    <thead className="bg-surface-muted text-content-muted">
-                      <tr>
-                        <th className="p-3 text-xs font-black">{t('procurement.item', 'الصنف')}</th>
-                        <th className="p-3 text-xs font-black">{t('procurement.quantity', 'الكمية')}</th>
-                        <th className="p-3 text-xs font-black">{t('procurement.price', 'السعر')}</th>
-                        <th className="p-3 text-xs font-black">{t('procurement.total', 'الإجمالي')}</th>
-                        <th className="p-3"></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {items.map((item, idx) => (
-                        <tr key={idx} className="hover:bg-surface-muted/30">
-                          <td className="p-3 text-sm font-bold">{item.name}</td>
-                          <td className="p-3 text-xs font-bold">{item.quantity} {item.unit}</td>
-                          <td className="p-3 text-xs font-bold"><PriceDisplay amount={item.pricePerUnit} /></td>
-                          <td className="p-3 text-sm font-black text-brand"><PriceDisplay amount={item.total} /></td>
-                          <td className="p-3 text-left">
-                            <button 
-                              onClick={() => setItems(items.filter((_, i) => i !== idx))}
-                              className="text-danger hover:bg-danger/10 p-1.5 rounded-xl transition-all"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="border border-border rounded-2xl bg-surface overflow-hidden">
+                  <ResponsiveTable
+                    breakpoint="md"
+                    cards={items.map((item, idx) => (
+                      <div key={idx} className="p-3 flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="text-sm font-bold truncate">{item.name}</div>
+                          <div className="text-xs text-content-muted mt-0.5">{item.quantity} {item.unit} &times; <PriceDisplay amount={item.pricePerUnit} /></div>
+                          <div className="text-sm font-black text-brand mt-0.5"><PriceDisplay amount={item.total} /></div>
+                        </div>
+                        <button
+                          onClick={() => setItems(items.filter((_, i) => i !== idx))}
+                          aria-label={t('common.delete')}
+                          className="min-w-[44px] min-h-[44px] flex items-center justify-center text-danger hover:bg-danger/10 rounded-xl transition-all shrink-0"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    ))}
+                    table={
+                      <table className="w-full text-right min-w-max">
+                        <thead className="bg-surface-muted text-content-muted">
+                          <tr>
+                            <th className="p-3 text-xs font-black">{t('procurement.item', 'الصنف')}</th>
+                            <th className="p-3 text-xs font-black">{t('procurement.quantity', 'الكمية')}</th>
+                            <th className="p-3 text-xs font-black">{t('procurement.price', 'السعر')}</th>
+                            <th className="p-3 text-xs font-black">{t('procurement.total', 'الإجمالي')}</th>
+                            <th className="p-3"></th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {items.map((item, idx) => (
+                            <tr key={idx} className="hover:bg-surface-muted/30">
+                              <td className="p-3 text-sm font-bold">{item.name}</td>
+                              <td className="p-3 text-xs font-bold">{item.quantity} {item.unit}</td>
+                              <td className="p-3 text-xs font-bold"><PriceDisplay amount={item.pricePerUnit} /></td>
+                              <td className="p-3 text-sm font-black text-brand"><PriceDisplay amount={item.total} /></td>
+                              <td className="p-3 text-left">
+                                <button
+                                  onClick={() => setItems(items.filter((_, i) => i !== idx))}
+                                  aria-label={t('common.delete')}
+                                  className="text-danger hover:bg-danger/10 p-2 rounded-xl transition-all"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    }
+                  />
                 </div>
               )}
 

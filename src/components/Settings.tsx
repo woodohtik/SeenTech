@@ -518,7 +518,10 @@ export default function Settings({ tenantId }: SettingsProps) {
       />
 
       {/* Horizontal Scrollable Tabs Selector */}
-      <div ref={tabsContainerRef} className="flex gap-2 overflow-x-auto pb-3 pt-1 scrollbar-none -mx-3 px-3 sm:mx-0 sm:px-0">
+      <div className="relative -mx-3 px-3 sm:mx-0 sm:px-0">
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-surface to-transparent z-10" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-surface to-transparent z-10" />
+        <div ref={tabsContainerRef} className="flex gap-2 overflow-x-auto pb-3 pt-1 scrollbar-none">
         {TABS.filter(tab => tab.visible).map(tab => {
           const TabIcon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -542,6 +545,7 @@ export default function Settings({ tenantId }: SettingsProps) {
             </button>
           );
         })}
+        </div>
       </div>
 
       <div className="w-full">
@@ -572,10 +576,11 @@ export default function Settings({ tenantId }: SettingsProps) {
                         <input type="file" className="hidden" accept="image/*" onChange={handleLogoChange} />
                       </label>
                       {logoPreview && (
-                        <button 
+                        <button
                           type="button"
                           onClick={() => { setLogoPreview(null); setValue('logoUrl', ''); }}
-                          className="absolute -top-2 -right-2 p-1.5 bg-danger text-white rounded-lg shadow-xl hover:bg-danger/90 transition-all hover:scale-110"
+                          aria-label={t('common.delete')}
+                          className="absolute -top-2 -right-2 min-w-[40px] min-h-[40px] flex items-center justify-center bg-danger text-white rounded-lg shadow-xl hover:bg-danger/90 transition-all hover:scale-110"
                         >
                           <CloseIcon size={16} />
                         </button>
@@ -954,7 +959,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                         { field: 'notificationSettings.dailyClose', title: t('settings_page.notifications.daily_close_title', 'تقارير الإغلاق اليومية'), desc: t('settings_page.notifications.daily_close_desc', 'ملخص بالأرباح والخسائر والمبيعات فور إغلاق الوردية.'), icon: FileText, color: 'text-success' },
                         { field: 'notificationSettings.tomorrowDelivery', title: t('settings_page.notifications.tomorrow_delivery_title', 'مواعيد تسليم الغد'), desc: t('settings_page.notifications.tomorrow_delivery_desc', 'تنبيه لقائمة العملاء الذين يجب تسليم طلباتهم في اليوم التالي.'), icon: Bell, color: 'text-warning' },
                       ].map((item) => (
-                        <div key={item.title} className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-5 sm:p-8 bg-surface-muted/30 hover:bg-surface border-2 border-transparent hover:border-border rounded-2xl sm:rounded-[2.5rem] transition-all group gap-4">
+                        <label key={item.title} className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-5 sm:p-8 bg-surface-muted/30 hover:bg-surface border-2 border-transparent hover:border-border rounded-2xl sm:rounded-[2.5rem] transition-all group gap-4 cursor-pointer">
                           <div className={cn("flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center", isRtl ? "sm:text-right" : "sm:text-left")}>
                             <div className={cn("p-4 bg-white rounded-2xl shadow-sm transition-transform group-hover:scale-110 shrink-0", item.color)}>
                               <item.icon size={26} />
@@ -965,12 +970,12 @@ export default function Settings({ tenantId }: SettingsProps) {
                             </div>
                           </div>
                           <div className="flex justify-end sm:justify-start">
-                            <label className="relative inline-flex items-center cursor-pointer">
+                            <span className="relative inline-flex items-center">
                               <input type="checkbox" className="sr-only peer" {...register(item.field as any)} />
                               <div className="w-14 h-7 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:start-[3px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand"></div>
-                            </label>
+                            </span>
                           </div>
-                        </div>
+                        </label>
                       ))}
                     </div>
 
