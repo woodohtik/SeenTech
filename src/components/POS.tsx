@@ -478,6 +478,17 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const totalAmountRef = React.useRef<number>(0);
   const loadingRef = React.useRef(loading);
   const handleCheckoutRef = React.useRef<any>(null);
+  // seen-launch-readiness-report.md blocker #3: loadingRef above is only
+  // updated as a side effect of render (`loadingRef.current = loading`
+  // below runs once per render, AFTER setLoading already triggered one) --
+  // it still leaves the same gap `if (loading) return` always had. This ref
+  // is instead flipped synchronously as the very first statement inside
+  // handleCheckout, before any state read or async work, so a second
+  // click/Enter event queued before React re-renders sees it true
+  // immediately -- not after the next render, which was the actual gap a
+  // fresh operationId per click made real (each click's own idempotency key
+  // can't catch a sibling click's genuinely separate one).
+  const isSubmittingRef = React.useRef(false);
 
   cartRef.current = cart;
   isPaymentModalOpenRef.current = isPaymentModalOpen;
@@ -894,13 +905,12 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   totalAmountRef.current = totalAmount;
 
   const handleCheckout = async () => {
-    // Explicit re-entrancy guard: the checkout button's disabled={loading}
-    // only takes effect after React re-renders, which leaves a window for a
-    // second click/Enter-key event already queued before that render to
-    // still reach this function and fire a duplicate sale (found via
-    // /qa-test code review on staging: 2026-09-20 -- not reproduced live,
-    // since reproducing it would have required a real double sale on a live
-    // tenant, but the gap itself is real).
+    // Real synchronous re-entrancy guard (see isSubmittingRef's own comment
+    // above) -- must be the first thing this function does, before any
+    // other check or async work.
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    try {
     if (loading) return;
     if (cart.length === 0) {
       toastError(t('pos.empty_cart'), t('pos.add_products_to_checkout'));
@@ -1206,6 +1216,9 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       handleError(error as any, t('pos.checkout_failed'));
     } finally {
       setLoading(false);
+    }
+    } finally {
+      isSubmittingRef.current = false;
     }
   };
   handleCheckoutRef.current = handleCheckout;

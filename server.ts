@@ -6,8 +6,10 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { authenticate, authorize } from "./src/server/middleware/authMiddleware.ts";
 import { registerPrintRelay } from "./src/server/printRelay.ts";
+import { initServerLogger, captureServerException } from "./src/server/logger.ts";
 
 dotenv.config();
+initServerLogger();
 
 const app = express();
 
@@ -2060,18 +2062,35 @@ app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any
     // Chain-tip swap: placeholder -> real hash, locked the same way
     // create_pos_sale locks it. See the KNOWN LIMITATION note above this
     // route for the concurrency window this does NOT close.
-    await supabaseAdmin.rpc('zatca_advance_chain_with_real_hash', {
+    //
+    // seen-launch-readiness-report.md blocker #2: this RPC's own return
+    // value (and any PostgREST error) used to be discarded entirely. The
+    // function deliberately returns FALSE -- not an exception -- when this
+    // invoice is no longer the chain's tip (a newer sale already advanced
+    // it), specifically so a stale/out-of-order call can't corrupt the
+    // chain by overwriting a newer hash. That FALSE is exactly the signal
+    // this route needs and was silently throwing away: the invoice itself
+    // genuinely cleared/reported with ZATCA (so it must NOT be marked
+    // rejected -- that would be factually wrong), but the chain tip was NOT
+    // updated with its real hash, which corrupts the PIH reference every
+    // invoice AFTER this one chains off of. That has to be loud, not silent.
+    const { data: chainAdvanced, error: chainError } = await supabaseAdmin.rpc('zatca_advance_chain_with_real_hash', {
       p_tenant_id: tenantId,
       p_order_id: orderId,
       p_real_hash: invoiceHash,
     });
+    if (chainError || chainAdvanced !== true) {
+      const chainFailMsg = '[zatca/submit-invoice] PIH CHAIN NOT ADVANCED -- invoice cleared/reported with ZATCA but the chain tip still holds a stale hash. Every subsequent invoice for this tenant will chain off the WRONG previous hash until this is investigated.';
+      console.error(chainFailMsg, { tenantId, orderId, invoiceId: invoice.id, invoiceHash, chainError });
+      captureServerException(new Error(chainFailMsg), { tenantId, orderId, invoiceId: invoice.id, invoiceHash, chainError });
+    }
 
     await supabaseAdmin
       .from('tax_invoices')
       .update({
         invoice_hash: invoiceHash,
         zatca_status: isB2B ? 'cleared' : 'reported',
-        zatca_response: result.raw,
+        zatca_response: chainAdvanced === true ? result.raw : { originalResponse: result.raw, _pihChainAdvanceFailed: true },
         zatca_submitted_at: now.toISOString(),
       })
       .eq('id', invoice.id);
@@ -2103,7 +2122,21 @@ app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any
 // sequence has completed and a 'production' zatca_credentials row exists.
 // Owner/admin only -- same gate as /api/tenant/settings, since this writes
 // tenant-identifying certificates, not day-to-day sale data.
+//
+// seen-launch-readiness-report.md blocker #1: requestComplianceCsid/
+// submitComplianceInvoice/requestProductionCsid were ALL hardcoded to
+// 'sandbox' -- including Production CSID, which ZATCA's own process issues
+// from the real production gateway (.../core), never the developer-portal
+// sandbox. A CSID minted that way would fail on the very first real sale.
+// zatcaTestEnvironment() below controls only the TEST phase (Compliance
+// CSID + compliance test invoices); Production CSID issuance is hardcoded
+// to 'production' just below, deliberately not tied to this variable.
 // =============================================================================
+
+function zatcaTestEnvironment(): 'sandbox' | 'simulation' {
+  const raw = (process.env.ZATCA_TEST_ENVIRONMENT || 'sandbox').trim().toLowerCase();
+  return raw === 'simulation' ? 'simulation' : 'sandbox';
+}
 
 app.get("/api/zatca/onboarding-status", authenticate, authorize(['owner', 'admin']), asyncHandler(async (req: any, res) => {
   const tenantId = req.user?.tenantId;
@@ -2197,7 +2230,7 @@ app.post("/api/zatca/request-compliance-csid", authenticate, authorize(['owner',
   const { encryptZatcaSecret } = await import('./src/server/zatcaCrypto.ts');
 
   try {
-    const result = await requestComplianceCsid(pending.csr_base64, otp, 'sandbox');
+    const result = await requestComplianceCsid(pending.csr_base64, otp, zatcaTestEnvironment());
     const { error } = await supabaseAdmin.from('zatca_credentials').upsert(
       {
         tenant_id: tenantId,
@@ -2282,7 +2315,7 @@ app.post("/api/zatca/run-compliance-tests", authenticate, authorize(['owner', 'a
     const signatureBase64 = signData(invoiceHash, privateKeyPem);
     const signedXml = build({ invoiceHash, signatureBase64 });
     const invoiceBase64 = Buffer.from(signedXml, 'utf8').toString('base64');
-    const result = await submitComplianceInvoice({ invoiceHash, uuid: common.uuid, invoiceBase64 }, auth, 'sandbox');
+    const result = await submitComplianceInvoice({ invoiceHash, uuid: common.uuid, invoiceBase64 }, auth, zatcaTestEnvironment());
     return { type: kind, status: result.status };
   }
 
@@ -2318,7 +2351,13 @@ app.post("/api/zatca/request-production-csid", authenticate, authorize(['owner',
   const auth = { binarySecurityToken: creds.certificate, secret: decryptZatcaSecret(creds.secret_encrypted) };
 
   try {
-    const result = await requestProductionCsid(creds.request_id, auth, 'sandbox');
+    // Deliberately NOT zatcaTestEnvironment() -- ZATCA issues the real
+    // Production CSID from its production gateway (.../core) regardless of
+    // which test environment the compliance phase used. This was the
+    // launch-readiness report's #1 blocker: every CSID this route minted
+    // was actually a sandbox credential, which real Clearance/Reporting
+    // (already correctly hardcoded to 'production') would reject outright.
+    const result = await requestProductionCsid(creds.request_id, auth, 'production');
     const { error } = await supabaseAdmin.from('zatca_credentials').upsert(
       {
         tenant_id: tenantId,
@@ -2352,10 +2391,13 @@ app.post("/api/zatca/request-production-csid", authenticate, authorize(['owner',
 // unhandledRejection/uncaughtException -- هذا التطبيق يعمل كدالة Vercel
 // serverless (عبر api/index.js)، وإنهاء العملية غير مجدٍ/ضار في هذا السياق.
 process.on('unhandledRejection', (reason) => {
-  console.error('[unhandledRejection]', reason instanceof Error ? reason : new Error(String(reason)));
+  const err = reason instanceof Error ? reason : new Error(String(reason));
+  console.error('[unhandledRejection]', err);
+  captureServerException(err, { source: 'unhandledRejection' });
 });
 process.on('uncaughtException', (err) => {
   console.error('[uncaughtException]', err);
+  captureServerException(err, { source: 'uncaughtException' });
 });
 
 // middleware معالجة أخطاء عام (4 معاملات) -- يجب أن يُسجَّل بعد كل مسارات
@@ -2368,6 +2410,7 @@ process.on('uncaughtException', (err) => {
 // unhandledRejection أعلاه.
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error(`[globalErrorHandler] ${req.path}:`, err);
+  captureServerException(err, { path: req.path, method: req.method });
   if (res.headersSent) return next(err);
   res.status(500).json({ error: 'حدث خطأ غير متوقع، حاول لاحقًا' });
 });

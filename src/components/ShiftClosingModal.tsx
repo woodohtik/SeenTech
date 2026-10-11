@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 
 import { isRtlLang } from '../lib/direction';
 import { useToast } from '../contexts/ToastContext';
+import { useStaff } from '../contexts/StaffContext';
 
 interface ShiftClosingModalProps {
   shift: Shift;
@@ -23,7 +24,9 @@ interface ShiftClosingModalProps {
 export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }: ShiftClosingModalProps) {
   const { t, i18n } = useTranslation();
   const { error: toastError } = useToast();
+  const { currentStaff } = useStaff();
   const isRtl = isRtlLang(i18n.language);
+  const canCloseThisShift = currentStaff?.id === shift.staffId || currentStaff?.role === 'owner' || currentStaff?.role === 'admin';
 
   const [actualCash, setActualCash] = useState('');
   const [reason, setReason] = useState('');
@@ -183,6 +186,15 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
       toastError(t('shift_closing.reason_required'));
       return;
     }
+    // seen-launch-readiness-report.md #6: RLS lets any staff member in the
+    // tenant update any shift row -- this client-side check is the actual
+    // guard against one cashier closing/reopening a colleague's shift,
+    // since nothing else in this component checked who was closing whose
+    // shift at all.
+    if (!canCloseThisShift) {
+      toastError(t('shift_closing.not_authorized', 'لا تملك صلاحية إغلاق وردية موظف آخر'));
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -211,12 +223,24 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
         updated_at: new Date().toISOString()
       };
 
-      const { error } = await supabase
+      // .eq('status', 'open') is the optimistic lock: if this shift was
+      // already closed (by this same request racing a duplicate submit, or
+      // by someone else entirely) between this modal opening and this
+      // write, the update matches zero rows instead of silently
+      // overwriting a previous close with different cash figures.
+      const { data: updatedRows, error } = await supabase
         .from('shifts')
         .update(closedData)
-        .eq('id', shift.id);
+        .eq('id', shift.id)
+        .eq('status', 'open')
+        .select('id');
 
       if (error) throw error;
+      if (!updatedRows || updatedRows.length === 0) {
+        toastError(t('shift_closing.already_closed', 'هذه الوردية مُغلَقة مسبقاً -- أُعيد تحميل بياناتها.'));
+        onClosed();
+        return;
+      }
 
       // Audit Log
       await logEmployeeAction(
@@ -373,9 +397,14 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
 
           {/* Footer (Fixed) */}
           <div className="sticky bottom-0 z-10 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6 sm:pt-6 sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))] border-t border-[var(--border)] bg-[var(--surface)] shrink-0">
-            <button 
+            {!canCloseThisShift && (
+              <p className="text-danger text-xs font-bold text-center mb-2">
+                {t('shift_closing.not_authorized', 'لا تملك صلاحية إغلاق وردية موظف آخر')}
+              </p>
+            )}
+            <button
               type="submit"
-              disabled={isSubmitting || !actualCash || (hasDiscrepancy && !reason)}
+              disabled={isSubmitting || !actualCash || (hasDiscrepancy && !reason) || !canCloseThisShift}
               className="w-full bg-brand text-white py-3 sm:py-3.5 rounded-2xl font-black text-sm sm:text-base hover:bg-brand/90 transition-all shadow-lg shadow-brand/20 disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting ? t('shift_closing.closing_shift') : t('shift_closing.confirm_close')}
