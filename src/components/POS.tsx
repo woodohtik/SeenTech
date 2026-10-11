@@ -1835,7 +1835,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setShowCartOnMobile(true)}
-          className="md:hidden fixed bottom-6 left-6 z-[40] bg-brand text-white p-5 rounded-[2rem] shadow-2xl flex items-center gap-3 transition-all"
+          className="md:hidden fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-6 z-[40] bg-brand text-white p-5 rounded-[2rem] shadow-2xl flex items-center gap-3 transition-all"
         >
           <div className="relative">
             <ShoppingCart size={28} />
@@ -2600,7 +2600,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               </div>
 
               {/* Footer (Fixed) */}
-              <div className="sticky bottom-0 z-10 p-4 sm:p-6 border-t border-[var(--border)] bg-[var(--surface)] shrink-0">
+              <div className="sticky bottom-0 z-10 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6 sm:pt-6 sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))] border-t border-[var(--border)] bg-[var(--surface)] shrink-0">
                 <button
                   onClick={handleAddCustomItem}
                   className="w-full py-3 sm:py-3.5 bg-brand text-white rounded-xl font-bold hover:bg-brand/90 transition-all shadow-lg shadow-brand/20 flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer"

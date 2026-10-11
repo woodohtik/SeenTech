@@ -68,6 +68,7 @@ import { getFriendlyErrorMessage } from "../../lib/firebase";
 import { useDirection } from "../../lib/direction";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../../lib/utils";
+import { ResponsiveTable } from "../ui/ResponsiveTable";
 import Branding from "../Branding";
 import Select, { SmartSelect } from "../ui/SmartSelect";
 import { useToast } from "../../contexts/ToastContext";
@@ -3280,47 +3281,70 @@ const OpeningBalanceModal = ({ onClose, tenantId, branches, items }: any) => {
               <h3 className="text-sm font-black text-content uppercase tracking-widest">
                 {t("inventory.preview_entries")} ({stockEntries.length})
               </h3>
-              <div className="border border-border rounded-3xl overflow-x-auto whitespace-nowrap">
-                <table className="w-full text-left border-collapse min-w-max">
-                  <thead className="bg-surface-muted">
-                    <tr>
-                      <th className="px-6 py-4 text-[10px] font-black text-content-muted uppercase tracking-widest">
-                        {t("inventory.item")}
-                      </th>
-                      <th className="px-6 py-4 text-[10px] font-black text-content-muted uppercase tracking-widest">
-                        {t("inventory.sku")}
-                      </th>
-                      <th className="px-6 py-4 text-[10px] font-black text-content-muted uppercase tracking-widest">
-                        {t("inventory.qty")}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {stockEntries.slice(0, 10).map((entry, i) => (
-                      <tr key={i}>
-                        <td className="px-6 py-4 text-sm font-bold text-content">
-                          {entry.name}
-                        </td>
-                        <td className="px-6 py-4 text-xs font-mono text-content-muted">
-                          {entry.sku}
-                        </td>
-                        <td className="px-6 py-4 text-sm font-black text-content">
-                          {entry.quantity}
-                        </td>
-                      </tr>
-                    ))}
-                    {stockEntries.length > 10 && (
-                      <tr>
-                        <td
-                          colSpan={3}
-                          className="px-6 py-4 text-center text-xs font-bold text-content-muted"
-                        >
+              <div className="border border-border rounded-3xl overflow-hidden">
+                <ResponsiveTable
+                  breakpoint="sm"
+                  cards={
+                    <>
+                      {stockEntries.slice(0, 10).map((entry, i) => (
+                        <div key={i} className="px-6 py-4 flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-sm font-bold text-content truncate">{entry.name}</div>
+                            <div className="text-xs font-mono text-content-muted mt-0.5">{entry.sku}</div>
+                          </div>
+                          <div className="text-sm font-black text-content shrink-0">{entry.quantity}</div>
+                        </div>
+                      ))}
+                      {stockEntries.length > 10 && (
+                        <div className="px-6 py-4 text-center text-xs font-bold text-content-muted">
                           + {stockEntries.length - 10} {t("common.more_items")}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                        </div>
+                      )}
+                    </>
+                  }
+                  table={
+                    <table className="w-full text-left border-collapse min-w-max">
+                      <thead className="bg-surface-muted">
+                        <tr>
+                          <th className="px-6 py-4 text-[10px] font-black text-content-muted uppercase tracking-widest">
+                            {t("inventory.item")}
+                          </th>
+                          <th className="px-6 py-4 text-[10px] font-black text-content-muted uppercase tracking-widest">
+                            {t("inventory.sku")}
+                          </th>
+                          <th className="px-6 py-4 text-[10px] font-black text-content-muted uppercase tracking-widest">
+                            {t("inventory.qty")}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {stockEntries.slice(0, 10).map((entry, i) => (
+                          <tr key={i}>
+                            <td className="px-6 py-4 text-sm font-bold text-content">
+                              {entry.name}
+                            </td>
+                            <td className="px-6 py-4 text-xs font-mono text-content-muted">
+                              {entry.sku}
+                            </td>
+                            <td className="px-6 py-4 text-sm font-black text-content">
+                              {entry.quantity}
+                            </td>
+                          </tr>
+                        ))}
+                        {stockEntries.length > 10 && (
+                          <tr>
+                            <td
+                              colSpan={3}
+                              className="px-6 py-4 text-center text-xs font-bold text-content-muted"
+                            >
+                              + {stockEntries.length - 10} {t("common.more_items")}
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  }
+                />
               </div>
             </div>
           )}
@@ -3450,7 +3474,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
   return (
     <div className="space-y-8">
       {/* Stock Movement Trend */}
-      <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
+      <div className="bg-surface p-4 sm:p-6 rounded-[2.5rem] border border-border shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <h3 className="text-xl font-black text-content flex items-center gap-3">
             <TrendingUp className="text-brand" />
@@ -3523,7 +3547,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Stock by Category */}
-        <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
+        <div className="bg-surface p-4 sm:p-6 rounded-[2.5rem] border border-border shadow-sm">
           <h3 className="text-xl font-black text-content mb-8 flex items-center gap-3">
             <Tag className="text-brand" />
             {t("inventory.stock_by_category")}
@@ -3567,7 +3591,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
         </div>
 
         {/* Stock by Branch */}
-        <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
+        <div className="bg-surface p-4 sm:p-6 rounded-[2.5rem] border border-border shadow-sm">
           <h3 className="text-xl font-black text-content mb-8 flex items-center gap-3">
             <Warehouse className="text-brand" />
             {t("inventory.stock_by_location")}
@@ -3612,7 +3636,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
       </div>
 
       {/* Audit Trail */}
-      <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
+      <div className="bg-surface p-4 sm:p-6 rounded-[2.5rem] border border-border shadow-sm">
         <div className="flex items-center justify-between mb-8">
           <h3 className="text-xl font-black text-content flex items-center gap-3">
             <History className="text-brand" />
@@ -3631,52 +3655,93 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto whitespace-nowrap scrollbar-hide">
-            <table className="w-full text-right min-w-max">
-              <thead className="bg-surface-muted text-content-muted text-sm border-b border-border">
-                <tr>
-                  <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">{t("common.date")}</th>
-                  <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">{t("inventory.item_name")}</th>
-                  <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">{t("inventory.branch")}</th>
-                  <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">{t("reconciliation.difference")}</th>
-                  <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">{t("inventory.type")}</th>
-                  <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">{t("reconciliation.reconciled_by")}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {[...filteredLedgerData].reverse().slice(0, 30).map((ledger: any) => {
-                  const item = items.find((i: any) => i.id === ledger.item_id);
-                  const branch = branches.find((b: any) => b.id === ledger.branch_id);
-                  return (
-                    <tr key={ledger.id} className="hover:bg-surface-muted transition-colors group">
-                      <td className="px-6 py-4 text-sm text-content-muted font-medium">
+          <div className="rounded-3xl border border-border overflow-hidden">
+            <ResponsiveTable
+              breakpoint="sm"
+              cards={[...filteredLedgerData].reverse().slice(0, 30).map((ledger: any) => {
+                const item = items.find((i: any) => i.id === ledger.item_id);
+                const branch = branches.find((b: any) => b.id === ledger.branch_id);
+                return (
+                  <div key={ledger.id} className="p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-bold text-content">{item?.name || ledger.item_name || t("common.unknown")}</div>
+                        <div className="text-xs text-content-muted font-medium mt-0.5">{branch?.name || t("common.unknown")}</div>
+                      </div>
+                      <span className={`shrink-0 px-3 py-1 rounded-lg text-xs font-black ${ledger.change > 0 ? 'bg-success/10 text-success' : ledger.change < 0 ? 'bg-danger/10 text-danger' : 'bg-content-muted/10 text-content-muted'}`}>
+                        {ledger.change > 0 ? '+' : ''}{ledger.change}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 text-xs text-content-muted font-medium">
+                      <span>
+                        {ledger.type === "addition"
+                          ? t("inventory.addition", "إضافة")
+                          : ledger.type === "adjustment"
+                          ? t("inventory.adjustment", "تسوية")
+                          : ledger.type}
+                        {" • "}
+                        {ledger.staff_name || "—"}
+                      </span>
+                      <span>
                         {new Date(ledger.created_at).toLocaleString(isRtl ? "ar-EG" : "en-US", {
                           day: "numeric",
                           month: "short",
                           hour: "2-digit",
                           minute: "2-digit"
                         })}
-                      </td>
-                      <td className="px-6 py-4 font-bold text-content">{item?.name || ledger.item_name || t("common.unknown")}</td>
-                      <td className="px-6 py-4 text-sm font-bold text-content-muted">{branch?.name || t("common.unknown")}</td>
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-lg text-xs font-black ${ledger.change > 0 ? 'bg-success/10 text-success' : ledger.change < 0 ? 'bg-danger/10 text-danger' : 'bg-content-muted/10 text-content-muted'}`}>
-                          {ledger.change > 0 ? '+' : ''}{ledger.change}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-content-muted font-medium">
-                        {ledger.type === "addition" 
-                          ? t("inventory.addition", "إضافة") 
-                          : ledger.type === "adjustment" 
-                          ? t("inventory.adjustment", "تسوية") 
-                          : ledger.type}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-content-muted font-medium">{ledger.staff_name || "—"}</td>
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+              table={
+                <table className="w-full text-right min-w-max">
+                  <thead className="bg-surface-muted text-content-muted text-sm border-b border-border">
+                    <tr>
+                      <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">{t("common.date")}</th>
+                      <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">{t("inventory.item_name")}</th>
+                      <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">{t("inventory.branch")}</th>
+                      <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">{t("reconciliation.difference")}</th>
+                      <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">{t("inventory.type")}</th>
+                      <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">{t("reconciliation.reconciled_by")}</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {[...filteredLedgerData].reverse().slice(0, 30).map((ledger: any) => {
+                      const item = items.find((i: any) => i.id === ledger.item_id);
+                      const branch = branches.find((b: any) => b.id === ledger.branch_id);
+                      return (
+                        <tr key={ledger.id} className="hover:bg-surface-muted transition-colors group">
+                          <td className="px-6 py-4 text-sm text-content-muted font-medium">
+                            {new Date(ledger.created_at).toLocaleString(isRtl ? "ar-EG" : "en-US", {
+                              day: "numeric",
+                              month: "short",
+                              hour: "2-digit",
+                              minute: "2-digit"
+                            })}
+                          </td>
+                          <td className="px-6 py-4 font-bold text-content">{item?.name || ledger.item_name || t("common.unknown")}</td>
+                          <td className="px-6 py-4 text-sm font-bold text-content-muted">{branch?.name || t("common.unknown")}</td>
+                          <td className="px-6 py-4">
+                            <span className={`px-3 py-1 rounded-lg text-xs font-black ${ledger.change > 0 ? 'bg-success/10 text-success' : ledger.change < 0 ? 'bg-danger/10 text-danger' : 'bg-content-muted/10 text-content-muted'}`}>
+                              {ledger.change > 0 ? '+' : ''}{ledger.change}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-content-muted font-medium">
+                            {ledger.type === "addition"
+                              ? t("inventory.addition", "إضافة")
+                              : ledger.type === "adjustment"
+                              ? t("inventory.adjustment", "تسوية")
+                              : ledger.type}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-content-muted font-medium">{ledger.staff_name || "—"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              }
+            />
           </div>
         )}
       </div>

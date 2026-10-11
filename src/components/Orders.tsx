@@ -1094,7 +1094,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             </div>
 
             {/* Footer (Fixed) */}
-            <div className="sticky bottom-0 z-10 p-4 sm:p-6 border-t border-[var(--border)] bg-[var(--surface)] shrink-0 flex items-center justify-between gap-3 shadow-md">
+            <div className="sticky bottom-0 z-10 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6 sm:pt-6 sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))] border-t border-[var(--border)] bg-[var(--surface)] shrink-0 flex items-center justify-between gap-3 shadow-md">
               <div>
                 {Object.keys(custErrors).length > 0 && (
                   <p className="text-xs text-danger font-bold flex items-center gap-1">

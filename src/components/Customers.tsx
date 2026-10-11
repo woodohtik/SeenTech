@@ -1642,13 +1642,13 @@ export default function Customers({ tenantId }: CustomersProps) {
       {/* Modals */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-            <motion.div 
+          <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+            <motion.div
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-[clamp(320px,94vw,1100px)] max-h-[90vh] rounded-[var(--radius-card)] bg-[var(--surface)] shadow-2xl flex flex-col my-auto border border-border z-10 overflow-hidden"
+              className="relative w-full max-w-[clamp(320px,94vw,1100px)] max-h-[92vh] sm:max-h-[90vh] rounded-t-3xl sm:rounded-[var(--radius-card)] bg-[var(--surface)] shadow-2xl flex flex-col my-auto border border-border z-10 overflow-hidden"
               dir={isRtl ? "rtl" : "ltr"}
             >
               <form onSubmit={handleSubmit(onSubmit, onInvalidSubmit)} className="flex flex-col flex-1 max-h-[90vh] overflow-hidden">
@@ -1803,7 +1803,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                 </div>
 
                 {/* Footer (Fixed) */}
-                <div className="sticky bottom-0 z-10 shrink-0 p-4 sm:p-6 border-t border-[var(--border)] bg-[var(--surface)] flex items-center justify-between gap-3 shadow-md">
+                <div className="sticky bottom-0 z-10 shrink-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6 sm:pt-6 sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))] border-t border-[var(--border)] bg-[var(--surface)] flex items-center justify-between gap-3 shadow-md">
                   <div>
                     {Object.keys(errors).length > 0 && (
                       <p className="text-xs text-danger font-bold flex items-center gap-1">
@@ -1918,19 +1918,19 @@ const CustomerDetailsModal = ({
   const isRtl = isRtlLang(i18n.language);
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-2 sm:p-6">
-      <motion.div 
+    <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-0 sm:p-6 overflow-y-auto">
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
-      <motion.div 
+      <motion.div
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className={cn("bg-surface w-full max-w-5xl rounded-2xl sm:rounded-[2rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh] border border-border", isRtl ? "text-right" : "text-left")}
+        className={cn("bg-surface w-full max-w-5xl rounded-t-3xl sm:rounded-[2rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh] border border-border", isRtl ? "text-right" : "text-left")}
       >
         <div className="p-4 sm:p-6 border-b border-border flex justify-between items-center bg-brand/5">
           <div className="flex items-center gap-2.5 sm:gap-3">
@@ -2099,7 +2099,7 @@ const CustomerDetailsModal = ({
         </div>
 
         {/* Footer (Fixed) */}
-        <div className="sticky bottom-0 z-10 shrink-0 p-4 sm:p-6 border-t border-[var(--border)] bg-[var(--surface)] flex gap-2.5 sm:gap-3 text-xs sm:text-base">
+        <div className="sticky bottom-0 z-10 shrink-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6 sm:pt-6 sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))] border-t border-[var(--border)] bg-[var(--surface)] flex gap-2.5 sm:gap-3 text-xs sm:text-base">
           <button 
             onClick={onEdit}
             className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 bg-surface text-content py-3 rounded-xl font-bold border border-border hover:bg-surface-muted transition-all"
@@ -2339,7 +2339,7 @@ const CustomerStatementModal = ({
   );
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-2 sm:p-6 print:absolute print:inset-0 print:z-[200] print:p-0 print:bg-white">
+    <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-0 sm:p-6 overflow-y-auto print:absolute print:inset-0 print:z-[200] print:p-0 print:bg-white print:overflow-visible">
       {/* Background Overlay */}
       <motion.div 
         initial={{ opacity: 0 }}
@@ -2355,7 +2355,7 @@ const CustomerStatementModal = ({
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
         className={cn(
-          "bg-surface w-full max-w-4xl rounded-2xl sm:rounded-[2rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh] border border-border print:border-none print:shadow-none print:max-h-none print:rounded-none print:w-full print:static", 
+          "bg-surface w-full max-w-4xl rounded-t-3xl sm:rounded-[2rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh] border border-border print:border-none print:shadow-none print:max-h-none print:rounded-none print:w-full print:static",
           isRtl ? "text-right" : "text-left"
         )}
       >
@@ -2657,7 +2657,7 @@ const CustomerStatementModal = ({
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 z-10 shrink-0 p-4 sm:p-6 border-t border-border bg-surface flex justify-end gap-3 print:hidden">
+        <div className="sticky bottom-0 z-10 shrink-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6 sm:pt-6 sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))] border-t border-border bg-surface flex justify-end gap-3 print:hidden">
           <button 
             onClick={onClose}
             className="px-6 py-2.5 bg-surface-muted text-content hover:bg-surface border border-border rounded-xl font-bold transition-all text-xs sm:text-sm cursor-pointer"

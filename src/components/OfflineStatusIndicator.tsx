@@ -56,7 +56,7 @@ export default function OfflineStatusIndicator({ tenantId }: { tenantId?: string
     // start-6 (=right-6 في RTL) على نفس المدى، بـz-50 أعلى -- فكان يُغطّي
     // هذا المؤشر بالكامل. يرتفع فوقه فقط أدنى من lg: (حيث ينتقل زر المساعد
     // للزاوية المقابلة أصلاً فلا تعارض هناك).
-    <div className="fixed bottom-24 lg:bottom-6 start-6 z-40 flex flex-col items-start gap-2">
+    <div className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] lg:bottom-[calc(1.5rem+env(safe-area-inset-bottom))] start-6 z-40 flex flex-col items-start gap-2">
       {expanded && (
         <div className="bg-surface border border-border rounded-2xl shadow-xl p-4 w-72 text-sm space-y-2.5">
           {pendingCount > 0 && (

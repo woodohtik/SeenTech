@@ -372,7 +372,7 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
           </div>
 
           {/* Footer (Fixed) */}
-          <div className="sticky bottom-0 z-10 p-4 sm:p-6 border-t border-[var(--border)] bg-[var(--surface)] shrink-0">
+          <div className="sticky bottom-0 z-10 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6 sm:pt-6 sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))] border-t border-[var(--border)] bg-[var(--surface)] shrink-0">
             <button 
               type="submit"
               disabled={isSubmitting || !actualCash || (hasDiscrepancy && !reason)}

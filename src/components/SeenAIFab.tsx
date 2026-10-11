@@ -236,7 +236,7 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
         id="tour-ai-fab"
         data-tour="ai-fab"
         className={cn(
-          "fixed bottom-6 right-6 z-50 flex flex-col items-center gap-2",
+          "fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-6 z-50 flex flex-col items-center gap-2",
           isRtl && "lg:left-6 lg:right-auto"
         )}
       >

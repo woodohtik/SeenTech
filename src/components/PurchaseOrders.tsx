@@ -715,8 +715,8 @@ export default function PurchaseOrders({
 
       {/* Detail view / Confirmation modal */}
       {selectedOrder && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-surface rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden border border-border flex flex-col max-h-[85vh] animate-in fade-in zoom-in duration-150">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 overflow-y-auto p-0 sm:p-4">
+          <div className="bg-surface rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden border border-border flex flex-col max-h-[90vh] sm:max-h-[85vh] animate-in fade-in zoom-in duration-150">
             <div className="p-6 border-b border-border flex justify-between items-center bg-surface-muted/40">
               <div>
                 <div className="flex items-center gap-3">
@@ -853,8 +853,8 @@ export default function PurchaseOrders({
 
       {/* Create Order Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-surface rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-border flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-150">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 overflow-y-auto p-0 sm:p-4">
+          <div className="bg-surface rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-border flex flex-col max-h-[92vh] sm:max-h-[90vh] animate-in fade-in zoom-in duration-150">
             <div className="p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
               <div>
                 <h2 className="text-xl font-black text-content">

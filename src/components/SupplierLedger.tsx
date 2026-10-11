@@ -240,14 +240,14 @@ export default function SupplierLedger({
         <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
           <button
             onClick={handleWhatsAppShare}
-            className="h-10 px-4 py-2 bg-success hover:bg-success/90 text-white rounded-xl text-xs font-black shadow-md shadow-success/10 flex items-center justify-center gap-2 transition-all cursor-pointer"
+            className="flex-1 min-w-[160px] md:flex-none md:w-auto h-10 px-4 py-2 bg-success hover:bg-success/90 text-white rounded-xl text-xs font-black shadow-md shadow-success/10 flex items-center justify-center gap-2 transition-all cursor-pointer"
           >
             <MessageCircle size={16} />
             <span>{t('procurement.send_whatsapp_pdf', 'إرسال كشف الحساب عبر واتساب')}</span>
           </button>
           <button
             onClick={() => void handleAttachLedgerPdf()}
-            className="h-10 px-4 py-2 bg-surface border border-border text-content-muted hover:text-content rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer"
+            className="flex-1 min-w-[140px] md:flex-none md:w-auto h-10 px-4 py-2 bg-surface border border-border text-content-muted hover:text-content rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer"
           >
             <Paperclip size={16} />
             <span>{t('procurement.attach_ledger_pdf', 'إرفاق كملف PDF أيضاً')}</span>
@@ -255,7 +255,7 @@ export default function SupplierLedger({
 
           <button
             onClick={() => setIsVoucherOpen(true)}
-            className="h-10 px-4 py-2 bg-danger hover:bg-danger/90 text-white rounded-xl text-xs font-black shadow-md shadow-danger/10 flex items-center justify-center gap-2 transition-all cursor-pointer"
+            className="flex-1 min-w-[140px] md:flex-none md:w-auto h-10 px-4 py-2 bg-danger hover:bg-danger/90 text-white rounded-xl text-xs font-black shadow-md shadow-danger/10 flex items-center justify-center gap-2 transition-all cursor-pointer"
           >
             <Plus size={16} />
             <span>{t('procurement.issue_payment_voucher', 'إصدار سند صرف (سداد)')}</span>
@@ -263,7 +263,7 @@ export default function SupplierLedger({
 
           <button
             onClick={handlePrintA4}
-            className="h-10 px-4 py-2 bg-brand hover:bg-brand/90 text-white rounded-xl text-xs font-black shadow-md shadow-brand/10 flex items-center justify-center gap-2 transition-all cursor-pointer"
+            className="flex-1 min-w-[120px] md:flex-none md:w-auto h-10 px-4 py-2 bg-brand hover:bg-brand/90 text-white rounded-xl text-xs font-black shadow-md shadow-brand/10 flex items-center justify-center gap-2 transition-all cursor-pointer"
           >
             <Printer size={16} />
             <span>{t('procurement.print_a4', 'طباعة كشف A4')}</span>
