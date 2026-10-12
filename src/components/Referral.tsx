@@ -8,8 +8,8 @@
 import { useEffect, useState } from 'react';
 import {
   ensureReferralCode, referralLink, getWallet, listReferrals, listMyWithdrawals,
-  requestWithdrawal, MIN_WITHDRAWAL, REWARD_PER_REFERRAL,
-  type Wallet, type ReferralRow, type Withdrawal,
+  requestWithdrawal, getReferralProgramSettings, MIN_WITHDRAWAL, REWARD_PER_REFERRAL,
+  type Wallet, type ReferralRow, type Withdrawal, type ReferralProgramSettings,
 } from '../services/referralService';
 import { CurrencySymbol } from './CurrencySymbol';
 import i18n from 'i18next';
@@ -32,16 +32,19 @@ export default function Referral({ tenantId }: { tenantId: string }) {
   const [copied, setCopied] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [programSettings, setProgramSettings] = useState<ReferralProgramSettings>({
+    enabled: true, rewardPerReferral: REWARD_PER_REFERRAL, minWithdrawal: MIN_WITHDRAWAL,
+  });
 
   async function load() {
     setLoading(true);
     try {
       const code = await ensureReferralCode(tenantId);
       setLink(referralLink(code));
-      const [w, r, wd] = await Promise.all([
-        getWallet(tenantId), listReferrals(tenantId), listMyWithdrawals(tenantId),
+      const [w, r, wd, settings] = await Promise.all([
+        getWallet(tenantId), listReferrals(tenantId), listMyWithdrawals(tenantId), getReferralProgramSettings(),
       ]);
-      setWallet(w); setRefs(r); setWithdrawals(wd);
+      setWallet(w); setRefs(r); setWithdrawals(wd); setProgramSettings(settings);
     } catch (e) {
       console.warn('[referral] load failed', e);
       handleError(e, t('referral.load_failed', 'تعذّر تحميل بيانات برنامج الإحالة'));
@@ -58,15 +61,20 @@ export default function Referral({ tenantId }: { tenantId: string }) {
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   }
 
-  const pct = Math.min(100, Math.round((wallet.balance / MIN_WITHDRAWAL) * 100));
-  const canWithdraw = wallet.balance > MIN_WITHDRAWAL;
+  const minWithdrawal = programSettings.minWithdrawal;
+  const pct = Math.min(100, Math.round((wallet.balance / minWithdrawal) * 100));
+  const canWithdraw = wallet.balance > minWithdrawal;
 
   return (
     <div dir={dir} style={s.wrap}>
       <div style={s.head}>
         <h2 style={s.title}>{t('referral.title')}</h2>
-        <p style={s.sub}>{t('referral.subtitle', { reward: REWARD_PER_REFERRAL })}</p>
+        <p style={s.sub}>{t('referral.subtitle', { reward: programSettings.rewardPerReferral })}</p>
       </div>
+
+      {!loading && !programSettings.enabled && (
+        <div style={s.disabledNotice}>{t('referral.program_disabled_notice', 'برنامج الإحالة متوقف مؤقتاً عن استقبال إحالات جديدة -- يمكنك متابعة سحب رصيدك الحالي كالمعتاد.')}</div>
+      )}
 
       <div style={s.grid}>
         {/* wallet */}
@@ -77,7 +85,7 @@ export default function Referral({ tenantId }: { tenantId: string }) {
           <div style={s.barNote}>
             {canWithdraw
               ? t('referral.ready_to_withdraw')
-              : t('referral.remaining_to_withdraw', { amount: (MIN_WITHDRAWAL - wallet.balance).toLocaleString('en-US'), min: MIN_WITHDRAWAL })}
+              : t('referral.remaining_to_withdraw', { amount: (minWithdrawal - wallet.balance).toLocaleString('en-US'), min: minWithdrawal })}
           </div>
           <button disabled={!canWithdraw} onClick={() => setShowModal(true)}
             style={{ ...s.cta, ...(canWithdraw ? {} : s.ctaDisabled) }}>{t('referral.request_transfer')}</button>
@@ -89,10 +97,10 @@ export default function Referral({ tenantId }: { tenantId: string }) {
           <div style={s.cardLbl}>{t('referral.your_link')}</div>
           <div style={s.linkRow}>
             <input readOnly value={link} style={s.linkInput} dir="ltr" />
-            <button onClick={copy} style={s.copyBtn}>{copied ? t('billing.modal_iban_copied') : t('common.copy')}</button>
+            <button onClick={copy} disabled={!programSettings.enabled} style={{ ...s.copyBtn, ...(programSettings.enabled ? {} : s.ctaDisabled) }}>{copied ? t('billing.modal_iban_copied') : t('common.copy')}</button>
           </div>
-          <button onClick={shareWhatsApp} style={s.waBtn}>{t('referral.share_whatsapp')}</button>
-          <div style={s.hint}>{t('referral.link_hint', { reward: REWARD_PER_REFERRAL })}</div>
+          <button onClick={shareWhatsApp} disabled={!programSettings.enabled} style={{ ...s.waBtn, ...(programSettings.enabled ? {} : s.ctaDisabled) }}>{t('referral.share_whatsapp')}</button>
+          <div style={s.hint}>{t('referral.link_hint', { reward: programSettings.rewardPerReferral })}</div>
         </div>
       </div>
 
@@ -124,14 +132,14 @@ export default function Referral({ tenantId }: { tenantId: string }) {
         </div>
       )}
 
-      {showModal && <WithdrawModal balance={wallet.balance} onClose={() => setShowModal(false)}
+      {showModal && <WithdrawModal balance={wallet.balance} minWithdrawal={minWithdrawal} onClose={() => setShowModal(false)}
         onDone={() => { setShowModal(false); load(); }} tenantId={tenantId} />}
     </div>
   );
 }
 
-function WithdrawModal({ tenantId, balance, onClose, onDone }:
-  { tenantId: string; balance: number; onClose: () => void; onDone: () => void }) {
+function WithdrawModal({ tenantId, balance, minWithdrawal, onClose, onDone }:
+  { tenantId: string; balance: number; minWithdrawal: number; onClose: () => void; onDone: () => void }) {
   const { t, dir } = useDirection();
   const [iban, setIban] = useState('');
   const [name, setName] = useState('');
@@ -143,7 +151,7 @@ function WithdrawModal({ tenantId, balance, onClose, onDone }:
     setErr('');
     if (!/^SA\d{22}$/.test(iban.replace(/\s/g, ''))) { setErr(t('referral.invalid_iban')); return; }
     if (!name.trim()) { setErr(t('referral.enter_beneficiary_name')); return; }
-    if (amount <= MIN_WITHDRAWAL || amount > balance) { setErr(t('referral.amount_range', { min: MIN_WITHDRAWAL, max: balance })); return; }
+    if (amount <= minWithdrawal || amount > balance) { setErr(t('referral.amount_range', { min: minWithdrawal, max: balance })); return; }
     setBusy(true);
     try { await requestWithdrawal(tenantId, amount, iban.replace(/\s/g, ''), name.trim()); onDone(); }
     catch (e: any) { setErr(e?.message || t('referral.submit_failed')); setBusy(false); }
@@ -182,6 +190,7 @@ function wStatusColor(s: string) { return s === 'paid' ? { bg: MINT, fg: CTA2 } 
 const s: Record<string, React.CSSProperties> = {
   wrap: {  color: TEXT, padding: 24, maxWidth: 1000, margin: '0 auto' },
   head: { marginBottom: 20 },
+  disabledNotice: { background: '#FBEAD0', color: '#8A5A12', border: '1px solid #F0D9A8', borderRadius: 14, padding: '14px 18px', fontSize: 14, fontWeight: 700, marginBottom: 18, lineHeight: 1.7 },
   title: { fontFamily: "'Tajawal', sans-serif", fontWeight: 800, fontSize: 28, color: INK, margin: 0 },
   sub: { color: GRAY, fontSize: 15.5, margin: '6px 0 0' },
   grid: { display: 'flex', gap: 18, flexWrap: 'wrap' },

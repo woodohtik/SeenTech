@@ -14,7 +14,8 @@ import {
   ShieldCheck,
   Server,
   Activity,
-  X
+  X,
+  Gift
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -43,8 +44,14 @@ export default function SaaSSystemSettings() {
     trialDays: 14,
     allowRegistrations: true
   });
+  const [referralSettings, setReferralSettings] = useState({
+    enabled: true,
+    rewardPerReferral: 300,
+    minWithdrawal: 1000
+  });
   const [isSavingBranding, setIsSavingBranding] = useState(false);
   const [isSavingPlatform, setIsSavingPlatform] = useState(false);
+  const [isSavingReferral, setIsSavingReferral] = useState(false);
   const [userRole, setUserRole] = useState<string>('');
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -101,6 +108,20 @@ export default function SaaSSystemSettings() {
         setPlatformSettings({
           trialDays: platformData.value.trialDays || 14,
           allowRegistrations: platformData.value.allowRegistrations !== false
+        });
+      }
+
+      const { data: referralData } = await supabase
+        .from('saas_settings')
+        .select('*')
+        .eq('key', 'referral_program')
+        .maybeSingle();
+
+      if (referralData && referralData.value) {
+        setReferralSettings({
+          enabled: referralData.value.enabled !== false,
+          rewardPerReferral: referralData.value.rewardPerReferral || 300,
+          minWithdrawal: referralData.value.minWithdrawal || 1000
         });
       }
 
@@ -178,6 +199,30 @@ export default function SaaSSystemSettings() {
       toastError(t('saas.settings_save_error'));
     } finally {
       setIsSavingPlatform(false);
+    }
+  };
+
+  const handleSaveReferral = async () => {
+    setIsSavingReferral(true);
+    try {
+      const { error } = await supabase
+        .from('saas_settings')
+        .upsert({
+          key: 'referral_program',
+          value: referralSettings,
+          updated_at: new Date().toISOString(),
+          updated_by: currentAuthUser?.id
+        }, { onConflict: 'key' });
+
+      if (error) throw error;
+
+      toastSuccess(t('saas.referral_settings_saved_success', 'تم حفظ إعدادات برنامج الإحالة'));
+      await logAuditAction('update_referral_program', `Updated referral program. Enabled: ${referralSettings.enabled}, Reward: ${referralSettings.rewardPerReferral}, Min withdrawal: ${referralSettings.minWithdrawal}`);
+    } catch (error) {
+      console.error('Error saving referral settings:', error);
+      toastError(t('saas.settings_save_error'));
+    } finally {
+      setIsSavingReferral(false);
     }
   };
 
@@ -399,6 +444,70 @@ export default function SaaSSystemSettings() {
                 className="flex items-center gap-2 px-8 py-4 bg-brand text-white rounded-2xl font-black hover:bg-brand/90 disabled:opacity-50 transition-all shadow-lg shadow-brand/10"
               >
                 {isSavingPlatform ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Save size={20} />
+                )}
+                <span>{t('common.save_changes', 'حفظ التعديلات')}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
+            <h3 className="text-xl font-black text-content mb-8 flex items-center gap-2">
+              <Gift className="text-brand" size={24} />
+              {t('saas.referral_program_settings', 'إعدادات برنامج الإحالة')}
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="space-y-4">
+                <label className="block text-sm font-black text-content-muted">{t('saas.referral_reward_per_referral', 'العمولة لكل إحالة (ر.س)')}</label>
+                <IconInput
+                  type="number"
+                  min="0"
+                  value={referralSettings.rewardPerReferral}
+                  onChange={(e) => setReferralSettings(prev => ({ ...prev, rewardPerReferral: Number(e.target.value) }))}
+                  startIcon={Gift}
+                  className="bg-surface-muted"
+                />
+              </div>
+
+              <div className="space-y-4">
+                <label className="block text-sm font-black text-content-muted">{t('saas.referral_min_withdrawal', 'الحد الأدنى للسحب (ر.س)')}</label>
+                <IconInput
+                  type="number"
+                  min="0"
+                  value={referralSettings.minWithdrawal}
+                  onChange={(e) => setReferralSettings(prev => ({ ...prev, minWithdrawal: Number(e.target.value) }))}
+                  startIcon={Gift}
+                  className="bg-surface-muted"
+                />
+              </div>
+
+              <div className="space-y-4 flex flex-col justify-end">
+                <label className="flex items-center justify-between p-4 bg-surface-muted rounded-2xl cursor-pointer hover:ring-2 hover:ring-brand/50 transition-all h-[56px]">
+                  <span className="text-sm font-black text-content">{t('saas.referral_program_enabled', 'تفعيل برنامج الإحالة')}</span>
+                  <input
+                    type="checkbox"
+                    checked={referralSettings.enabled}
+                    onChange={(e) => setReferralSettings(prev => ({ ...prev, enabled: e.target.checked }))}
+                    className="w-5 h-5 accent-brand"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <p className="text-xs text-content-muted font-bold mt-4">
+              {t('saas.referral_disabled_hint', 'عند التعطيل: تتوقف إحالات جديدة عن التسجيل فقط -- أرصدة التجار المكتسبة فعلاً تبقى قابلة للسحب كالمعتاد.')}
+            </p>
+
+            <div className="mt-8 flex justify-end">
+              <button
+                disabled={isSavingReferral || userRole === 'support_tech'}
+                onClick={handleSaveReferral}
+                className="flex items-center gap-2 px-8 py-4 bg-brand text-white rounded-2xl font-black hover:bg-brand/90 disabled:opacity-50 transition-all shadow-lg shadow-brand/10"
+              >
+                {isSavingReferral ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
                   <Save size={20} />

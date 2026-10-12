@@ -9,6 +9,13 @@
 
 import { supabase } from '../lib/supabase/client';
 
+/**
+ * seen-fields-categories-referral-task.md #5 -- هذان كانا ثابتين فعلياً في
+ * كل من هذا الملف وداخل RPCs قاعدة البيانات بشكل مستقل ومكرَّر (بلا أي
+ * شاشة إدارية لتعديلهما). الآن يُقرآن ديناميكياً من saas_settings (مفتاح
+ * 'referral_program') عبر getReferralProgramSettings أدناه؛ هذان الثابتان
+ * يبقيان فقط كقيمة افتراضية تُعرَض قبل اكتمال التحميل الأول.
+ */
 export const REWARD_PER_REFERRAL = 300;
 export const MIN_WITHDRAWAL = 1000;   // السحب متاح عند تجاوز هذا المبلغ (فوق 1000)
 export const SITE = 'https://seen.sa';
@@ -16,6 +23,17 @@ export const SITE = 'https://seen.sa';
 export interface Wallet { balance: number; total_earned: number; }
 export interface ReferralRow { id: string; referred_tenant_id: string; reward_amount: number; status: string; created_at: string; qualified_until?: string; credited_at?: string; }
 export interface Withdrawal { id: string; tenant_id?: string; amount: number; iban?: string; beneficiary?: string; status: string; admin_note?: string; requested_at: string; processed_at?: string; }
+export interface ReferralProgramSettings { enabled: boolean; rewardPerReferral: number; minWithdrawal: number; }
+
+/** إعدادات برنامج الإحالة العامة (شاشة سوبر أدمن) -- saas_settings['referral_program']. */
+export async function getReferralProgramSettings(): Promise<ReferralProgramSettings> {
+  const { data } = await supabase.from('saas_settings').select('value').eq('key', 'referral_program').maybeSingle();
+  return {
+    enabled: data?.value?.enabled !== false,
+    rewardPerReferral: Number(data?.value?.rewardPerReferral) || REWARD_PER_REFERRAL,
+    minWithdrawal: Number(data?.value?.minWithdrawal) || MIN_WITHDRAWAL,
+  };
+}
 
 /** يضمن وجود كود إحالة للمحل ويُرجعه. */
 export async function ensureReferralCode(tenantId: string): Promise<string> {
