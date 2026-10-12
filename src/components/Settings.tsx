@@ -24,7 +24,6 @@ import WarehouseManagement from './Inventory/WarehouseManagement';
 import Staff from './Staff';
 import RolePermissionsSettings from './RolePermissionsSettings';
 import InvoiceLayoutSettings from './InvoiceLayoutSettings';
-import TenantSupportHistory from './TenantSupportHistory';
 import PrinterSettings from './PrinterSettings';
 import WhatsAppSettings from './WhatsAppSettings';
 import BillingSettings from './BillingSettings';
@@ -42,7 +41,7 @@ interface SettingsProps {
   tenantId: string;
 }
 
-type TabType = 'profile' | 'appearance' | 'invoice' | 'printer' | 'tax' | 'zatca' | 'categories' | 'branches' | 'staff' | 'whatsapp' | 'billing' | 'support' | 'notifications' | 'data';
+type TabType = 'profile' | 'appearance' | 'invoice' | 'printer' | 'tax' | 'zatca' | 'categories' | 'branches' | 'staff' | 'whatsapp' | 'billing' | 'notifications' | 'data';
 
 interface SettingsData {
   name: string;
@@ -503,8 +502,8 @@ export default function Settings({ tenantId }: SettingsProps) {
 
   const TABS: { id: TabType; label: string; icon: any; visible: boolean; group: string }[] = [
     { id: 'profile', label: t('settings_page.tabs.profile', 'الملف الشخصي'), icon: Store, visible: true, group: 'business' },
-    { id: 'tax', label: t('settings_page.tabs.tax', 'الإعدادات الضريبية'), icon: FileText, visible: canEdit, group: 'business' },
-    { id: 'zatca', label: t('settings_page.tabs.zatca', 'ربط زاتكا'), icon: ShieldCheck, visible: canEdit, group: 'business' },
+    { id: 'tax', label: t('settings_page.tabs.tax', 'الإعدادات الضريبية'), icon: FileText, visible: hasPermission('settings.tax'), group: 'business' },
+    { id: 'zatca', label: t('settings_page.tabs.zatca', 'ربط زاتكا'), icon: ShieldCheck, visible: hasPermission('settings.tax'), group: 'business' },
     { id: 'categories', label: t('settings_page.tabs.categories', 'فئات المخزون والموردين'), icon: Hash, visible: canEdit, group: 'business' },
     { id: 'branches', label: t('settings_page.tabs.branches', 'الفروع والمواقع'), icon: MapPin, visible: hasPermission('branches.manage'), group: 'business' },
     

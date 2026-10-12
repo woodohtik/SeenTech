@@ -13,6 +13,21 @@ import { getFriendlyErrorMessage } from '../lib/firebase';
 import { useDirection } from '../lib/direction';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../contexts/ConfirmContext';
+import { useVerticalConfig } from '../hooks/useVerticalConfig';
+import { useTenantCategoryPicker, ADD_NEW_CATEGORY_VALUE } from '../hooks/useTenantCategoryPicker';
+import { LEGACY_INVENTORY_CATEGORY_SEED } from '../services/categoryService';
+import { mapCategoryKeyToLegacyCategory } from '../services/verticalService';
+import { encodeInventoryDescription } from '../utils/b2bHelper';
+
+/**
+ * seen-fields-categories-referral-task.md #3 -- قيمة خاصة لعنصر "+ إضافة
+ * منتج جديد" في نهاية قائمة اختيار الصنف. الرصيد الافتتاحي حُذف من نموذج
+ * إضافة منتج (InventoryManager.tsx)، فهذا هو المسار الوحيد المتبقي لإنشاء
+ * منتج جديد ومنحه رصيداً حقيقياً: يُنشأ هنا برصيد صفر، ثم كمية الاستلام في
+ * نفس بند أمر الشراء هذا تصبح رصيده الافتتاحي الحقيقي عند تأكيد الأمر
+ * (handleConfirmOrder أدناه، عبر adjustStock الموجود فعلاً).
+ */
+const ADD_NEW_ITEM_VALUE = '__add_new_item__';
 
 export default function PurchaseOrders({ 
   tenantId, 
@@ -68,6 +83,100 @@ export default function PurchaseOrders({
       .then(({ data }) => setItemsWithVariants(new Set((data || []).map((r: any) => r.item_id))))
       .catch(() => setItemsWithVariants(new Set()));
   }, [tenantId]);
+
+  // seen-fields-categories-referral-task.md #3 -- "+ إضافة منتج جديد" مضمَّن
+  // في قائمة اختيار الصنف، بنفس نمط useTenantCategoryPicker الموجود فعلاً.
+  const { inventoryCategories, isLegacyVertical } = useVerticalConfig();
+  const newItemCategorySeed = isLegacyVertical
+    ? LEGACY_INVENTORY_CATEGORY_SEED
+    : inventoryCategories.map((c: any) => ({ category_key: c.category_key, label_ar: c.label_ar }));
+  const newItemCategoryPicker = useTenantCategoryPicker(tenantId, 'inventory', newItemCategorySeed);
+  const [isAddingNewItem, setIsAddingNewItem] = useState(false);
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemCategoryKey, setNewItemCategoryKey] = useState('');
+  const [newItemUnit, setNewItemUnit] = useState('meter');
+  const [newItemCostPrice, setNewItemCostPrice] = useState(0);
+  const [newItemSellingPrice, setNewItemSellingPrice] = useState(0);
+  const [savingNewItem, setSavingNewItem] = useState(false);
+
+  const cancelAddNewItem = () => {
+    setIsAddingNewItem(false);
+    setNewItemName('');
+    setNewItemCategoryKey('');
+    setNewItemUnit('meter');
+    setNewItemCostPrice(0);
+    setNewItemSellingPrice(0);
+  };
+
+  const handleSaveNewItem = async () => {
+    if (!newItemName.trim() || !newItemCategoryKey || newItemCostPrice <= 0 || newItemSellingPrice <= 0) {
+      toastError(t('inventory.missing_fields_prompt', { fields: t('inventory.item_name') }));
+      return;
+    }
+    setSavingNewItem(true);
+    try {
+      const { data: branches } = await supabase.from('branches').select('id, is_main').eq('tenant_id', tenantId);
+      const sku = Math.floor(10000000 + Math.random() * 90000000).toString();
+      const { data: item, error: itemError } = await supabase
+        .from('inventory_items')
+        .insert({
+          name: newItemName.trim(),
+          category: mapCategoryKeyToLegacyCategory(newItemCategoryKey),
+          category_key: newItemCategoryKey,
+          unit: newItemUnit,
+          conversion_rate: 1,
+          min_threshold: 10,
+          price_per_unit: newItemSellingPrice,
+          description: encodeInventoryDescription(newItemCostPrice, 'exclusive', ''),
+          sku,
+          barcode: Math.random().toString().substring(2, 12),
+          quantity: 0,
+          show_in_pos: true,
+          opening_balance: 0,
+          tenant_id: tenantId,
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+      if (itemError) throw itemError;
+
+      if (branches && branches.length > 0) {
+        await supabase.from('branch_inventory').insert(
+          branches.map((b: any) => ({
+            branch_id: b.id,
+            item_id: item.id,
+            quantity: 0,
+            tenant_id: tenantId,
+            updated_at: new Date().toISOString(),
+          }))
+        );
+      }
+
+      // يُضاف مباشرة كبند في قائمة الفاتورة الحالية -- لا ننتظر تحديث
+      // قائمة inventory القادمة من المكوّن الأب (onRefresh غير متزامن).
+      const newPoItem: PurchaseOrderItem = {
+        itemId: item.id,
+        name: item.name,
+        quantity,
+        unit: item.unit,
+        conversionRate: 1,
+        baseQuantity: quantity,
+        pricePerUnit,
+        total: quantity * pricePerUnit,
+      };
+      setItems((prev) => [...prev, newPoItem]);
+      setSelectedItem('');
+      setQuantity(1);
+      setPricePerUnit(0);
+      cancelAddNewItem();
+      onRefresh?.();
+      toastSuccess(t('inventory.item_added_success', 'تمت إضافة المنتج بنجاح'));
+    } catch (error: any) {
+      toastError(error ? getFriendlyErrorMessage(error) : t('inventory.save_failed', 'فشل الحفظ'));
+    } finally {
+      setSavingNewItem(false);
+    }
+  };
 
   useEffect(() => {
     setTypeFilter(defaultTypeFilter);
@@ -391,12 +500,17 @@ export default function PurchaseOrders({
     ? getSupplierPurchasedItemIds(selectedSupplier)
     : null;
 
-  const itemSelectOptions = (supplierPurchasedItemIds
-    ? inventory.filter(i => supplierPurchasedItemIds.has(i.id))
-    : inventory
-  )
-    .filter(i => !itemsWithVariants.has(i.id))
-    .map(i => ({ value: i.id, label: t('procurement.item_option_label', { name: i.name, unit: i.unit, quantity: i.quantity }) }));
+  const itemSelectOptions = [
+    ...(supplierPurchasedItemIds
+      ? inventory.filter(i => supplierPurchasedItemIds.has(i.id))
+      : inventory
+    )
+      .filter(i => !itemsWithVariants.has(i.id))
+      .map(i => ({ value: i.id, label: t('procurement.item_option_label', { name: i.name, unit: i.unit, quantity: i.quantity }) })),
+    ...(modalType === 'purchase'
+      ? [{ value: ADD_NEW_ITEM_VALUE, label: t('procurement.add_new_item_option', '+ إضافة منتج جديد') }]
+      : []),
+  ];
 
   // What we actually paid this supplier for this item (weighted average
   // across their received purchases) -- a return must credit back the real
@@ -942,6 +1056,10 @@ export default function PurchaseOrders({
                     <SmartSelect
                       value={selectedItem}
                       onChange={(val) => {
+                        if (val === ADD_NEW_ITEM_VALUE) {
+                          setIsAddingNewItem(true);
+                          return;
+                        }
                         setSelectedItem(val);
                         if (modalType === 'return' && selectedSupplier) {
                           // A return must credit back what we actually paid --
@@ -992,7 +1110,106 @@ export default function PurchaseOrders({
                     />
                   </div>
                 </div>
-                <button 
+
+                {isAddingNewItem && (
+                  <div className="p-4 rounded-xl border-2 border-brand/40 bg-brand/5 space-y-3">
+                    <h4 className="text-xs font-black text-brand uppercase tracking-widest">{t('procurement.add_new_item_option', '+ إضافة منتج جديد')}</h4>
+                    <input
+                      autoFocus
+                      value={newItemName}
+                      onChange={(e) => setNewItemName(e.target.value)}
+                      placeholder={t('inventory.item_name_placeholder', 'اسم المنتج')}
+                      className="w-full px-4 py-2 bg-surface border border-border rounded-xl outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-sm"
+                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <SmartSelect
+                          value={newItemCategoryKey}
+                          onChange={(val) => {
+                            if (val === ADD_NEW_CATEGORY_VALUE) {
+                              newItemCategoryPicker.setAddingNew(true);
+                              return;
+                            }
+                            setNewItemCategoryKey(val);
+                          }}
+                          placeholder={t('inventory.category', 'الفئة')}
+                          options={[
+                            ...newItemCategoryPicker.options,
+                            { value: ADD_NEW_CATEGORY_VALUE, label: t('settings_page.categories.add_new', '+ إضافة فئة جديدة') },
+                          ]}
+                        />
+                        {newItemCategoryPicker.addingNew && (
+                          <div className="flex items-center gap-2 mt-2 p-2 rounded-xl border-2 border-brand/40 bg-surface">
+                            <input
+                              autoFocus
+                              value={newItemCategoryPicker.newLabel}
+                              onChange={(e) => newItemCategoryPicker.setNewLabel(e.target.value)}
+                              placeholder={t('settings_page.categories.new_name_placeholder', 'اسم الفئة الجديدة')}
+                              className="flex-1 bg-transparent outline-none font-bold text-content text-xs"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => newItemCategoryPicker.confirmAdd((key) => setNewItemCategoryKey(key)).catch(() => {})}
+                              disabled={!newItemCategoryPicker.newLabel.trim() || newItemCategoryPicker.saving}
+                              className="min-h-[28px] px-2 rounded-lg bg-brand text-white font-bold text-[10px] disabled:opacity-50"
+                            >
+                              {t('common.add', 'إضافة')}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <SmartSelect
+                        value={newItemUnit}
+                        onChange={(val) => setNewItemUnit(val)}
+                        options={[
+                          { value: 'meter', label: t('inventory.unit_meter', 'متر') },
+                          { value: 'yard', label: t('inventory.unit_yard', 'يارد') },
+                          { value: 'roll', label: t('inventory.unit_roll', 'لفّة') },
+                          { value: 'bolt', label: t('inventory.unit_bolt', 'بالة') },
+                          { value: 'piece', label: t('inventory.unit_piece', 'قطعة') },
+                          { value: 'box', label: t('inventory.unit_box', 'صندوق') },
+                        ]}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={newItemCostPrice || ''}
+                        onChange={(e) => setNewItemCostPrice(e.target.value === '' ? 0 : Number(e.target.value))}
+                        placeholder={t('inventory.cost_price_label', 'سعر التكلفة')}
+                        className="w-full px-4 py-2 bg-surface border border-border rounded-xl outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-sm"
+                      />
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={newItemSellingPrice || ''}
+                        onChange={(e) => setNewItemSellingPrice(e.target.value === '' ? 0 : Number(e.target.value))}
+                        placeholder={t('inventory.selling_price_label', 'سعر البيع')}
+                        className="w-full px-4 py-2 bg-surface border border-border rounded-xl outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-sm"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={handleSaveNewItem}
+                        disabled={savingNewItem || !newItemName.trim() || !newItemCategoryKey || newItemCostPrice <= 0 || newItemSellingPrice <= 0}
+                        className="flex-1 bg-brand text-white py-2.5 rounded-xl font-bold text-xs disabled:opacity-50"
+                      >
+                        {savingNewItem ? t('common.saving', 'جارٍ الحفظ...') : t('procurement.create_and_add_item', 'إنشاء وإضافة للقائمة')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelAddNewItem}
+                        className="px-4 py-2.5 rounded-xl text-content-muted font-bold text-xs hover:bg-surface"
+                      >
+                        {t('common.cancel', 'إلغاء')}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <button
                   onClick={handleAddItem}
                   disabled={!selectedItem || quantity <= 0 || pricePerUnit <= 0}
                   className="w-full bg-brand/10 text-brand py-3 rounded-xl font-bold text-xs hover:bg-brand hover:text-white transition-all disabled:opacity-50"

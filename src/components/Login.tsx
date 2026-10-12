@@ -29,6 +29,7 @@ import Branding from './Branding';
 import { IconInput } from './ui/IconInput';
 import { Button } from './ui/Button';
 import { getAuthErrorMessage } from '../utils/authErrorUtils';
+import { recordReferralOnSignup } from '../services/referralService';
 
 type ViewMode = 'login' | 'register' | 'forgot-password' | 'reset-sent';
 
@@ -477,6 +478,15 @@ export default function Login() {
 
         if (tenantError) throw tenantError;
         const tenantId = tenantData.id;
+
+        // seen-fields-categories-referral-task.md #5 -- the referral link
+        // (LandingPage.tsx) carries ?ref=CODE onto this page. Best-effort:
+        // never block signup on it, recordReferralOnSignup already swallows
+        // its own RPC errors.
+        const refCode = searchParams.get('ref');
+        if (refCode) {
+          recordReferralOnSignup(refCode, tenantId).catch(() => {});
+        }
 
         // Step 2: Create initial Branch
         const { data: branchData, error: branchError } = await supabase

@@ -21,7 +21,21 @@ export default function LandingPage() {
       if (event.origin !== window.location.origin) return;
       if (event.source !== iframeRef.current?.contentWindow) return;
       if (event.data?.type === 'NAVIGATE' && typeof event.data.path === 'string' && event.data.path.startsWith('/')) {
-        navigate(event.data.path);
+        // seen-fields-categories-referral-task.md #5 -- carry ?ref=CODE from
+        // this landing page's own URL onto the "ابدأ الآن" register link, so
+        // Login.tsx can record the referral once the new tenant signs up.
+        // The iframe is srcDoc (no real location/query of its own), so this
+        // has to happen here on the parent side, not in landing-bridge.js.
+        const ref = new URLSearchParams(window.location.search).get('ref');
+        let path = event.data.path;
+        if (ref) {
+          const url = new URL(path, window.location.origin);
+          if (url.searchParams.get('view') === 'register' && !url.searchParams.has('ref')) {
+            url.searchParams.set('ref', ref);
+            path = url.pathname + url.search;
+          }
+        }
+        navigate(path);
       } else if (event.data?.type === 'RESIZE' && typeof event.data.height === 'number' && event.data.height > 0) {
         setIframeHeight(event.data.height);
       }

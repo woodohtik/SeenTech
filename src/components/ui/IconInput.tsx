@@ -21,6 +21,7 @@ export const IconInput = forwardRef<HTMLInputElement, IconInputProps>(({
   id,
   type = 'text',
   disabled,
+  required,
   ...props
 }, ref) => {
   
@@ -55,7 +56,7 @@ export const IconInput = forwardRef<HTMLInputElement, IconInputProps>(({
             error ? "text-danger" : ""
           )}
         >
-          {label}
+          {label}{required && <span className="text-danger">*</span>}
         </label>
       )}
 
@@ -89,6 +90,7 @@ export const IconInput = forwardRef<HTMLInputElement, IconInputProps>(({
           id={id}
           type={type}
           disabled={disabled}
+          required={required}
           aria-invalid={error ? true : undefined}
           aria-describedby={error && id ? `${id}-error` : undefined}
           className={cn(

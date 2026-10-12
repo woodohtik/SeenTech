@@ -625,6 +625,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                 id="supplier-name"
                 {...register('name')}
                 label={t('procurement.company_name', 'اسم الشركة/المورد')}
+                required
                 startIcon={Building}
                 placeholder={t('procurement.company_name', 'اسم الشركة/المورد')}
                 error={errors.name?.message}
@@ -633,6 +634,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                 id="supplier-contact-person"
                 {...register('contactPerson')}
                 label={t('procurement.contact_person', 'الشخص المسؤول')}
+                required
                 startIcon={User}
                 placeholder={t('procurement.contact_person', 'الشخص المسؤول')}
                 error={errors.contactPerson?.message}
@@ -652,6 +654,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                   type="tel"
                   {...register('phone')}
                   label={t('procurement.phone', 'رقم الهاتف')}
+                  required
                   startIcon={Phone}
                   placeholder={t('procurement.phone', 'رقم الهاتف')}
                   error={errors.phone?.message}
@@ -667,7 +670,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                   error={errors.taxNumber?.message}
                 />
                 <div>
-                  <label className="block text-sm font-medium text-content-muted mb-1">{t('procurement.category', 'التصنيف')}</label>
+                  <label className="block text-sm font-medium text-content-muted mb-1">{t('procurement.category', 'التصنيف')}<span className="text-danger">*</span></label>
                   <Controller
                     control={control}
                     name="category"

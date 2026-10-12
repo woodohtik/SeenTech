@@ -37,7 +37,6 @@ export const LEGACY_INVENTORY_CATEGORY_SEED: CategorySeed[] = [
   { category_key: 'button', label_ar: 'أزرار' },
   { category_key: 'lining', label_ar: 'بطانات' },
   { category_key: 'accessories', label_ar: 'إكسسوارات' },
-  { category_key: 'other', label_ar: 'أخرى' },
 ];
 
 /** القائمة الثابتة القديمة لفئات الموردين -- نفس فكرة التبذير أول مرة. */
@@ -47,7 +46,6 @@ export const LEGACY_SUPPLIER_CATEGORY_SEED: CategorySeed[] = [
   { category_key: 'thread', label_ar: 'خيوط' },
   { category_key: 'button', label_ar: 'أزرار' },
   { category_key: 'lining', label_ar: 'بطانات' },
-  { category_key: 'other', label_ar: 'أخرى' },
 ];
 
 /**

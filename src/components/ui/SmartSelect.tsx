@@ -24,6 +24,7 @@ interface SmartSelectProps {
   startIcon?: LucideIcon;
   /** seen-fields-unification-task.md #2: نفس كلاس تسمية IconInput حرفياً -- لا نسخة تسمية جديدة. */
   label?: string;
+  required?: boolean;
   id?: string;
 }
 
@@ -39,6 +40,7 @@ export function SmartSelect({
   error = false,
   startIcon: StartIcon,
   label,
+  required,
   id,
 }: SmartSelectProps) {
   const { t, dir } = useDirection();
@@ -100,7 +102,7 @@ export function SmartSelect({
         error ? 'text-danger' : ''
       )}
     >
-      {label}
+      {label}{required && <span className="text-danger">*</span>}
     </label>
   );
 

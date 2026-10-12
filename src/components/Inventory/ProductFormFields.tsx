@@ -53,6 +53,13 @@ interface ProductFormFieldsProps {
   categoryPicker: ReturnType<typeof useTenantCategoryPicker>;
   suppliersList: { id: string; name: string }[];
   handleError: (err: unknown) => void;
+  /**
+   * seen-fields-categories-referral-task.md #3 -- المنتجات الجديدة تُنشَأ
+   * برصيد صفر دائماً الآن؛ الرصيد الحقيقي يُدخَل من أمر الشراء (نفس مكان
+   * استلام أي بضاعة أخرى) لا من نموذج الإضافة. ظاهر فقط في وضع التعديل،
+   * حيث لا يزال يمثّل تعديلاً يدوياً شرعياً لرصيد موجود فعلاً.
+   */
+  showOpeningBalance?: boolean;
 }
 
 export default function ProductFormFields({
@@ -65,6 +72,7 @@ export default function ProductFormFields({
   categoryPicker,
   suppliersList,
   handleError,
+  showOpeningBalance = true,
 }: ProductFormFieldsProps) {
   const { t } = useTranslation();
 
@@ -83,7 +91,7 @@ export default function ProductFormFields({
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
           <div className="space-y-2 col-span-1 md:col-span-6 text-right">
             <label htmlFor={`${idPrefix}-name`} className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-              {t("inventory.item_name")}
+              {t("inventory.item_name")}<span className="text-danger">*</span>
             </label>
             <input
               id={`${idPrefix}-name`}
@@ -275,7 +283,7 @@ export default function ProductFormFields({
           </div>
           <div className="space-y-2 col-span-1 md:col-span-4 text-right">
             <label htmlFor={`${idPrefix}-conversion-rate`} className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-              {t("inventory.conversion_rate")}
+              {t("inventory.conversion_rate")}<span className="text-danger">*</span>
             </label>
             <input
               id={`${idPrefix}-conversion-rate`}
@@ -313,7 +321,7 @@ export default function ProductFormFields({
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
           <div className="space-y-2 col-span-1 md:col-span-3 text-right">
             <label htmlFor={`${idPrefix}-cost-price`} className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-              {t("inventory.cost_price_label")}
+              {t("inventory.cost_price_label")}<span className="text-danger">*</span>
             </label>
             <input
               id={`${idPrefix}-cost-price`}
@@ -335,7 +343,7 @@ export default function ProductFormFields({
 
           <div className="space-y-2 col-span-1 md:col-span-3 text-right">
             <label htmlFor={`${idPrefix}-selling-price`} className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-              {t("inventory.selling_price_label")}
+              {t("inventory.selling_price_label")}<span className="text-danger">*</span>
             </label>
             <input
               id={`${idPrefix}-selling-price`}
@@ -387,7 +395,7 @@ export default function ProductFormFields({
 
       <div className="bg-brand/5 p-6 rounded-[2rem] border border-brand/10 text-right">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
-          <div className="space-y-2 col-span-1 md:col-span-6">
+          <div className={cn("space-y-2 col-span-1", showOpeningBalance ? "md:col-span-6" : "md:col-span-12")}>
             <label className="text-xs font-black text-content uppercase tracking-widest mx-1 block">
               {t("inventory.supplier_label")}
             </label>
@@ -401,20 +409,22 @@ export default function ProductFormFields({
               className="text-right"
             />
           </div>
-          <div className="space-y-2 col-span-1 md:col-span-6">
-            <label htmlFor={`${idPrefix}-initial-stock`} className="text-xs font-black text-content uppercase tracking-widest mx-1 block">
-              {t("inventory.initial_stock")}
-            </label>
-            <input
-              id={`${idPrefix}-initial-stock`}
-              type="number"
-              min="0"
-              placeholder="0.00"
-              value={formData.openingBalance || ""}
-              onChange={(e) => setFormData({ ...formData, openingBalance: e.target.value === "" ? 0 : Number(e.target.value) })}
-              className="w-full px-5 py-3 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
-            />
-          </div>
+          {showOpeningBalance && (
+            <div className="space-y-2 col-span-1 md:col-span-6">
+              <label htmlFor={`${idPrefix}-initial-stock`} className="text-xs font-black text-content uppercase tracking-widest mx-1 block">
+                {t("inventory.initial_stock")}
+              </label>
+              <input
+                id={`${idPrefix}-initial-stock`}
+                type="number"
+                min="0"
+                placeholder="0.00"
+                value={formData.openingBalance || ""}
+                onChange={(e) => setFormData({ ...formData, openingBalance: e.target.value === "" ? 0 : Number(e.target.value) })}
+                className="w-full px-5 py-3 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
+              />
+            </div>
+          )}
         </div>
       </div>
 

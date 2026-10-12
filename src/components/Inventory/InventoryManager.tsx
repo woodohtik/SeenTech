@@ -1837,12 +1837,11 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
 
     setSubmitting(true);
     try {
-      const defaultQty = formData.openingBalance || 0;
-      if (defaultQty < 0) {
-        toastError(t("inventory.negative_stock_error"));
-        setSubmitting(false);
-        return;
-      }
+      // seen-fields-categories-referral-task.md #3 -- الرصيد الافتتاحي حُذف
+      // من نموذج الإضافة؛ كل منتج جديد يُنشأ برصيد صفر، والرصيد الحقيقي
+      // يُدخَل لاحقاً من أمر الشراء (addNewItemInline أدناه، أو شاشة
+      // المخزون للتعديل اليدوي).
+      const defaultQty = 0;
       const sanitizedSku = formData.sku ? formData.sku.replace(/\D/g, '') : generateSKU();
       const itemData: any = {
         name: formData.name,
@@ -1869,7 +1868,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
           formData.category === "ready_made" ? formData.chestStyle : undefined,
         show_in_pos: formData.showInPos,
         supplier_id: formData.supplierId || null,
-        opening_balance: formData.openingBalance || 0,
+        opening_balance: defaultQty,
         tenant_id: tenantId,
         updated_at: new Date().toISOString(),
       };
@@ -1972,6 +1971,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
             categoryPicker={categoryPicker}
             suppliersList={suppliersList}
             handleError={handleError}
+            showOpeningBalance={false}
           />
 
           <button
