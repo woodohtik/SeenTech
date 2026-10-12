@@ -263,15 +263,20 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
 
   useEffect(() => {
     const lowStock = items.filter((item) => {
-      const totalStock = (
-        Object.values(branchStock).flat() as BranchInventory[]
-      )
-        .filter((bi) => bi.itemId === item.id)
-        .reduce((sum, bi) => sum + bi.quantity, 0);
+      const variants = tenantVariantsByItem[item.id];
+      const totalStock =
+        variants && variants.length > 0
+          ? variants.reduce(
+              (sum, v) => sum + Object.values(v.stockByBranch || {}).reduce((s, q) => s + q, 0),
+              0
+            )
+          : (Object.values(branchStock).flat() as BranchInventory[])
+              .filter((bi) => bi.itemId === item.id)
+              .reduce((sum, bi) => sum + bi.quantity, 0);
       return totalStock <= (item.minThreshold || 0);
     });
     setLowStockItems(lowStock);
-  }, [items, branchStock]);
+  }, [items, branchStock, tenantVariantsByItem]);
 
   // Fetch Branches
   useEffect(() => {
@@ -373,6 +378,19 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
   }
 
   function getTotalStock(itemId: string) {
+    // seen-fields-categories-referral-task.md follow-up -- once an item has
+    // variants, its own non-variant branch_inventory row is dead/unreachable
+    // (POS always routes to the variant picker, never the base row -- see
+    // POS.tsx's getItemDisplayStock), so counting it here would silently
+    // inflate the number past what's actually sellable. Mirrors POS.tsx's
+    // own variant-aware stock sum instead of the flat branchStock total.
+    const variants = tenantVariantsByItem[itemId];
+    if (variants && variants.length > 0) {
+      return variants.reduce(
+        (sum, v) => sum + Object.values(v.stockByBranch || {}).reduce((s, q) => s + q, 0),
+        0
+      );
+    }
     return branchStock[itemId]?.reduce((sum, s) => sum + s.quantity, 0) || 0;
   }
 

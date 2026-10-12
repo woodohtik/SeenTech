@@ -298,7 +298,11 @@ export default function PurchaseOrders({
 
       if (itemsError) throw itemsError;
 
-      toastSuccess(modalType === 'purchase' ? t('procurement.po_draft_created', 'تم إنشاء السند كمسودة') : t('procurement.return_draft_created', 'تم إنشاء مرتجع المشتريات كمسودة'));
+      // handleConfirmOrder shows its own success toast when isConfirmImmediately
+      // -- showing "created as draft" here too was misleading on that path.
+      if (!isConfirmImmediately) {
+        toastSuccess(modalType === 'purchase' ? t('procurement.po_draft_created', 'تم إنشاء السند كمسودة') : t('procurement.return_draft_created', 'تم إنشاء مرتجع المشتريات كمسودة'));
+      }
 
       const foundSupplier = suppliers.find(s => (s.id || '').toLowerCase().trim() === (poData.supplier_id || '').toLowerCase().trim());
 
