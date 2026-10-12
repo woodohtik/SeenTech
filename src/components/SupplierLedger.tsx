@@ -60,7 +60,7 @@ export default function SupplierLedger({
   onReloadSupplier,
 }: SupplierLedgerProps) {
   const { t, dir, locale } = useDirection();
-  const { handleError } = useToast();
+  const { handleError, error: toastError } = useToast();
   const [transactions, setTransactions] = useState<SupplierTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -170,6 +170,46 @@ export default function SupplierLedger({
 
   const handlePrintA4 = () => {
     window.print();
+  };
+
+  // seen-ux-fixes-batch-task.md #5: the only printing that existed was the
+  // full A4 statement (above) or a payment voucher at the moment it's
+  // issued -- no way to reprint one historical ledger row by itself. This
+  // ledger row IS the authoritative record (supplier_transactions has no
+  // foreign key back to a separate purchase-order/payment document), so
+  // the reprint is built directly from the row's own fields rather than
+  // trying to reconstruct some other source document.
+  const handlePrintTransaction = async (tx: SupplierTransaction) => {
+    const txDate = new Date(tx.date);
+    const row = (label: string, value: string) =>
+      `<tr><td style="padding:6px 0;color:#666;font-size:12px;">${label}</td><td style="padding:6px 0;font-weight:bold;font-size:13px;text-align:left;">${value}</td></tr>`;
+    const html = `
+      <div style="font-family:Tajawal,Arial,sans-serif;direction:rtl;text-align:right;padding:16px;max-width:400px;">
+        <h2 style="margin:0 0 2px;">${tenantName}</h2>
+        <p style="margin:0 0 16px;color:#888;font-size:11px;">${t('procurement.supplier_voucher_reprint_title', 'إعادة طباعة سند حركة')}</p>
+        <table style="width:100%;border-collapse:collapse;">
+          ${row(t('common.date', 'التاريخ'), txDate.toLocaleDateString('ar-SA-u-nu-latn'))}
+          ${row(t('procurement.reference_doc', 'المرجع / السند'), tx.reference_number)}
+          ${row(t('procurement.po_supplier', 'المورد'), supplier.name)}
+          ${row(t('procurement.doc_description', 'الوصف'), tx.notes || '—')}
+          ${tx.debit > 0 ? row(t('procurement.payments_debit', 'المدفوعات (مدين)'), tx.debit.toFixed(2)) : ''}
+          ${tx.credit > 0 ? row(t('procurement.liabilities_credit', 'المطلوبات (دائن)'), tx.credit.toFixed(2)) : ''}
+        </table>
+        <table style="width:100%;border-collapse:collapse;border-top:1px solid #ddd;margin-top:8px;">
+          ${row(t('procurement.balance_due', 'الرصيد المستحق (الذمة)'), tx.running_balance.toFixed(2))}
+        </table>
+      </div>
+    `;
+    try {
+      const { printHtmlContentDetailed } = await import('../utils/printManager');
+      const res = await printHtmlContentDetailed(html, { paperSize: 'A5', title: tx.reference_number });
+      if (!res.ok) {
+        toastError(t('printing.print_failed'), res.message);
+      }
+    } catch (e) {
+      console.error('[SupplierLedger] print transaction error:', e);
+      window.print();
+    }
   };
 
   const buildLedgerWhatsAppMessage = () => {
@@ -427,13 +467,14 @@ export default function SupplierLedger({
                   <th className="p-4 text-center">{t('procurement.payments_debit', 'المدفوعات (مدين)')}</th>
                   <th className="p-4 text-center">{t('procurement.liabilities_credit', 'المطلوبات (دائن)')}</th>
                   <th className="p-4 bg-surface-muted/80 text-content border-r border-border/50 font-black text-center print:bg-surface-muted">{t('procurement.balance_due', 'الرصيد المستحق (الذمة)')}</th>
+                  <th className="p-4 text-center print:hidden">{t('procurement.print_action', 'طباعة')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {filteredTransactions.map((tx, idx) => {
                   const txDate = new Date(tx.date);
                   const isDebitPayment = tx.debit > 0;
-                  
+
                   return (
                     <tr key={tx.id} className="hover:bg-surface-muted/40 transition-colors">
                       <td className="p-4 text-content-muted font-medium">
@@ -481,13 +522,22 @@ export default function SupplierLedger({
                           <CurrencySymbol className="h-[1.1em] w-auto inline-block" />
                         </div>
                       </td>
+                      <td className="p-4 text-center print:hidden">
+                        <button
+                          onClick={() => void handlePrintTransaction(tx)}
+                          aria-label={t('procurement.print_action', 'طباعة')}
+                          className="min-w-[36px] min-h-[36px] inline-flex items-center justify-center text-content-muted hover:text-brand hover:bg-brand/10 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Printer size={15} />
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
 
                 {filteredTransactions.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="p-12 text-center text-content-muted font-bold bg-surface">
+                    <td colSpan={7} className="p-12 text-center text-content-muted font-bold bg-surface">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <AlertCircle className="opacity-25" size={40} />
                         <p className="text-xs text-content-muted">{t('procurement.no_financial_movements', 'لا توجد حركات مالية مطابقة للقيد المستعلم عنه حالياً')}</p>
@@ -542,6 +592,13 @@ export default function SupplierLedger({
                       </span>
                     </div>
                   </div>
+                  <button
+                    onClick={() => void handlePrintTransaction(tx)}
+                    className="w-full min-h-[40px] flex items-center justify-center gap-1.5 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-colors cursor-pointer text-xs font-bold border border-border"
+                  >
+                    <Printer size={14} />
+                    <span>{t('procurement.print_action', 'طباعة')}</span>
+                  </button>
                 </div>
               );
             })}

@@ -117,7 +117,13 @@ app.use(helmet({
   // to avoid.
   crossOriginEmbedderPolicy: false,
 }));
-app.use(rateLimit({ windowMs: 60_000, max: 120 }));
+// seen-ux-fixes-batch-task.md #3: /api/health had no exception -- a branch
+// with several cashier devices sharing one IP could exceed 120 req/min
+// across ALL of them combined, and the connectivity check itself (the one
+// request that must never be rate-limited, or the app wrongly reports
+// "offline" while the internet is actually fine) would get a 429 like any
+// other route.
+app.use(rateLimit({ windowMs: 60_000, max: 120, skip: (req) => req.path === '/api/health' }));
 
 // حجم كبير لأن بيانات الرسم النقطي للفاتورة قد تصل لعدة ميغابايت
 app.use(express.json({ limit: '25mb' }));

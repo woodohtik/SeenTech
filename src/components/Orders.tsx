@@ -2725,23 +2725,25 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                       </button>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(order.id, order.orderNumber?.toString() || order.id);
-                      }}
-                      disabled={order.status === 'delivered'}
-                      className={cn(
-                        "min-w-[40px] min-h-[40px] flex items-center justify-center ms-2 transition-all rounded-xl border border-border/40",
-                        order.status === 'delivered'
-                          ? "text-content-muted/20 cursor-not-allowed"
-                          : "text-content-muted hover:text-danger hover:bg-danger/10 hover:border-danger/20"
-                      )}
-                      title={t('orders.delete_order')}
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    {canDelete && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(order.id, order.orderNumber?.toString() || order.id);
+                        }}
+                        disabled={order.status === 'delivered'}
+                        className={cn(
+                          "min-w-[40px] min-h-[40px] flex items-center justify-center ms-2 transition-all rounded-xl border border-border/40",
+                          order.status === 'delivered'
+                            ? "text-content-muted/20 cursor-not-allowed"
+                            : "text-content-muted hover:text-danger hover:bg-danger/10 hover:border-danger/20"
+                        )}
+                        title={t('orders.delete_order')}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -2906,19 +2908,21 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                       )}
                     </div>
 
-                    <button 
-                      onClick={() => handleDelete(order.id, order.orderNumber?.toString() || order.id)}
-                      disabled={order.status === 'delivered'}
-                      className={cn(
-                        "p-2.5 transition-all rounded-2xl border border-transparent",
-                        order.status === 'delivered' 
-                          ? "text-content-muted/20 cursor-not-allowed" 
-                          : "text-content-muted hover:text-danger hover:bg-danger/10 hover:border-danger/20"
-                      )}
-                      title={t('orders.delete_order')}
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                    {canDelete && (
+                      <button
+                        onClick={() => handleDelete(order.id, order.orderNumber?.toString() || order.id)}
+                        disabled={order.status === 'delivered'}
+                        className={cn(
+                          "p-2.5 transition-all rounded-2xl border border-transparent",
+                          order.status === 'delivered'
+                            ? "text-content-muted/20 cursor-not-allowed"
+                            : "text-content-muted hover:text-danger hover:bg-danger/10 hover:border-danger/20"
+                        )}
+                        title={t('orders.delete_order')}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -3591,7 +3595,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         {...register('isTest')}
                         className="w-5 h-5 text-brand border-white/20 rounded focus:ring-brand bg-transparent"
                       />
-                      <label htmlFor="isTest" className="text-sm font-bold text-content-muted/60 flex items-center gap-2">
+                      <label htmlFor="isTest" className="text-sm font-bold text-warning flex items-center gap-2">
                         <Zap size={16} className="text-warning" />
                         {t('common.test_data')}
                       </label>

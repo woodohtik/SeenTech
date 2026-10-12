@@ -10,7 +10,9 @@
 
 const PING_URL = '/api/health';
 const PING_INTERVAL_MS = 20000;
-const PING_TIMEOUT_MS = 5000;
+// seen-ux-fixes-batch-task.md #3: 5000ms could time out on a genuinely slow
+// (not dead) network, producing the same false "offline" the task reports.
+const PING_TIMEOUT_MS = 8000;
 
 type ConnectivityListener = (isOnline: boolean) => void;
 
@@ -34,7 +36,15 @@ async function pingServer(): Promise<boolean> {
 
 export async function checkConnectivityNow(): Promise<boolean> {
   const wasOnline = isOnline;
-  const nowOnline = await pingServer();
+  let nowOnline = await pingServer();
+  if (!nowOnline) {
+    // لا نُعلِن "غير متصل" من أول فشل -- قد يكون 429 عابراً من تحديد المعدّل
+    // على فرع فيه عدة أجهزة كاشير على نفس IP، أو هفوة شبكة لحظية، لا انقطاعاً
+    // فعلياً (seen-ux-fixes-batch-task.md #3). محاولة واحدة إضافية بعد ثانية
+    // قبل تغيير الحالة الظاهرة للمستخدم فعلياً.
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    nowOnline = await pingServer();
+  }
   isOnline = nowOnline;
   if (nowOnline !== wasOnline) {
     listeners.forEach(listener => listener(nowOnline));

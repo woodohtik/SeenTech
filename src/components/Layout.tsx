@@ -610,7 +610,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
           id="tour-dashboard-container"
           data-tour="dashboard-container"
           className={cn(
-          "flex-1 overflow-x-hidden flex flex-col",
+          "flex-1 overflow-x-hidden flex flex-col pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0",
           layoutMode === 'grid' && location.pathname === '/' ? "p-4 md:p-8" : "p-4 md:p-8"
         )}>
           {layoutMode === 'grid' && location.pathname === '/' ? (

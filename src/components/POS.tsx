@@ -1642,13 +1642,6 @@ const invoiceData: InvoiceData | null = completedOrder ? {
             <span className="whitespace-nowrap">{t('pos.shortcuts_button')}</span>
           </button>
 
-          <button
-            onClick={() => setIsCustomOrderModalOpen(true)}
-            className="flex items-center justify-center gap-2 px-5 h-11 bg-brand text-white rounded-xl hover:bg-brand/90 transition-all font-black shadow-sm active:scale-95 cursor-pointer text-xs sm:text-sm shrink-0"
-          >
-            <Scissors size={18} />
-            <span className="whitespace-nowrap">{t('pos.custom_tailor')}</span>
-          </button>
         </div>
 
         {/* Category Filters scroll row & View Toggle */}
@@ -1706,6 +1699,17 @@ const invoiceData: InvoiceData | null = completedOrder ? {
           {filteredInventory.length > 0 ? (
             viewMode === 'grid' ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 w-full">
+                <button
+                  onClick={() => setIsCustomOrderModalOpen(true)}
+                  className="flex flex-col items-center p-3.5 bg-brand/5 border border-brand/40 hover:border-brand rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group active:scale-95 cursor-pointer text-center w-full"
+                >
+                  <div className="w-full aspect-square bg-brand/10 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform overflow-hidden border border-brand/20">
+                    <Scissors size={26} className="text-brand" />
+                  </div>
+                  <span className="text-xs sm:text-sm font-bold text-brand text-center line-clamp-2 min-h-[2.25rem] mb-1 w-full flex items-center justify-center">
+                    {t('pos.custom_tailor')}
+                  </span>
+                </button>
                 {filteredInventory.map(item => (
                   <button
                     key={item.id}
@@ -1745,6 +1749,19 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               </div>
             ) : (
               <div className="flex flex-col gap-2.5 w-full">
+                <button
+                  onClick={() => setIsCustomOrderModalOpen(true)}
+                  className="flex items-center p-3 sm:p-3.5 bg-brand/5 border border-brand/40 hover:border-brand rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 group active:scale-[0.99] cursor-pointer w-full text-right"
+                >
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-brand/10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border border-brand/20 ms-0 me-3.5">
+                    <Scissors size={22} className="text-brand" />
+                  </div>
+                  <div className="flex-1 min-w-0 flex flex-col items-start text-start justify-center gap-1">
+                    <span className="text-xs sm:text-sm font-bold text-brand line-clamp-1 w-full text-start">
+                      {t('pos.custom_tailor')}
+                    </span>
+                  </div>
+                </button>
                 {filteredInventory.map(item => (
                   <button
                     key={item.id}

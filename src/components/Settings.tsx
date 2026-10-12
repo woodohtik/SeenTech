@@ -29,6 +29,7 @@ import PrinterSettings from './PrinterSettings';
 import WhatsAppSettings from './WhatsAppSettings';
 import BillingSettings from './BillingSettings';
 import ZatcaOnboardingSettings from './ZatcaOnboardingSettings';
+import CategoriesSettings from './CategoriesSettings';
 
 import Branding from './Branding';
 
@@ -41,7 +42,7 @@ interface SettingsProps {
   tenantId: string;
 }
 
-type TabType = 'profile' | 'appearance' | 'invoice' | 'printer' | 'tax' | 'zatca' | 'branches' | 'staff' | 'whatsapp' | 'billing' | 'support' | 'notifications' | 'data';
+type TabType = 'profile' | 'appearance' | 'invoice' | 'printer' | 'tax' | 'zatca' | 'categories' | 'branches' | 'staff' | 'whatsapp' | 'billing' | 'support' | 'notifications' | 'data';
 
 interface SettingsData {
   name: string;
@@ -504,6 +505,7 @@ export default function Settings({ tenantId }: SettingsProps) {
     { id: 'profile', label: t('settings_page.tabs.profile', 'الملف الشخصي'), icon: Store, visible: true, group: 'business' },
     { id: 'tax', label: t('settings_page.tabs.tax', 'الإعدادات الضريبية'), icon: FileText, visible: canEdit, group: 'business' },
     { id: 'zatca', label: t('settings_page.tabs.zatca', 'ربط زاتكا'), icon: ShieldCheck, visible: canEdit, group: 'business' },
+    { id: 'categories', label: t('settings_page.tabs.categories', 'فئات المخزون والموردين'), icon: Hash, visible: canEdit, group: 'business' },
     { id: 'branches', label: t('settings_page.tabs.branches', 'الفروع والمواقع'), icon: MapPin, visible: hasPermission('branches.manage'), group: 'business' },
     
     { id: 'appearance', label: t('settings_page.tabs.appearance', 'المظهر والسمات'), icon: Palette, visible: true, group: 'system' },
@@ -1007,6 +1009,10 @@ export default function Settings({ tenantId }: SettingsProps) {
 
               {activeTab === 'zatca' && (
                 <ZatcaOnboardingSettings tenantId={tenantId} />
+              )}
+
+              {activeTab === 'categories' && (
+                <CategoriesSettings tenantId={tenantId} />
               )}
 
               {activeTab === 'printer' && (

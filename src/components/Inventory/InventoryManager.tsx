@@ -86,6 +86,8 @@ import FabricUomConversion from "./FabricUomConversion";
 import { formatSmartStockDisplay, getUnitLabel } from "../../utils/fabricUomConverter";
 import { useVerticalConfig } from "../../hooks/useVerticalConfig";
 import { mapCategoryKeyToLegacyCategory } from "../../services/verticalService";
+import { useTenantCategoryPicker, ADD_NEW_CATEGORY_VALUE } from "../../hooks/useTenantCategoryPicker";
+import { LEGACY_INVENTORY_CATEGORY_SEED } from "../../services/categoryService";
 
 const generateSKU = (name?: string) => {
   const random = Math.floor(10000000 + Math.random() * 90000000);
@@ -110,6 +112,14 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
     () => new Map(inventoryCategories.map((c) => [c.category_key, c.label_ar])),
     [inventoryCategories]
   );
+  const inventoryCategorySeed = useMemo(
+    () =>
+      isLegacyVertical
+        ? LEGACY_INVENTORY_CATEGORY_SEED
+        : inventoryCategories.map((c) => ({ category_key: c.category_key, label_ar: c.label_ar })),
+    [isLegacyVertical, inventoryCategories]
+  );
+  const inventoryCategoryPicker = useTenantCategoryPicker(tenantId, "inventory", inventoryCategorySeed);
 
   const queryClient = useQueryClient();
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -625,25 +635,10 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
               <Select
                 value={selectedCategory}
                 onChange={(val) => setSelectedCategory(val)}
-                options={
-                  isLegacyVertical
-                    ? [
-                        { value: "all", label: t("inventory.all_categories") },
-                        { value: "fabric", label: t("inventory.category_fabric") },
-                        {
-                          value: "ready_made",
-                          label: t("inventory.category_ready_made"),
-                        },
-                        { value: "thread", label: t("inventory.category_thread") },
-                        { value: "button", label: t("inventory.category_button") },
-                        { value: "lining", label: t("inventory.category_lining") },
-                        { value: "other", label: t("inventory.category_other") },
-                      ]
-                    : [
-                        { value: "all", label: t("inventory.all_categories") },
-                        ...inventoryCategories.map((c) => ({ value: c.category_key, label: c.label_ar })),
-                      ]
-                }
+                options={[
+                  { value: "all", label: t("inventory.all_categories") },
+                  ...inventoryCategoryPicker.options,
+                ]}
                 className="bg-surface-muted w-full"
               />
             </div>
@@ -1686,6 +1681,14 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
   const { currentStaff } = useStaff();
   const { error: toastError, success: toastSuccess, handleError } = useToast();
   const { inventoryCategories, isLegacyVertical } = useVerticalConfig();
+  const categorySeed = useMemo(
+    () =>
+      isLegacyVertical
+        ? LEGACY_INVENTORY_CATEGORY_SEED
+        : inventoryCategories.map((c: any) => ({ category_key: c.category_key, label_ar: c.label_ar })),
+    [isLegacyVertical, inventoryCategories]
+  );
+  const categoryPicker = useTenantCategoryPicker(tenantId, "inventory", categorySeed);
   const [suppliersList, setSuppliersList] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
@@ -1974,27 +1977,53 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                 </label>
                 <SmartSelect
                   value={formData.category}
-                  onChange={(val) =>
-                    setFormData({ ...formData, category: val as any })
-                  }
-                  options={
-                    isLegacyVertical
-                      ? [
-                          { value: "fabric", label: t("inventory.category_fabric") },
-                          {
-                            value: "ready_made",
-                            label: t("inventory.category_ready_made"),
-                          },
-                          { value: "thread", label: t("inventory.category_thread") },
-                          { value: "button", label: t("inventory.category_button") },
-                          { value: "lining", label: t("inventory.category_lining") },
-                          { value: "accessories", label: t("inventory.category_accessories") },
-                          { value: "other", label: t("inventory.category_other") },
-                        ]
-                      : inventoryCategories.map((c) => ({ value: c.category_key, label: c.label_ar }))
-                  }
+                  onChange={(val) => {
+                    if (val === ADD_NEW_CATEGORY_VALUE) {
+                      categoryPicker.setAddingNew(true);
+                      return;
+                    }
+                    setFormData({ ...formData, category: val as any });
+                  }}
+                  options={[
+                    ...categoryPicker.options,
+                    { value: ADD_NEW_CATEGORY_VALUE, label: t("settings_page.categories.add_new", "+ إضافة فئة جديدة") },
+                  ]}
                   className="text-right"
                 />
+                {categoryPicker.addingNew && (
+                  <div className="flex items-center gap-2 mt-2 p-2.5 rounded-xl border-2 border-brand/40 bg-brand/5">
+                    <input
+                      autoFocus
+                      value={categoryPicker.newLabel}
+                      onChange={(e) => categoryPicker.setNewLabel(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          categoryPicker.confirmAdd((key) => setFormData({ ...formData, category: key as any })).catch(handleError);
+                        }
+                        if (e.key === "Escape") categoryPicker.cancelAdd();
+                      }}
+                      placeholder={t("settings_page.categories.new_name_placeholder", "اسم الفئة الجديدة")}
+                      className="flex-1 bg-transparent outline-none font-bold text-content text-sm placeholder:text-content-muted/60"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        categoryPicker.confirmAdd((key) => setFormData({ ...formData, category: key as any })).catch(handleError)
+                      }
+                      disabled={!categoryPicker.newLabel.trim() || categoryPicker.saving}
+                      className="min-h-[32px] px-3 rounded-lg bg-brand text-white font-bold text-xs disabled:opacity-50"
+                    >
+                      {t("common.add", "إضافة")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={categoryPicker.cancelAdd}
+                      className="min-h-[32px] px-2 rounded-lg text-content-muted font-bold text-xs hover:bg-surface"
+                    >
+                      {t("common.cancel", "إلغاء")}
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="space-y-2 col-span-1 md:col-span-12 text-right">
                 <label htmlFor="add-item-description" className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
@@ -3755,6 +3784,14 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
   const { dir } = useDirection();
   const { error: toastError, success: toastSuccess, handleError } = useToast();
   const { inventoryCategories, isLegacyVertical } = useVerticalConfig();
+  const categorySeed = useMemo(
+    () =>
+      isLegacyVertical
+        ? LEGACY_INVENTORY_CATEGORY_SEED
+        : inventoryCategories.map((c: any) => ({ category_key: c.category_key, label_ar: c.label_ar })),
+    [isLegacyVertical, inventoryCategories]
+  );
+  const categoryPicker = useTenantCategoryPicker(tenantId, "inventory", categorySeed);
   const [suppliersList, setSuppliersList] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
@@ -3951,27 +3988,53 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                 </label>
                 <SmartSelect
                   value={formData.category}
-                  onChange={(val) =>
-                    setFormData({ ...formData, category: val as any })
-                  }
-                  options={
-                    isLegacyVertical
-                      ? [
-                          { value: "fabric", label: t("inventory.category_fabric") },
-                          {
-                            value: "ready_made",
-                            label: t("inventory.category_ready_made"),
-                          },
-                          { value: "thread", label: t("inventory.category_thread") },
-                          { value: "button", label: t("inventory.category_button") },
-                          { value: "lining", label: t("inventory.category_lining") },
-                          { value: "accessories", label: t("inventory.category_accessories") },
-                          { value: "other", label: t("inventory.category_other") },
-                        ]
-                      : inventoryCategories.map((c) => ({ value: c.category_key, label: c.label_ar }))
-                  }
+                  onChange={(val) => {
+                    if (val === ADD_NEW_CATEGORY_VALUE) {
+                      categoryPicker.setAddingNew(true);
+                      return;
+                    }
+                    setFormData({ ...formData, category: val as any });
+                  }}
+                  options={[
+                    ...categoryPicker.options,
+                    { value: ADD_NEW_CATEGORY_VALUE, label: t("settings_page.categories.add_new", "+ إضافة فئة جديدة") },
+                  ]}
                   className="text-right"
                 />
+                {categoryPicker.addingNew && (
+                  <div className="flex items-center gap-2 mt-2 p-2.5 rounded-xl border-2 border-brand/40 bg-brand/5">
+                    <input
+                      autoFocus
+                      value={categoryPicker.newLabel}
+                      onChange={(e) => categoryPicker.setNewLabel(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          categoryPicker.confirmAdd((key) => setFormData({ ...formData, category: key as any })).catch(handleError);
+                        }
+                        if (e.key === "Escape") categoryPicker.cancelAdd();
+                      }}
+                      placeholder={t("settings_page.categories.new_name_placeholder", "اسم الفئة الجديدة")}
+                      className="flex-1 bg-transparent outline-none font-bold text-content text-sm placeholder:text-content-muted/60"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        categoryPicker.confirmAdd((key) => setFormData({ ...formData, category: key as any })).catch(handleError)
+                      }
+                      disabled={!categoryPicker.newLabel.trim() || categoryPicker.saving}
+                      className="min-h-[32px] px-3 rounded-lg bg-brand text-white font-bold text-xs disabled:opacity-50"
+                    >
+                      {t("common.add", "إضافة")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={categoryPicker.cancelAdd}
+                      className="min-h-[32px] px-2 rounded-lg text-content-muted font-bold text-xs hover:bg-surface"
+                    >
+                      {t("common.cancel", "إلغاء")}
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="space-y-2 col-span-1 md:col-span-12 text-right">
                 <label htmlFor="edit-item-description" className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">

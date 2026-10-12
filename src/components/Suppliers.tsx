@@ -38,6 +38,8 @@ import { cn } from '../lib/utils';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../contexts/ConfirmContext';
 import { useSafeMutation } from '../hooks/useSafeMutation';
+import { useTenantCategoryPicker, ADD_NEW_CATEGORY_VALUE } from '../hooks/useTenantCategoryPicker';
+import { LEGACY_SUPPLIER_CATEGORY_SEED } from '../services/categoryService';
 import Branding from './Branding';
 import { PriceDisplay } from './PriceDisplay';
 import PurchaseOrders from './PurchaseOrders';
@@ -49,10 +51,11 @@ import { useTranslation } from 'react-i18next';
 
 export default function Suppliers({ tenantId }: { tenantId: string }) {
   const { t } = useTranslation();
-  const { warning: toastWarning } = useToast();
+  const { warning: toastWarning, handleError: handleToastError } = useToast();
   const { confirm } = useConfirm();
   const { currentStaff } = useStaff();
   const queryClient = useQueryClient();
+  const categoryPicker = useTenantCategoryPicker(tenantId, 'supplier', LEGACY_SUPPLIER_CATEGORY_SEED);
 
   // Centralized Mutations for Suppliers (Strict Persistence)
   const saveSupplierMutation = useSafeMutation(
@@ -135,7 +138,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
   const [tenantName, setTenantName] = useState('نظام سين - SEEN POS');
   const [supplierReloadTrigger, setSupplierReloadTrigger] = useState(0);
 
-  const { register, handleSubmit, reset, control, formState: { errors, isSubmitting } } = useForm({
+  const { register, handleSubmit, reset, control, setValue, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(supplierSchema),
     defaultValues: {
       name: '',
@@ -413,6 +416,8 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
   };
 
   const getCategoryLabel = (category: string) => {
+    const custom = categoryPicker.options.find((c) => c.value === category);
+    if (custom) return custom.label;
     switch (category) {
       case 'fabric': return t('procurement.category_fabric', 'أقمشة');
       case 'thread': return t('procurement.category_thread', 'خيوط');
@@ -514,19 +519,14 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                     >
                       {t('procurement.category_all', 'الكل')}
                     </button>
-                    {[
-                      { id: 'fabric', label: t('procurement.category_fabric', 'أقمشة') },
-                      { id: 'thread', label: t('procurement.category_thread', 'خيوط') },
-                      { id: 'button', label: t('procurement.category_button', 'أزرار') },
-                      { id: 'other', label: t('procurement.category_other', 'أخرى') }
-                    ].map((cat) => (
+                    {categoryPicker.options.map((cat) => (
                       <button
-                        key={cat.id}
-                        onClick={() => setCategoryFilter(cat.id)}
+                        key={cat.value}
+                        onClick={() => setCategoryFilter(cat.value)}
                         className={cn(
                           "whitespace-nowrap px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer",
-                          categoryFilter === cat.id 
-                            ? "bg-brand text-white shadow-md shadow-brand/10" 
+                          categoryFilter === cat.value
+                            ? "bg-brand text-white shadow-md shadow-brand/10"
                             : "bg-surface text-content-muted border border-border hover:bg-surface-muted"
                         )}
                       >
@@ -713,18 +713,53 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                     render={({ field }) => (
                       <SmartSelect
                         {...field}
+                        onChange={(val) => {
+                          if (val === ADD_NEW_CATEGORY_VALUE) {
+                            categoryPicker.setAddingNew(true);
+                            return;
+                          }
+                          field.onChange(val);
+                        }}
                         className={cn("w-full", errors.category && "ring-2 ring-danger")}
                         options={[
-                          { value: 'fabric', label: t('procurement.category_fabric', 'أقمشة') },
-                          { value: 'accessories', label: t('procurement.category_accessories', 'إكسسوارات') },
-                          { value: 'thread', label: t('procurement.category_thread', 'خيوط') },
-                          { value: 'button', label: t('procurement.category_button', 'أزرار') },
-                          { value: 'lining', label: t('procurement.category_lining', 'بطانات') },
-                          { value: 'other', label: t('procurement.category_other', 'أخرى') }
+                          ...categoryPicker.options,
+                          { value: ADD_NEW_CATEGORY_VALUE, label: t('settings_page.categories.add_new', '+ إضافة فئة جديدة') },
                         ]}
                       />
                     )}
                   />
+                  {categoryPicker.addingNew && (
+                    <div className="flex items-center gap-2 mt-2 p-2.5 rounded-xl border-2 border-brand/40 bg-brand/5">
+                      <input
+                        autoFocus
+                        value={categoryPicker.newLabel}
+                        onChange={(e) => categoryPicker.setNewLabel(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            categoryPicker.confirmAdd((key) => setValue('category', key as any)).catch(handleToastError);
+                          }
+                          if (e.key === 'Escape') categoryPicker.cancelAdd();
+                        }}
+                        placeholder={t('settings_page.categories.new_name_placeholder', 'اسم الفئة الجديدة')}
+                        className="flex-1 bg-transparent outline-none font-bold text-content text-sm placeholder:text-content-muted/60"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => categoryPicker.confirmAdd((key) => setValue('category', key as any)).catch(handleToastError)}
+                        disabled={!categoryPicker.newLabel.trim() || categoryPicker.saving}
+                        className="min-h-[32px] px-3 rounded-lg bg-brand text-white font-bold text-xs disabled:opacity-50"
+                      >
+                        {t('common.add', 'إضافة')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={categoryPicker.cancelAdd}
+                        className="min-h-[32px] px-2 rounded-lg text-content-muted font-bold text-xs hover:bg-surface"
+                      >
+                        {t('common.cancel', 'إلغاء')}
+                      </button>
+                    </div>
+                  )}
                   {errors.category && <p className="text-xs text-danger font-bold mt-1">{errors.category.message}</p>}
                 </div>
               </div>

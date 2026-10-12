@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Package, CheckCircle2, Clock, Trash2, X, Search, Eye, Filter, ArrowLeftRight, Check, AlertCircle, RotateCcw } from 'lucide-react';
+import { Plus, Package, CheckCircle2, Clock, Trash2, X, Search, Eye, Filter, ArrowLeftRight, Check, AlertCircle, RotateCcw, Printer } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { Supplier, PurchaseOrder, InventoryItem, PurchaseOrderItem } from '../types';
 import { cn } from '../lib/utils';
@@ -416,6 +416,31 @@ export default function PurchaseOrders({
     setIsModalOpen(true);
   };
 
+  // seen-ux-fixes-batch-task.md #5: no purchase-order printing existed at
+  // all. Prints the detail modal's own visible content (same technique
+  // TaxInvoices.tsx uses on its #print-area -- printElementDetailed clones
+  // whatever DOM is there, no separate hidden template needed) rather than
+  // building a whole second printable layout for an internal document.
+  const [isPrintingPO, setIsPrintingPO] = useState(false);
+  const handlePrintPO = async (po: PurchaseOrder) => {
+    setIsPrintingPO(true);
+    try {
+      const { printElementDetailed } = await import('../utils/printManager');
+      const res = await printElementDetailed('po-detail-print-area', {
+        paperSize: 'A4',
+        title: t('procurement.po_number', 'رقم السند') + ': ' + (po.poNumber || (po as any).po_number || po.id),
+      });
+      if (!res.ok) {
+        toastError(t('printing.print_failed'), res.message);
+      }
+    } catch (e) {
+      console.error('[PurchaseOrders] print error:', e);
+      window.print();
+    } finally {
+      setIsPrintingPO(false);
+    }
+  };
+
   // Filter purchase orders
   const filteredOrders = purchaseOrders.filter(po => {
     // 1. Search filter
@@ -738,7 +763,12 @@ export default function PurchaseOrders({
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto flex-1 space-y-6">
+            <div id="po-detail-print-area" className="p-6 overflow-y-auto flex-1 space-y-6">
+              {selectedOrder.status === 'draft' && (
+                <div className="text-center text-xs font-black text-warning uppercase tracking-widest print:block">
+                  {t('procurement.po_status_draft', 'مسودة')}
+                </div>
+              )}
               {/* Order Info Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-4 bg-surface-muted/50 rounded-2xl border border-border">
@@ -812,10 +842,18 @@ export default function PurchaseOrders({
               </div>
               <div className="flex gap-3 w-full sm:w-auto">
                 <button
-                  onClick={() => setSelectedOrder(null)} 
+                  onClick={() => setSelectedOrder(null)}
                   className="flex-1 sm:flex-initial px-6 py-3 bg-surface border border-border hover:bg-surface-muted rounded-xl text-xs font-black transition-all"
                 >
                   {t('procurement.close_detail_modal', 'إغلاق نافذة التفاصيل')}
+                </button>
+                <button
+                  onClick={() => handlePrintPO(selectedOrder)}
+                  disabled={isPrintingPO}
+                  className="flex-1 sm:flex-initial px-6 py-3 bg-surface border border-border hover:bg-surface-muted rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <Printer size={16} />
+                  <span>{t('procurement.print_voucher', 'طباعة السند')}</span>
                 </button>
                 {selectedOrder.status === 'draft' && (
                   <button
@@ -910,19 +948,21 @@ export default function PurchaseOrders({
                       <p className="text-[10px] font-bold text-danger mt-1.5 px-1">{t('procurement.no_purchased_items_from_supplier', 'لا توجد أصناف تم شراؤها من هذا المورد بعد')}</p>
                     )}
                   </div>
-                  <div>
+                  <div className="space-y-2">
+                    <label className="block text-xs font-black text-content-muted uppercase tracking-widest">{t('procurement.quantity', 'الكمية')}</label>
                     <input
                       type="number"
-                      placeholder={t('procurement.quantity', 'الكمية')}
+                      placeholder="0"
                       value={quantity || ''}
                       onChange={(e) => setQuantity(Number(e.target.value))}
                       className="w-full px-4 py-2 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content font-bold text-sm"
                     />
                   </div>
-                  <div>
+                  <div className="space-y-2">
+                    <label className="block text-xs font-black text-content-muted uppercase tracking-widest">{t('procurement.price_per_unit_short', 'السعر / وحدة')}</label>
                     <input
                       type="number"
-                      placeholder={t('procurement.price_per_unit_short', 'السعر / وحدة')}
+                      placeholder="0.00"
                       value={pricePerUnit || ''}
                       onChange={(e) => setPricePerUnit(Number(e.target.value))}
                       readOnly={modalType === 'return'}
