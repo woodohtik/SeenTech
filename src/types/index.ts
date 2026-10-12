@@ -313,13 +313,24 @@ export interface PurchaseReturn {
   createdAt: string;
 }
 
-export interface InventoryVariant {
+/**
+ * seen-ux-fixes-batch-task.md item 10 -- a sub-SKU of an InventoryItem (e.g.
+ * a fabric in a specific color/size), each with its own SKU/barcode/stock
+ * per branch. Mirrors the `inventory_variants` table + `variant_id` columns
+ * on `branch_inventory`/`stock_ledger`/`order_items`, which existed in the
+ * schema since the very first migration but were never wired to any app code
+ * until now.
+ */
+export interface ProductVariant {
   id: string;
+  itemId: string;
+  name: string; // e.g., "أزرق - L"
+  options: Record<string, string>; // free key:value, e.g. { "لون": "أزرق", "مقاس": "L" }
   sku: string;
-  barcode: string;
-  name: string; // e.g., "White", "Large"
-  options: Record<string, string>; // e.g., { color: "White", size: "L" }
-  priceAdjustment?: number;
+  barcode?: string;
+  priceAdjustment: number;
+  /** branchId -> quantity, populated from branch_inventory when loaded alongside stock. */
+  stockByBranch?: Record<string, number>;
   updatedAt: string;
 }
 
@@ -365,7 +376,10 @@ export interface BranchInventory {
   id: string; // branchId_itemId
   branchId: string;
   itemId: string;
+  /** Null/undefined means the base item's own stock row (no variant). */
+  variantId?: string | null;
   quantity: number;
+  reserved?: number;
   tenantId: string;
   updatedAt: string;
 }
@@ -457,6 +471,7 @@ export interface OrderItem {
   
   // Ready-made fields
   itemId?: string; // Reference to InventoryItem
+  variantId?: string; // Reference to ProductVariant, when the item has variants
   name?: string;
   nameEn?: string;
   image?: string; // Image URL for the item

@@ -165,6 +165,7 @@ export async function adjustStock({
   tenantId,
   operationId,
   referenceId,
+  variantId,
 }: {
   branchId: string;
   itemId: string;
@@ -176,6 +177,8 @@ export async function adjustStock({
   /** Deterministic key so a retry cannot apply the same adjustment twice. */
   operationId?: string;
   referenceId?: string | null;
+  /** seen-ux-fixes-batch-task.md item 10 -- targets a specific product variant's stock row instead of the base item's. */
+  variantId?: string | null;
 }) {
   /* ----------------------------------------------------------------------
      Was: read -> `currentQty + quantity` -> absolute write, with no negative
@@ -206,6 +209,7 @@ export async function adjustStock({
     p_type: movementType,
     p_reference_id: referenceId ?? null,
     p_reference_type: reason || null,
+    p_variant_id: variantId ?? null,
   });
 
   if (error) throw error;

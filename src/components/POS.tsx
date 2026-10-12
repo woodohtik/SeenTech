@@ -39,7 +39,7 @@ import { refreshCustomersCache, refreshInventoryCache, refreshBranchStockCache, 
 import { enqueuePosSale, isNetworkFailure, decidePosSaleFailureAction } from '../lib/offline/outbox';
 import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
 import { Combobox, Transition, Dialog } from '@headlessui/react';
-import { Customer, InventoryItem, OrderItem, Order, PaymentMethod, OrderStatus } from '../types';
+import { Customer, InventoryItem, OrderItem, Order, PaymentMethod, OrderStatus, ProductVariant } from '../types';
 import { cn, generateOrderNumber } from '../lib/utils';
 import { SmartSelect } from './ui/SmartSelect';
 import { IconInput } from './ui/IconInput';
@@ -66,6 +66,7 @@ import { encodeOrderB2BNotes, encodeInvoiceExtendedNotes } from '../utils/b2bHel
 import { useTranslation } from 'react-i18next';
 import ScannerModal from './ScannerModal';
 import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
+import VariantPickerModal from './ui/VariantPickerModal';
 
 import { isRtlLang } from '../lib/direction';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
@@ -117,6 +118,13 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const [customerUnpaidBalance, setCustomerUnpaidBalance] = useState<number>(0);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [branchStock, setBranchStock] = useState<Record<string, number>>({});
+  // seen-ux-fixes-batch-task.md item 10 -- stock of each variant row (keyed
+  // by variantId) for the cashier's current branch, kept separate from
+  // branchStock above (which now only ever reflects the base, no-variant
+  // row -- see the fetch/realtime filters below).
+  const [variantStock, setVariantStock] = useState<Record<string, number>>({});
+  const [itemVariants, setItemVariants] = useState<Record<string, ProductVariant[]>>({});
+  const [variantPickerItem, setVariantPickerItem] = useState<InventoryItem | null>(null);
   const [isCustomOrderModalOpen, setIsCustomOrderModalOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -328,18 +336,30 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
       const item = payload.new;
       if (!currentStaff?.branchId || item.branch_id === currentStaff.branchId) {
-        setBranchStock(prev => ({
-          ...prev,
-          [item.item_id]: Number(item.quantity || 0)
-        }));
+        if (item.variant_id) {
+          setVariantStock(prev => ({ ...prev, [item.variant_id]: Number(item.quantity || 0) }));
+        } else {
+          setBranchStock(prev => ({
+            ...prev,
+            [item.item_id]: Number(item.quantity || 0)
+          }));
+        }
       }
     } else if (payload.eventType === 'DELETE') {
       const item = payload.old;
-      setBranchStock(prev => {
-        const copy = { ...prev };
-        delete copy[item.item_id];
-        return copy;
-      });
+      if (item.variant_id) {
+        setVariantStock(prev => {
+          const copy = { ...prev };
+          delete copy[item.variant_id];
+          return copy;
+        });
+      } else {
+        setBranchStock(prev => {
+          const copy = { ...prev };
+          delete copy[item.item_id];
+          return copy;
+        });
+      }
     }
   });
 
@@ -356,11 +376,12 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       Promise.resolve(p).then(r => r, (error) => ({ data: null, error }));
 
     const fetchData = async () => {
-      const [custResult, invResult, stockResult, tenantResult] = await Promise.all([
+      const [custResult, invResult, stockResult, tenantResult, variantResult] = await Promise.all([
         settleQuery(supabase.from('customers').select('*').eq('tenant_id', tenantId)),
         settleQuery(supabase.from('inventory_items').select('*').eq('tenant_id', tenantId)),
         settleQuery(supabase.from('branch_inventory').select('*').eq('tenant_id', tenantId)),
         settleQuery(supabase.from('tenants').select('*').eq('id', tenantId).maybeSingle()),
+        settleQuery(supabase.from('inventory_variants').select('*').eq('tenant_id', tenantId)),
       ]);
 
       let customersLoaded = false;
@@ -383,15 +404,41 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
 
       if (!stockResult.error) {
         const stockMap: Record<string, number> = {};
+        const variantStockMap: Record<string, number> = {};
         (stockResult.data || []).forEach((item: any) => {
           if (!currentStaff?.branchId || item.branch_id === currentStaff.branchId) {
-            stockMap[item.item_id] = Number(item.quantity || 0);
+            if (item.variant_id) {
+              variantStockMap[item.variant_id] = Number(item.quantity || 0);
+            } else {
+              stockMap[item.item_id] = Number(item.quantity || 0);
+            }
           }
         });
         setBranchStock(stockMap);
+        setVariantStock(variantStockMap);
         branchStockLoaded = true;
       } else {
         console.error('Error fetching POS branch stock:', stockResult.error);
+      }
+
+      if (!variantResult.error) {
+        const byItem: Record<string, ProductVariant[]> = {};
+        (variantResult.data || []).forEach((row: any) => {
+          const variant: ProductVariant = {
+            id: row.id,
+            itemId: row.item_id,
+            name: row.name,
+            options: row.options || {},
+            sku: row.sku,
+            barcode: row.barcode || undefined,
+            priceAdjustment: Number(row.price_adjustment) || 0,
+            updatedAt: row.updated_at,
+          };
+          (byItem[row.item_id] ||= []).push(variant);
+        });
+        setItemVariants(byItem);
+      } else {
+        console.error('Error fetching POS product variants:', variantResult.error);
       }
 
       if (customersLoaded && inventoryLoaded && branchStockLoaded) {
@@ -681,33 +728,55 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const handleScan = (decodedText: string) => {
     const item = inventory.find(i => i.barcode === decodedText || i.sku === decodedText);
     if (item) {
+      if ((itemVariants[item.id] || []).length > 0) {
+        // Scanning the parent item's own barcode when it has variants can't
+        // tell us which one -- fall back to the picker instead of guessing.
+        setVariantPickerItem(item);
+        return;
+      }
       addToCart(item);
       toastSuccess(t('pos.item_added_from_scan'));
-    } else {
-      toastError(t('pos.item_not_found'));
-    }
-  };
-
-  const addToCart = (item: InventoryItem) => {
-    // Check stock
-    const availableStock = branchStock[item.id] || 0;
-    
-    // Find current quantity in cart
-    const existingInCart = cart.find(i => i.type === 'ready_made' && i.itemId === item.id);
-    const currentQtyInCart = existingInCart ? existingInCart.quantity : 0;
-    
-    if (availableStock <= 0) {
-      toastError(t('pos.out_of_stock'), `${item.name} (${t('inventory.available')}: 0)`);
       return;
     }
-    
+    // Not a base item's own barcode/SKU -- check if it matches one specific variant instead.
+    for (const parentId of Object.keys(itemVariants)) {
+      const variant = itemVariants[parentId].find(v => v.barcode === decodedText || v.sku === decodedText);
+      if (variant) {
+        const parent = inventory.find(i => i.id === parentId);
+        if (parent) {
+          addToCart(parent, variant);
+          toastSuccess(t('pos.item_added_from_scan'));
+          return;
+        }
+      }
+    }
+    toastError(t('pos.item_not_found'));
+  };
+
+  const addToCart = (item: InventoryItem, variant?: ProductVariant) => {
+    // Check stock -- a variant's own row, not the base item's (which is 0
+    // once an item's stock has fully moved to its variants).
+    const availableStock = variant ? (variantStock[variant.id] || 0) : (branchStock[item.id] || 0);
+
+    // Find current quantity in cart -- keyed by (itemId, variantId) so two
+    // variants of the same item stay separate lines.
+    const existingInCart = cart.find(i => i.type === 'ready_made' && i.itemId === item.id && (i.variantId || undefined) === variant?.id);
+    const currentQtyInCart = existingInCart ? existingInCart.quantity : 0;
+
+    const displayName = variant ? `${item.name} — ${variant.name}` : item.name;
+
+    if (availableStock <= 0) {
+      toastError(t('pos.out_of_stock'), `${displayName} (${t('inventory.available')}: 0)`);
+      return;
+    }
+
     if (currentQtyInCart + 1 > availableStock) {
-      toastError(t('pos.insufficient_stock'), `${item.name} (${t('inventory.available')}: ${availableStock})`);
+      toastError(t('pos.insufficient_stock'), `${displayName} (${t('inventory.available')}: ${availableStock})`);
       return;
     }
 
     setCart(prev => {
-      const existing = prev.find(i => i.type === 'ready_made' && i.itemId === item.id);
+      const existing = prev.find(i => i.type === 'ready_made' && i.itemId === item.id && (i.variantId || undefined) === variant?.id);
       if (existing) {
         return prev.map(i => i === existing ? { ...i, quantity: i.quantity + 1 } : i);
       }
@@ -715,9 +784,10 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         id: Math.random().toString(36).substr(2, 9),
         type: 'ready_made',
         itemId: item.id,
-        name: item.name,
+        variantId: variant?.id,
+        name: displayName,
         nameEn: item.nameEn,
-        price: item.pricePerUnit,
+        price: item.pricePerUnit + (variant?.priceAdjustment || 0),
         taxType: item.taxType || 'exclusive',
         image: item.mainImage || item.images?.[0] || '',
         quantity: 1
@@ -725,6 +795,23 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     });
     // On mobile, maybe show the cart after adding?
     // setShowCartOnMobile(true);
+  };
+
+  /** Click handler for a POS product tile -- opens the variant picker instead of adding directly when the item has variants. */
+  const handleProductTileClick = (item: InventoryItem) => {
+    const variants = itemVariants[item.id] || [];
+    if (variants.length > 0) {
+      setVariantPickerItem(item);
+      return;
+    }
+    addToCart(item);
+  };
+
+  /** Stock badge for a product tile: the base item's own stock, or the sum across its variants once it has any. */
+  const getItemDisplayStock = (item: InventoryItem) => {
+    const variants = itemVariants[item.id] || [];
+    if (variants.length === 0) return branchStock[item.id] || 0;
+    return variants.reduce((sum, v) => sum + (variantStock[v.id] || 0), 0);
   };
 
   const handleItemImageUpload = (itemId: string, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -879,7 +966,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       if (i.id === id) {
         const newQuantity = Math.max(1, i.quantity + delta);
         if (i.type === 'ready_made' && i.itemId) {
-          const availableStock = branchStock[i.itemId] || 0;
+          const availableStock = i.variantId ? (variantStock[i.variantId] || 0) : (branchStock[i.itemId] || 0);
           if (newQuantity > availableStock) {
             stockExceeded = true;
             return i;
@@ -942,7 +1029,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     // Verify stock before checkout for ready_made items
     for (const item of cart) {
       if (item.type === 'ready_made' && item.itemId) {
-        const availableStock = branchStock[item.itemId] || 0;
+        const availableStock = item.variantId ? (variantStock[item.variantId] || 0) : (branchStock[item.itemId] || 0);
         if (item.quantity > availableStock) {
           toastError(t('pos.insufficient_stock_checkout'), `${item.name} (${t('inventory.available')}: ${availableStock})`);
           return;
@@ -1055,6 +1142,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
           type: item.type,
           status: item.type === 'custom' ? orderStatus : null,
           item_id: (item.type === 'ready_made' && item.itemId && isUuid(item.itemId)) ? item.itemId : null,
+          variant_id: (item.type === 'ready_made' && item.variantId && isUuid(item.variantId)) ? item.variantId : null,
           name: item.name || item.garmentType || 'منتج مخصص',
           garment_type: item.garmentType || null,
           fabric: item.fabric || null,
@@ -1619,6 +1707,19 @@ const invoiceData: InvoiceData | null = completedOrder ? {
   return (
     <div className="h-full flex flex-col md:flex-row font-sans bg-background text-content overflow-hidden w-full" dir={isRtl ? 'rtl' : 'ltr'}>
       <ScannerModal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} onScan={handleScan} />
+      {variantPickerItem && (
+        <VariantPickerModal
+          isOpen={!!variantPickerItem}
+          onClose={() => setVariantPickerItem(null)}
+          item={variantPickerItem}
+          variants={itemVariants[variantPickerItem.id] || []}
+          variantStock={variantStock}
+          onConfirm={(variant) => {
+            addToCart(variantPickerItem, variant);
+            setVariantPickerItem(null);
+          }}
+        />
+      )}
       {whatsappModalOpen && completedOrder && (
         <WhatsAppPhoneModal
           onClose={() => setWhatsappModalOpen(false)}
@@ -1732,14 +1833,14 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                 {filteredInventory.map(item => (
                   <button
                     key={item.id}
-                    onClick={() => addToCart(item)}
+                    onClick={() => handleProductTileClick(item)}
                     className="flex flex-col items-center p-3.5 bg-surface border border-border/70 hover:border-brand/50 rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group active:scale-95 cursor-pointer text-center w-full"
                   >
                     <div className="w-full aspect-square bg-surface-muted/60 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform overflow-hidden border border-border/40">
                       {item.mainImage ? (
-                        <img 
-                          src={item.mainImage} 
-                          alt={item.name} 
+                        <img
+                          src={item.mainImage}
+                          alt={item.name}
                           className="w-full h-full object-cover rounded-xl"
                           referrerPolicy="no-referrer"
                         />
@@ -1751,16 +1852,21 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     </div>
                     <span className="text-xs sm:text-sm font-bold text-content text-center line-clamp-2 min-h-[2.25rem] mb-1 w-full">
                       {i18n.language === 'en' && item.nameEn ? item.nameEn : item.name}
+                      {(itemVariants[item.id]?.length ?? 0) > 0 && (
+                        <span className="block text-[9px] font-bold text-brand mt-0.5">
+                          {itemVariants[item.id].length} {t('inventory.variants.badge_suffix', 'سمات')}
+                        </span>
+                      )}
                     </span>
                     <div className="flex flex-col items-center justify-center gap-0.5 mb-1 w-full">
                       <span className="text-brand font-black text-sm sm:text-base"><PriceDisplay amount={item.pricePerUnit} /></span>
                       <span className={cn(
                         "text-[10px] font-bold px-2 py-0.5 rounded-full",
-                        (branchStock[item.id] || 0) <= 0
+                        getItemDisplayStock(item) <= 0
                           ? "bg-danger/10 text-danger"
                           : "bg-success/10 text-success"
                       )}>
-                        {t('inventory.available')}: {branchStock[item.id] || 0}
+                        {t('inventory.available')}: {getItemDisplayStock(item)}
                       </span>
                     </div>
                   </button>
@@ -1784,7 +1890,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                 {filteredInventory.map(item => (
                   <button
                     key={item.id}
-                    onClick={() => addToCart(item)}
+                    onClick={() => handleProductTileClick(item)}
                     className="flex items-center p-3 sm:p-3.5 bg-surface border border-border/70 hover:border-brand/50 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 group active:scale-[0.99] cursor-pointer w-full text-right"
                   >
                     {/* Item Image */}
@@ -1814,12 +1920,17 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                         )}
                         <span className={cn(
                           "text-[10px] font-bold px-2 py-0.5 rounded-full",
-                          (branchStock[item.id] || 0) <= 0
+                          getItemDisplayStock(item) <= 0
                             ? "bg-danger/10 text-danger"
                             : "bg-success/10 text-success"
                         )}>
-                          {t('inventory.available')}: {branchStock[item.id] || 0}
+                          {t('inventory.available')}: {getItemDisplayStock(item)}
                         </span>
+                        {(itemVariants[item.id]?.length ?? 0) > 0 && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand/10 text-brand">
+                            {itemVariants[item.id].length} {t('inventory.variants.badge_suffix', 'سمات')}
+                          </span>
+                        )}
                       </div>
                     </div>
 

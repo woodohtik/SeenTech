@@ -57,6 +57,17 @@ export default function PurchaseOrders({
 
   const [realBranchId, setRealBranchId] = useState<string | null>(null);
   const [currentStaff, setCurrentStaff] = useState<any>(null);
+  // seen-ux-fixes-batch-task.md item 10 -- receiving a PO for an item with
+  // variants isn't supported yet (deferred); excluding these here is safer
+  // than letting a receipt silently add stock to the wrong row.
+  const [itemsWithVariants, setItemsWithVariants] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!tenantId) return;
+    Promise.resolve(supabase.from('inventory_variants').select('item_id').eq('tenant_id', tenantId))
+      .then(({ data }) => setItemsWithVariants(new Set((data || []).map((r: any) => r.item_id))))
+      .catch(() => setItemsWithVariants(new Set()));
+  }, [tenantId]);
 
   useEffect(() => {
     setTypeFilter(defaultTypeFilter);
@@ -383,7 +394,9 @@ export default function PurchaseOrders({
   const itemSelectOptions = (supplierPurchasedItemIds
     ? inventory.filter(i => supplierPurchasedItemIds.has(i.id))
     : inventory
-  ).map(i => ({ value: i.id, label: t('procurement.item_option_label', { name: i.name, unit: i.unit, quantity: i.quantity }) }));
+  )
+    .filter(i => !itemsWithVariants.has(i.id))
+    .map(i => ({ value: i.id, label: t('procurement.item_option_label', { name: i.name, unit: i.unit, quantity: i.quantity }) }));
 
   // What we actually paid this supplier for this item (weighted average
   // across their received purchases) -- a return must credit back the real
@@ -946,6 +959,11 @@ export default function PurchaseOrders({
                     )}
                     {modalType === 'return' && selectedSupplier && itemSelectOptions.length === 0 && (
                       <p className="text-[10px] font-bold text-danger mt-1.5 px-1">{t('procurement.no_purchased_items_from_supplier', 'لا توجد أصناف تم شراؤها من هذا المورد بعد')}</p>
+                    )}
+                    {itemsWithVariants.size > 0 && (
+                      <p className="text-[10px] text-content-muted mt-1.5 px-1">
+                        {t('inventory.variants.po_not_supported', 'المنتجات ذات السمات غير مدعومة بعد في أوامر الشراء -- عدّل مخزونها يدوياً من شاشة المخزون.')}
+                      </p>
                     )}
                   </div>
                   <div className="space-y-2">

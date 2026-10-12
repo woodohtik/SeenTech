@@ -53,7 +53,7 @@ import { isNetworkFailure } from "../../lib/offline/outbox";
 import { useAuth } from "../../contexts/AuthContext";
 import {
   InventoryItem,
-  InventoryVariant,
+  ProductVariant,
   Branch,
   BranchInventory,
   StockTransfer,
@@ -89,6 +89,8 @@ import { mapCategoryKeyToLegacyCategory } from "../../services/verticalService";
 import { useTenantCategoryPicker, ADD_NEW_CATEGORY_VALUE } from "../../hooks/useTenantCategoryPicker";
 import { LEGACY_INVENTORY_CATEGORY_SEED } from "../../services/categoryService";
 import ProductFormFields from "./ProductFormFields";
+import ProductVariantsSection from "./ProductVariantsSection";
+import { listVariantsForTenant, listVariants } from "../../services/variantService";
 
 const generateSKU = (name?: string) => {
   const random = Math.floor(10000000 + Math.random() * 90000000);
@@ -127,6 +129,15 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
   const [branchStock, setBranchStock] = useState<
     Record<string, BranchInventory[]>
   >({});
+  // seen-ux-fixes-batch-task.md item 10 -- itemId -> variant count, just for
+  // the "X سمات" badge in the product list; getTotalStock() already sums
+  // variant stock rows correctly since it reads all branch_inventory rows
+  // for an item regardless of variant_id.
+  const { data: tenantVariantsByItem = {} } = useQuery({
+    queryKey: ["tenant-variants", tenantId],
+    queryFn: () => listVariantsForTenant(tenantId),
+    enabled: !!tenantId,
+  });
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
@@ -142,7 +153,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
   const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
   const [selectedItemForAdjustment, setSelectedItemForAdjustment] = useState<{
     item: InventoryItem;
-    variant?: InventoryVariant;
+    variant?: ProductVariant;
     branch: Branch;
   } | null>(null);
   const [showConversionModal, setShowConversionModal] = useState(false);
@@ -788,7 +799,14 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                           )}
                         </div>
                         <div>
-                          <p className="font-black text-content">{item.name}</p>
+                          <p className="font-black text-content flex items-center gap-1.5">
+                            {item.name}
+                            {(tenantVariantsByItem[item.id]?.length ?? 0) > 0 && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-brand/10 text-brand">
+                                {tenantVariantsByItem[item.id].length} {t("inventory.variants.badge_suffix", "سمات")}
+                              </span>
+                            )}
+                          </p>
                           <p className="text-[10px] font-bold text-content-muted uppercase tracking-tighter">
                             SKU: {item.sku || "N/A"}
                           </p>
@@ -1121,8 +1139,13 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                 )}
                               </div>
                               <div>
-                                <p className="font-black text-content text-lg">
+                                <p className="font-black text-content text-lg flex items-center gap-1.5">
                                   {item.name}
+                                  {(tenantVariantsByItem[item.id]?.length ?? 0) > 0 && (
+                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-brand/10 text-brand">
+                                      {tenantVariantsByItem[item.id].length} {t("inventory.variants.badge_suffix", "سمات")}
+                                    </span>
+                                  )}
                                 </p>
                                 <p className="text-xs font-bold text-content-muted uppercase tracking-tighter">
                                   SKU: {item.sku || "N/A"}
@@ -1532,6 +1555,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
             }}
             tenantId={tenantId}
             item={editingItem}
+            branches={branches}
           />
         )}
         {showOpeningBalanceModal && (
@@ -1549,6 +1573,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
             branches={branches}
             items={items}
             branchStock={branchStock}
+            itemsWithVariants={Object.keys(tenantVariantsByItem)}
           />
         )}
         {showAdjustmentModal && selectedItemForAdjustment && (
@@ -1981,7 +2006,12 @@ const StockTransferModal = ({
   branches,
   items,
   branchStock,
+  itemsWithVariants = [],
 }: any) => {
+  // seen-ux-fixes-batch-task.md item 10 -- stock transfer isn't variant-aware
+  // yet (deferred to a later phase); excluding these items here is safer
+  // than letting a transfer silently move the wrong (or no) stock row.
+  const transferableItems = (items as InventoryItem[]).filter((it) => !itemsWithVariants.includes(it.id));
   const router = useRouter();
   const { t } = useTranslation();
   const { error: toastError, success: toastSuccess, handleError } = useToast();
@@ -2198,7 +2228,7 @@ const StockTransferModal = ({
                     }}
                     options={[
                       { value: "", label: t("common.select") },
-                      ...items.map((it: InventoryItem) => {
+                      ...transferableItems.map((it: InventoryItem) => {
                         const available = formData.fromBranchId
                           ? (branchStock[it.id]?.find((s: any) => s.branchId === formData.fromBranchId)?.quantity || 0)
                           : null;
@@ -2213,6 +2243,14 @@ const StockTransferModal = ({
                     ]}
                     className=""
                   />
+                  {itemsWithVariants.length > 0 && (
+                    <p className="text-[10px] text-content-muted mt-1">
+                      {t(
+                        "inventory.variants.transfer_not_supported",
+                        "المنتجات ذات السمات غير مدعومة بعد في التحويل بين الفروع -- عدّل مخزونها يدوياً من شاشة المخزون."
+                      )}
+                    </p>
+                  )}
                 </div>
                 <div className="sm:col-span-2 space-y-1">
                   <label htmlFor={`transfer-qty-${idx}`} className="text-[10px] font-black text-content-muted uppercase tracking-widest">
@@ -2278,23 +2316,34 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
   const [mode, setMode] = useState<"set" | "add">("add");
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
+  // seen-ux-fixes-batch-task.md item 10 -- a plain .maybeSingle() query by
+  // (branch_id, item_id) alone would throw once an item has more than one
+  // branch_inventory row (one per variant); a variant must be picked first.
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
+  const [variantsLoaded, setVariantsLoaded] = useState(false);
+  const [selectedVariantId, setSelectedVariantId] = useState<string>("");
 
   useEffect(() => {
+    listVariants(item.id)
+      .then((v) => setVariants(v))
+      .catch(() => setVariants([]))
+      .finally(() => setVariantsLoaded(true));
+  }, [item.id]);
+
+  const needsVariantChoice = variants.length > 0;
+  const variantReady = !needsVariantChoice || !!selectedVariantId;
+
+  useEffect(() => {
+    if (!variantReady) return;
     // Fetch current quantity to pre-fill
     const fetchCurrent = async () => {
-      const { data } = await supabase
-        .from("branch_inventory")
-        .select("quantity")
-        .eq("branch_id", branch.id)
-        .eq("item_id", item.id)
-        .maybeSingle();
-
-      if (data) {
-        setNewQuantity(data.quantity);
-      }
+      let query = supabase.from("branch_inventory").select("quantity").eq("branch_id", branch.id).eq("item_id", item.id);
+      query = selectedVariantId ? query.eq("variant_id", selectedVariantId) : query.is("variant_id", null);
+      const { data } = await query.maybeSingle();
+      if (data) setNewQuantity(data.quantity);
     };
     fetchCurrent();
-  }, [branch.id, item.id]);
+  }, [branch.id, item.id, selectedVariantId, variantReady]);
 
   const handleAdjust = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2319,12 +2368,9 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
         // the brief window between this read and the RPC call is still
         // possible for this specific "set" mode, same as
         // ManualConversionModal's own resolved_quantity calculation.
-        const { data: currentStock } = await supabase
-          .from("branch_inventory")
-          .select("quantity")
-          .eq("branch_id", branch.id)
-          .eq("item_id", item.id)
-          .maybeSingle();
+        let currentQuery = supabase.from("branch_inventory").select("quantity").eq("branch_id", branch.id).eq("item_id", item.id);
+        currentQuery = selectedVariantId ? currentQuery.eq("variant_id", selectedVariantId) : currentQuery.is("variant_id", null);
+        const { data: currentStock } = await currentQuery.maybeSingle();
         delta = newQuantity - (currentStock?.quantity || 0);
       }
 
@@ -2337,6 +2383,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
       await adjustStock({
         branchId: branch.id,
         itemId: item.id,
+        variantId: selectedVariantId || null,
         quantity: delta,
         reason: mode === "add" ? "addition" : "adjustment",
         type: delta > 0 ? "in" : "out",
@@ -2380,6 +2427,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
               </h2>
               <p className="text-[10px] text-content-muted font-bold uppercase tracking-widest">
                 {branch.name} • {item.name}
+                {selectedVariantId && ` — ${variants.find((v) => v.id === selectedVariantId)?.name || ""}`}
               </p>
             </div>
           </div>
@@ -2392,6 +2440,21 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
         </div>
 
         <form onSubmit={handleAdjust} className="p-4 sm:p-6 space-y-6">
+          {needsVariantChoice && (
+            <div className="space-y-2">
+              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
+                {t("inventory.variants.select_to_adjust", "اختر السمة المطلوب تعديل مخزونها")}
+              </label>
+              <SmartSelect
+                value={selectedVariantId}
+                onChange={(val) => setSelectedVariantId(val)}
+                options={variants.map((v) => ({ value: v.id, label: v.name }))}
+                placeholder={t("common.select", "اختر")}
+              />
+            </div>
+          )}
+
+          <div className={cn("space-y-6", needsVariantChoice && !selectedVariantId && "opacity-40 pointer-events-none")}>
           <div className="flex p-1 bg-surface-muted rounded-2xl">
             <button
               type="button"
@@ -2467,11 +2530,12 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !variantReady}
             className="w-full bg-brand text-white py-4 rounded-2xl font-black text-lg shadow-xl shadow-brand/10 hover:bg-brand/90 transition-all disabled:opacity-50"
           >
             {loading ? t("common.saving") : t("common.save")}
           </button>
+          </div>
         </form>
       </motion.div>
     </div>
@@ -2716,7 +2780,20 @@ const OpeningBalanceModal = ({ onClose, tenantId, branches, items }: any) => {
   const { error: toastError, success: toastSuccess, handleError } = useToast();
   const [selectedBranch, setSelectedBranch] = useState("");
   const [stockEntries, setStockEntries] = useState<any[]>([]);
+  const [skippedVariantRows, setSkippedVariantRows] = useState(0);
   const [loading, setLoading] = useState(false);
+  // seen-ux-fixes-batch-task.md item 10 -- importing an opening balance for
+  // an item with variants isn't supported yet (deferred); those rows are
+  // skipped (and surfaced to the merchant) instead of silently landing on
+  // the item's own base stock row.
+  const [itemsWithVariants, setItemsWithVariants] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!tenantId) return;
+    Promise.resolve(supabase.from("inventory_variants").select("item_id").eq("tenant_id", tenantId))
+      .then(({ data }) => setItemsWithVariants(new Set((data || []).map((r: any) => r.item_id))))
+      .catch(() => setItemsWithVariants(new Set()));
+  }, [tenantId]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -2732,7 +2809,7 @@ const OpeningBalanceModal = ({ onClose, tenantId, branches, items }: any) => {
 
       // Map Excel data to stock entries
       // Expecting columns: SKU, Quantity
-      const entries = data
+      const allEntries = data
         .map((row: any) => {
           const item = items.find((it: any) => it.sku === row.SKU);
           return {
@@ -2744,6 +2821,8 @@ const OpeningBalanceModal = ({ onClose, tenantId, branches, items }: any) => {
         })
         .filter((e) => e.itemId);
 
+      const entries = allEntries.filter((e) => !itemsWithVariants.has(e.itemId));
+      setSkippedVariantRows(allEntries.length - entries.length);
       setStockEntries(entries);
     };
     reader.readAsBinaryString(file);
@@ -2763,7 +2842,8 @@ const OpeningBalanceModal = ({ onClose, tenantId, branches, items }: any) => {
       const { data: existingInventory, error: fetchErr } = await supabase
         .from("branch_inventory")
         .select("item_id, quantity")
-        .eq("branch_id", selectedBranch);
+        .eq("branch_id", selectedBranch)
+        .is("variant_id", null);
 
       if (fetchErr) throw fetchErr;
 
@@ -2868,6 +2948,16 @@ const OpeningBalanceModal = ({ onClose, tenantId, branches, items }: any) => {
               </div>
             </div>
           </div>
+
+          {skippedVariantRows > 0 && (
+            <p className="text-xs font-bold text-warning px-1">
+              {t(
+                "inventory.variants.import_rows_skipped",
+                "تم تجاهل {{count}} صف لمنتجات لها سمات -- غير مدعوم بعد في الاستيراد، عدّلها يدوياً من شاشة المخزون.",
+                { count: skippedVariantRows }
+              )}
+            </p>
+          )}
 
           {stockEntries.length > 0 && (
             <div className="space-y-4">
@@ -3342,7 +3432,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
   );
 };
 
-const EditItemModal = ({ onClose, tenantId, item }: any) => {
+const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
   const router = useRouter();
   const { t } = useTranslation();
   const { dir } = useDirection();
@@ -3525,6 +3615,8 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
             suppliersList={suppliersList}
             handleError={handleError}
           />
+
+          <ProductVariantsSection tenantId={tenantId} itemId={item.id} branches={branches} />
 
           <div className="sticky bottom-0 bg-surface -mx-4 sm:-mx-8 -mb-4 sm:-mb-8 px-4 sm:px-8 pb-4 sm:pb-8 flex flex-col sm:flex-row sm:justify-end gap-3 sm:gap-4 pt-6 border-t border-border">
             <button
