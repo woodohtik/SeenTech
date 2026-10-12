@@ -9,6 +9,18 @@
 -- trailing parameter, which defaults to NULL and preserves today's exact
 -- behavior (a plain, non-variant stock row).
 
+-- Postgres does NOT treat "CREATE OR REPLACE" + a new trailing DEFAULT
+-- parameter as replacing the existing function in place -- it registers a
+-- second, separate overload instead (confirmed live on staging: querying
+-- pg_proc afterward showed both the old 7-arg and new 8-arg signatures
+-- coexisting). That risks PostgREST failing to pick a candidate when a
+-- caller's named-JSON RPC body is a valid subset of both overloads'
+-- parameters. Drop the old signature explicitly first so exactly one
+-- function remains -- every existing positional caller (transfer_ship_item/
+-- transfer_receive_item below, 7 positional args) still resolves correctly
+-- against the new 8-arg function via its own trailing default.
+DROP FUNCTION IF EXISTS public.apply_stock_movement(TEXT,UUID,UUID,NUMERIC,TEXT,UUID,TEXT);
+
 CREATE OR REPLACE FUNCTION public.apply_stock_movement(
   p_operation_id   TEXT,
   p_branch_id      UUID,
