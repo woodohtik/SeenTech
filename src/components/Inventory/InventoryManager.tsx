@@ -618,17 +618,15 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
 
           {/* Filters */}
           <div className="bg-surface p-3 sm:p-4 rounded-2xl sm:rounded-[2rem] border border-border shadow-sm flex flex-col sm:flex-row gap-3 sm:gap-4">
-            <div className="relative flex-1">
-              <Search
-                className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-content-muted"
-                size={18}
-              />
+            {/* seen-fields-unification-task.md #4: نفس نمط شريط البحث الموحّد (PurchaseOrders.tsx/Suppliers.tsx) -- كان بلا حدود خاصة به إطلاقاً. */}
+            <div className="flex-1 flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface focus-within:ring-2 focus-within:ring-brand/20 rounded-2xl px-4 h-12 transition-all shadow-inner shadow-black/5">
+              <Search className="text-content-muted shrink-0" size={18} />
               <input
                 type="text"
                 placeholder={t("inventory.search_placeholder")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 sm:pl-12 pr-4 py-2.5 sm:py-3 bg-transparent border-none outline-none focus:ring-0 font-semibold text-xs sm:text-sm text-content text-right"
+                className="w-full bg-transparent border-none outline-none focus:ring-0 font-semibold text-sm text-content"
               />
             </div>
             <div className="flex items-center gap-2 w-full sm:min-w-[200px] sm:w-auto">
@@ -2334,7 +2332,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
               <div className="space-y-2 col-span-1 md:col-span-6">
                 <label htmlFor="add-item-sku" className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-                  {t("inventory.sku")}
+                  {t("inventory.ref_sku")}
                 </label>
                 <input
                 id="add-item-sku"
@@ -4328,6 +4326,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                 <input
                 id="edit-item-initial-stock"
                   type="number"
+                  min="0"
                   placeholder="0.00"
                   value={formData.openingBalance || ""}
                   onChange={(e) => setFormData({ ...formData, openingBalance: e.target.value === "" ? 0 : Number(e.target.value) })}
@@ -4359,6 +4358,7 @@ const EditItemModal = ({ onClose, tenantId, item }: any) => {
                 </label>
                 <input
                 id="edit-item-barcode"
+                  placeholder="Barcode (Auto)"
                   value={formData.barcode}
                   onChange={(e) =>
                     setFormData({ ...formData, barcode: e.target.value })

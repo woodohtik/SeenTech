@@ -30,6 +30,7 @@ import { decodeInventoryDescription } from '../utils/b2bHelper';
 
 import { useForm, Controller } from 'react-hook-form';
 import { SmartSelect } from './ui/SmartSelect';
+import { IconInput } from './ui/IconInput';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { supplierSchema } from '../lib/validations';
 import { logEmployeeAction } from '../services/employeeAuditService';
@@ -536,7 +537,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface rounded-2xl px-4 h-12 transition-all w-full shadow-inner shadow-black/5">
+                <div className="flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface focus-within:ring-2 focus-within:ring-brand/20 rounded-2xl px-4 h-12 transition-all w-full shadow-inner shadow-black/5">
                   <Search className="text-content-muted shrink-0" size={18} />
                   <input 
                     type="text"
@@ -620,91 +621,51 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
               </button>
             </div>
             <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
-              <div>
-                <label htmlFor="supplier-name" className="block text-sm font-medium text-content-muted mb-1">{t('procurement.company_name', 'اسم الشركة/المورد')}</label>
-                <div className={cn(
-                  "flex items-center gap-2.5 px-3.5 py-2.5 bg-surface-muted border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand focus-within:border-transparent transition-all",
-                  errors.name && "border-danger"
-                )}>
-                  <Building size={18} className="text-content-muted shrink-0" />
-                  <input
-                    id="supplier-name"
-                    {...register('name')}
-                    placeholder={t('procurement.company_name', 'اسم الشركة/المورد')}
-                    className="w-full bg-transparent border-none p-0 outline-none text-content focus:ring-0 text-sm font-medium"
-                  />
-                </div>
-                {errors.name && <p className="text-xs text-danger font-bold mt-1">{errors.name.message}</p>}
-              </div>
-              <div>
-                <label htmlFor="supplier-contact-person" className="block text-sm font-medium text-content-muted mb-1">{t('procurement.contact_person', 'الشخص المسؤول')}</label>
-                <div className={cn(
-                  "flex items-center gap-2.5 px-3.5 py-2.5 bg-surface-muted border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand focus-within:border-transparent transition-all",
-                  errors.contactPerson && "border-danger"
-                )}>
-                  <User size={18} className="text-content-muted shrink-0" />
-                  <input
-                    id="supplier-contact-person"
-                    {...register('contactPerson')}
-                    placeholder={t('procurement.contact_person', 'الشخص المسؤول')}
-                    className="w-full bg-transparent border-none p-0 outline-none text-content focus:ring-0 text-sm font-medium"
-                  />
-                </div>
-                {errors.contactPerson && <p className="text-xs text-danger font-bold mt-1">{errors.contactPerson.message}</p>}
+              <IconInput
+                id="supplier-name"
+                {...register('name')}
+                label={t('procurement.company_name', 'اسم الشركة/المورد')}
+                startIcon={Building}
+                placeholder={t('procurement.company_name', 'اسم الشركة/المورد')}
+                error={errors.name?.message}
+              />
+              <IconInput
+                id="supplier-contact-person"
+                {...register('contactPerson')}
+                label={t('procurement.contact_person', 'الشخص المسؤول')}
+                startIcon={User}
+                placeholder={t('procurement.contact_person', 'الشخص المسؤول')}
+                error={errors.contactPerson?.message}
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <IconInput
+                  id="supplier-email"
+                  type="email"
+                  {...register('email')}
+                  label={t('procurement.email', 'البريد الإلكتروني')}
+                  startIcon={Mail}
+                  placeholder={t('procurement.email', 'البريد الإلكتروني')}
+                  error={errors.email?.message}
+                />
+                <IconInput
+                  id="supplier-phone"
+                  type="tel"
+                  {...register('phone')}
+                  label={t('procurement.phone', 'رقم الهاتف')}
+                  startIcon={Phone}
+                  placeholder={t('procurement.phone', 'رقم الهاتف')}
+                  error={errors.phone?.message}
+                />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="supplier-email" className="block text-sm font-medium text-content-muted mb-1">{t('procurement.email', 'البريد الإلكتروني')}</label>
-                  <div className={cn(
-                    "flex items-center gap-2.5 px-3.5 py-2.5 bg-surface-muted border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand focus-within:border-transparent transition-all",
-                    errors.email && "border-danger"
-                  )}>
-                    <Mail size={18} className="text-content-muted shrink-0" />
-                    <input
-                      id="supplier-email"
-                      type="email"
-                      {...register('email')}
-                      placeholder={t('procurement.email', 'البريد الإلكتروني')}
-                      className="w-full bg-transparent border-none p-0 outline-none text-content focus:ring-0 text-sm font-medium"
-                    />
-                  </div>
-                  {errors.email && <p className="text-xs text-danger font-bold mt-1">{errors.email.message}</p>}
-                </div>
-                <div>
-                  <label htmlFor="supplier-phone" className="block text-sm font-medium text-content-muted mb-1">{t('procurement.phone', 'رقم الهاتف')}</label>
-                  <div className={cn(
-                    "flex items-center gap-2.5 px-3.5 py-2.5 bg-surface-muted border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand focus-within:border-transparent transition-all",
-                    errors.phone && "border-danger"
-                  )}>
-                    <Phone size={18} className="text-content-muted shrink-0" />
-                    <input
-                      id="supplier-phone"
-                      type="tel"
-                      {...register('phone')}
-                      placeholder={t('procurement.phone', 'رقم الهاتف')}
-                      className="w-full bg-transparent border-none p-0 outline-none text-content focus:ring-0 text-sm font-medium"
-                    />
-                  </div>
-                  {errors.phone && <p className="text-xs text-danger font-bold mt-1">{errors.phone.message}</p>}
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="supplier-tax-number" className="block text-sm font-medium text-content-muted mb-1">{t('procurement.tax_number', 'الرقم الضريبي (اختياري)')}</label>
-                  <div className={cn(
-                    "flex items-center gap-2.5 px-3.5 py-2.5 bg-surface-muted border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand focus-within:border-transparent transition-all",
-                    errors.taxNumber && "border-danger"
-                  )}>
-                    <FileText size={18} className="text-content-muted shrink-0" />
-                    <input
-                      id="supplier-tax-number"
-                      {...register('taxNumber')}
-                      placeholder={t('procurement.tax_number', 'الرقم الضريبي')}
-                      className="w-full bg-transparent border-none p-0 outline-none text-content focus:ring-0 text-sm font-medium"
-                    />
-                  </div>
-                  {errors.taxNumber && <p className="text-xs text-danger font-bold mt-1">{errors.taxNumber.message}</p>}
-                </div>
+                <IconInput
+                  id="supplier-tax-number"
+                  {...register('taxNumber')}
+                  label={t('procurement.tax_number', 'الرقم الضريبي (اختياري)')}
+                  startIcon={FileText}
+                  placeholder={t('procurement.tax_number', 'الرقم الضريبي')}
+                  error={errors.taxNumber?.message}
+                />
                 <div>
                   <label className="block text-sm font-medium text-content-muted mb-1">{t('procurement.category', 'التصنيف')}</label>
                   <Controller
@@ -766,7 +727,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
               <div>
                 <label htmlFor="supplier-address" className="block text-sm font-medium text-content-muted mb-1">{t('procurement.address', 'العنوان (اختياري)')}</label>
                 <div className={cn(
-                  "flex items-start gap-2.5 px-3.5 py-2.5 bg-surface-muted border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand focus-within:border-transparent transition-all",
+                  "flex items-start gap-2.5 px-3.5 py-2.5 bg-surface border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand/20 focus-within:border-brand transition-all",
                   errors.address && "border-danger"
                 )}>
                   <MapPin size={18} className="text-content-muted shrink-0 mt-0.5" />

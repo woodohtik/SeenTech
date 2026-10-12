@@ -1247,9 +1247,9 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
 
       {viewMode !== 'permissions' && viewMode !== 'employee_activity' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-center">
-          <div className="flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface rounded-2xl px-4 h-12 transition-all w-full shadow-inner shadow-black/5">
+          <div className="flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface focus-within:ring-2 focus-within:ring-brand/20 rounded-2xl px-4 h-12 transition-all w-full shadow-inner shadow-black/5">
             <Search className="text-content-muted shrink-0" size={18} />
-            <input 
+            <input
               type="text"
               placeholder={t('settings_page.staff.search_placeholder')}
               value={searchQuery}

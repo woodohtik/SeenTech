@@ -1,158 +1,19 @@
-import React, { useState, forwardRef, Fragment } from 'react';
-import { useTranslation } from 'react-i18next';
-import { motion, AnimatePresence } from 'motion/react';
-import { User, Mail, Smartphone, Shield, X, Lock, Eye, EyeOff, ChevronDown, Briefcase, Store, Hash, Check, Key } from 'lucide-react';
+import React, { useState } from 'react';
+import { motion } from 'motion/react';
+import { User, Mail, Smartphone, X, Store, Key } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { cn } from '../lib/utils';
 import { Role, Branch } from '../types';
+import { cn } from '../lib/utils';
 import { supabase } from '../lib/supabase/client';
 import { useAuth } from '../contexts/AuthContext';
 import { generateSecurePin, hashPin } from '../services/staffService';
-import { Listbox, Transition } from '@headlessui/react';
 import { useDirection } from '../lib/direction';
 import { getFriendlyErrorMessage } from '../lib/firebase';
-
-const IconInput = forwardRef<HTMLInputElement, any>(({ icon: Icon, error, type = 'text', rightElement, dir, className, ...props }, ref) => {
-  return (
-    <div className={cn(
-      "flex items-center overflow-hidden border rounded-2xl bg-surface-muted transition-all focus-within:ring-2 focus-within:border-brand",
-      error
-        ? "border-danger ring-danger/20 focus-within:ring-danger/20 focus-within:border-danger"
-        : "border-border"
-    )}>
-      {Icon && (
-        <div className={cn(
-          "flex items-center justify-center px-4 py-4 border-e bg-surface/50 text-content-muted shrink-0 transition-colors",
-          error ? "border-danger text-danger bg-danger/5" : "border-border"
-        )}>
-          <Icon size={20} />
-        </div>
-      )}
-      <input
-        ref={ref}
-        type={type}
-        dir={dir}
-        className={cn(
-          "flex-1 bg-transparent py-4 px-4 font-bold outline-none text-content placeholder:text-content-muted/50 w-full",
-          className
-        )}
-        {...props}
-      />
-      {rightElement && (
-        <div className={cn(
-          "border-s bg-surface/50 flex shrink-0 transition-colors",
-          error ? "border-danger" : "border-border"
-        )}>
-          {rightElement}
-        </div>
-      )}
-    </div>
-  );
-});
-
-const PasswordInput = forwardRef<HTMLInputElement, any>(({ error, ...props }, ref) => {
-  const [show, setShow] = useState(false);
-  return (
-    <IconInput
-      ref={ref}
-      type={show ? 'text' : 'password'}
-      icon={Lock}
-      error={error}
-      rightElement={
-        <button
-          type="button"
-          onClick={() => setShow(!show)}
-          className="px-4 py-4 flex items-center justify-center text-content-muted hover:text-content hover:bg-surface transition-colors focus:outline-none"
-        >
-          {show ? <EyeOff size={20} /> : <Eye size={20} />}
-        </button>
-      }
-      {...props}
-    />
-  );
-});
-
-const IconSelect = forwardRef<any, any>(({ icon: Icon, error, options, value, onChange, name, ...props }, ref) => {
-  const { t } = useTranslation();
-  const selectedOption = options.find((opt: any) => String(opt.value) === String(value));
-  
-  return (
-    <Listbox value={value} onChange={onChange} name={name}>
-      {({ open }) => (
-        <div className={cn(
-          "flex items-center overflow-visible border rounded-2xl bg-surface-muted transition-all focus-within:ring-2 focus-within:border-brand",
-          open 
-            ? "ring-2 border-brand"
-            : (error ? "border-danger ring-danger/20 focus-within:ring-danger/20 focus-within:border-danger" : "border-border")
-        )}>
-          {Icon && (
-            <div className={cn(
-              "flex items-center justify-center px-4 py-4 border-e bg-surface/50 text-content-muted rounded-s-2xl shrink-0 transition-colors",
-              error ? "border-danger text-danger bg-danger/5" : "border-border"
-            )}>
-              <Icon size={20} />
-            </div>
-          )}
-          <div className="relative flex-1">
-            <Listbox.Button className="w-full text-start bg-transparent py-4 ps-4 pe-10 font-bold outline-none text-content truncate cursor-pointer">
-              <span className={cn("block truncate", !selectedOption?.value && "text-content-muted")}>
-                {selectedOption ? selectedOption.label : t('common.select')}
-              </span>
-              <span className="absolute inset-y-0 end-0 flex items-center justify-center pe-4 pointer-events-none text-content-muted">
-                <ChevronDown size={20} className={cn("transition-transform duration-200", open && "rotate-180")} />
-              </span>
-            </Listbox.Button>
-            
-            <Transition
-              as={Fragment}
-              leave="transition ease-in duration-100"
-              leaveFrom="opacity-100"
-              leaveTo="opacity-0"
-            >
-              <Listbox.Options className="absolute z-[200] mt-1 max-h-60 w-full overflow-auto rounded-xl bg-surface p-2 text-base shadow-2xl border border-border focus:outline-none sm:text-sm">
-                {options.map((opt: any, index: number) => {
-                  if (!opt.value) return null; // skip placeholder option
-                  return (
-                    <Listbox.Option
-                      key={index}
-                      className={({ active }) =>
-                        cn(
-                          'relative cursor-pointer select-none py-3 ps-10 pe-4 rounded-lg transition-colors font-bold',
-                          active ? 'bg-brand/10 text-brand' : 'text-content hover:bg-surface-muted'
-                        )
-                      }
-                      value={opt.value}
-                    >
-                      {({ selected, active }) => (
-                        <>
-                          <span className={cn('block truncate', selected ? 'font-black text-brand' : '')}>
-                            {opt.label}
-                          </span>
-                          {selected ? (
-                            <span
-                              className={cn(
-                                'absolute inset-y-0 start-0 flex items-center ps-3',
-                                active ? 'text-brand' : 'text-brand'
-                              )}
-                            >
-                              <Check className="h-5 w-5" aria-hidden="true" />
-                            </span>
-                          ) : null}
-                        </>
-                      )}
-                    </Listbox.Option>
-                  );
-                })}
-              </Listbox.Options>
-            </Transition>
-          </div>
-        </div>
-      )}
-    </Listbox>
-  );
-});
+import { IconInput } from './ui/IconInput';
+import { PasswordInput } from './ui/PasswordInput';
+import { SmartSelect } from './ui/SmartSelect';
 
 const phoneRegex = /^(\+?\d{1,3}[- ]?)?\d{10}$/;
 
@@ -373,26 +234,24 @@ export default function AddEmployeeModal({
             </div>
           )}
 
-          <div className="space-y-2">
-            <label className="text-xs font-black text-content-muted uppercase tracking-widest">{t('common.full_name')}</label>
-            <IconInput 
-              {...register('name')}
-              icon={User}
-              error={errors.name}
-            />
-            {errors.name && <p className="text-xs text-danger font-bold">{t(errors.name.message as string)}</p>}
-          </div>
+          <IconInput
+            {...register('name')}
+            label={t('common.full_name')}
+            startIcon={User}
+            error={errors.name?.message ? t(errors.name.message as string) : undefined}
+          />
 
-          <div className="space-y-2">
-            <label className="text-xs font-black text-content-muted uppercase tracking-widest">{t('staff.job_role')}</label>
+          <div className="space-y-1.5">
+            <label className="block text-xs font-black uppercase tracking-widest px-1 text-content-muted">{t('staff.job_role')}</label>
             <Controller
               name="role"
               control={control}
               render={({ field }) => (
-                <IconSelect 
-                  {...field}
-                  icon={User}
-                  error={errors.role}
+                <SmartSelect
+                  value={field.value}
+                  onChange={field.onChange}
+                  startIcon={User}
+                  error={!!errors.role}
                   options={[
                     { value: '', label: t('common.select_role') },
                     ...roles.map(role => ({ value: role.roleKey, label: role.name }))
@@ -400,19 +259,20 @@ export default function AddEmployeeModal({
                 />
               )}
             />
-            {errors.role && <p className="text-xs text-danger font-bold">{t(errors.role.message as string)}</p>}
+            {errors.role && <p className="text-xs text-danger font-bold px-1">{t(errors.role.message as string)}</p>}
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-black text-content-muted uppercase tracking-widest">{t('common.branch')}</label>
+          <div className="space-y-1.5">
+            <label className="block text-xs font-black uppercase tracking-widest px-1 text-content-muted">{t('common.branch')}</label>
             <Controller
               name="branchId"
               control={control}
               render={({ field }) => (
-                <IconSelect 
-                  {...field}
-                  icon={Store}
-                  error={errors.branchId}
+                <SmartSelect
+                  value={field.value}
+                  onChange={field.onChange}
+                  startIcon={Store}
+                  error={!!errors.branchId}
                   options={[
                     { value: '', label: t('common.select_branch') },
                     ...branches.map(branch => ({ value: branch.id, label: branch.name }))
@@ -420,43 +280,34 @@ export default function AddEmployeeModal({
                 />
               )}
             />
-            {errors.branchId && <p className="text-xs text-danger font-bold">{t(errors.branchId.message as string)}</p>}
+            {errors.branchId && <p className="text-xs text-danger font-bold px-1">{t(errors.branchId.message as string)}</p>}
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-black text-content-muted uppercase tracking-widest">{t('staff.email_required_label')}</label>
-            <IconInput 
-              {...register('email')}
-              icon={Mail}
-              error={errors.email}
-              dir="ltr"
-              placeholder="user@example.com"
-            />
-            {errors.email && <p className="text-xs text-danger font-bold">{t(errors.email.message as string)}</p>}
-          </div>
+          <IconInput
+            {...register('email')}
+            label={t('staff.email_required_label')}
+            startIcon={Mail}
+            error={errors.email?.message ? t(errors.email.message as string) : undefined}
+            dir="ltr"
+            placeholder="user@example.com"
+          />
 
-          <div className="space-y-2">
-            <label className="text-xs font-black text-content-muted uppercase tracking-widest">{t('staff.password_required_label')}</label>
-            <PasswordInput 
-              {...register('password')}
-              error={errors.password}
-              dir="ltr"
-              placeholder="••••••••"
-            />
-            {errors.password && <p className="text-xs text-danger font-bold">{t(errors.password.message as string)}</p>}
-          </div>
+          <PasswordInput
+            {...register('password')}
+            label={t('staff.password_required_label')}
+            error={errors.password?.message ? t(errors.password.message as string) : undefined}
+            dir="ltr"
+            placeholder="••••••••"
+          />
 
-          <div className="space-y-2">
-            <label className="text-xs font-black text-content-muted uppercase tracking-widest">{t('onboarding.fields.phone')}</label>
-            <IconInput 
-              {...register('phone')}
-              icon={Smartphone}
-              error={errors.phone}
-              dir="ltr"
-              placeholder="+966500000000"
-            />
-            {errors.phone && <p className="text-xs text-danger font-bold">{t(errors.phone.message as string)}</p>}
-          </div>
+          <IconInput
+            {...register('phone')}
+            label={t('onboarding.fields.phone')}
+            startIcon={Smartphone}
+            error={errors.phone?.message ? t(errors.phone.message as string) : undefined}
+            dir="ltr"
+            placeholder="+966500000000"
+          />
 
           <div className="p-4 bg-surface-muted rounded-2xl space-y-4">
             <div className="flex items-center justify-between">
@@ -483,18 +334,17 @@ export default function AddEmployeeModal({
             </div>
 
             {enablePin && (
-              <div className="space-y-2 pt-2 border-t border-border">
-                <label className="text-xs font-black text-content-muted uppercase tracking-widest">{t('staff.pin_code_four_digits')}</label>
-                <IconInput 
+              <div className="pt-2 border-t border-border">
+                <IconInput
                   {...register('pin')}
                   type="password"
-                  icon={Key}
-                  error={errors.pin}
+                  label={t('staff.pin_code_four_digits')}
+                  startIcon={Key}
+                  error={errors.pin?.message ? t(errors.pin.message as string) : undefined}
                   maxLength={4}
                   placeholder="****"
                   className="tracking-[1em]"
                 />
-                {errors.pin && <p className="text-xs text-danger font-bold">{t(errors.pin.message as string)}</p>}
               </div>
             )}
           </div>

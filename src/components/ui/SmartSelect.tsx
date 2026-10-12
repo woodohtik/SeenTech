@@ -22,6 +22,9 @@ interface SmartSelectProps {
   error?: boolean;
   /** Fixed leading icon shown before the control's own value/placeholder text (distinct from a per-option icon). */
   startIcon?: LucideIcon;
+  /** seen-fields-unification-task.md #2: نفس كلاس تسمية IconInput حرفياً -- لا نسخة تسمية جديدة. */
+  label?: string;
+  id?: string;
 }
 
 export function SmartSelect({
@@ -35,6 +38,8 @@ export function SmartSelect({
   disabled = false,
   error = false,
   startIcon: StartIcon,
+  label,
+  id,
 }: SmartSelectProps) {
   const { t, dir } = useDirection();
   const [query, setQuery] = useState('');
@@ -52,7 +57,7 @@ export function SmartSelect({
           option.label.toLowerCase().includes(query.toLowerCase())
         );
 
-  const containerClasses = cn('relative w-full', dir === 'rtl' ? 'text-right' : 'text-left');
+  const containerClasses = cn('relative w-full flex flex-col gap-1.5', dir === 'rtl' ? 'text-right' : 'text-left');
 
   const hasHeight = className?.includes('h-');
   const hasPadding = className?.includes('p-') || className?.includes('py-') || className?.includes('px-') || className?.includes('pr-') || className?.includes('pl-');
@@ -62,7 +67,9 @@ export function SmartSelect({
 
   const buttonClasses = cn(
     'relative w-full cursor-default outline-none transition-all shadow-sm focus:border-brand focus:ring-2 focus:ring-brand/20 flex items-center',
-    !hasHeight && 'h-[var(--size-input-height)]',
+    // seen-fields-unification-task.md #2: كان --size-input-height بالخطأ --
+    // متغيّر مختلف دلالياً عن باقي الحقول حتى لو تطابقت قيمتاهما اليوم بالصدفة (44px).
+    !hasHeight && 'h-[var(--size-button-height)]',
     !hasRounded && 'rounded-[var(--radius-md)]',
     !hasBorder && 'border border-border',
     !hasPadding && 'px-4',
@@ -77,8 +84,24 @@ export function SmartSelect({
   );
 
   const popoverClasses = cn(
-    'z-[9999]  max-h-64 overflow-y-auto rounded-3xl bg-surface p-2.5 text-sm shadow-xl border border-border focus:outline-none scrollbar-hide',
+    // seen-fields-unification-task.md #2: كانت rounded-3xl (24px) -- لا تطابق
+    // استدارة بقية القوائم المنسدلة (IconSelect/Select كلاهما rounded-xl).
+    'z-[9999]  max-h-64 overflow-y-auto rounded-xl bg-surface p-2.5 text-sm shadow-xl border border-border focus:outline-none scrollbar-hide',
     dir === 'rtl' ? 'text-right font-sans' : 'text-left font-sans'
+  );
+
+  // نفس كلاس تسمية IconInput حرفياً (src/components/ui/IconInput.tsx) -- التباعد يأتي من gap-1.5 في containerClasses، لا من هامش على التسمية نفسها.
+  const labelNode = label && (
+    <label
+      htmlFor={id}
+      className={cn(
+        'block text-xs font-black uppercase tracking-widest px-1 transition-colors select-none',
+        disabled ? 'text-content-muted/50' : 'text-content-muted hover:text-content',
+        error ? 'text-danger' : ''
+      )}
+    >
+      {label}
+    </label>
   );
 
   const transitionProps = {
@@ -93,6 +116,7 @@ export function SmartSelect({
   if (useCombobox) {
     return (
       <div className={containerClasses} dir={dir}>
+        {labelNode}
         <Combobox value={selectedOption} onChange={(opt: SelectOption | null) => {
           if (opt !== null && opt !== undefined) {
              onChange(opt.value);
@@ -106,6 +130,7 @@ export function SmartSelect({
               )} aria-hidden="true" />
             )}
             <Combobox.Input
+              id={id}
               className={cn(buttonClasses, StartIcon && (dir === 'rtl' ? 'pr-10' : 'pl-10'))}
               displayValue={(opt: SelectOption) => opt?.label || ''}
               onChange={(event) => setQuery(event.target.value)}
@@ -180,9 +205,10 @@ export function SmartSelect({
   // Fallback to Listbox for fewer items
   return (
     <div className={containerClasses} dir={dir}>
+      {labelNode}
       <Listbox value={value} onChange={onChange} disabled={disabled} name={name}>
         <div className="relative group">
-          <Listbox.Button className={cn(buttonClasses, StartIcon && (dir === 'rtl' ? 'pr-10' : 'pl-10'))}>
+          <Listbox.Button id={id} className={cn(buttonClasses, StartIcon && (dir === 'rtl' ? 'pr-10' : 'pl-10'))}>
             {StartIcon && (
               <StartIcon className={cn(
                 "absolute h-4 w-4 text-content-muted pointer-events-none group-hover:text-brand transition-colors",

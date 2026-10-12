@@ -76,7 +76,6 @@ import { notifyOrderStatusChange, notifyNewOrderForStaff } from '../utils/orderN
 import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
 import { shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
 import ScannerModal from './ScannerModal';
-import Select from './ui/Select';
 import { SmartSelect } from './ui/SmartSelect';
 import { DatePicker } from './ui/DatePicker';
 import { checkStockAvailability, deductStock } from '../services/inventoryService';
@@ -1817,11 +1816,11 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 <div className="mt-4 p-4 bg-surface rounded-2xl border border-danger/20 space-y-4 animate-in fade-in slide-in-from-top-2">
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-content-muted uppercase">{t('orders.pay_amount_now')}</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       value={payAmount}
                       onChange={(e) => setPayAmount(Number(e.target.value))}
-                      className="w-full bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                      className="w-full bg-surface border border-border rounded-xl p-4 text-sm font-black text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -2164,12 +2163,12 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
             <div className="space-y-2">
               <label className="text-xs font-bold text-content-muted uppercase tracking-widest">{t('orders.pay_amount_now')}</label>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 value={amount}
                 onChange={(e) => setAmount(Number(e.target.value))}
                 max={order.remainingAmount}
-                className="w-full bg-surface border border-border focus:border-success rounded-xl p-4 font-black text-success outline-none transition-all focus:ring-2 focus:ring-success/20"
+                className="w-full bg-surface border border-border rounded-xl p-4 text-sm font-black text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
               />
             </div>
 
@@ -2439,7 +2438,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
         <div className="flex flex-wrap items-center gap-3 bg-surface p-4 rounded-3xl border border-border shadow-sm">
           <div className="flex items-center gap-2 min-w-[180px]">
-            <Select
+            <SmartSelect
               value={statusFilter}
               onChange={(val) => setStatusFilter(val)}
               options={[

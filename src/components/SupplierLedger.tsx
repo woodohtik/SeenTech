@@ -388,17 +388,15 @@ export default function SupplierLedger({
       <div className="bg-surface border border-border p-5 rounded-3xl shadow-sm space-y-4 print:hidden">
         <div className="flex flex-col md:flex-row gap-3">
           
-          {/* Text search bar */}
-          <div className="group flex-1 flex items-center bg-surface-muted hover:bg-surface-muted/30 border border-border focus-within:border-brand focus-within:bg-surface rounded-xl transition-all overflow-hidden h-10">
-            <div className="flex items-center justify-center px-3.5 border-e border-border/60 text-content-muted group-focus-within:text-content h-full shrink-0">
-              <Search size={14} />
-            </div>
+          {/* seen-fields-unification-task.md #4: نفس نمط شريط البحث الموحّد (PurchaseOrders.tsx/Suppliers.tsx) -- كان rounded-xl بارتفاع h-10. */}
+          <div className="flex-1 flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface focus-within:ring-2 focus-within:ring-brand/20 rounded-2xl px-4 h-12 transition-all shadow-inner shadow-black/5">
+            <Search className="text-content-muted shrink-0" size={18} />
             <input
               type="text"
               placeholder={t('procurement.search_ledger_placeholder', 'بحث برقم السند، الفاتورة أو الملاحظات...')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 min-w-0 bg-transparent border-none py-2 px-3 text-xs text-content outline-none ring-0 placeholder:text-content-muted font-semibold"
+              className="w-full bg-transparent border-none outline-none focus:ring-0 font-semibold text-sm text-content"
             />
           </div>
 

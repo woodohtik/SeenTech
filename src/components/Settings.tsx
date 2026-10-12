@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { formatSaudiPhone } from '../utils/phoneUtils';
-import { Store, MapPin, Phone, Globe, Bell, Shield, CreditCard, MessageSquare, CheckCircle2, AlertCircle, AlertTriangle, ChevronRight, ExternalLink, Zap, Upload, X as CloseIcon, Database, Trash2, ShieldCheck, Palette, FileText, HelpCircle, Layout, Mail, Printer, Hash } from 'lucide-react';
+import { Store, MapPin, Phone, Globe, Bell, Shield, CreditCard, MessageSquare, CheckCircle2, AlertCircle, AlertTriangle, ChevronRight, ExternalLink, Zap, Upload, X as CloseIcon, Database, Trash2, ShieldCheck, Palette, FileText, HelpCircle, Layout, Mail, Printer, Hash, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
 import { saveLastKnown, getLastKnown } from '../lib/offline/lastKnownCache';
@@ -877,58 +877,41 @@ export default function Settings({ tenantId }: SettingsProps) {
                           exit={{ opacity: 0, scale: 0.98 }}
                           className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 bg-surface-muted/30 p-4 sm:p-6 rounded-2xl border border-border/50"
                         >
-                          <div className="space-y-2">
-                            <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em] px-1">{t('settings_page.tax.trn', 'الرقم الضريبي (TRN - 15 خانة)')}</label>
-                            <input
-                              type="text"
-                              maxLength={15}
-                              placeholder="300000000000003"
-                              required
-                              {...register('taxSettings.trn')}
-                              onChange={(e) => {
-                                const val = e.target.value.replace(/\D/g, '').slice(0, 15);
-                                setValue('taxSettings.trn', val, { shouldValidate: true });
-                              }}
-                              className={cn(
-                                "w-full bg-surface border border-border rounded-xl p-3 font-black outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content text-left tracking-widest text-sm",
-                                errors.taxSettings?.trn && "ring-2 ring-danger border-danger"
-                              )}
-                              dir="ltr"
-                            />
-                            {errors.taxSettings?.trn && <p className="text-xs text-danger font-bold">{errors.taxSettings.trn.message}</p>}
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em] px-1">{t('settings_page.tax.legal_name', 'اسم المكلف القانوني')}</label>
-                            <input
-                              type="text"
-                              required
-                              {...register('taxSettings.legalName')}
-                              className={cn(
-                                "w-full bg-surface border border-border rounded-xl p-3 font-semibold outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content text-sm",
-                                errors.taxSettings?.legalName && "ring-2 ring-danger border-danger"
-                              )}
-                              placeholder={t('settings_page.tax.legal_name_placeholder', 'الاسم المسجل في الشهادة الضريبية')}
-                            />
-                            {errors.taxSettings?.legalName && <p className="text-xs text-danger font-bold">{errors.taxSettings.legalName.message}</p>}
-                          </div>
-                          <div className="space-y-2 sm:col-span-2">
+                          <IconInput
+                            type="text"
+                            maxLength={15}
+                            placeholder="300000000000003"
+                            required
+                            label={t('settings_page.tax.trn', 'الرقم الضريبي (TRN - 15 خانة)')}
+                            {...register('taxSettings.trn')}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/g, '').slice(0, 15);
+                              setValue('taxSettings.trn', val, { shouldValidate: true });
+                            }}
+                            className="text-left tracking-widest"
+                            error={errors.taxSettings?.trn?.message}
+                            dir="ltr"
+                          />
+                          <IconInput
+                            type="text"
+                            required
+                            label={t('settings_page.tax.legal_name', 'اسم المكلف القانوني')}
+                            {...register('taxSettings.legalName')}
+                            placeholder={t('settings_page.tax.legal_name_placeholder', 'الاسم المسجل في الشهادة الضريبية')}
+                            error={errors.taxSettings?.legalName?.message}
+                          />
+                          <div className="space-y-1.5 sm:col-span-2">
                              <div className="flex flex-wrap items-center justify-between gap-1.5 px-1">
                                 <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.tax.vat_rate', 'نسبة الضريبة القياسية')}</label>
                                 <span className="text-[10px] font-black text-brand bg-brand/10 px-2 py-0.5 rounded-full shrink-0">{t('settings_page.tax.saudi_vat_note', 'المملكة العربية السعودية: 15%')}</span>
                              </div>
-                            <div className="relative group">
-                              <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-content-muted">%</span>
-                              <input 
-                                type="number" 
-                                {...register('taxSettings.vatRate')}
-                                className={cn(
-                                  "w-full bg-surface border border-border rounded-xl p-3 pl-10 font-black outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content text-sm",
-                                  errors.taxSettings?.vatRate && "ring-2 ring-danger border-danger"
-                                )}
-                                min="0" max="100"
-                              />
-                            </div>
-                            {errors.taxSettings?.vatRate && <p className="text-xs text-danger font-bold">{errors.taxSettings.vatRate.message}</p>}
+                            <IconInput
+                              type="number"
+                              {...register('taxSettings.vatRate')}
+                              endIcon={<span className="font-black text-content-muted">%</span>}
+                              error={errors.taxSettings?.vatRate?.message}
+                              min="0" max="100"
+                            />
                           </div>
 
                           <div className="space-y-3 sm:col-span-2 border-t border-border/50 pt-4">
@@ -1297,11 +1280,12 @@ export default function Settings({ tenantId }: SettingsProps) {
 
               {/* Search Bar */}
               <div className="p-4 sm:p-6 border-b border-border bg-surface flex flex-col sm:flex-row gap-3">
-                <input
+                <IconInput
                   type="text"
+                  startIcon={Search}
                   placeholder={t('settings_page.data.search_placeholder', 'ابحث باسم الموظف، العملية، أو التفاصيل...')}
                   value={searchTerm}
-                  className="flex-1 bg-surface border border-border px-4 py-3 rounded-2xl text-sm font-bold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
+                  containerClassName="flex-1"
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
                 <button

@@ -63,7 +63,7 @@ import { cn } from '../lib/utils';
 import Header from './Header';
 import TailorStatementReport from './TailorStatementReport';
 import Branding from './Branding';
-import Select from './ui/Select';
+import { SmartSelect } from './ui/SmartSelect';
 import { DatePicker } from './ui/DatePicker';
 import { ResponsiveTable } from './ui/ResponsiveTable';
 import { useToast } from '../contexts/ToastContext';
@@ -947,7 +947,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
       {/* Filters Bar */}
       <div id="reports-filters-bar" className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm flex flex-col lg:flex-row lg:items-center gap-4 sm:gap-6">
         <div className="relative w-full lg:flex-1">
-          <div className="flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface rounded-2xl px-4 h-12 transition-all shadow-inner shadow-black/5">
+          <div className="flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface focus-within:ring-2 focus-within:ring-brand/20 rounded-2xl px-4 h-12 transition-all shadow-inner shadow-black/5">
             <Search className="text-content-muted shrink-0" size={18} />
             <input
               id="reports-search-input"
@@ -1029,19 +1029,19 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           </div>
 
           <div className="flex-1 sm:flex-none sm:min-w-[160px]">
-            <Select 
+            <SmartSelect
               value={selectedStaff}
               onChange={(val) => setSelectedStaff(val)}
               options={[
                 { value: 'all', label: t('reports.filter_all_staff') },
                 ...staff.map(s => ({ value: s.id, label: s.name }))
               ]}
-              className="h-12 rounded-2xl bg-surface-muted/50 hover:bg-surface-muted/80 border-border text-sm font-bold text-content shadow-inner shadow-black/5 focus:ring-0 focus:border-brand/40"
+              className="bg-surface-muted"
             />
           </div>
 
           <div className="flex-1 sm:flex-none sm:min-w-[160px]">
-            <Select 
+            <SmartSelect
               value={paymentStatus}
               onChange={(val) => setPaymentStatus(val)}
               options={[
@@ -1050,7 +1050,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 { value: 'partial', label: t('common.payment_methods.partial') },
                 { value: 'unpaid', label: t('reports.payment_unpaid') }
               ]}
-              className="h-12 rounded-2xl bg-surface-muted/50 hover:bg-surface-muted/80 border-border text-sm font-bold text-content shadow-inner shadow-black/5 focus:ring-0 focus:border-brand/40"
+              className="bg-surface-muted"
             />
           </div>
         </div>

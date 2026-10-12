@@ -42,6 +42,7 @@ import { Combobox, Transition, Dialog } from '@headlessui/react';
 import { Customer, InventoryItem, OrderItem, Order, PaymentMethod, OrderStatus } from '../types';
 import { cn, generateOrderNumber } from '../lib/utils';
 import { SmartSelect } from './ui/SmartSelect';
+import { IconInput } from './ui/IconInput';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { PriceDisplay } from './PriceDisplay';
 import { decodeInventoryDescription, calculateItemTax, hasValidTaxSettings } from '../utils/b2bHelper';
@@ -1629,29 +1630,26 @@ const invoiceData: InvoiceData | null = completedOrder ? {
       {/* Main Pane (70% width on Desktop) */}
       <div className="w-full md:w-[70%] flex flex-col gap-4 lg:gap-5 overflow-x-hidden transition-all duration-300 p-4 sm:p-6 overflow-y-auto h-auto md:h-full flex-1">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="group flex-1 flex items-center bg-surface border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand focus-within:border-brand transition-all shadow-sm overflow-hidden h-11">
-            <div className="flex items-center justify-center px-3.5 border-e border-border/60 text-content-muted group-focus-within:text-brand h-full shrink-0">
-              <Search size={18} />
-            </div>
-            <input
-              ref={searchInputRef}
-              type="text"
-              placeholder={t('pos.search_placeholder')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 min-w-0 bg-transparent border-none py-2 px-3 text-sm text-content outline-none ring-0 placeholder:text-content-muted/60 font-bold"
-            />
-            <div className="flex items-center justify-center px-3 border-s border-border/60 h-full shrink-0">
+          <IconInput
+            ref={searchInputRef}
+            type="text"
+            startIcon={Search}
+            endIcon={
               <button
                 type="button"
                 onClick={() => setIsScannerOpen(true)}
                 aria-label={t('pos.scan_barcode')}
-                className="text-content-muted hover:text-brand transition-colors flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded cursor-pointer"
+                className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded cursor-pointer"
               >
                 <Barcode size={18} />
               </button>
-            </div>
-          </div>
+            }
+            placeholder={t('pos.search_placeholder')}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            containerClassName="flex-1"
+            className="font-bold"
+          />
 
           <button
             onClick={() => setIsShortcutsModalOpen(true)}
@@ -2523,15 +2521,12 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                  <div>
-                    <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">{t('pos.garment_type_label')}</label>
-                    <input 
-                      type="text" 
-                      value={customItemForm.garmentType}
-                      onChange={(e) => setCustomItemForm({...customItemForm, garmentType: e.target.value})}
-                      className="w-full p-2.5 sm:p-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-sm sm:text-base font-semibold text-content"
-                    />
-                  </div>
+                  <IconInput
+                    type="text"
+                    label={t('pos.garment_type_label')}
+                    value={customItemForm.garmentType}
+                    onChange={(e) => setCustomItemForm({...customItemForm, garmentType: e.target.value})}
+                  />
                   <div>
                     <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">{t('orders.price')}</label>
                     <div className="flex items-center bg-surface border border-border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-brand/20 focus-within:border-brand transition-all">
@@ -2705,33 +2700,31 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-content mb-1">{t('pos.customer_name')} <span className="text-danger">*</span></label>
-                      <input 
-                        type="text" 
+                      <IconInput
+                        type="text"
                         value={newCustomerName}
                         onChange={(e) => setNewCustomerName(e.target.value)}
-                        className="w-full p-2.5 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold"
                         placeholder={t('pos.customer_name_placeholder')}
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-content mb-1">{t('login.phone')} <span className="text-danger">*</span></label>
-                      <input 
-                        type="tel" 
+                      <IconInput
+                        type="tel"
                         value={newCustomerPhone}
                         onChange={(e) => setNewCustomerPhone(formatSaudiPhone(e.target.value))}
                         onBlur={(e) => setNewCustomerPhone(formatSaudiPhone(e.target.value))}
-                        className="w-full p-2.5 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-right"
                         placeholder="05XXXXXXXX"
                         dir="ltr"
+                        className="text-right"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-content mb-1">{t('pos.trn_label_clean')} <span className="text-content-muted text-xs font-normal">{t('pos.for_b2b_only')}</span></label>
-                      <input 
-                        type="text" 
+                      <IconInput
+                        type="text"
                         value={newCustomerVat}
                         onChange={(e) => setNewCustomerVat(e.target.value)}
-                        className="w-full p-2.5 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold" 
                         placeholder={t('pos.optional_b2b_desc')}
                       />
                     </div>
@@ -2802,22 +2795,20 @@ const invoiceData: InvoiceData | null = completedOrder ? {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-bold text-content mb-2">{t('pos.company_name')} <span className="text-danger">*</span></label>
-                <input
+                <IconInput
                   type="text"
                   placeholder={t('pos.company_name_placeholder')}
                   value={b2bData.companyName}
                   onChange={e => setB2bData({...b2bData, companyName: e.target.value})}
-                  className="w-full p-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold"
                 />
               </div>
               <div>
                 <label className="block text-sm font-bold text-content mb-2">{t('pos.trn_label_clean')} <span className="text-danger">*</span></label>
-                <input
+                <IconInput
                   type="text"
                   placeholder="300000000000003"
                   value={b2bData.trn}
                   onChange={e => setB2bData({...b2bData, trn: e.target.value})}
-                  className="w-full p-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold"
                 />
               </div>
             </div>

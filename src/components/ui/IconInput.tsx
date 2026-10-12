@@ -83,12 +83,14 @@ export const IconInput = forwardRef<HTMLInputElement, IconInputProps>(({
           </div>
         )}
 
-        {/* Input area */}
+        {/* Input area -- aria-invalid/aria-describedby default from `error`+`id` so callers don't need to wire them by hand; an explicit value in ...props still wins. */}
         <input
           ref={ref}
           id={id}
           type={type}
           disabled={disabled}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error && id ? `${id}-error` : undefined}
           className={cn(
             "flex-1 h-full min-w-0 bg-transparent px-3 text-sm text-content outline-none border-none placeholder:text-content-muted/40 font-semibold focus:ring-0 focus:border-none",
             disabled && "cursor-not-allowed",
@@ -112,9 +114,10 @@ export const IconInput = forwardRef<HTMLInputElement, IconInputProps>(({
         )}
       </div>
 
-      {/* Error Message */}
+      {/* Error Message -- id matches the id-error convention so callers can
+          wire aria-describedby (passed through via ...props) to a real element. */}
       {error && (
-        <span className="text-xs font-semibold text-danger px-1 mt-0.5 animate-fadeIn">
+        <span id={id ? `${id}-error` : undefined} className="text-xs font-semibold text-danger px-1 mt-0.5 animate-fadeIn">
           {error}
         </span>
       )}

@@ -76,7 +76,14 @@
   --size-input-padding: 0.75rem 1rem;
   --size-text-sm: 0.875rem;
   --size-text-base: 1rem;
-  --radius-md: 0.5rem;
+  /* seen-fields-unification-task.md #1: 12px (rounded-xl) هو المعيار
+     المعتمد لاستدارة الحقول -- كان 0.5rem (8px)، لا يطابق الشكل الفعلي
+     الأكثر انتشاراً في المشروع (IconInput ونماذج الشاشات الرئيسية). هذا
+     المتغيّر هو المصدر الحقيقي الذي يغذّي قاعدة !important العامة أسفل
+     (button/input/select/textarea) و Select.tsx/SmartSelect.tsx -- وليس
+     design-system/tokens.css (--seen-radius)، وهو توثيق غير مرتبط فعلياً
+     بأي كلاس Tailwind مُستخدَم، حُدِّث بنفس القيمة في مكانه فقط للتوثيق. */
+  --radius-md: 0.75rem;
 }
 
 :root {
