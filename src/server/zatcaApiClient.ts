@@ -32,6 +32,31 @@
  *    official Postman collection/API reference (not publicly discoverable
  *    -- swagger/openapi probing off this gateway all 500'd) or another
  *    documented working example to compare against byte-for-byte.
+ *
+ * seen-week-plan-task.md day 1-2 follow-up (2026-10-12): added the missing
+ * `Accept-Language` header below (cheapest fix, item 1) -- not yet
+ * re-tested live against the real sandbox since adding it, so still
+ * unconfirmed whether that alone clears the 400. Also did item 3 (compare
+ * against known-working examples): the Fatoora developer community
+ * (https://zatca1.discourse.group) and a public integration guide
+ * (https://www.jibrid.com/blog/zatca-phase2-api-integration-guide) both
+ * confirm the exact same header set (Content-Type, OTP, Accept-Version:
+ * V2) and body shape (`{ csr: base64CSR }`) this file already sends --
+ * no structural difference found. One real lead surfaced there worth
+ * re-checking on the next live attempt even though it contradicts our own
+ * prior test: multiple other developers hit this identical generic 400
+ * specifically from a malformed CSR encoding (CSR must be a single
+ * continuous base64 string -- no PEM headers/footers, no embedded
+ * newlines/whitespace); one reported ZATCA's own Swagger sample CSR
+ * working while their externally-generated one didn't, with no further
+ * detail on why. generateZatcaCsr() in zatcaCsr.ts does already produce a
+ * single continuous base64 string (csrBase64, not the PEM-wrapped form),
+ * so this looks ruled out here too -- but given it's the one concrete,
+ * reproducible cause other integrators report for this exact symptom, it's
+ * worth explicitly re-confirming (e.g. dump the live-sent csrBase64 to a
+ * log line and inspect it byte-for-byte) before escalating to item 2
+ * (ZATCA's own EGS developer support, 19993 / info@zatca.gov.sa) as a
+ * last resort.
  */
 
 const ZATCA_BASE_URL: Record<'sandbox' | 'simulation' | 'production', string> = {
