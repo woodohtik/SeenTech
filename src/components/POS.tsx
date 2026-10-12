@@ -67,6 +67,9 @@ import ScannerModal from './ScannerModal';
 import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
 
 import { isRtlLang } from '../lib/direction';
+import { useVerticalConfig } from '../hooks/useVerticalConfig';
+import { useTenantCategoryPicker } from '../hooks/useTenantCategoryPicker';
+import { LEGACY_INVENTORY_CATEGORY_SEED } from '../services/categoryService';
 
 // Body measurements live on the Customer record (not per order item), so a
 // custom-garment item's printed measurement table is the selected
@@ -623,23 +626,41 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
 
   const [selectedCategory, setSelectedCategory] = useState('all');
 
+  // seen-ux-fixes-batch-task.md #9 follow-up: فئات المخزون المخصصة لكل
+  // مستأجر (tenant_categories) بدل القيمة الثابتة category -- تبويبات
+  // النقطة تقرأ الآن category_key (الحر) مع رجوع آمن لـcategory (enum
+  // القديم) للعناصر التي لا تحمل category_key بعد.
+  const { inventoryCategories, isLegacyVertical } = useVerticalConfig();
+  const posCategorySeed = useMemo(
+    () =>
+      isLegacyVertical
+        ? LEGACY_INVENTORY_CATEGORY_SEED
+        : inventoryCategories.map((c) => ({ category_key: c.category_key, label_ar: c.label_ar })),
+    [isLegacyVertical, inventoryCategories]
+  );
+  const categoryPicker = useTenantCategoryPicker(tenantId, 'inventory', posCategorySeed);
+
   const uniqueCategories = React.useMemo(() => {
-    const list = new Set<string>();
-    inventory.forEach(item => {
-      if (item.category && item.showInPos !== false) {
-        list.add(item.category);
-      }
+    // فئات المستأجر الظاهرة (مرتّبة، غير المخفاة) تبقى ظاهرة دوماً كتبويبات
+    // ثابتة حتى لو لم يوجد بعد عنصر فيها -- استمرار لنفس سلوك تبويبي
+    // "أقمشة/جاهز" الثابتين سابقاً، معمّماً الآن لكل فئات المستأجر.
+    const tenantKeys = new Set(categoryPicker.options.map((o) => o.value));
+    // فئات على عناصر موجودة فعلياً لكنها غائبة عن tenant_categories (بيانات
+    // أقدم من هذا النظام، أو فئة أُخفيت لاحقاً وما زال عنصر قديم يحملها).
+    const extraKeys = new Set<string>();
+    inventory.forEach((item) => {
+      if (item.showInPos === false) return;
+      const key = item.category_key || item.category;
+      if (key && !tenantKeys.has(key)) extraKeys.add(key);
     });
-    const result = Array.from(list);
-    // Ensure we have some default categories shown even if empty
-    if (!result.includes('fabric')) result.push('fabric');
-    if (!result.includes('ready_made')) result.push('ready_made');
-    return ['all', ...result];
-  }, [inventory]);
+    return ['all', ...categoryPicker.options.map((o) => o.value), ...Array.from(extraKeys)];
+  }, [inventory, categoryPicker.options]);
 
   const getCategoryLabel = (cat: string) => {
+    if (cat === 'all') return t('pos.categories.all');
+    const custom = categoryPicker.options.find((o) => o.value === cat);
+    if (custom) return custom.label;
     switch (cat) {
-      case 'all': return t('pos.categories.all');
       case 'fabric': return t('pos.categories.fabric');
       case 'ready_made': return t('pos.categories.ready_made');
       case 'clothing': return t('pos.categories.clothing');
@@ -650,7 +671,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
 
   const filteredInventory = useMemo(() => inventory.filter(item =>
     item.showInPos !== false &&
-    (selectedCategory === 'all' || item.category === selectedCategory) &&
+    (selectedCategory === 'all' || (item.category_key || item.category) === selectedCategory) &&
     (item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
      item.barcode?.includes(searchQuery) ||
      item.sku?.includes(searchQuery))
@@ -1788,9 +1809,9 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                         {i18n.language === 'en' && item.nameEn ? item.nameEn : item.name}
                       </span>
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        {item.category && (
+                        {(item.category_key || item.category) && (
                           <span className="text-[10px] sm:text-xs text-content-muted bg-surface-muted px-2.5 py-0.5 rounded-full font-bold">
-                            {getCategoryLabel(item.category)}
+                            {getCategoryLabel(item.category_key || item.category)}
                           </span>
                         )}
                         <span className={cn(
