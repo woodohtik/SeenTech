@@ -340,8 +340,6 @@ function AppContent() {
                       userRole === 'billing_admin' || 
                       userRole === 'sales';
   const effectiveTenantId = (isSaaSStaff && impersonationTenantId) ? impersonationTenantId : tenantId;
-  
-  const is2FAVerified = true;
 
   // Trial & Subscription Expiry Checks
   const tenant = (currentUserStaff as any)?.tenant;
@@ -576,12 +574,24 @@ function AppContent() {
           <Route 
             path="/admin/*" 
             element={
-              (isSaaSStaff && is2FAVerified) ? (
+              isSaaSStaff ? (
                 <SaaSLayout userRole={userRole}>
                   <React.Suspense fallback={<PageSkeleton />}>
                     <Routes>
-                      <Route path="/dashboard" element={<RouteBoundary><SuperAdminDashboard /></RouteBoundary>} />
-                      <Route path="/tailors" element={<RouteBoundary><AdminTailors /></RouteBoundary>} />
+                      <Route path="/dashboard" element={
+                        <RouteBoundary>
+                          <RoleGuard allowedRoles={['super_admin', 'billing_admin', 'sales', 'support_tech']}>
+                            <SuperAdminDashboard />
+                          </RoleGuard>
+                        </RouteBoundary>
+                      } />
+                      <Route path="/tailors" element={
+                        <RouteBoundary>
+                          <RoleGuard allowedRoles={['super_admin', 'billing_admin', 'sales', 'support_tech']}>
+                            <AdminTailors />
+                          </RoleGuard>
+                        </RouteBoundary>
+                      } />
                       <Route path="/roles" element={
                         <RouteBoundary>
                           <RoleGuard allowedRoles={['super_admin']}>

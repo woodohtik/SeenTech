@@ -752,13 +752,13 @@ export default function Settings({ tenantId }: SettingsProps) {
                 </form>
               )}
 
-              {activeTab === 'branches' && (
+              {activeTab === 'branches' && hasPermission('branches.manage') && (
                 <div className="bg-surface rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm overflow-hidden">
                   <WarehouseManagement tenantId={tenantId} />
                 </div>
               )}
 
-              {activeTab === 'staff' && (
+              {activeTab === 'staff' && hasPermission('staff.manage') && (
                 <div className="space-y-5 sm:space-y-6">
                   <div className={cn("bg-surface-muted/30 p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-border flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-center", isRtl ? "sm:text-right" : "sm:text-left")}>
                     <div className="w-12 h-12 sm:w-14 sm:h-14 bg-brand/10 text-brand rounded-2xl flex items-center justify-center shadow-inner shrink-0">
@@ -826,7 +826,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                 <InvoiceLayoutSettings tenantId={tenantId} />
               )}
 
-              {activeTab === 'tax' && (
+              {activeTab === 'tax' && hasPermission('settings.tax') && (
                 <form onSubmit={handleSubmit(onSave)} className="bg-surface p-4 sm:p-6 lg:p-8 rounded-2xl lg:rounded-3xl border border-border shadow-xl shadow-brand/5 space-y-6 w-full">
                   <div className={cn("flex flex-col sm:flex-row items-center sm:items-start gap-4 border-b border-border pb-6 text-center", isRtl ? "sm:text-right" : "sm:text-left")}>
                     <div className="p-3 bg-brand/10 text-brand rounded-2xl shadow-inner shrink-0">
@@ -989,11 +989,11 @@ export default function Settings({ tenantId }: SettingsProps) {
                 </form>
               )}
 
-              {activeTab === 'zatca' && (
+              {activeTab === 'zatca' && hasPermission('settings.tax') && (
                 <ZatcaOnboardingSettings tenantId={tenantId} />
               )}
 
-              {activeTab === 'categories' && (
+              {activeTab === 'categories' && canEdit && (
                 <CategoriesSettings tenantId={tenantId} />
               )}
 
@@ -1001,15 +1001,15 @@ export default function Settings({ tenantId }: SettingsProps) {
                 <PrinterSettings />
               )}
 
-              {activeTab === 'whatsapp' && (
+              {activeTab === 'whatsapp' && canViewWhatsApp && (
                 <WhatsAppSettings />
               )}
 
-              {activeTab === 'billing' && (
+              {activeTab === 'billing' && canViewBilling && (
                 <BillingSettings tenantId={tenantId} />
               )}
 
-              {activeTab === 'notifications' && (
+              {activeTab === 'notifications' && canViewNotifications && (
                 <form onSubmit={handleSubmit(onSave)} className="bg-surface p-5 sm:p-8 md:p-10 rounded-2xl md:rounded-[3rem] border border-border shadow-xl shadow-brand/5 space-y-6 md:space-y-10 w-full">
                    <div className={cn("flex flex-col sm:flex-row items-center sm:items-start gap-4 border-b border-border pb-6 sm:pb-8 text-center", isRtl ? "sm:text-right" : "sm:text-left")}>
                       <div className="p-4 bg-warning/10 text-warning rounded-[1.5rem] shadow-inner">
@@ -1081,7 +1081,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                 </form>
               )}
 
-              {activeTab === 'data' && (
+              {activeTab === 'data' && (currentStaff?.role === 'owner' || currentStaff?.role === 'super_admin') && (
                 <div className="bg-surface p-5 sm:p-8 md:p-10 rounded-2xl md:rounded-[3rem] border border-border shadow-xl shadow-brand/5 space-y-6 md:space-y-10 w-full">
                    <div className={cn("flex flex-col sm:flex-row items-center sm:items-start gap-4 border-b border-border pb-6 sm:pb-8 text-center", isRtl ? "sm:text-right" : "sm:text-left")}>
                       <div className="p-4 bg-danger/10 text-danger rounded-[1.5rem] shadow-inner">

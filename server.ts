@@ -670,8 +670,26 @@ app.post("/api/orders/:id/notify-new-order", authenticate, asyncHandler(async (r
   res.json({ ok: true, sent });
 }));
 
-app.get("/api/health", (req, res) => {
-  res.json({ status: "ok" });
+// seen-deep-technical-audit.md -- حرج #8: كان يُرجع "ok" دائماً حتى لو
+// قاعدة البيانات معطوبة بالكامل، فلا قيمة فعلية لربطه بمراقبة توقف خارجية.
+// فحص حقيقي الآن: استعلام خفيف فعلي (بلا بيانات، head فقط) بمهلة قصيرة.
+app.get("/api/health", async (req, res) => {
+  try {
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5_000);
+    const { error } = await supabaseAdmin
+      .from("tenants")
+      .select("id", { head: true, count: "exact" })
+      .limit(1)
+      .abortSignal(controller.signal);
+    clearTimeout(timeout);
+    if (error) throw error;
+    res.json({ status: "ok" });
+  } catch (err: any) {
+    console.error("[health] database check failed:", err?.message || err);
+    res.status(503).json({ status: "error", database: "unreachable" });
+  }
 });
 
 app.get("/api/inventory-adjustments", authenticate, async (req: any, res) => {
