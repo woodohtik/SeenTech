@@ -137,6 +137,7 @@ export async function submitComplianceInvoice(
   const url = `${ZATCA_BASE_URL[env]}/compliance/invoices`;
   const res = await fetch(url, {
     method: 'POST',
+    signal: AbortSignal.timeout(10_000),
     headers: {
       'Content-Type': 'application/json',
       'Accept-Version': 'V2',
@@ -171,9 +172,11 @@ export async function requestProductionCsid(
   const url = `${ZATCA_BASE_URL[env]}/production/csids`;
   const res = await fetch(url, {
     method: 'POST',
+    signal: AbortSignal.timeout(10_000),
     headers: {
       'Content-Type': 'application/json',
       'Accept-Version': 'V2',
+      'Accept-Language': 'en',
       Authorization: basicAuthHeader(complianceAuth),
     },
     body: JSON.stringify({ compliance_request_id: complianceRequestId }),
@@ -207,6 +210,7 @@ export async function reportInvoice(
   const url = `${ZATCA_BASE_URL[env]}/invoices/reporting/single`;
   const res = await fetch(url, {
     method: 'POST',
+    signal: AbortSignal.timeout(10_000),
     headers: {
       'Content-Type': 'application/json',
       'Accept-Version': 'V2',
@@ -242,6 +246,7 @@ export async function clearInvoice(
   const url = `${ZATCA_BASE_URL[env]}/invoices/clearance/single`;
   const res = await fetch(url, {
     method: 'POST',
+    signal: AbortSignal.timeout(10_000),
     headers: {
       'Content-Type': 'application/json',
       'Accept-Version': 'V2',
@@ -284,6 +289,7 @@ export async function requestComplianceCsid(
   const url = `${ZATCA_BASE_URL[env]}/compliance`;
   const res = await fetch(url, {
     method: 'POST',
+    signal: AbortSignal.timeout(10_000),
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
