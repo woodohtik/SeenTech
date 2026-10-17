@@ -204,6 +204,16 @@ app.get("/api/public/invoices/:id", async (req, res) => {
     // Lazy import to ensure supabaseAdmin is initialized
     const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
 
+    // seen-deep-technical-audit.md Medium tier: this route had no rate limit
+    // at all, unlike every other /api/public/* route. Low actual risk --
+    // `id` is orders.id, an unguessable UUID, not a short/sequential token
+    // -- but added for consistency with the rest. Same shared
+    // tracking_attempts limiter the order-tracking routes already use.
+    const { allowed, recordFailure } = await checkTrackingRateLimit(supabaseAdmin, clientIp(req));
+    if (!allowed) {
+      return res.status(429).json({ error: 'محاولات كثيرة جداً. انتظر دقيقة ثم أعد المحاولة.' });
+    }
+
     const { data: orderData, error: orderError } = await supabaseAdmin
       .from('orders')
       .select('order_number, order_date, total_amount, tax_amount, tenant_id, customer_id')
@@ -211,6 +221,7 @@ app.get("/api/public/invoices/:id", async (req, res) => {
       .maybeSingle();
 
     if (orderError || !orderData) {
+      await recordFailure();
       return res.status(404).json({ error: 'Invoice not found' });
     }
 
@@ -1243,6 +1254,20 @@ app.post("/api/tenant/settings", authenticate, authorize(['owner', 'admin']), as
       if (cleaned.length === 9) return `+966${cleaned}`;
       return phone;
     };
+
+    // seen-deep-technical-audit.md Medium tier: vatRate had a real Zod check
+    // client-side (src/lib/validations.ts settingsSchema, 0-100) but nothing
+    // re-checked it server-side -- a direct API call bypassing that form
+    // could still write a garbage default_tax_rate (no CHECK constraint on
+    // that column either). Scoped to just this field rather than pulling in
+    // the whole client-facing schema, which depends on the i18n t() helper
+    // for its messages.
+    if (data.taxSettings?.vatRate !== undefined) {
+      const vatRate = Number(data.taxSettings.vatRate);
+      if (!Number.isFinite(vatRate) || vatRate < 0 || vatRate > 100) {
+        return res.status(400).json({ error: 'نسبة الضريبة يجب أن تكون رقماً بين 0 و 100' });
+      }
+    }
 
     const tax_settings = {
       ...data.taxSettings,
