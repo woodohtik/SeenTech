@@ -3,7 +3,7 @@ import path from "path";
 import fs from "fs";
 import dotenv from 'dotenv';
 import helmet from "helmet";
-import rateLimit from "express-rate-limit";
+import { globalRateLimiter } from "./src/server/rateLimiter.ts";
 import { authenticate, authorize } from "./src/server/middleware/authMiddleware.ts";
 import { registerPrintRelay } from "./src/server/printRelay.ts";
 import { initServerLogger, captureServerException, logger } from "./src/server/logger.ts";
@@ -136,7 +136,12 @@ app.use(helmet({
 // request that must never be rate-limited, or the app wrongly reports
 // "offline" while the internet is actually fine) would get a 429 like any
 // other route.
-app.use(rateLimit({ windowMs: 60_000, max: 120, skip: (req) => req.path === '/api/health' }));
+//
+// seen-rate-limiting-redis-task.md: was express-rate-limit's in-memory
+// MemoryStore -- ineffective on Vercel serverless, each function instance
+// keeps its own counter. Now backed by Upstash Redis (fail-open on Upstash
+// errors, see src/server/rateLimiter.ts).
+app.use(globalRateLimiter((req) => req.path === '/api/health'));
 
 // حجم كبير لأن بيانات الرسم النقطي للفاتورة قد تصل لعدة ميغابايت
 app.use(express.json({ limit: '25mb' }));
