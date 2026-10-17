@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+import { logger } from './logger.ts';
 
 dotenv.config();
 
@@ -10,7 +11,7 @@ if (supabaseUrl && supabaseUrl.endsWith('/')) {
 const supabaseServiceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 
 if (!supabaseUrl || !supabaseServiceKey || !supabaseUrl.startsWith('http')) {
-  console.warn(
+  logger.warn(
     '[supabase-admin] Missing or invalid VITE_SUPABASE_URL and/or SUPABASE_SERVICE_ROLE_KEY. ' +
       'Server-side Supabase queries (role/tenant lookups) will fail. ' +
       'SUPABASE_SERVICE_ROLE_KEY must be server-side only — never expose it with a VITE_ prefix.'

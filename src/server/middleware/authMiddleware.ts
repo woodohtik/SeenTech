@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { adminAuth } from '../firebase-admin.ts';
 import { supabaseAdmin } from '../supabase-admin.ts';
+import { logger } from '../logger.ts';
 
 // This project's Supabase auth now signs access tokens with an asymmetric
 // ES256 key (not the legacy shared HS256 secret) -- verify against its public
@@ -38,10 +39,10 @@ async function logSecurityEvent(entry: Record<string, unknown>): Promise<void> {
       created_at: new Date().toISOString(),
     });
     if (error) {
-      console.warn('[security_logs] insert skipped/failed:', error.message);
+      logger.warn({ err: error }, '[security_logs] insert skipped/failed');
     }
   } catch (err) {
-    console.warn('[security_logs] insert skipped/failed:', err);
+    logger.warn({ err }, '[security_logs] insert skipped/failed');
   }
 }
 
@@ -96,7 +97,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       try {
         decodedToken = await adminAuth.verifyIdToken(idToken);
       } catch (verifyError: any) {
-        console.warn('[authMiddleware] verifyIdToken failed:', verifyError.message);
+        logger.warn({ err: verifyError }, '[authMiddleware] verifyIdToken failed');
       }
     }
 
@@ -121,11 +122,17 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       .eq('uid', decodedToken.uid)
       .maybeSingle();
     if (saasError) {
-      console.error('[authMiddleware] saas_users lookup failed:', saasError.message);
+      logger.error({ err: saasError }, '[authMiddleware] saas_users lookup failed');
     }
     if (saasUser) {
       req.user.role = saasUser.role;
       req.user.tenantId = 'saas_management';
+      // seen-structured-logging-task.md: every log line downstream of this
+      // point on this request now carries tenantId/staffId automatically --
+      // req.log was set to a bare per-request child logger by server.ts's
+      // top-level middleware (correlation id only) before auth resolved who
+      // the caller actually is.
+      if ((req as any).log) (req as any).log = (req as any).log.child({ tenantId: req.user.tenantId });
       return next();
     }
 
@@ -136,7 +143,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       .eq('uid', decodedToken.uid)
       .maybeSingle();
     if (staffError) {
-      console.error('[authMiddleware] staff lookup failed:', staffError.message);
+      logger.error({ err: staffError }, '[authMiddleware] staff lookup failed');
     }
     if (staffRow) {
       // SECURITY: a deactivated employee's existing JWT is otherwise still
@@ -159,6 +166,9 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       req.user.role = staffRow.role;
       req.user.tenantId = staffRow.tenant_id;
       req.user.staffId = staffRow.id;
+      if ((req as any).log) {
+        (req as any).log = (req as any).log.child({ tenantId: staffRow.tenant_id, staffId: staffRow.id });
+      }
       return next();
     }
 
@@ -180,7 +190,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     });
     return res.status(403).json({ error: 'Forbidden: No role assigned' });
   } catch (error) {
-    console.error('Auth Middleware Error:', error);
+    logger.error({ err: error }, 'Auth Middleware Error');
     return res.status(401).json({ error: 'Unauthorized: Invalid token' });
   }
 };
@@ -216,7 +226,7 @@ export const authorize = (roles: string[]) => {
 
       return res.status(403).json({ error: 'Forbidden: Insufficient permissions' });
     } catch (error) {
-      console.error('Authorize Middleware Error:', error);
+      logger.error({ err: error }, 'Authorize Middleware Error');
       return res.status(403).json({ error: 'Forbidden: Insufficient permissions' });
     }
   };

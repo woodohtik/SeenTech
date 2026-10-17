@@ -64,6 +64,7 @@ import crypto from 'crypto';
 import net from 'net';
 import { authenticate } from './middleware/authMiddleware.ts';
 import { supabaseAdmin } from './supabase-admin.ts';
+import { logger } from './logger.ts';
 
 /* ============================ الأنواع ============================ */
 
@@ -285,7 +286,7 @@ const sweep = async () => {
 
     await supabaseAdmin.from('print_pair_attempts').delete().lt('reset_at', nowIso());
   } catch (e: any) {
-    console.warn('[print-relay] فشل التنظيف الدوري:', e?.message || e);
+    logger.warn({ err: e }, '[print-relay] فشل التنظيف الدوري');
   }
 };
 
@@ -448,8 +449,12 @@ export function registerPrintRelay(app: Express): void {
       }
       if (insertError) throw insertError;
 
-      console.log(
-        `[print-relay] محطة جديدة "${hostname}" (${platform}) — رمز الاقتران ${pairCode} — ${printers.length} طابعة`
+      // pairCode deliberately passed as a structured field (redacted by
+      // logger.ts's SENSITIVE_PATHS), never interpolated into the message
+      // string -- redact only scrubs structured fields, not free text.
+      logger.info(
+        { hostname, platform, printerCount: printers.length, pairCode },
+        '[print-relay] محطة جديدة مسجَّلة'
       );
 
       res.json({
@@ -462,7 +467,7 @@ export function registerPrintRelay(app: Express): void {
         resumed: false,
       });
     } catch (e: any) {
-      console.error('[print-relay] /agent/hello:', e?.message || e);
+      logger.error({ err: e }, '[print-relay] /agent/hello');
       res.status(500).json({ ok: false, error: 'تعذر تسجيل المحطة. حاول مرة أخرى.' });
     }
   });
@@ -531,7 +536,7 @@ export function registerPrintRelay(app: Express): void {
 
       if (!clientGone && !res.writableEnded) res.status(204).end();
     } catch (e: any) {
-      console.error('[print-relay] /agent/poll:', e?.message || e);
+      logger.error({ err: e }, '[print-relay] /agent/poll');
       if (!res.writableEnded) res.status(500).json({ ok: false, error: 'خطأ في السيرفر أثناء انتظار المهام.' });
     }
   });
@@ -573,11 +578,11 @@ export function registerPrintRelay(app: Express): void {
         .update({ status: ok ? 'done' : 'failed', error, bytes, updated_at: nowIso() })
         .eq('id', jobId);
 
-      if (!ok) console.warn(`[print-relay] فشلت المهمة ${jobId}: ${error}`);
+      if (!ok) logger.warn({ jobId, error }, '[print-relay] فشلت مهمة طباعة');
 
       res.json({ ok: true });
     } catch (e: any) {
-      console.error('[print-relay] /agent/result:', e?.message || e);
+      logger.error({ err: e }, '[print-relay] /agent/result');
       res.status(500).json({ ok: false, error: 'تعذر تسجيل نتيجة المهمة.' });
     }
   });
@@ -636,7 +641,7 @@ export function registerPrintRelay(app: Express): void {
         station: await publicStation(station as StationRow),
       });
     } catch (e: any) {
-      console.error('[print-relay] /pair:', e?.message || e);
+      logger.error({ err: e }, '[print-relay] /pair');
       res.status(500).json({ ok: false, error: 'تعذر إتمام الاقتران. حاول مرة أخرى.' });
     }
   });
@@ -675,7 +680,7 @@ export function registerPrintRelay(app: Express): void {
 
       res.json({ ok: true });
     } catch (e: any) {
-      console.error('[print-relay] /unpair:', e?.message || e);
+      logger.error({ err: e }, '[print-relay] /unpair');
       res.status(500).json({ ok: false, error: 'تعذر إلغاء الاقتران. حاول مرة أخرى.' });
     }
   });
@@ -698,7 +703,7 @@ export function registerPrintRelay(app: Express): void {
 
       res.json({ ok: true, station: await publicStation(station) });
     } catch (e: any) {
-      console.error('[print-relay] /station/:id:', e?.message || e);
+      logger.error({ err: e }, '[print-relay] /station/:id');
       res.status(500).json({ ok: false, error: 'تعذر قراءة حالة المحطة.' });
     }
   });
@@ -783,7 +788,7 @@ export function registerPrintRelay(app: Express): void {
 
       res.json({ ok: true, jobId });
     } catch (e: any) {
-      console.error('[print-relay] /job:', e?.message || e);
+      logger.error({ err: e }, '[print-relay] /job');
       res.status(500).json({ ok: false, error: 'تعذرت إضافة مهمة الطباعة.' });
     }
   });
@@ -823,7 +828,7 @@ export function registerPrintRelay(app: Express): void {
         },
       });
     } catch (e: any) {
-      console.error('[print-relay] /job/:id:', e?.message || e);
+      logger.error({ err: e }, '[print-relay] /job/:id');
       res.status(500).json({ ok: false, error: 'تعذرت قراءة حالة المهمة.' });
     }
   });
@@ -873,7 +878,7 @@ export function registerPrintRelay(app: Express): void {
       await sendRawToTcpPrinter(String(host).trim(), tcpPort, buffer);
       res.json({ ok: true, bytes: buffer.length });
     } catch (err: any) {
-      console.error('[print/raw]', err?.message || err);
+      logger.error({ err }, '[print/raw]');
       res.status(502).json({ ok: false, error: err?.message || 'فشل إرسال البيانات للطابعة.' });
     }
   });
@@ -916,5 +921,5 @@ export function registerPrintRelay(app: Express): void {
     socket.connect(tcpPort, String(host).trim(), () => finish(true));
   });
 
-  console.log('[print-relay] وسيط الطباعة السحابي جاهز على /api/print/*');
+  logger.info('[print-relay] وسيط الطباعة السحابي جاهز على /api/print/*');
 }

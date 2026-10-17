@@ -27,3 +27,6 @@ print-agent/dist/
 /playwright-report/
 /playwright/.cache/
 /playwright/.auth/
+
+.vercel
+.env*

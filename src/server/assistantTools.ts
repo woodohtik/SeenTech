@@ -1,4 +1,5 @@
 import { supabaseAdmin } from './supabase-admin.ts';
+import { logger } from './logger.ts';
 
 // ملاحظة بناء: 'ai' و'zod' كلاهما حزمتان ESM-only فقط (package.json: "type":
 // "module"). هذا الملف يُحزَّم ضمن server.ts بصيغة CJS عبر esbuild
@@ -112,7 +113,7 @@ async function logToolCall(
       deny_reason: denyReason || null,
     });
   } catch (err) {
-    console.error('[assistant_tool_calls] insert failed:', err);
+    logger.error({ err }, '[assistant_tool_calls] insert failed');
   }
 }
 

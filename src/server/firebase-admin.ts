@@ -1,5 +1,6 @@
 import admin from 'firebase-admin';
 import dotenv from 'dotenv';
+import { logger } from './logger.ts';
 
 dotenv.config();
 
@@ -16,7 +17,7 @@ if (!admin.apps.length) {
         try {
           serviceAccount = JSON.parse(Buffer.from(serviceAccountVar, 'base64').toString());
         } catch (e) {
-          console.error('FIREBASE_SERVICE_ACCOUNT is neither valid JSON nor valid Base64 JSON.');
+          logger.error({ err: e }, 'FIREBASE_SERVICE_ACCOUNT is neither valid JSON nor valid Base64 JSON.');
         }
       }
 
@@ -30,20 +31,20 @@ if (!admin.apps.length) {
           credential: admin.credential.cert(serviceAccount),
           databaseURL: process.env.VITE_FIREBASE_DATABASE_URL || `https://${serviceAccount.project_id}.firebaseio.com`
         });
-        console.log('[DEBUG] Firebase Admin initialized with service account.');
+        logger.debug('[DEBUG] Firebase Admin initialized with service account.');
       }
     } else if (process.env.VITE_FIREBASE_PROJECT_ID) {
         // Fallback to minimal initialization (useful for client-side matching roles)
         admin.initializeApp({
           projectId: process.env.VITE_FIREBASE_PROJECT_ID
         });
-        console.log('[DEBUG] Firebase Admin initialized with Project ID only.');
+        logger.debug('[DEBUG] Firebase Admin initialized with Project ID only.');
     } else {
-        console.warn('No Firebase Admin credentials provided. Attempting default initialization...');
+        logger.warn('No Firebase Admin credentials provided. Attempting default initialization...');
         admin.initializeApp();
     }
   } catch (error) {
-    console.error('Firebase Admin initialization error:', error);
+    logger.error({ err: error }, 'Firebase Admin initialization error');
   }
 }
 

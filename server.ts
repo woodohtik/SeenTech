@@ -6,7 +6,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { authenticate, authorize } from "./src/server/middleware/authMiddleware.ts";
 import { registerPrintRelay } from "./src/server/printRelay.ts";
-import { initServerLogger, captureServerException } from "./src/server/logger.ts";
+import { initServerLogger, captureServerException, logger } from "./src/server/logger.ts";
 
 dotenv.config();
 initServerLogger();
@@ -22,6 +22,19 @@ const app = express();
 // لا يثق بها؛ قراءتها يدوياً كما في clientIp() أدناه لا تحلّ هذا). Vercel
 // يمرّ عبر قفزة وكيل واحدة موثوقة قبل الوصول لدالة السيرفر.
 app.set('trust proxy', 1);
+
+// seen-structured-logging-task.md: every request gets a child pino logger
+// carrying a correlation id, attached to req.log so every handler below can
+// log structured JSON instead of console.*. Reuses Vercel's own x-vercel-id
+// when present (ties our log lines to Vercel's own request trace) instead
+// of inventing a second id; falls back to a fresh UUID for local dev where
+// that header doesn't exist. tenant_id/staff_id get added by authenticate()
+// itself once it resolves req.user, not here -- this runs before auth.
+app.use((req: any, res, next) => {
+  const requestId = (req.headers['x-vercel-id'] as string) || crypto.randomUUID();
+  req.log = logger.child({ requestId });
+  next();
+});
 
 // E-2 (security-fix-tasklist.md) / seen-master-backlog-and-structure.md P4:
 // CSP allowlist below is the result of a full repo survey of every external
@@ -254,7 +267,7 @@ app.get("/api/public/invoices/:id", async (req, res) => {
       customer: customerData ? { name: customerData.name } : null,
     });
   } catch (err) {
-    console.error("Error fetching invoice:", err);
+    logger.error({ err }, "Error fetching invoice");
     res.status(500).json({ error: 'تعذّر تحميل الفاتورة حالياً، حاول بعد قليل أو تواصل مع المتجر' });
   }
 });
@@ -296,7 +309,7 @@ function clientIp(req: express.Request): string {
 // every caller of this helper reports the same way the global handler does.
 // Still a safe no-op with no DSN set (see src/server/logger.ts).
 function internalError(res: express.Response, context: string, err: unknown): express.Response {
-  console.error(context, err);
+  logger.error({ err }, context);
   captureServerException(err, { context });
   return res.status(500).json({ error: 'Internal Server Error' });
 }
@@ -513,7 +526,7 @@ app.post("/api/public/order-tracking/:token/subscribe", asyncHandler(async (req,
     { onConflict: 'tracking_token,fcm_token' }
   );
   if (error) {
-    console.error('[order-tracking/subscribe]', error);
+    logger.error({ err: error }, '[order-tracking/subscribe]');
     return res.status(500).json({ error: 'تعذّر تفعيل إشعارات تتبّع الطلب حالياً، حاول مرة أخرى لاحقاً' });
   }
 
@@ -626,7 +639,7 @@ app.post("/api/staff/push-subscribe", authenticate, asyncHandler(async (req: any
     { onConflict: 'staff_id,fcm_token' }
   );
   if (error) {
-    console.error('[staff/push-subscribe]', error);
+    logger.error({ err: error }, '[staff/push-subscribe]');
     return res.status(500).json({ error: 'تعذّر تفعيل إشعارات الموظف حالياً، حاول مرة أخرى لاحقاً' });
   }
 
@@ -717,7 +730,7 @@ app.get("/api/health", async (req, res) => {
     if (error) throw error;
     res.json({ status: "ok" });
   } catch (err: any) {
-    console.error("[health] database check failed:", err?.message || err);
+    logger.error({ err }, "[health] database check failed");
     res.status(503).json({ status: "error", database: "unreachable" });
   }
 });
@@ -1196,7 +1209,7 @@ app.get("/api/tenant/settings", authenticate, authorize(['owner', 'admin', 'mana
       try {
         parsedMeta = JSON.parse(tenant.legacy_id);
       } catch (e) {
-        console.warn("Failed to parse tenant.legacy_id JSON:", e);
+        logger.warn({ err: e }, "Failed to parse tenant.legacy_id JSON");
       }
     }
 
@@ -1422,7 +1435,7 @@ async function streamAssistantReply(
             res.write(JSON.stringify({ t: 'tool', name: part.toolName, result: part.output }) + '\n');
           } else if (part.type === 'tool-error') {
             wroteAny = true;
-            console.error('[assistant-tool-error]', part.toolName, part.error);
+            logger.error({ err: part.error, tool: part.toolName }, '[assistant-tool-error]');
             res.write(JSON.stringify({ t: 'tool-error', name: part.toolName, message: 'تعذّر تنفيذ الأداة' }) + '\n');
           } else if (part.type === 'error') {
             throw part.error instanceof Error ? part.error : new Error(String(part.error));
@@ -1434,7 +1447,7 @@ async function streamAssistantReply(
         // المستخدم النهائي (Admin/Cashier في الـ Widget) لا يرى تفاصيل الخطأ
         // البرمجي أبداً (رسائل SDK/مزوّد الذكاء الاصطناعي الخام مثل quota/rate
         // limit) -- فقط سجل الخادم يحتفظ بها لأغراض التشخيص.
-        console.error(`Assistant stream error [provider=${candidate.providerKey}, attempt=${attempt}]:`, err);
+        logger.error({ err, provider: candidate.providerKey, attempt }, 'Assistant stream error');
 
         if (wroteAny) {
           // بدأ العميل بالفعل يستلم جزءاً من الرد -- لا تبديل ممكن الآن.
@@ -1618,7 +1631,7 @@ app.put("/api/super-admin/assistant-settings", authenticate, authorize(['super_a
       action: 'assistant_settings_updated',
       details: `isEnabled=${updatePayload.is_enabled}, activeProvider=${updatePayload.active_provider}, activeModel=${updatePayload.active_model}, fallbackOrder=${JSON.stringify(updatePayload.fallback_order)}`,
     }).then(({ error: logErr }: any) => {
-      if (logErr) console.warn('[saas_security_logs] insert failed:', logErr.message);
+      if (logErr) logger.warn({ err: logErr }, '[saas_security_logs] insert failed');
     });
 
     const { data: credRowsAfter } = await supabaseAdmin.from("assistant_provider_credentials").select("*");
@@ -1707,7 +1720,7 @@ app.post("/api/super-admin/assistant-settings/providers/:providerKey/test", auth
       .eq("provider_key", providerKey)
       .select("*")
       .maybeSingle();
-    if (updateErr) console.error('[assistant_provider_credentials] test-status update failed:', updateErr.message);
+    if (updateErr) logger.error({ err: updateErr }, '[assistant_provider_credentials] test-status update failed');
 
     let apiKeyMasked = '';
     if (updated?.api_key_encrypted) {
@@ -1793,7 +1806,7 @@ app.post("/api/super-admin/assistant-settings/test", authenticate, authorize(['s
       }
       res.end();
     } catch (streamErr: any) {
-      console.error('Assistant test stream error:', streamErr);
+      logger.error({ err: streamErr }, 'Assistant test stream error');
       if (wroteAny) {
         res.write(`\n\n[${streamErr.message || 'حدث خطأ أثناء توليد الرد'}]`);
         res.end();
@@ -1808,7 +1821,7 @@ app.post("/api/super-admin/assistant-settings/test", authenticate, authorize(['s
       return res.status(502).json({ error: streamErr.message || 'Assistant model call failed' });
     }
   } catch (err: any) {
-    console.error("Error in POST /api/super-admin/assistant-settings/test:", err);
+    logger.error({ err }, "Error in POST /api/super-admin/assistant-settings/test");
     if (!res.headersSent) {
       res.status(500).json({ error: err.message || "Internal Server Error" });
     }
@@ -1849,7 +1862,7 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
     if (settings.daily_message_limit > 0) {
       const { data: newCount, error: usageErr } = await supabaseAdmin.rpc('increment_assistant_usage', { p_tenant_id: tenantId });
       if (usageErr) {
-        console.error('increment_assistant_usage failed:', usageErr.message);
+        logger.error({ err: usageErr }, 'increment_assistant_usage failed');
       } else if (typeof newCount === 'number' && newCount > settings.daily_message_limit) {
         return res.status(429).json({ error: 'daily_limit_reached', message: 'تم الوصول للحد الأقصى من الرسائل اليوم.' });
       }
@@ -1933,12 +1946,12 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
               : `[tenant=${tenantId}] فشل المزوّد '${failedProviderKey}' (${reason}) -- لا يوجد مزوّد احتياطي آخر متاح`,
           });
         } catch (logErr) {
-          console.error('[saas_security_logs] fallback log insert failed:', logErr);
+          logger.error({ err: logErr }, '[saas_security_logs] fallback log insert failed');
         }
       },
     );
   } catch (err: any) {
-    console.error("Error in POST /api/chat:", err);
+    logger.error({ err }, "Error in POST /api/chat");
     if (!res.headersSent) {
       res.status(500).json({ error: 'حدث خطأ أثناء التواصل مع المساعد، حاول مرة أخرى.' });
     }
@@ -2145,7 +2158,7 @@ app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any
     });
     if (chainError || chainAdvanced !== true) {
       const chainFailMsg = '[zatca/submit-invoice] PIH CHAIN NOT ADVANCED -- invoice cleared/reported with ZATCA but the chain tip still holds a stale hash. Every subsequent invoice for this tenant will chain off the WRONG previous hash until this is investigated.';
-      console.error(chainFailMsg, { tenantId, orderId, invoiceId: invoice.id, invoiceHash, chainError });
+      logger.error({ tenantId, orderId, invoiceId: invoice.id, invoiceHash, err: chainError }, chainFailMsg);
       captureServerException(new Error(chainFailMsg), { tenantId, orderId, invoiceId: invoice.id, invoiceHash, chainError });
     }
 
@@ -2171,7 +2184,7 @@ app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any
       })
       .eq('id', invoice.id);
 
-    console.error('[zatca/submit-invoice]', err);
+    logger.error({ err }, '[zatca/submit-invoice]');
     // B2B rejection must never look like success to the caller -- POS.tsx
     // surfaces this to the cashier instead of treating the sale as done.
     res.status(502).json({ error: 'ZATCA rejected or failed to process this invoice', status: 'rejected', isB2B });
@@ -2312,7 +2325,7 @@ app.post("/api/zatca/request-compliance-csid", authenticate, authorize(['owner',
     res.json({ ok: true });
   } catch (err: any) {
     if (err instanceof ZatcaApiError) {
-      console.error('[zatca/request-compliance-csid]', err);
+      logger.error({ err }, '[zatca/request-compliance-csid]');
       return res.status(502).json({ error: 'رفضت زاتكا طلب Compliance CSID -- تحقَّق من صحة رمز OTP', details: err.body });
     }
     internalError(res, "Error in POST /api/zatca/request-compliance-csid:", err);
@@ -2388,7 +2401,7 @@ app.post("/api/zatca/run-compliance-tests", authenticate, authorize(['owner', 'a
     try {
       results.push(await runOne(kind));
     } catch (err: any) {
-      console.error('[zatca/run-compliance-tests]', kind, err);
+      logger.error({ err, kind }, '[zatca/run-compliance-tests]');
       results.push({ type: kind, error: err instanceof ZatcaApiError ? err.body : String(err?.message || err) });
     }
   }
@@ -2443,7 +2456,7 @@ app.post("/api/zatca/request-production-csid", authenticate, authorize(['owner',
     res.json({ ok: true });
   } catch (err: any) {
     if (err instanceof ZatcaApiError) {
-      console.error('[zatca/request-production-csid]', err);
+      logger.error({ err }, '[zatca/request-production-csid]');
       return res.status(502).json({ error: 'رفضت زاتكا طلب Production CSID', details: err.body });
     }
     internalError(res, "Error in POST /api/zatca/request-production-csid:", err);
@@ -2456,11 +2469,11 @@ app.post("/api/zatca/request-production-csid", authenticate, authorize(['owner',
 // serverless (عبر api/index.js)، وإنهاء العملية غير مجدٍ/ضار في هذا السياق.
 process.on('unhandledRejection', (reason) => {
   const err = reason instanceof Error ? reason : new Error(String(reason));
-  console.error('[unhandledRejection]', err);
+  logger.error({ err }, '[unhandledRejection]');
   captureServerException(err, { source: 'unhandledRejection' });
 });
 process.on('uncaughtException', (err) => {
-  console.error('[uncaughtException]', err);
+  logger.error({ err }, '[uncaughtException]');
   captureServerException(err, { source: 'uncaughtException' });
 });
 
@@ -2473,7 +2486,7 @@ process.on('uncaughtException', (err) => {
 // وبلا asyncHandler سيُترك معلّقًا حتى وقت دالة Vercel، مسجَّلاً فقط عبر
 // unhandledRejection أعلاه.
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(`[globalErrorHandler] ${req.path}:`, err);
+  ((req as any).log || logger).error({ err }, `[globalErrorHandler] ${req.path}`);
   captureServerException(err, { path: req.path, method: req.method });
   if (res.headersSent) return next(err);
   res.status(500).json({ error: 'حدث خطأ غير متوقع، حاول لاحقًا' });
@@ -2523,7 +2536,7 @@ if (process.env.VERCEL !== '1') {
   setupServer().then(() => {
     const PORT = 3000;
     app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server running on http://localhost:${PORT}`);
+      logger.info({ port: PORT }, `Server running on http://localhost:${PORT}`);
     });
   });
 }
