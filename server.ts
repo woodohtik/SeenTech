@@ -271,6 +271,16 @@ function clientIp(req: express.Request): string {
   return req.ip || 'unknown';
 }
 
+// SECURITY (seen-deep-technical-audit.md High #6): a raw Postgres/Supabase
+// error.message can leak schema details (table/column names, constraint
+// names) to the client. Internal routes should log the real error server-side
+// and send the client a generic message -- same pattern already used by the
+// public-facing routes above (e.g. /api/public/order-tracking's 500 handler).
+function internalError(res: express.Response, context: string, err: unknown): express.Response {
+  console.error(context, err);
+  return res.status(500).json({ error: 'Internal Server Error' });
+}
+
 // مشترك بين GET (قراءة الحالة) وPOST (تسجيل اشتراك الإشعارات) على نفس
 // المسار -- كلاهما تخمين محتمل لتوكِنات عشوائية فيستحقان نفس الحماية.
 // يزيد العدّاد فقط عند الاستدعاء بـ recordFailure=true (طلب بتوكِن غير
@@ -707,13 +717,12 @@ app.get("/api/inventory-adjustments", authenticate, async (req: any, res) => {
       .order("created_at", { ascending: false });
 
     if (error) {
-      return res.status(500).json({ error: error.message });
+      return internalError(res, "Error in GET /api/inventory-adjustments:", error);
     }
 
     res.json(data || []);
   } catch (err: any) {
-    console.error("Error in GET /api/inventory-adjustments:", err);
-    res.status(500).json({ error: err.message || 'Internal Server Error' });
+    internalError(res, "Error in GET /api/inventory-adjustments:", err);
   }
 });
 
@@ -748,13 +757,12 @@ app.get("/api/inventory-adjustments/:id/items", authenticate, async (req: any, r
       .eq("adjustment_id", id);
 
     if (error) {
-      return res.status(500).json({ error: error.message });
+      return internalError(res, "Error in GET /api/inventory-adjustments/:id/items:", error);
     }
 
     res.json(data || []);
   } catch (err: any) {
-    console.error("Error in GET /api/inventory-adjustments/:id/items:", err);
-    res.status(500).json({ error: err.message || 'Internal Server Error' });
+    internalError(res, "Error in GET /api/inventory-adjustments/:id/items:", err);
   }
 });
 
@@ -787,8 +795,7 @@ app.post("/api/inventory-adjustments", authenticate, async (req: any, res) => {
       .single();
 
     if (headerErr) {
-      console.error("Error inserting adjustment header:", headerErr);
-      return res.status(500).json({ error: `Header insert failed: ${headerErr.message}` });
+      return internalError(res, "Error inserting adjustment header:", headerErr);
     }
 
     const adjustmentId = headerData.id;
@@ -806,10 +813,9 @@ app.post("/api/inventory-adjustments", authenticate, async (req: any, res) => {
       .insert(detailRows);
 
     if (detailsErr) {
-      console.error("Error inserting adjustment details:", detailsErr);
       // Clean up header to avoid dangling reference
       await supabaseAdmin.from("inventory_adjustments").delete().eq("id", adjustmentId);
-      return res.status(500).json({ error: `Details insert failed: ${detailsErr.message}` });
+      return internalError(res, "Error inserting adjustment details:", detailsErr);
     }
 
     // 3. If Approved, update branch inventories and insert stock ledger rows
@@ -873,17 +879,15 @@ app.post("/api/inventory-adjustments", authenticate, async (req: any, res) => {
           }
         }
       } catch (innerErr: any) {
-        console.error("Error in stock update/ledger steps, rolling back adjustment records:", innerErr);
         // Clean up both header and details (cascaded delete)
         await supabaseAdmin.from("inventory_adjustments").delete().eq("id", adjustmentId);
-        return res.status(500).json({ error: innerErr.message });
+        return internalError(res, "Error in stock update/ledger steps, rolling back adjustment records:", innerErr);
       }
     }
 
     res.json(headerData);
   } catch (err: any) {
-    console.error("Error in POST /api/inventory-adjustments:", err);
-    res.status(500).json({ error: err.message || 'Internal Server Error' });
+    internalError(res, "Error in POST /api/inventory-adjustments:", err);
   }
 });
 
@@ -922,8 +926,7 @@ app.post("/api/saas/complete-temp-password", authenticate, async (req: any, res)
 
     res.json({ success: true });
   } catch (err: any) {
-    console.error("Error updating temp password status:", err);
-    res.status(500).json({ error: err.message || 'Internal Server Error' });
+    internalError(res, "Error updating temp password status:", err);
   }
 });
 
@@ -972,8 +975,7 @@ app.post("/api/staff/create-account", authenticate, authorize(['super_admin', 'o
 
     res.json({ uid: data.user!.id, alreadyExisted: false });
   } catch (err: any) {
-    console.error("Error creating staff account:", err);
-    res.status(500).json({ error: err.message || 'Internal Server Error' });
+    internalError(res, "Error creating staff account:", err);
   }
 });
 
@@ -1098,8 +1100,7 @@ app.post("/api/staff/verify-pin", authenticate, async (req: any, res) => {
       },
     });
   } catch (err: any) {
-    console.error("Error verifying staff PIN:", err);
-    res.status(500).json({ error: err.message || 'Internal Server Error' });
+    internalError(res, "Error verifying staff PIN:", err);
   }
 });
 
@@ -1139,8 +1140,7 @@ app.get("/api/staff/pins", authenticate, authorize(['super_admin', 'owner']), as
       }),
     });
   } catch (err: any) {
-    console.error("Error fetching staff pins:", err);
-    res.status(500).json({ error: err.message || 'Internal Server Error' });
+    internalError(res, "Error fetching staff pins:", err);
   }
 });
 
@@ -1217,8 +1217,7 @@ app.get("/api/tenant/settings", authenticate, authorize(['owner', 'admin', 'mana
       notificationSettings
     });
   } catch (err: any) {
-    console.error("Error in GET /api/tenant/settings:", err);
-    res.status(500).json({ error: err.message || "Internal Server Error" });
+    internalError(res, "Error in GET /api/tenant/settings:", err);
   }
 });
 
@@ -1272,13 +1271,12 @@ app.post("/api/tenant/settings", authenticate, authorize(['owner', 'admin']), as
       .eq("id", tenantId);
 
     if (error) {
-      return res.status(500).json({ error: error.message });
+      return internalError(res, "Error in POST /api/tenant/settings:", error);
     }
 
     res.json({ success: true });
   } catch (err: any) {
-    console.error("Error in POST /api/tenant/settings:", err);
-    res.status(500).json({ error: err.message || "Internal Server Error" });
+    internalError(res, "Error in POST /api/tenant/settings:", err);
   }
 });
 
@@ -1449,13 +1447,12 @@ app.get("/api/assistant-settings/status", authenticate, async (req: any, res) =>
         ? supabaseAdmin.from("tenants").select("assistant_enabled").eq("id", req.user.tenantId).maybeSingle()
         : Promise.resolve({ data: null, error: null }),
     ]);
-    if (error) return res.status(500).json({ error: error.message });
-    if (tenantErr) return res.status(500).json({ error: tenantErr.message });
+    if (error) return internalError(res, "Error in GET /api/assistant-settings/status:", error);
+    if (tenantErr) return internalError(res, "Error in GET /api/assistant-settings/status:", tenantErr);
     const isEnabled = Boolean(data?.is_enabled) && tenant?.assistant_enabled !== false;
     res.json({ isEnabled });
   } catch (err: any) {
-    console.error("Error in GET /api/assistant-settings/status:", err);
-    res.status(500).json({ error: err.message || "Internal Server Error" });
+    internalError(res, "Error in GET /api/assistant-settings/status:", err);
   }
 });
 
@@ -1496,11 +1493,11 @@ app.get("/api/super-admin/assistant-settings", authenticate, authorize(['super_a
       .select("*")
       .eq("id", "global")
       .maybeSingle();
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return internalError(res, "Error in GET /api/super-admin/assistant-settings:", error);
     if (!data) return res.status(404).json({ error: "Assistant settings not found" });
 
     const { data: credRows, error: credErr } = await supabaseAdmin.from("assistant_provider_credentials").select("*");
-    if (credErr) return res.status(500).json({ error: credErr.message });
+    if (credErr) return internalError(res, "Error in GET /api/super-admin/assistant-settings:", credErr);
 
     res.json({
       isEnabled: data.is_enabled,
@@ -1516,8 +1513,7 @@ app.get("/api/super-admin/assistant-settings", authenticate, authorize(['super_a
       providers: await buildProviderStatusList(credRows || []),
     });
   } catch (err: any) {
-    console.error("Error in GET /api/super-admin/assistant-settings:", err);
-    res.status(500).json({ error: err.message || "Internal Server Error" });
+    internalError(res, "Error in GET /api/super-admin/assistant-settings:", err);
   }
 });
 
@@ -1580,7 +1576,7 @@ app.put("/api/super-admin/assistant-settings", authenticate, authorize(['super_a
       .select("*")
       .maybeSingle();
 
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return internalError(res, "Error in PUT /api/super-admin/assistant-settings:", error);
 
     await supabaseAdmin.from('saas_security_logs').insert({
       user_id: req.user?.uid,
@@ -1607,8 +1603,7 @@ app.put("/api/super-admin/assistant-settings", authenticate, authorize(['super_a
       providers: await buildProviderStatusList(credRowsAfter || []),
     });
   } catch (err: any) {
-    console.error("Error in PUT /api/super-admin/assistant-settings:", err);
-    res.status(500).json({ error: err.message || "Internal Server Error" });
+    internalError(res, "Error in PUT /api/super-admin/assistant-settings:", err);
   }
 });
 
@@ -1701,8 +1696,7 @@ app.post("/api/super-admin/assistant-settings/providers/:providerKey/test", auth
       },
     });
   } catch (err: any) {
-    console.error("Error in POST /api/super-admin/assistant-settings/providers/:providerKey/test:", err);
-    res.status(500).json({ error: err.message || "Internal Server Error" });
+    internalError(res, "Error in POST /api/super-admin/assistant-settings/providers/:providerKey/test:", err);
   }
 });
 
@@ -2231,7 +2225,7 @@ app.post("/api/zatca/generate-csr", authenticate, authorize(['owner', 'admin']),
     egs_serial_number: egsSerialNumber,
     created_at: new Date().toISOString(),
   });
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) return internalError(res, "Error in POST /api/zatca/generate-csr:", error);
 
   res.json({ csrBase64 });
 }));
@@ -2267,15 +2261,15 @@ app.post("/api/zatca/request-compliance-csid", authenticate, authorize(['owner',
       },
       { onConflict: 'tenant_id,csid_type' }
     );
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return internalError(res, "Error in POST /api/zatca/request-compliance-csid:", error);
 
     res.json({ ok: true });
   } catch (err: any) {
-    console.error('[zatca/request-compliance-csid]', err);
     if (err instanceof ZatcaApiError) {
+      console.error('[zatca/request-compliance-csid]', err);
       return res.status(502).json({ error: 'رفضت زاتكا طلب Compliance CSID -- تحقَّق من صحة رمز OTP', details: err.body });
     }
-    res.status(500).json({ error: err?.message || 'Internal Server Error' });
+    internalError(res, "Error in POST /api/zatca/request-compliance-csid:", err);
   }
 }));
 
@@ -2394,7 +2388,7 @@ app.post("/api/zatca/request-production-csid", authenticate, authorize(['owner',
       },
       { onConflict: 'tenant_id,csid_type' }
     );
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return internalError(res, "Error in POST /api/zatca/request-production-csid:", error);
 
     // Pending CSR row has now been fully promoted (compliance + production
     // both issued from it) -- nothing left to resume from it.
@@ -2402,11 +2396,11 @@ app.post("/api/zatca/request-production-csid", authenticate, authorize(['owner',
 
     res.json({ ok: true });
   } catch (err: any) {
-    console.error('[zatca/request-production-csid]', err);
     if (err instanceof ZatcaApiError) {
+      console.error('[zatca/request-production-csid]', err);
       return res.status(502).json({ error: 'رفضت زاتكا طلب Production CSID', details: err.body });
     }
-    res.status(500).json({ error: err?.message || 'Internal Server Error' });
+    internalError(res, "Error in POST /api/zatca/request-production-csid:", err);
   }
 }));
 
