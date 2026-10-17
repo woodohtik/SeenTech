@@ -287,8 +287,17 @@ function clientIp(req: express.Request): string {
 // names) to the client. Internal routes should log the real error server-side
 // and send the client a generic message -- same pattern already used by the
 // public-facing routes above (e.g. /api/public/order-tracking's 500 handler).
+//
+// seen-deep-technical-audit.md High #11: most routes catch their own errors
+// and respond directly instead of calling next(err), so they never reached
+// the global error-handling middleware (the only place that called
+// captureServerException) -- meaning most 500s would never have reached
+// Sentry even with a real DSN configured. Routed through here too now, so
+// every caller of this helper reports the same way the global handler does.
+// Still a safe no-op with no DSN set (see src/server/logger.ts).
 function internalError(res: express.Response, context: string, err: unknown): express.Response {
   console.error(context, err);
+  captureServerException(err, { context });
   return res.status(500).json({ error: 'Internal Server Error' });
 }
 
