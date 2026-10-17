@@ -1568,7 +1568,7 @@ app.put("/api/super-admin/assistant-settings", authenticate, authorize(['super_a
       .from("assistant_provider_credentials")
       .select("provider_key, is_configured, last_test_status")
       .in("provider_key", keysNeedingCheck);
-    if (credErr) return res.status(500).json({ error: credErr.message });
+    if (credErr) return internalError(res, "Error in PUT /api/super-admin/assistant-settings (credentials check):", credErr);
     const credByKey = new Map((credRows || []).map((r: any) => [r.provider_key, r]));
 
     const notReady = keysNeedingCheck.filter((key) => {
@@ -1661,7 +1661,7 @@ app.post("/api/super-admin/assistant-settings/providers/:providerKey/test", auth
         updated_at: new Date().toISOString(),
         updated_by: req.user?.email || req.user?.uid || null,
       });
-      if (upsertErr) return res.status(500).json({ error: upsertErr.message });
+      if (upsertErr) return internalError(res, "Error in POST /api/super-admin/assistant-settings/providers/:providerKey/test (credential upsert):", upsertErr);
       apiKeyToTest = bodyApiKey;
     } else {
       const { data: cred } = await supabaseAdmin
@@ -1994,12 +1994,24 @@ app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any
 
   const { data: invoice } = await supabaseAdmin
     .from('tax_invoices')
-    .select('id, invoice_number, subtotal, tax_amount, total_amount, previous_invoice_hash, notes')
+    .select('id, invoice_number, subtotal, tax_amount, total_amount, previous_invoice_hash, notes, zatca_status')
     .eq('order_id', orderId)
     .eq('tenant_id', tenantId)
     .maybeSingle();
   if (!invoice) {
     return res.status(404).json({ error: 'Invoice not found for this order' });
+  }
+
+  // seen-deep-technical-audit.md High #2: no idempotency check here meant a
+  // retried request (network timeout on the client, double-click, a queued
+  // offline submission replayed) rebuilt a fresh XML with a new UUID and
+  // called ZATCA's Clearance/Reporting API again for an invoice already
+  // successfully cleared/reported -- a real duplicate submission to ZATCA
+  // itself, not just a wasted request. 'rejected'/'not_applicable' are
+  // deliberately NOT short-circuited here so a genuinely failed submission
+  // can still be retried.
+  if (invoice.zatca_status === 'cleared' || invoice.zatca_status === 'reported') {
+    return res.json({ ok: true, status: invoice.zatca_status, replayed: true });
   }
 
   const { data: items } = await supabaseAdmin
