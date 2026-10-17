@@ -132,13 +132,30 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     // 2. Check staff table
     const { data: staffRow, error: staffError } = await supabaseAdmin
       .from('staff')
-      .select('id, role, tenant_id')
+      .select('id, role, tenant_id, status')
       .eq('uid', decodedToken.uid)
       .maybeSingle();
     if (staffError) {
       console.error('[authMiddleware] staff lookup failed:', staffError.message);
     }
     if (staffRow) {
+      // SECURITY: a deactivated employee's existing JWT is otherwise still
+      // valid (Supabase has no server-side session revocation on its own) --
+      // this is the one place that re-checks status on every request, so a
+      // deactivation actually cuts off access immediately rather than only
+      // blocking a future login.
+      if (staffRow.status === 'inactive') {
+        await logSecurityEvent({
+          type: 'inactive_staff_access_attempt',
+          uid: decodedToken.uid,
+          email: decodedToken.email,
+          tenant_id: staffRow.tenant_id,
+          staff_id: staffRow.id,
+          path: req.path,
+          method: req.method,
+        });
+        return res.status(403).json({ error: 'Forbidden: Account deactivated' });
+      }
       req.user.role = staffRow.role;
       req.user.tenantId = staffRow.tenant_id;
       req.user.staffId = staffRow.id;
