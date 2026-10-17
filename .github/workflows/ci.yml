@@ -23,6 +23,18 @@ jobs:
       - name: Type check
         run: npm run lint
 
+      # seen-deep-technical-audit.md Medium #6: no dependency-security check
+      # existed at all. Report-only for now (continue-on-error) -- the
+      # current dependency tree already has 42 known advisories (3
+      # critical) that predate this step, so gating the build on them today
+      # would fail every push/PR immediately. This surfaces the data (shows
+      # as a non-blocking warning in the Actions UI) without blocking
+      # anyone; tightening it into a real gate is a separate decision once
+      # those existing findings have been triaged.
+      - name: Dependency audit (report-only)
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
       - name: Unit tests
         run: npm run test
 
