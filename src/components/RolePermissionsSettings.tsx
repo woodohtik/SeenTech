@@ -97,16 +97,12 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
         .select('*')
         .is('tenant_id', null);
 
-      // 2. Fetch system roles_permissions (tenant_id IS NULL)
-      const { data: systemRolesPermissionsData } = await supabase
-        .from('roles_permissions')
-        .select('*')
-        .is('tenant_id', null);
-
-      const sysRpMap = new Map((systemRolesPermissionsData || []).map(rp => [rp.role_key, rp.permissions]));
-
-      // 3. If in tenant mode, fetch tenant custom roles and tenant roles_permissions
-      let tenantRpMap = new Map();
+      // 2. If in tenant mode, fetch tenant custom roles.
+      // seen-deep-technical-audit.md: this used to also read/write a
+      // 'roles_permissions' table here -- that table never existed in any
+      // environment, so it was always an empty map; removed rather than
+      // finally created, since a tenant's own row in `roles` (step below)
+      // was already the real mechanism that shadows the system default.
       let tenantRolesData: any[] = [];
       if (tenantId && !isSuperAdmin) {
         const { data: tRoles } = await supabase
@@ -114,32 +110,20 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
           .select('*')
           .eq('tenant_id', tenantId);
         if (tRoles) tenantRolesData = tRoles;
-
-        const { data: tRpData } = await supabase
-          .from('roles_permissions')
-          .select('*')
-          .eq('tenant_id', tenantId);
-        if (tRpData) {
-          tenantRpMap = new Map(tRpData.map(rp => [rp.role_key, rp.permissions]));
-        }
       }
 
       const combinedRolesMap = new Map<string, Role>();
 
       // Seed default system roles as base
       Object.entries(DEFAULT_ROLES).forEach(([key, roleInfo]) => {
-        const sysPerms = sysRpMap.get(key) || roleInfo.permissions;
-        const isCustomizedByTenant = Boolean(tenantId && !isSuperAdmin && tenantRpMap.has(key));
-        const finalPerms = isCustomizedByTenant ? tenantRpMap.get(key) : sysPerms;
-
         combinedRolesMap.set(key, {
           id: key,
           name: roleInfo.name,
           description: roleInfo.description,
           roleKey: key,
-          permissions: finalPerms as PermissionsMap,
-          tenantId: isCustomizedByTenant ? tenantId : null,
-          isDefault: !isCustomizedByTenant,
+          permissions: roleInfo.permissions as PermissionsMap,
+          tenantId: null,
+          isDefault: true,
           createdAt: new Date().toISOString(),
           category: roleInfo.category || (isSaaSRole(key) ? 'saas' : 'merchant')
         });
@@ -148,9 +132,6 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
       // Override with DB system roles
       (systemRolesData || []).forEach(r => {
         const key = r.role_key || r.id;
-        const sysPerms = sysRpMap.get(key) || r.permissions || DEFAULT_ROLES[key]?.permissions || {};
-        const isCustomizedByTenant = Boolean(tenantId && !isSuperAdmin && tenantRpMap.has(key));
-        const finalPerms = isCustomizedByTenant ? tenantRpMap.get(key) : sysPerms;
         const defaultCategory = DEFAULT_ROLES[key]?.category || (isSaaSRole(key) ? 'saas' : 'merchant');
 
         combinedRolesMap.set(key, {
@@ -158,9 +139,9 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
           name: r.name,
           description: r.description || '',
           roleKey: key,
-          permissions: finalPerms as PermissionsMap,
-          tenantId: isCustomizedByTenant ? tenantId : r.tenant_id,
-          isDefault: !isCustomizedByTenant,
+          permissions: (r.permissions || DEFAULT_ROLES[key]?.permissions || {}) as PermissionsMap,
+          tenantId: r.tenant_id,
+          isDefault: true,
           createdAt: r.created_at || new Date().toISOString(),
           category: defaultCategory
         });
@@ -170,13 +151,12 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
       if (tenantId && !isSuperAdmin) {
         tenantRolesData.forEach(r => {
           const key = r.role_key || r.id;
-          const finalPerms = tenantRpMap.get(key) || r.permissions || {};
           combinedRolesMap.set(key, {
             id: r.id,
             name: r.name,
             description: r.description || '',
             roleKey: key,
-            permissions: finalPerms as PermissionsMap,
+            permissions: (r.permissions || {}) as PermissionsMap,
             tenantId: r.tenant_id,
             isDefault: false,
             createdAt: r.created_at || new Date().toISOString(),
@@ -293,49 +273,15 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
         isSuperAdmin
       );
 
-      // Save directly to roles_permissions table in Supabase
+      // Cache in localStorage (real persistence is updateRolePermissions'
+      // write to the `roles` table above -- see its own comment for why
+      // there's no separate 'roles_permissions' write here anymore).
       const roleKey = selectedRole.roleKey || selectedRole.id;
       if (typeof localStorage !== 'undefined') {
-        const cacheKey = isSuperAdmin 
-          ? `role_permissions_global_${roleKey}` 
+        const cacheKey = isSuperAdmin
+          ? `role_permissions_global_${roleKey}`
           : `role_permissions_${targetTenantId}_${roleKey}`;
         localStorage.setItem(cacheKey, JSON.stringify(permissionsState));
-      }
-
-      const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
-      const validRoleId = selectedRole && isUuid(selectedRole.id) ? selectedRole.id : null;
-
-      if (isSuperAdmin) {
-        // Upsert system global role permissions
-        const { data: existingSysRp } = await supabase
-          .from('roles_permissions')
-          .select('id')
-          .is('tenant_id', null)
-          .eq('role_key', roleKey)
-          .maybeSingle();
-
-        if (existingSysRp) {
-          await supabase.from('roles_permissions').update({
-            permissions: permissionsState,
-            updated_at: new Date().toISOString()
-          }).eq('id', existingSysRp.id);
-        } else {
-          await supabase.from('roles_permissions').insert({
-            role_id: validRoleId,
-            role_key: roleKey,
-            tenant_id: null,
-            permissions: permissionsState,
-            updated_at: new Date().toISOString()
-          });
-        }
-      } else if (targetTenantId) {
-        await supabase.from('roles_permissions').upsert({
-          role_id: validRoleId,
-          role_key: roleKey,
-          tenant_id: targetTenantId,
-          permissions: permissionsState,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'tenant_id,role_key' });
       }
 
       // Update local state

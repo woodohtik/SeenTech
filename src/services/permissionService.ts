@@ -295,51 +295,32 @@ export const getEffectivePermissions = async (staff: Staff): Promise<Permissions
     }
   }
 
-  // Search for role in roles_permissions table first
+  // Search for role in tenant roles, then system roles.
+  // seen-deep-technical-audit.md: this used to check a 'roles_permissions'
+  // table first -- that table never existed in any environment, so every
+  // read/write to it was a silent no-op; removed rather than finally
+  // created, since this `roles` lookup was already the real source of
+  // truth the whole time.
   try {
-    const { data: rpData } = await supabase
-      .from('roles_permissions')
+    const { data: tenantRoleData } = await supabase
+      .from('roles')
       .select('permissions')
       .eq('tenant_id', staff.tenantId)
       .eq('role_key', staff.role)
       .maybeSingle();
-    
-    if (rpData?.permissions) {
-      permissions = rpData.permissions as PermissionsMap;
+
+    if (tenantRoleData?.permissions) {
+      permissions = tenantRoleData.permissions as PermissionsMap;
     } else {
-      // Search for role in tenant roles
-      const { data: tenantRoleData } = await supabase
+      // Check system roles
+      const { data: systemRoleData } = await supabase
         .from('roles')
         .select('permissions')
-        .eq('tenant_id', staff.tenantId)
+        .is('tenant_id', null)
         .eq('role_key', staff.role)
         .maybeSingle();
-
-      if (tenantRoleData?.permissions) {
-        permissions = tenantRoleData.permissions as PermissionsMap;
-      } else {
-        // Check system roles_permissions (Super Admin global default)
-        const { data: sysRpData } = await supabase
-          .from('roles_permissions')
-          .select('permissions')
-          .is('tenant_id', null)
-          .eq('role_key', staff.role)
-          .maybeSingle();
-
-        if (sysRpData?.permissions) {
-          permissions = sysRpData.permissions as PermissionsMap;
-        } else {
-          // Check system roles
-          const { data: systemRoleData } = await supabase
-            .from('roles')
-            .select('permissions')
-            .is('tenant_id', null)
-            .eq('role_key', staff.role)
-            .maybeSingle();
-          if (systemRoleData?.permissions) {
-            permissions = systemRoleData.permissions as PermissionsMap;
-          }
-        }
+      if (systemRoleData?.permissions) {
+        permissions = systemRoleData.permissions as PermissionsMap;
       }
     }
   } catch (err) {
@@ -349,7 +330,7 @@ export const getEffectivePermissions = async (staff: Staff): Promise<Permissions
     // transiently, keeping the old cached value would silently grant
     // whatever was cached, possibly over-privileged. Fall back to the
     // built-in per-role defaults instead of trusting localStorage alone.
-    console.warn('Error querying roles_permissions:', err);
+    console.warn('Error querying roles:', err);
     permissions = DEFAULT_ROLES[staff.role]?.permissions ?? ({} as PermissionsMap);
   }
 
@@ -462,42 +443,14 @@ export const updateRolePermissions = async (
       localStorage.setItem(`role_permissions_global_${roleKeyToSave}`, JSON.stringify(permissions));
     }
 
-    // 3. Upsert into roles_permissions where tenant_id IS NULL
-    try {
-      const { data: existingSysRp } = await supabase
-        .from('roles_permissions')
-        .select('id')
-        .is('tenant_id', null)
-        .eq('role_key', roleKeyToSave)
-        .maybeSingle();
-
-      if (existingSysRp) {
-        await supabase.from('roles_permissions').update({
-          permissions,
-          updated_at: new Date().toISOString()
-        }).eq('id', existingSysRp.id);
-      } else {
-        await supabase.from('roles_permissions').insert({
-          role_id: roleId,
-          role_key: roleKeyToSave,
-          tenant_id: null,
-          permissions,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
-      }
-    } catch (err) {
-      console.warn('roles_permissions global update error:', err);
-    }
-
-    // 4. Dispatch real-time event across app
+    // 3. Dispatch real-time event across app
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('permissions_updated', { 
-        detail: { tenantId: null, roleKey: roleKeyToSave, isGlobal: true } 
+      window.dispatchEvent(new CustomEvent('permissions_updated', {
+        detail: { tenantId: null, roleKey: roleKeyToSave, isGlobal: true }
       }));
     }
 
-    // 5. Audit Log
+    // 4. Audit Log
     await supabase.from('audit_logs').insert({
       action: 'تحديث صلاحيات النظام القياسية',
       performed_by: performedBy,
@@ -545,20 +498,9 @@ export const updateRolePermissions = async (
     }).eq('id', roleId);
   }
 
-  // Save to roles_permissions table in Supabase & localStorage cache
-  try {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(`role_permissions_${tenantId}_${roleKeyToSave}`, JSON.stringify(permissions));
-    }
-    await supabase.from('roles_permissions').upsert({
-      role_id: roleId,
-      role_key: roleKeyToSave,
-      tenant_id: tenantId,
-      permissions,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'tenant_id,role_key' });
-  } catch (err) {
-    console.warn('roles_permissions table update note:', err);
+  // Cache in localStorage (real persistence is the roles.permissions update above)
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(`role_permissions_${tenantId}_${roleKeyToSave}`, JSON.stringify(permissions));
   }
 
   // Dispatch real-time update event across app
