@@ -12,6 +12,7 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "db:migrate": "tsx scripts/migrate.ts",
+    "db:verify-pos-sale": "tsx scripts/verify-pos-sale.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test"
