@@ -255,48 +255,36 @@ export default function PurchaseOrders({
       const prefix = modalType === 'purchase' ? 'PO' : 'RET';
       const orderNumber = `${prefix}-${Date.now()}`;
 
-      // 1. Insert order record
-      const { data: poData, error: poError } = await supabase
-        .from('purchase_orders')
-        .insert({
+      // One atomic, idempotent RPC (seen-deep-technical-audit.md High #9) --
+      // was: INSERT purchase_orders then a disconnected second INSERT
+      // purchase_order_items, no idempotency key. A dropped connection after
+      // the header insert left a permanent empty draft PO; a double-submit
+      // could create two. operationId doubles as the new PO's id, so a
+      // retried submission can never create it twice (same pattern as
+      // create_pos_sale for POS checkout).
+      const operationId = globalThis.crypto.randomUUID();
+      const { data: rpcResult, error: poError } = await supabase.rpc('create_purchase_order', {
+        p_operation_id: operationId,
+        p_header: {
           supplier_id: selectedSupplier,
-          tenant_id: tenantId,
           branch_id: realBranchId,
           po_number: orderNumber,
-          total_amount: totalAmount,
-          paid_amount: 0,
-          status: 'draft',
-          order_date: new Date().toISOString(),
           notes: notes || null,
-          created_by: currentStaff?.id || null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-      
+        },
+        p_items: items.map(item => ({
+          item_id: item.itemId,
+          name: item.name,
+          quantity: item.quantity,
+          unit: item.unit,
+          conversion_rate: item.conversionRate,
+          base_quantity: item.baseQuantity,
+          price_per_unit: item.pricePerUnit,
+          total: item.total
+        })),
+      });
+
       if (poError) throw poError;
-      if (!poData) throw new Error(t('procurement.failed_to_create_po', 'فشل إنشاء الطلب'));
-
-      // 2. Insert items
-      const itemsToInsert = items.map(item => ({
-        tenant_id: tenantId,
-        purchase_order_id: poData.id,
-        item_id: item.itemId,
-        name: item.name,
-        quantity: item.quantity,
-        unit: item.unit,
-        conversion_rate: item.conversionRate,
-        base_quantity: item.baseQuantity,
-        price_per_unit: item.pricePerUnit,
-        total: item.total
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('purchase_order_items')
-        .insert(itemsToInsert);
-
-      if (itemsError) throw itemsError;
+      if (!rpcResult?.purchase_order_id) throw new Error(t('procurement.failed_to_create_po', 'فشل إنشاء الطلب'));
 
       // handleConfirmOrder shows its own success toast when isConfirmImmediately
       // -- showing "created as draft" here too was misleading on that path.
@@ -304,18 +292,21 @@ export default function PurchaseOrders({
         toastSuccess(modalType === 'purchase' ? t('procurement.po_draft_created', 'تم إنشاء السند كمسودة') : t('procurement.return_draft_created', 'تم إنشاء مرتجع المشتريات كمسودة'));
       }
 
-      const foundSupplier = suppliers.find(s => (s.id || '').toLowerCase().trim() === (poData.supplier_id || '').toLowerCase().trim());
+      const foundSupplier = suppliers.find(s => (s.id || '').toLowerCase().trim() === selectedSupplier.toLowerCase().trim());
 
       const finalOrderObject = {
-        ...poData,
-        supplierId: poData.supplier_id,
+        id: rpcResult.purchase_order_id,
+        supplierId: selectedSupplier,
         supplierName: foundSupplier?.name || t('procurement.supplier_name_fallback'),
-        totalAmount: poData.total_amount,
+        po_number: orderNumber,
+        total_amount: rpcResult.total_amount,
+        totalAmount: rpcResult.total_amount,
         paidAmount: 0,
-        remainingAmount: poData.total_amount,
-        status: poData.status,
-        orderType: poData.po_number?.startsWith('RET') ? 'return' : 'purchase',
-        orderDate: poData.order_date,
+        remainingAmount: rpcResult.total_amount,
+        status: 'draft',
+        orderType: orderNumber.startsWith('RET') ? 'return' : 'purchase',
+        orderDate: new Date().toISOString(),
+        branch_id: realBranchId,
         items: items
       };
 
