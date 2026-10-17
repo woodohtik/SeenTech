@@ -24,8 +24,6 @@ import DateTimeDisplay from './DateTimeDisplay';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStaff } from '../contexts/StaffContext';
 import { decodeOrderRow } from '../utils/orderHistoryHelper';
-import { adjustStock } from '../services/inventoryService';
-import { logEmployeeAction } from '../services/employeeAuditService';
 import { generateOrderNumber } from '../lib/utils';
 
 import { isRtlLang } from '../lib/direction';
@@ -134,19 +132,12 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
 
   const handleReturn = async () => {
     if (!order) return;
-    
+
     setIsSubmitting(true);
     try {
-      const historyEntry = {
-        status: 'cancelled',
-        updatedAt: new Date().toISOString(),
-        updatedBy: currentStaff?.name || t('common.roles.owner'),
-        notes: `تم إرجاع الفاتورة. طريقة الاسترجاع: ${
-          refundMethod === 'cash' ? 'نقداً' : refundMethod === 'network' ? 'شبكة' : 'تحويل بنكي'
-        }. سبب الإرجاع: ${returnReason || 'لا يوجد'}`
-      };
+      const refundMethodLabel = refundMethod === 'cash' ? 'نقداً' : refundMethod === 'network' ? 'شبكة' : 'تحويل بنكي';
 
-      // 1. Find or resolve tax_invoice for this order to get invoice_id
+      // Find or resolve tax_invoice for this order to get invoice_id
       const { data: invoiceData } = await supabase
         .from('tax_invoices')
         .select('id, invoice_number')
@@ -156,37 +147,55 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
       if (!invoiceData?.id) {
         // sales_returns.invoice_id is NOT NULL + FK to tax_invoices(id) --
         // falling back to order.id here would just fail with a raw
-        // foreign-key violation once the insert below runs. Fail early
-        // with a clear message instead.
+        // foreign-key violation once the RPC below runs. Fail early with a
+        // clear message instead.
         toastError(t('sales_returns.no_tax_invoice_for_order'));
         return;
       }
       const invoiceId = invoiceData.id;
 
-      // 2. Insert into sales_returns
-      const salesReturnId = crypto.randomUUID();
+      // seen-pos-sale-testing-task.md: was 4 separate client-side writes
+      // (INSERT sales_returns, a loop of apply_stock_movement + INSERT
+      // sales_return_items, UPDATE orders, then an audit log insert) with no
+      // shared transaction -- a failure partway through left a 'completed'
+      // return with some stock restocked and the order never cancelled.
+      // process_sales_return (same atomic/idempotent pattern as
+      // create_pos_sale and create_purchase_order) does all of it in one
+      // RPC call. operationId doubles as the new sales_returns row's id.
+      const operationId = globalThis.crypto.randomUUID();
       const returnNumber = `RET-${generateOrderNumber()}`;
-      const { error: returnError } = await supabase
-        .from('sales_returns')
-        .insert({
-          id: salesReturnId,
-          tenant_id: tenantId,
-          invoice_id: invoiceId,
+      const orderHasCustomItems = (order.items || []).some((item: any) => item.type === 'custom');
+      const branchId = order.branchId || currentStaff?.branchId;
+
+      const { error: returnError } = await supabase.rpc('process_sales_return', {
+        p_operation_id: operationId,
+        p_return: {
           order_id: order.id,
+          invoice_id: invoiceId,
           return_number: returnNumber,
-          status: 'completed',
           reason: returnReason || null,
           total_amount: refundTotalAmount,
           refunded_amount: refundTotalAmount,
           refund_method: refundMethod,
-          processed_by: currentStaff?.id || null,
-          returned_at: new Date().toISOString(),
-          created_at: new Date().toISOString()
-        });
+          order_has_custom_items: orderHasCustomItems,
+          history_note: `تم إرجاع الفاتورة. طريقة الاسترجاع: ${refundMethodLabel}. سبب الإرجاع: ${returnReason || 'لا يوجد'}`,
+          audit_note: `تم عمل مرتجع للفاتورة #${order.orderNumber || order.id.slice(-6).toUpperCase()} بمبلغ ${refundTotalAmount} ريال بطريقة ${refundMethodLabel}`,
+        },
+        p_items: readyMadeItems
+          .filter((item: any) => item.itemId && branchId)
+          .map((item: any) => ({
+            item_id: item.itemId,
+            order_item_id: item.id || null,
+            name: item.name || 'منتج جاهز',
+            quantity: Number(item.quantity || 0),
+            price: Number(item.price || 0),
+            branch_id: branchId,
+          })),
+      });
 
       if (returnError) {
-        // 23505 = unique_violation على sales_returns_order_id_unique --
-        // نافذة/تبويب آخر أنجز استرجاع هذه الفاتورة بالفعل (سباق تزامن، لا
+        // 23505 = unique_violation على sales_returns_order_id_unique_full_return
+        // -- نافذة/تبويب آخر أنجز استرجاع هذه الفاتورة بالفعل (سباق تزامن، لا
         // يعني هذا خللاً حقيقياً يستحق رسالة الخطأ العامة).
         if ((returnError as any).code === '23505') {
           toastError(t('sales_returns.already_returned'));
@@ -197,70 +206,6 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
         }
         throw returnError;
       }
-
-      // 3. For each ready_made item, return quantity back to stock
-      for (const item of readyMadeItems) {
-        if (item.itemId) {
-          const branchId = order.branchId || currentStaff?.branchId;
-          if (branchId) {
-            await adjustStock({
-              branchId,
-              itemId: item.itemId,
-              quantity: Number(item.quantity || 0), // positive quantity increment
-              reason: `مرتجع مبيعات - إرجاع فاتورة ${order.orderNumber || order.id}`,
-              type: 'in', // restock
-              staffId: currentStaff?.id || null,
-              tenantId
-            });
-
-            // Log returned item
-            await supabase
-              .from('sales_return_items')
-              .insert({
-                id: crypto.randomUUID(),
-                tenant_id: tenantId,
-                return_id: salesReturnId,
-                order_item_id: item.id || null,
-                item_id: item.itemId,
-                name: item.name || 'منتج جاهز',
-                quantity: Number(item.quantity || 0),
-                unit_price: Number(item.price || 0),
-                total: Number(item.quantity || 0) * Number(item.price || 0)
-              });
-          }
-        }
-      }
-
-      // 4. refundTotalAmount above only ever covers ready_made items -- if
-      // the order also has custom items still in progress (and paid for),
-      // this return only settles the ready-made portion. Cancelling the
-      // WHOLE order here would silently drop those custom items from
-      // their normal workflow despite never being returned. Only when the
-      // order was fully ready-made (no custom items at all) does a full
-      // return correctly mean the order itself is done -> cancelled.
-      const orderHasCustomItems = (order.items || []).some((item: any) => item.type === 'custom');
-      if (!orderHasCustomItems) {
-        const { error: orderUpdateError } = await supabase
-          .from('orders')
-          .update({
-            status: 'cancelled',
-            updated_at: new Date().toISOString(),
-            items: order.items || [],
-            history: [...(order.history || []), historyEntry]
-          })
-          .eq('id', order.id);
-
-        if (orderUpdateError) throw orderUpdateError;
-      }
-
-      // 5. Audit trail
-      await logEmployeeAction(
-        tenantId,
-        currentStaff?.id || 'system',
-        currentStaff?.name || 'System',
-        'create_sales_return',
-        `تم عمل مرتجع للفاتورة #${order.orderNumber || order.id.slice(-6).toUpperCase()} بمبلغ ${refundTotalAmount} ريال بطريقة ${refundMethod === 'cash' ? 'نقداً' : refundMethod === 'network' ? 'شبكة' : 'تحويل بنكي'}`
-      );
 
       toastSuccess(t('sales_returns.return_success_msg'));
       setOrder(null);
