@@ -46,11 +46,19 @@ let orderNumberCounter = Math.floor(Math.random() * 1000);
 
 export function generateOrderNumber() {
   // Client-side, non-atomic, no retry-on-collision at any call site
-  // (seen-master-backlog-and-structure.md P2 item 11) -- the previous
-  // seconds-resolution timestamp + 2-digit suffix gave two orders created
-  // within the same second (plausible with multiple cashiers/branches
-  // active at once) a real 1-in-90 chance of landing on the same number.
-  const now = Date.now() % 10000000;
+  // (seen-master-backlog-and-structure.md P2 item 11, further tightened per
+  // seen-deep-technical-audit.md Medium #2) -- the previous seconds-
+  // resolution timestamp + 2-digit suffix gave two orders created within
+  // the same second a real 1-in-90 chance of colliding.
+  //
+  // Full Date.now() now, not `% 10000000` -- that truncation discarded the
+  // timestamp's higher-order digits, so two calls genuinely ~2.78 hours
+  // apart (any multiple of 10,000,000ms) could land on the same reduced
+  // value despite being nowhere near each other in real time. The full
+  // value plus the 3-digit suffix stays well under
+  // Number.MAX_SAFE_INTEGER (16 digits vs. its 16-digit ceiling starting
+  // with 9), so this doesn't introduce a precision gap either.
+  const now = Date.now();
   orderNumberCounter = (orderNumberCounter + 1) % 1000;
   return Number(`${now}${String(orderNumberCounter).padStart(3, '0')}`);
 }
