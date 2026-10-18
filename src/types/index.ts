@@ -609,6 +609,9 @@ export interface CreditNote {
   refundedTax: number;
   issuedAt: string;
   createdBy: string;
+  // seen-ai-assistant-zatca-cr-task.md, ZATCA #1 -- same vocabulary as
+  // TaxInvoice's own zatca status, see /api/zatca/submit-credit-note.
+  zatcaStatus?: 'not_applicable' | 'pending' | 'cleared' | 'reported' | 'rejected';
 }
 
 export interface AppNotification {

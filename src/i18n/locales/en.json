@@ -11,6 +11,9 @@
     "assistant_disabled_message": "The smart assistant has been temporarily disabled by the platform admin.",
     "not_configured_message": "The smart assistant hasn't been set up yet — please try again later.",
     "error_generic": "Something went wrong talking to the assistant. Please try again.",
+    "request_timeout": "The reply took too long, please try again.",
+    "request_cancelled": "Request cancelled.",
+    "cancel_request": "Cancel",
     "empty_state_greeting": "Hi {{name}}! How can I help you today?",
     "new_conversation": "New conversation",
     "card_summary": "Summary",
@@ -32,6 +35,13 @@
     "card_tax": "Tax",
     "card_discount": "Discount",
     "card_access_denied": "Not available",
+    "card_supplier_balance": "Supplier balance",
+    "card_supplier_not_found": "Supplier not found",
+    "card_pending_pos": "{{count}} purchase order(s) not yet received",
+    "card_period_comparison": "Period comparison",
+    "card_customer_stats": "Customer stats",
+    "card_total_customers": "Total customers",
+    "card_new_customers": "New customers",
     "fetching_data": "Fetching data...",
     "guided_tour_question": "Want me to walk you there in the interface now?",
     "guided_tour_yes": "Yes, guide me",
@@ -540,7 +550,13 @@
     "selected_invoice": "Selected Invoice",
     "submitting": "Issuing...",
     "success_issued": "Credit Note issued successfully",
-    "title": "Credit Notes"
+    "title": "Credit Notes",
+    "zatca_status": "ZATCA status",
+    "zatca_cleared": "Cleared",
+    "zatca_reported": "Reported",
+    "zatca_pending": "Submitting",
+    "zatca_rejected": "Rejected",
+    "zatca_not_applicable": "Not linked to ZATCA"
   },
   "customers": {
     "account_statement": "Account Statement",
@@ -4888,7 +4904,8 @@
     "phone_format": "Invalid phone format",
     "pin_four_digits": "Must be 4 digits.",
     "required": "This field is required",
-    "tax_number_format": "Tax number must be 15 digits"
+    "tax_number_format": "Tax number must be 15 digits",
+    "commercial_register_format": "Commercial register number must be 10 digits"
   },
   "whatsapp": {
     "default_template": "Hello {customer_name}, your order {order_id} has been received. Total: {total_amount} SAR. You can track your order status here: {invoice_url}",

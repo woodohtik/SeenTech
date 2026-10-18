@@ -413,6 +413,140 @@ export async function buildAssistantTools(ctx: AssistantToolContext) {
     'suppliers', 'reports_filters', 'reports_tabs', 'settings',
   ] as const;
 
+  // seen-ai-assistant-zatca-cr-task.md #5: نفس بوابة الصلاحية التي تحمي شاشة
+  // الموردين/المشتريات بالكامل في الواجهة (suppliers.manage -- لا يوجد
+  // suppliers.view منفصل في هذا المشروع، انظر App.tsx/ProtectedRoute).
+  const getSupplierBalance = tool({
+    description: 'رصيد مورد معيّن (كم تدين له المنشأة)، وعدد أوامر الشراء المرسَلة له التي لم تُستلَم بعد. البحث بالاسم كاملاً أو جزءاً منه.',
+    inputSchema: z.object({
+      supplierName: z.string().describe('اسم المورد كاملاً أو جزء منه'),
+    }),
+    execute: async ({ supplierName }) => {
+      if (!(await hasOperationalPermission(ctx, 'suppliers.manage'))) {
+        await logToolCall(ctx, 'getSupplierBalance', { supplierName }, true, 'insufficient_permission');
+        return { denied: true, message: DENIED_ROLE_MESSAGE };
+      }
+      await logToolCall(ctx, 'getSupplierBalance', { supplierName }, false);
+
+      const safeName = sanitizeForOrFilter(supplierName);
+      const { data: suppliers, error } = await supabaseAdmin
+        .from('suppliers')
+        .select('id, name, phone, balance, category')
+        .eq('tenant_id', ctx.tenantId)
+        .ilike('name', `%${safeName}%`)
+        .limit(5);
+      if (error) throw new Error(error.message);
+      if (!suppliers || suppliers.length === 0) return { found: false, suppliers: [] };
+
+      const supplierIds = suppliers.map((s: any) => s.id);
+      const { data: pendingPOs } = await supabaseAdmin
+        .from('purchase_orders')
+        .select('supplier_id, po_number, remaining_amount')
+        .eq('tenant_id', ctx.tenantId)
+        .in('supplier_id', supplierIds)
+        .in('status', ['draft', 'sent']);
+
+      return {
+        found: true,
+        suppliers: suppliers.map((s: any) => ({
+          name: s.name,
+          phone: s.phone,
+          category: s.category,
+          balanceOwed: Number(s.balance) || 0,
+          pendingPurchaseOrders: (pendingPOs || []).filter((po: any) => po.supplier_id === s.id).length,
+        })),
+      };
+    },
+  });
+
+  // مقارنة فترتين زمنيتين -- يُشغِّل assistant_get_sales_summary (نفس RPC
+  // التي تستخدمها getSalesSummary) مرتين، مرة لكل فترة، ويرجع الفرق جاهزاً
+  // بدل ترك نموذج اللغة يطرح رقمين بنفسه (عرضة لأخطاء حسابية).
+  const comparePeriods = tool({
+    description: 'يقارن إجمالي المبيعات بين فترتين زمنيتين (مثال: هذا الشهر مقابل الشهر الماضي). للإدارة فقط.',
+    inputSchema: z.object({
+      periodAStart: z.string().describe('بداية الفترة الأولى (الأحدث عادةً) YYYY-MM-DD'),
+      periodAEnd: z.string().describe('نهاية الفترة الأولى YYYY-MM-DD'),
+      periodBStart: z.string().describe('بداية الفترة الثانية (للمقارنة) YYYY-MM-DD'),
+      periodBEnd: z.string().describe('نهاية الفترة الثانية YYYY-MM-DD'),
+    }),
+    execute: async ({ periodAStart, periodAEnd, periodBStart, periodBEnd }) => {
+      if (!isAdminRole(ctx.userRole)) {
+        await logToolCall(ctx, 'comparePeriods', { periodAStart, periodAEnd, periodBStart, periodBEnd }, true, 'insufficient_role');
+        return { denied: true, message: DENIED_ROLE_MESSAGE };
+      }
+      const a = clampDateRange(periodAStart, periodAEnd);
+      const b = clampDateRange(periodBStart, periodBEnd);
+      await logToolCall(ctx, 'comparePeriods', { periodA: a, periodB: b }, false);
+
+      const [resA, resB] = await Promise.all([
+        supabaseAdmin.rpc('assistant_get_sales_summary', { p_tenant_id: ctx.tenantId, p_start: a.start, p_end: a.end }),
+        supabaseAdmin.rpc('assistant_get_sales_summary', { p_tenant_id: ctx.tenantId, p_start: b.start, p_end: b.end }),
+      ]);
+      if (resA.error) throw new Error(resA.error.message);
+      if (resB.error) throw new Error(resB.error.message);
+
+      const salesA = Number(resA.data?.totalSales) || 0;
+      const salesB = Number(resB.data?.totalSales) || 0;
+      const changeAmount = salesA - salesB;
+      const changePercent = salesB !== 0 ? Number(((changeAmount / salesB) * 100).toFixed(1)) : null;
+
+      return {
+        periodA: { ...resA.data, startDate: a.start, endDate: a.end },
+        periodB: { ...resB.data, startDate: b.start, endDate: b.end },
+        changeAmount,
+        changePercent,
+      };
+    },
+  });
+
+  const getCustomerStats = tool({
+    description: 'إحصاءات العملاء: العدد الإجمالي، عدد العملاء الجدد المسجَّلين خلال فترة محددة.',
+    inputSchema: z.object({
+      startDate: z.string().optional().describe('بداية فترة "عملاء جدد" YYYY-MM-DD -- اختياري'),
+      endDate: z.string().optional().describe('نهاية فترة "عملاء جدد" YYYY-MM-DD -- اختياري'),
+    }),
+    execute: async ({ startDate, endDate }) => {
+      if (!(await hasOperationalPermission(ctx, 'customers.view'))) {
+        await logToolCall(ctx, 'getCustomerStats', { startDate, endDate }, true, 'insufficient_permission');
+        return { denied: true, message: DENIED_ROLE_MESSAGE };
+      }
+      await logToolCall(ctx, 'getCustomerStats', { startDate, endDate }, false);
+
+      const { count: totalCustomers, error: totalErr } = await supabaseAdmin
+        .from('customers')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', ctx.tenantId)
+        .neq('is_test', true);
+      if (totalErr) throw new Error(totalErr.message);
+
+      let newCustomersInPeriod: number | null = null;
+      let appliedStart: string | null = null;
+      let appliedEnd: string | null = null;
+      if (startDate && endDate) {
+        const { start, end } = clampDateRange(startDate, endDate);
+        appliedStart = start;
+        appliedEnd = end;
+        const { count, error: periodErr } = await supabaseAdmin
+          .from('customers')
+          .select('id', { count: 'exact', head: true })
+          .eq('tenant_id', ctx.tenantId)
+          .neq('is_test', true)
+          .gte('created_at', start)
+          .lte('created_at', `${end}T23:59:59`);
+        if (periodErr) throw new Error(periodErr.message);
+        newCustomersInPeriod = count ?? 0;
+      }
+
+      return {
+        totalCustomers: totalCustomers ?? 0,
+        newCustomersInPeriod,
+        appliedStartDate: appliedStart,
+        appliedEndDate: appliedEnd,
+      };
+    },
+  });
+
   const guidedTour = tool({
     description: 'اعرض أو فعّل جولة تعليمية تفاعلية تُشير فعلياً إلى مكان الإجراء في واجهة النظام (نفس نظام الجولة التي تظهر أول مرة عند تسجيل الدخول، لكن مركّزة على موضوع واحد). استدعِ هذه الأداة دائماً مباشرة بعد شرح "كيف أضيف/أنشئ/أسجّل ..." بـ action="offer" — الأداة نفسها تعرض للمستخدم زر توجيه، فلا تكتفِ بسؤاله نصياً فقط دون استدعائها. إن وافق المستخدم لاحقاً بالنص على عرض سابق (مثل "نعم" أو "أكيد")، استدعها مرة أخرى بنفس الـ topic و action="start" لتشغيل الجولة فوراً. لا تستخدمها لموضوع لم تشرحه للمستخدم للتو.',
     inputSchema: z.object({
@@ -435,6 +569,9 @@ export async function buildAssistantTools(ctx: AssistantToolContext) {
     getPendingOrders,
     getRevenueReport,
     getDailyClosingReport,
+    getSupplierBalance,
+    comparePeriods,
+    getCustomerStats,
     guidedTour,
   };
 }

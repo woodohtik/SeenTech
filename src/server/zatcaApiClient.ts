@@ -87,6 +87,33 @@ async function parseJsonOrText(res: Response): Promise<unknown> {
   }
 }
 
+/**
+ * seen-ai-assistant-zatca-cr-task.md, ZATCA #3: one retry, short delay,
+ * ONLY for a transient failure -- the fetch itself throwing (network error,
+ * DNS, connection reset, or this request's own AbortSignal.timeout firing)
+ * or a 5xx from ZATCA's gateway. A real 4xx rejection (invalid request,
+ * bad CSR, business-rule failure) is never retried here -- retrying that
+ * would just waste 10 more seconds reproducing the exact same rejection,
+ * and every call site above already distinguishes 4xx from a timeout via
+ * ZatcaApiError's status.
+ *
+ * `buildInit` is called fresh for each attempt (not a static RequestInit)
+ * specifically so the retry gets its own new AbortSignal.timeout(10_000) --
+ * reusing the first attempt's signal would mean a request that failed near
+ * the 10s mark retries against a signal that's already expired or about to.
+ */
+async function fetchWithRetry(url: string, buildInit: () => RequestInit): Promise<Response> {
+  try {
+    const res = await fetch(url, buildInit());
+    if (res.status < 500) return res;
+    await new Promise((r) => setTimeout(r, 1000));
+    return fetch(url, buildInit());
+  } catch (err) {
+    await new Promise((r) => setTimeout(r, 1000));
+    return fetch(url, buildInit());
+  }
+}
+
 export interface ComplianceCsidResult {
   /** The issued certificate, base64-encoded by ZATCA (decode to get the PEM/DER X.509 cert). */
   binarySecurityToken: string;
@@ -135,7 +162,7 @@ export async function submitComplianceInvoice(
   env: ZatcaEnvironment = 'sandbox'
 ): Promise<ZatcaInvoiceResponse> {
   const url = `${ZATCA_BASE_URL[env]}/compliance/invoices`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, () => ({
     method: 'POST',
     signal: AbortSignal.timeout(10_000),
     headers: {
@@ -149,7 +176,7 @@ export async function submitComplianceInvoice(
       uuid: submission.uuid,
       invoice: submission.invoiceBase64,
     }),
-  });
+  }));
   const body = await parseJsonOrText(res);
   if (!res.ok) {
     throw new ZatcaApiError(`ZATCA Compliance Invoice submission failed (${res.status})`, res.status, body);
@@ -170,7 +197,7 @@ export async function requestProductionCsid(
   env: ZatcaEnvironment = 'sandbox'
 ): Promise<ComplianceCsidResult> {
   const url = `${ZATCA_BASE_URL[env]}/production/csids`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, () => ({
     method: 'POST',
     signal: AbortSignal.timeout(10_000),
     headers: {
@@ -180,7 +207,7 @@ export async function requestProductionCsid(
       Authorization: basicAuthHeader(complianceAuth),
     },
     body: JSON.stringify({ compliance_request_id: complianceRequestId }),
-  });
+  }));
   const body = await parseJsonOrText(res);
   if (!res.ok) {
     throw new ZatcaApiError(`ZATCA Production CSID request failed (${res.status})`, res.status, body);
@@ -208,7 +235,7 @@ export async function reportInvoice(
   env: ZatcaEnvironment = 'production'
 ): Promise<ZatcaInvoiceResponse> {
   const url = `${ZATCA_BASE_URL[env]}/invoices/reporting/single`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, () => ({
     method: 'POST',
     signal: AbortSignal.timeout(10_000),
     headers: {
@@ -222,7 +249,7 @@ export async function reportInvoice(
       uuid: submission.uuid,
       invoice: submission.invoiceBase64,
     }),
-  });
+  }));
   const body = await parseJsonOrText(res);
   if (!res.ok) {
     throw new ZatcaApiError(`ZATCA Reporting failed (${res.status})`, res.status, body);
@@ -244,7 +271,7 @@ export async function clearInvoice(
   env: ZatcaEnvironment = 'production'
 ): Promise<ZatcaInvoiceResponse> {
   const url = `${ZATCA_BASE_URL[env]}/invoices/clearance/single`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, () => ({
     method: 'POST',
     signal: AbortSignal.timeout(10_000),
     headers: {
@@ -259,7 +286,7 @@ export async function clearInvoice(
       uuid: submission.uuid,
       invoice: submission.invoiceBase64,
     }),
-  });
+  }));
   const body = await parseJsonOrText(res);
   if (!res.ok) {
     throw new ZatcaApiError(`ZATCA Clearance failed (${res.status})`, res.status, body);
@@ -287,7 +314,7 @@ export async function requestComplianceCsid(
   env: ZatcaEnvironment = 'sandbox'
 ): Promise<ComplianceCsidResult> {
   const url = `${ZATCA_BASE_URL[env]}/compliance`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, () => ({
     method: 'POST',
     signal: AbortSignal.timeout(10_000),
     headers: {
@@ -298,7 +325,7 @@ export async function requestComplianceCsid(
       OTP: otp,
     },
     body: JSON.stringify({ csr: csrBase64 }),
-  });
+  }));
 
   const body = await parseJsonOrText(res);
   if (!res.ok) {

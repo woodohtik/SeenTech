@@ -1893,7 +1893,7 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
     const roleLabel = roleLabels[req.user?.role || ''] || 'مستخدم';
     const toolsAddendum = `
 
-لديك أدوات وصول لبيانات حقيقية من نظام المتجر (مبيعات، فواتير، مخزون، عملاء، طلبات). استخدمها دائماً عندما يسأل المستخدم عن أرقام أو بيانات فعلية، بدل التخمين أو الإجابة من معرفة عامة. لخّص نتائج الأدوات بلغة عربية واضحة وودية، لا تكتفِ بإرجاع أرقام جافة فقط. أدواتك قراءة فقط تماماً: إذا طلب المستخدم تعديل أو حذف أي بيانات، وجّهه لاستخدام واجهة النظام العادية بدل محاولة تنفيذ ذلك. بعض الأدوات (التقارير المالية التفصيلية) متاحة فقط لأدوار الإدارة — إذا رفضتها الأداة، أخبر المستخدم بذلك بأدب دون محاولة الإلحاح أو الالتفاف على القيد مهما أعاد صياغة الطلب.`;
+لديك أدوات وصول لبيانات حقيقية من نظام المتجر (مبيعات، فواتير، مخزون، عملاء، طلبات). استخدمها دائماً عندما يسأل المستخدم عن أرقام أو بيانات فعلية، بدل التخمين أو الإجابة من معرفة عامة. لخّص نتائج الأدوات بلغة عربية واضحة وودية، لا تكتفِ بإرجاع أرقام جافة فقط. أدواتك قراءة فقط تماماً: إذا طلب المستخدم تعديل أو حذف أي بيانات، وجّهه لاستخدام واجهة النظام العادية بدل محاولة تنفيذ ذلك. بعض الأدوات (التقارير المالية التفصيلية) متاحة فقط لأدوار الإدارة — إذا رفضتها الأداة، أخبر المستخدم بذلك بأدب دون محاولة الإلحاح أو الالتفاف على القيد مهما أعاد صياغة الطلب. إن أخطأت أداة أثناء التنفيذ (لا رفض صلاحية، بل خطأ فعلي)، قل للمستخدم صراحة أن البيانات تعذّر جلبها الآن وأن يحاول مرة أخرى — لا تُخمّن الرقم أو تُقدّره بنفسك مهما بدا قريباً من المعقول.`;
     const contextualSystemPrompt = `${ASSISTANT_PERSONA_AND_KNOWLEDGE}\n\n${settings.system_prompt}${toolsAddendum}\n\nيتحدث معك الآن: ${userName || ''} (${roleLabel}).`;
 
     // ترتيب المرشّحين: المزوّد النشط أولاً، ثم الترتيب الاحتياطي (بدون
@@ -1934,7 +1934,14 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
       userId: req.user?.uid,
       userRole: req.user?.role,
     });
-    const conversationMessages: Array<{ role: 'assistant' | 'user'; content: string }> = messages.map((m: any) => ({ role: m.role === 'assistant' ? 'assistant' as const : 'user' as const, content: String(m.content || '') }));
+    // seen-ai-assistant-zatca-cr-task.md #3: حد دفاعي على الخادم نفسه، بصرف
+    // النظر عمّا يرسله العميل -- SeenAIFab.tsx يقتطع لآخر MAX_HISTORY_MESSAGES
+    // (20) قبل الإرسال أصلاً، لكن هذا يبقى السد الفعلي ضد أي عميل آخر (أو
+    // نسخة قديمة مخزَّنة محلياً) يرسل سجلاً كاملاً بلا قطع.
+    const MAX_HISTORY_MESSAGES = 20;
+    const conversationMessages: Array<{ role: 'assistant' | 'user'; content: string }> = messages
+      .slice(-MAX_HISTORY_MESSAGES)
+      .map((m: any) => ({ role: m.role === 'assistant' ? 'assistant' as const : 'user' as const, content: String(m.content || '') }));
 
     await streamAssistantReply(
       candidates,
@@ -2232,6 +2239,228 @@ app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any
 }));
 
 // =============================================================================
+// seen-ai-assistant-zatca-cr-task.md, ZATCA #1: submits a credit note
+// (sales_returns row, created today via CreditNotes.tsx) to ZATCA as type
+// code 381, referencing the original invoice via cac:BillingReference.
+// Mirrors /api/zatca/submit-invoice's shape closely on purpose (two-pass
+// build -> hash -> sign -> rebuild, atomic claim, chain-tip swap) --
+// deliberately NOT a shared helper with submit-invoice: the two pull from
+// different source tables (sales_returns vs tax_invoices/orders) with just
+// enough different field shapes that forcing one shared function would
+// trade a little duplication for a worse, harder-to-follow abstraction.
+//
+// Debit notes (383) are NOT wired here -- there is no existing data model or
+// UI anywhere in this project for "debit note" the way CreditNotes.tsx/
+// sales_returns already exist for credit notes (a debit note is a merchant
+// invoicing a customer for MORE after the fact, not a return -- a different
+// business flow with no current anchor point). buildCreditNoteXml in
+// zatcaInvoiceXml.ts already supports either via its invoiceTypeCode
+// parameter, so adding a debit-note route later is mechanical once that
+// workflow actually exists; inventing one now with no real entry point
+// would just be dead, never-wired code.
+// =============================================================================
+app.post("/api/zatca/submit-credit-note", authenticate, asyncHandler(async (req: any, res) => {
+  const tenantId = req.user?.tenantId;
+  const { creditNoteId } = req.body || {};
+  if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
+  if (typeof creditNoteId !== 'string' || !creditNoteId) return res.status(400).json({ error: 'creditNoteId is required' });
+
+  const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+
+  const { data: prodCreds } = await supabaseAdmin
+    .from('zatca_credentials')
+    .select('certificate, private_key_encrypted, secret_encrypted')
+    .eq('tenant_id', tenantId)
+    .eq('csid_type', 'production')
+    .maybeSingle();
+
+  // No production CSID for this tenant yet -- same "normal case" as
+  // submit-invoice; zatca_status already defaults to 'not_applicable'.
+  if (!prodCreds) {
+    return res.json({ ok: true, status: 'not_applicable' });
+  }
+
+  const { data: note } = await supabaseAdmin
+    .from('sales_returns')
+    .select('id, tenant_id, order_id, invoice_id, return_number, reason, refunded_amount, returned_at, previous_invoice_hash, zatca_status')
+    .eq('id', creditNoteId)
+    .maybeSingle();
+  if (!note || note.tenant_id !== tenantId) {
+    return res.status(404).json({ error: 'Credit note not found' });
+  }
+
+  // Same idempotency reasoning as submit-invoice: a genuinely failed/
+  // 'not_applicable' note can still be retried, a cleared/reported one must not be re-submitted.
+  if (note.zatca_status === 'cleared' || note.zatca_status === 'reported') {
+    return res.json({ ok: true, status: note.zatca_status, replayed: true });
+  }
+
+  const { data: originalInvoice } = await supabaseAdmin
+    .from('tax_invoices')
+    .select('invoice_number, tax_rate')
+    .eq('id', note.invoice_id)
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+  if (!originalInvoice) {
+    return res.status(404).json({ error: 'Original invoice not found for this credit note' });
+  }
+
+  const { data: tenant } = await supabaseAdmin
+    .from('tenants')
+    .select('name, vat_number, commercial_register, address, city, postal_code')
+    .eq('id', tenantId)
+    .maybeSingle();
+  if (!tenant?.vat_number || !tenant?.name) {
+    return res.status(409).json({ error: 'Tenant tax settings incomplete; cannot submit to ZATCA' });
+  }
+
+  const { decryptZatcaSecret } = await import('./src/server/zatcaCrypto.ts');
+  const { signData, sha256Base64 } = await import('./src/server/zatcaSigning.ts');
+  const { buildCreditNoteXml } = await import('./src/server/zatcaInvoiceXml.ts');
+  const { clearInvoice, reportInvoice, ZatcaApiError } = await import('./src/server/zatcaApiClient.ts');
+  const { decodeOrderB2BNotes } = await import('./src/utils/b2bHelper.ts');
+
+  let isB2B = false;
+  let b2bMeta: { b2bCompanyName?: string; b2bTRN?: string } = {};
+  if (note.order_id) {
+    const { data: originalOrder } = await supabaseAdmin
+      .from('orders')
+      .select('notes')
+      .eq('id', note.order_id)
+      .maybeSingle();
+    const decoded = decodeOrderB2BNotes(originalOrder?.notes);
+    isB2B = !!decoded.isB2B;
+    b2bMeta = decoded;
+  }
+
+  const privateKeyPem = decryptZatcaSecret(prodCreds.private_key_encrypted);
+  const secret = decryptZatcaSecret(prodCreds.secret_encrypted);
+  const auth = { binarySecurityToken: prodCreds.certificate, secret };
+
+  const rawRate = Number(originalInvoice.tax_rate) || 15;
+  const vatPercent = rawRate > 1 ? rawRate : rawRate * 100;
+  const refundedAmount = Number(note.refunded_amount) || 0;
+  // refunded_amount is tax-inclusive (CreditNotes.tsx caps it at the
+  // original invoice's own total_amount, which is tax-inclusive) -- back
+  // out the tax-exclusive subtotal the same way CreditNotes.tsx's own
+  // refundTax calculation already does, so this XML's totals are internally
+  // consistent (subtotal + tax = totalWithTax) rather than double-counting tax.
+  const subtotal = refundedAmount / (1 + vatPercent / 100);
+  const taxAmount = refundedAmount - subtotal;
+
+  const now = new Date();
+  const uuid = crypto.randomUUID();
+
+  const commonInput = {
+    invoiceNumber: `CN-${note.return_number}`,
+    uuid,
+    issueDateIso: now.toISOString().slice(0, 10),
+    issueTimeIso: now.toISOString().slice(11, 19),
+    seller: {
+      legalName: tenant.name,
+      vatNumber: tenant.vat_number,
+      crn: tenant.commercial_register || undefined,
+      street: tenant.address || undefined,
+      city: tenant.city || undefined,
+      postalCode: tenant.postal_code || undefined,
+      countryCode: 'SA',
+    },
+    paymentMeansCode: '10',
+    lines: [{
+      id: '1',
+      itemName: note.reason || 'مرتجع',
+      quantity: 1,
+      unitPrice: subtotal,
+      lineExtensionAmount: subtotal,
+      taxPercent: vatPercent,
+      taxAmount,
+    }],
+    subtotal,
+    taxAmount,
+    totalWithTax: refundedAmount,
+    previousInvoiceHash: note.previous_invoice_hash,
+    invoiceHash: '',
+    billingReferenceInvoiceNumber: originalInvoice.invoice_number,
+    reason: note.reason || undefined,
+    buyer: isB2B ? { legalName: b2bMeta.b2bCompanyName || '', vatNumber: b2bMeta.b2bTRN || '' } : undefined,
+  };
+
+  const unsignedXml = buildCreditNoteXml(commonInput);
+  const invoiceHash = sha256Base64(unsignedXml);
+  const signatureBase64 = signData(invoiceHash, privateKeyPem);
+  const signedXml = buildCreditNoteXml({ ...commonInput, invoiceHash, signatureBase64 });
+  const invoiceBase64 = Buffer.from(signedXml, 'utf8').toString('base64');
+
+  const submission = { invoiceHash, uuid, invoiceBase64 };
+
+  try {
+    // PIH chain claim FIRST (separate from the submission-status claim right
+    // after it): a note only ever gets one chain link regardless of how many
+    // times submission is retried -- zatca_claim_credit_note_pih is itself
+    // idempotent (returns the existing hash on a second call), so calling it
+    // again here on a retry is safe and does not advance the chain twice.
+    const { data: claimedHash, error: pihClaimError } = await supabaseAdmin.rpc('zatca_claim_credit_note_pih', {
+      p_tenant_id: tenantId,
+      p_note_id: note.id,
+    });
+    if (pihClaimError) return internalError(res, "Error in POST /api/zatca/submit-credit-note (pih claim):", pihClaimError);
+
+    // Same atomic submission-status mutex as submit-invoice.
+    const { data: claimed, error: claimError } = await supabaseAdmin
+      .from('sales_returns')
+      .update({ zatca_status: 'pending' })
+      .eq('id', note.id)
+      .not('zatca_status', 'in', '(cleared,reported,pending)')
+      .select('id')
+      .maybeSingle();
+    if (claimError) return internalError(res, "Error in POST /api/zatca/submit-credit-note (claim):", claimError);
+    if (!claimed) {
+      return res.status(409).json({ error: 'ZATCA submission already in progress or completed for this credit note' });
+    }
+
+    const result = isB2B
+      ? await clearInvoice(submission, auth, 'production')
+      : await reportInvoice(submission, auth, 'production');
+
+    const { data: chainAdvanced, error: chainError } = await supabaseAdmin.rpc('zatca_advance_chain_with_real_hash', {
+      p_tenant_id: tenantId,
+      p_order_id: note.id,
+      p_real_hash: invoiceHash,
+    });
+    if (chainError || chainAdvanced !== true) {
+      const chainFailMsg = '[zatca/submit-credit-note] PIH CHAIN NOT ADVANCED -- credit note cleared/reported with ZATCA but the chain tip still holds a stale hash (or the claimed hash above was already stale). Every subsequent invoice/note for this tenant will chain off the WRONG previous hash until this is investigated.';
+      logger.error({ tenantId, noteId: note.id, invoiceHash, err: chainError }, chainFailMsg);
+      captureServerException(new Error(chainFailMsg), { tenantId, noteId: note.id, invoiceHash, chainError });
+    }
+
+    await supabaseAdmin
+      .from('sales_returns')
+      .update({
+        invoice_hash: invoiceHash,
+        zatca_status: isB2B ? 'cleared' : 'reported',
+        zatca_response: chainAdvanced === true ? result.raw : { originalResponse: result.raw, _pihChainAdvanceFailed: true },
+        zatca_submitted_at: now.toISOString(),
+      })
+      .eq('id', note.id);
+
+    res.json({ ok: true, status: isB2B ? 'cleared' : 'reported' });
+  } catch (err: any) {
+    const isZatcaError = err instanceof ZatcaApiError;
+    await supabaseAdmin
+      .from('sales_returns')
+      .update({
+        zatca_status: 'rejected',
+        zatca_response: isZatcaError ? err.body : { message: String(err?.message || err) },
+        zatca_submitted_at: now.toISOString(),
+      })
+      .eq('id', note.id);
+
+    logger.error({ err }, '[zatca/submit-credit-note]');
+    res.status(502).json({ error: 'ZATCA rejected or failed to process this credit note', status: 'rejected', isB2B });
+  }
+}));
+
+// =============================================================================
 // ZATCA merchant onboarding wizard (seen-zatca-service-process.md) -- the
 // sequence a tenant runs ONCE to actually connect to ZATCA (CSR -> OTP ->
 // Compliance CSID -> compliance tests -> Production CSID). Everything above
@@ -2344,7 +2573,7 @@ app.post("/api/zatca/request-compliance-csid", authenticate, authorize(['owner',
   if (!pending) return res.status(409).json({ error: 'لا يوجد CSR معلَّق -- ولِّد واحداً أولاً (الخطوة ب)' });
 
   const { requestComplianceCsid, ZatcaApiError } = await import('./src/server/zatcaApiClient.ts');
-  const { encryptZatcaSecret } = await import('./src/server/zatcaCrypto.ts');
+  const { encryptZatcaSecret, extractCertificateExpiry } = await import('./src/server/zatcaCrypto.ts');
 
   try {
     const result = await requestComplianceCsid(pending.csr_base64, otp, zatcaTestEnvironment());
@@ -2356,6 +2585,8 @@ app.post("/api/zatca/request-compliance-csid", authenticate, authorize(['owner',
         private_key_encrypted: pending.private_key_encrypted, // already encrypted -- same key pair the CSR was built with
         secret_encrypted: encryptZatcaSecret(result.secret),
         request_id: result.requestId,
+        expires_at: extractCertificateExpiry(result.binarySecurityToken)?.toISOString() ?? null,
+        expiry_alert_sent_at: null,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'tenant_id,csid_type' }
@@ -2462,7 +2693,7 @@ app.post("/api/zatca/request-production-csid", authenticate, authorize(['owner',
     .maybeSingle();
   if (!creds?.request_id) return res.status(409).json({ error: 'لا يوجد طلب Compliance CSID مكتمل -- أكمِل الخطوات السابقة أولاً' });
 
-  const { decryptZatcaSecret, encryptZatcaSecret } = await import('./src/server/zatcaCrypto.ts');
+  const { decryptZatcaSecret, encryptZatcaSecret, extractCertificateExpiry } = await import('./src/server/zatcaCrypto.ts');
   const { requestProductionCsid, ZatcaApiError } = await import('./src/server/zatcaApiClient.ts');
 
   const auth = { binarySecurityToken: creds.certificate, secret: decryptZatcaSecret(creds.secret_encrypted) };
@@ -2483,6 +2714,8 @@ app.post("/api/zatca/request-production-csid", authenticate, authorize(['owner',
         private_key_encrypted: creds.private_key_encrypted, // same key pair throughout -- ZATCA re-certifies the same CSR's key, never a new one
         secret_encrypted: encryptZatcaSecret(result.secret),
         request_id: result.requestId,
+        expires_at: extractCertificateExpiry(result.binarySecurityToken)?.toISOString() ?? null,
+        expiry_alert_sent_at: null,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'tenant_id,csid_type' }
@@ -2501,6 +2734,61 @@ app.post("/api/zatca/request-production-csid", authenticate, authorize(['owner',
     }
     internalError(res, "Error in POST /api/zatca/request-production-csid:", err);
   }
+}));
+
+// =============================================================================
+// seen-ai-assistant-zatca-cr-task.md, ZATCA #2: مراقبة انتهاء صلاحية شهادات
+// زاتكا -- Vercel Cron يستدعي هذا المسار يومياً (vercel.json). لا جلسة
+// مستخدم هنا (لا "authenticate" العادية) -- التحقق عبر CRON_SECRET فقط، بنفس
+// الطريقة الموصى بها من Vercel نفسها لحماية مسارات الـcron من أي استدعاء
+// عام غير مصرَّح به (vercel.com/docs/cron-jobs/manage-cron-jobs#securing-cron-jobs).
+// يُنبِّه مرة واحدة فقط لكل شهادة (عبر expiry_alert_sent_at) -- لا نفس
+// التنبيه كل يوم حتى يتجدد الاتصال.
+// =============================================================================
+const ZATCA_CERT_EXPIRY_ALERT_WINDOW_DAYS = 30;
+
+app.get("/api/cron/zatca-cert-expiry-check", asyncHandler(async (req: any, res) => {
+  const cronSecret = (process.env.CRON_SECRET || '').trim();
+  if (!cronSecret || req.headers.authorization !== `Bearer ${cronSecret}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+  const cutoff = new Date(Date.now() + ZATCA_CERT_EXPIRY_ALERT_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: expiringSoon, error } = await supabaseAdmin
+    .from('zatca_credentials')
+    .select('tenant_id, csid_type, expires_at')
+    .eq('csid_type', 'production')
+    .not('expires_at', 'is', null)
+    .lte('expires_at', cutoff)
+    .is('expiry_alert_sent_at', null);
+  if (error) return internalError(res, "Error in GET /api/cron/zatca-cert-expiry-check:", error);
+
+  let alerted = 0;
+  for (const row of expiringSoon || []) {
+    const daysLeft = Math.max(0, Math.ceil((new Date(row.expires_at).getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
+    try {
+      await supabaseAdmin.from('notifications').insert({
+        tenant_id: row.tenant_id,
+        title: 'شهادة زاتكا تقترب من انتهاء الصلاحية',
+        message: `شهادة زاتكا (CSID) الخاصة بمتجرك ستنتهي خلال ${daysLeft} يوماً تقريباً. تواصل مع زاتكا لتجديدها قبل الانتهاء لتفادي توقف إصدار الفواتير الإلكترونية.`,
+        type: 'alert',
+        status: 'unread',
+        metadata: { source: 'zatca_cert_expiry', expires_at: row.expires_at, days_left: daysLeft },
+      });
+      await supabaseAdmin
+        .from('zatca_credentials')
+        .update({ expiry_alert_sent_at: new Date().toISOString() })
+        .eq('tenant_id', row.tenant_id)
+        .eq('csid_type', 'production');
+      alerted++;
+    } catch (err) {
+      logger.error({ err, tenantId: row.tenant_id }, '[cron/zatca-cert-expiry-check] failed to alert one tenant -- continuing with the rest');
+    }
+  }
+
+  res.json({ ok: true, checked: (expiringSoon || []).length, alerted });
 }));
 
 // شبكة أمان أخيرة لما يفلت من كل شيء أعلاه (تسجيل فقط، بلا رد على العميل --

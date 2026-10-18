@@ -82,6 +82,26 @@ export interface ZatcaStandardInvoiceInput extends ZatcaInvoiceInputCommon {
   buyer: ZatcaParty;
 }
 
+/**
+ * seen-ai-assistant-zatca-cr-task.md, ZATCA #1: a credit note is not a new
+ * invoice type so much as the SAME invoice skeleton with a different
+ * cbc:InvoiceTypeCode (381 instead of 388) plus a mandatory
+ * cac:BillingReference back to the invoice it corrects -- ZATCA has no
+ * concept of a credit note that doesn't reference an original invoice.
+ * CONFIDENCE LEVEL: same as the module-level note above -- the general UBL
+ * shape here is standard and documented; the exact BillingReference
+ * structure has not been checked against a real ZATCA compliance response
+ * (no tenant has completed real onboarding yet, see zatcaApiClient.ts).
+ */
+export interface ZatcaCreditNoteInput extends ZatcaInvoiceInputCommon {
+  /** Buyer party -- present for a standard (B2B) credit note, absent for simplified (B2C). */
+  buyer?: ZatcaParty;
+  /** The original invoice's own invoice number (cbc:ID), not its UUID. */
+  billingReferenceInvoiceNumber: string;
+  /** Free-text reason, e.g. the merchant-entered refund reason -- ZATCA recommends but does not strictly require this. */
+  reason?: string;
+}
+
 const NS = {
   invoice: 'urn:oasis:names:specification:ubl:schema:xsd:Invoice-2',
   cac: 'urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2',
@@ -98,8 +118,9 @@ const NS = {
  * standard/simplified distinction.
  */
 function buildInvoiceXmlCore(
-  input: ZatcaInvoiceInputCommon & { buyer?: ZatcaParty },
-  invoiceTypeNameFlag: string
+  input: ZatcaInvoiceInputCommon & { buyer?: ZatcaParty; billingReferenceInvoiceNumber?: string; reason?: string },
+  invoiceTypeNameFlag: string,
+  invoiceTypeCode: string = '388'
 ): string {
   const doc = create({ version: '1.0', encoding: 'UTF-8' })
     .ele(NS.invoice, 'Invoice', {
@@ -137,9 +158,25 @@ function buildInvoiceXmlCore(
   // against ZATCA's own guideline once you can. "0200000" = simplified,
   // "0100000" = standard, no third-party billing/nominal supply/export/
   // summary/self-billing flags set in either case.
-  doc.ele(NS.cbc, 'cbc:InvoiceTypeCode', { name: invoiceTypeNameFlag }).txt('388').up();
+  doc.ele(NS.cbc, 'cbc:InvoiceTypeCode', { name: invoiceTypeNameFlag }).txt(invoiceTypeCode).up();
+  if (input.reason) {
+    doc.ele(NS.cbc, 'cbc:Note').txt(input.reason).up();
+  }
   doc.ele(NS.cbc, 'cbc:DocumentCurrencyCode').txt('SAR').up();
   doc.ele(NS.cbc, 'cbc:TaxCurrencyCode').txt('SAR').up();
+
+  // cac:BillingReference -- mandatory for a credit/debit note (381/383):
+  // ZATCA has no concept of one that doesn't reference the invoice it
+  // corrects. Absent for a plain invoice (388), where there's nothing to
+  // reference yet.
+  if (input.billingReferenceInvoiceNumber) {
+    doc
+      .ele(NS.cac, 'cac:BillingReference')
+      .ele(NS.cac, 'cac:InvoiceDocumentReference')
+      .ele(NS.cbc, 'cbc:ID').txt(input.billingReferenceInvoiceNumber).up()
+      .up()
+      .up();
+  }
 
   if (input.previousInvoiceHash) {
     doc
@@ -257,4 +294,15 @@ export function buildSimplifiedInvoiceXml(input: ZatcaSimplifiedInvoiceInput): s
 /** Builds the UBL Standard Tax Invoice XML (B2B, synchronous Clearance flow) as a string. */
 export function buildStandardInvoiceXml(input: ZatcaStandardInvoiceInput): string {
   return buildInvoiceXmlCore(input, '0100000');
+}
+
+/**
+ * Builds a UBL Credit Note XML (type code 381) -- same simplified/standard
+ * distinction as an invoice (buyer present => standard/B2B, absent =>
+ * simplified/B2C), submitted through the exact same Clearance/Reporting
+ * endpoints as a regular invoice (zatcaApiClient.ts's clearInvoice/
+ * reportInvoice take any signed UBL document, not specifically an invoice).
+ */
+export function buildCreditNoteXml(input: ZatcaCreditNoteInput): string {
+  return buildInvoiceXmlCore(input, input.buyer ? '0100000' : '0200000', '381');
 }

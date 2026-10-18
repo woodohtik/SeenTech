@@ -11,6 +11,9 @@
     "assistant_disabled_message": "تم تعطيل المساعد الذكي مؤقتاً من قبل إدارة المنصة.",
     "not_configured_message": "لم يتم إعداد المساعد الذكي بعد، يرجى المحاولة لاحقاً.",
     "error_generic": "حدث خطأ أثناء التواصل مع المساعد، حاول مرة أخرى.",
+    "request_timeout": "استغرق الرد وقتاً طويلاً، حاول مرة أخرى.",
+    "request_cancelled": "تم إلغاء الطلب.",
+    "cancel_request": "إلغاء",
     "empty_state_greeting": "مرحباً {{name}}! كيف يمكنني مساعدتك اليوم؟",
     "new_conversation": "محادثة جديدة",
     "card_summary": "ملخص",
@@ -32,6 +35,13 @@
     "card_tax": "الضريبة",
     "card_discount": "الخصم",
     "card_access_denied": "غير متاح",
+    "card_supplier_balance": "رصيد المورد",
+    "card_supplier_not_found": "لم يتم العثور على المورد",
+    "card_pending_pos": "{{count}} أمر شراء لم يُستلَم بعد",
+    "card_period_comparison": "مقارنة الفترتين",
+    "card_customer_stats": "إحصاءات العملاء",
+    "card_total_customers": "إجمالي العملاء",
+    "card_new_customers": "عملاء جدد",
     "fetching_data": "جاري جلب البيانات...",
     "guided_tour_question": "هل تريدني أن أوجهك لمكانها في الواجهة الآن؟",
     "guided_tour_yes": "نعم، وجّهني",
@@ -540,7 +550,13 @@
     "selected_invoice": "الفاتورة المحددة",
     "submitting": "جاري الإصدار...",
     "success_issued": "تم إصدار الإشعار الدائن بنجاح",
-    "title": "الإشعارات الدائنة والصادرة"
+    "title": "الإشعارات الدائنة والصادرة",
+    "zatca_status": "حالة زاتكا",
+    "zatca_cleared": "مخلَّصة",
+    "zatca_reported": "مُبلَّغة",
+    "zatca_pending": "جاري الإرسال",
+    "zatca_rejected": "مرفوضة",
+    "zatca_not_applicable": "غير مرتبطة بزاتكا"
   },
   "customers": {
     "account_statement": "كشف الحساب",
@@ -4891,7 +4907,8 @@
     "phone_format": "رقم الهاتف غير صحيح",
     "pin_four_digits": "يجب أن يكون 4 أرقام",
     "required": "هذا الحقل مطلوب",
-    "tax_number_format": "رقم الضريبة يجب أن يكون 15 رقم"
+    "tax_number_format": "رقم الضريبة يجب أن يكون 15 رقم",
+    "commercial_register_format": "رقم السجل التجاري يجب أن يكون 10 أرقام"
   },
   "whatsapp": {
     "default_template": "مرحباً {customer_name}، تم استلام طلبك رقم {order_id}. الإجمالي: {total_amount} ر.س. يمكنك متابعة حالة الطلب من هنا: {invoice_url}",

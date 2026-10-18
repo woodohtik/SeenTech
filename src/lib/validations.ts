@@ -174,7 +174,12 @@ export const settingsSchema = z.object({
   name: z.string().min(2, t('validation.min_length', { count: 2 })),
   phone: z.string().optional().or(z.literal('')),
   address: z.string().min(5, t('validation.min_length', { count: 5 })),
-  commercialRegister: z.string().optional().or(z.literal('')),
+  // seen-ai-assistant-zatca-cr-task.md: required (not just format-checked
+  // when present like trn below) -- ZatcaOnboardingSettings.tsx already
+  // blocks ZATCA activation without it, so leaving it skippable here just
+  // meant a merchant could complete this whole tab and still hit a wall
+  // later with no idea why.
+  commercialRegister: z.string().min(1, t('validation.required')).regex(/^\d{10}$/, t('validation.commercial_register_format')),
   city: z.string().optional().or(z.literal('')),
   postalCode: z.string().optional().or(z.literal('')),
   inventoryStrategy: z.enum(['centralized', 'decentralized']),

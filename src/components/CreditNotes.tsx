@@ -7,12 +7,42 @@ import { logEmployeeAction } from '../services/employeeAuditService';
 import { generateOrderNumber } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
 import { FileText, ArrowDownLeft, Search, Eye, X, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { submitZatcaCreditNote } from '../utils/zatcaSubmit';
+import { cn } from '../lib/utils';
 import { useStaff } from '../contexts/StaffContext';
 import { useToast } from '../contexts/ToastContext';
 import { useTranslation } from 'react-i18next';
 import DateTimeDisplay from './DateTimeDisplay';
 
 import { isRtlLang } from '../lib/direction';
+
+// seen-ai-assistant-zatca-cr-task.md, ZATCA #1 -- 'not_applicable' (no
+// production CSID yet, true for every tenant today) renders as neutral/
+// muted rather than an error state, since it's the expected default, not a
+// failure.
+function ZatcaStatusBadge({ status }: { status?: CreditNote['zatcaStatus'] }) {
+  const { t } = useTranslation();
+  const styles: Record<string, string> = {
+    cleared: 'bg-success/10 text-success',
+    reported: 'bg-success/10 text-success',
+    pending: 'bg-warning/10 text-warning',
+    rejected: 'bg-danger/10 text-danger',
+    not_applicable: 'bg-surface-muted text-content-muted',
+  };
+  const labels: Record<string, string> = {
+    cleared: t('credit_notes.zatca_cleared', 'مخلَّصة'),
+    reported: t('credit_notes.zatca_reported', 'مُبلَّغة'),
+    pending: t('credit_notes.zatca_pending', 'جاري الإرسال'),
+    rejected: t('credit_notes.zatca_rejected', 'مرفوضة'),
+    not_applicable: t('credit_notes.zatca_not_applicable', 'غير مرتبطة بزاتكا'),
+  };
+  const key = status || 'not_applicable';
+  return (
+    <span className={cn('inline-block px-2 py-1 rounded-lg text-xs font-bold', styles[key])}>
+      {labels[key]}
+    </span>
+  );
+}
 
 export default function CreditNotes({ tenantId }: { tenantId: string }) {
   const { t, i18n } = useTranslation();
@@ -96,7 +126,8 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
             refundedAmount: Number(d.refunded_amount),
             refundedTax: d.refunded_amount ? (Number(d.refunded_amount) - (Number(d.refunded_amount) / (1 + (invTaxRate / 100)))) : 0,
             issuedAt: d.returned_at || d.created_at || new Date().toISOString(),
-            createdBy: 'System'
+            createdBy: 'System',
+            zatcaStatus: d.zatca_status || 'not_applicable',
           } as CreditNote;
         });
 
@@ -175,10 +206,10 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
       );
 
       toastSuccess(t('credit_notes.success_issued', 'تم إصدار الإشعار الدائن بنجاح'));
-      
-      // Update local state 
+
+      // Update local state
       if (noteData) {
-        setCreditNotes(prev => [{ 
+        setCreditNotes(prev => [{
           id: noteData.id,
           creditNoteNumber: noteData.return_number,
           originalInvoiceId: noteData.invoice_id,
@@ -188,10 +219,18 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
           refundedAmount: Number(noteData.refunded_amount),
           refundedTax: refundTax,
           issuedAt: noteData.returned_at || noteData.created_at,
-          createdBy: currentStaff?.name || 'System'
+          createdBy: currentStaff?.name || 'System',
+          zatcaStatus: 'not_applicable',
         } as CreditNote, ...prev]);
+
+        // Fire-and-forget, بنفس نمط submitZatcaInvoice بعد بيع POS -- لا يوقف
+        // نجاح إصدار الإشعار محلياً، فقط يحدِّث الشارة لاحقاً بالنتيجة
+        // الحقيقية (no-op 'not_applicable' لأي مستأجر بلا Production CSID بعد).
+        void submitZatcaCreditNote(noteData.id).then((result) => {
+          setCreditNotes(prev => prev.map(cn => cn.id === noteData.id ? { ...cn, zatcaStatus: result.status as CreditNote['zatcaStatus'] } : cn));
+        });
       }
-      
+
       setSelectedInvoice(null);
       setReason('');
       setRefundAmount(0);
@@ -341,6 +380,7 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
                     <th className="p-4">{t('credit_notes.date', 'التاريخ')}</th>
                     <th className="p-4">{t('credit_notes.reason', 'السبب')}</th>
                     <th className="p-4">{t('credit_notes.refunded_amt', 'المبلغ المسترجع')}</th>
+                    <th className="p-4">{t('credit_notes.zatca_status', 'حالة زاتكا')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-surface-muted text-sm font-medium">
@@ -357,11 +397,14 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
                       </td>
                       <td className="p-4 text-content truncate max-w-[200px]" title={note.reason}>{note.reason}</td>
                       <td className="p-4 font-black text-content"><PriceDisplay amount={note.refundedAmount} /></td>
+                      <td className="p-4">
+                        <ZatcaStatusBadge status={note.zatcaStatus} />
+                      </td>
                     </tr>
                   ))}
                   {creditNotes.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="p-8 text-center text-content-muted font-bold">{t('credit_notes.no_credit_notes', 'لا يوجد إشعارات دائنة مصدرة')}</td>
+                      <td colSpan={6} className="p-8 text-center text-content-muted font-bold">{t('credit_notes.no_credit_notes', 'لا يوجد إشعارات دائنة مصدرة')}</td>
                     </tr>
                   )}
                 </tbody>

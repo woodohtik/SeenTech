@@ -628,7 +628,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between px-1">
-                        <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.store_name', 'اسم المنشأة التجاري')}</label>
+                        <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.store_name', 'اسم المنشأة التجاري')} <span className="text-danger">*</span></label>
                         <HelpCircle size={14} className="text-content-muted/40 cursor-help" />
                       </div>
                       <IconInput 
@@ -667,7 +667,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                     </div>
                     <div className="sm:col-span-2 space-y-1.5">
                       <div className="flex items-center justify-between px-1">
-                        <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.address', 'العنوان التفصيلي')}</label>
+                        <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.address', 'العنوان التفصيلي')} <span className="text-danger">*</span></label>
                         <HelpCircle size={14} className="text-content-muted/40 cursor-help" />
                       </div>
                       <IconInput
@@ -705,7 +705,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                     </div>
                     <div className="sm:col-span-2 space-y-1.5">
                       <div className="flex items-center justify-between px-1">
-                        <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.commercial_register', 'رقم السجل التجاري (CR)')}</label>
+                        <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.commercial_register', 'رقم السجل التجاري (CR)')} <span className="text-danger">*</span></label>
                         <HelpCircle size={14} className="text-content-muted/40 cursor-help" />
                       </div>
                       <IconInput
@@ -713,6 +713,8 @@ export default function Settings({ tenantId }: SettingsProps) {
                         {...register('commercialRegister')}
                         startIcon={FileText}
                         error={errors.commercialRegister?.message}
+                        placeholder="1234567890"
+                        maxLength={10}
                         dir="ltr"
                       />
                     </div>

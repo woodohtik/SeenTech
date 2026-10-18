@@ -11,6 +11,9 @@
     "assistant_disabled_message": "پلیٹ فارم ایڈمن نے ذہین معاون کو عارضی طور پر غیر فعال کر دیا ہے۔",
     "not_configured_message": "ذہین معاون ابھی تک ترتیب نہیں دیا گیا، براہ کرم بعد میں کوشش کریں۔",
     "error_generic": "معاون سے رابطے میں مسئلہ پیش آیا، دوبارہ کوشش کریں۔",
+    "request_timeout": "جواب آنے میں بہت وقت لگا، دوبارہ کوشش کریں۔",
+    "request_cancelled": "درخواست منسوخ کر دی گئی۔",
+    "cancel_request": "منسوخ کریں",
     "empty_state_greeting": "سلام {{name}}! آج میں آپ کی کیسے مدد کر سکتا ہوں؟",
     "new_conversation": "نئی گفتگو",
     "card_summary": "خلاصہ",
@@ -32,6 +35,13 @@
     "card_tax": "ٹیکس",
     "card_discount": "رعایت",
     "card_access_denied": "دستیاب نہیں",
+    "card_supplier_balance": "سپلائر کا بیلنس",
+    "card_supplier_not_found": "سپلائر نہیں ملا",
+    "card_pending_pos": "{{count}} خریداری آرڈر ابھی موصول نہیں ہوئے",
+    "card_period_comparison": "دو مدتوں کا موازنہ",
+    "card_customer_stats": "کسٹمر کے اعدادوشمار",
+    "card_total_customers": "کل کسٹمرز",
+    "card_new_customers": "نئے کسٹمرز",
     "fetching_data": "ڈیٹا حاصل کیا جا رہا ہے...",
     "guided_tour_question": "کیا میں اب آپ کو انٹرفیس میں وہاں تک رہنمائی کروں؟",
     "guided_tour_yes": "جی ہاں، رہنمائی کریں",
@@ -540,7 +550,13 @@
     "selected_invoice": "منتخب انوائس",
     "submitting": "جاری ہو رہا ہے...",
     "success_issued": "کریڈٹ نوٹ کامیابی سے جاری ہو گیا",
-    "title": "کریڈٹ نوٹس اور اجرا"
+    "title": "کریڈٹ نوٹس اور اجرا",
+    "zatca_status": "زاتکا کی حیثیت",
+    "zatca_cleared": "منظور شدہ",
+    "zatca_reported": "رپورٹ شدہ",
+    "zatca_pending": "بھیجا جا رہا ہے",
+    "zatca_rejected": "مسترد",
+    "zatca_not_applicable": "زاتکا سے منسلک نہیں"
   },
   "customers": {
     "account_statement": "اکاؤنٹ اسٹیٹمنٹ",
@@ -4888,7 +4904,8 @@
     "phone_format": "فون نمبر درست نہیں ہے",
     "pin_four_digits": "4 ہندسوں کا ہونا ضروری ہے۔",
     "required": "یہ خانہ ضروری ہے",
-    "tax_number_format": "ٹیکس نمبر 15 ہندسوں کا ہونا چاہیے"
+    "tax_number_format": "ٹیکس نمبر 15 ہندسوں کا ہونا چاہیے",
+    "commercial_register_format": "کمرشل رجسٹر نمبر 10 ہندسوں کا ہونا چاہیے"
   },
   "whatsapp": {
     "default_template": "ہیلو {customer_name}، آپ کا آرڈر {order_id} موصول ہو گیا ہے۔ کل: {total_amount} ریال۔ آپ اپنے آرڈر کی حالت یہاں دیکھ سکتے ہیں: {invoice_url}",

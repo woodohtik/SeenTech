@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Bot, Sparkles, X, Send, AlertTriangle, TrendingUp, FileText, Users, PackageSearch, Compass, ArrowRight } from 'lucide-react';
+import { Bot, Sparkles, X, Send, AlertTriangle, TrendingUp, FileText, Users, PackageSearch, Compass, ArrowRight, StopCircle, RefreshCw, MessageSquarePlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { useDirection } from '../lib/direction';
@@ -25,6 +25,20 @@ interface SeenAIFabProps {
   tenantId?: string | null;
 }
 
+// seen-ai-assistant-zatca-cr-task.md #1: مهلة زمنية قصوى لطلب الدردشة --
+// بدونها، أي تعلّق في الخادم (مزوّد لا يرجع خطأ صريح) يُبقي الواجهة في وضع
+// "يكتب..." للأبد بلا أي وسيلة خروج غير تحديث الصفحة بالكامل.
+const REQUEST_TIMEOUT_MS = 40_000;
+
+// #3: يُرسَل آخر هذا العدد من الرسائل فقط مع كل طلب، لا السجل كاملاً --
+// يحد استهلاك التوكنات/التكلفة مع طول المحادثة بدل أن يكبر بلا حدود. السجل
+// المعروض محلياً للمستخدم يبقى كاملاً، هذا يحد فقط ما يُرسَل فعلياً للخادم.
+const MAX_HISTORY_MESSAGES = 20;
+
+function chatStorageKey(tenantId: string): string {
+  return `seen_ai_chat_${tenantId}`;
+}
+
 async function getAuthHeader(): Promise<Record<string, string>> {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
@@ -39,12 +53,17 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
   const [isSending, setIsSending] = useState(false);
   const [statusText, setStatusText] = useState<string | null>(null);
   const [bannerMessage, setBannerMessage] = useState<string | null>(null);
+  const [canRetry, setCanRetry] = useState(false);
   const { t } = useTranslation();
   const { dir, isRtl } = useDirection();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const statusTextRef = useRef<string | null>(null);
   const pendingTourTopicRef = useRef<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const manualCancelRef = useRef(false);
+  const lastRequestMessagesRef = useRef<ChatMessage[] | null>(null);
+  const hydratedTenantRef = useRef<string | null>(null);
 
   const launchGuidedTour = useCallback((topic: string) => {
     setIsOpen(false);
@@ -103,6 +122,44 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isSending]);
 
+  // #2: استرجاع المحادثة من sessionStorage عند توفر tenantId -- مرة واحدة
+  // فقط لكل تبويب/جلسة متصفح، لا localStorage (لا داعٍ لبقاء المحادثة بعد
+  // إغلاق المتصفح، وsessionStorage يعزل تلقائياً بين تبويبات/مستخدمين
+  // مختلفين على نفس الجهاز بلا أي منطق إضافي).
+  useEffect(() => {
+    if (!tenantId || hydratedTenantRef.current === tenantId) return;
+    hydratedTenantRef.current = tenantId;
+    try {
+      const raw = sessionStorage.getItem(chatStorageKey(tenantId));
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed);
+      }
+    } catch {
+      // تخزين تالف أو غير متاح (وضع التصفح الخاص) -- يبدأ بمحادثة فارغة فقط
+    }
+  }, [tenantId]);
+
+  useEffect(() => {
+    if (!tenantId) return;
+    try {
+      if (messages.length === 0) {
+        sessionStorage.removeItem(chatStorageKey(tenantId));
+      } else {
+        sessionStorage.setItem(chatStorageKey(tenantId), JSON.stringify(messages));
+      }
+    } catch {
+      // مساحة التخزين ممتلئة أو غير متاحة -- المحادثة ببساطة لن تنجو من تحديث الصفحة
+    }
+  }, [messages, tenantId]);
+
+  const startNewConversation = useCallback(() => {
+    setMessages([]);
+    setBannerMessage(null);
+    setCanRetry(false);
+    lastRequestMessagesRef.current = null;
+  }, []);
+
   // تعطيل الحقل (disabled={isSending} أدناه) يزيل تركيز المتصفح منه قسرياً
   // فوراً إن كان هو العنصر الذي يحمل التركيز -- لا يُعاد التركيز تلقائياً
   // حين يُعاد تفعيله، فيضطر المستخدم للنقر يدوياً قبل كل رسالة تالية.
@@ -110,17 +167,23 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
     if (!isSending) inputRef.current?.focus();
   }, [isSending]);
 
-  const sendMessage = useCallback(async (overrideText?: string) => {
-    const text = (overrideText ?? input).trim();
-    if (!text || isSending) return;
-
-    const nextMessages: ChatMessage[] = [...messages, { role: 'user', content: text }];
-    setMessages(nextMessages);
-    setInput('');
+  // استُخرجت من sendMessage لتُستدعى أيضاً من زر "إعادة المحاولة" (#7) بنفس
+  // requestMessages الفاشلة تماماً دون إضافة رسالة مستخدم مكررة -- sendMessage
+  // نفسها تُلحق رسالة جديدة دائماً، وهذا ما لا يصح فعله عند إعادة محاولة طلب
+  // فشل بعد أن رسالته أُلحقت بالفعل.
+  const performRequest = useCallback(async (requestMessages: ChatMessage[]) => {
     setIsSending(true);
     statusTextRef.current = t('ai.thinking');
     setStatusText(statusTextRef.current);
     setBannerMessage(null);
+    setCanRetry(false);
+    manualCancelRef.current = false;
+
+    // #1: مهلة زمنية قصوى + إمكانية إلغاء يدوي (handleCancel أدناه) عبر نفس
+    // AbortController -- كلاهما يصل لنفس catch، يُفرَّقان عبر manualCancelRef.
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
       const authHeader = await getAuthHeader();
@@ -129,7 +192,8 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader },
-        body: JSON.stringify({ messages: nextMessages, userName, userRole }),
+        body: JSON.stringify({ messages: requestMessages.slice(-MAX_HISTORY_MESSAGES), userName, userRole }),
+        signal: controller.signal,
       });
 
       if (res.status === 403) {
@@ -211,15 +275,51 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
         pendingTourTopicRef.current = null;
         window.setTimeout(() => launchGuidedTour(topic), 500);
       }
-    } catch (err) {
-      console.error('SeenAI chat error:', err);
-      setBannerMessage(t('ai.error_generic'));
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        if (manualCancelRef.current) {
+          setBannerMessage(t('ai.request_cancelled'));
+        } else {
+          setBannerMessage(t('ai.request_timeout'));
+          lastRequestMessagesRef.current = requestMessages;
+          setCanRetry(true);
+        }
+      } else {
+        console.error('SeenAI chat error:', err);
+        lastRequestMessagesRef.current = requestMessages;
+        setBannerMessage(t('ai.error_generic'));
+        setCanRetry(true);
+      }
     } finally {
+      window.clearTimeout(timeoutId);
+      abortControllerRef.current = null;
       setIsSending(false);
       statusTextRef.current = null;
       setStatusText(null);
     }
-  }, [input, isSending, messages, userName, userRole, t, launchGuidedTour, notifyNewReply]);
+  }, [userName, userRole, t, launchGuidedTour, notifyNewReply]);
+
+  const sendMessage = useCallback((overrideText?: string) => {
+    const text = (overrideText ?? input).trim();
+    if (!text || isSending) return;
+    const nextMessages: ChatMessage[] = [...messages, { role: 'user', content: text }];
+    setMessages(nextMessages);
+    setInput('');
+    void performRequest(nextMessages);
+  }, [input, isSending, messages, performRequest]);
+
+  // #1: زر "إلغاء" يدوي -- يستخدم نفس AbortController الخاص بالمهلة الزمنية،
+  // manualCancelRef يُفرِّق رسالة "تم الإلغاء" عن رسالة "انتهت المهلة" في catch أعلاه.
+  const handleCancel = useCallback(() => {
+    manualCancelRef.current = true;
+    abortControllerRef.current?.abort();
+  }, []);
+
+  // #7: إعادة محاولة بنفس requestMessages الفاشلة تماماً -- لا عبر sendMessage
+  // (التي كانت ستُلحق رسالة مستخدم مكررة فوق الرسالة الفاشلة الموجودة أصلاً).
+  const handleRetry = useCallback(() => {
+    if (lastRequestMessagesRef.current) void performRequest(lastRequestMessagesRef.current);
+  }, [performRequest]);
 
   if (!isEnabled) return null;
 
@@ -284,12 +384,24 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
                     <p className="text-[10px] font-bold text-content-muted leading-tight">{t('ai.assistant_subtitle')}</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="p-2 hover:bg-black/5 rounded-full text-content-muted transition-colors shrink-0"
-                >
-                  <X size={20} />
-                </button>
+                <div className="flex items-center gap-1 shrink-0">
+                  {messages.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={startNewConversation}
+                      title={t('ai.new_conversation', 'محادثة جديدة')}
+                      className="p-2 hover:bg-black/5 rounded-full text-content-muted transition-colors"
+                    >
+                      <MessageSquarePlus size={18} />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    className="p-2 hover:bg-black/5 rounded-full text-content-muted transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -347,18 +459,34 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
                 ))}
 
                 {isSending && statusText && (
-                  <div className="flex justify-start rtl:justify-end">
+                  <div className="flex items-center gap-2 justify-start rtl:justify-end">
                     <div className="bg-surface-muted rounded-2xl rounded-tl-md px-4 py-3 flex items-center gap-2">
                       <span className="w-2 h-2 bg-brand/70 rounded-full animate-bounce [animation-delay:-0.3s] [animation-duration:0.9s]" />
                       <span className="w-2 h-2 bg-brand/70 rounded-full animate-bounce [animation-delay:-0.15s] [animation-duration:0.9s]" />
                       <span className="w-2 h-2 bg-brand/70 rounded-full animate-bounce [animation-duration:0.9s]" />
                     </div>
+                    <button
+                      type="button"
+                      onClick={handleCancel}
+                      className="flex items-center gap-1 text-content-muted hover:text-danger text-[10px] font-bold transition-colors shrink-0"
+                    >
+                      <StopCircle size={13} /> {t('ai.cancel_request')}
+                    </button>
                   </div>
                 )}
 
                 {bannerMessage && (
-                  <div className="bg-warning/10 text-warning text-xs font-bold rounded-xl px-4 py-3 text-center">
-                    {bannerMessage}
+                  <div className="bg-warning/10 text-warning text-xs font-bold rounded-xl px-4 py-3 text-center space-y-2">
+                    <p>{bannerMessage}</p>
+                    {canRetry && (
+                      <button
+                        type="button"
+                        onClick={handleRetry}
+                        className="inline-flex items-center gap-1.5 bg-warning/15 hover:bg-warning/25 text-warning rounded-lg px-3 py-1.5 transition-colors"
+                      >
+                        <RefreshCw size={12} /> {t('common.retry', 'إعادة المحاولة')}
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -618,6 +746,76 @@ function ToolResultCard({ name, result, onStartTour }: { name: string; result: a
                 <span className="text-content-muted shrink-0">{o.status}</span>
               </div>
             ))}
+          </div>
+        </div>
+      );
+    }
+    case 'getSupplierBalance': {
+      const suppliers = result.suppliers || [];
+      if (!result.found || suppliers.length === 0) return <EmptyCard text={t('ai.card_supplier_not_found')} />;
+      return (
+        <div className="max-w-[90%] w-full bg-surface border border-border rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2 text-xs font-black text-brand uppercase tracking-widest p-3 border-b border-border">
+            <FileText size={14} /> {t('ai.card_supplier_balance')}
+          </div>
+          <div className="divide-y divide-border">
+            {suppliers.map((s: any, i: number) => (
+              <div key={i} className="p-3 text-xs space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-content">{s.name}</span>
+                  <PriceDisplay amount={Number(s.balanceOwed) || 0} />
+                </div>
+                {s.pendingPurchaseOrders > 0 && (
+                  <div className="text-content-muted">{t('ai.card_pending_pos', { count: s.pendingPurchaseOrders })}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    case 'comparePeriods': {
+      if (!result.periodA || !result.periodB) return null;
+      const up = Number(result.changeAmount) >= 0;
+      return (
+        <div className="max-w-[90%] w-full bg-surface border border-border rounded-2xl p-4 space-y-3">
+          <div className="flex items-center gap-2 text-xs font-black text-brand uppercase tracking-widest">
+            <TrendingUp size={14} /> {t('ai.card_period_comparison')}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <div className="text-[10px] text-content-muted font-bold">{result.periodA.startDate} → {result.periodA.endDate}</div>
+              <div className="text-sm font-black text-content"><PriceDisplay amount={Number(result.periodA.totalSales) || 0} /></div>
+            </div>
+            <div>
+              <div className="text-[10px] text-content-muted font-bold">{result.periodB.startDate} → {result.periodB.endDate}</div>
+              <div className="text-sm font-black text-content"><PriceDisplay amount={Number(result.periodB.totalSales) || 0} /></div>
+            </div>
+          </div>
+          <div className={cn("text-xs font-black pt-2 border-t border-border", up ? "text-success" : "text-danger")}>
+            {up ? '▲' : '▼'} <PriceDisplay amount={Math.abs(Number(result.changeAmount) || 0)} />
+            {result.changePercent !== null && ` (${result.changePercent > 0 ? '+' : ''}${result.changePercent}%)`}
+          </div>
+        </div>
+      );
+    }
+    case 'getCustomerStats': {
+      return (
+        <div className="max-w-[90%] w-full bg-surface border border-border rounded-2xl p-4 space-y-3">
+          <div className="flex items-center gap-2 text-xs font-black text-brand uppercase tracking-widest">
+            <Users size={14} /> {t('ai.card_customer_stats')}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <div className="text-[10px] text-content-muted font-bold">{t('ai.card_total_customers')}</div>
+              <div className="text-sm font-black text-content">{result.totalCustomers}</div>
+            </div>
+            {typeof result.newCustomersInPeriod === 'number' && (
+              <div>
+                <div className="text-[10px] text-content-muted font-bold">{t('ai.card_new_customers')}</div>
+                <div className="text-sm font-black text-content">{result.newCustomersInPeriod}</div>
+              </div>
+            )}
           </div>
         </div>
       );

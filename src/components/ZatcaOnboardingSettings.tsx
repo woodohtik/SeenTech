@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import {
   ShieldCheck,
   FileKey,
@@ -10,6 +11,7 @@ import {
   Copy,
   ExternalLink,
   RefreshCw,
+  Pencil,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { useDirection } from '../lib/direction';
@@ -58,6 +60,7 @@ type SubStepState = 'idle' | 'running' | 'done' | 'error';
 export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSettingsProps) {
   const { t } = useTranslation();
   const { dir } = useDirection();
+  const navigate = useNavigate();
   const { success: toastSuccess, error: toastError } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -290,7 +293,18 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
               </div>
               <div className="flex justify-between gap-2 bg-surface-muted/50 rounded-xl px-3 py-2">
                 <span className="text-content-muted font-bold">{t('settings_page.profile.commercial_register', 'السجل التجاري')}</span>
-                <span className="font-black text-content" dir="ltr">{profile?.commercialRegister || '—'}</span>
+                {profile?.commercialRegister ? (
+                  <span className="font-black text-content" dir="ltr">{profile.commercialRegister}</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/settings?tab=profile')}
+                    className="flex items-center gap-1.5 text-danger font-black text-xs hover:underline shrink-0"
+                  >
+                    <Pencil size={12} />
+                    {t('settings_page.zatca.fill_in_profile', 'عدّل في الملف الشخصي')}
+                  </button>
+                )}
               </div>
               <div className="flex justify-between gap-2 bg-surface-muted/50 rounded-xl px-3 py-2">
                 <span className="text-content-muted font-bold">{t('settings_page.profile.city', 'المدينة')}</span>
@@ -302,10 +316,20 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
               </div>
             </div>
             {!profileComplete && (
-              <p className="text-danger text-xs font-bold mt-3 flex items-center gap-1.5">
-                <AlertTriangle size={14} />
-                {t('settings_page.zatca.profile_incomplete', 'أكمِل هذه البيانات من تبويبَي "الملف الشخصي" و"الإعدادات الضريبية" قبل المتابعة.')}
-              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2.5">
+                <p className="text-danger text-xs font-bold flex items-center gap-1.5">
+                  <AlertTriangle size={14} />
+                  {t('settings_page.zatca.profile_incomplete', 'أكمِل هذه البيانات من تبويبَي "الملف الشخصي" و"الإعدادات الضريبية" قبل المتابعة.')}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => navigate('/settings?tab=profile')}
+                  className="flex items-center gap-1.5 bg-danger/10 text-danger font-black text-xs px-3 py-1.5 rounded-lg hover:bg-danger/15 transition-all shrink-0"
+                >
+                  <Pencil size={12} />
+                  {t('settings_page.zatca.fill_in_profile', 'عدّل في الملف الشخصي')}
+                </button>
+              </div>
             )}
           </div>
 

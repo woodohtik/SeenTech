@@ -45,3 +45,25 @@ export function decryptZatcaSecret(stored: string): string {
   const decrypted = Buffer.concat([decipher.update(Buffer.from(dataB64, 'base64')), decipher.final()]);
   return decrypted.toString('utf8');
 }
+
+/**
+ * seen-ai-assistant-zatca-cr-task.md, ZATCA #2: ZATCA's own CSID response
+ * never states an expiry explicitly -- it's only present inside the X.509
+ * certificate itself (binarySecurityToken, base64). Node's built-in
+ * X509Certificate parses either PEM or DER without a new dependency; ZATCA's
+ * WS-Security BinarySecurityToken convention is base64-of-DER, so decoding
+ * the base64 and handing the raw bytes straight to X509Certificate is the
+ * right shape. Returns null (never throws) on anything unparseable -- this
+ * must never block onboarding from completing just because expiry tracking
+ * couldn't be derived; the credential itself is still fully usable.
+ */
+export function extractCertificateExpiry(binarySecurityTokenBase64: string): Date | null {
+  try {
+    const der = Buffer.from(binarySecurityTokenBase64, 'base64');
+    const cert = new crypto.X509Certificate(der);
+    const parsed = new Date(cert.validTo);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  } catch {
+    return null;
+  }
+}
