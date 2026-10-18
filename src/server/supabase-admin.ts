@@ -2,7 +2,12 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import { logger } from './logger.ts';
 
-dotenv.config();
+// { path: [...] }, not bare dotenv.config() -- this repo has no .env file,
+// only .env.local (written by `vercel env pull`); bare dotenv.config() only
+// looks for .env and silently loads nothing (verified directly). See
+// src/server/rateLimiter.ts's longer comment on this -- same fix applied
+// here and in firebase-admin.ts/server.ts.
+dotenv.config({ path: ['.env.local', '.env'] });
 
 let supabaseUrl = (process.env.VITE_SUPABASE_URL || '').trim();
 if (supabaseUrl && supabaseUrl.endsWith('/')) {

@@ -8,7 +8,15 @@ import { authenticate, authorize } from "./src/server/middleware/authMiddleware.
 import { registerPrintRelay } from "./src/server/printRelay.ts";
 import { initServerLogger, captureServerException, logger } from "./src/server/logger.ts";
 
-dotenv.config();
+// { path: [...] }, not bare dotenv.config() -- this repo has no .env file,
+// only .env.local (written by `vercel env pull`); bare dotenv.config() only
+// looks for .env and silently loads nothing (verified directly). This
+// call's own position here is actually moot for the imports above (ES
+// module imports evaluate first -- see src/server/rateLimiter.ts's
+// comment), which is exactly why rateLimiter.ts/firebase-admin.ts/
+// supabase-admin.ts each also call this themselves; kept here too for
+// anything in this file itself that reads process.env at module scope.
+dotenv.config({ path: ['.env.local', '.env'] });
 initServerLogger();
 
 const app = express();
@@ -2137,6 +2145,33 @@ app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any
   const submission = { invoiceHash, uuid: commonInput.uuid, invoiceBase64 };
 
   try {
+    // Atomic claim, not just the read above: that SELECT-then-check only
+    // closes the *sequential* retry case (a request that starts after an
+    // earlier one already finished). Two near-simultaneous requests for
+    // the same invoice (a double-click, or a client retrying before the
+    // first response returns) would both read the same pre-submission
+    // status and both pass that check -- this UPDATE...RETURNING is the
+    // actual mutex: only the request that successfully flips the status
+    // away from a non-terminal value gets a row back. Placed as the very
+    // first thing inside this try block, immediately before the actual
+    // network call, specifically so every failure path from here on
+    // (including this claim itself erroring) is covered by this same
+    // try/catch -- an earlier version claimed before the XML build/sign
+    // steps above, which aren't inside any catch that resets the status,
+    // and could leave an invoice stuck at 'pending' forever if one of
+    // them threw.
+    const { data: claimed, error: claimError } = await supabaseAdmin
+      .from('tax_invoices')
+      .update({ zatca_status: 'pending' })
+      .eq('id', invoice.id)
+      .not('zatca_status', 'in', '(cleared,reported,pending)')
+      .select('id')
+      .maybeSingle();
+    if (claimError) return internalError(res, "Error in POST /api/zatca/submit-invoice (claim):", claimError);
+    if (!claimed) {
+      return res.status(409).json({ error: 'ZATCA submission already in progress or completed for this invoice' });
+    }
+
     const result = isB2B
       ? await clearInvoice(submission, auth, 'production')
       : await reportInvoice(submission, auth, 'production');

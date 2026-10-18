@@ -1,7 +1,28 @@
 import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';
 import type { Request, Response, NextFunction } from 'express';
+import dotenv from 'dotenv';
 import { logger } from './logger.ts';
+
+// Must call this here, not just rely on server.ts's own dotenv.config() --
+// ES module imports are fully evaluated before the importing module's own
+// top-level code runs, so server.ts's `import { globalRateLimiter } from
+// "./src/server/rateLimiter.ts"` (above its own dotenv.config() call) would
+// otherwise read process.env before .env is loaded in local dev, leaving
+// `redis`/`ratelimit` below permanently null for the whole process even
+// with valid vars in .env.local.
+//
+// { path: ['.env.local', '.env'] } -- not a bare dotenv.config(). This repo
+// has no .env file at all (only .env.local, written by `vercel env pull`),
+// and bare dotenv.config() only ever looks for .env -- it fails with a
+// swallowed ENOENT and silently loads nothing, which is exactly what was
+// happening here and in every sibling file (server.ts, firebase-admin.ts,
+// supabase-admin.ts, all fixed alongside this one) before this fix.
+// Verified directly: KV_REST_API_URL is only actually present in
+// process.env after switching to this array form. Vercel itself injects
+// these as real process env vars regardless of any of this, so it only
+// ever mattered for `npm run dev`.
+dotenv.config({ path: ['.env.local', '.env'] });
 
 /**
  * seen-rate-limiting-redis-task.md -- replaces the global in-memory
