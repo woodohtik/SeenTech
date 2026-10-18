@@ -71,19 +71,26 @@
   --color-warning: var(--warning);
   --color-info: var(--info);
 
-  --size-input-height: 44px;
-  --size-button-height: 44px;
+  /* سين v5.1 §3/§7 (seen-ai-assistant-zatca-cr-task.md "صقل v5.1"، نقطة
+     البيع أولاً): DESIGN.md يحدد 48px صراحة لارتفاع الزر/الحقل ولحد أدنى
+     هدف اللمس ("اللمس: 48×48 حد أدنى")، لا 44 -- كانت القيمة السابقة هنا
+     (ومثلها الحد الأدنى في @layer base أسفل) أقل من ذلك بصمت منذ دمج
+     الألوان الأول (الذي لم يمس هذا الملف إطلاقاً، فقط القيم اللونية في
+     :root). غيّرت الاسم قصداً لا القيمة فقط -- كان بالأصل 44 (رمز "هدف
+     لمس مريح للجمهور 40+")، لكن هذا نفسه الرقم الذي ينص عليه v5.1 لنفس
+     السبب، فلا تعارض حقيقي في النية، فقط رقم كان غير مطابق للمواصفة
+     المكتوبة لاحقاً. */
+  --size-input-height: 48px;
+  --size-button-height: 48px;
   --size-input-padding: 0.75rem 1rem;
   --size-text-sm: 0.875rem;
   --size-text-base: 1rem;
-  /* seen-fields-unification-task.md #1: 12px (rounded-xl) هو المعيار
-     المعتمد لاستدارة الحقول -- كان 0.5rem (8px)، لا يطابق الشكل الفعلي
-     الأكثر انتشاراً في المشروع (IconInput ونماذج الشاشات الرئيسية). هذا
-     المتغيّر هو المصدر الحقيقي الذي يغذّي قاعدة !important العامة أسفل
-     (button/input/select/textarea) و Select.tsx/SmartSelect.tsx -- وليس
-     design-system/tokens.css (--seen-radius)، وهو توثيق غير مرتبط فعلياً
-     بأي كلاس Tailwind مُستخدَم، حُدِّث بنفس القيمة في مكانه فقط للتوثيق. */
-  --radius-md: 0.75rem;
+  /* سين v5.1 §4: "الأزرار والحقول والقوائم: 8" -- لا 12. القيمة 12
+     (0.75rem) هنا كانت من قرار أقدم (seen-fields-unification-task.md)
+     سبق DESIGN.md v5.1 نفسه ولم يُراجَع ضد مواصفته لاحقاً؛ --seen-radius
+     في design-system/tokens.css (المصدر الفعلي لـv5.1) ينص على 8 لنفس
+     الفئة بالضبط. البطاقات (--radius-card) تبقى منفصلة عند 12 كما هي. */
+  --radius-md: 0.5rem;
 }
 
 :root {
@@ -221,21 +228,21 @@ select {
   padding-left: 1.25rem !important;
 }
 
-/* Hover & Focus States */
+/* Hover & Focus States — سين v5.1 §5/§10: "الظل للطاير والنوافذ بس" و"لا
+   تحط ظل على بطاقة عادية" -- نفس المبدأ يمتد لحقل عادي، فلا رفع (lift)
+   ولا ظل أسود هنا، فقط تغيّر لون الحد. التركيز يطابق حلقة §5 بالضبط
+   (أبيض 2px ثم أزرق 4px) بدل الصندوق الأزرق الشفاف + الظل الأسود السابقين. */
 select:hover {
   border-color: var(--brand) !important;
   background-color: var(--surface);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 select:focus {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%230F6E96' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   outline: none;
-  box-shadow: 0 0 0 4px rgba(15, 110, 150, 0.15), 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+  box-shadow: var(--seen-shadow-focus, 0 0 0 2px #FFFFFF, 0 0 0 4px #0F6E96) !important;
   border-color: var(--brand) !important;
   background-color: var(--surface);
-  transform: translateY(-1px);
 }
 
 /* Styled option groups and options */
@@ -361,7 +368,10 @@ option {
 }
 
 .modal-container {
-  @apply relative w-full my-auto rounded-[var(--radius-card)] bg-[var(--surface)] shadow-2xl flex flex-col;
+  @apply relative w-full my-auto rounded-[var(--radius-card)] bg-[var(--surface)] flex flex-col;
+  /* سين v5.1 §5: النوافذ تأخذ --seen-shadow-modal (مبني على الحبر)، لا
+     shadow-2xl الأسود الافتراضي من Tailwind. */
+  box-shadow: var(--seen-shadow-modal, 0 12px 32px rgba(14,42,66,.16), 0 2px 6px rgba(14,42,66,.08));
   max-height: min(90vh, 100%);
   max-width: clamp(300px, 95vw, 900px);
 }
@@ -510,11 +520,11 @@ table td {
    التي تحدّد أبعادها صراحةً (Tailwind utilities أعلى تخصيصاً).
    ============================================================ */
 @layer base {
-  /* ارتفاع موحّد لعناصر الإدخال = هدف لمس ≥44px (مهم للجمهور 40+) — يرفع الصغير ولا يقلّص الكبير */
+  /* ارتفاع موحّد لعناصر الإدخال = هدف لمس 48px (سين v5.1 §3) — يرفع الصغير ولا يقلّص الكبير */
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
   select,
   textarea {
-    min-height: 44px;
+    min-height: 48px;
   }
   textarea { min-height: 88px; }
 
@@ -525,12 +535,16 @@ table td {
   [dir="ltr"] input,
   [dir="ltr"] textarea { text-align: left; }
 
-  /* حلقة تركيز متّسقة للوصولية (لا تظهر إلا بالكيبورد) */
-  :focus-visible { outline: 2px solid var(--color-brand, #34BBED); outline-offset: 2px; }
+  /* حلقة تركيز متّسقة للوصولية (لا تظهر إلا بالكيبورد) — سين v5.1 §5:
+     حلقة 2px أزرق 600 مع فراغ 2px أبيض، لا outline ملاصق للحافة بلا فراغ
+     كما كان (وبلون #34BBED متبقٍّ من قبل الهوية الحالية، غير موجود في
+     لوحة v5.1 أصلاً). box-shadow بدل outline لأنه الشكل الوحيد القادر
+     على إنتاج فراغ أبيض بين الحد والحلقة. */
+  :focus-visible { outline: none; box-shadow: var(--seen-shadow-focus, 0 0 0 2px #FFFFFF, 0 0 0 4px #0F6E96); }
 }
 
 /* فئات اختيارية موحّدة — يطبّقها الفريق تدريجياً على المكوّنات لتوحيد الشكل */
-.seen-field { width: 100%; min-height: 44px; }
+.seen-field { width: 100%; min-height: 48px; }
 @media (max-width: 640px) {
   .seen-btn-primary { width: 100%; }   /* الأزرار الأساسية بعرض كامل على الجوال */
 }

@@ -1569,7 +1569,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         </div>
 
         {/* Order Summary Block */}
-        <div className="p-4 sm:px-6 sm:py-5 border-t border-border bg-surface shadow-lg shrink-0">
+        <div className="p-4 sm:px-6 sm:py-5 border-t border-border bg-surface shrink-0">
           <div className="space-y-2 mb-4">
             <div className="flex justify-between items-center text-xs sm:text-sm">
               <span className="text-content-muted font-bold">{t('pos.subtotal')}</span>
@@ -1606,7 +1606,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                setPaidAmount(totalAmount);
             }}
             disabled={cart.length === 0}
-            className="w-full py-3.5 sm:py-4 bg-success hover:bg-success/90 text-white rounded-2xl font-black text-base sm:text-lg transition-all shadow-md shadow-success/10 active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:scale-100 flex items-center justify-center gap-2.5 cursor-pointer"
+            className="w-full py-3.5 sm:py-4 bg-success hover:bg-success/90 text-white rounded-2xl font-black text-base sm:text-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:scale-100 flex items-center justify-center gap-2.5 cursor-pointer"
           >
             <CreditCard size={22} />
             <span>{t('pos.checkout_and_pay')}</span>
@@ -1815,13 +1815,21 @@ const invoiceData: InvoiceData | null = completedOrder ? {
         </div>
 
         {/* Products Grid / List View */}
-        <div className="flex-1 bg-surface border border-border rounded-2xl p-4 sm:p-5 overflow-auto shadow-sm">
+        {/* سين v5.1 §5/§10 (صقل نقطة البيع): "الارتفاع بالخط الرفيع، مو
+            بالظل" -- اللوحة والبطاقات هنا بطاقات عادية ثابتة في مكانها، لا
+            عناصر طايرة (قوائم منسدلة/توست/نوافذ)، فلا تأخذ shadow-sm ولا
+            أي رفع hover (-translate-y) حسب القاعدة الصريحة "لا تحط ظل على
+            بطاقة عادية". التمايز عند hover يبقى حدّياً (تغيّر لون الحد)
+            فقط، وrounded-2xl (16px) تحوّلت rounded-xl (12px) لتطابق فئة
+            "البطاقات" الوحيدة المسموحة في §4 بدل قيمة وسيطة غير موجودة
+            في اللوحة. */}
+        <div className="flex-1 bg-surface border border-border rounded-xl p-4 sm:p-5 overflow-auto">
           {filteredInventory.length > 0 ? (
             viewMode === 'grid' ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 w-full">
                 <button
                   onClick={() => setIsCustomOrderModalOpen(true)}
-                  className="flex flex-col items-center p-3.5 bg-brand/5 border border-brand/40 hover:border-brand rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group active:scale-95 cursor-pointer text-center w-full"
+                  className="flex flex-col items-center p-3.5 bg-brand/5 border border-brand/40 hover:border-brand rounded-xl transition-all duration-200 group active:scale-95 cursor-pointer text-center w-full"
                 >
                   <div className="w-full aspect-square bg-brand/10 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform overflow-hidden border border-brand/20">
                     <Scissors size={26} className="text-brand" />
@@ -1834,7 +1842,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   <button
                     key={item.id}
                     onClick={() => handleProductTileClick(item)}
-                    className="flex flex-col items-center p-3.5 bg-surface border border-border/70 hover:border-brand/50 rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group active:scale-95 cursor-pointer text-center w-full"
+                    className="flex flex-col items-center p-3.5 bg-surface border border-border/70 hover:border-brand/50 rounded-xl transition-all duration-200 group active:scale-95 cursor-pointer text-center w-full"
                   >
                     <div className="w-full aspect-square bg-surface-muted/60 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform overflow-hidden border border-border/40">
                       {item.mainImage ? (
@@ -1876,7 +1884,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               <div className="flex flex-col gap-2.5 w-full">
                 <button
                   onClick={() => setIsCustomOrderModalOpen(true)}
-                  className="flex items-center p-3 sm:p-3.5 bg-brand/5 border border-brand/40 hover:border-brand rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 group active:scale-[0.99] cursor-pointer w-full text-right"
+                  className="flex items-center p-3 sm:p-3.5 bg-brand/5 border border-brand/40 hover:border-brand rounded-xl transition-all duration-200 group active:scale-[0.99] cursor-pointer w-full text-right"
                 >
                   <div className="w-14 h-14 sm:w-16 sm:h-16 bg-brand/10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border border-brand/20 ms-0 me-3.5">
                     <Scissors size={22} className="text-brand" />
@@ -1891,7 +1899,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   <button
                     key={item.id}
                     onClick={() => handleProductTileClick(item)}
-                    className="flex items-center p-3 sm:p-3.5 bg-surface border border-border/70 hover:border-brand/50 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 group active:scale-[0.99] cursor-pointer w-full text-right"
+                    className="flex items-center p-3 sm:p-3.5 bg-surface border border-border/70 hover:border-brand/50 rounded-xl transition-all duration-200 group active:scale-[0.99] cursor-pointer w-full text-right"
                   >
                     {/* Item Image */}
                     <div className="w-14 h-14 sm:w-16 sm:h-16 bg-surface-muted/60 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border border-border/40 ms-0 me-3.5">
@@ -1958,7 +1966,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
       </div>
 
       {/* Desktop sidebar cart layout (30% width) - Hidden on mobile */}
-      <div className="hidden md:flex md:w-[30%] md:min-w-[360px] md:max-w-[450px] ltr:border-l rtl:border-r border-border flex-col h-full overflow-hidden shrink-0 shadow-sm">
+      <div className="hidden md:flex md:w-[30%] md:min-w-[360px] md:max-w-[450px] ltr:border-l rtl:border-r border-border flex-col h-full overflow-hidden shrink-0">
         {renderCartPanel(false)}
       </div>
 
