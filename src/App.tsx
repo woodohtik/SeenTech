@@ -9,18 +9,30 @@ import {
   Navigate,
   useParams
 } from 'react-router-dom';
-import OrderTracking from './components/public/OrderTracking';
-import LandingPage from './components/LandingPage';
+// مراجعة-الفريق-التقني-الكامل-2026-10-19.md (أداء): كانا مستوردين بشكل
+// ساكن رغم كونهما مسارين عامّين منفصلين لا علاقة لهما بتطبيق تسجيل الدخول
+// -- كل مستخدم مسجّل دخول (حتى الكاشير) كان يُحمِّل LandingPage.html المضمّن
+// (~74KB) ضمن حزمته الرئيسية بلا أي استفادة منه إطلاقاً.
+const OrderTracking = React.lazy(() => import('./components/public/OrderTracking'));
+const LandingPage = React.lazy(() => import('./components/LandingPage'));
 
 // صفحة تتبّع الطلب العامة للعميل النهائي (بلا مصادقة) — /track/:token
 const TrackRoute = () => {
   const { token } = useParams();
-  return <OrderTracking token={token || ''} />;
+  return (
+    <React.Suspense fallback={<PageSkeleton />}>
+      <OrderTracking token={token || ''} />
+    </React.Suspense>
+  );
 };
 
 // توجيه تلقائي لصفحة الهبوط للزوار غير المسجلين
 const LandingRedirect = () => {
-  return <LandingPage />;
+  return (
+    <React.Suspense fallback={<MainSkeleton />}>
+      <LandingPage />
+    </React.Suspense>
+  );
 };
 import { logError } from './lib/logger';
 import Layout from './components/Layout';

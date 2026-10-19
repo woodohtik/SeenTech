@@ -181,17 +181,24 @@ export default function SupplierLedger({
   // trying to reconstruct some other source document.
   const handlePrintTransaction = async (tx: SupplierTransaction) => {
     const txDate = new Date(tx.date);
+    const { escapeHtml } = await import('../utils/printManager');
+    // مراجعة-الفريق-التقني-الكامل-2026-10-19.md (حرجة): tx.notes وsupplier.name
+    // حقول حرة يدخلها أي موظف (نموذج أمر شراء/مورد) -- كانتا تُحقنان هنا بلا
+    // تهريب، وهذا القالب ينتهي أحياناً في نافذة بنفس أصل التطبيق (انظر تعليق
+    // escapeHtml في printManager.ts). كل قيمة مصدرها بيانات المستخدم أدناه
+    // تمر عبر escapeHtml الآن؛ القيم الثابتة (تسميات t(...)، أرقام منسَّقة
+    // بـtoFixed/toLocaleDateString) لا تحتاجها.
     const row = (label: string, value: string) =>
       `<tr><td style="padding:6px 0;color:#666;font-size:12px;">${label}</td><td style="padding:6px 0;font-weight:bold;font-size:13px;text-align:left;">${value}</td></tr>`;
     const html = `
       <div style="font-family:Tajawal,Arial,sans-serif;direction:rtl;text-align:right;padding:16px;max-width:400px;">
-        <h2 style="margin:0 0 2px;">${tenantName}</h2>
+        <h2 style="margin:0 0 2px;">${escapeHtml(tenantName)}</h2>
         <p style="margin:0 0 16px;color:#888;font-size:11px;">${t('procurement.supplier_voucher_reprint_title', 'إعادة طباعة سند حركة')}</p>
         <table style="width:100%;border-collapse:collapse;">
           ${row(t('common.date', 'التاريخ'), txDate.toLocaleDateString('ar-SA-u-nu-latn'))}
-          ${row(t('procurement.reference_doc', 'المرجع / السند'), tx.reference_number)}
-          ${row(t('procurement.po_supplier', 'المورد'), supplier.name)}
-          ${row(t('procurement.doc_description', 'الوصف'), tx.notes || '—')}
+          ${row(t('procurement.reference_doc', 'المرجع / السند'), escapeHtml(tx.reference_number))}
+          ${row(t('procurement.po_supplier', 'المورد'), escapeHtml(supplier.name))}
+          ${row(t('procurement.doc_description', 'الوصف'), escapeHtml(tx.notes || '—'))}
           ${tx.debit > 0 ? row(t('procurement.payments_debit', 'المدفوعات (مدين)'), tx.debit.toFixed(2)) : ''}
           ${tx.credit > 0 ? row(t('procurement.liabilities_credit', 'المطلوبات (دائن)'), tx.credit.toFixed(2)) : ''}
         </table>

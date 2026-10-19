@@ -1,64 +1,34 @@
 import { supabase } from '../lib/supabase/client';
 import { SupplierTransaction } from '../types/supplierLedger';
 
-const LEDGER_STORAGE_KEY_PREFIX = 'seen_supplier_transactions_v1_';
+// مراجعة-الفريق-التقني-الكامل-2026-10-19.md (نتيجة حرجة): supplier_transactions
+// لم يكن له أي migration فعلياً (تحقَّق مباشرة: الجدول غير موجود على staging) --
+// هذا الملف كان يتراجع صامتاً إلى localStorage لكل متصفح/جهاز على حدة عند
+// فشل الاستعلام، ما يعني أن جهازي POS لنفس التاجر يريان رصيد/سجل حركة
+// مختلفَين تماماً لنفس المورد بلا أي تنبيه. الجدول أُضيف الآن بـmigration
+// حقيقية (20261019020000_missing_tables_schema_drift.sql)، فحُذف مسار
+// localStorage بالكامل -- لا مصدر حقيقة ثانٍ بعد اليوم.
 
-/**
- * Normalizes and fetches all transactions for a specific supplier.
- * Utilizes a hybrid cloud-and-local strategy:
- * 1. Checks if Supabase `supplier_transactions` table exists and queries it.
- * 2. If missing/fails, falls back seamlessly to per-tenant `localStorage` storage.
- * 3. Seeds pre-populated realistic transactions if the ledger is completely empty.
- */
+/** Fetches all transactions for a specific supplier, ordered oldest-first. */
 export async function getSupplierTransactions(
   supplierId: string,
   tenantId: string,
-  supplierName: string,
+  _supplierName: string,
   supplierBalance: number
 ): Promise<SupplierTransaction[]> {
-  try {
-    // 1. Attempt database query
-    const { data, error } = await supabase
-      .from('supplier_transactions')
-      .select('*')
-      .eq('supplier_id', supplierId)
-      .eq('tenant_id', tenantId)
-      .order('date', { ascending: true });
+  const { data, error } = await supabase
+    .from('supplier_transactions')
+    .select('*')
+    .eq('supplier_id', supplierId)
+    .eq('tenant_id', tenantId)
+    .order('date', { ascending: true });
 
-    // If table relation exists and query works, return it
-    if (!error && data) {
-      if (data.length > 0) {
-        return data as SupplierTransaction[];
-      }
-    } else if (error) {
-      // Table may not exist in database yet; fallback gracefully without throwing console.error
-      console.warn('supplier_transactions table query notice:', error.message || error);
-    }
-  } catch (err) {
-    console.warn('Exception querying supplier_transactions from DB:', err);
-  }
+  if (error) throw error;
+  if (data && data.length > 0) return data as SupplierTransaction[];
 
-  // 2. Fallback to LocalStorage sync
-  const localKey = `${LEDGER_STORAGE_KEY_PREFIX}${tenantId}_${supplierId}`;
-  const stored = localStorage.getItem(localKey);
-  
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored) as SupplierTransaction[];
-      // Filter out legacy auto-seeded mock transactions (e.g. starting with 'mock-')
-      const realTransactions = parsed.filter(tx => !tx.id || !tx.id.toString().startsWith('mock-'));
-      if (realTransactions.length > 0) {
-        return realTransactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-      }
-      // Clean up stale mock data key from localStorage
-      localStorage.removeItem(localKey);
-    } catch (e) {
-      console.error('Error parsing local supplier ledger:', e);
-    }
-  }
-
-  // 3. For new or clean suppliers without transaction records:
-  // If supplier has a non-zero opening balance, create a single opening balance entry.
+  // مورد جديد بلا أي حركة بعد: إن كان له رصيد افتتاحي، أنشئ سطر "رصيد
+  // افتتاحي" تمثيلياً (لا يُكتَب في الجدول -- فقط للعرض) ليبدأ السجل من رقم
+  // غير صفري بدل الظهور فارغاً رغم وجود ذمة فعلية.
   if (supplierBalance && supplierBalance > 0) {
     const openingTx: SupplierTransaction = {
       id: `opening-${supplierId}`,
@@ -100,20 +70,12 @@ export async function addSupplierTransaction(
   // their delta correctly via the RPC, but each ledger row still recorded
   // its own stale pre-update snapshot as running_balance.
   let authoritativeBalance = currentBalance + delta;
-  try {
-    const { data: newBalance, error: updateErr } = await supabase.rpc('increment_supplier_balance', {
-      p_supplier_id: transaction.supplier_id,
-      p_delta: delta,
-    });
-
-    if (updateErr) {
-      console.error('Failed to update supplier balance in Supabase:', updateErr);
-    } else if (typeof newBalance === 'number') {
-      authoritativeBalance = newBalance;
-    }
-  } catch (err) {
-    console.error('Exception updating supplier balance in Supabase:', err);
-  }
+  const { data: newBalance, error: updateErr } = await supabase.rpc('increment_supplier_balance', {
+    p_supplier_id: transaction.supplier_id,
+    p_delta: delta,
+  });
+  if (updateErr) throw updateErr;
+  if (typeof newBalance === 'number') authoritativeBalance = newBalance;
 
   const fullTransaction: SupplierTransaction = {
     ...transaction,
@@ -121,80 +83,21 @@ export async function addSupplierTransaction(
     running_balance: Number(authoritativeBalance.toFixed(2)),
   };
 
-  // 1. Attempt to store in Supabase
-  try {
-    const { error } = await supabase
-      .from('supplier_transactions')
-      .insert({
-        id: fullTransaction.id,
-        supplier_id: fullTransaction.supplier_id,
-        tenant_id: fullTransaction.tenant_id,
-        type: fullTransaction.type,
-        credit: fullTransaction.credit,
-        debit: fullTransaction.debit,
-        running_balance: fullTransaction.running_balance,
-        reference_number: fullTransaction.reference_number,
-        date: fullTransaction.date,
-        notes: fullTransaction.notes,
-      });
-
-    if (error) {
-      console.warn('Could not insert transaction to Supabase table, falling back to localStorage:', error);
-    }
-  } catch (err) {
-    console.warn('Could not insert transaction to Supabase table, falling back to localStorage:', err);
-  }
-
-  // 2. Always persist in LocalStorage for safe fallback
-  const localKey = `${LEDGER_STORAGE_KEY_PREFIX}${tenantId}_${fullTransaction.supplier_id}`;
-  const existing = await getSupplierTransactions(
-    fullTransaction.supplier_id,
-    tenantId,
-    '',
-    currentBalance
-  );
-
-  // Keep all transactions including seeded/mock history to preserve full mathematical coherence
-  const activeTransactions = existing;
-
-  const updatedTransactions = [...activeTransactions, fullTransaction].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
-
-  localStorage.setItem(localKey, JSON.stringify(updatedTransactions));
+  const { error } = await supabase
+    .from('supplier_transactions')
+    .insert({
+      id: fullTransaction.id,
+      supplier_id: fullTransaction.supplier_id,
+      tenant_id: fullTransaction.tenant_id,
+      type: fullTransaction.type,
+      credit: fullTransaction.credit,
+      debit: fullTransaction.debit,
+      running_balance: fullTransaction.running_balance,
+      reference_number: fullTransaction.reference_number,
+      date: fullTransaction.date,
+      notes: fullTransaction.notes,
+    });
+  if (error) throw error;
 
   return fullTransaction;
-}
-
-/**
- * Returns SQL setup code so user can apply it directly to database for permanent storage.
- */
-export function getLedgerSQLMigrationCode(): string {
-  return `-- 1. إنشاء جدول حسابات حركة الموردين
-CREATE TABLE IF NOT EXISTS public.supplier_transactions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
-    supplier_id UUID NOT NULL REFERENCES public.suppliers(id) ON DELETE CASCADE,
-    type VARCHAR(30) NOT NULL CHECK (type IN ('purchase', 'payment', 'adjustment')),
-    credit NUMERIC(14,2) NOT NULL DEFAULT 0,
-    debit NUMERIC(14,2) NOT NULL DEFAULT 0,
-    running_balance NUMERIC(14,2) NOT NULL DEFAULT 0,
-    reference_number VARCHAR(100) NOT NULL,
-    date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    notes TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- 2. إنشاء الفهارس لتسريع البحث والاستعلام
-CREATE INDEX IF NOT EXISTS idx_supplier_transactions_supplier ON public.supplier_transactions(supplier_id);
-CREATE INDEX IF NOT EXISTS idx_supplier_transactions_tenant ON public.supplier_transactions(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_supplier_transactions_date ON public.supplier_transactions(date DESC);
-
--- 3. تفعيل RLS وعزل الوصول حسب المستأجر (tenant_id)
-ALTER TABLE public.supplier_transactions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY supplier_transactions_tenant_isolation ON public.supplier_transactions
-    FOR ALL TO authenticated
-    USING (app_is_super_admin() OR tenant_id = app_current_tenant_id())
-    WITH CHECK (app_is_super_admin() OR tenant_id = app_current_tenant_id());
-`;
 }

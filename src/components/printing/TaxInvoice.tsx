@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { QRCodeSVG } from 'qrcode.react';
 import Barcode from 'react-barcode';
 import { generateZatcaQR } from '../../services/zatcaService';
+import { calculateItemTax } from '../../utils/b2bHelper';
 import { FileText, Printer, Mail, Phone, MapPin, Layers, Globe } from 'lucide-react';
 import { CurrencySymbol } from '../CurrencySymbol';
 
@@ -108,10 +109,12 @@ export default function TaxInvoice({
     let taxableAmount = 0;
     let subtotal = 0;
 
+    // مراجعة-الفريق-التقني-الكامل-2026-10-19.md (بنية): calculateItemTax
+    // المشتركة بدل إعادة كتابة صيغة "شامل الضريبة" يدوياً -- unitPrice هنا
+    // شامل الضريبة دائماً (انظر تعليق InvoiceItem أعلاه)، فالنوع 'inclusive' ثابت.
     items.forEach((item) => {
-      const itemTotalInc = item.unitPrice * item.quantity;
-      const itemTotalExc = itemTotalInc / (1 + vatRate);
-      const itemVat = itemTotalInc - itemTotalExc;
+      const { basePrice: itemTotalExc, taxAmount: itemVat, finalPrice: itemTotalInc } =
+        calculateItemTax(item.unitPrice, 'inclusive', vatRate, item.quantity);
 
       grandTotal += itemTotalInc;
       vatAmount += itemVat;
@@ -327,10 +330,9 @@ export default function TaxInvoice({
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
               {items.map((item, index) => {
-                const itemTotalInc = item.unitPrice * item.quantity;
-                const itemTotalExc = itemTotalInc / (1 + vatRate);
-                const itemUnitExc = item.unitPrice / (1 + vatRate);
-                const itemVat = itemTotalInc - itemTotalExc;
+                const { basePrice: itemTotalExc, taxAmount: itemVat, finalPrice: itemTotalInc } =
+                  calculateItemTax(item.unitPrice, 'inclusive', vatRate, item.quantity);
+                const itemUnitExc = calculateItemTax(item.unitPrice, 'inclusive', vatRate, 1).basePrice;
 
                 return (
                   <React.Fragment key={index}>

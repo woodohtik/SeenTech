@@ -38,6 +38,23 @@
 
 import i18n from 'i18next';
 
+// مراجعة-الفريق-التقني-الكامل-2026-10-19.md (نتيجة أمنية حرجة): أي نص يُحقَن
+// مباشرة في قالب HTML خام يُمرَّر لـ printHtmlContent/printHtmlContentDetailed
+// ينتهي -- عند فشل iframe.srcdoc -- في `window.open('', ...)` التي ترث نفس
+// أصل التطبيق (printElementDetailed/printHtmlContentDetailed أدناه)، بخلاف
+// srcdoc المعزول. أي حقل حر يُدخله مستخدم (ملاحظات، اسم مورد...) يُمرَّر لقالب
+// كهذا دون تهريب هو XSS مخزَّن قادر على سرقة توكِن الجلسة من localStorage.
+// استخدم هذه الدالة على كل قيمة نصية مصدرها بيانات المستخدم قبل الحقن في أي
+// قالب HTML هنا -- لا بديل آمن غيرها طالما القالب نص خام لا DOM مُهرَّب فعلاً.
+export function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export type PrintPaperSize = '80mm' | '58mm' | 'A4' | 'A5';
 
 export interface PrintOptions {

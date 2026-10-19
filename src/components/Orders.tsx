@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { formatSaudiPhone } from '../utils/phoneUtils';
+import { calculateItemTax } from '../utils/b2bHelper';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
@@ -491,29 +492,13 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const vatRate = vatRatePercentage / 100;
   const tailoringTaxType = tenant?.taxSettings?.tailoringTaxType || 'exclusive';
 
-  let calculatedSubtotal = totalAmount;
-  let calculatedVat = 0;
-  let calculatedGrandTotal = totalAmount;
-
-  if (isTaxEnabled) {
-    if (tailoringTaxType === 'exclusive') {
-      calculatedSubtotal = totalAmount;
-      calculatedVat = totalAmount * vatRate;
-      calculatedGrandTotal = totalAmount + calculatedVat;
-    } else if (tailoringTaxType === 'inclusive') {
-      calculatedGrandTotal = totalAmount;
-      calculatedSubtotal = totalAmount / (1 + vatRate);
-      calculatedVat = totalAmount - calculatedSubtotal;
-    } else if (tailoringTaxType === 'exempt') {
-      calculatedGrandTotal = totalAmount;
-      calculatedSubtotal = totalAmount;
-      calculatedVat = 0;
-    }
-  }
-
-  const roundedSubtotal = Number(calculatedSubtotal.toFixed(2));
-  const roundedVat = Number(calculatedVat.toFixed(2));
-  const roundedGrandTotal = Number(calculatedGrandTotal.toFixed(2));
+  // مراجعة-الفريق-التقني-الكامل-2026-10-19.md (بنية): كانت هذه الصيغة
+  // الرياضية (شامل/غير شامل/معفى) معاد كتابتها هنا يدوياً بدل استدعاء
+  // calculateItemTax المشتركة -- نفس نمط التكرار الذي أدى سابقاً لفروق بين
+  // الرقم المعروض في الطلبات والرقم المطبوع في الفاتورة. isTaxEnabled=false
+  // يعادل 'exempt' هنا (كانت تحسب calculatedVat=0 دون تغيير المجموع).
+  const { basePrice: roundedSubtotal, taxAmount: roundedVat, finalPrice: roundedGrandTotal } =
+    calculateItemTax(totalAmount, isTaxEnabled ? tailoringTaxType : 'exempt', vatRate, 1);
 
   const mapOrderData = useCallback((o: any): Order => {
     if (!o) return o;
