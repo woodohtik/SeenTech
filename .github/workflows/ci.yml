@@ -37,10 +37,6 @@ jobs:
       # bump that needs a real Android/iOS build-pipeline test this CI
       # can't do. Deliberately left ungated rather than force a major
       # mobile-tooling bump blind.
-      # would fail every push/PR immediately. This surfaces the data (shows
-      # as a non-blocking warning in the Actions UI) without blocking
-      # anyone; tightening it into a real gate is a separate decision once
-      # those existing findings have been triaged.
       - name: Dependency audit (report-only)
         run: npm audit --audit-level=high
         continue-on-error: true
@@ -84,3 +80,42 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 14
+
+  # مراجعة-الفريق-التقني-الكامل-2026-10-19.md (ديف أوبس): لا توجد خطوة CI
+  # تبني capacitor-customer/android (تطبيق العملاء، Google Play) قبل أي
+  # دمج -- كسر توافق Capacitor/Gradle كان لا يُكتشَف إلا عند محاولة بناء
+  # يدوي فعلي، وتحديداً وقت رفعة حقيقية على Play Console. هذا فحص تجميع
+  # (assembleDebug) فقط، بلا توقيع ولا نشر -- continue-on-error لأنها أول
+  # مرة يعمل فيها Gradle في CI هذا المشروع، تُشدَّد لبوابة حقيقية لاحقاً
+  # بعد إثبات استقرارها.
+  android-build-check:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build customer app web assets
+        run: npm run build:customer
+
+      - name: Sync Capacitor Android project
+        working-directory: capacitor-customer
+        run: npx cap sync android
+
+      - name: Gradle assembleDebug (compile check only, no signing)
+        working-directory: capacitor-customer/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
