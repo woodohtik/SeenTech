@@ -45,7 +45,8 @@ import { SmartSelect } from './ui/SmartSelect';
 import { IconInput } from './ui/IconInput';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { PriceDisplay } from './PriceDisplay';
-import { decodeInventoryDescription, calculateItemTax, hasValidTaxSettings } from '../utils/b2bHelper';
+import { decodeInventoryDescription, hasValidTaxSettings } from '../utils/b2bHelper';
+import { computeCartTotals } from '../utils/cartTotals';
 import { QRCodeSVG } from 'qrcode.react';
 import { useStaff } from '../contexts/StaffContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -981,36 +982,19 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     }
   };
 
-  const isTaxEnabled = taxSettings?.enabled ?? Boolean(taxSettings?.trn);
-  const effectiveVatRate = isTaxEnabled ? ((Number(taxSettings?.vatRate ?? 15)) / 100) : 0;
-
-  const subTotalAmount = cart.reduce((sum, item) => {
-    const calc = calculateItemTax(item.price, (item.taxType as any) || 'exclusive', effectiveVatRate, item.quantity);
-    return sum + calc.basePrice;
-  }, 0);
-
-  const taxAmountPerItem = cart.reduce((sum, item) => {
-    const calc = calculateItemTax(item.price, (item.taxType as any) || 'exclusive', effectiveVatRate, item.quantity);
-    return sum + calc.taxAmount;
-  }, 0);
-  
-  // Calculate discount
-  let calculatedDiscountAmount = 0;
-  if (discountValue > 0) {
-    if (discountType === 'percent') {
-      calculatedDiscountAmount = subTotalAmount * (discountValue / 100);
-    } else {
-      calculatedDiscountAmount = discountValue;
-    }
-  }
-  calculatedDiscountAmount = Math.min(calculatedDiscountAmount, subTotalAmount);
-  
-  const discountedSubtotal = subTotalAmount - calculatedDiscountAmount;
-
-  const discountRatio = subTotalAmount > 0 ? (subTotalAmount - calculatedDiscountAmount) / subTotalAmount : 1;
-  const taxAmount = isTaxEnabled ? taxAmountPerItem * discountRatio : 0;
-  const vatRate = isTaxEnabled ? Number(taxSettings?.vatRate ?? 15) : 0;
-  const totalAmount = discountedSubtotal + taxAmount;
+  // مراجعة-الفريق-التقني-الكامل-2026-10-19.md (QA، حرجة): مستخرَج الآن إلى
+  // src/utils/cartTotals.ts (computeCartTotals) -- نفس الصيغ بالضبط، بلا أي
+  // تغيير سلوكي -- ليصبح قابلاً للاختبار بمعزل عن POS.tsx كاملاً (انظر
+  // cartTotals.test.ts).
+  const {
+    isTaxEnabled,
+    vatRate,
+    subTotalAmount,
+    calculatedDiscountAmount,
+    discountedSubtotal,
+    taxAmount,
+    totalAmount,
+  } = computeCartTotals(cart, taxSettings, discountType, discountValue);
   totalAmountRef.current = totalAmount;
 
   const handleCheckout = async () => {
