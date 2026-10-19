@@ -4,8 +4,6 @@ import { supabase } from '../lib/supabase/client';
 import { Supplier, PurchaseOrder, InventoryItem, PurchaseOrderItem } from '../types';
 import { cn } from '../lib/utils';
 import { ResponsiveTable } from './ui/ResponsiveTable';
-import { addSupplierTransaction } from '../services/supplierAccountsService';
-import { adjustStock } from '../services/inventoryService';
 import { SmartSelect } from './ui/SmartSelect';
 import { PriceDisplay } from './PriceDisplay';
 import { useTranslation } from 'react-i18next';
@@ -25,7 +23,7 @@ import { encodeInventoryDescription } from '../utils/b2bHelper';
  * إضافة منتج (InventoryManager.tsx)، فهذا هو المسار الوحيد المتبقي لإنشاء
  * منتج جديد ومنحه رصيداً حقيقياً: يُنشأ هنا برصيد صفر، ثم كمية الاستلام في
  * نفس بند أمر الشراء هذا تصبح رصيده الافتتاحي الحقيقي عند تأكيد الأمر
- * (handleConfirmOrder أدناه، عبر adjustStock الموجود فعلاً).
+ * (handleConfirmOrder أدناه، عبر RPC confirm_purchase_order).
  */
 const ADD_NEW_ITEM_VALUE = '__add_new_item__';
 
@@ -339,18 +337,18 @@ export default function PurchaseOrders({
     }
     setIsConfirming(true);
     try {
-      // 1. Fetch current items of the purchase order to prevent any client-state mismatch
+      // Read-only validation fetch -- keeps today's friendly client-side
+      // error messages (missing items). The actual mutation no longer
+      // happens here: it all runs inside confirm_purchase_order below.
       const { data: orderDetails, error: fetchErr } = await supabase
         .from('purchase_orders')
-        .select('*, purchase_order_items(*)')
+        .select('po_number, purchase_order_items(id)')
         .eq('id', order.id)
         .single();
-      
+
       if (fetchErr) throw fetchErr;
       if (!orderDetails) throw new Error(t('procurement.po_details_not_found'));
-
-      const orderItems = orderDetails.purchase_order_items || [];
-      if (orderItems.length === 0) {
+      if (!orderDetails.purchase_order_items || orderDetails.purchase_order_items.length === 0) {
         throw new Error(t('procurement.no_items_to_confirm'));
       }
 
@@ -358,113 +356,20 @@ export default function PurchaseOrders({
       const orderNumberStr = orderDetails.po_number || order.po_number || order.poNumber || '';
       const finalOrderType = orderNumberStr.startsWith('RET') ? 'return' : 'purchase';
 
-      // 2. Resolve active branch ID dynamically with a fallback to ensure we never have a null branch_id
-      let activeBranchId = orderDetails.branch_id || order.branch_id || order.branchId || realBranchId;
-      if (!activeBranchId) {
-        const { data: fallbackBranches } = await supabase
-          .from('branches')
-          .select('id')
-          .eq('tenant_id', tenantId)
-          .limit(1);
-        if (fallbackBranches && fallbackBranches.length > 0) {
-          activeBranchId = fallbackBranches[0].id;
-        }
-      }
-
-      if (!activeBranchId) {
-        throw new Error(t('procurement.no_branch_for_stock'));
-      }
-
-      // 3. Perform atomic stock, ledger updates
-      //
-      // Was: read quantity from inventory_items -> compute in JS -> write
-      // absolute value, then the SAME read-compute-write again for
-      // branch_inventory -- two independently racy tables, no negative
-      // guard, and a ledger row inserted unconditionally after both. Two
-      // staff confirming the same purchase order concurrently (or one
-      // retrying after a timeout) would each read the same starting
-      // quantity and overwrite each other's stock addition.
-      //
-      // Now: one transactional apply_stock_movement call per item (the
-      // already-fixed pattern used by adjustStock elsewhere in this
-      // project) -- relative delta, >= 0 enforced in the database, and a
-      // ledger row derived from the real before/after values. Idempotent
-      // per order+item via operationId, so a retried confirmation can't
-      // double-apply.
-      for (const item of orderItems) {
-        // Skip updating inventory for custom items that don't have a database inventory reference
-        if (!item.item_id) {
-          console.warn(`Skipping stock update for item "${item.name}" because it does not map to a database inventory item ID.`);
-          continue;
-        }
-
-        const baseQty = Number(item.base_quantity || item.quantity || 0);
-        const delta = finalOrderType === 'purchase' ? baseQty : -baseQty;
-
-        await adjustStock({
-          branchId: activeBranchId,
-          itemId: item.item_id,
-          quantity: delta,
-          reason: finalOrderType === 'purchase' ? 'purchase' : 'return',
-          type: finalOrderType === 'purchase' ? 'in' : 'out',
-          staffId: currentStaff?.id || null,
-          tenantId,
-          operationId: `po:${order.id}:item:${item.item_id}`,
-          referenceId: order.id,
-        });
-      }
-
-      // 4. Update Supplier balance and write to transaction ledger
-      const supplierIdResolved = orderDetails.supplier_id || order.supplier_id || order.supplierId;
-      if (supplierIdResolved) {
-        const { data: supplier, error: sErr } = await supabase
-          .from('suppliers')
-          .select('balance')
-          .eq('id', supplierIdResolved)
-          .single();
-        
-        if (!sErr && supplier) {
-          const currentBalance = Number(supplier.balance || 0);
-          const orderTotal = Number(orderDetails.total_amount || order.total_amount || order.totalAmount || 0);
-          const isPurchase = finalOrderType === 'purchase';
-          
-          await addSupplierTransaction(
-            tenantId,
-            {
-              supplier_id: supplierIdResolved,
-              type: isPurchase ? 'purchase' : 'adjustment',
-              credit: isPurchase ? orderTotal : 0,
-              debit: isPurchase ? 0 : orderTotal,
-              reference_number: orderNumberStr || `PO-${order.id.slice(-6).toUpperCase()}`,
-              date: new Date().toISOString(),
-              notes: isPurchase 
-                ? `شراء بضائع ومواد بموجب أمر الشراء رقم ${orderNumberStr || order.id.slice(-6).toUpperCase()}`
-                : `مرتجع بضائع ومواد بموجب سند إرجاع رقم ${orderNumberStr || order.id.slice(-6).toUpperCase()}`,
-              tenant_id: tenantId,
-            },
-            currentBalance,
-            // مراجعة-الفريق-التقني-الكامل-2026-10-19.md: order.id ثابت عبر أي
-            // إعادة محاولة لتأكيد نفس أمر الشراء هذا تحديداً -- يمنع مضاعفة
-            // رصيد المورد وسطر السجل المكرَّر إن انقطع الاتصال بعد هذه
-            // الخطوة وقبل تحديث حالة الطلب أدناه، فأعاد الموظف الضغط.
-            order.id
-          );
-        }
-      }
-
-      // 5. Update order status to confirmed (received or returned for database ENUM compatibility)
-      const targetStatus = finalOrderType === 'purchase' ? 'received' : 'returned';
-
-      const { error: poUpdErr } = await supabase
-        .from('purchase_orders')
-        .update({
-          status: targetStatus,
-          received_date: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', order.id);
-
-      if (poUpdErr) throw poUpdErr;
+      // مراجعة-الفريق-التقني-الكامل-2026-10-19.md (قاعدة بيانات، عالية):
+      // كانت هذه الدالة 3 طلبات شبكة منفصلة تُطبِّق كل أثرها (خصم/إضافة
+      // مخزون لكل بند، تحديث رصيد المورد، تحديث حالة السند) بلا معاملة
+      // واحدة تجمعها -- انقطاع الاتصال بين أي خطوتين كان يترك حالة جزئية
+      // مرئية (أثر مُطبَّق فعلياً، والسند لا يزال "مسودة"). RPC واحد
+      // ذرّي (confirm_purchase_order، 20261019060000_atomic_confirm_purchase_order.sql)
+      // يؤدي الخطوات الثلاث داخل معاملة قاعدة بيانات واحدة، بنفس مفاتيح
+      // idempotency المستخدَمة سابقاً (po:<order_id>:item:<item_id> للمخزون،
+      // order.id لرصيد المورد) فيستأنف بأمان أي تأكيد قديم بالنمط السابق
+      // انقطع منتصف الطريق دون تكرار أي أثر سبق تطبيقه.
+      const { error: confirmErr } = await supabase.rpc('confirm_purchase_order', {
+        p_order_id: order.id,
+      });
+      if (confirmErr) throw confirmErr;
 
       toastSuccess(finalOrderType === 'return' ? t('procurement.return_confirmed_success') : t('procurement.po_confirmed_success'));
       setSelectedOrder(null);
