@@ -2360,6 +2360,8 @@
     "subtotal": "Subtotal",
     "tailoring": "Custom Tailor Thobe",
     "tax_invoice_issued": "Tax invoice issued successfully",
+    "zatca_clearance_rejected_title": "ZATCA rejected the invoice",
+    "zatca_clearance_rejected_desc": "The sale and stock deduction were already recorded locally, but ZATCA rejected clearance of the tax invoice. This sale needs immediate manual review from the tax invoices log -- do not hand this invoice to the customer as a valid tax invoice.",
     "tax_settings_required_desc": "Enter your real trade name and VAT number in Settings before issuing any invoice.",
     "tax_settings_required_title": "Complete tax settings first",
     "total": "Total",

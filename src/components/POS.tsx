@@ -104,7 +104,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const router = useRouter();
   const refreshCounter = useRefreshCounter();
   const { error: toastError, success: toastSuccess, handleError } = useToast();
-  const { confirm } = useConfirm();
+  const { confirm, alertModal } = useConfirm();
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
   // prefers-reduced-motion: skip the slide/spring enter animation and jump
@@ -1218,23 +1218,37 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       // no-auth customer tracking page, not the nonexistent /order/:id
       // this used to build).
       const trackingToken: string | undefined = !queuedOffline ? saleResult?.tracking_token : undefined;
+      // مراجعة-الفريق-التقني-الكامل-2026-10-19.md (امتثال، حرجة): كان رفض
+      // زاتكا لفاتورة B2B يُكتشَف بعد فوات الأوان -- toast عابر بعد أن
+      // الكاشير رأى شاشة "تم بنجاح" وربما سلّم الفاتورة للعميل فعلاً. زاتكا
+      // نفسها تتطلب Clearance متزامنة لفواتير B2B تحديداً (بعكس Reporting
+      // غير المتزامنة خلال 24 ساعة لفواتير B2C) -- فالانتظار هنا قبل
+      // اعتبار البيع مكتملاً هو السلوك الصحيح تقنياً، لا مجرد تشديد. هذا
+      // لا يُلغي البيع/خصم المخزون المُلتزَم بهما فعلاً داخل create_pos_sale
+      // (لا توجد بعد RPC عكس/إلغاء مخصّصة لذلك)، لكنه يمنع ظهور الأمر وكأنه
+      // اكتمل بنجاح ضريبياً بينما زاتكا رفضته فعلياً -- الكاشير يرى تنبيهاً
+      // حاجباً (alertModal) يجب إقراره صراحة قبل المتابعة، لا toast عابر.
+      let zatcaRejected = false;
       if (!queuedOffline) {
         void notifyNewOrderForStaff(newOrder.id);
-        // ZATCA real onboarding (seen-zatca-real-onboarding-task.md Phase ب
-        // step 6): a complete no-op server-side for every tenant without a
-        // production CSID yet (the normal case today) -- never blocks the
-        // receipt. Only once a tenant actually finishes real ZATCA
-        // onboarding does this start mattering; B2B rejection by ZATCA is
-        // surfaced as a follow-up warning rather than undoing the already-
-        // committed local sale (no reversal flow exists for that yet).
-        submitZatcaInvoice(newOrder.id, isB2B).then(result => {
-          if (isB2B && result.status === 'rejected') {
-            toastError(
-              t('pos.zatca_clearance_rejected_title', 'رفضت زاتكا الفاتورة'),
-              t('pos.zatca_clearance_rejected_desc', 'تم تسجيل البيع محلياً، لكن زاتكا رفضت اعتماد الفاتورة الضريبية. راجع الفاتورة في سجل الفواتير الضريبية.')
-            );
+        if (isB2B) {
+          // loading (مضبوطة true بالفعل أعلى الدالة) تبقى كما هي خلال هذا
+          // الانتظار -- زر الدفع يبقى معطَّلاً/بحالة تحميل، لا حاجة لحالة نص جديدة.
+          const zatcaResult = await submitZatcaInvoice(newOrder.id, isB2B);
+          if (zatcaResult.status === 'rejected') {
+            zatcaRejected = true;
+            await alertModal({
+              title: t('pos.zatca_clearance_rejected_title', 'رفضت زاتكا الفاتورة'),
+              description: t('pos.zatca_clearance_rejected_desc', 'تم تسجيل البيع والمخزون محلياً، لكن زاتكا رفضت اعتماد الفاتورة الضريبية. هذا البيع يحتاج مراجعة يدوية فورية من سجل الفواتير الضريبية -- لا تُسلِّم هذه الفاتورة للعميل كفاتورة ضريبية سارية.',
+              ),
+              danger: true,
+            });
           }
-        });
+        } else {
+          // B2C: Reporting غير متزامنة خلال 24 ساعة حسب مواصفة زاتكا نفسها
+          // -- الانتظار هنا غير مطلوب ولا مبرَّر، يبقى "أرسل ولا تنتظر" كما كان.
+          void submitZatcaInvoice(newOrder.id, isB2B);
+        }
       }
 
       setCart([]);
@@ -1277,6 +1291,9 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
           t('pos.sale_queued_offline_title', 'سُجِّلت الفاتورة محلياً'),
           t('pos.sale_queued_offline_desc', 'لا يوجد اتصال حالياً — ستُرسَل تلقائياً للخادم فور عودة الإنترنت.')
         );
+      } else if (zatcaRejected) {
+        // alertModal الحاجبة أعلى الدالة أبلغت الكاشير صراحة بالفعل -- toast
+        // "تم بنجاح" هنا سيناقض تلك الرسالة مباشرة، فلا داعي له إطلاقاً.
       } else if (saleResult?.stock_conflicts > 0) {
         /* Phase 4: a stock deduction lost the race against another
            (likely offline) device selling the same item -- the sale
@@ -1290,8 +1307,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       } else {
         toastSuccess(t('pos.tax_invoice_issued'));
       }
-      
-      if (isAutoPrintEnabled) {
+
+      if (isAutoPrintEnabled && !zatcaRejected) {
         flushSync(() => {
           // ensure state is flushed before printing
         });

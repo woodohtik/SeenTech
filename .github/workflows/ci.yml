@@ -24,9 +24,19 @@ jobs:
         run: npm run lint
 
       # seen-deep-technical-audit.md Medium #6: no dependency-security check
-      # existed at all. Report-only for now (continue-on-error) -- the
-      # current dependency tree already has 42 known advisories (3
-      # critical) that predate this step, so gating the build on them today
+      # existed at all. Report-only for now (continue-on-error) --
+      # مراجعة-الفريق-التقني-الكامل-2026-10-19.md triaged the original 42
+      # advisories (3 critical): `npm audit fix` closed proxy-addr (express,
+      # actually reachable -- feeds req.ip/trust-proxy used by the rate
+      # limiter) and websocket-driver (firebase's realtime-db transitive
+      # dep) with no breaking changes. 20 remain (1 critical): a `tar`
+      # advisory reachable only through @capacitor/assets's CLI icon/splash
+      # generator -- a local dev-only tool a developer runs manually on
+      # files they supply themselves, never deployed, never reachable by
+      # any real user -- whose only fix is a semver-major @capacitor/cli
+      # bump that needs a real Android/iOS build-pipeline test this CI
+      # can't do. Deliberately left ungated rather than force a major
+      # mobile-tooling bump blind.
       # would fail every push/PR immediately. This surfaces the data (shows
       # as a non-blocking warning in the Actions UI) without blocking
       # anyone; tightening it into a real gate is a separate decision once
