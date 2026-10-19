@@ -85,6 +85,11 @@ export interface OfflinePinLockout {
   tenantId: string;
   failedCount: number;
   lockUntil: number | null;
+  // مراجعة-الفريق-التقني-الكامل-2026-10-19.md: مدة القفل *القادمة* بالدقائق
+  // -- تبدأ من 1 وتتضاعف عند كل قفل جديد (سقف 15)، بنفس منطق
+  // record_pin_verify_failure في 20260908070000_pin_verify_rate_limit.sql
+  // (lock_minutes). اختياري للتوافق مع سجلات قديمة محفوظة قبل هذا الحقل.
+  lockMinutes?: number;
 }
 
 class SeenOfflineDatabase extends Dexie {

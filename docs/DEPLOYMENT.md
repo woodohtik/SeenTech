@@ -133,3 +133,5 @@ seen-deep-technical-audit.md Medium tier: لا توجد خطة تراجع موث
 | تطبيق العملاء | `VITE_CUSTOMER_API_ORIGIN` | حرِج عند البناء الإنتاجي — راجع القسم 4 |
 | مراقبة | `VITE_SENTRY_DSN` | اختياري، يعمل فقط في بناء إنتاجي فعلي |
 | هجرة بيانات لمرة واحدة | `FIREBASE_AUTH_EXPORT_PATH`, `FIREBASE_SCRYPT_*` | لتشغيل `scripts/migrate.ts` يدوياً فقط، ليست جزءاً من تشغيل التطبيق |
+| محدِّد المعدّل العام (Upstash) | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | **لا تُضَف يدوياً** — تُحقَن تلقائياً عبر `vercel integration add upstash/upstash-kv`، ثم `vercel env pull` تجلبها محلياً. غيابها ليس عطلاً (fail-open، يسمح بكل الطلبات ويسجّل تحذيراً فقط) |
+| جدولة Vercel Cron | `CRON_SECRET` | يحمي `/api/cron/zatca-cert-expiry-check` فقط — غيابه يرفض كل استدعاء cron بأمان (401)، لا يعطّل شيئاً آخر |

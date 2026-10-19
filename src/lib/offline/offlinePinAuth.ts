@@ -30,7 +30,17 @@ import { offlineDb, type CachedStaffAuth } from './db';
  */
 
 const MAX_ATTEMPTS = 5;
-const LOCK_MINUTES_SCHEDULE = [1, 2, 4, 8, 15]; // capped at 15, matches the server's own cap
+// مراجعة-الفريق-التقني-الكامل-2026-10-19.md (QA، عالية): نسخة سابقة من هذا
+// الملف استخدمت مصفوفة ثابتة [1,2,4,8,15] مفهرَسة بـfailedCount مباشرة --
+// بما أن القفل لا يُفعَّل أصلاً إلا عند failedCount>=5، كان الفهرس عند أول
+// قفل فعلي يساوي 4 (آخر عنصر) دائماً، فكل أول قفل يقفز مباشرة لـ15 دقيقة
+// بدل البدء من دقيقة واحدة -- عناصر 1/2/4/8 كانت كوداً ميتاً لا يُصادَف
+// إطلاقاً. اكتُشف هذا عبر اختبار حقيقي (offlinePinAuth.test.ts)، لا نظرياً.
+// الإصلاح: يطابق الآن record_pin_verify_failure فعلياً (نفس الاسمين
+// p_max_attempts/p_max_lock_minutes) -- lockMinutes يُخزَّن لكل تاجر، يبدأ
+// من 1، يتضاعف عند كل قفل جديد (سقف 15)، وfailedCount يُصفَّر عند كل قفل.
+const INITIAL_LOCK_MINUTES = 1;
+const MAX_LOCK_MINUTES = 15;
 
 const PBKDF2_ITERATIONS = 210_000; // OWASP's 2023 baseline for PBKDF2-HMAC-SHA256
 const SALT_BYTES = 16;
@@ -125,9 +135,23 @@ export async function tryOfflinePinVerify(tenantId: string, pin: string): Promis
   }
 
   const failedCount = (lockout?.failedCount || 0) + 1;
-  const lockMinutes = LOCK_MINUTES_SCHEDULE[Math.min(failedCount - 1, LOCK_MINUTES_SCHEDULE.length - 1)];
-  const lockUntil = failedCount >= MAX_ATTEMPTS ? Date.now() + lockMinutes * 60 * 1000 : null;
-  await offlineDb.offlinePinLockout.put({ tenantId, failedCount, lockUntil });
+  if (failedCount >= MAX_ATTEMPTS) {
+    const currentLockMinutes = lockout?.lockMinutes || INITIAL_LOCK_MINUTES;
+    const nextLockMinutes = Math.min(currentLockMinutes * 2, MAX_LOCK_MINUTES);
+    await offlineDb.offlinePinLockout.put({
+      tenantId,
+      failedCount: 0,
+      lockUntil: Date.now() + currentLockMinutes * 60 * 1000,
+      lockMinutes: nextLockMinutes,
+    });
+  } else {
+    await offlineDb.offlinePinLockout.put({
+      tenantId,
+      failedCount,
+      lockUntil: null,
+      lockMinutes: lockout?.lockMinutes ?? INITIAL_LOCK_MINUTES,
+    });
+  }
 
   return { outcome: 'no_match' };
 }

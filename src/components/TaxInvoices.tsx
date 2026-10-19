@@ -404,9 +404,16 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
   };
   
   // Use pre-computed QR, or fallback logic
+  // مراجعة-الفريق-التقني-الكامل-2026-10-19.md (امتثال، متوسطة): كان الرقم
+  // الضريبي المفقود يُستبدَل صامتاً بـ'000000000000000' -- رقم بصيغة صحيحة
+  // (15 رقماً) يبدو حقيقياً، فيُنتج QR يمر كفاتورة ضريبية سليمة ظاهرياً رغم
+  // عدم وجود رقم ضريبي حقيقي خلفه. الآن: لا رقم حقيقي = لا QR إطلاقاً، فشل
+  // ظاهر (الفاتورة تُطبَع بلا الرمز) بدل بيانات وهمية صامتة.
   const sellerName = order.sellerName || tenant.name || 'المنشأة';
-  const vatNumber = order.sellerTRN || tenant.taxSettings?.trn || tenant.vatNumber || '000000000000000';
-  const qrCodeBase64 = order.qrCodeBase64 || generateZatcaQR(sellerName, vatNumber, invoiceDate.toISOString(), totalIncVat.toFixed(2), vatAmount.toFixed(2));
+  const vatNumber = order.sellerTRN || tenant.taxSettings?.trn || tenant.vatNumber || '';
+  const qrCodeBase64 = order.qrCodeBase64 || (vatNumber
+    ? generateZatcaQR(sellerName, vatNumber, invoiceDate.toISOString(), totalIncVat.toFixed(2), vatAmount.toFixed(2))
+    : undefined);
 
   // Build items list
   const formattedItems = order.items.map((item: any) => ({
