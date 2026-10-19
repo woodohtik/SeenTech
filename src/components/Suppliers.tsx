@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { motion } from 'motion/react';
 import { 
   Users, 
@@ -427,12 +428,16 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
     }
   };
 
-  const filteredSuppliers = suppliers.filter(s => {
-    const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (s.contactPerson || '').toLowerCase().includes(searchTerm.toLowerCase());
+  // مراجعة-الفريق-التقني-الكامل-2026-10-19.md (أداء): debounce + useMemo --
+  // كانت هذه المصفوفة تُعاد حسابها عند كل render بلا أي منهما (الاستثناء
+  // الوحيد مقابل Orders/POS/Inventory/Customers المماثلة والمُغلَّفة بالفعل).
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 250);
+  const filteredSuppliers = useMemo(() => suppliers.filter(s => {
+    const matchesSearch = s.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      (s.contactPerson || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || s.category === categoryFilter;
     return matchesSearch && matchesCategory;
-  });
+  }), [suppliers, debouncedSearchTerm, categoryFilter]);
 
   return (
     <div className="p-4 md:p-6 space-y-6 font-sans">

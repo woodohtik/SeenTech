@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { formatSaudiPhone } from '../utils/phoneUtils';
 import { calculateItemTax } from '../utils/b2bHelper';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
@@ -311,6 +312,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const [staff, setStaff] = useState<Staff[]>([]);
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [search, setSearch] = useState('');
+  // مراجعة-الفريق-التقني-الكامل-2026-10-19.md (أداء): debounce قبل الفلترة --
+  // الحقل نفسه يبقى مربوطاً بـsearch (استجابة فورية للكتابة)، filteredOrders
+  // وحدها تستخدم القيمة المؤجَّلة.
+  const debouncedSearch = useDebouncedValue(search, 250);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [isEditingMeasurements, setIsEditingMeasurements] = useState(false);
@@ -1471,7 +1476,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   };
 
   const filteredOrders = useMemo(() => orders.filter(o => {
-    const searchLower = search.toLowerCase();
+    const searchLower = debouncedSearch.toLowerCase();
     const orderNumberStr = o.orderNumber ? o.orderNumber.toString() : '';
     // Handle potential invoice number inside the order object if it exists
     const invoiceNumberStr = (o as any).invoiceNumber ? String((o as any).invoiceNumber).toLowerCase() : '';
@@ -1494,7 +1499,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     const matchesTab = activeTab === 'active' ? o.status !== 'delivered' : o.status === 'delivered';
 
     return matchesSearch && matchesStatus && matchesDate && matchesTab;
-  }), [orders, search, statusFilter, startDate, endDate, activeTab]);
+  }), [orders, debouncedSearch, statusFilter, startDate, endDate, activeTab]);
 
   // Groups unpaidOrders by customerId once (O(n)) instead of re-filtering
   // the whole unpaidOrders array for every row rendered below (was O(n*m)

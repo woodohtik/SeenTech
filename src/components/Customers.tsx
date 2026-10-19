@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import DateTimeDisplay from './DateTimeDisplay';
@@ -85,6 +86,9 @@ export default function Customers({ tenantId }: CustomersProps) {
   const { confirm } = useConfirm();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
+  // مراجعة-الفريق-التقني-الكامل-2026-10-19.md (أداء): نفس إصلاح Orders.tsx/
+  // Suppliers.tsx -- الحقل يبقى فورياً، الفلترة تتأخر 250ms فقط.
+  const debouncedSearch = useDebouncedValue(search, 250);
   const [sortBy, setSortBy] = useState<'date' | 'date_asc' | 'name' | 'balance_desc'>('date');
   const [filter, setFilter] = useState<'all' | 'measurements' | 'recent' | 'test' | 'b2b' | 'b2c'>('all');
   const [balanceFilter, setBalanceFilter] = useState<'all' | 'debtor' | 'creditor' | 'balanced'>('all');
@@ -644,7 +648,7 @@ export default function Customers({ tenantId }: CustomersProps) {
   const filteredCustomers = useMemo(() => customers
     .filter(c => {
       // Search filter
-      const searchLower = search.toLowerCase().trim();
+      const searchLower = debouncedSearch.toLowerCase().trim();
       const matchesSearch = !searchLower || searchLower.split(/\s+/).every(term => 
         c.name.toLowerCase().includes(term) || 
         c.phone.includes(term) ||
@@ -691,7 +695,7 @@ export default function Customers({ tenantId }: CustomersProps) {
         return balB - balA;
       }
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    }), [customers, search, filter, balanceFilter, customerBalances, sortBy]);
+    }), [customers, debouncedSearch, filter, balanceFilter, customerBalances, sortBy]);
 
 
 
