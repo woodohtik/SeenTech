@@ -40,6 +40,7 @@ import {
   Building2,
   DollarSign,
   Download,
+  Upload,
   ArrowDownLeft,
   ArrowUpRight
 } from 'lucide-react';
@@ -55,6 +56,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { customerSchema } from '../lib/validations';
+import {
+  CUSTOMER_IMPORT_COLUMN_FIELDS,
+  CustomerImportField,
+  CustomerImportRow,
+  mapCustomerImportHeaders,
+  parseCustomerImportRows,
+} from '../utils/customerImport';
 import { PriceDisplay } from './PriceDisplay';
 import PageSkeleton from "./PageSkeleton";
 import Header from './Header';
@@ -99,6 +107,7 @@ export default function Customers({ tenantId }: CustomersProps) {
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -711,7 +720,7 @@ export default function Customers({ tenantId }: CustomersProps) {
         subtitle={t('customers.subtitle')}
       >
         <div className="flex items-center gap-2">
-          <button 
+          <button
             onClick={() => handleExportExcel()}
             className="bg-surface text-content border border-border px-4 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-surface-muted transition-all text-xs sm:text-sm cursor-pointer shadow-sm hover:border-brand/30"
             title={t('customers.export_excel_title')}
@@ -719,6 +728,17 @@ export default function Customers({ tenantId }: CustomersProps) {
             <FileSpreadsheet size={18} className="text-success" />
             <span className="hidden sm:inline">{t('customers.export_excel')}</span>
           </button>
+
+          {canCreate && (
+            <button
+              onClick={() => setIsImportModalOpen(true)}
+              className="bg-surface text-content border border-border px-4 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-surface-muted transition-all text-xs sm:text-sm cursor-pointer shadow-sm hover:border-brand/30"
+              title={t('customers.import_excel_title')}
+            >
+              <Upload size={18} className="text-brand" />
+              <span className="hidden sm:inline">{t('customers.import_excel')}</span>
+            </button>
+          )}
 
           {canCreate && (
             <button
@@ -1832,6 +1852,19 @@ export default function Customers({ tenantId }: CustomersProps) {
           />
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {isImportModalOpen && (
+          <CustomerImportModal
+            tenantId={tenantId}
+            existingCustomers={customers}
+            onClose={() => setIsImportModalOpen(false)}
+            onImported={() => {
+              queryClient.invalidateQueries({ queryKey: ['customers', tenantId] });
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -2637,6 +2670,266 @@ const CustomerStatementModal = ({
           >
             {t('sales.close')}
           </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+/**
+ * مراجعة-الفريق-التقني-الكامل-2026-10-19.md جلسة brainstorming (العملاء، أول
+ * كيان من ثلاثة: عملاء/منتجات/موردين) -- استيراد عملاء جُدد بالجملة من ملف
+ * Excel. يختلف عمداً عن OpeningBalanceModal أعلاه في InventoryManager.tsx:
+ * ذاك يُحدِّث كمية صنف *موجود مسبقاً*، هذا يُنشئ سجلات *جديدة*. منطق التحقق/
+ * المطابقة الفعلي (قابل للاختبار بمعزل عن React/XLSX) يعيش في
+ * src/utils/customerImport.ts -- انظر customerImport.test.ts.
+ */
+const CustomerImportModal = ({
+  tenantId,
+  existingCustomers,
+  onClose,
+  onImported,
+}: {
+  tenantId: string;
+  existingCustomers: Customer[];
+  onClose: () => void;
+  onImported: () => void;
+}) => {
+  const { t, i18n } = useTranslation();
+  const isRtl = isRtlLang(i18n.language);
+  const { error: toastError, success: toastSuccess, handleError } = useToast();
+
+  const [step, setStep] = useState<'upload' | 'preview' | 'result'>('upload');
+  const [rows, setRows] = useState<CustomerImportRow[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const translatedColumnAliases: Partial<Record<CustomerImportField, string>> = Object.fromEntries(
+    CUSTOMER_IMPORT_COLUMN_FIELDS.map((field) => [field, t(`customers.import_template_col_${field === 'companyName' ? 'company' : field}`)])
+  );
+
+  const handleDownloadTemplate = () => {
+    const headers = CUSTOMER_IMPORT_COLUMN_FIELDS.map((field) => translatedColumnAliases[field] as string);
+    const worksheet = XLSX.utils.aoa_to_sheet([headers]);
+    worksheet['!dir'] = isRtl ? 'rtl' : 'ltr';
+    worksheet['!cols'] = headers.map(() => ({ wch: 22 }));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, t('customers.import_modal_title'));
+    XLSX.writeFile(workbook, `${t('customers.import_template_filename')}.xlsx`);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLoading(true);
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const raw: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+        if (raw.length < 2) {
+          setRows([]);
+          setStep('preview');
+          return;
+        }
+
+        const headerRow = raw[0].map((h: any) => String(h ?? ''));
+        const colIndex = mapCustomerImportHeaders(headerRow, translatedColumnAliases);
+        const existingPhones = new Set(existingCustomers.map((c) => c.phone).filter(Boolean));
+
+        const parsed = parseCustomerImportRows(raw, colIndex, existingPhones, {
+          invalid: t('customers.import_row_invalid'),
+          duplicateExisting: t('customers.import_row_duplicate_existing'),
+          duplicateInFile: t('customers.import_row_duplicate_in_file'),
+        });
+
+        setRows(parsed);
+        setStep('preview');
+      } catch {
+        toastError(t('customers.import_failed'));
+      } finally {
+        setLoading(false);
+        e.target.value = '';
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const validRows = rows.filter((r) => r.status === 'valid');
+  const duplicateRows = rows.filter((r) => r.status === 'duplicate_existing' || r.status === 'duplicate_in_file');
+  const invalidRows = rows.filter((r) => r.status === 'invalid');
+
+  const handleConfirmImport = async () => {
+    if (validRows.length === 0) return;
+    setLoading(true);
+    try {
+      const nowIso = new Date().toISOString();
+      const payload = validRows.map((r) => ({
+        name: r.name,
+        phone: r.formattedPhone,
+        notes: r.notes || null,
+        measurements: {},
+        styles: { city: r.city || undefined, address: r.address || undefined },
+        company_name: r.companyName || null,
+        vat_number: r.trn || null,
+        tenant_id: tenantId,
+        created_at: nowIso,
+        updated_at: nowIso,
+        is_test: false,
+      }));
+
+      const { error } = await supabase.from('customers').insert(payload);
+      if (error) throw error;
+
+      onImported();
+      toastSuccess(t('customers.import_success', { count: validRows.length }));
+      setStep('result');
+    } catch (err) {
+      handleError(err as any, t('customers.import_failed'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderRowList = (list: CustomerImportRow[], icon: React.ReactNode, colorClass: string) => (
+    <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+      {list.map((r) => (
+        <div key={r.rowNumber} className={cn("flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-xl bg-surface-muted/60", colorClass)}>
+          {icon}
+          <span className="truncate">{r.name || '-'} ({r.phone || '-'})</span>
+          <span className="text-content-muted font-medium shrink-0">— {r.reason}</span>
+        </div>
+      ))}
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-black/60 backdrop-blur-md"
+        onClick={step === 'result' ? undefined : onClose}
+      />
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        className="bg-surface w-full max-w-2xl rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
+        dir={isRtl ? 'rtl' : 'ltr'}
+      >
+        <div className="p-4 sm:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
+          <div className="flex items-center gap-4">
+            <div className="p-4 bg-brand text-white rounded-2xl shadow-lg shadow-brand/10">
+              <Upload size={24} />
+            </div>
+            <div>
+              <h2 className="text-2xl font-black text-content">{t('customers.import_modal_title')}</h2>
+              <p className="text-xs text-content-muted font-bold">{t('customers.import_modal_subtitle')}</p>
+            </div>
+          </div>
+          {step !== 'result' && (
+            <button onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors">
+              <X size={24} className="text-content-muted" />
+            </button>
+          )}
+        </div>
+
+        <div className="p-4 sm:p-8 space-y-6 overflow-y-auto">
+          {step === 'upload' && (
+            <>
+              <button
+                onClick={handleDownloadTemplate}
+                className="w-full px-5 py-3 bg-surface-muted border border-border rounded-2xl flex items-center justify-center gap-2 text-content font-bold hover:bg-surface-muted/70 transition-all cursor-pointer"
+              >
+                <Download size={18} />
+                {t('customers.import_download_template')}
+              </button>
+
+              <div className="relative">
+                <input
+                  id="customer-import-file"
+                  type="file"
+                  accept=".xlsx, .xls"
+                  onChange={handleFileUpload}
+                  disabled={loading}
+                  className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-wait"
+                />
+                <div className="w-full px-5 py-6 bg-brand/5 border-2 border-dashed border-brand/20 rounded-2xl flex items-center justify-center gap-2 text-brand font-bold">
+                  <Upload size={20} />
+                  {loading ? t('common.loading') : t('customers.import_choose_file')}
+                </div>
+              </div>
+            </>
+          )}
+
+          {(step === 'preview' || step === 'result') && (
+            <div className="space-y-4">
+              {validRows.length === 0 ? (
+                <p className="text-sm font-bold text-warning px-1">{t('customers.import_no_valid_rows')}</p>
+              ) : (
+                <div className="flex items-center gap-2 text-sm font-black text-success px-1">
+                  <Check size={18} />
+                  {step === 'preview'
+                    ? t('customers.import_preview_summary', { count: validRows.length })
+                    : `${validRows.length} ${t('customers.import_result_success_header')}`}
+                </div>
+              )}
+
+              {duplicateRows.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-black text-warning uppercase tracking-widest px-1">
+                    {duplicateRows.length} {t('customers.import_result_duplicate_header')}
+                  </p>
+                  {renderRowList(duplicateRows, <AlertCircle size={14} className="shrink-0" />, 'text-warning')}
+                </div>
+              )}
+
+              {invalidRows.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-black text-danger uppercase tracking-widest px-1">
+                    {invalidRows.length} {t('customers.import_result_error_header')}
+                  </p>
+                  {renderRowList(invalidRows, <X size={14} className="shrink-0" />, 'text-danger')}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="sticky bottom-0 shrink-0 p-4 sm:p-8 border-t border-border bg-surface flex justify-end gap-3">
+          {step === 'preview' && (
+            <>
+              <button
+                onClick={() => { setRows([]); setStep('upload'); }}
+                className="px-6 py-3 bg-surface-muted text-content hover:bg-surface border border-border rounded-xl font-bold transition-all text-xs sm:text-sm cursor-pointer"
+              >
+                {t('common.cancel')}
+              </button>
+              {validRows.length > 0 && (
+                <button
+                  onClick={handleConfirmImport}
+                  disabled={loading}
+                  className="px-6 py-3 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold text-xs sm:text-sm transition-all shadow-lg shadow-brand/20 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+                >
+                  {t('customers.import_confirm_button', { count: validRows.length })}
+                </button>
+              )}
+            </>
+          )}
+          {step === 'result' && (
+            <button
+              onClick={onClose}
+              className="px-6 py-3 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold text-xs sm:text-sm transition-all shadow-lg shadow-brand/20 cursor-pointer"
+            >
+              {t('customers.import_result_done')}
+            </button>
+          )}
         </div>
       </motion.div>
     </div>
