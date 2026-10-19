@@ -19,8 +19,14 @@ import {
   MessageSquare,
   Building,
   User,
-  FileText
+  FileText,
+  Upload,
+  Download,
+  CheckCircle2,
+  AlertCircle,
+  X
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
@@ -28,6 +34,14 @@ import { saveLastKnown, getLastKnown } from '../lib/offline/lastKnownCache';
 import { isNetworkFailure } from '../lib/offline/outbox';
 import { Supplier, PurchaseOrder, PurchaseReturn, InventoryItem } from '../types';
 import { decodeInventoryDescription } from '../utils/b2bHelper';
+import { useDirection } from '../lib/direction';
+import { addSupplierTransaction } from '../services/supplierAccountsService';
+import {
+  SUPPLIER_IMPORT_COLUMN_FIELDS,
+  SupplierImportField,
+  mapSupplierImportHeaders,
+  parseSupplierImportRows,
+} from '../utils/supplierImport';
 
 import { useForm, Controller } from 'react-hook-form';
 import { SmartSelect } from './ui/SmartSelect';
@@ -132,6 +146,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [selectedSupplierDetails, setSelectedSupplierDetails] = useState<Supplier | null>(null);
 
@@ -448,16 +463,26 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
         </div>
         <div className="flex gap-2 w-full md:w-auto">
           {activeTab === 'suppliers' && (
-            <button 
-              onClick={() => {
-                setEditingSupplier(null);
-                setIsModalOpen(true);
-              }}
-              className="flex-1 md:flex-none bg-brand text-white px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:bg-brand/90 transition-colors"
-            >
-              <Plus size={20} />
-              <span>{t('procurement.add_supplier', 'إضافة مورد')}</span>
-            </button>
+            <>
+              <button
+                onClick={() => setIsImportModalOpen(true)}
+                className="flex-1 md:flex-none bg-surface text-content border border-border px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:bg-surface-muted transition-colors"
+                title={t('procurement.bulk_import_button_title', 'استيراد موردين جدد بالجملة من ملف إكسل')}
+              >
+                <Upload size={18} />
+                <span>{t('procurement.bulk_import_button', 'استيراد موردين')}</span>
+              </button>
+              <button
+                onClick={() => {
+                  setEditingSupplier(null);
+                  setIsModalOpen(true);
+                }}
+                className="flex-1 md:flex-none bg-brand text-white px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:bg-brand/90 transition-colors"
+              >
+                <Plus size={20} />
+                <span>{t('procurement.add_supplier', 'إضافة مورد')}</span>
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -1054,6 +1079,325 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
           }}
         />
       )}
+
+      {isImportModalOpen && (
+        <SupplierImportModal
+          tenantId={tenantId}
+          existingSuppliers={suppliers}
+          categoryOptions={categoryPicker.options}
+          onClose={() => setIsImportModalOpen(false)}
+          onImported={() => {
+            setSupplierReloadTrigger((prev) => prev + 1);
+            queryClient.invalidateQueries({ queryKey: ['suppliers', tenantId] });
+          }}
+        />
+      )}
     </div>
   );
 }
+
+interface SupplierImportRowView {
+  rowNumber: number;
+  name: string;
+  phoneText: string;
+  status: 'valid' | 'duplicate_existing' | 'duplicate_in_file' | 'invalid';
+  reason?: string;
+  resolved?: ReturnType<typeof parseSupplierImportRows>[number]['resolved'];
+}
+
+/**
+ * مراجعة-الفريق-التقني-الكامل-2026-10-19.md جلسة brainstorming (الموردون،
+ * ثالث وآخر كيان: عملاء/منتجات/موردين -- انظر CustomerImportModal
+ * (Customers.tsx) وProductImportModal (InventoryManager.tsx) للكيانين
+ * الأولين). موردٌ جديد هنا يحمل، اختيارياً، "رصيداً افتتاحياً" حقيقياً (مديونية
+ * سابقة قبل الانتقال للنظام) -- بخلاف نموذج "إضافة مورد" اليدوي الذي يثبّت
+ * balance=0 دائماً. يُطبَّق عبر addSupplierTransaction (نفس RPC
+ * increment_supplier_balance الذرّي المستخدَم في PurchaseOrders.tsx) بدل
+ * كتابة suppliers.balance مباشرة، فيترك سطر سجل حقيقي قابل للمراجعة
+ * ("رصيد افتتاحي عند الاستيراد") بدل رقم يظهر من العدم.
+ */
+const SupplierImportModal = ({
+  tenantId,
+  existingSuppliers,
+  categoryOptions,
+  onClose,
+  onImported,
+}: {
+  tenantId: string;
+  existingSuppliers: Supplier[];
+  categoryOptions: { value: string; label: string }[];
+  onClose: () => void;
+  onImported: () => void;
+}) => {
+  const { t } = useTranslation();
+  const { dir } = useDirection();
+  const { error: toastError, success: toastSuccess } = useToast();
+
+  const [step, setStep] = useState<'upload' | 'preview' | 'result'>('upload');
+  const [rows, setRows] = useState<ReturnType<typeof parseSupplierImportRows>>([]);
+  const [loading, setLoading] = useState(false);
+  const [insertedCount, setInsertedCount] = useState(0);
+
+  const translatedColumnAliases: Partial<Record<SupplierImportField, string>> = Object.fromEntries(
+    SUPPLIER_IMPORT_COLUMN_FIELDS.map((field) => [
+      field,
+      t(`procurement.bulk_import_template_col_${field.replace(/([A-Z])/g, '_$1').toLowerCase()}`),
+    ])
+  );
+
+  const handleDownloadTemplate = () => {
+    const headers = SUPPLIER_IMPORT_COLUMN_FIELDS.map((field) => translatedColumnAliases[field] as string);
+    const worksheet = XLSX.utils.aoa_to_sheet([headers]);
+    worksheet['!dir'] = dir;
+    worksheet['!cols'] = headers.map(() => ({ wch: 20 }));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, t('procurement.bulk_import_modal_title'));
+    XLSX.writeFile(workbook, `${t('procurement.bulk_import_template_filename')}.xlsx`);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLoading(true);
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const raw: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+        const headerRow = raw[0] ? raw[0].map((h: any) => String(h ?? '')) : [];
+        const colIndex = mapSupplierImportHeaders(headerRow, translatedColumnAliases);
+
+        const existingPhones = new Set(existingSuppliers.map((s) => s.phone).filter(Boolean));
+
+        const parsed = parseSupplierImportRows(raw, colIndex, categoryOptions, existingPhones, {
+          invalid: t('procurement.bulk_import_row_invalid'),
+          duplicateExisting: t('procurement.bulk_import_row_duplicate_existing'),
+          duplicateInFile: t('procurement.bulk_import_row_duplicate_in_file'),
+          unknownCategory: t('procurement.bulk_import_row_unknown_category'),
+        });
+
+        setRows(parsed);
+        setStep('preview');
+      } catch {
+        toastError(t('procurement.bulk_import_failed'));
+      } finally {
+        setLoading(false);
+        e.target.value = '';
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const validRows = rows.filter((r) => r.status === 'valid');
+  const duplicateRows = rows.filter((r) => r.status === 'duplicate_existing' || r.status === 'duplicate_in_file');
+  const invalidRows = rows.filter((r) => r.status === 'invalid');
+
+  const handleConfirmImport = async () => {
+    if (validRows.length === 0) return;
+    setLoading(true);
+    let succeeded = 0;
+    const failedRows: SupplierImportRowView[] = [];
+
+    for (const row of validRows) {
+      const resolved = row.resolved!;
+      try {
+        const { data: newSup, error } = await supabase
+          .from('suppliers')
+          .insert({
+            name: resolved.name,
+            contact_person: resolved.contactPerson || null,
+            email: resolved.email || null,
+            phone: resolved.phone,
+            address: resolved.address || null,
+            tax_number: resolved.taxNumber || null,
+            category: resolved.categoryKey,
+            balance: 0,
+            tenant_id: tenantId,
+            created_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+        if (error) throw error;
+
+        if (resolved.openingBalance > 0) {
+          await addSupplierTransaction(
+            tenantId,
+            {
+              supplier_id: newSup.id,
+              type: 'adjustment',
+              credit: resolved.openingBalance,
+              debit: 0,
+              reference_number: 'OPENING',
+              date: new Date().toISOString(),
+              notes: t('procurement.bulk_import_opening_balance_note', 'رصيد افتتاحي عند الاستيراد'),
+              tenant_id: tenantId,
+            },
+            0,
+            `supplier-import-opening:${newSup.id}`
+          );
+        }
+
+        succeeded += 1;
+      } catch (err: any) {
+        failedRows.push({
+          rowNumber: row.rowNumber, name: row.name, phoneText: row.phoneText,
+          status: 'invalid', reason: err?.message || t('procurement.bulk_import_row_invalid'),
+        });
+      }
+    }
+
+    setInsertedCount(succeeded);
+    if (failedRows.length > 0) {
+      setRows((prev) => [...prev.filter((r) => r.status !== 'valid'), ...failedRows as any]);
+    }
+    if (succeeded > 0) onImported();
+    toastSuccess(t('procurement.bulk_import_success', { count: succeeded }));
+    setStep('result');
+    setLoading(false);
+  };
+
+  const renderRowList = (list: SupplierImportRowView[], icon: React.ReactNode, colorClass: string) => (
+    <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+      {list.map((r) => (
+        <div key={r.rowNumber} className={cn("flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-xl bg-surface-muted/60", colorClass)}>
+          {icon}
+          <span className="truncate">{r.name || '-'} ({r.phoneText || '-'})</span>
+          <span className="text-content-muted font-medium shrink-0">— {r.reason}</span>
+        </div>
+      ))}
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-black/60 backdrop-blur-md"
+        onClick={step === 'result' ? undefined : onClose}
+      />
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        className="bg-surface w-full max-w-2xl rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
+        dir={dir}
+      >
+        <div className="p-4 sm:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
+          <div className="flex items-center gap-4">
+            <div className="p-4 bg-brand text-white rounded-2xl shadow-lg shadow-brand/10">
+              <Upload size={24} />
+            </div>
+            <div>
+              <h2 className="text-2xl font-black text-content">{t('procurement.bulk_import_modal_title')}</h2>
+              <p className="text-xs text-content-muted font-bold">{t('procurement.bulk_import_modal_subtitle')}</p>
+            </div>
+          </div>
+          {step !== 'result' && (
+            <button onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors">
+              <X size={24} className="text-content-muted" />
+            </button>
+          )}
+        </div>
+
+        <div className="p-4 sm:p-8 space-y-6 overflow-y-auto">
+          {step === 'upload' && (
+            <>
+              <button
+                onClick={handleDownloadTemplate}
+                className="w-full px-5 py-3 bg-surface-muted border border-border rounded-2xl flex items-center justify-center gap-2 text-content font-bold hover:bg-surface-muted/70 transition-all cursor-pointer"
+              >
+                <Download size={18} />
+                {t('procurement.bulk_import_download_template')}
+              </button>
+
+              <div className="relative">
+                <input
+                  id="supplier-import-file"
+                  type="file"
+                  accept=".xlsx, .xls"
+                  onChange={handleFileUpload}
+                  disabled={loading}
+                  className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-wait"
+                />
+                <div className="w-full px-5 py-6 bg-brand/5 border-2 border-dashed border-brand/20 rounded-2xl flex items-center justify-center gap-2 text-brand font-bold">
+                  <Upload size={20} />
+                  {loading ? t('common.loading') : t('inventory.choose_file')}
+                </div>
+              </div>
+            </>
+          )}
+
+          {(step === 'preview' || step === 'result') && (
+            <div className="space-y-4">
+              {validRows.length === 0 && step === 'preview' ? (
+                <p className="text-sm font-bold text-warning px-1">{t('procurement.bulk_import_no_valid_rows')}</p>
+              ) : (
+                <div className="flex items-center gap-2 text-sm font-black text-success px-1">
+                  <CheckCircle2 size={18} />
+                  {step === 'preview'
+                    ? t('procurement.bulk_import_preview_summary', { count: validRows.length })
+                    : `${insertedCount} ${t('procurement.bulk_import_result_success_header')}`}
+                </div>
+              )}
+
+              {duplicateRows.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-black text-warning uppercase tracking-widest px-1">
+                    {duplicateRows.length} {t('procurement.bulk_import_result_duplicate_header')}
+                  </p>
+                  {renderRowList(duplicateRows, <AlertCircle size={14} className="shrink-0" />, 'text-warning')}
+                </div>
+              )}
+
+              {invalidRows.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-black text-danger uppercase tracking-widest px-1">
+                    {invalidRows.length} {t('procurement.bulk_import_result_error_header')}
+                  </p>
+                  {renderRowList(invalidRows, <X size={14} className="shrink-0" />, 'text-danger')}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="sticky bottom-0 shrink-0 p-4 sm:p-8 border-t border-border bg-surface flex justify-end gap-3">
+          {step === 'preview' && (
+            <>
+              <button
+                onClick={() => { setRows([]); setStep('upload'); }}
+                className="px-6 py-3 bg-surface-muted text-content hover:bg-surface border border-border rounded-xl font-bold transition-all text-xs sm:text-sm cursor-pointer"
+              >
+                {t('common.cancel')}
+              </button>
+              {validRows.length > 0 && (
+                <button
+                  onClick={handleConfirmImport}
+                  disabled={loading}
+                  className="px-6 py-3 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold text-xs sm:text-sm transition-all shadow-lg shadow-brand/20 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+                >
+                  {t('procurement.bulk_import_confirm_button', { count: validRows.length })}
+                </button>
+              )}
+            </>
+          )}
+          {step === 'result' && (
+            <button
+              onClick={onClose}
+              className="px-6 py-3 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold text-xs sm:text-sm transition-all shadow-lg shadow-brand/20 cursor-pointer"
+            >
+              {t('procurement.bulk_import_result_done')}
+            </button>
+          )}
+        </div>
+      </motion.div>
+    </div>
+  );
+};
