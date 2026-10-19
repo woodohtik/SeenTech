@@ -44,6 +44,7 @@ import {
   Scale,
   Layout as LayoutIcon,
   ClipboardList,
+  Upload,
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase/client";
@@ -86,6 +87,12 @@ import FabricUomConversion from "./FabricUomConversion";
 import { formatSmartStockDisplay, getUnitLabel } from "../../utils/fabricUomConverter";
 import { useVerticalConfig } from "../../hooks/useVerticalConfig";
 import { mapCategoryKeyToLegacyCategory } from "../../services/verticalService";
+import {
+  PRODUCT_IMPORT_COLUMN_FIELDS,
+  ProductImportField,
+  mapProductImportHeaders,
+  parseProductImportRows,
+} from "../../utils/productImport";
 import { useTenantCategoryPicker, ADD_NEW_CATEGORY_VALUE } from "../../hooks/useTenantCategoryPicker";
 import { LEGACY_INVENTORY_CATEGORY_SEED } from "../../services/categoryService";
 import ProductFormFields from "./ProductFormFields";
@@ -162,6 +169,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
     branch: Branch;
   } | null>(null);
   const [showOpeningBalanceModal, setShowOpeningBalanceModal] = useState(false);
+  const [showProductImportModal, setShowProductImportModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [activeTab, setActiveTab] = useState<
     "inventory" | "reports" | "transfers" | "stock_take" | "fabric_uom"
@@ -502,6 +510,16 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
               >
                 <ArrowRightLeft size={16} className="sm:size-[20px]" />
                 <span className="whitespace-nowrap">{t("inventory.transfer_stock")}</span>
+              </button>
+            )}
+            {hasPermission("inventory.create") && (
+              <button
+                onClick={() => setShowProductImportModal(true)}
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 bg-surface border-2 border-border px-3 sm:px-5 py-2.5 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm text-content-muted hover:border-brand/20 hover:text-brand transition-all shadow-sm"
+                title={t("inventory.bulk_import_button_title")}
+              >
+                <Upload size={16} className="sm:size-[20px]" />
+                <span className="whitespace-nowrap">{t("inventory.bulk_import_button")}</span>
               </button>
             )}
           </div>
@@ -1582,6 +1600,15 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
             tenantId={tenantId}
             branches={branches}
             items={items}
+          />
+        )}
+        {showProductImportModal && (
+          <ProductImportModal
+            onClose={() => setShowProductImportModal(false)}
+            tenantId={tenantId}
+            branches={branches}
+            existingItems={items}
+            onImported={() => queryClient.invalidateQueries({ queryKey: inventoryQueryKey })}
           />
         )}
         {showTransferModal && (
@@ -3059,6 +3086,330 @@ const OpeningBalanceModal = ({ onClose, tenantId, branches, items }: any) => {
               ? t("common.saving")
               : t("inventory.confirm_opening_balance")}
           </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+interface ProductImportRowView {
+  rowNumber: number;
+  name: string;
+  skuText: string;
+  status: 'valid' | 'duplicate_existing' | 'duplicate_in_file' | 'invalid';
+  reason?: string;
+  resolved?: ReturnType<typeof parseProductImportRows>[number]['resolved'];
+}
+
+/**
+ * مراجعة-الفريق-التقني-الكامل-2026-10-19.md جلسة brainstorming (المنتجات،
+ * ثاني كيان من ثلاثة: عملاء/منتجات/موردين -- انظر Customers.tsx's
+ * CustomerImportModal للكيان الأول). كل منتج جديد يُنشأ هنا برصيد صفر دائماً
+ * في كل الفروع، بنفس القرار المعماري المتعمَّد المطبَّق في handleAdd أعلاه
+ * (AddItemModal) -- OpeningBalanceModal الموجودة فعلاً (تربط بالـSKU) هي
+ * الخطوة التالية لضخ الكميات الحقيقية، لا تُعاد هنا.
+ *
+ * الإدراج يحدث صفاً صفاً (لا إدراج جماعي واحد) عمداً: inventory_items.sku
+ * وbarcode لهما قيد تكرار حقيقي في قاعدة البيانات
+ * (uq_inventory_items_tenant_sku/barcode) -- فحص التكرار هنا يقلل الاحتمال
+ * لكن لا يلغي نافذة سباق صغيرة (جهاز آخر يُنشئ نفس SKU في نفس اللحظة)؛
+ * إدراج جماعي واحد كان سيفشل الدفعة كاملة عند أي تعارض كهذا، بينما الحلقة
+ * هنا تعزل الصف المتعارض فقط ويكمل الباقي.
+ */
+const ProductImportModal = ({
+  tenantId,
+  branches,
+  existingItems,
+  onClose,
+  onImported,
+}: {
+  tenantId: string;
+  branches: Branch[];
+  existingItems: InventoryItem[];
+  onClose: () => void;
+  onImported: () => void;
+}) => {
+  const { t } = useTranslation();
+  const { dir, isRtl } = useDirection();
+  const { error: toastError, success: toastSuccess } = useToast();
+  const { inventoryCategories, isLegacyVertical } = useVerticalConfig();
+  const categorySeed = useMemo(
+    () =>
+      isLegacyVertical
+        ? LEGACY_INVENTORY_CATEGORY_SEED
+        : inventoryCategories.map((c: any) => ({ category_key: c.category_key, label_ar: c.label_ar })),
+    [isLegacyVertical, inventoryCategories]
+  );
+  const categoryPicker = useTenantCategoryPicker(tenantId, "inventory", categorySeed);
+
+  const [step, setStep] = useState<'upload' | 'preview' | 'result'>('upload');
+  const [rows, setRows] = useState<ReturnType<typeof parseProductImportRows>>([]);
+  const [loading, setLoading] = useState(false);
+  const [insertedCount, setInsertedCount] = useState(0);
+
+  const translatedColumnAliases: Partial<Record<ProductImportField, string>> = Object.fromEntries(
+    PRODUCT_IMPORT_COLUMN_FIELDS.map((field) => [
+      field,
+      t(`inventory.bulk_import_template_col_${field.replace(/([A-Z])/g, '_$1').toLowerCase()}`),
+    ])
+  );
+
+  const handleDownloadTemplate = () => {
+    const headers = PRODUCT_IMPORT_COLUMN_FIELDS.map((field) => translatedColumnAliases[field] as string);
+    const worksheet = XLSX.utils.aoa_to_sheet([headers]);
+    worksheet['!dir'] = dir;
+    worksheet['!cols'] = headers.map(() => ({ wch: 20 }));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, t('inventory.bulk_import_modal_title'));
+    XLSX.writeFile(workbook, `${t('inventory.bulk_import_template_filename')}.xlsx`);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLoading(true);
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const raw: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+        const headerRow = raw[0] ? raw[0].map((h: any) => String(h ?? '')) : [];
+        const colIndex = mapProductImportHeaders(headerRow, translatedColumnAliases);
+
+        const existingSkus = new Set(existingItems.map((i: any) => i.sku).filter(Boolean));
+        const existingBarcodes = new Set(existingItems.map((i: any) => i.barcode).filter(Boolean));
+
+        const parsed = parseProductImportRows(raw, colIndex, categoryPicker.options, existingSkus, existingBarcodes, {
+          invalid: t('inventory.bulk_import_row_invalid'),
+          duplicateSku: t('inventory.bulk_import_row_duplicate_sku'),
+          duplicateBarcode: t('inventory.bulk_import_row_duplicate_barcode'),
+          unknownCategory: t('inventory.bulk_import_row_unknown_category'),
+          unknownUnit: t('inventory.bulk_import_row_unknown_unit'),
+          unknownTaxType: t('inventory.bulk_import_row_unknown_tax_type'),
+        });
+
+        setRows(parsed);
+        setStep('preview');
+      } catch {
+        toastError(t('inventory.bulk_import_failed'));
+      } finally {
+        setLoading(false);
+        e.target.value = '';
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const validRows = rows.filter((r) => r.status === 'valid');
+  const duplicateRows = rows.filter((r) => r.status === 'duplicate_existing' || r.status === 'duplicate_in_file');
+  const invalidRows = rows.filter((r) => r.status === 'invalid');
+
+  const handleConfirmImport = async () => {
+    if (validRows.length === 0) return;
+    setLoading(true);
+    let succeeded = 0;
+    const failedRows: ProductImportRowView[] = [];
+
+    for (const row of validRows) {
+      const resolved = row.resolved!;
+      try {
+        const nowIso = new Date().toISOString();
+        const { data: item, error: itemError } = await supabase
+          .from('inventory_items')
+          .insert({
+            name: resolved.name,
+            category: mapCategoryKeyToLegacyCategory(resolved.categoryKey),
+            category_key: resolved.categoryKey,
+            unit: resolved.unit,
+            conversion_rate: resolved.conversionRate,
+            min_threshold: resolved.minThreshold,
+            price_per_unit: resolved.price,
+            description: encodeInventoryDescription(resolved.costPrice, resolved.taxType, ''),
+            sku: resolved.sku,
+            barcode: resolved.barcode,
+            quantity: 0,
+            images: [],
+            show_in_pos: true,
+            tenant_id: tenantId,
+            updated_at: nowIso,
+          })
+          .select()
+          .single();
+        if (itemError) throw itemError;
+
+        const branchInventoryInserts = branches.map((branch: Branch) => ({
+          branch_id: branch.id,
+          item_id: item.id,
+          quantity: 0,
+          tenant_id: tenantId,
+          updated_at: nowIso,
+        }));
+        if (branchInventoryInserts.length > 0) {
+          const { error: branchError } = await supabase.from('branch_inventory').insert(branchInventoryInserts);
+          if (branchError) throw branchError;
+        }
+
+        succeeded += 1;
+      } catch (err: any) {
+        failedRows.push({
+          rowNumber: row.rowNumber, name: row.name, skuText: row.skuText,
+          status: 'invalid', reason: err?.message || t('inventory.bulk_import_row_invalid'),
+        });
+      }
+    }
+
+    setInsertedCount(succeeded);
+    if (failedRows.length > 0) {
+      setRows((prev) => [...prev.filter((r) => r.status !== 'valid'), ...failedRows as any]);
+    }
+    if (succeeded > 0) onImported();
+    toastSuccess(t('inventory.bulk_import_success', { count: succeeded }));
+    setStep('result');
+    setLoading(false);
+  };
+
+  const renderRowList = (list: ProductImportRowView[], icon: React.ReactNode, colorClass: string) => (
+    <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+      {list.map((r) => (
+        <div key={r.rowNumber} className={cn("flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-xl bg-surface-muted/60", colorClass)}>
+          {icon}
+          <span className="truncate">{r.name || '-'} ({r.skuText || '-'})</span>
+          <span className="text-content-muted font-medium shrink-0">— {r.reason}</span>
+        </div>
+      ))}
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-black/60 backdrop-blur-md"
+        onClick={step === 'result' ? undefined : onClose}
+      />
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        className="bg-surface w-full max-w-2xl rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
+        dir={dir}
+      >
+        <div className="p-4 sm:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
+          <div className="flex items-center gap-4">
+            <div className="p-4 bg-brand text-white rounded-2xl shadow-lg shadow-brand/10">
+              <Upload size={24} />
+            </div>
+            <div>
+              <h2 className="text-2xl font-black text-content">{t('inventory.bulk_import_modal_title')}</h2>
+              <p className="text-xs text-content-muted font-bold">{t('inventory.bulk_import_modal_subtitle')}</p>
+            </div>
+          </div>
+          {step !== 'result' && (
+            <button onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors">
+              <X size={24} className="text-content-muted" />
+            </button>
+          )}
+        </div>
+
+        <div className="p-4 sm:p-8 space-y-6 overflow-y-auto">
+          {step === 'upload' && (
+            <>
+              <button
+                onClick={handleDownloadTemplate}
+                className="w-full px-5 py-3 bg-surface-muted border border-border rounded-2xl flex items-center justify-center gap-2 text-content font-bold hover:bg-surface-muted/70 transition-all cursor-pointer"
+              >
+                <Download size={18} />
+                {t('inventory.bulk_import_download_template')}
+              </button>
+
+              <div className="relative">
+                <input
+                  id="product-import-file"
+                  type="file"
+                  accept=".xlsx, .xls"
+                  onChange={handleFileUpload}
+                  disabled={loading}
+                  className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-wait"
+                />
+                <div className="w-full px-5 py-6 bg-brand/5 border-2 border-dashed border-brand/20 rounded-2xl flex items-center justify-center gap-2 text-brand font-bold">
+                  <Upload size={20} />
+                  {loading ? t('common.loading') : t('inventory.choose_file')}
+                </div>
+              </div>
+
+              <p className="text-xs text-content-muted font-medium px-1">{t('inventory.bulk_import_opening_balance_hint')}</p>
+            </>
+          )}
+
+          {(step === 'preview' || step === 'result') && (
+            <div className="space-y-4">
+              {validRows.length === 0 && step === 'preview' ? (
+                <p className="text-sm font-bold text-warning px-1">{t('inventory.bulk_import_no_valid_rows')}</p>
+              ) : (
+                <div className="flex items-center gap-2 text-sm font-black text-success px-1">
+                  <CheckCircle2 size={18} />
+                  {step === 'preview'
+                    ? t('inventory.bulk_import_preview_summary', { count: validRows.length })
+                    : `${insertedCount} ${t('inventory.bulk_import_result_success_header')}`}
+                </div>
+              )}
+
+              {duplicateRows.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-black text-warning uppercase tracking-widest px-1">
+                    {duplicateRows.length} {t('inventory.bulk_import_result_duplicate_header')}
+                  </p>
+                  {renderRowList(duplicateRows, <AlertCircle size={14} className="shrink-0" />, 'text-warning')}
+                </div>
+              )}
+
+              {invalidRows.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-black text-danger uppercase tracking-widest px-1">
+                    {invalidRows.length} {t('inventory.bulk_import_result_error_header')}
+                  </p>
+                  {renderRowList(invalidRows, <X size={14} className="shrink-0" />, 'text-danger')}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="sticky bottom-0 shrink-0 p-4 sm:p-8 border-t border-border bg-surface flex justify-end gap-3">
+          {step === 'preview' && (
+            <>
+              <button
+                onClick={() => { setRows([]); setStep('upload'); }}
+                className="px-6 py-3 bg-surface-muted text-content hover:bg-surface border border-border rounded-xl font-bold transition-all text-xs sm:text-sm cursor-pointer"
+              >
+                {t('common.cancel')}
+              </button>
+              {validRows.length > 0 && (
+                <button
+                  onClick={handleConfirmImport}
+                  disabled={loading}
+                  className="px-6 py-3 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold text-xs sm:text-sm transition-all shadow-lg shadow-brand/20 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+                >
+                  {t('inventory.bulk_import_confirm_button', { count: validRows.length })}
+                </button>
+              )}
+            </>
+          )}
+          {step === 'result' && (
+            <button
+              onClick={onClose}
+              className="px-6 py-3 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold text-xs sm:text-sm transition-all shadow-lg shadow-brand/20 cursor-pointer"
+            >
+              {t('inventory.bulk_import_result_done')}
+            </button>
+          )}
         </div>
       </motion.div>
     </div>
