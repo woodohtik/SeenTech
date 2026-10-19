@@ -1478,6 +1478,15 @@
     "vat_rate": "VAT Rate",
     "walk_in_customer": "Guest Customer"
   },
+  "location_picker": {
+    "geolocation_denied": "Couldn't access your location -- make sure your browser allows it",
+    "geolocation_unsupported": "Your browser doesn't support location detection",
+    "instructions": "Click the map, or use the \"Use my current location\" button below",
+    "no_address_found": "Location selected -- you can edit the address manually after confirming",
+    "resolving": "Resolving address...",
+    "title": "Pick Location on Map",
+    "use_current_location": "Use My Current Location"
+  },
   "login": {
     "account_check_failed_desc": "Something went wrong while verifying your account. It may be a temporary database connection issue. Try again.",
     "account_check_failed_title": "Couldn't verify your account",
@@ -3874,6 +3883,7 @@
       "no_email": "No registered email",
       "official_protected": "Official & Secured",
       "phone": "Unified Contact Number",
+      "pick_on_map": "Pick on Map",
       "save_notice": "These settings are saved automatically and reflect on all branches",
       "save_store": "Save Store Settings",
       "save_success": "Store settings saved successfully",

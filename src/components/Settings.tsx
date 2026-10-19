@@ -19,6 +19,7 @@ import { useStaff } from '../contexts/StaffContext';
 import { usePermissions } from '../hooks/usePermissions';
 import ThemeSwitcher from './ThemeSwitcher';
 import { IconInput } from './ui/IconInput';
+import LocationPickerModal from './ui/LocationPickerModal';
 
 import WarehouseManagement from './Inventory/WarehouseManagement';
 import Staff from './Staff';
@@ -133,6 +134,7 @@ export default function Settings({ tenantId }: SettingsProps) {
   const canViewWhatsApp = hasPermission('settings.whatsapp');
   const canViewBilling = hasPermission('settings.billing');
   const canViewNotifications = hasPermission('settings.notifications');
+  const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(settingsSchema),
@@ -677,6 +679,14 @@ export default function Settings({ tenantId }: SettingsProps) {
                         startIcon={MapPin}
                         error={errors.address?.message}
                       />
+                      <button
+                        type="button"
+                        onClick={() => setIsLocationPickerOpen(true)}
+                        className="text-xs font-bold text-brand hover:text-brand/80 transition-colors flex items-center gap-1.5 px-1"
+                      >
+                        <MapPin size={13} />
+                        {t('settings_page.profile.pick_on_map', 'تحديد على الخريطة')}
+                      </button>
                     </div>
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between px-1">
@@ -1360,6 +1370,16 @@ export default function Settings({ tenantId }: SettingsProps) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {isLocationPickerOpen && (
+        <LocationPickerModal
+          onClose={() => setIsLocationPickerOpen(false)}
+          onConfirm={({ address, city }) => {
+            if (address) setValue('address', address, { shouldValidate: true });
+            if (city) setValue('city', city, { shouldValidate: true });
+          }}
+        />
+      )}
     </div>
   );
 }
