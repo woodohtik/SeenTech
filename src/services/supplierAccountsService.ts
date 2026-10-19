@@ -50,13 +50,23 @@ export async function getSupplierTransactions(
 
 /**
  * Creates/records a transaction and updates the supplier's balance.
+ *
+ * `operationId`, when provided (مراجعة-الفريق-التقني-الكامل-2026-10-19.md،
+ * قاعدة بيانات، عالية): يجعل هذا الاستدعاء بالكامل قابلاً لإعادة المحاولة
+ * بأمان -- يُستخدَم كمفتاح idempotency لـincrement_supplier_balance (لا
+ * يُضاعِف الفرق على الرصيد عند إعادة المحاولة) **و** كمعرّف (id) ثابت لسطر
+ * supplier_transactions نفسه بدل UUID عشوائي في كل مرة، فإعادة المحاولة لا
+ * تُنشئ سطر سجل مكرراً أيضاً. بلا هذا المعرّف (الاستدعاءات القديمة)، السلوك
+ * يبقى كما كان تماماً -- لا idempotency، لتفادي كسر مستدعين لم تُراجَع
+ * دلالة "نفس العملية" لديهم بعد.
  */
 export async function addSupplierTransaction(
   tenantId: string,
   transaction: Omit<SupplierTransaction, 'id' | 'running_balance'>,
-  currentBalance: number
+  currentBalance: number,
+  operationId?: string
 ): Promise<SupplierTransaction> {
-  const transactionId = crypto.randomUUID();
+  const transactionId = operationId || crypto.randomUUID();
 
   // credit: we owe supplier more (+ balance); debit: we pay supplier (- balance)
   const isDebit = transaction.debit > 0;
@@ -73,6 +83,7 @@ export async function addSupplierTransaction(
   const { data: newBalance, error: updateErr } = await supabase.rpc('increment_supplier_balance', {
     p_supplier_id: transaction.supplier_id,
     p_delta: delta,
+    p_operation_id: operationId || null,
   });
   if (updateErr) throw updateErr;
   if (typeof newBalance === 'number') authoritativeBalance = newBalance;
@@ -85,7 +96,7 @@ export async function addSupplierTransaction(
 
   const { error } = await supabase
     .from('supplier_transactions')
-    .insert({
+    .upsert({
       id: fullTransaction.id,
       supplier_id: fullTransaction.supplier_id,
       tenant_id: fullTransaction.tenant_id,
@@ -96,7 +107,7 @@ export async function addSupplierTransaction(
       reference_number: fullTransaction.reference_number,
       date: fullTransaction.date,
       notes: fullTransaction.notes,
-    });
+    }, { onConflict: 'id', ignoreDuplicates: true });
   if (error) throw error;
 
   return fullTransaction;

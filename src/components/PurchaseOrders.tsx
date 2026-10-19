@@ -442,7 +442,12 @@ export default function PurchaseOrders({
                 : `مرتجع بضائع ومواد بموجب سند إرجاع رقم ${orderNumberStr || order.id.slice(-6).toUpperCase()}`,
               tenant_id: tenantId,
             },
-            currentBalance
+            currentBalance,
+            // مراجعة-الفريق-التقني-الكامل-2026-10-19.md: order.id ثابت عبر أي
+            // إعادة محاولة لتأكيد نفس أمر الشراء هذا تحديداً -- يمنع مضاعفة
+            // رصيد المورد وسطر السجل المكرَّر إن انقطع الاتصال بعد هذه
+            // الخطوة وقبل تحديث حالة الطلب أدناه، فأعاد الموظف الضغط.
+            order.id
           );
         }
       }
