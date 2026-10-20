@@ -35,6 +35,8 @@ import { supabase } from '../lib/supabase/client';
 import { useTranslation } from 'react-i18next';
 import { getFriendlyErrorMessage } from '../lib/firebase';
 import UserPreferencesMenu from './UserPreferencesMenu';
+import ImpersonationBanner, { IMPERSONATION_BANNER_HEIGHT } from './ImpersonationBanner';
+import { logImpersonationStart, endImpersonation } from '../services/impersonationService';
 
 import { IconInput } from './ui/IconInput';
 
@@ -406,7 +408,8 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
     setUnreadCount(prev => Math.max(0, prev - 1));
   };
 
-  const stopImpersonation = () => {
+  const stopImpersonation = async () => {
+    if (impersonationTenantId) await endImpersonation(impersonationTenantId);
     setImpersonationTenantId(null);
     window.location.href = '/admin/dashboard';
   };
@@ -421,31 +424,19 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
   };
 
   return (
-    <div className="h-screen w-full overflow-hidden bg-background flex font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
-      {/* Impersonation Banner */}
-      <AnimatePresence>
-        {impersonationTenantId && (
-          <motion.div 
-            initial={{ y: -100 }}
-            animate={{ y: 0 }}
-            exit={{ y: -100 }}
-            className="fixed top-0 left-0 right-0 z-[200] bg-warning text-white py-2 px-4 flex items-center justify-center gap-4 shadow-xl"
-          >
-            <div className="flex items-center gap-2 font-black text-sm">
-              <AlertCircle size={18} />
-              <span>{t('common.support_mode_desc')}</span>
-            </div>
-            <div className="h-4 w-px bg-surface/30 mx-2" />
-            <span className="text-xs font-bold">{t('common.current_subscriber')}: {impersonatedTenantName || impersonationTenantId}</span>
-            <button 
-              onClick={stopImpersonation}
-              className="bg-surface text-warning px-4 py-1 rounded-full text-xs font-black hover:bg-surface/90 transition-all ml-4"
-            >
-              {t('common.end_impersonation')}
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div
+      className="w-full overflow-hidden bg-surface flex font-sans"
+      style={{
+        height: impersonationTenantId ? `calc(100vh - ${IMPERSONATION_BANNER_HEIGHT}px)` : '100vh',
+        marginTop: impersonationTenantId ? IMPERSONATION_BANNER_HEIGHT : 0,
+      }}
+      dir={isRtl ? 'rtl' : 'ltr'}
+    >
+      <ImpersonationBanner
+        tenantId={impersonationTenantId}
+        tenantLabel={impersonatedTenantName}
+        onEnd={stopImpersonation}
+      />
 
       {/* Sidebar Overlay for mobile */}
       <AnimatePresence>
@@ -461,13 +452,14 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
       </AnimatePresence>
 
       {/* Sidebar */}
-      <motion.aside 
+      <motion.aside
         initial={false}
-        animate={{ 
+        animate={{
           width: (isMobile || isSidebarOpen) ? 280 : 80,
           x: (isMobile && !isSidebarOpen) ? (isRtl ? 280 : -280) : 0
         }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        style={isMobile ? { top: impersonationTenantId ? IMPERSONATION_BANNER_HEIGHT : 0 } : undefined}
         className={cn(
           "bg-surface border-l rtl:border-l ltr:border-r border-border shadow-2xl shadow-brand/5 relative z-40 flex flex-col h-screen sticky top-0",
           isMobile && cn("fixed inset-y-0 z-40", isRtl ? "right-0" : "left-0")
@@ -673,7 +665,7 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
 
         {/* Page Content */}
         <div className="flex-1 overflow-y-auto p-8">
-          <div className={cn("max-w-7xl mx-auto", impersonationTenantId && "mt-12")}>
+          <div className="max-w-7xl mx-auto">
             {children}
           </div>
         </div>

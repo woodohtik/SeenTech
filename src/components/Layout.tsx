@@ -13,8 +13,7 @@ import {
   LayoutGrid,
   List,
   Menu,
-  X as XIcon,
-  AlertCircle
+  X as XIcon
 } from 'lucide-react';
 import { Icon } from './ui/Icon';
 import OfflineBanner from './OfflineBanner';
@@ -33,6 +32,8 @@ import { getFilteredNavItems } from '../config/navigation';
 import { usePermissions } from '../hooks/usePermissions';
 import { VerticalConfigProvider } from '../hooks/useVerticalConfig';
 import UserPreferencesMenu from './UserPreferencesMenu';
+import ImpersonationBanner, { IMPERSONATION_BANNER_HEIGHT } from './ImpersonationBanner';
+import { endImpersonation } from '../services/impersonationService';
 import SupportConsentModal from './SupportConsentModal';
 import StaffTutorialModal from './StaffTutorialModal';
 import SeenAIFab from './SeenAIFab';
@@ -212,58 +213,23 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
 
   return (
     <VerticalConfigProvider tenantId={tenantId}>
-    <div className={cn("flex min-h-[100dvh] h-[100dvh] bg-surface-muted font-sans overflow-hidden w-full transition-all duration-300", isLocked && "blur-xl select-none pointer-events-none scale-98")}>
-      {/* Global Impersonation Banner */}
-      <AnimatePresence>
-        {impersonationTenantId && (
-          <motion.div 
-            initial={{ y: -100 }}
-            animate={{ y: 0 }}
-            exit={{ y: -100 }}
-            className="fixed top-0 left-0 right-0 z-[200] bg-warning text-white py-2 px-4 flex items-center justify-center gap-4 shadow-xl"
-          >
-            <div className="flex items-center gap-2 font-black text-sm">
-              <AlertCircle size={18} />
-              <span>{t('saas.impersonation_banner')}</span>
-            </div>
-            <div className="h-4 w-px bg-white/30 mx-2" />
-            <span className="text-xs font-bold">{t('saas.current_tenant', { name: tenantName })}</span>
-            <button 
-              onClick={async () => {
-                try {
-                  const { data } = await supabase
-                    .from('support_sessions')
-                    .select('id, started_at')
-                    .eq('tenant_id', impersonationTenantId!)
-                    .is('ended_at', null)
-                    .order('started_at', { ascending: false })
-                    .limit(1)
-                    .single();
-                  
-                  if (data) {
-                    const started = new Date(data.started_at);
-                    const ended = new Date();
-                    const durationMins = Math.ceil((ended.getTime() - started.getTime()) / 60000);
-                    
-                    await supabase
-                      .from('support_sessions')
-                      .update({ ended_at: ended.toISOString(), duration_minutes: durationMins })
-                      .eq('id', data.id);
-                  }
-                } catch (e) {
-                  console.error('Error ending support session', e);
-                }
-                setImpersonationTenantId(null);
-                window.location.href = '/admin/dashboard';
-              }}
-              className="bg-white text-warning px-4 py-1 rounded-full text-xs font-black hover:bg-white/90 transition-all ml-4"
-            >
-              {t('saas.end_impersonation')}
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <div className={cn("fixed left-0 right-0 z-[190] flex flex-col", impersonationTenantId ? "top-12" : "top-0")}>
+    <div
+      className={cn("flex min-h-[100dvh] bg-surface-muted font-sans overflow-hidden w-full transition-all duration-300", isLocked && "blur-xl select-none pointer-events-none scale-98")}
+      style={{
+        height: impersonationTenantId ? `calc(100dvh - ${IMPERSONATION_BANNER_HEIGHT}px)` : '100dvh',
+        marginTop: impersonationTenantId ? IMPERSONATION_BANNER_HEIGHT : 0,
+      }}
+    >
+      <ImpersonationBanner
+        tenantId={impersonationTenantId}
+        tenantLabel={tenantName}
+        onEnd={async () => {
+          if (impersonationTenantId) await endImpersonation(impersonationTenantId);
+          setImpersonationTenantId(null);
+          window.location.href = '/admin/dashboard';
+        }}
+      />
+      <div className="fixed left-0 right-0 z-[190] flex flex-col" style={{ top: impersonationTenantId ? IMPERSONATION_BANNER_HEIGHT : 0 }}>
         <OfflineBanner />
       </div>
       <OfflineStatusIndicator tenantId={tenantId || undefined} />
@@ -278,10 +244,11 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
 
       {/* Sidebar */}
       {layoutMode === 'sidebar' && (
-        <aside 
+        <aside
           id="tour-sidebar"
           data-tour="sidebar"
           dir={isRtl ? 'rtl' : 'ltr'}
+          style={{ top: impersonationTenantId ? IMPERSONATION_BANNER_HEIGHT : 0 }}
           className={cn(
             "bg-surface flex flex-col transition-all duration-300 z-40",
             isRtl ? "border-l border-border" : "border-r border-border",
@@ -492,7 +459,11 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
       <div className="flex-1 flex flex-col overflow-hidden relative">
         {/* Mobile Header (Fixed Top Bar) */}
         {layoutMode === 'sidebar' && (
-          <header className="lg:hidden fixed top-0 left-0 right-0 h-20 bg-surface/90 backdrop-blur-xl border-b border-border/60 flex items-center justify-between px-4 sm:px-6 shrink-0 z-40 shadow-[0_8px_30px_rgb(0,0,0,0.02)]" dir={isRtl ? 'rtl' : 'ltr'}>
+          <header
+            className="lg:hidden fixed left-0 right-0 h-20 bg-surface/90 backdrop-blur-xl border-b border-border/60 flex items-center justify-between px-4 sm:px-6 shrink-0 z-40 shadow-[0_8px_30px_rgb(0,0,0,0.02)]"
+            style={{ top: impersonationTenantId ? IMPERSONATION_BANNER_HEIGHT : 0 }}
+            dir={isRtl ? 'rtl' : 'ltr'}
+          >
             <div className="flex items-center gap-3">
               <button
                 id="tour-mobile-menu-btn"

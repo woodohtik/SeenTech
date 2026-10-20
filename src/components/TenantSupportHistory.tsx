@@ -20,45 +20,17 @@ export default function TenantSupportHistory({ tenantId }: Props) {
   const fetchSessions = async () => {
     setLoading(true);
     // Explicit sessions only for the tenant to see. Mute stealth logic explicitly here.
-    const { data, error } = await supabase
+    // support_sessions مؤكَّد موجود وفعّال في schema cache على staging والإنتاج
+    // (seen-admin-reengineering-task.md بند 9) -- لا حاجة لمسار بديل عبر
+    // saas_settings بعد الآن.
+    const { data } = await supabase
       .from('support_sessions')
       .select('*')
       .eq('tenant_id', tenantId)
       .eq('access_type', 'explicit')
       .order('started_at', { ascending: false });
 
-    if (!error && data) {
-      setSessions(data);
-      setLoading(false);
-      return;
-    }
-
-    // support_sessions الحقيقي قد لا يكون موجوداً في الـschema cache (نفس القيد
-    // الموجود في مسارات الكتابة -- AdminTailors.tsx/SuperAdminDashboard.tsx/
-    // Layout.tsx -- جميعها تتراجع لتخزين الجلسة في saas_settings بمفتاح
-    // support_sessions عند فشل الجدول الحقيقي). اقرأ من نفس المصدر البديل
-    // بدل اختلاق صف وهمي لا علاقة له بأي جلسة دعم حقيقية.
-    const { data: setting } = await supabase
-      .from('saas_settings')
-      .select('*')
-      .eq('key', 'support_sessions')
-      .maybeSingle();
-    const allSessions = setting?.value && Array.isArray(setting.value) ? setting.value : [];
-    const tenantExplicitSessions = allSessions
-      .filter((s: any) => s.tenant_id === tenantId && s.access_type === 'explicit')
-      .map((s: any) => ({
-        id: s.id,
-        tenant_id: s.tenant_id,
-        saas_user_id: s.saas_user_id,
-        saas_user_name: s.saas_user_name,
-        access_type: s.access_type,
-        started_at: s.started_at,
-        ended_at: s.ended_at ?? null,
-        duration_minutes: s.duration_minutes ?? null,
-      } as SupportSession))
-      .sort((a: SupportSession, b: SupportSession) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
-
-    setSessions(tenantExplicitSessions);
+    setSessions(data || []);
     setLoading(false);
   };
 

@@ -33,6 +33,7 @@ import {
   Bot
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
+import { logImpersonationStart } from '../services/impersonationService';
 import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { TailorRequest, Tenant, Plan, Order } from '../types';
@@ -220,39 +221,14 @@ export default function AdminTailors() {
 
   const handleStealthLogin = async (tenantId: string) => {
     try {
-      // Record stealth session in Audit logs (support_sessions)
-      try {
-        const { error } = await supabase.from('support_sessions').insert({
-          tenant_id: tenantId,
-          saas_user_id: dbUser!.id,
-          saas_user_name: dbUser?.display_name || dbUser?.email || 'Admin',
-          access_type: 'stealth',
-          started_at: new Date().toISOString()
-        });
-        if (error && (error.code === 'PGRST205' || error.message?.includes('cache') || error.message?.includes('relation'))) {
-          // Fallback to saas_settings
-          const { data: setting } = await supabase
-            .from('saas_settings')
-            .select('*')
-            .eq('key', 'support_sessions')
-            .maybeSingle();
-          const existingSessions = setting?.value && Array.isArray(setting.value) ? setting.value : [];
-          existingSessions.push({
-            id: Math.random().toString(36).substring(2, 15),
-            tenant_id: tenantId,
-            saas_user_id: dbUser!.id,
-            saas_user_name: dbUser?.display_name || dbUser?.email || 'Admin',
-            access_type: 'stealth',
-            started_at: new Date().toISOString()
-          });
-          await supabase.from('saas_settings').upsert({
-            key: 'support_sessions',
-            value: existingSessions,
-            updated_at: new Date().toISOString()
-          });
-        }
-      } catch (err) {
-        console.warn('Stealth audit logging fallback:', err);
+      const logged = await logImpersonationStart(
+        tenantId,
+        { id: dbUser!.id, name: dbUser?.display_name || dbUser?.email || 'Admin' },
+        'stealth'
+      );
+      if (!logged) {
+        showToast(t('saas.tenants.stealth_audit_log_failed', 'تعذّر تسجيل عملية الدخول الخفي في سجل التدقيق -- لا يمكن المتابعة بلا سجل'), 'error');
+        return;
       }
 
       localStorage.setItem('impersonatedTenantId', tenantId);
@@ -344,43 +320,17 @@ export default function AdminTailors() {
           setLoading(false);
           
           if (currentStatus === 'approved') {
-            showToast(t('saas.tenants.access_approved'), 'success');
-            
-            // Record explicit session
-            try {
-              if (!isFallback) {
-                await supabase.from('support_sessions').insert({
-                  tenant_id: tenantId,
-                  saas_user_id: dbUser!.id,
-                  saas_user_name: dbUser?.display_name || dbUser?.email || 'Support Representative',
-                  access_type: 'explicit',
-                  started_at: new Date().toISOString()
-                });
-              } else {
-                const { data: setting } = await supabase
-                  .from('saas_settings')
-                  .select('*')
-                  .eq('key', 'support_sessions')
-                  .maybeSingle();
-                const existingSessions = setting?.value && Array.isArray(setting.value) ? setting.value : [];
-                existingSessions.push({
-                  id: Math.random().toString(36).substring(2, 15),
-                  tenant_id: tenantId,
-                  saas_user_id: dbUser!.id,
-                  saas_user_name: dbUser?.display_name || dbUser?.email || 'Support Representative',
-                  access_type: 'explicit',
-                  started_at: new Date().toISOString()
-                });
-                await supabase.from('saas_settings').upsert({
-                  key: 'support_sessions',
-                  value: existingSessions,
-                  updated_at: new Date().toISOString()
-                });
-              }
-            } catch (sessErr) {
-              console.warn('Session recording failed:', sessErr);
+            const logged = await logImpersonationStart(
+              tenantId,
+              { id: dbUser!.id, name: dbUser?.display_name || dbUser?.email || 'Support Representative' },
+              'explicit'
+            );
+            if (!logged) {
+              showToast(t('saas.tenants.stealth_audit_log_failed', 'تعذّر تسجيل عملية الدخول الخفي في سجل التدقيق -- لا يمكن المتابعة بلا سجل'), 'error');
+              return;
             }
 
+            showToast(t('saas.tenants.access_approved'), 'success');
             localStorage.setItem('impersonatedTenantId', tenantId);
             localStorage.setItem('tenant_id', tenantId);
             window.location.href = '/dashboard';
@@ -403,7 +353,16 @@ export default function AdminTailors() {
     }
   };
 
-  const handleImpersonate = (tenantId: string) => {
+  const handleImpersonate = async (tenantId: string) => {
+    const logged = await logImpersonationStart(
+      tenantId,
+      { id: dbUser!.id, name: dbUser?.display_name || dbUser?.email || 'Admin' },
+      'explicit'
+    );
+    if (!logged) {
+      showToast(t('saas.tenants.stealth_audit_log_failed', 'تعذّر تسجيل عملية الدخول الخفي في سجل التدقيق -- لا يمكن المتابعة بلا سجل'), 'error');
+      return;
+    }
     localStorage.setItem('impersonatedTenantId', tenantId);
     localStorage.setItem('tenant_id', tenantId);
     window.location.href = '/dashboard';

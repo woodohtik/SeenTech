@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase/client';
+import { logImpersonationStart } from '../services/impersonationService';
 import { Tenant, Order, AuditLog, EmployeeActivityLog } from '../types';
 import { 
   Users, 
@@ -495,46 +496,15 @@ export default function SuperAdminDashboard() {
       return;
     }
     try {
-      // الدخول الخفي كان يتابع حتى لو فشل سجل التدقيق الخاص به بالكامل
-      // (المسار الأساسي والبديل معاً) -- دخول بلا أي أثر تدقيقي إطلاقاً.
-      // الآن: فشل تسجيل التدقيق يمنع المتابعة صراحة بدل تجاهله بصمت.
-      let logged = false;
-      try {
-        const { error } = await supabase.from('support_sessions').insert({
-          tenant_id: tenantId,
-          saas_user_id: dbUser!.id,
-          saas_user_name: dbUser?.display_name || dbUser?.email || 'Admin',
-          access_type: 'stealth',
-          started_at: new Date().toISOString()
-        });
-        if (!error) {
-          logged = true;
-        } else if (error.code === 'PGRST205' || error.message?.includes('cache') || error.message?.includes('relation')) {
-          // Fallback to saas_settings
-          const { data: setting } = await supabase
-            .from('saas_settings')
-            .select('*')
-            .eq('key', 'support_sessions')
-            .maybeSingle();
-          const existingSessions = setting?.value && Array.isArray(setting.value) ? setting.value : [];
-          existingSessions.push({
-            id: Math.random().toString(36).substring(2, 15),
-            tenant_id: tenantId,
-            saas_user_id: dbUser!.id,
-            saas_user_name: dbUser?.display_name || dbUser?.email || 'Admin',
-            access_type: 'stealth',
-            started_at: new Date().toISOString()
-          });
-          const { error: fallbackError } = await supabase.from('saas_settings').upsert({
-            key: 'support_sessions',
-            value: existingSessions,
-            updated_at: new Date().toISOString()
-          });
-          if (!fallbackError) logged = true;
-        }
-      } catch (err) {
-        console.error('Stealth audit logging failed:', err);
-      }
+      // الدخول الخفي كان يتابع حتى لو فشل سجل التدقيق الخاص به بالكامل --
+      // دخول بلا أي أثر تدقيقي إطلاقاً. الآن: فشل تسجيل التدقيق يمنع المتابعة
+      // صراحة بدل تجاهله بصمت (logImpersonationStart مشترك مع كل مسارات
+      // الانتحال الأخرى -- seen-admin-reengineering-task.md بند 2).
+      const logged = await logImpersonationStart(
+        tenantId,
+        { id: dbUser!.id, name: dbUser?.display_name || dbUser?.email || 'Admin' },
+        'stealth'
+      );
 
       if (!logged) {
         toastError(t('saas.tenants.stealth_audit_log_failed', 'تعذّر تسجيل عملية الدخول الخفي في سجل التدقيق -- لا يمكن المتابعة بلا سجل'));
@@ -707,45 +677,14 @@ export default function SuperAdminDashboard() {
               t('saas.tenants.access_request_approved')
             );
             
-            // Record explicit session -- نفس إصلاح handleStealthSupportLogin
-            // (~429-473): لا انتحال بلا سجل تدقيق ناجح فعلياً، بدل المتابعة
-            // بصمت لو فشل الإدراج الأساسي والبديل معاً.
-            let logged = false;
-            try {
-              if (!isFallback) {
-                const { error: sessErrRes } = await supabase.from('support_sessions').insert({
-                  tenant_id: tenantId,
-                  saas_user_id: dbUser!.id,
-                  saas_user_name: dbUser?.display_name || dbUser?.email || 'Support Representative',
-                  access_type: 'explicit',
-                  started_at: new Date().toISOString()
-                });
-                if (!sessErrRes) logged = true;
-              } else {
-                const { data: setting } = await supabase
-                  .from('saas_settings')
-                  .select('*')
-                  .eq('key', 'support_sessions')
-                  .maybeSingle();
-                const existingSessions = setting?.value && Array.isArray(setting.value) ? setting.value : [];
-                existingSessions.push({
-                  id: Math.random().toString(36).substring(2, 15),
-                  tenant_id: tenantId,
-                  saas_user_id: dbUser!.id,
-                  saas_user_name: dbUser?.display_name || dbUser?.email || 'Support Representative',
-                  access_type: 'explicit',
-                  started_at: new Date().toISOString()
-                });
-                const { error: fallbackErr } = await supabase.from('saas_settings').upsert({
-                  key: 'support_sessions',
-                  value: existingSessions,
-                  updated_at: new Date().toISOString()
-                });
-                if (!fallbackErr) logged = true;
-              }
-            } catch (sessErr) {
-              console.error('Session recording failed:', sessErr);
-            }
+            // نفس إصلاح handleStealthSupportLogin: لا انتحال بلا سجل تدقيق
+            // ناجح فعلياً -- logImpersonationStart مشترك الآن مع كل مسارات
+            // الانتحال الأخرى (seen-admin-reengineering-task.md بند 2).
+            const logged = await logImpersonationStart(
+              tenantId,
+              { id: dbUser!.id, name: dbUser?.display_name || dbUser?.email || 'Support Representative' },
+              'explicit'
+            );
 
             if (!logged) {
               toastHandleError(null, t('saas.tenants.stealth_audit_log_failed', 'تعذّر تسجيل عملية الدخول الخفي في سجل التدقيق -- لا يمكن المتابعة بلا سجل'));
