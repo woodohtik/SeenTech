@@ -17,15 +17,13 @@ import {
   Clock, 
   Copy, 
   Check, 
-  HelpCircle, 
-  FileText, 
-  ArrowLeft, 
-  Building2, 
+  HelpCircle,
+  ArrowLeft,
+  Building2,
   ChevronDown,
   ChevronUp,
   Download,
-  Lock,
-  Star
+  Lock
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { PriceDisplay } from './PriceDisplay';
@@ -45,6 +43,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
 
   const [loading, setLoading] = useState(true);
   const [tenant, setTenant] = useState<any>(null);
+  const [plans, setPlans] = useState<any[]>([]);
   const [currentPlan, setCurrentPlan] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
   const [userRequests, setUserRequests] = useState<SubscriptionRequest[]>([]);
@@ -53,7 +52,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
   const [showFaq, setShowFaq] = useState(false);
 
   // Selected plan in upgrade modal
-  const [selectedPlanId, setSelectedPlanId] = useState<'basic' | 'free'>('basic');
+  const [selectedPlanId, setSelectedPlanId] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<'bank_transfer' | 'card' | 'network' | 'cash'>('bank_transfer');
   const [referenceNo, setReferenceNo] = useState('');
   const [proofFile, setProofFile] = useState<File | null>(null);
@@ -64,56 +63,6 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const PLANS = [
-    {
-      id: 'basic' as const,
-      name: t('billing.plans.basic.name'),
-      tagline: t('billing.plans.basic.tagline'),
-      price: 599,
-      period: t('billing.plans.basic.period'),
-      badge: t('billing.plans.basic.badge'),
-      isPopular: true,
-      desc: t('billing.plans.basic.desc'),
-      features: [
-        t('billing.plans.basic.f1'),
-        t('billing.plans.basic.f2'),
-        t('billing.plans.basic.f3'),
-        t('billing.plans.basic.f4'),
-        t('billing.plans.basic.f5'),
-        t('billing.plans.basic.f6'),
-        t('billing.plans.basic.f7'),
-        t('billing.plans.basic.f8')
-      ]
-    },
-    {
-      id: 'free' as const,
-      name: t('billing.plans.free.name'),
-      tagline: t('billing.plans.free.tagline'),
-      price: 0,
-      period: t('billing.plans.free.period'),
-      badge: t('billing.plans.free.badge'),
-      isPopular: false,
-      desc: t('billing.plans.free.desc'),
-      features: [
-        t('billing.plans.free.f1'),
-        t('billing.plans.free.f2'),
-        t('billing.plans.free.f3'),
-        t('billing.plans.free.f4')
-      ]
-    }
-  ];
-
-  const COMPARISON_FEATURES = [
-    { name: t('billing.compare.f1'), free: true, basic: true },
-    { name: t('billing.compare.f2'), free: true, basic: true },
-    { name: t('billing.compare.f3'), free: true, basic: true },
-    { name: t('billing.compare.f4'), free: true, basic: true },
-    { name: t('billing.compare.f5'), free: t('billing.compare.limited'), basic: t('billing.compare.unlimited') },
-    { name: t('billing.compare.f6'), free: t('billing.compare.by_email'), basic: t('billing.compare.live_support') },
-    { name: t('billing.compare.f7'), free: true, basic: true },
-    { name: t('billing.compare.f8'), free: t('billing.compare.basic'), basic: t('billing.compare.advanced') },
-  ];
-
   const fetchRealBillingData = async () => {
     if (!tenantId || tenantId === 'saas_management') {
       setLoading(false);
@@ -121,20 +70,27 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
     }
     setLoading(true);
     try {
-      // 1. جلب بيانات المشترك من قاعدة البيانات
-      const { data: tenantData } = await supabase
-        .from('tenants')
-        .select('*')
-        .eq('id', tenantId)
-        .maybeSingle();
+      // مراجعة-الفريق-التقني-الكامل-2026-10-19.md جلسة brainstorming (توحيد
+      // شاشة الفوترة مع جدول plans): كانت هذه الشاشة تعرض مصفوفة باقات
+      // ثابتة بالكود (سعر 599/0 مكتوبان حرفياً) منفصلة تماماً عن جدول
+      // plans -- تعديل سعر/اسم/ميزات باقة من لوحة السوبر أدمن لم يكن
+      // ينعكس هنا إطلاقاً. تُجلَب الآن حية، وتُفلتَر بـis_active (أثر
+      // جانبي مفيد: تعطيل باقة من لوحة السوبر أدمن يخفيها عن التجّار فعلياً).
+      const [{ data: tenantData }, { data: plansData }] = await Promise.all([
+        supabase.from('tenants').select('*').eq('id', tenantId).maybeSingle(),
+        supabase.from('plans').select('*').eq('is_active', true).order('price'),
+      ]);
+
+      const activePlans = plansData || [];
+      setPlans(activePlans);
 
       if (tenantData) {
         setTenant(tenantData);
-        if (tenantData.plan_id === 'basic') {
-          setCurrentPlan(PLANS[0]);
-        } else {
-          setCurrentPlan(PLANS[1]);
-        }
+        setCurrentPlan(
+          activePlans.find((p) => p.id === tenantData.plan_id) ||
+          activePlans.find((p) => p.id === 'free') ||
+          null
+        );
       }
 
       // 2. جلب سجل المدفوعات الحقيقية
@@ -201,7 +157,8 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
     e.preventDefault();
     if (!tenantId) return;
 
-    const targetPlan = PLANS.find(p => p.id === selectedPlanId) || PLANS[0];
+    const targetPlan = plans.find(p => p.id === selectedPlanId) || plans[0];
+    if (!targetPlan) return;
 
     if (targetPlan.price > 0 && !proofPreview && !referenceNo.trim()) {
       toastError(t('billing.proof_required_alert'));
@@ -238,11 +195,12 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
     }
   };
 
-  const getPlanDisplayName = () => {
-    if (tenant?.plan_id === 'basic') return t('billing.plans.basic.name');
-    if (tenant?.plan_id === 'free') return t('billing.plans.free.name');
-    return currentPlan?.name || t('billing.plans.free.name_trial');
-  };
+  // Picks the cheapest paid plan as the sensible default when a CTA opens
+  // the upgrade modal without the merchant having picked a specific card
+  // first (e.g. the generic "send payment proof" buttons below).
+  const getDefaultUpgradePlanId = () => plans.find((p) => p.price > 0)?.id || plans[0]?.id || '';
+
+  const getPlanDisplayName = () => currentPlan?.name || t('billing.plans.free.name_trial');
 
   const getPlanStatusLabel = () => {
     const status = tenant?.status || 'active';
@@ -374,7 +332,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
             <button
               type="button"
               onClick={() => {
-                setSelectedPlanId('basic');
+                setSelectedPlanId(getDefaultUpgradePlanId());
                 setShowUpgradeModal(true);
               }}
               className="w-full bg-brand hover:bg-brand/90 text-white px-6 py-4 rounded-2xl font-black transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-brand/20 flex items-center justify-center gap-2 cursor-pointer text-sm"
@@ -398,30 +356,14 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-          {PLANS.map((plan) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+          {plans.map((plan) => {
             const isCurrent = tenant?.plan_id === plan.id || (!tenant?.plan_id && plan.id === 'free');
             return (
               <div
                 key={plan.id}
-                className={`rounded-3xl sm:rounded-[2.5rem] p-6 sm:p-8 flex flex-col justify-between relative transition-all duration-300 border-2 ${
-                  plan.isPopular
-                    ? 'bg-surface border-brand shadow-xl shadow-brand/10 ring-4 ring-brand/10'
-                    : 'bg-surface border-border hover:border-brand/40 shadow-sm'
-                }`}
+                className="rounded-3xl sm:rounded-[2.5rem] p-6 sm:p-8 flex flex-col justify-between relative transition-all duration-300 border-2 bg-surface border-border hover:border-brand/40 shadow-sm"
               >
-                {/* Popular / Best Choice Badge */}
-                {plan.badge && (
-                  <div className={cn("absolute -top-3.5", isRtl ? "right-8" : "left-8")}>
-                    <span className={`px-4 py-1 rounded-full text-xs font-black shadow-md flex items-center gap-1.5 ${
-                      plan.isPopular ? 'bg-brand text-white' : 'bg-surface-muted text-content border border-border'
-                    }`}>
-                      <Star size={12} className={plan.isPopular ? 'fill-white' : ''} />
-                      {plan.badge}
-                    </span>
-                  </div>
-                )}
-
                 <div className="space-y-6">
                   {/* Plan Name & Price Header */}
                   <div className="border-b border-border pb-6 space-y-3">
@@ -433,13 +375,11 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-content-muted font-bold leading-relaxed">{plan.tagline}</p>
 
                     <div className="flex items-baseline gap-2 pt-2">
                       <span className="text-3xl sm:text-4xl font-black text-content font-mono dir-ltr">
                         {plan.price > 0 ? `${plan.price} SAR` : t('billing.price_free')}
                       </span>
-                      <span className="text-xs font-bold text-content-muted">/ {plan.period}</span>
                     </div>
                   </div>
 
@@ -447,7 +387,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                   <div className="space-y-3">
                     <p className="text-xs font-black text-content uppercase tracking-wider">{t('billing.card_included_features')}</p>
                     <ul className="space-y-2.5">
-                      {plan.features.map((feat, idx) => (
+                      {(plan.features || []).map((feat: string, idx: number) => (
                         <li key={idx} className="flex items-start gap-2.5 text-xs font-bold text-content leading-relaxed">
                           <CheckCircle2 size={16} className="text-success shrink-0 mt-0.5" />
                           <span>{feat}</span>
@@ -465,11 +405,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                       setSelectedPlanId(plan.id);
                       setShowUpgradeModal(true);
                     }}
-                    className={`w-full py-4 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md ${
-                      plan.isPopular
-                        ? 'bg-brand hover:bg-brand/90 text-white shadow-brand/20 hover:scale-[1.02]'
-                        : 'bg-surface-muted hover:bg-border text-content hover:scale-[1.02]'
-                    }`}
+                    className="w-full py-4 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md bg-surface-muted hover:bg-border text-content hover:scale-[1.02]"
                   >
                     <Sparkles size={16} />
                     <span>{isCurrent ? t('billing.card_renew_or_confirm') : t('billing.card_switch_to', { planName: plan.name })}</span>
@@ -478,65 +414,6 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
               </div>
             );
           })}
-        </div>
-      </div>
-
-      {/* Detailed Feature Comparison Matrix */}
-      <div className="bg-surface rounded-3xl sm:rounded-[2.5rem] border border-border p-6 sm:p-8 shadow-sm space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border pb-4">
-          <div>
-            <h4 className="text-lg sm:text-xl font-black text-content flex items-center gap-2">
-              <FileText size={22} className="text-brand" />
-              <span>{t('billing.compare_table_title')}</span>
-            </h4>
-            <p className="text-xs text-content-muted font-bold mt-1">
-              {t('billing.compare_table_subtitle')}
-            </p>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          {/* min-width so the wrapper's overflow-x-auto actually engages: with a
-              plain w-100% table the three columns were squashed to ~95px each on
-              a phone and every feature name broke to one word per line. */}
-          <table className="w-full min-w-[600px] text-right text-xs">
-            <thead>
-              <tr className="border-b border-border bg-surface-muted/50 text-content-muted font-black">
-                <th className="p-2.5 sm:p-4 rounded-r-2xl">{t('billing.compare_col_feature')}</th>
-                <th className="p-2.5 sm:p-4 text-center">{t('billing.compare_col_free')}</th>
-                <th className="p-2.5 sm:p-4 text-center rounded-l-2xl text-brand font-black">{t('billing.compare_col_basic')}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/60">
-              {COMPARISON_FEATURES.map((item, i) => (
-                <tr key={i} className="hover:bg-surface-muted/30 transition-colors">
-                  <td className="p-2.5 sm:p-4 font-bold text-content">{item.name}</td>
-                  <td className="p-2.5 sm:p-4 text-center">
-                    {typeof item.free === 'boolean' ? (
-                      item.free ? (
-                        <CheckCircle2 size={18} className="text-success mx-auto" />
-                      ) : (
-                        <X size={18} className="text-danger mx-auto" />
-                      )
-                    ) : (
-                      <span className="font-bold text-warning bg-warning/10 px-2.5 py-1 rounded-md">{item.free}</span>
-                    )}
-                  </td>
-                  <td className="p-2.5 sm:p-4 text-center">
-                    {typeof item.basic === 'boolean' ? (
-                      item.basic ? (
-                        <CheckCircle2 size={18} className="text-success mx-auto" />
-                      ) : (
-                        <X size={18} className="text-danger mx-auto" />
-                      )
-                    ) : (
-                      <span className="font-black text-brand bg-brand/10 px-2.5 py-1 rounded-md">{item.basic}</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </div>
 
@@ -565,7 +442,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
 
             <button
               type="button"
-              onClick={() => setShowUpgradeModal(true)}
+              onClick={() => { setSelectedPlanId(getDefaultUpgradePlanId()); setShowUpgradeModal(true); }}
               className="text-xs font-black text-white bg-brand hover:bg-brand/90 px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 w-full sm:w-auto justify-center shadow-md shadow-brand/20 cursor-pointer"
             >
               <Plus size={16} />
@@ -627,7 +504,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
             </div>
             <button
               type="button"
-              onClick={() => setShowUpgradeModal(true)}
+              onClick={() => { setSelectedPlanId(getDefaultUpgradePlanId()); setShowUpgradeModal(true); }}
               className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 bg-brand text-white rounded-xl text-xs font-black hover:bg-brand/90 transition-all cursor-pointer shadow-md shadow-brand/20"
             >
               <Plus size={16} />
@@ -662,7 +539,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                   {t('billing.modal_choose_plan')}
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {PLANS.map((p) => (
+                  {plans.map((p) => (
                     <div
                       key={p.id}
                       onClick={() => setSelectedPlanId(p.id)}
@@ -683,7 +560,6 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                           {p.price > 0 ? `${p.price} SAR` : t('billing.price_free')}
                         </span>
                       </div>
-                      <p className="text-[11px] text-content-muted font-bold leading-relaxed">{p.desc}</p>
                     </div>
                   ))}
                 </div>

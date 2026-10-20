@@ -5,7 +5,7 @@ export interface SubscriptionRequest {
   tenant_id: string;
   tenant_name?: string;
   tenant_email?: string;
-  plan_id: 'free' | 'basic';
+  plan_id: string;
   plan_name: string;
   amount: number;
   payment_method: 'bank_transfer' | 'card' | 'network' | 'cash';
