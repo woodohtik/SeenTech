@@ -33,7 +33,9 @@ import {
   UserCheck,
   AlertCircle,
   ShieldAlert,
-  Bot
+  Bot,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -56,6 +58,7 @@ import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../contexts/ConfirmContext';
 import { Trans, useTranslation } from 'react-i18next';
 import { isRtlLang, localeOf } from '../lib/direction';
+import { validatePlanForm, PlanFormInput, PlanFormField } from '../utils/planValidation';
 
 type TabType = 'overview' | 'tenants' | 'financials' | 'performance' | 'security' | 'plans';
 
@@ -1852,6 +1855,249 @@ export default function SuperAdminDashboard() {
           </button>
         </div>
       </div>
+
+      {planModalMode && (
+        <PlanFormModal
+          mode={planModalMode}
+          plan={planModalMode === 'edit' ? editingPlan : null}
+          onClose={() => { setPlanModalMode(null); setEditingPlan(null); }}
+          onSaved={fetchData}
+        />
+      )}
     </div>
   );
 }
+
+/**
+ * docs/superpowers/plans/2026-10-20-plans-management.md (Task 3) --
+ * create/edit modal for a single plans row. id is only editable on
+ * create (immutable PK once tenants.plan_id can reference it).
+ */
+const PlanFormModal = ({
+  mode,
+  plan,
+  onClose,
+  onSaved,
+}: {
+  mode: 'create' | 'edit';
+  plan: any | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) => {
+  const { t } = useTranslation();
+  const { success: toastSuccess, handleError: toastHandleError } = useToast();
+
+  const [id, setId] = useState(plan?.id || '');
+  const [name, setName] = useState(plan?.name || '');
+  const [price, setPrice] = useState(plan ? String(plan.price) : '0');
+  const [maxStaff, setMaxStaff] = useState(plan ? String(plan.max_staff) : '1');
+  const [maxOrders, setMaxOrders] = useState(plan ? String(plan.max_orders) : '0');
+  const [features, setFeatures] = useState<string[]>(plan?.features?.length ? plan.features : ['']);
+  const [isActive, setIsActive] = useState<boolean>(plan?.is_active ?? true);
+  const [errors, setErrors] = useState<Partial<Record<PlanFormField, string>>>({});
+  const [saving, setSaving] = useState(false);
+
+  const handleFeatureChange = (index: number, value: string) => {
+    setFeatures((prev) => prev.map((f, i) => (i === index ? value : f)));
+  };
+  const handleFeatureRemove = (index: number) => {
+    setFeatures((prev) => prev.filter((_, i) => i !== index));
+  };
+  const handleFeatureAdd = () => {
+    setFeatures((prev) => [...prev, '']);
+  };
+
+  const handleSubmit = async () => {
+    const input: PlanFormInput = { id, name, price, maxStaff, maxOrders };
+    const result = validatePlanForm(input, mode === 'edit');
+    if (!result.valid) {
+      setErrors(result.errors);
+      return;
+    }
+    setErrors({});
+    setSaving(true);
+
+    const payload = {
+      name: name.trim(),
+      price: Number(price),
+      max_staff: Number(maxStaff),
+      max_orders: Number(maxOrders),
+      features: features.map((f) => f.trim()).filter(Boolean),
+      is_active: isActive,
+    };
+
+    if (mode === 'create') {
+      const { error } = await supabase.from('plans').insert({ id, ...payload });
+      if (error) {
+        setSaving(false);
+        if ((error as any).code === '23505') {
+          setErrors({ id: t('saas.plan_duplicate_id') });
+          return;
+        }
+        toastHandleError(error, t('saas.plan_save_failed'));
+        return;
+      }
+      toastSuccess(t('saas.plan_create_success'));
+    } else {
+      const { error } = await supabase.from('plans').update(payload).eq('id', plan.id);
+      if (error) {
+        setSaving(false);
+        toastHandleError(error, t('saas.plan_save_failed'));
+        return;
+      }
+      toastSuccess(t('saas.plan_update_success'));
+    }
+
+    setSaving(false);
+    onSaved();
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-2 sm:p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} />
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        className="bg-surface w-full max-w-lg rounded-[2rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
+      >
+        <div className="p-4 sm:p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
+          <h2 className="text-lg font-black text-content">
+            {t(mode === 'create' ? 'saas.plan_modal_title_create' : 'saas.plan_modal_title_edit')}
+          </h2>
+          <button onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors">
+            <X size={20} className="text-content-muted" />
+          </button>
+        </div>
+
+        <div className="p-4 sm:p-6 space-y-4 overflow-y-auto">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.plan_field_id')}</label>
+            <input
+              type="text"
+              value={id}
+              onChange={(e) => setId(e.target.value)}
+              readOnly={mode === 'edit'}
+              className={cn(
+                "w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none",
+                mode === 'edit' && "bg-surface-muted text-content-muted cursor-not-allowed",
+                errors.id && "border-danger"
+              )}
+            />
+            {mode === 'edit' && <p className="text-[10px] text-content-muted font-bold">{t('saas.plan_field_id_locked_hint')}</p>}
+            {errors.id && <p className="text-[10px] text-danger font-bold">{errors.id}</p>}
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.plan_field_name')}</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={cn("w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none", errors.name && "border-danger")}
+            />
+            {errors.name && <p className="text-[10px] text-danger font-bold">{errors.name}</p>}
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.plan_field_price')}</label>
+            <input
+              type="number"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className={cn("w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none", errors.price && "border-danger")}
+            />
+            {errors.price && <p className="text-[10px] text-danger font-bold">{errors.price}</p>}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.plan_field_max_staff')}</label>
+              <input
+                type="number"
+                value={maxStaff}
+                onChange={(e) => setMaxStaff(e.target.value)}
+                className={cn("w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none", errors.maxStaff && "border-danger")}
+              />
+              <p className="text-[9px] text-content-muted font-bold">{t('saas.plan_field_max_staff_hint')}</p>
+              {errors.maxStaff && <p className="text-[10px] text-danger font-bold">{errors.maxStaff}</p>}
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.plan_field_max_orders')}</label>
+              <input
+                type="number"
+                value={maxOrders}
+                onChange={(e) => setMaxOrders(e.target.value)}
+                className={cn("w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none", errors.maxOrders && "border-danger")}
+              />
+              <p className="text-[9px] text-content-muted font-bold">{t('saas.plan_field_max_orders_hint')}</p>
+              {errors.maxOrders && <p className="text-[10px] text-danger font-bold">{errors.maxOrders}</p>}
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.plan_field_features')}</label>
+            <div className="space-y-2">
+              {features.map((feature, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={feature}
+                    onChange={(e) => handleFeatureChange(index, e.target.value)}
+                    placeholder={t('saas.plan_feature_placeholder')}
+                    className="flex-1 bg-surface border border-border rounded-xl px-3.5 py-2 text-sm font-bold outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleFeatureRemove(index)}
+                    className="p-2 text-content-muted hover:text-danger bg-surface-muted hover:bg-danger/10 rounded-xl transition-all cursor-pointer shrink-0"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={handleFeatureAdd}
+              className="flex items-center gap-1.5 text-xs font-bold text-brand hover:text-brand/80 transition-colors mt-1"
+            >
+              <Plus size={14} />
+              {t('saas.plan_feature_add')}
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between bg-surface-muted p-3.5 rounded-xl border border-border">
+            <label className="text-xs font-black text-content">{t('saas.plan_field_active')}</label>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={isActive}
+                onChange={(e) => setIsActive(e.target.checked)}
+              />
+              <div className="w-12 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand"></div>
+            </label>
+          </div>
+        </div>
+
+        <div className="sticky bottom-0 shrink-0 p-4 sm:p-6 border-t border-border bg-surface flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-6 py-2.5 bg-surface-muted text-content hover:bg-surface border border-border rounded-xl font-bold text-sm transition-all cursor-pointer"
+          >
+            {t('common.cancel')}
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={saving}
+            className="px-6 py-2.5 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-brand/20 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+          >
+            {t('saas.plan_save')}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
