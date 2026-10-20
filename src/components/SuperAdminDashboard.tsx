@@ -821,7 +821,7 @@ export default function SuperAdminDashboard() {
           </div>
           <button
             onClick={fetchData}
-            className="flex items-center gap-2 p-3 bg-surface border border-border text-content hover:bg-surface-muted rounded-2xl shadow-sm transition-all cursor-pointer"
+            className="flex items-center gap-2 p-3 bg-surface border border-border text-content hover:bg-surface-muted rounded-xl shadow-sm transition-all cursor-pointer"
             title={t('saas.refresh_data')}
             aria-label={t('saas.refresh_data')}
           >
@@ -832,7 +832,7 @@ export default function SuperAdminDashboard() {
 
       {/* Advanced Tabs Controller */}
       <div className="w-full overflow-x-auto scrollbar-none pb-1 -mb-1">
-        <div className="flex gap-1.5 bg-surface p-1.5 rounded-2xl sm:rounded-[1.5rem] border border-border/80 shadow-sm w-max">
+        <div className="flex gap-1.5 bg-surface p-1.5 rounded-2xl border border-border/80 shadow-sm w-max">
           {[
             { id: 'overview', label: t('saas.overview', 'الرئيسية'), icon: LayoutDashboard },
             { id: 'tenants', label: t('saas.menu_tenants'), icon: Users },
@@ -845,7 +845,7 @@ export default function SuperAdminDashboard() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as TabType)}
               className={cn(
-                "flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-xs font-black transition-all cursor-pointer whitespace-nowrap",
+                "flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap",
                 activeTab === tab.id 
                   ? "bg-brand text-white shadow-md shadow-brand/15" 
                   : "text-content-muted hover:bg-surface-muted hover:text-content"
@@ -877,7 +877,7 @@ export default function SuperAdminDashboard() {
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="bg-surface p-6 rounded-[2rem] border border-border shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
+                  className="bg-surface p-6 rounded-2xl border border-border shadow-sm transition-all group relative overflow-hidden"
                 >
                   <div className="flex justify-between items-start mb-5">
                     <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform", stat.bg, stat.color)}>
@@ -901,7 +901,7 @@ export default function SuperAdminDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               
               {/* MRR Timeline Chart */}
-              <div className="lg:col-span-2 bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
+              <div className="lg:col-span-2 bg-surface p-8 rounded-2xl border border-border shadow-sm">
                 <div className="flex items-center justify-between mb-8">
                   <div>
                     <h3 className="text-lg font-black text-content flex items-center gap-2">
@@ -936,7 +936,7 @@ export default function SuperAdminDashboard() {
               </div>
 
               {/* Plans Distribution Ring */}
-              <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm flex flex-col">
+              <div className="bg-surface p-8 rounded-2xl border border-border shadow-sm flex flex-col">
                 <h3 className="text-lg font-black text-content mb-1 flex items-center gap-2">
                   <PieChartIcon className="text-brand" size={20} />
                   <span>{t('saas.plan_distribution', 'توزيع الباقات')}</span>
@@ -1004,7 +1004,7 @@ export default function SuperAdminDashboard() {
             className="space-y-6"
           >
             {/* Filter and Search Bar */}
-            <div className="bg-surface p-6 rounded-[2rem] border border-border shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
               <div className="relative w-full md:w-80">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-content-muted" size={16} />
                 <input
@@ -1149,7 +1149,7 @@ export default function SuperAdminDashboard() {
             </div>
 
             {/* Desktop View - Table */}
-            <div className="hidden md:block bg-surface rounded-[2rem] border border-border shadow-sm overflow-hidden">
+            <div className="hidden md:block bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left rtl:text-right border-collapse">
                   <thead>
@@ -1280,7 +1280,7 @@ export default function SuperAdminDashboard() {
                 { label: t('saas.arr_label', 'ARR (الإيراد السنوي المتكرر)'), value: <PriceDisplay amount={arr} />, icon: TrendingUp, color: 'text-success', bg: 'bg-success/5' },
                 { label: t('saas.kpi_ltv'), value: <PriceDisplay amount={ltv} />, icon: Activity, color: 'text-brand', bg: 'bg-brand/5' },
               ].map((m) => (
-                <div key={m.label} className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
+                <div key={m.label} className="bg-surface p-8 rounded-2xl border border-border shadow-sm">
                   <div className="flex items-center gap-3 mb-4">
                     <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", m.bg, m.color)}>
                       <m.icon size={20} />
@@ -1293,7 +1293,7 @@ export default function SuperAdminDashboard() {
             </div>
 
             {/* Plans comparison overview */}
-            <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
+            <div className="bg-surface p-8 rounded-2xl border border-border shadow-sm">
               <h3 className="text-lg font-black text-content mb-2">{t('saas.plans_performance_title')}</h3>
               <p className="text-content-muted font-bold text-xs mb-6">
                 {t('saas.plans_performance_subtitle')}
@@ -1343,7 +1343,7 @@ export default function SuperAdminDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               
               {/* Latency measurement */}
-              <div className="bg-surface p-6 rounded-[2rem] border border-border shadow-sm flex flex-col justify-between">
+              <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm flex flex-col justify-between">
                 <div>
                   <div className="flex justify-between items-start mb-4">
                     <span className="text-[10px] font-black text-content-muted uppercase tracking-widest leading-none">Database Latency</span>
@@ -1376,7 +1376,7 @@ export default function SuperAdminDashboard() {
                 { label: 'Uptime (30-day index)', value: '99.98%', progress: 99.9, color: 'text-warning', bg: 'bg-warning' },
                 { label: 'Active API Traffic', value: '1.4k requests/m', progress: 34, color: 'text-brand', bg: 'bg-brand' },
               ].map((p, i) => (
-                <div key={i} className="bg-surface p-6 rounded-[2rem] border border-border shadow-sm flex flex-col justify-between">
+                <div key={i} className="bg-surface p-6 rounded-2xl border border-border shadow-sm flex flex-col justify-between">
                   <div>
                     <div className="flex justify-between items-start mb-4">
                       <span className="text-[10px] font-black text-content-muted uppercase tracking-widest leading-none">{p.label}</span>
@@ -1398,7 +1398,7 @@ export default function SuperAdminDashboard() {
             </div>
 
             {/* System logs flow */}
-            <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
+            <div className="bg-surface p-8 rounded-2xl border border-border shadow-sm">
               <div className="flex items-center justify-between mb-8">
                 <div>
                   <h3 className="text-lg font-black text-content flex items-center gap-2">
@@ -1459,7 +1459,7 @@ export default function SuperAdminDashboard() {
             className="space-y-8"
           >
             {/* Security Alert Header */}
-            <div className="bg-danger/5 p-8 rounded-[2rem] border border-danger/10 flex flex-col md:flex-row items-start md:items-center gap-6">
+            <div className="bg-danger/5 p-8 rounded-2xl border border-danger/10 flex flex-col md:flex-row items-start md:items-center gap-6">
               <div className="w-16 h-16 bg-danger/10 text-danger rounded-2xl flex items-center justify-center shrink-0">
                 <Shield size={32} />
               </div>
@@ -1472,7 +1472,7 @@ export default function SuperAdminDashboard() {
             </div>
 
             {/* Audit list and search filters */}
-            <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
+            <div className="bg-surface p-8 rounded-2xl border border-border shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
                   <h3 className="text-base font-black text-content flex items-center gap-2">
@@ -1547,7 +1547,7 @@ export default function SuperAdminDashboard() {
             exit={{ opacity: 0, y: -10 }}
             className="space-y-6"
           >
-            <div className="bg-surface p-6 rounded-[2rem] border border-border shadow-sm flex items-center justify-between">
+            <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-black text-content">{t('saas.plans_tab_title')}</h3>
                 <p className="text-content-muted font-bold text-xs mt-1">{t('saas.plans_tab_subtitle')}</p>
@@ -1560,7 +1560,7 @@ export default function SuperAdminDashboard() {
               </button>
             </div>
 
-            <div className="bg-surface rounded-[2rem] border border-border shadow-sm overflow-hidden overflow-x-auto">
+            <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-surface-muted text-[10px] font-black text-content-muted uppercase tracking-widest border-b border-border">
@@ -1636,7 +1636,7 @@ export default function SuperAdminDashboard() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-lg bg-surface p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] border border-border shadow-2xl flex flex-col gap-5 sm:gap-6 mx-4"
+              className="relative w-full max-w-lg bg-surface p-5 sm:p-8 rounded-3xl border border-border shadow-2xl flex flex-col gap-5 sm:gap-6 mx-4"
             >
               <div className="flex justify-between items-center pb-4 border-b border-border/80">
                 <h3 className="text-base sm:text-lg font-black text-content">
@@ -1848,7 +1848,7 @@ export default function SuperAdminDashboard() {
 
       {/* Sticky Support Widget */}
       <div className="sticky bottom-6 z-20 flex justify-center w-full px-4">
-        <div className="bg-white/95 backdrop-blur-md border border-border p-2 sm:p-3 rounded-2xl sm:rounded-[2.5rem] shadow-xl flex items-center justify-between sm:justify-start gap-2 sm:gap-3 ring-1 ring-black/5 w-full sm:w-auto max-w-md sm:max-w-none">
+        <div className="bg-white/95 backdrop-blur-md border border-border p-2 sm:p-3 rounded-2xl shadow-xl flex items-center justify-between sm:justify-start gap-2 sm:gap-3 ring-1 ring-black/5 w-full sm:w-auto max-w-md sm:max-w-none">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="hidden sm:flex -space-x-4 pr-2 border-l border-border ml-2 rtl:border-l-0 rtl:border-r rtl:ml-0 rtl:mr-2">
               {[1, 2, 3].map(i => (
@@ -1862,7 +1862,7 @@ export default function SuperAdminDashboard() {
               <p className="text-[9px] sm:text-[10px] font-bold text-success leading-tight mt-0.5">{t('saas.active_now_green', 'متواجدون الآن')}</p>
             </div>
           </div>
-          <button className="px-4 py-2.5 sm:px-8 sm:py-3 bg-brand text-white rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-xs shadow-md shadow-brand/15 hover:scale-105 active:scale-95 transition-all cursor-pointer whitespace-nowrap shrink-0">
+          <button className="px-4 py-2.5 sm:px-8 sm:py-3 bg-brand text-white rounded-xl font-black text-[10px] sm:text-xs shadow-md shadow-brand/15 hover:scale-105 active:scale-95 transition-all cursor-pointer whitespace-nowrap shrink-0">
             {t('saas.open_support_ticket', 'فتح تذكرة')}
           </button>
         </div>
@@ -1981,7 +1981,7 @@ const PlanFormModal = ({
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-surface w-full max-w-lg rounded-[2rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
+        className="bg-surface w-full max-w-lg rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
       >
         <div className="p-4 sm:p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
           <h2 className="text-lg font-black text-content">
