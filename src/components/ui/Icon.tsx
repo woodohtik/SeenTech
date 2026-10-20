@@ -19,11 +19,13 @@ import {
   Bell,
   MessageSquare,
   Shield,
+  ShieldCheck,
   CreditCard,
   Database,
   Scissors,
   Calendar,
   Layers,
+  Hash,
   type LucideIcon,
   type LucideProps,
 } from 'lucide-react';
@@ -52,11 +54,13 @@ const ICONS = {
   bell: Bell,
   'message-square': MessageSquare,
   shield: Shield,
+  'shield-check': ShieldCheck,
   'credit-card': CreditCard,
   database: Database,
   scissors: Scissors,
   calendar: Calendar,
   layers: Layers,
+  hash: Hash,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof ICONS | SeenIconName;

@@ -176,9 +176,16 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
   const canViewBilling = hasPermission('settings.billing');
   const canViewNotifications = hasPermission('settings.notifications');
 
+  // seen-ux-fixes-batch-task.md: هذه القائمة كانت نسخة مستقلة ومكررة من
+  // TABS الفعلية في Settings.tsx، وانجرفت عنها بمرور الوقت -- فقدت تبويبي
+  // 'zatca' و'categories' بالكامل (موجودان وفعّالان في صفحة الإعدادات نفسها)
+  // رغم أنهما كانا موجودَين هناك طوال الوقت. أُعيد مزامنتها هنا يدوياً حتى
+  // تطابق Settings.tsx بالضبط (الأسماء، الأيقونات، وشروط الظهور).
   const settingsSubTabs = [
     { id: 'profile', label: t('settings_page.tabs.profile'), icon: 'store' as const, visible: true },
-    { id: 'tax', label: t('settings_page.tabs.tax'), icon: 'file-text' as const, visible: canEdit },
+    { id: 'tax', label: t('settings_page.tabs.tax'), icon: 'file-text' as const, visible: hasPermission('settings.tax') },
+    { id: 'zatca', label: t('settings_page.tabs.zatca'), icon: 'shield-check' as const, visible: hasPermission('settings.tax') },
+    { id: 'categories', label: t('settings_page.tabs.categories'), icon: 'hash' as const, visible: canEdit },
     { id: 'branches', label: t('settings_page.tabs.branches'), icon: 'map-pin' as const, visible: hasPermission('branches.manage') },
     { id: 'appearance', label: t('settings_page.tabs.appearance'), icon: 'palette' as const, visible: true },
     { id: 'invoice', label: t('settings_page.tabs.invoice'), icon: 'file-text' as const, visible: true },
@@ -445,7 +452,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
                           : "ml-4 pl-3 border-l border-border/60 text-left"
                       )}
                     >
-                      {settingsSubTabs.map((subTab) => {
+                      {settingsSubTabs.filter((subTab) => subTab.visible).map((subTab) => {
                         const searchParams = new URLSearchParams(location.search);
                         const currentTabId = searchParams.get('tab') || 'profile';
                         const isSubTabActive = currentTabId === subTab.id;
