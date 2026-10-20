@@ -57,7 +57,7 @@ import { useConfirm } from '../contexts/ConfirmContext';
 import { Trans, useTranslation } from 'react-i18next';
 import { isRtlLang, localeOf } from '../lib/direction';
 
-type TabType = 'overview' | 'tenants' | 'financials' | 'performance' | 'security';
+type TabType = 'overview' | 'tenants' | 'financials' | 'performance' | 'security' | 'plans';
 
 export default function SuperAdminDashboard() {
   const { t, i18n } = useTranslation();
@@ -80,6 +80,8 @@ export default function SuperAdminDashboard() {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [activityLogs, setActivityLogs] = useState<EmployeeActivityLog[]>([]);
   const [plansList, setPlansList] = useState<any[]>([]);
+  const [planModalMode, setPlanModalMode] = useState<'create' | 'edit' | null>(null);
+  const [editingPlan, setEditingPlan] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState<string>('Super Admin');
   
@@ -204,6 +206,34 @@ export default function SuperAdminDashboard() {
   useEffect(() => {
     fetchData();
   }, [i18n.language]);
+
+  // docs/superpowers/plans/2026-10-20-plans-management.md (Task 2/4)
+  const handleTogglePlanActive = async (plan: any) => {
+    const { error } = await supabase.from('plans').update({ is_active: !plan.is_active }).eq('id', plan.id);
+    if (error) {
+      toastHandleError(error, t('saas.plans_toggle_failed'));
+      return;
+    }
+    toastSuccess(t('saas.plans_toggle_success'));
+    await fetchData();
+  };
+
+  const handleDeletePlan = async (plan: any) => {
+    const subscriberCount = tenants.filter(t => t.planId === plan.id).length;
+    if (subscriberCount > 0) {
+      toastError(t('saas.plan_delete_blocked', { count: subscriberCount }));
+      return;
+    }
+    if (!(await confirm({ description: t('saas.plan_delete_confirm', { name: plan.name }), danger: true }))) return;
+
+    const { error } = await supabase.from('plans').delete().eq('id', plan.id);
+    if (error) {
+      toastHandleError(error, t('saas.plan_delete_failed'));
+      return;
+    }
+    toastSuccess(t('saas.plan_delete_success'));
+    await fetchData();
+  };
 
   // Real Dynamic Calculations (Zero Fallback Policy)
   const activeTenantsCount = useMemo(() => {
@@ -794,6 +824,7 @@ export default function SuperAdminDashboard() {
             { id: 'financials', label: t('saas.financials', 'المالية'), icon: DollarSign },
             { id: 'performance', label: t('saas.performance', 'الأداء والتشغيل'), icon: Server },
             { id: 'security', label: t('saas.security', 'الأمان والتدقيق'), icon: Shield },
+            { id: 'plans', label: t('saas.menu_plans', 'الباقات'), icon: CreditCard },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -1488,6 +1519,87 @@ export default function SuperAdminDashboard() {
                   </div>
                 )}
               </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* PLANS TAB */}
+        {activeTab === 'plans' && (
+          <motion.div
+            key="plans"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-6"
+          >
+            <div className="bg-surface p-6 rounded-[2rem] border border-border shadow-sm flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-black text-content">{t('saas.plans_tab_title')}</h3>
+                <p className="text-content-muted font-bold text-xs mt-1">{t('saas.plans_tab_subtitle')}</p>
+              </div>
+              <button
+                onClick={() => setPlanModalMode('create')}
+                className="bg-brand text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-brand/90 transition-all cursor-pointer"
+              >
+                {t('saas.plans_new_button')}
+              </button>
+            </div>
+
+            <div className="bg-surface rounded-[2rem] border border-border shadow-sm overflow-hidden overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-surface-muted text-[10px] font-black text-content-muted uppercase tracking-widest border-b border-border">
+                    <th className="p-4 text-start">{t('saas.plans_col_name')}</th>
+                    <th className="p-4 text-center">{t('saas.plans_col_price')}</th>
+                    <th className="p-4 text-center">{t('saas.plans_col_max_staff')}</th>
+                    <th className="p-4 text-center">{t('saas.plans_col_max_orders')}</th>
+                    <th className="p-4 text-center">{t('saas.plans_col_features')}</th>
+                    <th className="p-4 text-center">{t('saas.plans_col_status')}</th>
+                    <th className="p-4 text-center">{t('saas.plans_col_actions')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {plansList.map((plan) => (
+                    <tr key={plan.id}>
+                      <td className="p-4 font-bold text-content">{plan.name}</td>
+                      <td className="p-4 text-center font-mono"><PriceDisplay amount={plan.price} /></td>
+                      <td className="p-4 text-center font-mono">{plan.max_staff}</td>
+                      <td className="p-4 text-center">
+                        <span className="font-mono">{plan.max_orders}</span>
+                        <span className="block text-[9px] text-content-muted font-bold mt-0.5">{t('saas.plans_max_orders_hint')}</span>
+                      </td>
+                      <td className="p-4 text-center text-content-muted font-bold">{(plan.features || []).length}</td>
+                      <td className="p-4 text-center">
+                        <button
+                          onClick={() => handleTogglePlanActive(plan)}
+                          className={cn(
+                            "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wide cursor-pointer",
+                            plan.is_active ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
+                          )}
+                        >
+                          {plan.is_active ? t('saas.plans_status_active') : t('saas.plans_status_inactive')}
+                        </button>
+                      </td>
+                      <td className="p-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => { setEditingPlan(plan); setPlanModalMode('edit'); }}
+                            className="p-2 text-content-muted hover:text-content bg-surface-muted hover:bg-border rounded-xl transition-all cursor-pointer"
+                          >
+                            <Settings size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDeletePlan(plan)}
+                            className="p-2 text-content-muted hover:text-danger bg-surface-muted hover:bg-danger/10 rounded-xl transition-all cursor-pointer"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </motion.div>
         )}
