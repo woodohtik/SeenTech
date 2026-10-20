@@ -4461,6 +4461,7 @@
       "appearance": "Appearance & Themes",
       "billing": "Subscription & Payments",
       "branches": "Branches & Locations",
+      "categories": "Inventory & Supplier Categories",
       "data": "Data Management",
       "invoice": "Invoice Layout",
       "notifications": "Notifications",
@@ -4468,7 +4469,8 @@
       "profile": "Profile",
       "staff": "Staff Members",
       "tax": "Tax Settings",
-      "whatsapp": "WhatsApp Integration"
+      "whatsapp": "WhatsApp Integration",
+      "zatca": "ZATCA Integration"
     },
     "tax": {
       "calculation_method": "Custom Item Tax Calculation Method",
