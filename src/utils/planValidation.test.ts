@@ -42,6 +42,18 @@ describe('validatePlanForm', () => {
     expect(result.errors.price).toBeTruthy();
   });
 
+  it('rejects a blank price instead of silently treating it as 0 (Number("") === 0)', () => {
+    const result = validatePlanForm({ id: 'pro', name: 'Pro', price: '', maxStaff: '10', maxOrders: '5000' }, false);
+    expect(result.valid).toBe(false);
+    expect(result.errors.price).toBeTruthy();
+  });
+
+  it('rejects a whitespace-only price', () => {
+    const result = validatePlanForm({ id: 'pro', name: 'Pro', price: '   ', maxStaff: '10', maxOrders: '5000' }, false);
+    expect(result.valid).toBe(false);
+    expect(result.errors.price).toBeTruthy();
+  });
+
   it('accepts price of exactly 0 (free plan)', () => {
     const result = validatePlanForm({ id: 'free', name: 'Free', price: '0', maxStaff: '1', maxOrders: '100' }, false);
     expect(result.valid).toBe(true);

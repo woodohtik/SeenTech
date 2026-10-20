@@ -47,9 +47,13 @@ export function validatePlanForm(input: PlanFormInput, isEditing: boolean): Plan
     errors.name = 'required';
   }
 
-  const price = Number(input.price);
-  if (!Number.isFinite(price) || price < 0) {
-    errors.price = 'invalid';
+  if (input.price.trim() === '') {
+    errors.price = 'required';
+  } else {
+    const price = Number(input.price);
+    if (!Number.isFinite(price) || price < 0) {
+      errors.price = 'invalid';
+    }
   }
 
   if (!isNonNegativeInteger(input.maxStaff)) {

@@ -222,8 +222,20 @@ export default function SuperAdminDashboard() {
   };
 
   const handleDeletePlan = async (plan: any) => {
-    const subscriberCount = tenants.filter(t => t.planId === plan.id).length;
-    if (subscriberCount > 0) {
+    // Fresh-reviewer finding: counting from the already-loaded `tenants`
+    // state (fetched once, with its own fetch error swallowed, and capped
+    // at PostgREST's default row limit) could read 0 subscribers when the
+    // real count is not -- the one check this whole feature exists for.
+    // A live, exact count sidesteps all three failure modes at once.
+    const { count: subscriberCount, error: countError } = await supabase
+      .from('tenants')
+      .select('id', { count: 'exact', head: true })
+      .eq('plan_id', plan.id);
+    if (countError) {
+      toastHandleError(countError, t('saas.plan_delete_failed'));
+      return;
+    }
+    if ((subscriberCount || 0) > 0) {
       toastError(t('saas.plan_delete_blocked', { count: subscriberCount }));
       return;
     }
@@ -1897,6 +1909,15 @@ const PlanFormModal = ({
   const [errors, setErrors] = useState<Partial<Record<PlanFormField, string>>>({});
   const [saving, setSaving] = useState(false);
 
+  // Fresh-reviewer finding: errors used to render raw codes ("required",
+  // "invalid") verbatim -- translate every code through one path, including
+  // the duplicate-id case, which used to set a pre-translated string here
+  // instead of a code like every other field.
+  const fieldErrorText = (code?: string): string | undefined => {
+    if (!code) return undefined;
+    return t(code === 'duplicate_id' ? 'saas.plan_duplicate_id' : `saas.plan_error_${code}`);
+  };
+
   const handleFeatureChange = (index: number, value: string) => {
     setFeatures((prev) => prev.map((f, i) => (i === index ? value : f)));
   };
@@ -1931,7 +1952,7 @@ const PlanFormModal = ({
       if (error) {
         setSaving(false);
         if ((error as any).code === '23505') {
-          setErrors({ id: t('saas.plan_duplicate_id') });
+          setErrors({ id: 'duplicate_id' });
           return;
         }
         toastHandleError(error, t('saas.plan_save_failed'));
@@ -1986,7 +2007,7 @@ const PlanFormModal = ({
               )}
             />
             {mode === 'edit' && <p className="text-[10px] text-content-muted font-bold">{t('saas.plan_field_id_locked_hint')}</p>}
-            {errors.id && <p className="text-[10px] text-danger font-bold">{errors.id}</p>}
+            {errors.id && <p className="text-[10px] text-danger font-bold">{fieldErrorText(errors.id)}</p>}
           </div>
 
           <div className="space-y-1.5">
@@ -1997,7 +2018,7 @@ const PlanFormModal = ({
               onChange={(e) => setName(e.target.value)}
               className={cn("w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none", errors.name && "border-danger")}
             />
-            {errors.name && <p className="text-[10px] text-danger font-bold">{errors.name}</p>}
+            {errors.name && <p className="text-[10px] text-danger font-bold">{fieldErrorText(errors.name)}</p>}
           </div>
 
           <div className="space-y-1.5">
@@ -2008,7 +2029,7 @@ const PlanFormModal = ({
               onChange={(e) => setPrice(e.target.value)}
               className={cn("w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none", errors.price && "border-danger")}
             />
-            {errors.price && <p className="text-[10px] text-danger font-bold">{errors.price}</p>}
+            {errors.price && <p className="text-[10px] text-danger font-bold">{fieldErrorText(errors.price)}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -2021,7 +2042,7 @@ const PlanFormModal = ({
                 className={cn("w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none", errors.maxStaff && "border-danger")}
               />
               <p className="text-[9px] text-content-muted font-bold">{t('saas.plan_field_max_staff_hint')}</p>
-              {errors.maxStaff && <p className="text-[10px] text-danger font-bold">{errors.maxStaff}</p>}
+              {errors.maxStaff && <p className="text-[10px] text-danger font-bold">{fieldErrorText(errors.maxStaff)}</p>}
             </div>
             <div className="space-y-1.5">
               <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.plan_field_max_orders')}</label>
@@ -2032,7 +2053,7 @@ const PlanFormModal = ({
                 className={cn("w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none", errors.maxOrders && "border-danger")}
               />
               <p className="text-[9px] text-content-muted font-bold">{t('saas.plan_field_max_orders_hint')}</p>
-              {errors.maxOrders && <p className="text-[10px] text-danger font-bold">{errors.maxOrders}</p>}
+              {errors.maxOrders && <p className="text-[10px] text-danger font-bold">{fieldErrorText(errors.maxOrders)}</p>}
             </div>
           </div>
 
