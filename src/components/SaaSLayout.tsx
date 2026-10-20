@@ -37,6 +37,7 @@ import { getFriendlyErrorMessage } from '../lib/firebase';
 import UserPreferencesMenu from './UserPreferencesMenu';
 import ImpersonationBanner, { IMPERSONATION_BANNER_HEIGHT } from './ImpersonationBanner';
 import { logImpersonationStart, endImpersonation } from '../services/impersonationService';
+import TwoFactorChallenge from './TwoFactorChallenge';
 
 import { IconInput } from './ui/IconInput';
 
@@ -263,7 +264,23 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
     };
   }, [lastActivity, handleLogout]);
 
-  // 2. 2FA Verification Check (Removed per user request)
+  // 2. 2FA Verification Check -- seen-admin-reengineering-task.md بند 7.
+  // nextLevel هو 'aal2' فقط إذا كان الحساب يملك عامل TOTP موثَّق فعلاً؛
+  // حساب بلا تفعيل 2FA يبقى يدخل كالمعتاد (nextLevel = 'aal1').
+  const [mfaChecked, setMfaChecked] = useState(false);
+  const [needsMfaChallenge, setNeedsMfaChallenge] = useState(false);
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (!error && data) {
+          setNeedsMfaChallenge(data.nextLevel === 'aal2' && data.currentLevel !== 'aal2');
+        }
+      } finally {
+        setMfaChecked(true);
+      }
+    })();
+  }, []);
 
   // 3. Impersonation Check (Fetch names)
   useEffect(() => {
@@ -422,6 +439,10 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
       default: return 'SaaS Staff';
     }
   };
+
+  if (mfaChecked && needsMfaChallenge) {
+    return <TwoFactorChallenge onVerified={() => setNeedsMfaChallenge(false)} />;
+  }
 
   return (
     <div

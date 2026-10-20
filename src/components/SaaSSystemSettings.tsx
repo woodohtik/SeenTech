@@ -24,6 +24,7 @@ import { IconInput } from './ui/IconInput';
 import { SmartSelect } from './ui/SmartSelect';
 import { useTranslation } from 'react-i18next';
 import GlobalRoleManager from './GlobalRoleManager';
+import TwoFactorSetup from './TwoFactorSetup';
 
 import { isRtlLang } from '../lib/direction';
 import { useToast } from '../contexts/ToastContext';
@@ -326,6 +327,8 @@ export default function SaaSSystemSettings() {
           </span>
         )}
       </div>
+
+      <TwoFactorSetup />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* System Health */}
