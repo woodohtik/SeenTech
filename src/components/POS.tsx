@@ -1706,7 +1706,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
   };
 
   return (
-    <div className="h-full flex flex-col md:flex-row font-sans bg-background text-content overflow-hidden w-full" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="h-full flex flex-col md:flex-row font-sans bg-surface text-content overflow-hidden w-full" dir={isRtl ? 'rtl' : 'ltr'}>
       <ScannerModal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} onScan={handleScan} />
       {variantPickerItem && (
         <VariantPickerModal

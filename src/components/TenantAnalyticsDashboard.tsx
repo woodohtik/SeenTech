@@ -386,7 +386,7 @@ export default function TenantAnalyticsDashboard() {
                       <div className="w-10 h-10 bg-brand/10 text-brand rounded-full flex items-center justify-center font-bold">
                         {staff.name.charAt(0)}
                       </div>
-                      <span className="absolute bottom-0 right-0 w-3 h-3 bg-success border-2 border-white rounded-full animate-pulse"></span>
+                      <span className="absolute bottom-0 right-0 ltr:right-auto ltr:left-0 w-3 h-3 bg-success border-2 border-white rounded-full animate-pulse"></span>
                     </div>
                     <div>
                       <h4 className="font-bold text-sm text-content">{staff.name}</h4>

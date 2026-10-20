@@ -262,7 +262,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
 
   if (loadingShift) {
     return (
-      <div className="flex-1 flex h-full items-center justify-center bg-background font-sans p-12" dir={isRtl ? 'rtl' : 'ltr'}>
+      <div className="flex-1 flex h-full items-center justify-center bg-surface font-sans p-12" dir={isRtl ? 'rtl' : 'ltr'}>
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-brand/20 border-t-brand rounded-full animate-spin" />
           <span className="text-sm font-bold text-content-muted">{t('common.loading')}</span>
@@ -272,7 +272,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
   }
 
   return (
-    <div className="flex flex-col h-full font-sans bg-background" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="flex flex-col h-full font-sans bg-surface" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Header & Top Tabs */}
       <div className="bg-surface border-b border-border shrink-0">
         <div className="px-4 sm:px-6 py-3.5 sm:py-4 flex flex-col gap-3 sm:gap-4">
