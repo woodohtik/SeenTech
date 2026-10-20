@@ -129,16 +129,16 @@ export default function AdminTailors() {
 
     const fetchGlobalStats = async () => {
       try {
-        const { data: orders } = await supabase
-          .from('orders')
-          .select('paid_amount');
-        
-        if (orders) {
-          const revenue = orders.reduce((acc, curr: any) => acc + (curr.paid_amount || 0), 0);
+        // seen-admin-reengineering-task.md بند 4 -- كان يجلب كل صف orders في
+        // كل المنصة بلا حد فقط ليجمع عمودين في المتصفح. get_platform_order_summary
+        // (migration 20261020000000) تحسب المجموع في قاعدة البيانات مباشرة.
+        const { data, error } = await supabase.rpc('get_platform_order_summary').single();
+        if (error) throw error;
+        if (data) {
           setPlatformStats(prev => ({
             ...prev,
-            totalOrders: orders.length,
-            totalRevenue: revenue
+            totalOrders: Number((data as any).total_orders) || 0,
+            totalRevenue: Number((data as any).total_revenue) || 0
           }));
         }
       } catch (error) {

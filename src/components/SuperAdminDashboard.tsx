@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase/client';
 import { logImpersonationStart } from '../services/impersonationService';
-import { Tenant, Order, AuditLog, EmployeeActivityLog } from '../types';
+import { Tenant, AuditLog, EmployeeActivityLog } from '../types';
 import { 
   Users, 
   TrendingUp, 
@@ -60,6 +60,7 @@ import { useConfirm } from '../contexts/ConfirmContext';
 import { Trans, useTranslation } from 'react-i18next';
 import { isRtlLang, localeOf } from '../lib/direction';
 import { validatePlanForm, PlanFormInput, PlanFormField } from '../utils/planValidation';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 
 type TabType = 'overview' | 'tenants' | 'financials' | 'performance' | 'security' | 'plans';
 
@@ -80,9 +81,17 @@ export default function SuperAdminDashboard() {
 
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [activityLogs, setActivityLogs] = useState<EmployeeActivityLog[]>([]);
+  // seen-admin-reengineering-task.md بند 4 -- ترقيم صفحات فعلي بدل .limit()
+  // ثابت بلا .range(): كل خلاصة تحمل صفحتها الخاصة، بحد أقصى معروف
+  // (auditLogsTotal/activityLogsTotal) لتعطيل "التالي" عند آخر صفحة.
+  const AUDIT_PAGE_SIZE = 20;
+  const ACTIVITY_PAGE_SIZE = 20;
+  const [auditPage, setAuditPage] = useState(0);
+  const [auditLogsTotal, setAuditLogsTotal] = useState(0);
+  const [activityPage, setActivityPage] = useState(0);
+  const [activityLogsTotal, setActivityLogsTotal] = useState(0);
   const [plansList, setPlansList] = useState<any[]>([]);
   const [planModalMode, setPlanModalMode] = useState<'create' | 'edit' | null>(null);
   const [editingPlan, setEditingPlan] = useState<any | null>(null);
@@ -124,17 +133,11 @@ export default function SuperAdminDashboard() {
     try {
       const [
         { data: tenantsData },
-        { data: ordersData },
         { data: saasUserData },
-        { data: auditData },
-        { data: activityData },
         { data: plansData }
       ] = await Promise.all([
         supabase.from('tenants').select('*'),
-        supabase.from('orders').select('*').order('order_date', { ascending: false }).limit(200),
         supabase.from('saas_users').select('*').eq('uid', currentAuthUser?.id).single(),
-        supabase.from('audit_logs').select('*').order('occurred_at', { ascending: false }).limit(40),
-        supabase.from('employee_activity_logs').select('*').order('occurred_at', { ascending: false }).limit(40),
         supabase.from('plans').select('*')
       ]);
 
@@ -159,36 +162,6 @@ export default function SuperAdminDashboard() {
         }) as Tenant));
       }
 
-      if (ordersData) {
-        setOrders(ordersData.map(d => ({
-          ...d,
-          customerId: d.customer_id,
-          customerName: d.customer_name,
-          orderDate: d.order_date,
-          totalAmount: Number(d.total_amount),
-          paidAmount: Number(d.paid_amount),
-          remainingAmount: Number(d.remaining_amount),
-          branchId: d.branch_id,
-          orderNumber: d.order_number,
-          createdAt: d.created_at,
-          updatedAt: d.updated_at,
-          tenantId: d.tenant_id
-        }) as Order));
-      }
-
-      if (auditData) setAuditLogs(auditData.map(d => ({
-        id: String(d.id),
-        action: d.action,
-        performedBy: d.performed_by,
-        performedByEmail: d.performed_by_email,
-        tenantId: d.tenant_id,
-        targetTenantId: d.target_tenant_id,
-        details: d.details,
-        type: d.type,
-        timestamp: d.occurred_at,
-      }) as AuditLog));
-      if (activityData) setActivityLogs(activityData as any);
-      
       if (saasUserData) {
         setUserName(saasUserData.name || currentAuthUser?.email?.split('@')[0] || 'Super Admin');
       } else if (currentAuthUser?.email?.toLowerCase() === "nomansa2566512@gmail.com") {
@@ -210,6 +183,67 @@ export default function SuperAdminDashboard() {
   useEffect(() => {
     fetchData();
   }, [i18n.language]);
+
+  // seen-admin-reengineering-task.md بند 4 -- خلاصتان منفصلتان بترقيم صفحات
+  // فعلي (.range()) بدل .limit() ثابت بلا أي تنقّل، كل واحدة بصفحتها الخاصة
+  // لأنهما تُعرَضان في تبويبين مختلفين (الأمان/الأداء) ولا داعي لتحميل إحداهما
+  // عند تقليب صفحات الأخرى.
+  const fetchAuditLogsPage = async (page: number, search: string, typeFilter: string) => {
+    const from = page * AUDIT_PAGE_SIZE;
+    const to = from + AUDIT_PAGE_SIZE - 1;
+    let query = supabase
+      .from('audit_logs')
+      .select('*', { count: 'exact' })
+      .order('occurred_at', { ascending: false });
+    if (search.trim()) {
+      const term = `%${search.trim()}%`;
+      query = query.or(`action.ilike.${term},performed_by_email.ilike.${term},details.ilike.${term}`);
+    }
+    if (typeFilter !== 'all') {
+      query = query.eq('type', typeFilter);
+    }
+    const { data, count, error } = await query.range(from, to);
+    if (error) {
+      console.error('Error fetching audit logs page:', error);
+      return;
+    }
+    setAuditLogsTotal(count || 0);
+    setAuditLogs((data || []).map(d => ({
+      id: String(d.id),
+      action: d.action,
+      performedBy: d.performed_by,
+      performedByEmail: d.performed_by_email,
+      tenantId: d.tenant_id,
+      targetTenantId: d.target_tenant_id,
+      details: d.details,
+      type: d.type,
+      timestamp: d.occurred_at,
+    }) as AuditLog));
+  };
+
+  const fetchActivityLogsPage = async (page: number) => {
+    const from = page * ACTIVITY_PAGE_SIZE;
+    const to = from + ACTIVITY_PAGE_SIZE - 1;
+    const { data, count, error } = await supabase
+      .from('employee_activity_logs')
+      .select('*', { count: 'exact' })
+      .order('occurred_at', { ascending: false })
+      .range(from, to);
+    if (error) {
+      console.error('Error fetching activity logs page:', error);
+      return;
+    }
+    setActivityLogsTotal(count || 0);
+    setActivityLogs((data || []) as any);
+  };
+
+  const debouncedAuditSearch = useDebouncedValue(auditSearch, 250);
+  useEffect(() => { setAuditPage(0); }, [debouncedAuditSearch, auditTypeFilter]);
+  useEffect(() => {
+    fetchAuditLogsPage(auditPage, debouncedAuditSearch, auditTypeFilter);
+  }, [auditPage, debouncedAuditSearch, auditTypeFilter]);
+
+  useEffect(() => { fetchActivityLogsPage(activityPage); }, [activityPage]);
 
   // docs/superpowers/plans/2026-10-20-plans-management.md (Task 2/4)
   const handleTogglePlanActive = async (plan: any) => {
@@ -380,17 +414,6 @@ export default function SuperAdminDashboard() {
       return matchesSearch && matchesStatus && matchesPlan;
     });
   }, [tenants, searchTerm, statusFilter, planFilter]);
-
-  // Filtering Audit Logs
-  const filteredAuditLogs = useMemo(() => {
-    return auditLogs.filter(log => {
-      const matchesSearch = log.action.toLowerCase().includes(auditSearch.toLowerCase()) || 
-                            log.performedByEmail.toLowerCase().includes(auditSearch.toLowerCase()) ||
-                            (log.details && log.details.toLowerCase().includes(auditSearch.toLowerCase()));
-      const matchesType = auditTypeFilter === 'all' || log.type === auditTypeFilter;
-      return matchesSearch && matchesType;
-    });
-  }, [auditLogs, auditSearch, auditTypeFilter]);
 
   // Action: Toggle tenant status with database update
   const handleToggleStatus = async (tenantId: string, currentStatus: string) => {
@@ -1384,6 +1407,28 @@ export default function SuperAdminDashboard() {
                   </div>
                 )}
               </div>
+
+              {activityLogsTotal > ACTIVITY_PAGE_SIZE && (
+                <div className="flex items-center justify-between pt-4 mt-4 border-t border-border/60">
+                  <button
+                    disabled={activityPage === 0}
+                    onClick={() => setActivityPage(p => Math.max(0, p - 1))}
+                    className="px-3 py-1.5 rounded-xl text-xs font-black bg-surface-muted hover:bg-border disabled:opacity-40 disabled:cursor-not-allowed text-content-muted transition-all cursor-pointer"
+                  >
+                    {t('saas.pagination_prev', 'السابق')}
+                  </button>
+                  <span className="text-[10px] font-black text-content-muted uppercase tracking-wider">
+                    {t('saas.pagination_page_of', { page: activityPage + 1, total: Math.max(1, Math.ceil(activityLogsTotal / ACTIVITY_PAGE_SIZE)) })}
+                  </span>
+                  <button
+                    disabled={(activityPage + 1) * ACTIVITY_PAGE_SIZE >= activityLogsTotal}
+                    onClick={() => setActivityPage(p => p + 1)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-black bg-surface-muted hover:bg-border disabled:opacity-40 disabled:cursor-not-allowed text-content-muted transition-all cursor-pointer"
+                  >
+                    {t('saas.pagination_next', 'التالي')}
+                  </button>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -1447,7 +1492,7 @@ export default function SuperAdminDashboard() {
               </div>
 
               <div className="space-y-3">
-                {filteredAuditLogs.map((log) => (
+                {auditLogs.map((log) => (
                   <div key={log.id} className="flex items-start gap-4 p-5 bg-surface-muted/20 rounded-2xl border border-border border-r-4 border-r-rose-400">
                     <div className="p-2 bg-danger/10 text-danger rounded-lg shrink-0 mt-0.5">
                       <AlertCircle size={14} />
@@ -1467,12 +1512,34 @@ export default function SuperAdminDashboard() {
                     </div>
                   </div>
                 ))}
-                {filteredAuditLogs.length === 0 && (
+                {auditLogs.length === 0 && (
                   <div className="text-center py-8 text-xs text-content-muted font-bold">
                     {t('saas.no_matching_audit_records')}
                   </div>
                 )}
               </div>
+
+              {auditLogsTotal > AUDIT_PAGE_SIZE && (
+                <div className="flex items-center justify-between pt-4 mt-4 border-t border-border/60">
+                  <button
+                    disabled={auditPage === 0}
+                    onClick={() => setAuditPage(p => Math.max(0, p - 1))}
+                    className="px-3 py-1.5 rounded-xl text-xs font-black bg-surface-muted hover:bg-border disabled:opacity-40 disabled:cursor-not-allowed text-content-muted transition-all cursor-pointer"
+                  >
+                    {t('saas.pagination_prev', 'السابق')}
+                  </button>
+                  <span className="text-[10px] font-black text-content-muted uppercase tracking-wider">
+                    {t('saas.pagination_page_of', { page: auditPage + 1, total: Math.max(1, Math.ceil(auditLogsTotal / AUDIT_PAGE_SIZE)) })}
+                  </span>
+                  <button
+                    disabled={(auditPage + 1) * AUDIT_PAGE_SIZE >= auditLogsTotal}
+                    onClick={() => setAuditPage(p => p + 1)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-black bg-surface-muted hover:bg-border disabled:opacity-40 disabled:cursor-not-allowed text-content-muted transition-all cursor-pointer"
+                  >
+                    {t('saas.pagination_next', 'التالي')}
+                  </button>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
