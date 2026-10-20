@@ -301,15 +301,9 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                 {getPlanDisplayName()}
               </h2>
               <span className="text-brand text-2xl sm:text-3xl font-black font-mono dir-ltr">
-                {tenant?.plan_id === 'basic' ? '599 SAR / ' + t('billing.plans.basic.period') : t('billing.plans.free.badge')}
+                {currentPlan && currentPlan.price > 0 ? `${currentPlan.price} SAR` : t('billing.price_free')}
               </span>
             </div>
-
-            <p className="text-content-muted font-bold text-xs sm:text-sm leading-relaxed max-w-2xl">
-              {tenant?.plan_id === 'basic'
-                ? t('billing.current_plan_basic_desc')
-                : t('billing.current_plan_free_desc')}
-            </p>
 
             <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-content-muted pt-3 border-t border-border/60">
               <span className="flex items-center gap-1.5 text-content font-bold">
