@@ -221,7 +221,7 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
   return (
     <div className="space-y-6" dir={dir}>
       {/* Header */}
-      <div className="bg-surface p-5 sm:p-8 rounded-2xl md:rounded-[2.5rem] border border-border shadow-xl shadow-brand/5">
+      <div className="bg-surface p-5 sm:p-8 rounded-2xl border border-border shadow-xl shadow-brand/5">
         <div className="flex items-center gap-4">
           <div className={cn(
             "w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center shrink-0",

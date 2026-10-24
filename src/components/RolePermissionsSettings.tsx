@@ -375,7 +375,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
   return (
     <div className="space-y-8" dir={dir}>
       {/* Top Banner Header */}
-      <div className="bg-gradient-to-r from-brand/10 via-surface to-brand/5 p-6 md:p-8 rounded-[2.5rem] border border-brand/20 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="bg-gradient-to-r from-brand/10 via-surface to-brand/5 p-6 md:p-8 rounded-2xl border border-brand/20 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-brand text-white rounded-2xl shadow-lg shadow-brand/20">
@@ -451,7 +451,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Sidebar Role Selector Tabs */}
             <div className="lg:col-span-4 space-y-4">
-              <div className="bg-surface rounded-[2.5rem] border border-border shadow-sm p-5 space-y-4">
+              <div className="bg-surface rounded-2xl border border-border shadow-sm p-5 space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-border">
                   <h3 className="text-xs font-black text-content-muted uppercase tracking-wider">
                     {isSuperAdmin ? t('permissions.roles_list_super_admin') : t('permissions.roles_list_tenant')}
@@ -606,7 +606,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
         {/* Permission Matrix Toggles */}
         <div className="lg:col-span-8 space-y-6">
           {selectedRole ? (
-            <div className="bg-surface rounded-[2.5rem] border border-border shadow-sm p-6 md:p-8 space-y-6">
+            <div className="bg-surface rounded-2xl border border-border shadow-sm p-6 md:p-8 space-y-6">
               {/* Role Header Controls */}
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-border">
                 <div>
@@ -830,7 +830,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
               )}
             </div>
           ) : (
-            <div className="bg-surface rounded-[2.5rem] border border-border p-12 text-center text-content-muted font-bold">
+            <div className="bg-surface rounded-2xl border border-border p-12 text-center text-content-muted font-bold">
               {t('permissions.select_role_hint')}
             </div>
           )}

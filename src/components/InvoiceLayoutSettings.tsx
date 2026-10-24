@@ -326,7 +326,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
              <h3 className="text-lg font-black text-content uppercase tracking-tight">{t('settings_page.invoice.section1_title')}</h3>
           </div>
           
-          <div className="space-y-4 bg-surface-muted/50 p-4 sm:p-6 rounded-2xl md:rounded-[2rem] border border-border">
+          <div className="space-y-4 bg-surface-muted/50 p-4 sm:p-6 rounded-2xl border border-border">
             <div className="space-y-3">
               <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">{t('settings_page.invoice.paper_size')}</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -421,7 +421,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
              <h3 className="text-lg font-black text-content uppercase tracking-tight">{t('settings_page.invoice.section2_title')}</h3>
           </div>
           
-          <div className="space-y-6 bg-surface-muted/50 p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border">
+          <div className="space-y-6 bg-surface-muted/50 p-4 sm:p-8 rounded-2xl border border-border">
             <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8 border-b border-border/50 pb-6 sm:pb-8">
               <div className="relative w-28 h-28 bg-white border-2 border-dashed border-border rounded-3xl flex items-center justify-center overflow-hidden group hover:border-brand transition-all shadow-inner">
                 {logoPreview ? (
@@ -532,7 +532,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
           </div>
 
           {/* Table Columns */}
-          <div className="space-y-6 bg-surface-muted/30 p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border">
+          <div className="space-y-6 bg-surface-muted/30 p-4 sm:p-8 rounded-2xl border border-border">
             <div className="flex items-center gap-3">
                <div className="p-2 bg-white rounded-lg shadow-sm text-brand">
                   <Layout size={18} />
@@ -564,7 +564,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
           </div>
 
           {/* Footer */}
-          <div className="space-y-6 bg-surface-muted/30 p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border">
+          <div className="space-y-6 bg-surface-muted/30 p-4 sm:p-8 rounded-2xl border border-border">
             <div className="flex items-center gap-3">
                <div className="p-2 bg-white rounded-lg shadow-sm text-brand">
                   <FileText size={18} />
@@ -593,7 +593,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
               />
             </div>
 
-            <label className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-4 sm:p-6 bg-surface-muted/50 rounded-2xl sm:rounded-[2rem] border border-dashed border-brand/20 cursor-pointer hover:bg-brand/5 transition-all gap-4">
+            <label className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-4 sm:p-6 bg-surface-muted/50 rounded-2xl border border-dashed border-brand/20 cursor-pointer hover:bg-brand/5 transition-all gap-4">
               <div className={cn("flex items-center gap-4", isRtl ? "text-right" : "text-left")}>
                  <div className="p-3 bg-white rounded-2xl shadow-sm text-brand shrink-0">
                     <Zap size={24} className="animate-pulse" />

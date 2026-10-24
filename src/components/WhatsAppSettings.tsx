@@ -115,7 +115,7 @@ export default function WhatsAppSettings() {
   };
 
   return (
-    <div className={cn("bg-surface p-5 sm:p-8 md:p-10 rounded-2xl md:rounded-[3rem] border border-border shadow-xl shadow-brand/5 space-y-6 md:space-y-10 w-full relative", isRtl ? "text-right" : "text-left")} dir={isRtl ? "rtl" : "ltr"}>
+    <div className={cn("bg-surface p-5 sm:p-8 md:p-10 rounded-2xl border border-border shadow-xl shadow-brand/5 space-y-6 md:space-y-10 w-full relative", isRtl ? "text-right" : "text-left")} dir={isRtl ? "rtl" : "ltr"}>
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-[92vw] bg-surface-muted text-white px-5 py-2.5 rounded-2xl shadow-2xl text-xs sm:text-sm font-black flex items-center gap-2 border border-border animate-bounce">
@@ -126,7 +126,7 @@ export default function WhatsAppSettings() {
 
       {/* Header */}
       <div className={cn("flex flex-col sm:flex-row items-center gap-4 border-b border-border pb-6 sm:pb-8", isRtl ? "sm:items-start text-center sm:text-right" : "sm:items-start text-center sm:text-left")}>
-        <div className="p-4 bg-success/10 text-success rounded-[1.5rem] shadow-inner shrink-0">
+        <div className="p-4 bg-success/10 text-success rounded-2xl shadow-inner shrink-0">
           <MessageSquare size={32} />
         </div>
         <div className="flex-1">
@@ -144,7 +144,7 @@ export default function WhatsAppSettings() {
 
       <div className="space-y-6 md:space-y-8 w-full">
         {/* Toggle Switch Box */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between p-5 sm:p-8 bg-success/5 rounded-2xl sm:rounded-[2.5rem] border border-success/20 gap-6">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between p-5 sm:p-8 bg-success/5 rounded-2xl border border-success/20 gap-6">
           <div className={cn("flex flex-col sm:flex-row items-center gap-5 flex-1", isRtl ? "sm:items-start text-center sm:text-right" : "sm:items-start text-center sm:text-left")}>
             <div className="p-4 bg-surface rounded-2xl shadow-sm shrink-0">
               <Zap size={28} className="text-success animate-pulse" />

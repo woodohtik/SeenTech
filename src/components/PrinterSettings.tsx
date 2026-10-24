@@ -872,7 +872,7 @@ export default function PrinterSettings() {
       </div>
 
       {/* الترويسة */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-border shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface p-4 sm:p-6 rounded-2xl border border-border shadow-xs">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <div className="p-3 sm:p-3.5 bg-brand/10 text-brand rounded-2xl shrink-0">
             <Printer size={24} />
@@ -931,7 +931,7 @@ export default function PrinterSettings() {
       )}
 
       {/* الطباعة الصامتة عبر وسيط سين (الاقتران) — المسار الأساسي الموصى به */}
-      <div className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border-2 border-brand/30 shadow-xs space-y-4">
+      <div className="bg-surface p-4 sm:p-6 rounded-2xl border-2 border-brand/30 shadow-xs space-y-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
             <Zap size={20} className="text-brand" />
@@ -1058,7 +1058,7 @@ export default function PrinterSettings() {
       </div>
 
       {/* أزرار الربط الحقيقي */}
-      <div className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-border shadow-xs space-y-4">
+      <div className="bg-surface p-4 sm:p-6 rounded-2xl border border-border shadow-xs space-y-4">
         <div className="flex items-center gap-2">
           <Search size={20} className="text-brand" />
           <h3 className="text-base font-black text-content">{t('settings_page.printer.link_real_printer')}</h3>
@@ -1112,7 +1112,7 @@ export default function PrinterSettings() {
       {activePrinter && (
         <div
           className={cn(
-            'p-6 sm:p-8 rounded-[2.5rem] border-2 transition-all space-y-4 shadow-lg relative overflow-hidden',
+            'p-6 sm:p-8 rounded-2xl border-2 transition-all space-y-4 shadow-lg relative overflow-hidden',
             isRtl ? 'text-right' : 'text-left',
             activePrinter.status === 'online'
               ? 'bg-success/10 border-success/40'
@@ -1212,7 +1212,7 @@ export default function PrinterSettings() {
       )}
 
       {/* قائمة الطابعات */}
-      <div className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-border shadow-xs space-y-4">
+      <div className="bg-surface p-4 sm:p-6 rounded-2xl border border-border shadow-xs space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h3 className="text-base font-black text-content">{t('settings_page.printer.printers_heading', { count: printers.length })}</h3>
           <span className="text-xs text-content-muted font-bold">
@@ -1331,7 +1331,7 @@ export default function PrinterSettings() {
       </div>
 
       {/* إرشادات حل المشاكل */}
-      <div className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-border shadow-xs space-y-4">
+      <div className="bg-surface p-4 sm:p-6 rounded-2xl border border-border shadow-xs space-y-4">
         <button
           type="button"
           onClick={() => setShowHelpGuide(!showHelpGuide)}
@@ -1427,7 +1427,7 @@ function ToggleCard({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-border shadow-xs">
+    <div className="bg-surface p-4 sm:p-6 rounded-2xl border border-border shadow-xs">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
           <div className="p-3 bg-brand/10 text-brand rounded-2xl shrink-0">
