@@ -540,7 +540,7 @@ export default function CashOperationsModal({ shift, tenantId, onClose }: CashOp
                     return (
                       <div 
                         key={entry.id}
-                        className="p-3 bg-white border border-border/60 rounded-xl hover:shadow-sm transition-all flex flex-col gap-2 relative overflow-hidden group"
+                        className="p-3 bg-white border border-border/60 rounded-xl transition-all flex flex-col gap-2 relative overflow-hidden group"
                       >
                         {/* Side Border Indicator */}
                         <div className={cn(

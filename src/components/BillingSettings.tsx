@@ -454,7 +454,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
             {payments.map((inv) => (
               <div
                 key={inv.id}
-                className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center p-4 sm:p-5 bg-surface-muted/40 hover:bg-surface border-2 border-transparent hover:border-brand/20 hover:shadow-lg rounded-2xl transition-all group gap-4"
+                className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center p-4 sm:p-5 bg-surface-muted/40 hover:bg-surface border-2 border-transparent hover:border-brand/20 rounded-2xl transition-all group gap-4"
               >
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-right">
                   <div className="w-12 h-12 bg-success/10 text-success rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">

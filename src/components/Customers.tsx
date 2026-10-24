@@ -1991,7 +1991,7 @@ const CustomerDetailsModal = ({
                 { label: t('customers.sleeve'), value: customer.measurements?.sleeve, icon: <Scissors size={14} />, color: 'bg-info/10 text-info' },
                 { label: t('customers.neck'), value: customer.measurements?.neck, icon: <User size={14} />, color: 'bg-brand/10 text-brand' },
               ].map((m) => (
-                <div key={m.label} className="bg-surface p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-border hover:border-brand/20 transition-all group shadow-sm hover:shadow-md">
+                <div key={m.label} className="bg-surface p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-border hover:border-brand/20 transition-all group shadow-sm">
                   <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
                     <div className={cn("p-1.5 rounded-lg", m.color)}>
                       {m.icon}
@@ -2017,7 +2017,7 @@ const CustomerDetailsModal = ({
                 { label: t('customers.chest_style'), value: customer.measurements?.chestStyle, desc: t('inventory.chest_style') },
                 { label: t('customers.shoulder_style'), value: customer.measurements?.shoulderStyle, desc: t('customers.shoulder_style_desc') },
               ].map((v) => (
-                <div key={v.label} className="bg-surface p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-border flex flex-col items-center text-center group hover:border-brand/40 transition-all shadow-sm hover:shadow-md">
+                <div key={v.label} className="bg-surface p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-border flex flex-col items-center text-center group hover:border-brand/40 transition-all shadow-sm">
                   <div className="w-12 h-12 sm:w-16 sm:h-16 bg-brand/5 text-brand rounded-xl sm:rounded-2xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform shadow-inner">
                     {v.value ? visualIcons[v.value] : <Info size={20} className="opacity-20 sm:w-6 sm:h-6" />}
                   </div>
