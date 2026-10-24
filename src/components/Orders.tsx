@@ -161,7 +161,7 @@ const OrderStepper = ({ currentStatus, stages }: { currentStatus: string; stages
   }, [currentIdx]);
 
   return (
-    <div className="relative bg-surface p-6 rounded-[2rem] border border-border shadow-sm mb-8">
+    <div className="relative bg-surface p-6 rounded-2xl border border-border shadow-sm mb-8">
       <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-surface to-transparent rounded-e-[2rem] z-20" />
       <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-surface to-transparent rounded-s-[2rem] z-20" />
       <div ref={scrollRef} className="overflow-x-auto">
@@ -1945,7 +1945,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: idx * 0.1 }}
                     key={item.garmentType + item.fabric + idx} 
-                    className="bg-brand/5 p-5 rounded-[2rem] border border-brand/10 space-y-3 relative overflow-hidden group"
+                    className="bg-brand/5 p-5 rounded-2xl border border-brand/10 space-y-3 relative overflow-hidden group"
                   >
                     <div className="absolute top-0 right-0 w-16 h-16 bg-brand/5 rounded-bl-[2rem] -z-0 translate-x-4 -translate-y-4 transition-transform group-hover:translate-x-0 group-hover:translate-y-0" />
                     
@@ -2014,7 +2014,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const ConfirmDeliveryModal = () => (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsConfirmDeliveryOpen(false)} />
-      <motion.div role="dialog" aria-modal="true" aria-label={t('orders.confirm_delivery_title')} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-surface w-full max-w-sm rounded-[2rem] shadow-2xl relative z-10 p-8 text-center" dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}>
+      <motion.div role="dialog" aria-modal="true" aria-label={t('orders.confirm_delivery_title')} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-surface w-full max-w-sm rounded-3xl shadow-2xl relative z-10 p-8 text-center" dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}>
         <div className="w-20 h-20 bg-success/10 text-success rounded-full flex items-center justify-center mx-auto mb-6">
           <CheckCircle2 size={40} />
         </div>
@@ -2211,7 +2211,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: '100%', opacity: 0 }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="bg-surface w-full max-w-[92mm] sm:max-w-[100mm] rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl relative z-10 overflow-hidden"
+        className="bg-surface w-full max-w-[92mm] sm:max-w-[100mm] rounded-t-3xl shadow-2xl relative z-10 overflow-hidden"
       >
         <div className={cn("p-8 space-y-6", isRtlLang(i18n.language) ? "text-right" : "text-left")} dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}>
           <div className="flex justify-between items-start">
@@ -2229,7 +2229,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             <p className="text-content-muted font-medium">{t('common.order')}: #{order.orderNumber || order.id.slice(-6).toUpperCase()}</p>
           </div>
 
-          <div className="bg-surface-muted p-6 rounded-[2rem] space-y-4">
+          <div className="bg-surface-muted p-6 rounded-2xl space-y-4">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-surface rounded-xl shadow-sm">
@@ -2470,8 +2470,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
       <div className="grid grid-cols-1 gap-4">
         {filteredOrders.length === 0 ? (
-          <div className="p-12 text-center bg-surface border border-border rounded-[2.5rem] shadow-sm flex flex-col items-center justify-center">
-            <div className="w-16 h-16 rounded-[1.5rem] bg-surface-muted border border-border flex items-center justify-center mb-4 text-content-muted/50">
+          <div className="p-12 text-center bg-surface border border-border rounded-2xl shadow-sm flex flex-col items-center justify-center">
+            <div className="w-16 h-16 rounded-2xl bg-surface-muted border border-border flex items-center justify-center mb-4 text-content-muted/50">
               <ShoppingBag size={32} />
             </div>
             <h3 className="text-lg font-black text-content mb-1">
@@ -2740,7 +2740,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 <div className="hidden lg:flex lg:items-center lg:justify-between lg:gap-6">
                   <div className="flex items-center gap-5">
                     <div className={cn(
-                      "w-16 h-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-500 group-hover:scale-105 group-hover:rotate-3 shrink-0",
+                      "w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-105 group-hover:rotate-3 shrink-0",
                       statusDisplay.bgColor,
                       statusDisplay.color
                     )}>
@@ -2867,7 +2867,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
                       {order.status !== 'delivered' && openStatusDropdownId === order.id && (
                         <div className={cn(
-                          "absolute top-full mt-2 w-56 bg-surface rounded-[2rem] shadow-2xl border border-border/50 py-3 z-30 animate-in fade-in zoom-in duration-200 backdrop-blur-xl",
+                          "absolute top-full mt-2 w-56 bg-surface rounded-3xl shadow-2xl border border-border/50 py-3 z-30 animate-in fade-in zoom-in duration-200 backdrop-blur-xl",
                           isRtlLang(i18n.language) ? "right-0" : "left-0"
                         )}>
                           <div className="px-4 py-2 mb-2 border-b border-border/50">
@@ -2956,7 +2956,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-lg rounded-t-[2.5rem] lg:rounded-[2.5rem] shadow-2xl z-10 overflow-hidden bg-surface border border-border flex flex-col max-h-[85vh]"
+              className="relative w-full max-w-lg rounded-t-3xl shadow-2xl z-10 overflow-hidden bg-surface border border-border flex flex-col max-h-[85vh]"
               dir={isRtlLang(i18n.language) ? "rtl" : "ltr"}
             >
               <div className="flex items-center justify-between p-6 border-b border-border bg-brand/5 shrink-0">
@@ -3073,7 +3073,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className={cn("relative w-full lg:max-w-4xl rounded-t-[2.5rem] lg:rounded-[2.5rem] shadow-2xl z-10 overflow-hidden h-[95vh] lg:h-auto lg:max-h-[90vh] flex flex-col border border-border bg-surface", isRtlLang(i18n.language) ? "text-right" : "text-left")}
+              className={cn("relative w-full lg:max-w-4xl rounded-t-3xl shadow-2xl z-10 overflow-hidden h-[95vh] lg:h-auto lg:max-h-[90vh] flex flex-col border border-border bg-surface", isRtlLang(i18n.language) ? "text-right" : "text-left")}
               dir={isRtlLang(i18n.language) ? "rtl" : "ltr"}
             >
               {/* Header (Fixed) */}
@@ -3333,7 +3333,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           initial={{ opacity: 0, x: 20 }}
                           animate={{ opacity: 1, x: 0 }}
                           key={field.id} 
-                          className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-surface-muted p-6 rounded-[2rem] relative group border border-transparent hover:border-brand/10 transition-all"
+                          className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-surface-muted p-6 rounded-2xl relative group border border-transparent hover:border-brand/10 transition-all"
                         >
                           <div className="space-y-1">
                             <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.item_type')}</label>
@@ -3512,7 +3512,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
                 {/* Financials & Images */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="bg-brand text-white p-8 rounded-[2.5rem] shadow-2xl shadow-brand/10 space-y-6 relative overflow-hidden">
+                    <div className="bg-brand text-white p-8 rounded-2xl shadow-2xl shadow-brand/10 space-y-6 relative overflow-hidden">
                       <div className="absolute top-0 right-0 p-8 opacity-10 -rotate-12 scale-150">
                         <ShoppingBag size={120} />
                       </div>
