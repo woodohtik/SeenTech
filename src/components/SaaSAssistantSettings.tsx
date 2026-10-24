@@ -325,13 +325,13 @@ export default function SaaSAssistantSettings() {
       </div>
 
       {loading ? (
-        <div className="bg-surface p-16 rounded-[2.5rem] border border-border shadow-sm text-center text-content-muted font-bold">
+        <div className="bg-surface p-16 rounded-2xl border border-border shadow-sm text-center text-content-muted font-bold">
           {t('saas.assistant_settings.loading')}
         </div>
       ) : (
         <>
           {/* Enable Toggle */}
-          <div className="bg-brand/5 p-6 rounded-[2rem] border border-brand/10 flex items-center justify-between gap-4">
+          <div className="bg-brand/5 p-6 rounded-2xl border border-brand/10 flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-brand text-white rounded-2xl flex items-center justify-center shrink-0">
                 <Bot size={24} />
@@ -370,7 +370,7 @@ export default function SaaSAssistantSettings() {
                   <div
                     key={p.providerKey}
                     className={cn(
-                      'bg-surface p-6 rounded-[2rem] border shadow-sm space-y-4',
+                      'bg-surface p-6 rounded-2xl border shadow-sm space-y-4',
                       isActive ? 'border-brand ring-2 ring-brand/20' : 'border-border'
                     )}
                   >
@@ -473,7 +473,7 @@ export default function SaaSAssistantSettings() {
           </div>
 
           {/* Fallback Order */}
-          <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm space-y-4">
+          <div className="bg-surface p-8 rounded-2xl border border-border shadow-sm space-y-4">
             <div>
               <h3 className="text-xl font-black text-content flex items-center gap-2">
                 <ShieldCheck className="text-brand" size={22} />
@@ -552,7 +552,7 @@ export default function SaaSAssistantSettings() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* System Prompt */}
-            <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm space-y-4">
+            <div className="bg-surface p-8 rounded-2xl border border-border shadow-sm space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-black text-content flex items-center gap-2">
                   <Bot className="text-brand" size={22} />
@@ -577,7 +577,7 @@ export default function SaaSAssistantSettings() {
 
             {/* Model tuning + Limits */}
             <div className="space-y-8">
-              <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm space-y-4">
+              <div className="bg-surface p-8 rounded-2xl border border-border shadow-sm space-y-4">
                 <h3 className="text-xl font-black text-content flex items-center gap-2 mb-2">
                   <Sparkles className="text-brand" size={22} />
                   {t('saas.assistant_settings.provider_section_title')}
@@ -606,7 +606,7 @@ export default function SaaSAssistantSettings() {
                 </div>
               </div>
 
-              <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm space-y-2">
+              <div className="bg-surface p-8 rounded-2xl border border-border shadow-sm space-y-2">
                 <h3 className="text-xl font-black text-content flex items-center gap-2 mb-2">
                   <ShieldCheck className="text-brand" size={22} />
                   {t('saas.assistant_settings.limits_section_title')}
@@ -625,7 +625,7 @@ export default function SaaSAssistantSettings() {
           </div>
 
           {/* Live Preview */}
-          <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm space-y-4">
+          <div className="bg-surface p-8 rounded-2xl border border-border shadow-sm space-y-4">
             <h3 className="text-xl font-black text-content flex items-center gap-2">
               <Sparkles className="text-brand" size={22} />
               {t('saas.assistant_settings.preview_section_title')}
