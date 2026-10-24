@@ -1536,7 +1536,7 @@ export default function Customers({ tenantId }: CustomersProps) {
             );
           })
         ) : customers.length === 0 ? (
-          <div className="py-20 flex flex-col items-center justify-center bg-surface rounded-[3rem] border-2 border-dashed border-border text-content-muted">
+          <div className="py-20 flex flex-col items-center justify-center bg-surface rounded-2xl border-2 border-dashed border-border text-content-muted">
             <div className="p-6 bg-brand/10 text-brand rounded-full mb-4">
               <UserPlus size={48} />
             </div>
@@ -1553,7 +1553,7 @@ export default function Customers({ tenantId }: CustomersProps) {
             )}
           </div>
         ) : (
-          <div className="py-20 flex flex-col items-center justify-center bg-surface rounded-[3rem] border-2 border-dashed border-border text-content-muted">
+          <div className="py-20 flex flex-col items-center justify-center bg-surface rounded-2xl border-2 border-dashed border-border text-content-muted">
             <div className="p-6 bg-surface-muted rounded-full mb-4">
               <Search size={48} className="opacity-20" />
             </div>
@@ -1673,7 +1673,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-[clamp(320px,94vw,1100px)] max-h-[92vh] sm:max-h-[90vh] rounded-t-3xl sm:rounded-[var(--radius-card)] bg-[var(--surface)] shadow-2xl flex flex-col my-auto border border-border z-10 overflow-hidden"
+              className="relative w-full max-w-[clamp(320px,94vw,1100px)] max-h-[92vh] sm:max-h-[90vh] rounded-t-3xl bg-[var(--surface)] shadow-2xl flex flex-col my-auto border border-border z-10 overflow-hidden"
               dir={isRtl ? "rtl" : "ltr"}
             >
               <form onSubmit={handleSubmit(onSubmit, onInvalidSubmit)} className="flex flex-col flex-1 max-h-[90vh] overflow-hidden">
@@ -1941,7 +1941,7 @@ const CustomerDetailsModal = ({
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className={cn("bg-surface w-full max-w-5xl rounded-t-3xl sm:rounded-[2rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh] border border-border", isRtl ? "text-right" : "text-left")}
+        className={cn("bg-surface w-full max-w-5xl rounded-t-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh] border border-border", isRtl ? "text-right" : "text-left")}
       >
         <div className="p-4 sm:p-6 border-b border-border flex justify-between items-center bg-brand/5">
           <div className="flex items-center gap-2.5 sm:gap-3">
@@ -2033,7 +2033,7 @@ const CustomerDetailsModal = ({
 
           {/* Garment Blueprint Section */}
           <DetailSection title={t('customers.garment_blueprint')} icon={Scissors}>
-            <div className="bg-surface-muted/30 rounded-2xl sm:rounded-[2.5rem] p-2 sm:p-4 border border-border pointer-events-none overflow-x-auto scrollbar-hide">
+            <div className="bg-surface-muted/30 rounded-2xl p-2 sm:p-4 border border-border pointer-events-none overflow-x-auto scrollbar-hide">
               <ThobeMeasurementSelector 
                 values={(customer.measurements as Measurements) || {}}
                 onChange={() => {}} // Read-only in details view
@@ -2361,7 +2361,7 @@ const CustomerStatementModal = ({
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
         className={cn(
-          "bg-surface w-full max-w-4xl rounded-t-3xl sm:rounded-[2rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh] border border-border print:border-none print:shadow-none print:max-h-none print:rounded-none print:w-full print:static",
+          "bg-surface w-full max-w-4xl rounded-t-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh] border border-border print:border-none print:shadow-none print:max-h-none print:rounded-none print:w-full print:static",
           isRtl ? "text-right" : "text-left"
         )}
       >
@@ -2820,7 +2820,7 @@ const CustomerImportModal = ({
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-surface w-full max-w-2xl rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
+        className="bg-surface w-full max-w-2xl rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
         dir={isRtl ? 'rtl' : 'ltr'}
       >
         <div className="p-4 sm:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
