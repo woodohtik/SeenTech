@@ -483,7 +483,7 @@ const FabricUomConversion: React.FC<FabricUomConversionProps> = ({ tenantId }) =
                     <motion.div
                       key={item.id}
                       layout
-                      className="bg-surface border border-border rounded-3xl p-5 hover:shadow-md transition-all flex flex-col justify-between"
+                      className="bg-surface border border-border rounded-3xl p-5 transition-all flex flex-col justify-between"
                     >
                       <div>
                         <div className="flex items-start justify-between gap-3 mb-3">

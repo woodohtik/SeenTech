@@ -130,7 +130,7 @@ export default function SaaSReports() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat) => (
-          <div key={stat.label} className="bg-surface p-6 rounded-2xl border border-border shadow-sm transition-all hover:shadow-md">
+          <div key={stat.label} className="bg-surface p-6 rounded-2xl border border-border shadow-sm transition-all">
             <div className="flex items-center justify-between mb-4">
               <div className={`${stat.bg} ${stat.color} p-3 rounded-2xl`}>
                 <stat.icon size={24} />

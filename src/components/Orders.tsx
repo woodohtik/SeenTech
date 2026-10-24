@@ -2498,7 +2498,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   "p-3.5 sm:p-4 lg:p-6 rounded-2xl sm:rounded-3xl border transition-all duration-200 group relative overflow-visible z-10 hover:z-30",
                   selectedOrder?.id === order.id 
                     ? "bg-brand/5 border-brand ring-2 sm:ring-4 ring-brand/20 shadow-xl shadow-brand/10" 
-                    : "bg-surface border-border shadow-sm hover:shadow-md hover:border-brand/30"
+                    : "bg-surface border-border shadow-sm hover:border-brand/30"
                 )}
               >
                 {/* Selection indicator */}

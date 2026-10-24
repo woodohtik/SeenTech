@@ -1305,7 +1305,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                 layout
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-border shadow-xs hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 relative overflow-visible text-right"
+                className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-border shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 relative overflow-visible text-right"
               >
                 {/* Active/Inactive side accent */}
                 <div className={cn(

@@ -284,7 +284,7 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
               <motion.div 
                 key={transfer.id}
                 layout
-                className="bg-surface rounded-2xl border border-border shadow-sm hover:shadow-xl transition-all group overflow-hidden"
+                className="bg-surface rounded-2xl border border-border shadow-sm transition-all group overflow-hidden"
               >
                 <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
                   <div className="flex items-center gap-6">

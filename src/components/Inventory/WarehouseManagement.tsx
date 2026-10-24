@@ -128,7 +128,7 @@ const WarehouseManagement: React.FC<WarehouseManagementProps> = ({ tenantId }) =
           <motion.div
             key={branch.id}
             layout
-            className="bg-surface rounded-2xl sm:rounded-3xl border border-border shadow-xs hover:shadow-md transition-all p-4 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 text-right"
+            className="bg-surface rounded-2xl sm:rounded-3xl border border-border shadow-xs transition-all p-4 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 text-right"
           >
             {/* Right side: Branch identity & details */}
             <div className="flex items-center gap-4 min-w-0 flex-1">

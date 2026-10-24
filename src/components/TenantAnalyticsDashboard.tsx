@@ -426,7 +426,7 @@ function StatCard({
   trendValue?: number 
 }) {
   return (
-    <div className="bg-surface rounded-2xl border border-border p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+    <div className="bg-surface rounded-2xl border border-border p-6 shadow-sm transition-shadow relative overflow-hidden group">
       <div className="flex justify-between items-start mb-4">
         <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110", bg, color)}>
           <Icon size={24} />
