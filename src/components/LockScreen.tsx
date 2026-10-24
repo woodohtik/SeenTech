@@ -184,7 +184,7 @@ export default function LockScreen({ currentStaff, onUnlock, tenantId, onUnlockW
       >
         {/* Status Indicator */}
         <div className="relative">
-          <div className="w-20 h-20 bg-brand/10 border border-brand/20 rounded-[2rem] flex items-center justify-center text-brand relative shadow-[0_0_50px_-12px_rgba(15,110,150,0.3)]">
+          <div className="w-20 h-20 bg-brand/10 border border-brand/20 rounded-2xl flex items-center justify-center text-brand relative shadow-[0_0_50px_-12px_rgba(15,110,150,0.3)]">
             {isVerifying ? (
               <Loader2 className="w-8 h-8 animate-spin" />
             ) : (

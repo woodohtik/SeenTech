@@ -190,7 +190,7 @@ export default function ResetPassword() {
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="inline-block p-6 bg-white/10 backdrop-blur-xl rounded-[2.5rem] mb-8"
+            className="inline-block p-6 bg-white/10 backdrop-blur-xl rounded-2xl mb-8"
           >
             <ShieldCheck size={80} className="text-white" />
           </motion.div>

@@ -294,7 +294,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="w-full max-w-md bg-surface rounded-[3rem] shadow-xl border border-border p-10 relative z-10 flex flex-col items-center"
+                className="w-full max-w-md bg-surface rounded-3xl shadow-xl border border-border p-10 relative z-10 flex flex-col items-center"
               >
                 <div className="w-20 h-20 bg-brand/5 rounded-3xl flex items-center justify-center text-brand mb-6 shadow-inner">
                   <KeyRound size={40} />
@@ -367,7 +367,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="w-full max-w-md bg-surface rounded-[3rem] shadow-xl border border-border p-10 relative z-10 flex flex-col items-center"
+                className="w-full max-w-md bg-surface rounded-3xl shadow-xl border border-border p-10 relative z-10 flex flex-col items-center"
               >
                 <div className="w-20 h-20 bg-warning/10 rounded-3xl flex items-center justify-center text-warning mb-6 shadow-inner">
                   <Lock size={40} />
@@ -434,7 +434,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
-                className="w-full max-w-md bg-surface rounded-[3rem] shadow-xl border border-border p-10 relative z-10 flex flex-col items-center"
+                className="w-full max-w-md bg-surface rounded-3xl shadow-xl border border-border p-10 relative z-10 flex flex-col items-center"
               >
                 <div className="lg:hidden w-20 h-20 bg-brand/5 rounded-3xl flex items-center justify-center text-brand mb-6 shadow-inner">
                   <Shield size={40} />
@@ -585,7 +585,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
               <motion.div 
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="w-40 h-56 bg-white/10 backdrop-blur-2xl rounded-[2.5rem] border-2 border-white/20 shadow-2xl p-6 flex flex-col gap-3 relative z-20"
+                className="w-40 h-56 bg-white/10 backdrop-blur-2xl rounded-2xl border-2 border-white/20 shadow-2xl p-6 flex flex-col gap-3 relative z-20"
               >
                 <div className="grid grid-cols-3 gap-2 flex-1">
                   {[...Array(9)].map((_, i) => (
@@ -610,7 +610,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
               <motion.div 
                 animate={{ x: [20, 0, 20], y: [0, 15, 0] }}
                 transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                className="absolute bottom-10 right-10 w-24 h-24 bg-warning/20 backdrop-blur-xl rounded-[2rem] border border-white/20 flex items-center justify-center shadow-xl z-30"
+                className="absolute bottom-10 right-10 w-24 h-24 bg-warning/20 backdrop-blur-xl rounded-2xl border border-white/20 flex items-center justify-center shadow-xl z-30"
               >
                 <Users size={40} className="text-warning" />
               </motion.div>

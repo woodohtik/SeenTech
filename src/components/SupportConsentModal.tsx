@@ -185,7 +185,7 @@ export default function SupportConsentModal({ tenantId }: Props) {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-surface rounded-[2rem] border border-border shadow-2xl overflow-hidden"
+              className="bg-surface rounded-3xl border border-border shadow-2xl overflow-hidden"
             >
               <div className="p-6 text-center border-b border-border bg-surface-muted flex flex-col items-center">
                  <div className="w-16 h-16 bg-brand/10 text-brand flex items-center justify-center rounded-full mb-4 relative overflow-hidden">

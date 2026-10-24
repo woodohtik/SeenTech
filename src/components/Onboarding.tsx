@@ -559,7 +559,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="bg-white rounded-[2rem] sm:rounded-[3rem] shadow-2xl shadow-slate-200/50 border border-border overflow-hidden"
+              className="bg-white rounded-2xl shadow-2xl shadow-slate-200/50 border border-border overflow-hidden"
             >
               <div className="p-5 sm:p-8 md:p-14">
                 {currentStep === 1 && (
@@ -904,7 +904,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                 <button 
                   onClick={handleNext}
                   disabled={loading}
-                  className="px-6 sm:px-10 py-3.5 sm:py-5 bg-brand text-white rounded-[1.2rem] sm:rounded-[1.8rem] font-black text-base sm:text-lg shadow-xl shadow-brand/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 sm:gap-3 disabled:opacity-50 disabled:scale-100"
+                  className="px-6 sm:px-10 py-3.5 sm:py-5 bg-brand text-white rounded-xl font-black text-base sm:text-lg shadow-xl shadow-brand/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 sm:gap-3 disabled:opacity-50 disabled:scale-100"
                 >
                   {loading ? (
                     <>
