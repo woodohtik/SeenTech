@@ -294,7 +294,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="w-full max-w-md bg-surface rounded-3xl shadow-xl border border-border p-10 relative z-10 flex flex-col items-center"
+                className="w-full max-w-md bg-surface rounded-3xl shadow-xl border border-border p-10 relative z-10 flex flex-col items-center my-auto"
               >
                 <div className="w-20 h-20 bg-brand/5 rounded-3xl flex items-center justify-center text-brand mb-6 shadow-inner">
                   <KeyRound size={40} />
@@ -367,7 +367,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="w-full max-w-md bg-surface rounded-3xl shadow-xl border border-border p-10 relative z-10 flex flex-col items-center"
+                className="w-full max-w-md bg-surface rounded-3xl shadow-xl border border-border p-10 relative z-10 flex flex-col items-center my-auto"
               >
                 <div className="w-20 h-20 bg-warning/10 rounded-3xl flex items-center justify-center text-warning mb-6 shadow-inner">
                   <Lock size={40} />
@@ -434,7 +434,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
-                className="w-full max-w-md bg-surface rounded-3xl shadow-xl border border-border p-10 relative z-10 flex flex-col items-center"
+                className="w-full max-w-md bg-surface rounded-3xl shadow-xl border border-border p-10 relative z-10 flex flex-col items-center my-auto"
               >
                 <div className="lg:hidden w-20 h-20 bg-brand/5 rounded-3xl flex items-center justify-center text-brand mb-6 shadow-inner">
                   <Shield size={40} />
