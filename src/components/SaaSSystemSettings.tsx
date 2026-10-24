@@ -339,7 +339,7 @@ export default function SaaSSystemSettings() {
       </div>
 
       {/* Role Information Banner */}
-      <div className="bg-brand/5 p-6 rounded-[2rem] border border-brand/10 flex items-center justify-between">
+      <div className="bg-brand/5 p-6 rounded-2xl border border-brand/10 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-brand text-white rounded-2xl flex items-center justify-center">
             <Shield size={24} />
@@ -362,7 +362,7 @@ export default function SaaSSystemSettings() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* System Health */}
-        <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
+        <div className="bg-surface p-8 rounded-2xl border border-border shadow-sm">
           <h3 className="text-xl font-black text-content mb-8 flex items-center gap-2">
             <ShieldCheck className="text-brand" size={24} />
             {t('common.system_health')}
@@ -390,7 +390,7 @@ export default function SaaSSystemSettings() {
         </div>
 
         <div className="lg:col-span-2 space-y-8">
-          <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
+          <div className="bg-surface p-8 rounded-2xl border border-border shadow-sm">
             <h3 className="text-xl font-black text-content mb-8 flex items-center gap-2">
               <Globe className="text-brand" size={24} />
               {t('common.branding_settings')}
@@ -437,7 +437,7 @@ export default function SaaSSystemSettings() {
             </div>
           </div>
 
-          <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
+          <div className="bg-surface p-8 rounded-2xl border border-border shadow-sm">
             <h3 className="text-xl font-black text-content mb-8 flex items-center gap-2">
               <Settings className="text-brand" size={24} />
               {t('saas.core_platform_settings', 'إعدادات المنصة الأساسية')}
@@ -486,7 +486,7 @@ export default function SaaSSystemSettings() {
             </div>
           </div>
 
-          <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
+          <div className="bg-surface p-8 rounded-2xl border border-border shadow-sm">
             <h3 className="text-xl font-black text-content mb-8 flex items-center gap-2">
               <Gift className="text-brand" size={24} />
               {t('saas.referral_program_settings', 'إعدادات برنامج الإحالة')}
@@ -550,7 +550,7 @@ export default function SaaSSystemSettings() {
             </div>
           </div>
 
-          <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
+          <div className="bg-surface p-8 rounded-2xl border border-border shadow-sm">
             <h3 className="text-xl font-black text-content mb-8 flex items-center gap-2">
               <Building2 className="text-brand" size={24} />
               {t('saas.bank_transfer_settings', 'تفاصيل التحويل البنكي')}
@@ -614,12 +614,12 @@ export default function SaaSSystemSettings() {
       </div>
 
       {/* Global Role Manager */}
-      <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
+      <div className="bg-surface p-8 rounded-2xl border border-border shadow-sm">
         <GlobalRoleManager />
       </div>
 
       {/* Advanced Data Management */}
-      <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
+      <div className="bg-surface p-8 rounded-2xl border border-border shadow-sm">
         <h3 className="text-xl font-black text-content mb-8 flex items-center gap-2">
           <Database className="text-danger" size={24} />
           {t('common.advanced_data_management')}
@@ -691,7 +691,7 @@ export default function SaaSSystemSettings() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-surface rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl"
+              className="bg-surface rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl"
             >
               <div className="p-8 border-b border-border flex items-center justify-between bg-danger/5">
                 <div className="flex items-center gap-3">
