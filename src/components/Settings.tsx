@@ -765,14 +765,14 @@ export default function Settings({ tenantId }: SettingsProps) {
               )}
 
               {activeTab === 'branches' && hasPermission('branches.manage') && (
-                <div className="bg-surface rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm overflow-hidden">
+                <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
                   <WarehouseManagement tenantId={tenantId} />
                 </div>
               )}
 
               {activeTab === 'staff' && hasPermission('staff.manage') && (
                 <div className="space-y-5 sm:space-y-6">
-                  <div className={cn("bg-surface-muted/30 p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-border flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-center", isRtl ? "sm:text-right" : "sm:text-left")}>
+                  <div className={cn("bg-surface-muted/30 p-4 sm:p-6 rounded-2xl border border-border flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-center", isRtl ? "sm:text-right" : "sm:text-left")}>
                     <div className="w-12 h-12 sm:w-14 sm:h-14 bg-brand/10 text-brand rounded-2xl flex items-center justify-center shadow-inner shrink-0">
                       <Shield size={24} />
                     </div>
@@ -783,7 +783,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                   </div>
                   {/* No overflow-hidden: the staff view has its own horizontal
                       scrollers, and clipping here cut its tab bar off instead. */}
-                  <div className="bg-surface rounded-2xl sm:rounded-[3rem] border border-border shadow-xl shadow-brand/5">
+                  <div className="bg-surface rounded-2xl border border-border shadow-xl shadow-brand/5">
                     <Staff tenantId={tenantId} />
                   </div>
                 </div>
@@ -1022,9 +1022,9 @@ export default function Settings({ tenantId }: SettingsProps) {
               )}
 
               {activeTab === 'notifications' && canViewNotifications && (
-                <form onSubmit={handleSubmit(onSave)} className="bg-surface p-5 sm:p-8 md:p-10 rounded-2xl md:rounded-[3rem] border border-border shadow-xl shadow-brand/5 space-y-6 md:space-y-10 w-full">
+                <form onSubmit={handleSubmit(onSave)} className="bg-surface p-5 sm:p-8 md:p-10 rounded-2xl border border-border shadow-xl shadow-brand/5 space-y-6 md:space-y-10 w-full">
                    <div className={cn("flex flex-col sm:flex-row items-center sm:items-start gap-4 border-b border-border pb-6 sm:pb-8 text-center", isRtl ? "sm:text-right" : "sm:text-left")}>
-                      <div className="p-4 bg-warning/10 text-warning rounded-[1.5rem] shadow-inner">
+                      <div className="p-4 bg-warning/10 text-warning rounded-2xl shadow-inner">
                         <Bell size={32} />
                       </div>
                       <div>
@@ -1040,7 +1040,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                         { field: 'notificationSettings.dailyClose', title: t('settings_page.notifications.daily_close_title', 'تقارير الإغلاق اليومية'), desc: t('settings_page.notifications.daily_close_desc', 'ملخص بالأرباح والخسائر والمبيعات فور إغلاق الوردية.'), icon: FileText, color: 'text-success' },
                         { field: 'notificationSettings.tomorrowDelivery', title: t('settings_page.notifications.tomorrow_delivery_title', 'مواعيد تسليم الغد'), desc: t('settings_page.notifications.tomorrow_delivery_desc', 'تنبيه لقائمة العملاء الذين يجب تسليم طلباتهم في اليوم التالي.'), icon: Bell, color: 'text-warning' },
                       ].map((item) => (
-                        <label key={item.title} className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-5 sm:p-8 bg-surface-muted/30 hover:bg-surface border-2 border-transparent hover:border-border rounded-2xl sm:rounded-[2.5rem] transition-all group gap-4 cursor-pointer">
+                        <label key={item.title} className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-5 sm:p-8 bg-surface-muted/30 hover:bg-surface border-2 border-transparent hover:border-border rounded-2xl transition-all group gap-4 cursor-pointer">
                           <div className={cn("flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center", isRtl ? "sm:text-right" : "sm:text-left")}>
                             <div className={cn("p-4 bg-white rounded-2xl shadow-sm transition-transform group-hover:scale-110 shrink-0", item.color)}>
                               <item.icon size={26} />
@@ -1094,9 +1094,9 @@ export default function Settings({ tenantId }: SettingsProps) {
               )}
 
               {activeTab === 'data' && (currentStaff?.role === 'owner' || currentStaff?.role === 'super_admin') && (
-                <div className="bg-surface p-5 sm:p-8 md:p-10 rounded-2xl md:rounded-[3rem] border border-border shadow-xl shadow-brand/5 space-y-6 md:space-y-10 w-full">
+                <div className="bg-surface p-5 sm:p-8 md:p-10 rounded-2xl border border-border shadow-xl shadow-brand/5 space-y-6 md:space-y-10 w-full">
                    <div className={cn("flex flex-col sm:flex-row items-center sm:items-start gap-4 border-b border-border pb-6 sm:pb-8 text-center", isRtl ? "sm:text-right" : "sm:text-left")}>
-                      <div className="p-4 bg-danger/10 text-danger rounded-[1.5rem] shadow-inner">
+                      <div className="p-4 bg-danger/10 text-danger rounded-2xl shadow-inner">
                         <Database size={32} />
                       </div>
                       <div>
@@ -1106,7 +1106,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                     </div>
 
                     <div className="space-y-6 md:space-y-8 w-full">
-                      <div className={cn("p-5 sm:p-10 bg-danger/5 rounded-2xl sm:rounded-[3rem] border-2 border-dashed border-danger/20 space-y-6", isRtl ? "text-right" : "text-left")}>
+                      <div className={cn("p-5 sm:p-10 bg-danger/5 rounded-2xl border-2 border-dashed border-danger/20 space-y-6", isRtl ? "text-right" : "text-left")}>
                         <div className={cn("flex flex-col sm:flex-row items-center gap-4 text-danger text-center", isRtl ? "sm:text-right" : "sm:text-left")}>
                           <div className="p-3 bg-danger text-white rounded-2xl shadow-lg shadow-danger/20">
                             <AlertCircle size={28} />
@@ -1120,7 +1120,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                           <button
                             onClick={() => setShowResetConfirm(true)}
                             disabled={isDeletingTestData}
-                            className="flex items-center justify-center gap-2 sm:gap-3 bg-danger text-white w-full sm:w-auto px-5 sm:px-6 py-3.5 sm:py-4 rounded-xl sm:rounded-[1.5rem] font-black hover:bg-danger/90 transition-all shadow-xl shadow-danger/20 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
+                            className="flex items-center justify-center gap-2 sm:gap-3 bg-danger text-white w-full sm:w-auto px-5 sm:px-6 py-3.5 sm:py-4 rounded-xl font-black hover:bg-danger/90 transition-all shadow-xl shadow-danger/20 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
                           >
                             {isDeletingTestData ? (
                               <div className="w-5 h-5 sm:w-6 sm:h-6 border-4 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
@@ -1135,7 +1135,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                       <button
                         onClick={() => setShowAuditModal(true)}
                         className={cn(
-                          "w-full flex items-center gap-5 p-5 sm:p-8 bg-surface rounded-2xl sm:rounded-[2.5rem] border-2 border-border border-dashed hover:border-success/40 hover:bg-success/5 transition-all group cursor-pointer",
+                          "w-full flex items-center gap-5 p-5 sm:p-8 bg-surface rounded-2xl border-2 border-border border-dashed hover:border-success/40 hover:bg-success/5 transition-all group cursor-pointer",
                           isRtl ? "text-right" : "text-left"
                         )}
                       >
