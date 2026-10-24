@@ -270,7 +270,7 @@ export default function SaaSTeamManagement() {
       </div>
 
       {/* Main Table */}
-      <div className="bg-surface rounded-[2.5rem] p-6 shadow-sm border border-border overflow-hidden">
+      <div className="bg-surface rounded-2xl p-6 shadow-sm border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-start rtl:text-right ltr:text-left">
             <thead>
@@ -369,7 +369,7 @@ export default function SaaSTeamManagement() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-surface w-full max-w-md rounded-[2.5rem] shadow-2xl relative z-10 border border-border p-8"
+              className="bg-surface w-full max-w-md rounded-3xl shadow-2xl relative z-10 border border-border p-8"
             >
               <h2 className="text-2xl font-black text-content mb-6">
                 {editingUser ? t('saas.edit_member', 'تعديل بيانات الموظف') : t('saas.add_member_new', 'إضافة موظف جديد')}

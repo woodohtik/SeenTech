@@ -822,7 +822,7 @@ export default function AdminTailors() {
           className="space-y-10"
         >
           {/* Filters & Actions */}
-          <div className="bg-surface p-6 rounded-[2.5rem] border border-border shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex flex-col sm:flex-row flex-1 gap-4 w-full md:w-auto">
               <div className="flex-1 max-w-sm">
                 <IconInput 
@@ -989,7 +989,7 @@ export default function AdminTailors() {
            className="space-y-10"
         >
 
-          <div className="bg-surface rounded-[3rem] border border-border shadow-sm overflow-hidden">
+          <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
             <div className="p-8 border-b border-border bg-brand/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <h3 className="text-xl font-black text-content">{t('saas.tenants.licenses_title')}</h3>
@@ -1112,7 +1112,7 @@ export default function AdminTailors() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-surface w-full max-w-4xl rounded-[2.5rem] shadow-2xl overflow-hidden relative z-10 border border-border flex flex-col max-h-[90vh]"
+              className="bg-surface w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden relative z-10 border border-border flex flex-col max-h-[90vh]"
             >
               {/* Header */}
               <div className="p-8 border-b border-border flex justify-between items-start bg-surface-muted/50">

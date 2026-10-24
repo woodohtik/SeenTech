@@ -163,7 +163,7 @@ export default function SaaSAuditLogs() {
       </div>
 
       {/* Filters */}
-      <div className="bg-surface p-6 rounded-[2.5rem] border border-border shadow-sm flex flex-col md:flex-row gap-4">
+      <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm flex flex-col md:flex-row gap-4">
         <div className="flex-1">
           <IconInput 
             type="text"
@@ -191,7 +191,7 @@ export default function SaaSAuditLogs() {
       </div>
 
       {/* Logs Table */}
-      <div className="bg-surface rounded-[2.5rem] border border-border shadow-sm overflow-x-auto whitespace-nowrap scrollbar-hide">
+      <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-x-auto whitespace-nowrap scrollbar-hide">
         <table className="w-full text-right rtl:text-right ltr:text-left min-w-max">
           <thead>
             <tr className="bg-surface-muted text-content-muted text-xs font-black uppercase tracking-wider">
