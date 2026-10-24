@@ -1429,12 +1429,12 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         <div className="h-24 bg-surface rounded-3xl border border-border"></div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-32 bg-surface rounded-[2rem] border border-border shadow-sm"></div>
+            <div key={i} className="h-32 bg-surface rounded-2xl border border-border shadow-sm"></div>
           ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="h-[400px] bg-surface rounded-[2.5rem] border border-border"></div>
-          <div className="h-[400px] bg-surface rounded-[2.5rem] border border-border"></div>
+          <div className="h-[400px] bg-surface rounded-2xl border border-border"></div>
+          <div className="h-[400px] bg-surface rounded-2xl border border-border"></div>
         </div>
       </div>
     );
@@ -1596,7 +1596,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         <motion.div 
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/20 rounded-[2rem] p-6 lg:p-8 flex flex-col md:flex-row items-center justify-between gap-6"
+          className="bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/20 rounded-2xl p-6 lg:p-8 flex flex-col md:flex-row items-center justify-between gap-6"
         >
           <div className={cn("flex items-center gap-4", textAlignmentClass)} dir={dir}>
             <div className="w-12 h-12 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-2xl flex items-center justify-center shrink-0 animate-pulse">
@@ -1809,7 +1809,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             : { revenue: 0, date: '-' };
 
           return (
-            <div className="lg:col-span-2 bg-surface rounded-2xl sm:rounded-3xl md:rounded-[2.5rem] border border-border shadow-sm p-4 sm:p-6 md:p-8 flex flex-col justify-between transition-all">
+            <div className="lg:col-span-2 bg-surface rounded-2xl border border-border shadow-sm p-4 sm:p-6 md:p-8 flex flex-col justify-between transition-all">
               {/* Header with Title and Control Pills */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
@@ -2096,7 +2096,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
 
         {/* Status Breakdown */}
         {hasOrdersPermission && (
-          <div className={cn("bg-surface rounded-2xl sm:rounded-3xl md:rounded-[2.5rem] border border-border shadow-sm p-4 sm:p-6 md:p-8 flex flex-col justify-between", !hasRevenuePermission && "lg:col-span-3")}>
+          <div className={cn("bg-surface rounded-2xl border border-border shadow-sm p-4 sm:p-6 md:p-8 flex flex-col justify-between", !hasRevenuePermission && "lg:col-span-3")}>
             <div>
               <h3 className="text-xl font-black text-content mb-2">{t('dashboard.status_distribution')}</h3>
               <p className="text-sm text-content-muted font-medium mb-8">{t('dashboard.status_distribution_desc', 'مراحل العمل الحالية في المشغل')}</p>
@@ -2180,7 +2180,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         {/* Recent Orders Table */}
         {hasOrdersPermission && (
-          <div className="lg:col-span-2 bg-surface rounded-2xl sm:rounded-3xl md:rounded-[2.5rem] border border-border shadow-sm overflow-hidden">
+          <div className="lg:col-span-2 bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
             <div className="p-4 sm:p-6 md:p-8 border-b border-border flex justify-between items-center">
               <h3 className="text-lg sm:text-xl font-black text-content">{t('dashboard.recent_orders')}</h3>
               <button 
@@ -2334,7 +2334,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
 
         {/* Recent Notifications / Low Stock */}
         <div className="space-y-6">
-          <div className="bg-surface rounded-2xl sm:rounded-3xl md:rounded-[2.5rem] border border-border shadow-sm p-4 sm:p-6 md:p-8">
+          <div className="bg-surface rounded-2xl border border-border shadow-sm p-4 sm:p-6 md:p-8">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg sm:text-xl font-black text-content">{t('dashboard.notifications', 'التنبيهات')}</h3>
               <span className="bg-danger/10 text-danger text-[10px] font-black px-2 py-1 rounded-lg">{t('common.active', 'نشط')}</span>
@@ -2386,7 +2386,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
           </div>
 
           {hasInventoryPermission && (
-            <div className="bg-brand rounded-2xl sm:rounded-3xl md:rounded-[2.5rem] p-4 sm:p-6 md:p-8 text-white shadow-xl shadow-brand/20 relative overflow-hidden group">
+            <div className="bg-brand rounded-2xl p-4 sm:p-6 md:p-8 text-white shadow-xl shadow-brand/20 relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
                 <Package size={120} />
               </div>
