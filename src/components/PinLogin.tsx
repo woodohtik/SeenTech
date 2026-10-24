@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Shield, Delete, Lock, AlertCircle, LogOut, Loader2, Mail, Eye, EyeOff, KeyRound, ArrowRight } from 'lucide-react';
+import { Shield, Delete, User, Users, Lock, AlertCircle, LogOut, Loader2, Mail, Eye, EyeOff, KeyRound, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { Staff } from '../types';
 import { cn } from '../lib/utils';
@@ -502,10 +502,10 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                       onClick={() => handleNumberClick(num.toString())}
                       disabled={isVerifying}
                       className={cn(
-                        "h-16 sm:h-20 rounded-2xl text-2xl sm:text-3xl font-black transition-all active:scale-95 disabled:opacity-50 border border-transparent touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
+                        "h-16 sm:h-20 rounded-2xl text-2xl sm:text-3xl font-black transition-all duration-200 active:scale-90 disabled:opacity-50 border border-transparent touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
                         activeKey === num.toString()
-                          ? "bg-brand text-white scale-95 shadow-lg shadow-brand/20 border-brand"
-                          : "bg-surface-muted text-content hover:bg-brand/5 hover:text-brand hover:border-brand/10"
+                          ? "bg-brand text-white scale-90 shadow-lg shadow-brand/30 border-brand"
+                          : "bg-surface-muted text-content hover:bg-brand/5 hover:text-brand hover:border-brand/10 hover:scale-105 hover:shadow-md"
                       )}
                     >
                       {num}
@@ -516,10 +516,10 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                     onClick={() => handleNumberClick('0')}
                     disabled={isVerifying}
                     className={cn(
-                      "h-16 sm:h-20 rounded-2xl text-2xl sm:text-3xl font-black transition-all active:scale-95 disabled:opacity-50 border border-transparent touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
+                      "h-16 sm:h-20 rounded-2xl text-2xl sm:text-3xl font-black transition-all duration-200 active:scale-90 disabled:opacity-50 border border-transparent touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
                       activeKey === '0'
-                        ? "bg-brand text-white scale-95 shadow-lg shadow-brand/20 border-brand"
-                        : "bg-surface-muted text-content hover:bg-brand/5 hover:text-brand hover:border-brand/10"
+                        ? "bg-brand text-white scale-90 shadow-lg shadow-brand/30 border-brand"
+                        : "bg-surface-muted text-content hover:bg-brand/5 hover:text-brand hover:border-brand/10 hover:scale-105 hover:shadow-md"
                     )}
                   >
                     0
@@ -528,10 +528,10 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                     onClick={handleDelete}
                     disabled={isVerifying}
                     className={cn(
-                      "h-16 sm:h-20 rounded-2xl flex items-center justify-center transition-all active:scale-95 disabled:opacity-50 border border-transparent touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
+                      "h-16 sm:h-20 rounded-2xl flex items-center justify-center transition-all duration-200 active:scale-90 disabled:opacity-50 border border-transparent touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
                       activeKey === 'Backspace'
-                        ? "bg-danger text-white scale-95 shadow-lg shadow-danger/20 border-danger"
-                        : "bg-surface-muted text-content-muted hover:bg-danger/10 hover:text-danger hover:border-danger/20"
+                        ? "bg-danger text-white scale-90 shadow-lg shadow-danger/30 border-danger"
+                        : "bg-surface-muted text-content-muted hover:bg-danger/10 hover:text-danger hover:border-danger/20 hover:scale-105 hover:shadow-md"
                     )}
                     aria-label={t('common.delete', 'حذف')}
                   >
@@ -577,23 +577,58 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
           </div>
 
           <div className="relative z-10 text-center text-white w-full max-w-lg">
-            {/* Single hero visual: one calm, orchestrated animation instead of several competing ones */}
-            <motion.div
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              initial={{ opacity: 0, scale: 0.9 }}
-              className="w-44 h-60 mx-auto mb-10 bg-white/10 backdrop-blur-2xl rounded-2xl border-2 border-white/20 shadow-2xl p-6 flex flex-col gap-3"
-            >
-              <div className="grid grid-cols-3 gap-2 flex-1">
-                {[...Array(9)].map((_, i) => (
-                  <div key={i} className="bg-white/10 rounded-lg border border-white/5" />
-                ))}
-                <div />
-                <div className="bg-brand/40 rounded-lg border border-white/20" />
-                <div />
-              </div>
-              <div className="h-4 bg-white/20 rounded-full w-2/3 mx-auto" />
-            </motion.div>
+            {/* Visual Composition: PIN Pad + floating staff avatars */}
+            <div className="relative h-72 mb-10 flex items-center justify-center">
+              <motion.div
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                className="w-40 h-56 bg-white/10 backdrop-blur-2xl rounded-2xl border-2 border-white/20 shadow-2xl p-6 flex flex-col gap-3 relative z-20"
+              >
+                <div className="grid grid-cols-3 gap-2 flex-1">
+                  {[...Array(9)].map((_, i) => (
+                    <div key={i} className="bg-white/10 rounded-lg border border-white/5" />
+                  ))}
+                  <div />
+                  <div className="bg-brand/40 rounded-lg border border-white/20" />
+                  <div />
+                </div>
+                <div className="h-4 bg-white/20 rounded-full w-2/3 mx-auto" />
+              </motion.div>
+
+              {/* Floating Staff Avatars */}
+              <motion.div
+                animate={{ x: [-20, 0, -20], y: [0, -15, 0] }}
+                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute top-6 left-6 w-20 h-20 bg-success/20 backdrop-blur-xl rounded-2xl border border-white/20 flex items-center justify-center shadow-xl z-30"
+              >
+                <User size={32} className="text-success" />
+              </motion.div>
+
+              <motion.div
+                animate={{ x: [20, 0, 20], y: [0, 15, 0] }}
+                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                className="absolute bottom-6 right-6 w-24 h-24 bg-warning/20 backdrop-blur-xl rounded-2xl border border-white/20 flex items-center justify-center shadow-xl z-30"
+              >
+                <Users size={40} className="text-warning" />
+              </motion.div>
+
+              {/* Connecting Lines (Visualizing Access) */}
+              <svg className="absolute inset-0 w-full h-full -z-10 opacity-20" viewBox="0 0 400 300">
+                <motion.path
+                  d="M 100 80 Q 200 150 200 150"
+                  stroke="white" strokeWidth="2" fill="none" strokeDasharray="5,5"
+                  animate={{ strokeDashoffset: [0, -20] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                />
+                <motion.path
+                  d="M 300 220 Q 200 150 200 150"
+                  stroke="white" strokeWidth="2" fill="none" strokeDasharray="5,5"
+                  animate={{ strokeDashoffset: [0, -20] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                />
+              </svg>
+            </div>
 
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
               <h1 className="text-5xl font-black mb-6 leading-tight whitespace-pre-line">{t('login.staff_portal_headline')}</h1>
