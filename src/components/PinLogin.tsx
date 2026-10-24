@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Shield, Delete, User, Users, Lock, AlertCircle, LogOut, CheckCircle2, Loader2, Mail, Eye, EyeOff, KeyRound, ArrowRight } from 'lucide-react';
+import { Shield, Delete, Lock, AlertCircle, LogOut, Loader2, Mail, Eye, EyeOff, KeyRound, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { Staff } from '../types';
 import { cn } from '../lib/utils';
@@ -281,11 +281,13 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
     }
   };
 
+  const cardClassName = "w-full max-w-md max-h-[90vh] overflow-y-auto bg-surface rounded-3xl shadow-xl border border-border p-6 sm:p-10 relative z-10 flex flex-col items-center my-auto";
+
   return (
-    <div className="fixed inset-0 z-[100] bg-surface flex items-center justify-center overflow-y-auto font-sans" dir={dir}>
-      <div className="flex w-full h-full">
+    <div className="fixed inset-0 z-[100] bg-surface overflow-y-auto font-sans" dir={dir}>
+      <div className="flex min-h-full">
         {/* Right Side: PIN Login Form */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-surface-muted/50">
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 bg-surface-muted/50">
           <AnimatePresence mode="wait">
             {showPasswordLogin ? (
               <motion.form
@@ -294,12 +296,12 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="w-full max-w-md bg-surface rounded-3xl shadow-xl border border-border p-10 relative z-10 flex flex-col items-center my-auto"
+                className={cardClassName}
               >
-                <div className="w-20 h-20 bg-brand/5 rounded-3xl flex items-center justify-center text-brand mb-6 shadow-inner">
-                  <KeyRound size={40} />
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-brand/5 rounded-2xl flex items-center justify-center text-brand mb-5 sm:mb-6 shadow-inner">
+                  <KeyRound size={36} />
                 </div>
-                <h2 className="text-3xl font-black text-content mb-2 text-center">{t('login.password_login_title')}</h2>
+                <h2 className="text-2xl sm:text-3xl font-black text-content mb-2 text-center">{t('login.password_login_title')}</h2>
                 <p className="text-content-muted text-sm mb-6 text-center font-medium">{t('login.password_login_desc')}</p>
 
                 {passwordEmail && (
@@ -362,23 +364,23 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                 </div>
               </motion.form>
             ) : mustChangePin ? (
-              <motion.div 
+              <motion.div
                 key="change-pin"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="w-full max-w-md bg-surface rounded-3xl shadow-xl border border-border p-10 relative z-10 flex flex-col items-center my-auto"
+                className={cardClassName}
               >
-                <div className="w-20 h-20 bg-warning/10 rounded-3xl flex items-center justify-center text-warning mb-6 shadow-inner">
-                  <Lock size={40} />
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-warning/10 rounded-2xl flex items-center justify-center text-warning mb-5 sm:mb-6 shadow-inner">
+                  <Lock size={36} />
                 </div>
-                <h2 className="text-3xl font-black text-content mb-2 text-center">{t('login.change_pin_title')}</h2>
-                <p className="text-content-muted text-sm mb-8 text-center font-medium">{t('login.change_pin_desc')}</p>
+                <h2 className="text-2xl sm:text-3xl font-black text-content mb-2 text-center">{t('login.change_pin_title')}</h2>
+                <p className="text-content-muted text-sm mb-6 text-center font-medium">{t('login.change_pin_desc')}</p>
 
-                <div className="w-full space-y-6">
+                <div className="w-full space-y-5">
                   <div className="space-y-2">
                     <label className="text-xs font-black text-content-muted uppercase tracking-widest mr-2">{t('login.new_pin')}</label>
-                    <input 
+                    <input
                       type="password"
                       maxLength={4}
                       value={newPin}
@@ -389,7 +391,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-black text-content-muted uppercase tracking-widest mr-2">{t('login.confirm_pin')}</label>
-                    <input 
+                    <input
                       type="password"
                       maxLength={4}
                       value={confirmPin}
@@ -406,15 +408,15 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                     </div>
                   )}
 
-                  <button 
+                  <button
                     onClick={handlePinChange}
                     disabled={isChanging || newPin.length !== 4 || confirmPin.length !== 4}
                     className="w-full bg-brand text-white py-4 rounded-2xl font-black hover:bg-brand/90 shadow-xl shadow-brand/10 transition-all active:scale-95 disabled:opacity-50"
                   >
                     {isChanging ? t('common.saving') : t('login.confirm_new_pin')}
                   </button>
-                  
-                  <button 
+
+                  <button
                     onClick={() => {
                       setMustChangePin(null);
                       setPin('');
@@ -429,28 +431,28 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                 </div>
               </motion.div>
             ) : (
-              <motion.div 
+              <motion.div
                 key="login-pin"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
-                className="w-full max-w-md bg-surface rounded-3xl shadow-xl border border-border p-10 relative z-10 flex flex-col items-center my-auto"
+                className={cardClassName}
               >
-                <div className="lg:hidden w-20 h-20 bg-brand/5 rounded-3xl flex items-center justify-center text-brand mb-6 shadow-inner">
-                  <Shield size={40} />
+                <div className="lg:hidden w-16 h-16 bg-brand/5 rounded-2xl flex items-center justify-center text-brand mb-5 shadow-inner">
+                  <Shield size={32} />
                 </div>
 
-                <h2 className="text-3xl font-black text-content mb-2 text-center">{t('login.staff_login_title')}</h2>
-                <p className="text-content-muted text-sm mb-10 text-center font-medium">{t('login.staff_login_desc')}</p>
+                <h2 className="text-2xl sm:text-3xl font-black text-content mb-2 text-center">{t('login.staff_login_title')}</h2>
+                <p className="text-content-muted text-sm mb-6 sm:mb-8 text-center font-medium">{t('login.staff_login_desc')}</p>
 
                 {/* PIN Display */}
-                <div className="flex gap-4 mb-8 relative">
+                <div className="flex gap-3 sm:gap-4 mb-6 sm:mb-8 relative">
                   {[0, 1, 2, 3].map((i) => (
                     <motion.div
                       key={i}
                       animate={pin.length === i ? { scale: [1, 1.1, 1] } : {}}
                       className={cn(
-                        "w-14 h-20 rounded-2xl border-2 flex items-center justify-center transition-all duration-200 text-2xl font-black",
+                        "w-12 h-16 sm:w-14 sm:h-20 rounded-2xl border-2 flex items-center justify-center transition-all duration-200 text-2xl font-black",
                         pin.length > i ? "bg-brand border-brand text-white" : "bg-surface-muted border-border",
                         error && "border-danger bg-danger/5 text-danger"
                       )}
@@ -484,7 +486,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="flex items-center gap-2 text-danger text-sm font-bold mb-8 bg-danger/10 px-6 py-3 rounded-2xl border border-danger/20"
+                      className="flex items-center gap-2 text-danger text-sm font-bold mb-6 bg-danger/10 px-6 py-3 rounded-2xl border border-danger/20"
                     >
                       <AlertCircle size={18} />
                       <span>{error}</span>
@@ -493,14 +495,14 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                 </AnimatePresence>
 
                 {/* Numpad */}
-                <div className="grid grid-cols-3 gap-5 w-full">
+                <div className="grid grid-cols-3 gap-3 sm:gap-4 w-full">
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                     <button
                       key={num}
                       onClick={() => handleNumberClick(num.toString())}
                       disabled={isVerifying}
                       className={cn(
-                        "h-20 rounded-2xl text-3xl font-black transition-all active:scale-95 disabled:opacity-50 border border-transparent touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
+                        "h-16 sm:h-20 rounded-2xl text-2xl sm:text-3xl font-black transition-all active:scale-95 disabled:opacity-50 border border-transparent touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
                         activeKey === num.toString()
                           ? "bg-brand text-white scale-95 shadow-lg shadow-brand/20 border-brand"
                           : "bg-surface-muted text-content hover:bg-brand/5 hover:text-brand hover:border-brand/10"
@@ -509,12 +511,12 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                       {num}
                     </button>
                   ))}
-                  <div className="h-20" />
+                  <div className="h-16 sm:h-20" />
                   <button
                     onClick={() => handleNumberClick('0')}
                     disabled={isVerifying}
                     className={cn(
-                      "h-20 rounded-2xl text-3xl font-black transition-all active:scale-95 disabled:opacity-50 border border-transparent touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
+                      "h-16 sm:h-20 rounded-2xl text-2xl sm:text-3xl font-black transition-all active:scale-95 disabled:opacity-50 border border-transparent touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
                       activeKey === '0'
                         ? "bg-brand text-white scale-95 shadow-lg shadow-brand/20 border-brand"
                         : "bg-surface-muted text-content hover:bg-brand/5 hover:text-brand hover:border-brand/10"
@@ -526,18 +528,18 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                     onClick={handleDelete}
                     disabled={isVerifying}
                     className={cn(
-                      "h-20 rounded-2xl flex items-center justify-center transition-all active:scale-95 disabled:opacity-50 border border-transparent touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
+                      "h-16 sm:h-20 rounded-2xl flex items-center justify-center transition-all active:scale-95 disabled:opacity-50 border border-transparent touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
                       activeKey === 'Backspace'
                         ? "bg-danger text-white scale-95 shadow-lg shadow-danger/20 border-danger"
                         : "bg-surface-muted text-content-muted hover:bg-danger/10 hover:text-danger hover:border-danger/20"
                     )}
                     aria-label={t('common.delete', 'حذف')}
                   >
-                    <Delete size={28} />
+                    <Delete size={26} />
                   </button>
                 </div>
 
-                <div className="mt-10 pt-8 border-t border-border w-full space-y-1">
+                <div className="mt-6 sm:mt-8 pt-6 border-t border-border w-full space-y-1">
                   <button
                     onClick={async () => {
                       const { data: { session } } = await supabase.auth.getSession();
@@ -566,96 +568,51 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
           </AnimatePresence>
         </div>
 
-        {/* Left Side: Decorative / Vector Illustration */}
+        {/* Left Side: Decorative Panel */}
         <div className="hidden lg:flex lg:w-1/2 bg-brand relative overflow-hidden items-center justify-center p-12">
-          {/* Abstract Background Elements */}
+          {/* Soft background glow -- static, not animated */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-surface/5 rounded-full blur-3xl" />
             <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-brand/10 rounded-full blur-3xl" />
           </div>
 
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="relative z-10 text-center text-white w-full max-w-lg"
-          >
-            {/* Visual Composition: Employees + PIN Pad */}
-            <div className="relative h-80 mb-12 flex items-center justify-center">
-              {/* Central PIN Pad Vector */}
-              <motion.div 
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="w-40 h-56 bg-white/10 backdrop-blur-2xl rounded-2xl border-2 border-white/20 shadow-2xl p-6 flex flex-col gap-3 relative z-20"
-              >
-                <div className="grid grid-cols-3 gap-2 flex-1">
-                  {[...Array(9)].map((_, i) => (
-                    <div key={i} className="bg-white/10 rounded-lg border border-white/5" />
-                  ))}
-                  <div />
-                  <div className="bg-brand/40 rounded-lg border border-white/20" />
-                  <div />
+          <div className="relative z-10 text-center text-white w-full max-w-lg">
+            {/* Single hero visual: one calm, orchestrated animation instead of several competing ones */}
+            <motion.div
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              className="w-44 h-60 mx-auto mb-10 bg-white/10 backdrop-blur-2xl rounded-2xl border-2 border-white/20 shadow-2xl p-6 flex flex-col gap-3"
+            >
+              <div className="grid grid-cols-3 gap-2 flex-1">
+                {[...Array(9)].map((_, i) => (
+                  <div key={i} className="bg-white/10 rounded-lg border border-white/5" />
+                ))}
+                <div />
+                <div className="bg-brand/40 rounded-lg border border-white/20" />
+                <div />
+              </div>
+              <div className="h-4 bg-white/20 rounded-full w-2/3 mx-auto" />
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+              <h1 className="text-5xl font-black mb-6 leading-tight whitespace-pre-line">{t('login.staff_portal_headline')}</h1>
+              <p className="text-white/80 text-xl font-medium max-w-md mx-auto leading-relaxed opacity-80">
+                {t('login.staff_portal_desc')}
+              </p>
+
+              <div className="mt-12 flex flex-wrap items-center justify-center gap-6">
+                <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/10">
+                  <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
+                  <span className="text-xs font-bold text-white/80 uppercase tracking-widest">{t('login.system_active')}</span>
                 </div>
-                <div className="h-4 bg-white/20 rounded-full w-2/3 mx-auto" />
-              </motion.div>
-
-              {/* Floating Employee Avatars */}
-              <motion.div 
-                animate={{ x: [-20, 0, -20], y: [0, -15, 0] }}
-                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute top-10 left-10 w-20 h-20 bg-success/20 backdrop-blur-xl rounded-3xl border border-white/20 flex items-center justify-center shadow-xl z-30"
-              >
-                <User size={32} className="text-success" />
-              </motion.div>
-
-              <motion.div 
-                animate={{ x: [20, 0, 20], y: [0, 15, 0] }}
-                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                className="absolute bottom-10 right-10 w-24 h-24 bg-warning/20 backdrop-blur-xl rounded-2xl border border-white/20 flex items-center justify-center shadow-xl z-30"
-              >
-                <Users size={40} className="text-warning" />
-              </motion.div>
-
-              <motion.div 
-                animate={{ scale: [1, 1.1, 1] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="absolute top-1/2 -right-4 w-16 h-16 bg-brand/30 backdrop-blur-xl rounded-2xl border border-white/20 flex items-center justify-center shadow-xl z-10"
-              >
-                <Shield size={24} className="text-white/60" />
-              </motion.div>
-
-              {/* Connecting Lines (Visualizing Access) */}
-              <svg className="absolute inset-0 w-full h-full -z-10 opacity-20" viewBox="0 0 400 300">
-                <motion.path 
-                  d="M 100 80 Q 200 150 200 150" 
-                  stroke="white" strokeWidth="2" fill="none" strokeDasharray="5,5"
-                  animate={{ strokeDashoffset: [0, -20] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                />
-                <motion.path 
-                  d="M 300 220 Q 200 150 200 150" 
-                  stroke="white" strokeWidth="2" fill="none" strokeDasharray="5,5"
-                  animate={{ strokeDashoffset: [0, -20] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                />
-              </svg>
-            </div>
-
-            <h1 className="text-5xl font-black mb-6 leading-tight whitespace-pre-line">{t('login.staff_portal_headline')}</h1>
-            <p className="text-white/80 text-xl font-medium max-w-md mx-auto leading-relaxed opacity-80">
-              {t('login.staff_portal_desc')}
-            </p>
-            
-            <div className="mt-12 flex flex-wrap items-center justify-center gap-6">
-              <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/10">
-                <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
-                <span className="text-xs font-bold text-white/80 uppercase tracking-widest">{t('login.system_active')}</span>
+                <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/10">
+                  <Shield size={14} className="text-white/60" />
+                  <span className="text-xs font-bold text-white/80 uppercase tracking-widest">{t('login.advanced_protection')}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/10">
-                <Shield size={14} className="text-white/60" />
-                <span className="text-xs font-bold text-white/80 uppercase tracking-widest">{t('login.advanced_protection')}</span>
-              </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
       </div>
     </div>
