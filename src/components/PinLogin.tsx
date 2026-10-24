@@ -281,7 +281,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
     }
   };
 
-  const cardClassName = "w-full max-w-md max-h-[90vh] overflow-y-auto bg-surface rounded-3xl shadow-xl border border-border p-6 sm:p-10 relative z-10 flex flex-col items-center my-auto";
+  const cardClassName = "w-full max-w-md max-h-[90vh] overflow-y-auto bg-surface rounded-3xl shadow-xl border border-border p-6 relative z-10 flex flex-col items-center my-auto";
 
   return (
     <div className="fixed inset-0 z-[100] bg-surface overflow-y-auto font-sans" dir={dir}>
@@ -301,7 +301,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                 <div className="w-16 h-16 sm:w-20 sm:h-20 bg-brand/5 rounded-2xl flex items-center justify-center text-brand mb-5 sm:mb-6 shadow-inner">
                   <KeyRound size={36} />
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-black text-content mb-2 text-center">{t('login.password_login_title')}</h2>
+                <h2 className="text-2xl font-black text-content mb-2 text-center">{t('login.password_login_title')}</h2>
                 <p className="text-content-muted text-sm mb-6 text-center font-medium">{t('login.password_login_desc')}</p>
 
                 {passwordEmail && (
@@ -374,7 +374,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                 <div className="w-16 h-16 sm:w-20 sm:h-20 bg-warning/10 rounded-2xl flex items-center justify-center text-warning mb-5 sm:mb-6 shadow-inner">
                   <Lock size={36} />
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-black text-content mb-2 text-center">{t('login.change_pin_title')}</h2>
+                <h2 className="text-2xl font-black text-content mb-2 text-center">{t('login.change_pin_title')}</h2>
                 <p className="text-content-muted text-sm mb-6 text-center font-medium">{t('login.change_pin_desc')}</p>
 
                 <div className="w-full space-y-5">
@@ -442,17 +442,17 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                   <Shield size={32} />
                 </div>
 
-                <h2 className="text-2xl sm:text-3xl font-black text-content mb-2 text-center">{t('login.staff_login_title')}</h2>
-                <p className="text-content-muted text-sm mb-6 sm:mb-8 text-center font-medium">{t('login.staff_login_desc')}</p>
+                <h2 className="text-2xl font-black text-content mb-2 text-center">{t('login.staff_login_title')}</h2>
+                <p className="text-content-muted text-sm mb-5 text-center font-medium">{t('login.staff_login_desc')}</p>
 
                 {/* PIN Display */}
-                <div className="flex gap-3 sm:gap-4 mb-6 sm:mb-8 relative">
+                <div className="flex gap-2.5 mb-5 relative">
                   {[0, 1, 2, 3].map((i) => (
                     <motion.div
                       key={i}
                       animate={pin.length === i ? { scale: [1, 1.1, 1] } : {}}
                       className={cn(
-                        "w-12 h-16 sm:w-14 sm:h-20 rounded-2xl border-2 flex items-center justify-center transition-all duration-200 text-2xl font-black",
+                        "w-12 h-14 rounded-2xl border-2 flex items-center justify-center transition-all duration-200 text-2xl font-black",
                         pin.length > i ? "bg-brand border-brand text-white" : "bg-surface-muted border-border",
                         error && "border-danger bg-danger/5 text-danger"
                       )}
@@ -495,14 +495,14 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                 </AnimatePresence>
 
                 {/* Numpad */}
-                <div className="grid grid-cols-3 gap-3 sm:gap-4 w-full">
+                <div className="grid grid-cols-3 gap-2.5 w-full">
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                     <button
                       key={num}
                       onClick={() => handleNumberClick(num.toString())}
                       disabled={isVerifying}
                       className={cn(
-                        "h-16 sm:h-20 rounded-2xl text-2xl sm:text-3xl font-black transition-all duration-200 active:scale-90 disabled:opacity-50 border border-transparent touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
+                        "h-14 rounded-2xl text-2xl font-black transition-all duration-200 active:scale-90 disabled:opacity-50 border border-transparent touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
                         activeKey === num.toString()
                           ? "bg-brand text-white scale-90 shadow-lg shadow-brand/30 border-brand"
                           : "bg-surface-muted text-content hover:bg-brand/5 hover:text-brand hover:border-brand/10 hover:scale-105 hover:shadow-md"
@@ -511,12 +511,12 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                       {num}
                     </button>
                   ))}
-                  <div className="h-16 sm:h-20" />
+                  <div className="h-14" />
                   <button
                     onClick={() => handleNumberClick('0')}
                     disabled={isVerifying}
                     className={cn(
-                      "h-16 sm:h-20 rounded-2xl text-2xl sm:text-3xl font-black transition-all duration-200 active:scale-90 disabled:opacity-50 border border-transparent touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
+                      "h-14 rounded-2xl text-2xl font-black transition-all duration-200 active:scale-90 disabled:opacity-50 border border-transparent touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
                       activeKey === '0'
                         ? "bg-brand text-white scale-90 shadow-lg shadow-brand/30 border-brand"
                         : "bg-surface-muted text-content hover:bg-brand/5 hover:text-brand hover:border-brand/10 hover:scale-105 hover:shadow-md"
@@ -528,7 +528,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                     onClick={handleDelete}
                     disabled={isVerifying}
                     className={cn(
-                      "h-16 sm:h-20 rounded-2xl flex items-center justify-center transition-all duration-200 active:scale-90 disabled:opacity-50 border border-transparent touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
+                      "h-14 rounded-2xl flex items-center justify-center transition-all duration-200 active:scale-90 disabled:opacity-50 border border-transparent touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
                       activeKey === 'Backspace'
                         ? "bg-danger text-white scale-90 shadow-lg shadow-danger/30 border-danger"
                         : "bg-surface-muted text-content-muted hover:bg-danger/10 hover:text-danger hover:border-danger/20 hover:scale-105 hover:shadow-md"
@@ -539,7 +539,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
                   </button>
                 </div>
 
-                <div className="mt-6 sm:mt-8 pt-6 border-t border-border w-full space-y-1">
+                <div className="mt-5 pt-6 border-t border-border w-full space-y-1">
                   <button
                     onClick={async () => {
                       const { data: { session } } = await supabase.auth.getSession();
@@ -582,7 +582,6 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
               <motion.div
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                initial={{ opacity: 0, scale: 0.9 }}
                 className="w-40 h-56 bg-white/10 backdrop-blur-2xl rounded-2xl border-2 border-white/20 shadow-2xl p-6 flex flex-col gap-3 relative z-20"
               >
                 <div className="grid grid-cols-3 gap-2 flex-1">
