@@ -79,7 +79,7 @@ export default function ProductFormFields({
   return (
     <>
       {/* Image Uploader */}
-      <div className="bg-surface-muted/50 p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-border">
+      <div className="bg-surface-muted/50 p-4 sm:p-6 rounded-2xl border border-border">
         <ProductImageUploader
           tenantId={tenantId}
           onUploadComplete={(url: string) => setFormData({ ...formData, mainImage: url })}
@@ -87,7 +87,7 @@ export default function ProductFormFields({
         />
       </div>
 
-      <div className="bg-surface-muted/50 p-6 rounded-[2rem] border border-border">
+      <div className="bg-surface-muted/50 p-6 rounded-2xl border border-border">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
           <div className="space-y-2 col-span-1 md:col-span-6 text-right">
             <label htmlFor={`${idPrefix}-name`} className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
@@ -182,7 +182,7 @@ export default function ProductFormFields({
             animate={{ height: "auto", opacity: 1, transitionEnd: { overflow: "visible" } }}
             exit={{ height: 0, opacity: 0, overflow: "hidden" }}
           >
-            <div className="bg-brand/5 p-6 rounded-[2rem] border border-brand/10 space-y-6">
+            <div className="bg-brand/5 p-6 rounded-2xl border border-brand/10 space-y-6">
               <div className="flex items-center gap-2 mb-2">
                 <Shirt className="text-brand" size={18} />
                 <h3 className="text-sm font-black text-content uppercase tracking-widest text-brand">
@@ -261,7 +261,7 @@ export default function ProductFormFields({
         )}
       </AnimatePresence>
 
-      <div className="bg-surface-muted/50 p-6 rounded-[2rem] border border-border">
+      <div className="bg-surface-muted/50 p-6 rounded-2xl border border-border">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
           <div className="space-y-2 col-span-1 md:col-span-4 text-right">
             <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
@@ -317,7 +317,7 @@ export default function ProductFormFields({
         </div>
       </div>
 
-      <div className="bg-surface-muted/50 p-6 rounded-[2rem] border border-border">
+      <div className="bg-surface-muted/50 p-6 rounded-2xl border border-border">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
           <div className="space-y-2 col-span-1 md:col-span-3 text-right">
             <label htmlFor={`${idPrefix}-cost-price`} className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
@@ -393,7 +393,7 @@ export default function ProductFormFields({
         </div>
       </div>
 
-      <div className="bg-brand/5 p-6 rounded-[2rem] border border-brand/10 text-right">
+      <div className="bg-brand/5 p-6 rounded-2xl border border-brand/10 text-right">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
           <div className={cn("space-y-2 col-span-1", showOpeningBalance ? "md:col-span-6" : "md:col-span-12")}>
             <label className="text-xs font-black text-content uppercase tracking-widest mx-1 block">
@@ -428,7 +428,7 @@ export default function ProductFormFields({
         </div>
       </div>
 
-      <div className="bg-surface-muted/50 p-6 rounded-[2rem] border border-border">
+      <div className="bg-surface-muted/50 p-6 rounded-2xl border border-border">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
           <div className="space-y-2 col-span-1 md:col-span-6">
             <label htmlFor={`${idPrefix}-sku`} className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
@@ -457,7 +457,7 @@ export default function ProductFormFields({
         </div>
       </div>
 
-      <div className="flex items-center justify-between p-6 bg-brand/5 rounded-[2rem] border border-brand/10">
+      <div className="flex items-center justify-between p-6 bg-brand/5 rounded-2xl border border-brand/10">
         <div>
           <h4 className="text-sm font-black text-content">{t("inventory.visible_in_pos")}</h4>
           <p className="text-xs text-content-muted">{t("inventory.show_in_pos_desc")}</p>
