@@ -347,7 +347,7 @@ export default function PaymentVoucherModal({
           aria-label={t('procurement.pv_modal_title')}
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="relative bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-6 overflow-hidden border border-slate-200 flex flex-col font-sans text-slate-800 print:shadow-none print:border-none print:mx-auto print:my-0 print:p-0"
+          className="relative bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 overflow-hidden border border-slate-200 flex flex-col font-sans text-slate-800 print:shadow-none print:border-none print:mx-auto print:my-0 print:p-0"
           dir={dir}
         >
           {/* Header Action Row (Hidden in print) */}

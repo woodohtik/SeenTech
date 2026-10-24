@@ -306,7 +306,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
         </div>
       </div>
 
-      <div className="bg-surface rounded-2xl md:rounded-[2rem] border border-border shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
         {/* Desktop View Table */}
         <div className="hidden md:block overflow-x-auto whitespace-nowrap scrollbar-hide">
           <table className="w-full text-right min-w-max">
@@ -413,7 +413,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
             aria-label={t('pos.order_details')}
             onClick={(e) => e.stopPropagation()}
             className={cn(
-            "bg-surface rounded-2xl md:rounded-[2rem] shadow-2xl flex flex-col max-h-[92vh] overflow-hidden transition-all duration-200",
+            "bg-surface rounded-3xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden transition-all duration-200",
             selectedOrder.isB2B ? "w-full max-w-3xl" : "w-full max-w-[92mm] sm:max-w-[100mm]"
           )}>
             <div className="p-4 sm:p-6 border-b border-border flex justify-between items-center shrink-0">

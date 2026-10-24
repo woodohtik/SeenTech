@@ -2004,7 +2004,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setShowCartOnMobile(true)}
-          className="md:hidden fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-6 z-[40] bg-brand text-white p-5 rounded-[2rem] shadow-2xl flex items-center gap-3 transition-all"
+          className="md:hidden fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-6 z-[40] bg-brand text-white p-5 rounded-2xl shadow-2xl flex items-center gap-3 transition-all"
         >
           <div className="relative">
             <ShoppingCart size={28} />
@@ -2035,7 +2035,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               animate={{ y: 0, x: 0 }}
               exit={shouldReduceMotion ? undefined : { y: window.innerWidth < 1024 ? '100%' : 0, x: window.innerWidth >= 1024 ? '100%' : 0 }}
               transition={shouldReduceMotion ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 200 }}
-              className="bg-surface w-full lg:w-[450px] md:h-auto lg:h-full h-[90vh] shadow-2xl relative z-10 flex flex-col lg:rounded-none rounded-t-[2.5rem] border-t lg:border-t-0 lg:border-r border-border overflow-hidden lg:mr-auto md:max-w-md md:rounded-[2.5rem] md:mb-10 lg:max-w-none lg:mb-0 lg:ml-0"
+              className="bg-surface w-full lg:w-[450px] md:h-auto lg:h-full h-[90vh] shadow-2xl relative z-10 flex flex-col lg:rounded-none rounded-t-3xl border-t lg:border-t-0 lg:border-r border-border overflow-hidden lg:mr-auto md:max-w-md md:rounded-3xl md:mb-10 lg:max-w-none lg:mb-0 lg:ml-0"
               dir={isRtl ? 'rtl' : 'ltr'}
             >
               <div className="flex-1 overflow-y-auto p-4 lg:p-6 pb-24 lg:pb-6">
@@ -2380,7 +2380,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={shouldReduceMotion ? undefined : { scale: 0.95, opacity: 0, y: 20 }}
               transition={shouldReduceMotion ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-md rounded-[2.5rem] bg-surface shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-right"
+              className="relative w-full max-w-md rounded-3xl bg-surface shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-right"
               dir={isRtl ? 'rtl' : 'ltr'}
             >
               {/* Header */}

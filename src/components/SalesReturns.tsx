@@ -233,7 +233,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
 
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
-      <div className="bg-surface p-4 sm:p-6 rounded-2xl md:rounded-[2rem] border border-border shadow-sm space-y-6">
+      <div className="bg-surface p-4 sm:p-6 rounded-2xl border border-border shadow-sm space-y-6">
         <div>
           <h2 className="text-lg sm:text-xl font-bold text-content mb-4">
             {t('sales_returns.title')}

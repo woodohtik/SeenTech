@@ -582,7 +582,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-md rounded-[2.5rem] bg-surface shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-right"
+              className="relative w-full max-w-md rounded-3xl bg-surface shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-right"
               dir={isRtl ? 'rtl' : 'ltr'}
             >
               {/* Header */}
