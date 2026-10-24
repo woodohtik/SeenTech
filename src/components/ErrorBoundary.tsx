@@ -191,7 +191,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
 
       return (
         <div className="min-h-screen bg-surface-muted flex items-center justify-center p-4 font-sansSelection" dir={dirOf()}>
-          <div className="max-w-md w-full bg-surface rounded-[2.5rem] shadow-2xl border border-border p-10 text-center relative overflow-hidden">
+          <div className="max-w-md w-full bg-surface rounded-3xl shadow-2xl border border-border p-10 text-center relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-danger to-danger"></div>
             
             <div className="w-24 h-24 bg-danger/10 rounded-full flex items-center justify-center mx-auto mb-8 animate-pulse">

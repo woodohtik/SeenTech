@@ -139,7 +139,7 @@ function AccountIssueScreen({ variant, email, detail, onRetry, onLogout }: {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="max-w-md w-full bg-surface rounded-[2.5rem] shadow-2xl p-10 border border-warning/20 text-center relative overflow-hidden"
+        className="max-w-md w-full bg-surface rounded-3xl shadow-2xl p-10 border border-warning/20 text-center relative overflow-hidden"
       >
         <div className="absolute top-0 right-0 w-32 h-32 bg-warning/10 rounded-full blur-3xl opacity-50 -mr-16 -mt-16" />
         <div className="w-20 h-20 bg-warning/10 text-warning rounded-3xl flex items-center justify-center mx-auto mb-6 border border-warning/20">
@@ -437,7 +437,7 @@ function AppContent() {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md w-full bg-surface rounded-[2.5rem] shadow-2xl p-8 md:p-10 border border-border relative overflow-hidden"
+          className="max-w-md w-full bg-surface rounded-3xl shadow-2xl p-8 md:p-10 border border-border relative overflow-hidden"
         >
           {/* Decorative accents */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-warning/5 rounded-full blur-3xl -mr-16 -mt-16" />
@@ -482,7 +482,7 @@ function AppContent() {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="max-w-xl w-full bg-slate-900 rounded-[3rem] shadow-2xl p-10 md:p-14 border border-red-500/15 relative overflow-hidden"
+          className="max-w-xl w-full bg-slate-900 rounded-3xl shadow-2xl p-10 md:p-14 border border-red-500/15 relative overflow-hidden"
         >
           {/* Visual Accents */}
           <div className="absolute top-0 right-0 w-44 h-44 bg-red-500/5 rounded-full blur-3xl -mr-20 -mt-20" />

@@ -29,7 +29,7 @@ export default function MainSkeleton() {
       <div className="flex-1 flex flex-col overflow-hidden relative">
         <main className="flex-1 overflow-auto p-8 flex flex-col space-y-8">
           {/* Header Row */}
-          <div className="flex justify-between items-center bg-surface p-6 rounded-[2rem] border border-border shadow-sm">
+          <div className="flex justify-between items-center bg-surface p-6 rounded-2xl border border-border shadow-sm">
             <div className="space-y-2">
               <div className="h-8 w-48 bg-border rounded-lg"></div>
               <div className="h-4 w-32 bg-surface-muted rounded-lg"></div>
@@ -43,12 +43,12 @@ export default function MainSkeleton() {
           {/* Grid Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-32 bg-surface rounded-[2rem] border border-border shadow-sm"></div>
+              <div key={i} className="h-32 bg-surface rounded-2xl border border-border shadow-sm"></div>
             ))}
           </div>
 
           {/* Table/Charts Area */}
-          <div className="flex-1 bg-surface rounded-[2rem] border border-border shadow-sm p-8 space-y-6">
+          <div className="flex-1 bg-surface rounded-2xl border border-border shadow-sm p-8 space-y-6">
             <div className="h-8 w-1/4 bg-border rounded-lg"></div>
             <div className="space-y-4">
               {[1, 2, 3, 4, 5].map((i) => (

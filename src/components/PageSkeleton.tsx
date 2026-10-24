@@ -24,7 +24,7 @@ export default function PageSkeleton() {
       {/* Grid Skeleton */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} className="bg-surface p-6 rounded-[2.5rem] border border-border space-y-4 shadow-sm">
+          <div key={i} className="bg-surface p-6 rounded-2xl border border-border space-y-4 shadow-sm">
             <div className="flex justify-between items-start">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-surface-muted"></div>

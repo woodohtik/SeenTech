@@ -284,7 +284,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
       )}
 
       {/* Hero Active Plan Overview Banner */}
-      <div className="bg-surface border-2 border-brand/20 p-6 sm:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-xl shadow-brand/5 relative overflow-hidden transition-all">
+      <div className="bg-surface border-2 border-brand/20 p-6 sm:p-10 rounded-2xl shadow-xl shadow-brand/5 relative overflow-hidden transition-all">
         <div className="absolute top-0 right-0 w-96 h-96 bg-brand/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-brand/5 rounded-full blur-2xl pointer-events-none -ml-20 -mb-20" />
 
@@ -320,7 +320,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
           </div>
 
           {/* min-width only from sm: at 320-360px a hard 280px floor overflowed. */}
-          <div className="bg-surface-muted/90 backdrop-blur-md p-5 sm:p-8 rounded-2xl sm:rounded-[2rem] border border-border text-center sm:min-w-[280px] w-full lg:w-auto shrink-0 flex flex-col justify-between shadow-sm space-y-4">
+          <div className="bg-surface-muted/90 backdrop-blur-md p-5 sm:p-8 rounded-2xl border border-border text-center sm:min-w-[280px] w-full lg:w-auto shrink-0 flex flex-col justify-between shadow-sm space-y-4">
             <div>
               <p className="text-content-muted font-black uppercase tracking-wider text-[11px] mb-1">{t('billing.billing_status_title')}</p>
               <p className="text-2xl sm:text-3xl font-black text-content">{getNextBillingDate()}</p>
@@ -360,7 +360,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
             return (
               <div
                 key={plan.id}
-                className="rounded-3xl sm:rounded-[2.5rem] p-6 sm:p-8 flex flex-col justify-between relative transition-all duration-300 border-2 bg-surface border-border hover:border-brand/40 shadow-sm"
+                className="rounded-2xl p-6 sm:p-8 flex flex-col justify-between relative transition-all duration-300 border-2 bg-surface border-border hover:border-brand/40 shadow-sm"
               >
                 <div className="space-y-6">
                   {/* Plan Name & Price Header */}
@@ -416,7 +416,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
       </div>
 
       {/* Real Invoices & Payments History */}
-      <div className="bg-surface p-6 sm:p-8 rounded-3xl sm:rounded-[2.5rem] border border-border shadow-sm space-y-6">
+      <div className="bg-surface p-6 sm:p-8 rounded-2xl border border-border shadow-sm space-y-6">
         <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between pb-4 border-b border-border gap-4">
           <div>
             <h4 className="text-lg sm:text-xl font-black text-content flex items-center gap-2.5">

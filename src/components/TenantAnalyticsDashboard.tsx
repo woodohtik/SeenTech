@@ -225,7 +225,7 @@ export default function TenantAnalyticsDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-surface p-6 rounded-[2rem] border border-border shadow-sm">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-surface p-6 rounded-2xl border border-border shadow-sm">
         <div className="flex items-center gap-4">
           <Link 
             to="/admin/tailors"
@@ -321,7 +321,7 @@ export default function TenantAnalyticsDashboard() {
         <div className="space-y-6">
           
           {/* Health Score Card */}
-          <div className="bg-surface rounded-[2rem] border border-border p-6 shadow-sm relative overflow-hidden">
+          <div className="bg-surface rounded-2xl border border-border p-6 shadow-sm relative overflow-hidden">
              <div className="absolute top-0 right-0 w-32 h-32 bg-brand/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
              
              <h3 className="font-black text-content flex items-center gap-2 mb-6 relative z-10">
@@ -362,7 +362,7 @@ export default function TenantAnalyticsDashboard() {
           </div>
 
           {/* Active Sessions Panel */}
-          <div className="bg-surface rounded-[2rem] border border-border p-6 shadow-sm">
+          <div className="bg-surface rounded-2xl border border-border p-6 shadow-sm">
             <h3 className="font-black text-content flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Activity className="text-success" size={20} />
@@ -426,7 +426,7 @@ function StatCard({
   trendValue?: number 
 }) {
   return (
-    <div className="bg-surface rounded-[2rem] border border-border p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+    <div className="bg-surface rounded-2xl border border-border p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
       <div className="flex justify-between items-start mb-4">
         <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110", bg, color)}>
           <Icon size={24} />
