@@ -599,17 +599,17 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
               <motion.div
                 animate={{ x: [-20, 0, -20], y: [0, -15, 0] }}
                 transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute top-6 left-6 w-20 h-20 bg-success/20 backdrop-blur-xl rounded-2xl border border-white/20 flex items-center justify-center shadow-xl z-30"
+                className="absolute top-6 left-6 w-20 h-20 bg-success/40 backdrop-blur-xl rounded-2xl border border-white/30 flex items-center justify-center shadow-xl z-30"
               >
-                <User size={32} className="text-success" />
+                <User size={32} className="text-white" />
               </motion.div>
 
               <motion.div
                 animate={{ x: [20, 0, 20], y: [0, 15, 0] }}
                 transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                className="absolute bottom-6 right-6 w-24 h-24 bg-warning/20 backdrop-blur-xl rounded-2xl border border-white/20 flex items-center justify-center shadow-xl z-30"
+                className="absolute bottom-6 right-6 w-24 h-24 bg-warning/40 backdrop-blur-xl rounded-2xl border border-white/30 flex items-center justify-center shadow-xl z-30"
               >
-                <Users size={40} className="text-warning" />
+                <Users size={40} className="text-white" />
               </motion.div>
 
               {/* Connecting Lines (Visualizing Access) */}
