@@ -87,7 +87,7 @@ export default function VisualMeasurements({ values, onChange, readOnly }: Visua
   );
 
   return (
-    <div className="space-y-6 md:space-y-8 p-4 md:p-6 bg-surface rounded-2xl md:rounded-[2rem] border border-border shadow-sm" dir={dir}>
+    <div className="space-y-6 md:space-y-8 p-4 md:p-6 bg-surface rounded-2xl border border-border shadow-sm" dir={dir}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <Section title={t('inventory.collar_type')} field="collarType" options={COLLAR_TYPES} />
         <Section title={t('inventory.cuff_type')} field="cuffType" options={CUFF_TYPES} />

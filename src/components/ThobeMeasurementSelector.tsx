@@ -67,7 +67,7 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
 
   return (
     <div className={cn(
-      "flex flex-col items-center gap-8 bg-surface p-4 sm:p-8 rounded-[2rem] border border-border shadow-xl shadow-brand/5 w-full",
+      "flex flex-col items-center gap-8 bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-xl shadow-brand/5 w-full",
       !readOnly ? "lg:flex-row lg:items-start" : "max-w-md mx-auto"
     )}>
       {/* Interactive SVG Section */}

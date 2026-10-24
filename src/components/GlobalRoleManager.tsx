@@ -339,7 +339,7 @@ export default function GlobalRoleManager() {
               <motion.div
                 key={role.id}
                 layoutId={role.id}
-                className="bg-surface p-6 rounded-[2rem] border border-border shadow-sm hover:shadow-md transition-all group"
+                className="bg-surface p-6 rounded-2xl border border-border shadow-sm hover:shadow-md transition-all group"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className={cn(
