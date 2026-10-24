@@ -2211,7 +2211,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: '100%', opacity: 0 }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="bg-surface w-full max-w-[92mm] sm:max-w-[100mm] rounded-t-3xl shadow-2xl relative z-10 overflow-hidden"
+        className="bg-surface w-full max-w-[92mm] sm:max-w-[100mm] rounded-t-3xl lg:rounded-3xl shadow-2xl relative z-10 overflow-hidden"
       >
         <div className={cn("p-8 space-y-6", isRtlLang(i18n.language) ? "text-right" : "text-left")} dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}>
           <div className="flex justify-between items-start">
@@ -2956,7 +2956,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-lg rounded-t-3xl shadow-2xl z-10 overflow-hidden bg-surface border border-border flex flex-col max-h-[85vh]"
+              className="relative w-full max-w-lg rounded-t-3xl lg:rounded-3xl shadow-2xl z-10 overflow-hidden bg-surface border border-border flex flex-col max-h-[85vh]"
               dir={isRtlLang(i18n.language) ? "rtl" : "ltr"}
             >
               <div className="flex items-center justify-between p-6 border-b border-border bg-brand/5 shrink-0">
@@ -3073,7 +3073,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className={cn("relative w-full lg:max-w-4xl rounded-t-3xl shadow-2xl z-10 overflow-hidden h-[95vh] lg:h-auto lg:max-h-[90vh] flex flex-col border border-border bg-surface", isRtlLang(i18n.language) ? "text-right" : "text-left")}
+              className={cn("relative w-full lg:max-w-4xl rounded-t-3xl lg:rounded-3xl shadow-2xl z-10 overflow-hidden h-[95vh] lg:h-auto lg:max-h-[90vh] flex flex-col border border-border bg-surface", isRtlLang(i18n.language) ? "text-right" : "text-left")}
               dir={isRtlLang(i18n.language) ? "rtl" : "ltr"}
             >
               {/* Header (Fixed) */}

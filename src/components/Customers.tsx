@@ -1673,7 +1673,7 @@ export default function Customers({ tenantId }: CustomersProps) {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-[clamp(320px,94vw,1100px)] max-h-[92vh] sm:max-h-[90vh] rounded-t-3xl bg-[var(--surface)] shadow-2xl flex flex-col my-auto border border-border z-10 overflow-hidden"
+              className="relative w-full max-w-[clamp(320px,94vw,1100px)] max-h-[92vh] sm:max-h-[90vh] rounded-t-3xl sm:rounded-3xl bg-[var(--surface)] shadow-2xl flex flex-col my-auto border border-border z-10 overflow-hidden"
               dir={isRtl ? "rtl" : "ltr"}
             >
               <form onSubmit={handleSubmit(onSubmit, onInvalidSubmit)} className="flex flex-col flex-1 max-h-[90vh] overflow-hidden">
@@ -1941,7 +1941,7 @@ const CustomerDetailsModal = ({
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className={cn("bg-surface w-full max-w-5xl rounded-t-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh] border border-border", isRtl ? "text-right" : "text-left")}
+        className={cn("bg-surface w-full max-w-5xl rounded-t-3xl sm:rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh] border border-border", isRtl ? "text-right" : "text-left")}
       >
         <div className="p-4 sm:p-6 border-b border-border flex justify-between items-center bg-brand/5">
           <div className="flex items-center gap-2.5 sm:gap-3">
@@ -2361,7 +2361,7 @@ const CustomerStatementModal = ({
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
         className={cn(
-          "bg-surface w-full max-w-4xl rounded-t-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh] border border-border print:border-none print:shadow-none print:max-h-none print:rounded-none print:w-full print:static",
+          "bg-surface w-full max-w-4xl rounded-t-3xl sm:rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh] border border-border print:border-none print:shadow-none print:max-h-none print:rounded-none print:w-full print:static",
           isRtl ? "text-right" : "text-left"
         )}
       >
