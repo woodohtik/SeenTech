@@ -28,6 +28,7 @@ import {
 import { supabase } from '../lib/supabase/client';
 import { PriceDisplay } from './PriceDisplay';
 import { createSubscriptionRequest, fetchMySubscriptionRequests, SubscriptionRequest } from '../services/subscriptionRequestService';
+import { getBankTransferSettings, DEFAULT_BANK_TRANSFER_SETTINGS, BankTransferSettings } from '../services/bankTransferService';
 import { useToast } from '../contexts/ToastContext';
 
 import { isRtlLang } from '../lib/direction';
@@ -49,6 +50,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
   const [userRequests, setUserRequests] = useState<SubscriptionRequest[]>([]);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [copiedIban, setCopiedIban] = useState(false);
+  const [bankTransfer, setBankTransfer] = useState<BankTransferSettings>(DEFAULT_BANK_TRANSFER_SETTINGS);
   const [showFaq, setShowFaq] = useState(false);
 
   // Selected plan in upgrade modal
@@ -76,10 +78,12 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
       // plans -- تعديل سعر/اسم/ميزات باقة من لوحة السوبر أدمن لم يكن
       // ينعكس هنا إطلاقاً. تُجلَب الآن حية، وتُفلتَر بـis_active (أثر
       // جانبي مفيد: تعطيل باقة من لوحة السوبر أدمن يخفيها عن التجّار فعلياً).
-      const [{ data: tenantData }, { data: plansData }] = await Promise.all([
+      const [{ data: tenantData }, { data: plansData }, bankTransferData] = await Promise.all([
         supabase.from('tenants').select('*').eq('id', tenantId).maybeSingle(),
         supabase.from('plans').select('*').eq('is_active', true).order('price'),
+        getBankTransferSettings(),
       ]);
+      setBankTransfer(bankTransferData);
 
       const activePlans = plansData || [];
       setPlans(activePlans);
@@ -132,7 +136,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
   };
 
   const copyIbanToClipboard = () => {
-    navigator.clipboard.writeText('SA1280000456123456789012');
+    navigator.clipboard.writeText(bankTransfer.iban);
     setCopiedIban(true);
     setTimeout(() => setCopiedIban(false), 2500);
   };
@@ -604,9 +608,9 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                   </div>
 
                   <div className="space-y-1 text-content-muted font-bold text-[11px]">
-                    <p>{t('billing.modal_bank_name_label')} <span className="text-content font-mono font-bold">{t('billing.modal_bank_name_val')}</span></p>
-                    <p>{t('billing.modal_bank_holder_label')} <span className="text-content font-bold">{t('billing.modal_bank_holder_val')}</span></p>
-                    <p>{t('billing.modal_iban_label')} <span className="text-brand font-mono dir-ltr select-all font-black">SA1280000456123456789012</span></p>
+                    <p>{t('billing.modal_bank_name_label')} <span className="text-content font-mono font-bold">{bankTransfer.bankName}</span></p>
+                    <p>{t('billing.modal_bank_holder_label')} <span className="text-content font-bold">{bankTransfer.accountHolder}</span></p>
+                    <p>{t('billing.modal_iban_label')} <span className="text-brand font-mono dir-ltr select-all font-black">{bankTransfer.iban}</span></p>
                   </div>
                 </div>
               )}

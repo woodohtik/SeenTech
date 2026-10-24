@@ -15,7 +15,8 @@ import {
   Server,
   Activity,
   X,
-  Gift
+  Gift,
+  Building2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -25,6 +26,7 @@ import { SmartSelect } from './ui/SmartSelect';
 import { useTranslation } from 'react-i18next';
 import GlobalRoleManager from './GlobalRoleManager';
 import TwoFactorSetup from './TwoFactorSetup';
+import { getBankTransferSettings, DEFAULT_BANK_TRANSFER_SETTINGS } from '../services/bankTransferService';
 
 import { isRtlLang } from '../lib/direction';
 import { useToast } from '../contexts/ToastContext';
@@ -50,9 +52,11 @@ export default function SaaSSystemSettings() {
     rewardPerReferral: 300,
     minWithdrawal: 1000
   });
+  const [bankTransferSettings, setBankTransferSettings] = useState(DEFAULT_BANK_TRANSFER_SETTINGS);
   const [isSavingBranding, setIsSavingBranding] = useState(false);
   const [isSavingPlatform, setIsSavingPlatform] = useState(false);
   const [isSavingReferral, setIsSavingReferral] = useState(false);
+  const [isSavingBankTransfer, setIsSavingBankTransfer] = useState(false);
   const [userRole, setUserRole] = useState<string>('');
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -125,6 +129,8 @@ export default function SaaSSystemSettings() {
           minWithdrawal: referralData.value.minWithdrawal || 1000
         });
       }
+
+      setBankTransferSettings(await getBankTransferSettings());
 
       const { data: saasUserData } = await supabase
         .from('saas_users')
@@ -224,6 +230,30 @@ export default function SaaSSystemSettings() {
       toastError(t('saas.settings_save_error'));
     } finally {
       setIsSavingReferral(false);
+    }
+  };
+
+  const handleSaveBankTransfer = async () => {
+    setIsSavingBankTransfer(true);
+    try {
+      const { error } = await supabase
+        .from('saas_settings')
+        .upsert({
+          key: 'bank_transfer',
+          value: bankTransferSettings,
+          updated_at: new Date().toISOString(),
+          updated_by: currentAuthUser?.id
+        }, { onConflict: 'key' });
+
+      if (error) throw error;
+
+      toastSuccess(t('saas.bank_transfer_saved_success', 'تم حفظ تفاصيل التحويل البنكي'));
+      await logAuditAction('update_bank_transfer', `Updated bank transfer details: ${bankTransferSettings.bankName}`);
+    } catch (error) {
+      console.error('Error saving bank transfer settings:', error);
+      toastError(t('saas.settings_save_error'));
+    } finally {
+      setIsSavingBankTransfer(false);
     }
   };
 
@@ -511,6 +541,67 @@ export default function SaaSSystemSettings() {
                 className="flex items-center gap-2 px-8 py-4 bg-brand text-white rounded-2xl font-black hover:bg-brand/90 disabled:opacity-50 transition-all shadow-lg shadow-brand/10"
               >
                 {isSavingReferral ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Save size={20} />
+                )}
+                <span>{t('common.save_changes', 'حفظ التعديلات')}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-surface p-8 rounded-[2.5rem] border border-border shadow-sm">
+            <h3 className="text-xl font-black text-content mb-8 flex items-center gap-2">
+              <Building2 className="text-brand" size={24} />
+              {t('saas.bank_transfer_settings', 'تفاصيل التحويل البنكي')}
+            </h3>
+
+            <p className="text-xs text-content-muted font-bold mb-6 -mt-4">
+              {t('saas.bank_transfer_hint', 'هذه البيانات هي ما يراه التاجر عند اختيار الدفع بالتحويل البنكي في شاشة الفوترة.')}
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="space-y-4">
+                <label className="block text-sm font-black text-content-muted">{t('saas.bank_transfer_bank_name', 'اسم البنك')}</label>
+                <IconInput
+                  type="text"
+                  value={bankTransferSettings.bankName}
+                  onChange={(e) => setBankTransferSettings(prev => ({ ...prev, bankName: e.target.value }))}
+                  startIcon={Building2}
+                  className="bg-surface-muted"
+                />
+              </div>
+
+              <div className="space-y-4">
+                <label className="block text-sm font-black text-content-muted">{t('saas.bank_transfer_account_holder', 'اسم المستفيد')}</label>
+                <IconInput
+                  type="text"
+                  value={bankTransferSettings.accountHolder}
+                  onChange={(e) => setBankTransferSettings(prev => ({ ...prev, accountHolder: e.target.value }))}
+                  startIcon={Building2}
+                  className="bg-surface-muted"
+                />
+              </div>
+
+              <div className="space-y-4">
+                <label className="block text-sm font-black text-content-muted">{t('saas.bank_transfer_iban', 'رقم الآيبان (IBAN)')}</label>
+                <IconInput
+                  type="text"
+                  value={bankTransferSettings.iban}
+                  onChange={(e) => setBankTransferSettings(prev => ({ ...prev, iban: e.target.value.toUpperCase() }))}
+                  startIcon={Building2}
+                  className="bg-surface-muted dir-ltr"
+                />
+              </div>
+            </div>
+
+            <div className="mt-8 flex justify-end">
+              <button
+                disabled={isSavingBankTransfer || userRole === 'support_tech'}
+                onClick={handleSaveBankTransfer}
+                className="flex items-center gap-2 px-8 py-4 bg-brand text-white rounded-2xl font-black hover:bg-brand/90 disabled:opacity-50 transition-all shadow-lg shadow-brand/10"
+              >
+                {isSavingBankTransfer ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
                   <Save size={20} />
