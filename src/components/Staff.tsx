@@ -1565,7 +1565,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
               {/* Roles Sidebar */}
               <div className="lg:col-span-4 xl:col-span-3 space-y-4">
-                <div className="bg-surface rounded-2xl sm:rounded-[2rem] border border-border shadow-sm overflow-hidden">
+                <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
                   <div className="p-4 sm:p-5 bg-surface-muted/50 border-b border-border flex justify-between items-center">
                     <h4 className="text-xs font-black text-content-muted uppercase tracking-widest">{t('settings_page.staff.permissions.roles_title')}</h4>
                     <button 
@@ -1658,7 +1658,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                 {selectedRoleForPermissions && (
                   <>
                     {/* Role Header Card */}
-                    <div className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-border shadow-sm space-y-4">
+                    <div className="bg-surface p-4 sm:p-6 rounded-2xl border border-border shadow-sm space-y-4">
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <div className="flex items-center gap-3.5 min-w-0">
                           <div className={cn(
@@ -1759,7 +1759,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                         const enabledCount = categoryPerms.filter(p => selectedRoleForPermissions.permissions[p.id as PermissionKey]).length;
 
                         return (
-                          <div key={category} className="bg-surface rounded-2xl sm:rounded-[2rem] border border-border shadow-sm overflow-hidden flex flex-col">
+                          <div key={category} className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden flex flex-col">
                             <button 
                               onClick={() => toggleCategory(category)}
                               className="w-full p-4 sm:p-5 bg-surface-muted/30 border-b border-border flex items-center justify-between group transition-colors hover:bg-surface-muted/60"
@@ -1845,7 +1845,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
               {/* Staff List Sidebar */}
               <div className="lg:col-span-4 xl:col-span-3 space-y-4">
-                <div className="bg-surface rounded-2xl sm:rounded-[2rem] border border-border shadow-sm overflow-hidden">
+                <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
                   <div className="p-4 sm:p-5 bg-surface-muted border-b border-border">
                     <h4 className="text-xs font-black text-content-muted uppercase tracking-widest">{t('settings_page.staff.permissions.choose_employee')}</h4>
                   </div>
@@ -1899,7 +1899,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                 {selectedStaffForPermissions ? (
                   <div className="space-y-6">
                     {/* Header Card for Selected Staff */}
-                    <div className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-border shadow-sm space-y-4">
+                    <div className="bg-surface p-4 sm:p-6 rounded-2xl border border-border shadow-sm space-y-4">
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div className="flex items-center gap-3.5 min-w-0">
                           <div className="w-12 h-12 rounded-2xl bg-brand/10 text-brand font-black text-xl flex items-center justify-center border border-brand/20 shrink-0">
@@ -1986,7 +1986,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                         if (categoryPerms.length === 0) return null;
 
                         return (
-                          <div key={category} className="bg-surface rounded-2xl sm:rounded-[2rem] border border-border shadow-sm overflow-hidden flex flex-col">
+                          <div key={category} className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden flex flex-col">
                             <button 
                               onClick={() => toggleCategory(category)}
                               className="w-full p-4 sm:p-5 bg-surface-muted/30 border-b border-border flex items-center justify-between group transition-colors hover:bg-surface-muted/60"
@@ -2077,7 +2077,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                     </div>
                   </div>
                 ) : (
-                  <div className="h-full min-h-[350px] bg-surface rounded-2xl sm:rounded-[2rem] border border-dashed border-border flex flex-col items-center justify-center text-center p-8">
+                  <div className="h-full min-h-[350px] bg-surface rounded-2xl border border-dashed border-border flex flex-col items-center justify-center text-center p-8">
                     <div className="w-16 h-16 bg-surface-muted rounded-full flex items-center justify-center text-content-muted mb-4">
                       <User size={32} />
                     </div>
@@ -2091,7 +2091,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
             </div>
           )}
 
-          <div className="bg-brand/5 rounded-2xl sm:rounded-[2rem] p-4 sm:p-6 flex items-start gap-3 sm:gap-4 border border-brand/10">
+          <div className="bg-brand/5 rounded-2xl p-4 sm:p-6 flex items-start gap-3 sm:gap-4 border border-brand/10">
             <div className="p-3 bg-surface rounded-2xl text-brand shadow-sm border border-border">
               <Info size={24} />
             </div>
@@ -2194,7 +2194,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                   initial={{ opacity: 0, scale: 0.95, y: 20 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                  className="relative w-full max-w-sm max-h-[92dvh] overflow-y-auto bg-surface rounded-2xl sm:rounded-[2rem] shadow-2xl border border-border p-5 sm:p-8"
+                  className="relative w-full max-w-sm max-h-[92dvh] overflow-y-auto bg-surface rounded-3xl shadow-2xl border border-border p-5 sm:p-8"
                 >
                   <div className="w-20 h-20 bg-danger/10 rounded-full flex items-center justify-center mb-6 mx-auto">
                     <Trash2 size={32} className="text-danger" />
@@ -2568,7 +2568,7 @@ const RolePermissionsModal = ({ role, onClose }: { role: Role; onClose: () => vo
             const categoryPerms = SYSTEM_PERMISSIONS.filter(p => p.categoryKey === category);
             
             return (
-              <div key={category} className="bg-surface rounded-[2rem] border border-border overflow-hidden">
+              <div key={category} className="bg-surface rounded-2xl border border-border overflow-hidden">
                 <button 
                   onClick={() => toggleCategory(category)}
                   className="w-full p-4 bg-surface-muted/30 flex items-center justify-between group transition-colors hover:bg-surface-muted/50"
