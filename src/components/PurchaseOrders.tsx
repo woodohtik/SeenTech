@@ -608,7 +608,7 @@ export default function PurchaseOrders({
       </div>
 
       {/* Main Data Table & Mobile Cards */}
-      <div className="bg-surface rounded-2xl md:rounded-[2rem] border border-border overflow-hidden shadow-sm">
+      <div className="bg-surface rounded-2xl border border-border overflow-hidden shadow-sm">
         {/* Desktop Table View */}
         <div className="hidden md:block overflow-x-auto whitespace-nowrap scrollbar-hide">
           <table className="w-full text-right min-w-max">

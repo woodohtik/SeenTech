@@ -240,7 +240,7 @@ const BranchModal = ({ onClose, onSave, initialData }: any) => {
         initial={{ scale: 0.9, opacity: 0, y: 20 }} 
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-surface w-full max-w-lg rounded-2xl sm:rounded-[2.5rem] shadow-2xl relative z-10 max-h-[92dvh] overflow-y-auto border border-border"
+        className="bg-surface w-full max-w-lg rounded-3xl shadow-2xl relative z-10 max-h-[92dvh] overflow-y-auto border border-border"
       >
         <div className="p-5 sm:p-8 border-b border-border flex justify-between items-center gap-3 bg-surface-muted/50">
           <div className="flex items-center gap-3 sm:gap-4 min-w-0">

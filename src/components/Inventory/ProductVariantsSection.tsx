@@ -168,7 +168,7 @@ export default function ProductVariantsSection({ tenantId, itemId, branches }: P
   };
 
   return (
-    <div className="bg-surface-muted/50 p-6 rounded-[2rem] border border-border space-y-4">
+    <div className="bg-surface-muted/50 p-6 rounded-2xl border border-border space-y-4">
       <div className="flex items-center gap-2">
         <Layers size={18} className="text-brand" />
         <h3 className="text-sm font-black text-content uppercase tracking-widest text-brand">

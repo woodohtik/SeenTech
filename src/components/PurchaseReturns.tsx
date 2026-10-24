@@ -222,7 +222,7 @@ export default function PurchaseReturns({
                 />
               </div>
 
-              <div className="bg-surface-muted/40 p-6 rounded-[2rem] border border-border space-y-6">
+              <div className="bg-surface-muted/40 p-6 rounded-2xl border border-border space-y-6">
                 <h3 className="font-bold text-content text-sm flex items-center gap-2">
                   <Plus size={18} className="text-brand" />
                   {t('procurement.add_items_to_return')}
@@ -270,7 +270,7 @@ export default function PurchaseReturns({
               </div>
 
               {items.length > 0 && (
-                <div className="border border-border rounded-[2rem] overflow-hidden shadow-sm bg-surface">
+                <div className="border border-border rounded-2xl overflow-hidden shadow-sm bg-surface">
                   {/* Mobile View: Stacked Card List */}
                   <div className="block md:hidden divide-y divide-border">
                     {items.map((item, idx) => (

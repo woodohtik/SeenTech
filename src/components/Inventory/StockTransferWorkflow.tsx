@@ -253,7 +253,7 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
         </div>
       </div>
 
-      <div className="bg-surface p-4 rounded-[2rem] border border-border shadow-sm flex items-center gap-4">
+      <div className="bg-surface p-4 rounded-2xl border border-border shadow-sm flex items-center gap-4">
         <Filter className="text-content-muted/40" size={20} />
         <div className="flex gap-2">
           {['all', 'pending', 'in_transit', 'completed'].map(status => (
@@ -284,7 +284,7 @@ const StockTransferWorkflow: React.FC<StockTransferWorkflowProps> = ({ tenantId 
               <motion.div 
                 key={transfer.id}
                 layout
-                className="bg-surface rounded-[2rem] border border-border shadow-sm hover:shadow-xl transition-all group overflow-hidden"
+                className="bg-surface rounded-2xl border border-border shadow-sm hover:shadow-xl transition-all group overflow-hidden"
               >
                 <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
                   <div className="flex items-center gap-6">
@@ -371,7 +371,7 @@ const TransferDetailsModal = ({ transfer, onClose, onReceive, getBranchName }: a
         initial={{ scale: 0.9, opacity: 0, y: 20 }} 
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-white w-full max-w-3xl rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col"
+        className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col"
       >
         <div className="p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
           <div className="flex items-center gap-4">
