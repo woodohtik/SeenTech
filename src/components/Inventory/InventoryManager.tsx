@@ -665,7 +665,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
           </div>
 
           {/* Filters */}
-          <div className="bg-surface p-3 sm:p-4 rounded-2xl sm:rounded-[2rem] border border-border shadow-sm flex flex-col sm:flex-row gap-3 sm:gap-4">
+          <div className="bg-surface p-3 sm:p-4 rounded-2xl border border-border shadow-sm flex flex-col sm:flex-row gap-3 sm:gap-4">
             {/* seen-fields-unification-task.md #4: نفس نمط شريط البحث الموحّد (PurchaseOrders.tsx/Suppliers.tsx) -- كان بلا حدود خاصة به إطلاقاً. */}
             <div className="flex-1 flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface focus-within:ring-2 focus-within:ring-brand/20 rounded-2xl px-4 h-12 transition-all shadow-inner shadow-black/5">
               <Search className="text-content-muted shrink-0" size={18} />
@@ -769,7 +769,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
             )}
           </AnimatePresence>
 
-          <div className="bg-surface rounded-[2.5rem] border border-border shadow-xl overflow-hidden">
+          <div className="bg-surface rounded-2xl border border-border shadow-xl overflow-hidden">
             {/* Bulk Selection Controls for Mobile */}
             <div className="lg:hidden flex items-center justify-between p-4 bg-surface-muted/50 border-b border-border">
               <button
@@ -1336,7 +1336,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                     <div className="flex flex-col md:flex-row gap-8">
                                       {item.mainImage && (
                                         <div className="w-full md:w-64 lg:w-80 shrink-0">
-                                          <div className="aspect-square bg-surface border-2 border-border rounded-[2.5rem] overflow-hidden shadow-xl group relative">
+                                          <div className="aspect-square bg-surface border-2 border-border rounded-2xl overflow-hidden shadow-xl group relative">
                                             <img
                                               src={item.mainImage}
                                               alt={item.name}
@@ -1355,7 +1355,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                             item.cuffType ||
                                             item.pocketType ||
                                             item.chestStyle) && (
-                                            <div className="bg-surface border border-border rounded-[2.5rem] p-8 shadow-sm">
+                                            <div className="bg-surface border border-border rounded-2xl p-8 shadow-sm">
                                               <div className="flex items-center gap-3 mb-6">
                                                 <div className="p-2 bg-brand/10 text-brand rounded-xl">
                                                   <Shirt size={20} />
@@ -1546,7 +1546,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
       )}
 
       {activeTab === "transfers" && (
-        <div className="bg-surface rounded-[2.5rem] border border-border shadow-sm overflow-hidden">
+        <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
           <StockTransferWorkflow tenantId={tenantId} />
         </div>
       )}
@@ -1657,7 +1657,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="bg-surface w-full max-w-md rounded-[2rem] shadow-2xl relative z-10 overflow-hidden border border-border p-8"
+              className="bg-surface w-full max-w-md rounded-3xl shadow-2xl relative z-10 overflow-hidden border border-border p-8"
             >
               <div className="flex flex-col items-center text-center space-y-6">
                 <div className="p-4 bg-danger/10 text-danger rounded-full shadow-lg shadow-danger/5">
@@ -1981,7 +1981,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-surface w-full max-w-3xl rounded-2xl sm:rounded-3xl md:rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[90vh]"
+        className="bg-surface w-full max-w-3xl rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[90vh]"
       >
         <div className="p-4 sm:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
           <div className="flex items-center gap-2 sm:gap-4">
@@ -2167,7 +2167,7 @@ const StockTransferModal = ({
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-surface w-full max-w-2xl rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col"
+        className="bg-surface w-full max-w-2xl rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col"
       >
         <div className="p-4 sm:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
           <div className="flex items-center gap-4">
@@ -2459,7 +2459,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-surface w-full max-w-md rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden"
+        className="bg-surface w-full max-w-md rounded-3xl shadow-2xl relative z-10 overflow-hidden"
       >
         <div className="p-4 sm:p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
           <div className="flex items-center gap-3">
@@ -2683,7 +2683,7 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch }: any) => {
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-surface w-full max-w-md rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden border border-border p-4 sm:p-8"
+        className="bg-surface w-full max-w-md rounded-3xl shadow-2xl relative z-10 overflow-hidden border border-border p-4 sm:p-8"
       >
         <button
           onClick={onClose}
@@ -2934,7 +2934,7 @@ const OpeningBalanceModal = ({ onClose, tenantId, branches, items }: any) => {
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-surface w-full max-w-4xl rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
+        className="bg-surface w-full max-w-4xl rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
       >
         <div className="p-4 sm:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
           <div className="flex items-center gap-4">
@@ -3298,7 +3298,7 @@ const ProductImportModal = ({
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-surface w-full max-w-2xl rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
+        className="bg-surface w-full max-w-2xl rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
         dir={dir}
       >
         <div className="p-4 sm:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
@@ -3526,7 +3526,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
   return (
     <div className="space-y-8">
       {/* Stock Movement Trend */}
-      <div className="bg-surface p-4 sm:p-6 rounded-[2.5rem] border border-border shadow-sm">
+      <div className="bg-surface p-4 sm:p-6 rounded-2xl border border-border shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <h3 className="text-xl font-black text-content flex items-center gap-3">
             <TrendingUp className="text-brand" />
@@ -3599,7 +3599,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Stock by Category */}
-        <div className="bg-surface p-4 sm:p-6 rounded-[2.5rem] border border-border shadow-sm">
+        <div className="bg-surface p-4 sm:p-6 rounded-2xl border border-border shadow-sm">
           <h3 className="text-xl font-black text-content mb-8 flex items-center gap-3">
             <Tag className="text-brand" />
             {t("inventory.stock_by_category")}
@@ -3643,7 +3643,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
         </div>
 
         {/* Stock by Branch */}
-        <div className="bg-surface p-4 sm:p-6 rounded-[2.5rem] border border-border shadow-sm">
+        <div className="bg-surface p-4 sm:p-6 rounded-2xl border border-border shadow-sm">
           <h3 className="text-xl font-black text-content mb-8 flex items-center gap-3">
             <Warehouse className="text-brand" />
             {t("inventory.stock_by_location")}
@@ -3688,7 +3688,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
       </div>
 
       {/* Audit Trail */}
-      <div className="bg-surface p-4 sm:p-6 rounded-[2.5rem] border border-border shadow-sm">
+      <div className="bg-surface p-4 sm:p-6 rounded-2xl border border-border shadow-sm">
         <div className="flex items-center justify-between mb-8">
           <h3 className="text-xl font-black text-content flex items-center gap-3">
             <History className="text-brand" />
@@ -3948,7 +3948,7 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-surface w-full max-w-3xl rounded-2xl sm:rounded-3xl md:rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[90vh]"
+        className="bg-surface w-full max-w-3xl rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[90vh]"
       >
         <div className="p-4 sm:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
           <div className="flex items-center gap-2 sm:gap-4">
