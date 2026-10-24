@@ -752,7 +752,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
   if (!canViewReports) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] text-right" dir={dir}>
-        <div className="p-6 bg-danger/10 text-danger rounded-[2.5rem] mb-6">
+        <div className="p-6 bg-danger/10 text-danger rounded-2xl mb-6">
           <AlertTriangle size={48} />
         </div>
         <h2 className="text-2xl font-black text-content mb-2">{t('reports.access_denied_title')}</h2>
@@ -945,7 +945,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
       />
 
       {/* Filters Bar */}
-      <div id="reports-filters-bar" className="bg-surface p-4 sm:p-6 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm flex flex-col lg:flex-row lg:items-center gap-4 sm:gap-6">
+      <div id="reports-filters-bar" className="bg-surface p-4 sm:p-6 rounded-2xl border border-border shadow-sm flex flex-col lg:flex-row lg:items-center gap-4 sm:gap-6">
         <div className="relative w-full lg:flex-1">
           <div className="flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface focus-within:ring-2 focus-within:ring-brand/20 rounded-2xl px-4 h-12 transition-all shadow-inner shadow-black/5">
             <Search className="text-content-muted shrink-0" size={18} />
@@ -1061,7 +1061,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
         <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-surface to-transparent z-10" />
         <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-surface to-transparent z-10" />
         <div id="reports-tabs-nav-container" className="w-full overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-        <div className="flex items-center gap-1.5 sm:gap-2 bg-surface p-1.5 sm:p-2 rounded-xl sm:rounded-[2rem] border border-border shadow-sm w-max">
+        <div className="flex items-center gap-1.5 sm:gap-2 bg-surface p-1.5 sm:p-2 rounded-2xl border border-border shadow-sm w-max">
           {reportTabs.map((tab) => (
             <button
               id={`tab-btn-${tab.id}`}
@@ -1099,7 +1099,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 { label: t('dashboard.orders_count'), value: filteredOrders.length, icon: ShoppingBag, color: 'text-warning', bg: 'bg-warning/10', isCurrency: false },
                 { label: t('reports.delayed_orders'), value: orderStats.delayedCount, icon: AlertTriangle, color: 'text-danger', bg: 'bg-danger/10', isCurrency: false },
               ].map((stat, i) => (
-                <div key={i} className="bg-surface p-3 sm:p-6 lg:p-8 rounded-xl sm:rounded-[2.5rem] border border-border shadow-sm flex flex-col sm:flex-row items-center sm:items-start lg:items-center gap-3 sm:gap-6 text-center sm:text-right">
+                <div key={i} className="bg-surface p-3 sm:p-6 lg:p-8 rounded-2xl border border-border shadow-sm flex flex-col sm:flex-row items-center sm:items-start lg:items-center gap-3 sm:gap-6 text-center sm:text-right">
                   <div className={cn("p-2.5 sm:p-5 rounded-xl sm:rounded-2xl shrink-0", stat.bg, stat.color)}>
                     <stat.icon size={20} className="sm:w-7 sm:h-7" />
                   </div>
@@ -1119,7 +1119,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           {activeTab === 'financial' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
               {/* Revenue vs Sales Trend */}
-              <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+              <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
                 <div className="flex justify-between items-center mb-6 sm:mb-8">
                   <h3 className="text-sm sm:text-lg font-black text-content">{t('reports.revenue_vs_sales')}</h3>
                   <div className="flex gap-2 sm:gap-4 text-[10px] sm:text-xs font-bold">
@@ -1176,7 +1176,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               </div>
 
               {/* Payment Methods */}
-              <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+              <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
                 <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.sales_by_payment_method')}</h3>
                 <div className="h-64 sm:h-80">
                   <ResponsiveContainer width="100%" height="100%">
@@ -1208,24 +1208,24 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
               {/* Tax, Profit & Returns Cards */}
               <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
                   <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.total_tax')}</p>
                   <h3 className="text-base sm:text-2xl font-black text-danger mt-1 sm:mt-2"><PriceDisplay amount={financialStats.totalTax} /></h3>
                   <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('dashboard.admin.vat_15')}</p>
                 </div>
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
                   <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.net_profit')}</p>
                   <h3 className="text-base sm:text-2xl font-black text-success mt-1 sm:mt-2"><PriceDisplay amount={financialStats.netProfit} /></h3>
                   <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('reports.after_tax_deduction')}</p>
                 </div>
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
                   <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.avg_order_value')}</p>
                   <h3 className="text-base sm:text-2xl font-black text-brand mt-1 sm:mt-2">
                     <PriceDisplay amount={nonCancelledOrders.length > 0 ? financialStats.totalSales / nonCancelledOrders.length : 0} />
                   </h3>
                   <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('reports.based_on_orders', { n: nonCancelledOrders.length })}</p>
                 </div>
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
                   <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.total_returns_value')}</p>
                   <h3 className="text-base sm:text-2xl font-black text-danger mt-1 sm:mt-2"><PriceDisplay amount={financialStats.totalReturnsValue} /></h3>
                   <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('common.status_cancelled')}</p>
@@ -1249,7 +1249,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                   { label: t('reports.pl_expenses'), value: profitLossStats.operatingExpenses, color: 'text-danger', bg: 'bg-danger/10' },
                   { label: t('reports.pl_net_profit'), value: profitLossStats.netProfit, color: profitLossStats.netProfit >= 0 ? 'text-success' : 'text-danger', bg: profitLossStats.netProfit >= 0 ? 'bg-success/10' : 'bg-danger/10', sub: t('reports.pl_margin', { n: profitLossStats.netMargin.toFixed(1) }) },
                 ].map((card, i) => (
-                  <div key={i} className="bg-surface p-3 sm:p-6 rounded-xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                  <div key={i} className="bg-surface p-3 sm:p-6 rounded-2xl border border-border shadow-sm">
                     <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest truncate">{card.label}</p>
                     <h3 className={cn("text-sm sm:text-xl font-black mt-1 sm:mt-2 truncate", card.color)}><PriceDisplay amount={card.value} /></h3>
                     {card.sub && <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{card.sub}</p>}
@@ -1257,7 +1257,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 ))}
               </div>
 
-              <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+              <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
                 <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.pl_breakdown_title')}</h3>
                 <div className="h-64 sm:h-80">
                   <ResponsiveContainer width="100%" height="100%">
@@ -1285,7 +1285,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           {activeTab === 'orders' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
               {/* Order Status Bar Chart */}
-              <div className="lg:col-span-2 bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+              <div className="lg:col-span-2 bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
                 <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.current_order_statuses')}</h3>
                 <div className="h-64 sm:h-80">
                   <ResponsiveContainer width="100%" height="100%">
@@ -1324,7 +1324,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
               {/* KPIs */}
               <div className="grid grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-6">
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border cursor-default flex flex-col justify-between">
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border cursor-default flex flex-col justify-between">
                   <div>
                     <div className="flex items-center gap-2 sm:gap-4 mb-2 sm:mb-4">
                       <div className="p-2 bg-warning/10 text-warning rounded-lg sm:rounded-xl shrink-0"><Clock size={16} className="sm:w-6 sm:h-6" /></div>
@@ -1336,7 +1336,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 </div>
 
                 <div 
-                  className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm cursor-pointer hover:border-danger/30 transition-all flex flex-col justify-between"
+                  className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm cursor-pointer hover:border-danger/30 transition-all flex flex-col justify-between"
                   onClick={() => setDrillDown({
                     title: t('reports.delayed_orders_title'),
                     data: orderStats.delayedOrders,
@@ -1364,7 +1364,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           {activeTab === 'inventory' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
               {/* Low Stock Alerts */}
-              <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+              <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
                 <div className="flex items-center justify-between mb-6 sm:mb-8">
                   <h3 className="text-sm sm:text-lg font-black text-content flex items-center gap-1.5 sm:gap-2">
                     <AlertTriangle className="text-danger shrink-0 sm:w-5 sm:h-5" size={18} />
@@ -1403,7 +1403,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               </div>
 
               {/* Top Consumed Items */}
-              <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+              <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
                 <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.most_available_items')}</h3>
                 <div className="h-64 sm:h-80">
                   <ResponsiveContainer width="100%" height="100%">
@@ -1426,7 +1426,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
           {activeTab === 'staff' && (
             <div className="space-y-4 sm:space-y-8">
               {/* Detailed Employee Performance Table */}
-              <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm space-y-6">
+              <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <h3 className="text-base sm:text-xl font-black text-content flex items-center gap-2">
@@ -1582,7 +1582,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               {/* Staff Section */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
                 {/* Staff Productivity */}
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
                   <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.staff_productivity')}</h3>
                   <div className="h-64 sm:h-80">
                     <ResponsiveContainer width="100%" height="100%">
@@ -1601,7 +1601,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 </div>
 
                 {/* Staff Sales */}
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
                   <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.cashier_total_sales')}</h3>
                   <div className="space-y-4 sm:space-y-6">
                     {staffStats.performance.filter(s => s.role === 'cashier' || s.role === 'owner' || s.role === 'admin').map((s, i) => (
@@ -1631,7 +1631,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               {/* Customer Insights Section */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
                 {/* Top Customers */}
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
                   <div className="flex items-center justify-between mb-6 sm:mb-8">
                     <h3 className="text-sm sm:text-lg font-black text-content">{t('reports.top_customers')}</h3>
                     <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-brand/10 text-brand rounded-full text-[10px] sm:text-xs font-black">
@@ -1665,7 +1665,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 </div>
 
                 {/* Customer Retention */}
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
                   <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.customer_retention')}</h3>
                   <div className="h-64 sm:h-80">
                     <ResponsiveContainer width="100%" height="100%">
@@ -1704,14 +1704,14 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                   { label: t('reports.sp_net_purchases'), value: supplierStats.totalPurchases - supplierStats.totalPurchaseReturns, color: 'text-success', bg: 'bg-success/10' },
                   { label: t('reports.sp_outstanding_balance'), value: supplierStats.totalOutstandingBalance, color: 'text-warning', bg: 'bg-warning/10' },
                 ].map((stat, i) => (
-                  <div key={i} className="bg-surface p-3 sm:p-6 rounded-xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                  <div key={i} className="bg-surface p-3 sm:p-6 rounded-2xl border border-border shadow-sm">
                     <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest truncate">{stat.label}</p>
                     <h3 className={cn("text-sm sm:text-xl font-black mt-1 sm:mt-2 truncate", stat.color)}><PriceDisplay amount={stat.value} /></h3>
                   </div>
                 ))}
               </div>
 
-              <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+              <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
                 <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.sp_purchases_trend')}</h3>
                 <div className="h-64 sm:h-80">
                   <ResponsiveContainer width="100%" height="100%">
@@ -1735,7 +1735,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                 </div>
               </div>
 
-              <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+              <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
                 <h3 className="text-sm sm:text-lg font-black text-content mb-6 sm:mb-8">{t('reports.sp_supplier_breakdown')}</h3>
                 <div className="rounded-2xl border border-border overflow-hidden">
                   <ResponsiveTable
@@ -1841,17 +1841,17 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6">
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
                   <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.vat_output')}</p>
                   <h3 className="text-base sm:text-2xl font-black text-brand mt-1 sm:mt-2"><PriceDisplay amount={vatStats.outputVat} /></h3>
                   <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('reports.vat_output_desc')}</p>
                 </div>
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
                   <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.vat_input')}</p>
                   <h3 className="text-base sm:text-2xl font-black text-warning mt-1 sm:mt-2"><PriceDisplay amount={vatStats.inputVat} /></h3>
                   <p className="text-[9px] sm:text-[10px] text-content-muted mt-0.5 sm:mt-1 font-bold">{t('reports.vat_input_desc')}</p>
                 </div>
-                <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm">
+                <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm">
                   <p className="text-[10px] sm:text-xs font-black text-content-muted uppercase tracking-widest">{t('reports.vat_net_due')}</p>
                   <h3 className={cn("text-base sm:text-2xl font-black mt-1 sm:mt-2", vatStats.netVatDue >= 0 ? 'text-danger' : 'text-success')}>
                     <PriceDisplay amount={Math.abs(vatStats.netVatDue)} />
@@ -1866,7 +1866,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
           {activeTab === 'zreports' && (
             <div className="space-y-4 sm:space-y-8">
-              <div className="bg-surface p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm max-w-xl mx-auto text-center">
+              <div className="bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-sm max-w-xl mx-auto text-center">
                 <div className="bg-brand/10 w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center text-brand mx-auto mb-4 sm:mb-6">
                   <Calculator size={28} className="sm:w-8 sm:h-8" />
                 </div>
@@ -1900,7 +1900,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               </div>
 
               {dailyZData && (
-                <div className="bg-white rounded-2xl sm:rounded-[2.5rem] border border-border shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4">
+                <div className="bg-white rounded-3xl border border-border shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4">
                   <ZReport 
                     data={dailyZData} 
                     onClose={() => setDailyZData(null)} 
@@ -1937,7 +1937,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
               initial={{ scale: 0.9, opacity: 0, y: 20 }} 
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-surface w-full max-w-5xl rounded-2xl sm:rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh] border border-border"
+              className="bg-surface w-full max-w-5xl rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh] border border-border"
             >
               <div className="p-4 sm:p-8 border-b border-border flex flex-col sm:flex-row gap-4 justify-between sm:items-center bg-surface-muted/50">
                 <div className="flex items-center gap-3 sm:gap-4">
