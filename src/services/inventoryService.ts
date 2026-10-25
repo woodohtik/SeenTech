@@ -174,8 +174,19 @@ export async function adjustStock({
   type: string;
   staffId: string | null;
   tenantId: string;
-  /** Deterministic key so a retry cannot apply the same adjustment twice. */
-  operationId?: string;
+  /**
+   * Deterministic key so a retry cannot apply the same adjustment twice.
+   * Required (security audit 2026-10-25, fingerprint
+   * apply_stock_movement.caller_supplied_random_operation_id): an earlier
+   * optional version silently fell back to crypto.randomUUID() when
+   * omitted, generating a fresh id on every call -- including a retry of
+   * the identical logical operation after a dropped response -- which
+   * defeated apply_stock_movement's replay guard and let the stock delta
+   * be silently re-applied. Callers must derive this from stable business
+   * identifiers for the operation (e.g. `purchase-return:<returnId>:item:<itemId>`),
+   * not generate a fresh value per call.
+   */
+  operationId: string;
   referenceId?: string | null;
   /** seen-ux-fixes-batch-task.md item 10 -- targets a specific product variant's stock row instead of the base item's. */
   variantId?: string | null;
@@ -196,13 +207,8 @@ export async function adjustStock({
   else if (quantity < 0) movementType = 'deduction';
   else if (quantity > 0) movementType = 'addition';
 
-  const opId =
-    operationId ||
-    (globalThis.crypto?.randomUUID?.() as string | undefined) ||
-    `adjust:${branchId}:${itemId}:${Date.now()}`;
-
   const { error } = await supabase.rpc('apply_stock_movement', {
-    p_operation_id: opId,
+    p_operation_id: operationId,
     p_branch_id: branchId,
     p_item_id: itemId,
     p_delta: quantity,

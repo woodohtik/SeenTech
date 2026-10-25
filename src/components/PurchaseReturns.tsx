@@ -76,6 +76,13 @@ export default function PurchaseReturns({
       return;
     }
     setIsSubmitting(true);
+    // Security audit 2026-10-25, fingerprint
+    // apply_stock_movement.caller_supplied_random_operation_id: generated
+    // once per submit attempt so a retry of this exact call (e.g. after a
+    // dropped response) reuses the same operationId per item below instead
+    // of a fresh random one, letting apply_stock_movement's replay guard
+    // actually catch the duplicate.
+    const returnBatchId = crypto.randomUUID();
     try {
       const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
 
@@ -111,7 +118,8 @@ export default function PurchaseReturns({
           reason: `مرتجع مشتريات - ${reason}`,
           type: 'out',
           staffId: currentStaff?.id || null,
-          tenantId
+          tenantId,
+          operationId: `purchase-return:${returnBatchId}:item:${item.itemId}`,
         });
       }
 

@@ -598,7 +598,20 @@ export function registerPrintRelay(app: Express): void {
    *
    * يُدخل المستخدم رمز الاقتران الظاهر في نافذة الوسيط مرة واحدة فقط.
    */
-  app.post('/api/print/pair', async (req: Request, res: Response) => {
+  // Security audit 2026-10-25, fingerprint
+  // print-relay.pair.rate-limit-per-ip-distributed-bypass: this route was
+  // fully unauthenticated and its only brute-force control (10/min) was
+  // keyed solely by caller IP against a code that never expires for an
+  // active station -- trivially defeated by distributing guesses across
+  // source IPs, with any tenant's valid code counting as a win. Pairing a
+  // printer is always done by an already-logged-in staff member from the
+  // POS/settings screen (see src/utils/printRelayClient.ts's
+  // pairWithStation, which now sends the session token), so requiring
+  // `authenticate` costs nothing for the real flow while excluding
+  // anonymous internet callers entirely. A global, IP-independent counter
+  // closes the remaining distributed-guessing gap for any attacker who
+  // does hold a staff session somewhere.
+  app.post('/api/print/pair', authenticate, async (req: Request, res: Response) => {
     try {
       const ip = clientIp(req);
       const { data: rec } = await supabaseAdmin.from('print_pair_attempts').select('*').eq('ip', ip).maybeSingle();
@@ -608,6 +621,14 @@ export function registerPrintRelay(app: Express): void {
         return res.status(429).json({
           ok: false,
           error: 'محاولات كثيرة جداً. انتظر دقيقة ثم أعد المحاولة.',
+        });
+      }
+
+      const { data: globalCount } = await supabaseAdmin.rpc('check_global_pair_attempt_count');
+      if (typeof globalCount === 'number' && globalCount >= CONFIG.pairAttemptsPerMinute * 20) {
+        return res.status(429).json({
+          ok: false,
+          error: 'محاولات كثيرة جداً على مستوى النظام. انتظر قليلاً ثم أعد المحاولة.',
         });
       }
 
@@ -626,6 +647,7 @@ export function registerPrintRelay(app: Express): void {
         // -- نفس إصلاح increment_tracking_attempt، يمنع محاولتين متزامنتين
         // من الكتابة على نفس count القديم بدل التراكم الصحيح.
         await supabaseAdmin.rpc('increment_print_pair_attempt', { p_ip: ip });
+        await supabaseAdmin.rpc('increment_global_pair_attempt');
         return res.status(404).json({
           ok: false,
           error: 'رمز اقتران غير صحيح، أو أن وسيط الطباعة غير مُشغَّل. تأكد من الرمز الظاهر في نافذة الوسيط.',
@@ -770,6 +792,16 @@ export function registerPrintRelay(app: Express): void {
           error: 'عنوان طابعة الشبكة غير صالح. يُسمح فقط بعناوين الشبكة المحلية (مثل 192.168.1.50).',
         });
       }
+      // Security audit 2026-10-25, fingerprint print-relay.job.tcp-port-allowlist-missing:
+      // this route validated only the host, never the port, for target='tcp' jobs --
+      // unlike /api/print/raw and /api/print/probe below, which both already check
+      // ALLOWED_RAW_PORTS. A paired client could queue a job against any port on any
+      // private host, turning the victim's print-agent into an arbitrary-port internal
+      // TCP relay. Apply the same allowlist here.
+      const tcpPort = target === 'tcp' ? (Number(body.port) || 9100) : null;
+      if (target === 'tcp' && !ALLOWED_RAW_PORTS.has(tcpPort as number)) {
+        return res.status(400).json({ ok: false, error: 'رقم المنفذ غير صالح.' });
+      }
 
       const jobId = newId();
       const { error } = await supabaseAdmin.from('print_jobs').insert({
@@ -778,7 +810,7 @@ export function registerPrintRelay(app: Express): void {
         target,
         printer: target === 'spooler' ? String(body.printer).trim().slice(0, 200) : null,
         host: target === 'tcp' ? String(body.host).trim() : null,
-        port: target === 'tcp' ? Number(body.port) || 9100 : null,
+        port: tcpPort,
         data_base64: dataBase64,
         doc_name: String(body.docName || 'SEEN POS Receipt').slice(0, 120),
         copies: Math.min(Math.max(1, Number(body.copies) || 1), 5),

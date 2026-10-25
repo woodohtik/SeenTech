@@ -2367,6 +2367,14 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [variantsLoaded, setVariantsLoaded] = useState(false);
   const [selectedVariantId, setSelectedVariantId] = useState<string>("");
+  // Security audit 2026-10-25, fingerprint
+  // apply_stock_movement.caller_supplied_random_operation_id: stable for
+  // this modal's whole lifetime, so retrying the same submit attempt (e.g.
+  // after a dropped response) reuses the same operationId and
+  // apply_stock_movement's replay guard can actually catch the duplicate.
+  // Closing and reopening the modal (a genuinely new adjustment) mounts a
+  // fresh instance and gets a fresh id.
+  const [adjustmentSessionId] = useState(() => crypto.randomUUID());
 
   useEffect(() => {
     listVariants(item.id)
@@ -2434,6 +2442,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
         type: delta > 0 ? "in" : "out",
         staffId: currentStaff?.id || null,
         tenantId,
+        operationId: `manual-adjust:${adjustmentSessionId}:${branch.id}:${item.id}:${selectedVariantId || "base"}`,
       });
 
       toastSuccess(t("inventory.adjustment_success"));

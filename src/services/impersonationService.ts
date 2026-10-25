@@ -36,26 +36,15 @@ export async function logImpersonationStart(
   return true;
 }
 
-/** يجد آخر سجل مفتوح (بلا ended_at) لهذا المستأجر ويغلقه بمدة محسوبة فعلياً. */
+/** ينهي آخر سجل مفتوح (بلا ended_at) للمستخدم الحالي نفسه في هذا المستأجر،
+ * عبر RPC يتحقق من الملكية (saas_user_id = المستخدم الحالي) على الخادم --
+ * لا UPDATE مباشر بعد الآن، RLS لا يسمح به أصلاً (security audit 2026-10-25،
+ * fingerprint support-sessions-actor-not-bound-to-auth-uid). */
 export async function endImpersonation(tenantId: string): Promise<void> {
   try {
-    const { data } = await supabase
-      .from('support_sessions')
-      .select('id, started_at')
-      .eq('tenant_id', tenantId)
-      .is('ended_at', null)
-      .order('started_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (data) {
-      const started = new Date(data.started_at);
-      const ended = new Date();
-      const durationMinutes = Math.ceil((ended.getTime() - started.getTime()) / 60000);
-      await supabase
-        .from('support_sessions')
-        .update({ ended_at: ended.toISOString(), duration_minutes: durationMinutes })
-        .eq('id', data.id);
+    const { error } = await supabase.rpc('end_impersonation_session', { p_tenant_id: tenantId });
+    if (error) {
+      console.error('[impersonation] Error ending support session:', error);
     }
   } catch (err) {
     console.error('[impersonation] Error ending support session:', err);

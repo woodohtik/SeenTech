@@ -128,6 +128,7 @@ app.use(helmet({
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
       formAction: ["'self'"],
+      frameAncestors: ["'self'"],
     },
   },
   crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
@@ -363,16 +364,28 @@ async function checkTrackingRateLimit(
 // حقيقية لم تكن موجودة).
 const PHONE_LOOKUP_ATTEMPTS_PER_MINUTE = 10;
 
+// Security audit 2026-10-25, fingerprint
+// server.ts:381:lookup-email-by-phone-pii-oracle: checkPhoneLookupRateLimit's
+// counter was only ever incremented on a miss (recordFailure was called by
+// the 404 branch alone) -- the exact harvesting scenario this limiter exists
+// to stop (sweeping a list of real phone numbers) was completely unthrottled,
+// since every successful lookup never counted against the limit. The read
+// also silently dropped any DB error (`const { data: rec } = ...`), failing
+// open. recordAttempt() below is now called on every outcome, and a read
+// error fails closed (treated as already at the limit) instead of allowed.
 async function checkPhoneLookupRateLimit(
   supabaseAdmin: any,
   ip: string
-): Promise<{ allowed: boolean; recordFailure: () => Promise<void> }> {
-  const { data: rec } = await supabaseAdmin.from('auth_phone_lookup_attempts').select('*').eq('ip', ip).maybeSingle();
+): Promise<{ allowed: boolean; recordAttempt: () => Promise<void> }> {
+  const { data: rec, error } = await supabaseAdmin.from('auth_phone_lookup_attempts').select('*').eq('ip', ip).maybeSingle();
+  if (error) {
+    return { allowed: false, recordAttempt: async () => {} };
+  }
   const recActive = !!rec && new Date(rec.reset_at).getTime() > Date.now();
   const allowed = !(recActive && rec.count >= PHONE_LOOKUP_ATTEMPTS_PER_MINUTE);
   return {
     allowed,
-    recordFailure: async () => {
+    recordAttempt: async () => {
       await supabaseAdmin.rpc('increment_auth_phone_lookup_attempt', { p_ip: ip });
     },
   };
@@ -386,22 +399,24 @@ app.post("/api/auth/lookup-email-by-phone", asyncHandler(async (req, res) => {
     return res.status(400).json({ ok: false, error: 'رقم جوال مطلوب' });
   }
 
-  const { allowed, recordFailure } = await checkPhoneLookupRateLimit(supabaseAdmin, clientIp(req));
+  const { allowed, recordAttempt } = await checkPhoneLookupRateLimit(supabaseAdmin, clientIp(req));
   if (!allowed) {
     return res.status(429).json({ ok: false, error: 'محاولات كثيرة جداً. انتظر دقيقة ثم أعد المحاولة.' });
   }
 
   const { data: reqRow } = await supabaseAdmin.from('tailor_requests').select('email').eq('phone', phone).maybeSingle();
   if (reqRow?.email) {
+    await recordAttempt();
     return res.json({ ok: true, email: reqRow.email });
   }
 
   const { data: staffRow } = await supabaseAdmin.from('staff').select('email').eq('phone', phone).maybeSingle();
   if (staffRow?.email) {
+    await recordAttempt();
     return res.json({ ok: true, email: staffRow.email });
   }
 
-  await recordFailure();
+  await recordAttempt();
   res.status(404).json({ ok: false, error: 'لا يوجد حساب مرتبط بهذا الرقم' });
 }));
 

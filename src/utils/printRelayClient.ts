@@ -24,6 +24,7 @@
  */
 
 import i18n from 'i18next';
+import { supabase } from '../lib/supabase/client';
 
 /* ============================ الأنواع ============================ */
 
@@ -144,11 +145,18 @@ export async function pairWithStation(pairCode: string): Promise<RelayStation> {
     throw new Error(i18n.t('printing.relay.enter_pair_code_6'));
   }
 
+  // security audit 2026-10-25, fingerprint
+  // print-relay.pair.rate-limit-per-ip-distributed-bypass: /api/print/pair
+  // now requires an authenticated session (previously fully anonymous).
+  const { data: { session } } = await supabase.auth.getSession();
+
   let res: Response;
   try {
     res = await fetch('/api/print/pair', {
       method: 'POST',
-      headers: jsonHeaders,
+      headers: session?.access_token
+        ? { ...jsonHeaders, Authorization: `Bearer ${session.access_token}` }
+        : jsonHeaders,
       body: JSON.stringify({ pairCode: code }),
     });
   } catch (e) {
