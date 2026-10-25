@@ -88,7 +88,7 @@ export function SmartSelect({
   const popoverClasses = cn(
     // seen-fields-unification-task.md #2: كانت rounded-3xl (24px) -- لا تطابق
     // استدارة بقية القوائم المنسدلة (IconSelect/Select كلاهما rounded-xl).
-    'z-[9999]  max-h-64 overflow-y-auto rounded-xl bg-surface p-2.5 text-sm shadow-xl border border-border focus:outline-none scrollbar-hide',
+    'z-[9999] max-h-64 max-w-xs overflow-y-auto rounded-xl bg-surface p-2.5 text-sm shadow-xl border border-border focus:outline-none scrollbar-hide',
     dir === 'rtl' ? 'text-right font-sans' : 'text-left font-sans'
   );
 
@@ -145,7 +145,7 @@ export function SmartSelect({
               <ChevronDown className="h-4 w-4 text-content-muted group-hover:text-brand" aria-hidden="true" />
             </Combobox.Button>
             <Transition as={Fragment} {...transitionProps} afterLeave={() => setQuery('')}>
-              <Combobox.Options className={popoverClasses} anchor="bottom" style={{ width: "var(--button-width)" }}>
+              <Combobox.Options className={popoverClasses} anchor="bottom" style={{ minWidth: "var(--input-width)" }}>
                 {filteredOptions.length === 0 && query !== '' ? (
                   <div className="relative cursor-default select-none py-3 px-4 text-content-muted text-xs font-bold">
                     {t('common.no_results')}
@@ -233,7 +233,7 @@ export function SmartSelect({
             </span>
           </Listbox.Button>
           <Transition as={Fragment} {...transitionProps}>
-            <Listbox.Options className={popoverClasses} anchor="bottom" style={{ width: "var(--button-width)" }}>
+            <Listbox.Options className={popoverClasses} anchor="bottom" style={{ minWidth: "var(--button-width)" }}>
               {options.map((option) => (
                 <Listbox.Option
                    key={option.value}
