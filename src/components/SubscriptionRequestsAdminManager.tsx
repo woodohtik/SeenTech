@@ -18,6 +18,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { PriceDisplay } from './PriceDisplay';
+import { IconInput } from './ui/IconInput';
 import { 
   fetchSubscriptionRequests, 
   approveSubscriptionRequest, 
@@ -216,16 +217,14 @@ export default function SubscriptionRequestsAdminManager() {
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="relative flex-1 md:w-64">
-            <Search size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-content-muted" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t('subscription.requests.search_placeholder')}
-              className="w-full pr-10 pl-4 py-2.5 bg-surface-muted border border-border rounded-2xl text-xs font-bold text-content focus:border-brand focus:outline-none"
-            />
-          </div>
+          <IconInput
+            type="text"
+            startIcon={Search}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t('subscription.requests.search_placeholder')}
+            containerClassName="flex-1 md:w-64"
+          />
 
           <button
             onClick={loadRequests}

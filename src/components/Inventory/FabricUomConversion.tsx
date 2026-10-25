@@ -23,6 +23,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { useStaff } from '../../contexts/StaffContext';
 import { SmartSelect } from '../ui/SmartSelect';
+import { IconInput } from '../ui/IconInput';
 import { 
   DEFAULT_FABRIC_UNITS, 
   safeRound, 
@@ -447,18 +448,14 @@ const FabricUomConversion: React.FC<FabricUomConversionProps> = ({ tenantId }) =
           {activeSubTab === 'display' && (
             <div className="space-y-4">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex-1 max-w-md flex items-center overflow-hidden border border-border rounded-2xl bg-surface transition-all focus-within:ring-2 focus-within:border-brand shadow-xs">
-                  <div className="flex items-center justify-center px-4 py-3 border-e border-border bg-surface/50 text-content-muted shrink-0">
-                    <Search size={18} />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder={t('inventory.search_fabrics_placeholder', 'البحث في أقمشة المخزن بالاسم أو الـ SKU...')}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-transparent font-bold text-sm text-right outline-none border-none focus:ring-0 focus:outline-none"
-                  />
-                </div>
+                <IconInput
+                  type="text"
+                  startIcon={Search}
+                  placeholder={t('inventory.search_fabrics_placeholder', 'البحث في أقمشة المخزن بالاسم أو الـ SKU...')}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  containerClassName="flex-1 max-w-md"
+                />
                 <button 
                   onClick={() => setRefreshCounter(prev => prev + 1)}
                   className="flex items-center gap-1.5 px-4 py-2 bg-surface border border-border rounded-xl text-xs font-bold text-content hover:bg-surface-muted/50 self-end md:self-auto"

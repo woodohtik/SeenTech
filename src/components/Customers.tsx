@@ -757,23 +757,23 @@ export default function Customers({ tenantId }: CustomersProps) {
       <div className="space-y-4">
         <div className="flex flex-col lg:flex-row gap-3">
           {/* Search Box */}
-          <div id="tour-customers-search" data-tour="customers-search" className="flex-1 bg-surface p-3 sm:p-4 rounded-2xl border border-border shadow-sm flex items-center gap-3 group focus-within:border-brand/40 transition-all">
-            <Search size={20} className="text-content-muted group-focus-within:text-brand transition-colors shrink-0" />
-            <input 
-              type="text" 
-              placeholder={t('customers.search_placeholder')} 
-              className={cn("flex-1 bg-transparent border-none focus:ring-0 text-content placeholder-content-muted font-bold text-sm sm:text-base outline-none", isRtl ? "text-right" : "text-left")}
+          <div id="tour-customers-search" data-tour="customers-search" className="flex-1">
+            <IconInput
+              type="text"
+              startIcon={Search}
+              endIcon={search ? (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  className="text-content-muted hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              ) : undefined}
+              placeholder={t('customers.search_placeholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            {search && (
-              <button 
-                onClick={() => setSearch('')}
-                className="p-1 hover:bg-surface-muted rounded-full text-content-muted hover:text-brand transition-all shrink-0"
-              >
-                <X size={16} />
-              </button>
-            )}
           </div>
 
           {/* Action & Filter Controls */}

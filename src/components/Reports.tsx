@@ -66,6 +66,7 @@ import Branding from './Branding';
 import { SmartSelect } from './ui/SmartSelect';
 import { DatePicker } from './ui/DatePicker';
 import { ResponsiveTable } from './ui/ResponsiveTable';
+import { IconInput } from './ui/IconInput';
 import { useToast } from '../contexts/ToastContext';
 import { motion, AnimatePresence } from 'motion/react';
 import * as XLSX from 'xlsx';
@@ -947,20 +948,17 @@ export default function Reports({ tenantId }: { tenantId: string }) {
       {/* Filters Bar */}
       <div id="reports-filters-bar" className="bg-surface p-4 sm:p-6 rounded-2xl border border-border shadow-sm flex flex-col lg:flex-row lg:items-center gap-4 sm:gap-6">
         <div className="relative w-full lg:flex-1">
-          <div className="flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface focus-within:ring-2 focus-within:ring-brand/20 rounded-2xl px-4 h-12 transition-all shadow-inner shadow-black/5">
-            <Search className="text-content-muted shrink-0" size={18} />
-            <input
-              id="reports-search-input"
-              type="text"
-              placeholder={t('dashboard.cashier.search_placeholder')}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setTimeout(() => setIsSearchFocused(false), 150)}
-              className="w-full bg-transparent border-none p-0 focus:ring-0 font-bold text-sm text-content outline-none"
-              autoComplete="off"
-            />
-          </div>
+          <IconInput
+            id="reports-search-input"
+            type="text"
+            startIcon={Search}
+            placeholder={t('dashboard.cashier.search_placeholder')}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onFocus={() => setIsSearchFocused(true)}
+            onBlur={() => setTimeout(() => setIsSearchFocused(false), 150)}
+            autoComplete="off"
+          />
 
           {/* Live search results dropdown */}
           {isSearchFocused && searchTerm.trim() && (

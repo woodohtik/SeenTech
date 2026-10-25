@@ -6,6 +6,7 @@ import { decodeInvoiceExtendedNotes } from '../utils/b2bHelper';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import { generateOrderNumber } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
+import { IconInput } from './ui/IconInput';
 import { FileText, ArrowDownLeft, Search, Eye, X, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { submitZatcaCreditNote } from '../utils/zatcaSubmit';
 import { cn } from '../lib/utils';
@@ -267,16 +268,14 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
           
           {!selectedInvoice ? (
             <div className="flex-1 space-y-4">
-              <div className="relative">
-                <Search size={18} className="absolute right-3 top-3 text-content-muted" />
-                <input 
-                  type="text" 
-                  placeholder={t('credit_notes.search_invoice_placeholder', 'ابحث برقم الفاتورة الأصلية...')} 
-                  value={searchInvoice}
-                  onChange={(e) => setSearchInvoice(e.target.value)}
-                  className="w-full bg-surface-muted border border-border rounded-xl py-3 pr-10 pl-4 focus:ring-2 focus:ring-brand font-mono text-content"
-                />
-              </div>
+              <IconInput
+                type="text"
+                startIcon={Search}
+                placeholder={t('credit_notes.search_invoice_placeholder', 'ابحث برقم الفاتورة الأصلية...')}
+                value={searchInvoice}
+                onChange={(e) => setSearchInvoice(e.target.value)}
+                className="font-mono"
+              />
               
               {searchInvoice && (
                 <div className="border border-border rounded-xl max-h-64 overflow-y-auto divide-y divide-border">

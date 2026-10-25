@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase/client';
 import { Supplier, PurchaseOrder, InventoryItem, PurchaseOrderItem } from '../types';
 import { cn } from '../lib/utils';
 import { ResponsiveTable } from './ui/ResponsiveTable';
+import { IconInput } from './ui/IconInput';
 import { SmartSelect } from './ui/SmartSelect';
 import { PriceDisplay } from './PriceDisplay';
 import { useTranslation } from 'react-i18next';
@@ -533,16 +534,14 @@ export default function PurchaseOrders({
       {/* Filter and Search Bar */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
         {/* Search Input */}
-        <div className="lg:col-span-2 flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface focus-within:ring-2 focus-within:ring-brand/20 rounded-2xl px-4 h-12 transition-all w-full shadow-inner shadow-black/5">
-          <Search className="text-content-muted shrink-0" size={18} />
-          <input
-            type="text"
-            placeholder={t('procurement.search_po_placeholder', 'بحث برقم السند أو اسم المورد...')}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-transparent font-bold outline-none text-content border-none p-0 focus:ring-0 text-sm"
-          />
-        </div>
+        <IconInput
+          type="text"
+          startIcon={Search}
+          placeholder={t('procurement.search_po_placeholder', 'بحث برقم السند أو اسم المورد...')}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          containerClassName="lg:col-span-2"
+        />
 
         {/* Type Filter Buttons */}
         <div className="bg-surface rounded-2xl p-1 border border-border flex items-center">

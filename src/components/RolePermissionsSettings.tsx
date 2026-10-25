@@ -26,6 +26,7 @@ import {
   Lock
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
+import { IconInput } from './ui/IconInput';
 import { Role, PermissionKey, PermissionsMap } from '../types';
 import { SYSTEM_PERMISSIONS } from '../constants/permissions';
 import { DEFAULT_ROLES, updateRolePermissions, createCustomRole, isMerchantRole, isSaaSRole } from '../services/permissionService';
@@ -677,21 +678,23 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
 
               {/* Filters Bar */}
               <div className="flex flex-col md:flex-row items-center gap-4">
-                <div className="relative flex-1 w-full">
-                  <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-content-muted" size={18} />
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder={t('permissions.search_placeholder')}
-                    className="w-full bg-surface-muted border border-border rounded-2xl py-3 pr-11 pl-4 text-xs font-bold text-content focus:border-brand outline-none transition-all"
-                  />
-                  {searchTerm && (
-                    <button onClick={() => setSearchTerm('')} className="absolute left-4 top-1/2 -translate-y-1/2 text-content-muted hover:text-content">
+                <IconInput
+                  type="text"
+                  startIcon={Search}
+                  endIcon={searchTerm ? (
+                    <button
+                      type="button"
+                      onClick={() => setSearchTerm('')}
+                      className="text-content-muted hover:text-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded cursor-pointer"
+                    >
                       <X size={16} />
                     </button>
-                  )}
-                </div>
+                  ) : undefined}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder={t('permissions.search_placeholder')}
+                  containerClassName="flex-1 w-full"
+                />
 
                 <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 scrollbar-none">
                   <button

@@ -43,6 +43,7 @@ import { CurrencySymbol } from './CurrencySymbol';
 import { motion, AnimatePresence } from 'motion/react';
 import { SmartSelect } from './ui/SmartSelect';
 import { DatePicker } from './ui/DatePicker';
+import { IconInput } from './ui/IconInput';
 import Header from './Header';
 import { useStaff } from '../contexts/StaffContext';
 import { usePermissions } from '../hooks/usePermissions';
@@ -147,16 +148,14 @@ const DrillDownModal = ({
         {/* Scrollable Body */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6 bg-surface border-b border-border flex gap-4">
-            <div className="flex-1 bg-surface-muted p-3 rounded-xl flex items-center gap-3 border border-transparent focus-within:border-brand/20 transition-all">
-              <Search size={18} className="text-content-muted" />
-              <input 
-                type="text" 
-                placeholder={t('dashboard.search_results')} 
-                className="bg-transparent border-none focus:ring-0 text-sm w-full font-bold text-content outline-none"
-                value={drillSearch}
-                onChange={(e) => setDrillSearch(e.target.value)}
-              />
-            </div>
+            <IconInput
+              type="text"
+              startIcon={Search}
+              placeholder={t('dashboard.search_results')}
+              value={drillSearch}
+              onChange={(e) => setDrillSearch(e.target.value)}
+              containerClassName="flex-1"
+            />
           </div>
 
           <div className="flex-1 overflow-x-auto whitespace-nowrap scrollbar-hide p-4">

@@ -567,16 +567,13 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface focus-within:ring-2 focus-within:ring-brand/20 rounded-2xl px-4 h-12 transition-all w-full shadow-inner shadow-black/5">
-                  <Search className="text-content-muted shrink-0" size={18} />
-                  <input 
-                    type="text"
-                    placeholder={t('procurement.search_placeholder', 'بحث عن مورد بسجل المحاسبة...')}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-transparent font-bold outline-none text-content border-none p-0 focus:ring-0 text-sm"
-                  />
-                </div>
+                <IconInput
+                  type="text"
+                  startIcon={Search}
+                  placeholder={t('procurement.search_placeholder', 'بحث عن مورد بسجل المحاسبة...')}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
 
               {/* Accounts Datatable and Ledger Master */}

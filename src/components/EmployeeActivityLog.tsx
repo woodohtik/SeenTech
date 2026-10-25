@@ -6,6 +6,7 @@ import { EmployeeActivityLog } from '../types';
 import { Search } from 'lucide-react';
 import DateTimeDisplay from './DateTimeDisplay';
 import { DatePicker } from './ui/DatePicker';
+import { IconInput } from './ui/IconInput';
 
 export default function EmployeeActivityLogTab({ tenantId }: { tenantId: string }) {
   const { t } = useTranslation();
@@ -92,16 +93,13 @@ export default function EmployeeActivityLogTab({ tenantId }: { tenantId: string 
       
       {/* Filters */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
-        <div className="flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface rounded-2xl px-4 h-12 transition-all w-full shadow-inner shadow-black/5">
-          <Search className="text-content-muted shrink-0" size={18} />
-          <input 
-            type="text"
-            placeholder={t('settings_page.staff.activity.search_placeholder', 'بحث بالإسم أو العملية...')}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-transparent font-bold outline-none text-content border-none p-0 focus:ring-0 text-sm"
-          />
-        </div>
+        <IconInput
+          type="text"
+          startIcon={Search}
+          placeholder={t('settings_page.staff.activity.search_placeholder', 'بحث بالإسم أو العملية...')}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
         <div className="w-full">
           <DatePicker value={dateFilter} onChange={setDateFilter} />
         </div>

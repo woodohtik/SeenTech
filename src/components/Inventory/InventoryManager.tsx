@@ -70,6 +70,7 @@ import { useDirection } from "../../lib/direction";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../../lib/utils";
 import { ResponsiveTable } from "../ui/ResponsiveTable";
+import { IconInput } from "../ui/IconInput";
 import Branding from "../Branding";
 import Select, { SmartSelect } from "../ui/SmartSelect";
 import { useToast } from "../../contexts/ToastContext";
@@ -666,17 +667,14 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
 
           {/* Filters */}
           <div className="bg-surface p-3 sm:p-4 rounded-2xl border border-border shadow-sm flex flex-col sm:flex-row gap-3 sm:gap-4">
-            {/* seen-fields-unification-task.md #4: نفس نمط شريط البحث الموحّد (PurchaseOrders.tsx/Suppliers.tsx) -- كان بلا حدود خاصة به إطلاقاً. */}
-            <div className="flex-1 flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface focus-within:ring-2 focus-within:ring-brand/20 rounded-2xl px-4 h-12 transition-all shadow-inner shadow-black/5">
-              <Search className="text-content-muted shrink-0" size={18} />
-              <input
-                type="text"
-                placeholder={t("inventory.search_placeholder")}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-transparent border-none outline-none focus:ring-0 font-semibold text-sm text-content"
-              />
-            </div>
+            <IconInput
+              type="text"
+              startIcon={Search}
+              placeholder={t("inventory.search_placeholder")}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              containerClassName="flex-1"
+            />
             <div className="flex items-center gap-2 w-full sm:min-w-[200px] sm:w-auto">
               <Select
                 value={selectedCategory}

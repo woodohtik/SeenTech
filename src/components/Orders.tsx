@@ -80,6 +80,7 @@ import { shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
 import ScannerModal from './ScannerModal';
 import { SmartSelect } from './ui/SmartSelect';
 import { DatePicker } from './ui/DatePicker';
+import { IconInput } from './ui/IconInput';
 import { checkStockAvailability, deductStock } from '../services/inventoryService';
 import { useStaff } from '../contexts/StaffContext';
 import { useBranding } from '../contexts/BrandingContext';
@@ -2407,23 +2408,25 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       </Header>
 
       <div className="flex flex-col md:flex-row gap-4">
-        <div id="tour-orders-search" data-tour="orders-search" className="flex-1 bg-surface p-4 rounded-3xl border border-border shadow-sm flex items-center gap-3">
-          <Search size={20} className="text-content-muted" />
-          <input 
-            type="text" 
-            placeholder={t('orders.search_placeholder')} 
+        <div id="tour-orders-search" data-tour="orders-search" className="flex-1">
+          <IconInput
+            type="text"
+            startIcon={Search}
+            endIcon={
+              <button
+                type="button"
+                onClick={() => setIsScannerOpen(true)}
+                aria-label={t('pos.scan_barcode')}
+                className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded cursor-pointer"
+              >
+                <Barcode size={18} />
+              </button>
+            }
+            placeholder={t('orders.search_placeholder')}
             data-orders-search="true"
-            className="flex-1 bg-transparent border-none focus:ring-0 text-content"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <button 
-            type="button"
-            onClick={() => setIsScannerOpen(true)}
-            className="text-content-muted hover:text-brand transition-colors cursor-pointer"
-          >
-            <Barcode size={20} />
-          </button>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 bg-surface p-4 rounded-3xl border border-border shadow-sm">

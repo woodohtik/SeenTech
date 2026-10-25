@@ -23,6 +23,7 @@ import { useStaff } from '../contexts/StaffContext';
 import { PriceDisplay } from './PriceDisplay';
 import { useToast } from '../contexts/ToastContext';
 import { ResponsiveTable } from './ui/ResponsiveTable';
+import { IconInput } from './ui/IconInput';
 
 interface CashierDashboardProps {
   tenantId: string;
@@ -313,16 +314,14 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
 
           <div className="flex flex-wrap items-center gap-3">
             {/* Search Input */}
-            <div className="relative min-w-[220px]">
-              <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-content-muted" />
-              <input
-                type="text"
-                placeholder={t('dashboard.cashier.search_placeholder')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pr-9 pl-3 py-2 bg-surface-muted border border-border rounded-xl text-xs font-bold text-content focus:outline-none focus:border-brand"
-              />
-            </div>
+            <IconInput
+              type="text"
+              startIcon={Search}
+              placeholder={t('dashboard.cashier.search_placeholder')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              containerClassName="min-w-[220px] w-auto"
+            />
 
             {/* Filter Selector */}
             <div className="flex items-center gap-1.5 bg-surface-muted p-1 border border-border rounded-xl text-xs font-bold">

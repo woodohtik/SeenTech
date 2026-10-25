@@ -19,6 +19,7 @@ import { supabase } from '../lib/supabase/client';
 import { useToast } from '../contexts/ToastContext';
 import { Order } from '../types';
 import { PriceDisplay } from './PriceDisplay';
+import { IconInput } from './ui/IconInput';
 import { useTranslation } from 'react-i18next';
 import DateTimeDisplay from './DateTimeDisplay';
 import { motion, AnimatePresence } from 'motion/react';
@@ -239,19 +240,15 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
             {t('sales_returns.title')}
           </h2>
           <div className="flex flex-col sm:flex-row gap-3">
-            <div className="group flex-1 flex items-center bg-surface-muted border border-border rounded-xl focus-within:ring-2 focus-within:ring-brand transition-all overflow-hidden h-12">
-              <div className="flex items-center justify-center px-4 border-e border-border text-content-muted group-focus-within:text-brand h-full shrink-0 bg-surface-muted">
-                <Search size={18} />
-              </div>
-              <input 
-                type="text"
-                placeholder={t('sales_returns.search_placeholder_phone')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="flex-1 min-w-0 bg-transparent border-none py-3 px-4 text-sm text-content outline-none ring-0 placeholder:text-content-muted font-semibold"
-              />
-            </div>
+            <IconInput
+              type="text"
+              startIcon={Search}
+              placeholder={t('sales_returns.search_placeholder_phone')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              containerClassName="flex-1"
+            />
             <button 
               onClick={handleSearch}
               disabled={loading || !searchQuery.trim()}

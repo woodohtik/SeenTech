@@ -9,6 +9,7 @@ import Branding from './Branding';
 import { useTranslation } from 'react-i18next';
 import DateTimeDisplay from './DateTimeDisplay';
 import { DatePicker } from './ui/DatePicker';
+import { IconInput } from './ui/IconInput';
 
 import { isRtlLang } from '../lib/direction';
 
@@ -130,16 +131,14 @@ export default function ShiftHistory({ tenantId, staffId, isManager }: ShiftHist
           <p className="text-content-muted mt-1">{t('shift_history.desc')}</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-          <div className="relative flex-1 md:w-64">
-            <Search className={cn("absolute top-1/2 -translate-y-1/2 text-content-muted", isRtl ? "right-3" : "left-3")} size={18} />
-            <input 
-              type="text" 
-              placeholder={t('shift_history.search_employee')}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={cn("w-full py-2 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand outline-none text-sm font-bold", isRtl ? "pr-10 pl-4" : "pl-10 pr-4")}
-            />
-          </div>
+          <IconInput
+            type="text"
+            startIcon={Search}
+            placeholder={t('shift_history.search_employee')}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            containerClassName="flex-1 md:w-64"
+          />
           <div className="min-w-[150px]">
             <DatePicker value={dateFilter} onChange={setDateFilter} />
           </div>

@@ -32,6 +32,7 @@ import { useToast } from "../../contexts/ToastContext";
 import { usePermissions } from "../../hooks/usePermissions";
 import { cn } from "../../lib/utils";
 import { SmartSelect } from "../ui/SmartSelect";
+import { IconInput } from "../ui/IconInput";
 import { Branch, InventoryItem, BranchInventory } from "../../types";
 import { motion, AnimatePresence } from "motion/react";
 import { computeAdjustmentLine } from "../../services/inventoryService";
@@ -799,25 +800,14 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
               <div className="bg-surface p-4 rounded-2xl border border-border/80 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1">
                   {/* Search Input */}
-                  <div className="relative flex-1">
-                    <Search
-                      size={15}
-                      className={cn(
-                        "absolute top-1/2 -translate-y-1/2 text-content-muted",
-                        isRtl ? "right-3.5" : "left-3.5"
-                      )}
-                    />
-                    <input
-                      type="text"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      placeholder={t("inventory.search_barcode_sku_placeholder", "البحث باسم الصنف، الباركود، أو رمز الـ SKU...")}
-                      className={cn(
-                        "w-full bg-surface text-content border border-border py-2 rounded-xl text-xs sm:text-sm outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand",
-                        isRtl ? "pr-10 pl-3.5" : "pl-10 pr-3.5"
-                      )}
-                    />
-                  </div>
+                  <IconInput
+                    type="text"
+                    startIcon={Search}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder={t("inventory.search_barcode_sku_placeholder", "البحث باسم الصنف، الباركود، أو رمز الـ SKU...")}
+                    containerClassName="flex-1"
+                  />
 
                   {/* Category select filter */}
                   <div className="w-full sm:w-44">

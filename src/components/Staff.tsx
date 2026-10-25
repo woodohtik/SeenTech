@@ -34,6 +34,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Order, Staff as StaffMemberType, AuditLog, Role, Branch, PermissionKey, PermissionsMap } from '../types';
 import { Controller, useForm } from 'react-hook-form';
 import { SmartSelect } from './ui/SmartSelect';
+import { IconInput } from './ui/IconInput';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { staffSchema } from '../lib/validations';
 import { cn } from '../lib/utils';
@@ -1247,16 +1248,13 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
 
       {viewMode !== 'permissions' && viewMode !== 'employee_activity' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-center">
-          <div className="flex items-center gap-2.5 bg-surface-muted/50 hover:bg-surface-muted/80 border border-border focus-within:border-brand/40 focus-within:bg-surface focus-within:ring-2 focus-within:ring-brand/20 rounded-2xl px-4 h-12 transition-all w-full shadow-inner shadow-black/5">
-            <Search className="text-content-muted shrink-0" size={18} />
-            <input
-              type="text"
-              placeholder={t('settings_page.staff.search_placeholder')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-transparent font-bold outline-none text-content border-none p-0 focus:ring-0 text-sm"
-            />
-          </div>
+          <IconInput
+            type="text"
+            startIcon={Search}
+            placeholder={t('settings_page.staff.search_placeholder')}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
           
           <SmartSelect 
             value={roleFilter}
@@ -1577,16 +1575,13 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                     </button>
                   </div>
                   <div className="p-3 border-b border-border bg-surface-muted/20">
-                    <div className="flex items-center gap-2 bg-surface border border-border focus-within:border-brand rounded-xl px-3 py-2 transition-all w-full">
-                      <Search className="text-content-muted shrink-0" size={14} />
-                      <input 
-                        type="text" 
-                        placeholder={t('settings_page.staff.permissions.search_roles')} 
-                        value={sidebarSearchTerm} 
-                        onChange={e => setSidebarSearchTerm(e.target.value)} 
-                        className="w-full bg-transparent text-xs font-bold outline-none text-content border-none p-0 focus:ring-0" 
-                      />
-                    </div>
+                    <IconInput
+                      type="text"
+                      startIcon={Search}
+                      placeholder={t('settings_page.staff.permissions.search_roles')}
+                      value={sidebarSearchTerm}
+                      onChange={e => setSidebarSearchTerm(e.target.value)}
+                    />
                   </div>
                   <div className="max-h-[500px] lg:max-h-[600px] overflow-y-auto divide-y divide-border/60">
                     {activeRoles.filter(r => r.name.toLowerCase().includes(sidebarSearchTerm.toLowerCase())).map(role => (
@@ -1677,16 +1672,14 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 bg-surface-muted border border-border focus-within:border-brand rounded-xl px-3 py-2 transition-all w-full sm:w-64 shrink-0">
-                          <Search className="text-content-muted shrink-0" size={15} />
-                          <input 
-                            type="text"
-                            placeholder={t('settings_page.staff.permissions.search_permissions')}
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-transparent text-xs font-bold outline-none text-content border-none p-0 focus:ring-0"
-                          />
-                        </div>
+                        <IconInput
+                          type="text"
+                          startIcon={Search}
+                          placeholder={t('settings_page.staff.permissions.search_permissions')}
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          containerClassName="w-full sm:w-64 shrink-0"
+                        />
                       </div>
 
                       {/* Staff Members Tagged under this role */}
@@ -1850,16 +1843,13 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                     <h4 className="text-xs font-black text-content-muted uppercase tracking-widest">{t('settings_page.staff.permissions.choose_employee')}</h4>
                   </div>
                   <div className="p-3 border-b border-border bg-surface-muted/20">
-                    <div className="flex items-center gap-2 bg-surface border border-border focus-within:border-brand rounded-xl px-3 py-2 transition-all w-full">
-                      <Search className="text-content-muted shrink-0" size={14} />
-                      <input 
-                        type="text" 
-                        placeholder={t('settings_page.staff.permissions.search_employees')} 
-                        value={sidebarSearchTerm} 
-                        onChange={e => setSidebarSearchTerm(e.target.value)} 
-                        className="w-full bg-transparent text-xs font-bold outline-none text-content border-none p-0 focus:ring-0" 
-                      />
-                    </div>
+                    <IconInput
+                      type="text"
+                      startIcon={Search}
+                      placeholder={t('settings_page.staff.permissions.search_employees')}
+                      value={sidebarSearchTerm}
+                      onChange={e => setSidebarSearchTerm(e.target.value)}
+                    />
                   </div>
                   <div className="max-h-[500px] lg:max-h-[600px] overflow-y-auto divide-y divide-border/60">
                     {staff.filter(m => m.name.toLowerCase().includes(sidebarSearchTerm.toLowerCase()) || m.role.toLowerCase().includes(sidebarSearchTerm.toLowerCase())).map(member => (
@@ -1925,16 +1915,14 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                             <span>{t('settings_page.staff.permissions.restore_defaults')}</span>
                           </button>
                           
-                          <div className="flex items-center gap-2 bg-surface-muted border border-border focus-within:border-brand rounded-xl px-3 py-2 transition-all w-full sm:w-56 shrink-0">
-                            <Search className="text-content-muted shrink-0" size={15} />
-                            <input 
-                              type="text"
-                              placeholder={t('settings_page.staff.permissions.search')}
-                              value={searchTerm}
-                              onChange={(e) => setSearchTerm(e.target.value)}
-                              className="w-full bg-transparent text-xs font-bold outline-none text-content border-none p-0 focus:ring-0"
-                            />
-                          </div>
+                          <IconInput
+                            type="text"
+                            startIcon={Search}
+                            placeholder={t('settings_page.staff.permissions.search')}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            containerClassName="w-full sm:w-56 shrink-0"
+                          />
                         </div>
                       </div>
 
