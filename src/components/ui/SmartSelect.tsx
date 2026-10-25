@@ -88,7 +88,7 @@ export function SmartSelect({
   const popoverClasses = cn(
     // seen-fields-unification-task.md #2: كانت rounded-3xl (24px) -- لا تطابق
     // استدارة بقية القوائم المنسدلة (IconSelect/Select كلاهما rounded-xl).
-    'z-[9999] max-h-64 max-w-xs overflow-y-auto rounded-xl bg-surface p-2.5 text-sm shadow-xl border border-border focus:outline-none scrollbar-hide',
+    'z-[9999] max-h-64 max-w-[min(90vw,28rem)] overflow-y-auto rounded-xl bg-surface p-2.5 text-sm shadow-xl border border-border focus:outline-none scrollbar-hide',
     dir === 'rtl' ? 'text-right font-sans' : 'text-left font-sans'
   );
 
