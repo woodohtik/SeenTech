@@ -62,7 +62,7 @@
 import type { Express, Request, Response } from 'express';
 import crypto from 'crypto';
 import net from 'net';
-import { authenticate } from './middleware/authMiddleware.ts';
+import { authenticate, AuthRequest } from './middleware/authMiddleware.ts';
 import { supabaseAdmin } from './supabase-admin.ts';
 import { logger } from './logger.ts';
 
@@ -883,7 +883,41 @@ export function registerPrintRelay(app: Express): void {
   // exist yet for a station using this direct-TCP fallback).
   const ALLOWED_RAW_PORTS = new Set([9100, 9101, 9102, 9103, 515, 631]);
 
-  app.post('/api/print/raw', authenticate, async (req: Request, res: Response) => {
+  /**
+   * Security audit 2026-10-25, fingerprint print-relay.raw-probe.no-tenant-scoping:
+   * `authenticate` only proves the caller is SOME tenant's staff member, not
+   * that this host:port belongs to THEIR tenant -- print_stations (the
+   * relay/pairing flow's table) has no tenant_id at all, and this direct-TCP
+   * fallback never recorded ownership anywhere. First-use pinning: the first
+   * tenant to target a given host:port claims it in `tenant_print_hosts`;
+   * anyone else targeting the same host:port afterward is rejected. The
+   * insert races safely on the table's (host, port) primary key -- a
+   * unique-violation just means someone already claimed it, so we fall
+   * through to the ownership check below instead of treating it as failure.
+   */
+  async function ensurePrintHostOwnership(host: string, port: number, tenantId: string): Promise<boolean> {
+    const { error: insertError } = await supabaseAdmin
+      .from('tenant_print_hosts')
+      .insert({ host, port, tenant_id: tenantId });
+
+    if (!insertError) return true;
+    if (insertError.code !== '23505') {
+      logger.error({ err: insertError }, '[print-relay] tenant_print_hosts claim failed');
+      return false;
+    }
+
+    const { data: existing, error: lookupError } = await supabaseAdmin
+      .from('tenant_print_hosts')
+      .select('tenant_id')
+      .eq('host', host)
+      .eq('port', port)
+      .maybeSingle();
+
+    if (lookupError || !existing) return false;
+    return existing.tenant_id === tenantId;
+  }
+
+  app.post('/api/print/raw', authenticate, async (req: AuthRequest, res: Response) => {
     try {
       const { host, port, dataBase64 } = req.body || {};
 
@@ -902,6 +936,14 @@ export function registerPrintRelay(app: Express): void {
         return res.status(400).json({ ok: false, error: 'رقم المنفذ غير صالح.' });
       }
 
+      if (!req.user?.tenantId || req.user.tenantId === 'saas_management') {
+        return res.status(403).json({ ok: false, error: 'غير مصرّح بهذا الإجراء.' });
+      }
+      const owned = await ensurePrintHostOwnership(String(host).trim(), tcpPort, req.user.tenantId);
+      if (!owned) {
+        return res.status(403).json({ ok: false, error: 'هذا المضيف مسجَّل مسبقاً لمتجر آخر.' });
+      }
+
       const buffer = Buffer.from(dataBase64, 'base64');
       if (!buffer.length) {
         return res.status(400).json({ ok: false, error: 'بيانات الطباعة فارغة.' });
@@ -915,7 +957,7 @@ export function registerPrintRelay(app: Express): void {
     }
   });
 
-  app.post('/api/print/probe', authenticate, (req: Request, res: Response) => {
+  app.post('/api/print/probe', authenticate, async (req: AuthRequest, res: Response) => {
     const { host, port } = req.body || {};
 
     if (!isPrivateHost(host)) {
@@ -929,6 +971,15 @@ export function registerPrintRelay(app: Express): void {
     if (!ALLOWED_RAW_PORTS.has(tcpPort)) {
       return res.status(400).json({ ok: false, error: 'رقم المنفذ غير صالح.' });
     }
+
+    if (!req.user?.tenantId || req.user.tenantId === 'saas_management') {
+      return res.status(403).json({ ok: false, error: 'غير مصرّح بهذا الإجراء.' });
+    }
+    const owned = await ensurePrintHostOwnership(String(host).trim(), tcpPort, req.user.tenantId);
+    if (!owned) {
+      return res.status(403).json({ ok: false, error: 'هذا المضيف مسجَّل مسبقاً لمتجر آخر.' });
+    }
+
     const socket = new net.Socket();
     let settled = false;
 
