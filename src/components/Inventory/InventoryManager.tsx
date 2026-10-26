@@ -157,6 +157,11 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  // seen-ux-fixes-batch-task.md item 10 -- when a new item is created with
+  // "has variants" checked, we jump straight into EditItemModal with the
+  // variant builder already open instead of making the merchant find and
+  // re-open Edit themselves.
+  const [autoOpenVariantsItemId, setAutoOpenVariantsItemId] = useState<string | null>(null);
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
   const [selectedItemForAdjustment, setSelectedItemForAdjustment] = useState<{
@@ -1577,6 +1582,12 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
         {showAddModal && (
           <AddItemModal
             onClose={() => setShowAddModal(false)}
+            onCreated={(rawItem: any) => {
+              setShowAddModal(false);
+              setEditingItem(mapInventoryData(rawItem));
+              setAutoOpenVariantsItemId(rawItem.id);
+              setShowEditModal(true);
+            }}
             tenantId={tenantId}
             branches={branches}
           />
@@ -1586,10 +1597,12 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
             onClose={() => {
               setShowEditModal(false);
               setEditingItem(null);
+              setAutoOpenVariantsItemId(null);
             }}
             tenantId={tenantId}
             item={editingItem}
             branches={branches}
+            autoOpenVariants={autoOpenVariantsItemId === editingItem.id}
           />
         )}
         {showOpeningBalanceModal && (
@@ -1741,7 +1754,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
   );
 };
 
-const AddItemModal = ({ onClose, tenantId, branches }: any) => {
+const AddItemModal = ({ onClose, onCreated, tenantId, branches }: any) => {
   const router = useRouter();
   const { t } = useTranslation();
   const { dir } = useDirection();
@@ -1759,6 +1772,12 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
   const [suppliersList, setSuppliersList] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
+  // seen-ux-fixes-batch-task.md item 10 -- a product's variants can only be
+  // created after it has an id (inventory_variants.item_id is a FK), so this
+  // checkbox doesn't add variants itself; it just tells handleAdd to hand
+  // the newly created item to onCreated (opens EditItemModal with the
+  // variant builder already up) instead of just closing.
+  const [hasVariants, setHasVariants] = useState(false);
   const isAddItem = true;
   const [formData, setFormData] = useState({
     name: "",
@@ -1957,9 +1976,14 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
         });
       }
 
-      onClose();
       router.refresh();
-      toastSuccess(t("inventory.add_success", "Product added successfully"));
+      if (hasVariants && onCreated) {
+        toastSuccess(t("inventory.add_success", "Product added successfully"));
+        onCreated(item);
+      } else {
+        onClose();
+        toastSuccess(t("inventory.add_success", "Product added successfully"));
+      }
     } catch (error) {
       setSubmitting(false);
       handleError(error as any, t("inventory.add_failed", "Failed to add product"));
@@ -2016,6 +2040,26 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
             handleError={handleError}
             showOpeningBalance={false}
           />
+
+          <label className="flex items-start gap-3 p-4 rounded-2xl border-2 border-border bg-surface-muted/50 cursor-pointer hover:border-brand/40 transition-colors">
+            <input
+              type="checkbox"
+              checked={hasVariants}
+              onChange={(e) => setHasVariants(e.target.checked)}
+              className="mt-0.5 w-5 h-5 rounded-md border-2 border-border text-brand focus:ring-2 focus:ring-brand/20 shrink-0"
+            />
+            <span>
+              <span className="block font-bold text-content text-sm">
+                {t("inventory.variants.has_variants_label", "هذا المنتج له سمات (لون، مقاس...)")}
+              </span>
+              <span className="block text-xs text-content-muted font-medium mt-0.5">
+                {t(
+                  "inventory.variants.has_variants_hint",
+                  "بعد الحفظ، ستنتقل مباشرةً لإضافة السمات (مثل الألوان أو المقاسات) وتحديد مخزون كل واحدة."
+                )}
+              </span>
+            </span>
+          </label>
 
           <button
             type="submit"
@@ -3808,7 +3852,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
   );
 };
 
-const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
+const EditItemModal = ({ onClose, tenantId, item, branches, autoOpenVariants }: any) => {
   const router = useRouter();
   const { t } = useTranslation();
   const { dir } = useDirection();
@@ -3992,7 +4036,13 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
             handleError={handleError}
           />
 
-          <ProductVariantsSection tenantId={tenantId} itemId={item.id} branches={branches} />
+          <ProductVariantsSection
+            tenantId={tenantId}
+            itemId={item.id}
+            branches={branches}
+            baseSku={item.sku}
+            autoStartAdd={autoOpenVariants}
+          />
 
           <div className="sticky bottom-0 bg-surface -mx-4 sm:-mx-8 -mb-4 sm:-mb-8 px-4 sm:px-8 pb-4 sm:pb-8 flex flex-col sm:flex-row sm:justify-end gap-3 sm:gap-4 pt-6 border-t border-border">
             <button
