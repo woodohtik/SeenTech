@@ -1888,17 +1888,28 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
       return;
     }
 
+    let variantRowsToSave = pendingVariantRows;
     if (productMode === "advanced") {
-      if (pendingVariantRows.length === 0) {
+      if (variantRowsToSave.length === 0) {
         toastError(t("inventory.variants.at_least_one_required", "أضف سمة واحدة على الأقل، أو بدّل لمنتج بسيط"));
         return;
       }
-      const rowMissingSku = pendingVariantRows.find((r) => !r.sku.trim());
-      if (rowMissingSku) {
-        toastError(t("inventory.variants.sku_required_for", { name: rowMissingSku.name, defaultValue: `رمز SKU مطلوب لـ "${rowMissingSku.name}"` }));
-        return;
+      // A row's SKU is optional, same as the base item's own -- fill any
+      // blank one with a random fallback instead of blocking the whole
+      // submit (VariantAttributeBuilder already does this on its own "تم"
+      // button, but a merchant can reach this submit without ever clicking
+      // that, e.g. by clearing a field after confirming).
+      if (variantRowsToSave.some((r) => !r.sku.trim())) {
+        const used = new Set(variantRowsToSave.map((r) => r.sku.trim()).filter(Boolean));
+        variantRowsToSave = variantRowsToSave.map((r) => {
+          if (r.sku.trim()) return r;
+          let candidate = Math.floor(10000000 + Math.random() * 90000000).toString();
+          while (used.has(candidate)) candidate = Math.floor(10000000 + Math.random() * 90000000).toString();
+          used.add(candidate);
+          return { ...r, sku: candidate };
+        });
       }
-      const rowSkus = pendingVariantRows.map((r) => r.sku.trim());
+      const rowSkus = variantRowsToSave.map((r) => r.sku.trim());
       if (new Set(rowSkus).size !== rowSkus.length) {
         toastError(t("inventory.variants.duplicate_sku", "لا يمكن تكرار نفس رمز SKU لأكثر من سمة"));
         return;
@@ -1986,9 +1997,9 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
 
       router.refresh();
 
-      if (productMode === "advanced" && pendingVariantRows.length > 0) {
+      if (productMode === "advanced" && variantRowsToSave.length > 0) {
         let savedCount = 0;
-        for (const row of pendingVariantRows) {
+        for (const row of variantRowsToSave) {
           try {
             await createVariant({
               tenantId,

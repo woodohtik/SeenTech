@@ -42,6 +42,9 @@ let attrIdCounter = 0;
 const nextAttrId = () => `attr-${++attrIdCounter}`;
 const EMPTY_ATTRIBUTE = (): AttributeDraft & { id: string } => ({ id: nextAttrId(), name: "", values: [] });
 
+/** Mirrors InventoryManager's own generateSKU() fallback for the base item's SKU field when left blank -- a variant row deserves the same "optional, not required" treatment. */
+const generateFallbackSku = () => Math.floor(10000000 + Math.random() * 90000000).toString();
+
 export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChange, onSaveAll, onSaved }: VariantAttributeBuilderProps) {
   const { t } = useTranslation();
   const [step, setStep] = useState<"attributes" | "rows">("attributes");
@@ -87,7 +90,12 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
         key: `row-${index}`,
         name: combo.name,
         options: combo.options,
-        sku: baseSku ? `${baseSku}-${index + 1}` : "",
+        // Always pre-fill a usable SKU -- when there's no base-item SKU to
+        // suffix (merchant left that field blank, auto-generated at save)
+        // a blank suggestion here read as "missing" rather than "optional",
+        // which is exactly what caused "رمز SKU مطلوب" surprising someone
+        // who never typed a base SKU in the first place.
+        sku: baseSku ? `${baseSku}-${index + 1}` : generateFallbackSku(),
         barcode: "",
         priceAdjustment: "0",
         openingStock: "0",
@@ -110,12 +118,23 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
   };
 
   const handlePrimaryAction = async () => {
-    const missingSku = rows.find((r) => !r.sku.trim());
-    if (missingSku) {
-      setError(t("inventory.variants.sku_required_for", { name: missingSku.name, defaultValue: `رمز SKU مطلوب لـ "${missingSku.name}"` }));
-      return;
+    // A row left blank gets a random fallback instead of blocking --
+    // goToRows already pre-fills one, but a row added/edited afterward (or
+    // one the merchant cleared by hand) could still be empty here.
+    let effectiveRows = rows;
+    if (rows.some((r) => !r.sku.trim())) {
+      const used = new Set(rows.map((r) => r.sku.trim()).filter(Boolean));
+      effectiveRows = rows.map((r) => {
+        if (r.sku.trim()) return r;
+        let candidate = generateFallbackSku();
+        while (used.has(candidate)) candidate = generateFallbackSku();
+        used.add(candidate);
+        return { ...r, sku: candidate };
+      });
+      setRowsAndNotify(effectiveRows);
     }
-    const skus = rows.map((r) => r.sku.trim());
+
+    const skus = effectiveRows.map((r) => r.sku.trim());
     if (new Set(skus).size !== skus.length) {
       setError(t("inventory.variants.duplicate_sku", "لا يمكن تكرار نفس رمز SKU لأكثر من سمة"));
       return;
@@ -130,7 +149,7 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
     }
 
     setSaving(true);
-    const { failed } = await onSaveAll(rows);
+    const { failed } = await onSaveAll(effectiveRows);
     setSaving(false);
     if (failed.length === 0) {
       onSaved?.();
