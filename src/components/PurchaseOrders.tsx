@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Package, CheckCircle2, Clock, Trash2, X, Search, Eye, Filter, ArrowLeftRight, Check, AlertCircle, RotateCcw, Printer } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
-import { Supplier, PurchaseOrder, InventoryItem, PurchaseOrderItem } from '../types';
+import { Supplier, PurchaseOrder, InventoryItem, PurchaseOrderItem, ProductVariant } from '../types';
+import { listVariantsForTenant } from '../services/variantService';
 import { cn } from '../lib/utils';
 import { ResponsiveTable } from './ui/ResponsiveTable';
 import { IconInput } from './ui/IconInput';
@@ -71,17 +72,22 @@ export default function PurchaseOrders({
 
   const [realBranchId, setRealBranchId] = useState<string | null>(null);
   const [currentStaff, setCurrentStaff] = useState<any>(null);
-  // seen-ux-fixes-batch-task.md item 10 -- receiving a PO for an item with
-  // variants isn't supported yet (deferred); excluding these here is safer
-  // than letting a receipt silently add stock to the wrong row.
-  const [itemsWithVariants, setItemsWithVariants] = useState<Set<string>>(new Set());
+  // seen-ux-fixes-batch-task.md item 10 -- purchasing an item with variants
+  // now requires picking which one (selectedVariantId below) before it can
+  // be added to the order; a 'return', though, still can't be traced back
+  // to which variant was actually purchased (supplier purchase history is
+  // tracked per item_id only), so that mode keeps excluding them.
+  const [itemVariantsByItem, setItemVariantsByItem] = useState<Record<string, ProductVariant[]>>({});
+  const [selectedVariantId, setSelectedVariantId] = useState('');
 
   useEffect(() => {
     if (!tenantId) return;
-    Promise.resolve(supabase.from('inventory_variants').select('item_id').eq('tenant_id', tenantId))
-      .then(({ data }) => setItemsWithVariants(new Set((data || []).map((r: any) => r.item_id))))
-      .catch(() => setItemsWithVariants(new Set()));
+    listVariantsForTenant(tenantId)
+      .then(setItemVariantsByItem)
+      .catch(() => setItemVariantsByItem({}));
   }, [tenantId]);
+
+  const selectedItemVariants = itemVariantsByItem[selectedItem] || [];
 
   // seen-fields-categories-referral-task.md #3 -- "+ إضافة منتج جديد" مضمَّن
   // في قائمة اختيار الصنف، بنفس نمط useTenantCategoryPicker الموجود فعلاً.
@@ -227,11 +233,14 @@ export default function PurchaseOrders({
   const handleAddItem = () => {
     const invItem = inventory.find(i => i.id === selectedItem);
     if (!invItem) return;
+    if (selectedItemVariants.length > 0 && !selectedVariantId) return;
+    const variant = selectedVariantId ? selectedItemVariants.find(v => v.id === selectedVariantId) : undefined;
 
     const rate = Number(invItem.conversionRate || (invItem as any).conversion_rate || 1);
     const newItem: PurchaseOrderItem = {
       itemId: invItem.id,
-      name: invItem.name,
+      variantId: variant?.id,
+      name: variant ? `${invItem.name} — ${variant.name}` : invItem.name,
       quantity,
       unit: invItem.unit,
       conversionRate: rate,
@@ -242,6 +251,7 @@ export default function PurchaseOrders({
 
     setItems([...items, newItem]);
     setSelectedItem('');
+    setSelectedVariantId('');
     setQuantity(1);
     setPricePerUnit(0);
   };
@@ -272,6 +282,7 @@ export default function PurchaseOrders({
         },
         p_items: items.map(item => ({
           item_id: item.itemId,
+          variant_id: item.variantId || null,
           name: item.name,
           quantity: item.quantity,
           unit: item.unit,
@@ -411,7 +422,7 @@ export default function PurchaseOrders({
       ? inventory.filter(i => supplierPurchasedItemIds.has(i.id))
       : inventory
     )
-      .filter(i => !itemsWithVariants.has(i.id))
+      .filter(i => modalType !== 'return' || !itemVariantsByItem[i.id]?.length)
       .map(i => ({ value: i.id, label: t('procurement.item_option_label', { name: i.name, unit: i.unit, quantity: i.quantity }) })),
     ...(modalType === 'purchase'
       ? [{ value: ADD_NEW_ITEM_VALUE, label: t('procurement.add_new_item_option', '+ إضافة منتج جديد') }]
@@ -965,6 +976,7 @@ export default function PurchaseOrders({
                           return;
                         }
                         setSelectedItem(val);
+                        setSelectedVariantId('');
                         if (modalType === 'return' && selectedSupplier) {
                           // A return must credit back what we actually paid --
                           // not a price the staff member types in freehand.
@@ -982,10 +994,20 @@ export default function PurchaseOrders({
                     {modalType === 'return' && selectedSupplier && itemSelectOptions.length === 0 && (
                       <p className="text-[10px] font-bold text-danger mt-1.5 px-1">{t('procurement.no_purchased_items_from_supplier', 'لا توجد أصناف تم شراؤها من هذا المورد بعد')}</p>
                     )}
-                    {itemsWithVariants.size > 0 && (
+                    {modalType === 'return' && Object.keys(itemVariantsByItem).length > 0 && (
                       <p className="text-[10px] text-content-muted mt-1.5 px-1">
-                        {t('inventory.variants.po_not_supported', 'المنتجات ذات السمات غير مدعومة بعد في أوامر الشراء -- عدّل مخزونها يدوياً من شاشة المخزون.')}
+                        {t('inventory.variants.po_return_not_supported', 'مرتجعات المنتجات ذات السمات غير مدعومة بعد -- عدّل مخزونها يدوياً من شاشة المخزون.')}
                       </p>
+                    )}
+                    {modalType === 'purchase' && selectedItemVariants.length > 0 && (
+                      <div className="mt-2">
+                        <SmartSelect
+                          value={selectedVariantId}
+                          onChange={setSelectedVariantId}
+                          placeholder={t('inventory.variants.select_variant_placeholder', 'اختر السمة (اللون/المقاس)...')}
+                          options={selectedItemVariants.map(v => ({ value: v.id, label: v.name }))}
+                        />
+                      </div>
                     )}
                   </div>
                   <div className="space-y-2">
@@ -1115,7 +1137,7 @@ export default function PurchaseOrders({
 
                 <button
                   onClick={handleAddItem}
-                  disabled={!selectedItem || quantity <= 0 || pricePerUnit <= 0}
+                  disabled={!selectedItem || quantity <= 0 || pricePerUnit <= 0 || (selectedItemVariants.length > 0 && !selectedVariantId)}
                   className="w-full bg-brand/10 text-brand py-3 rounded-xl font-bold text-xs hover:bg-brand hover:text-white transition-all disabled:opacity-50"
                 >
                   {t('procurement.add_item_to_doc_list', 'أضف الصنف لقائمة المستند')}

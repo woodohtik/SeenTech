@@ -267,6 +267,8 @@ export interface Supplier {
 
 export interface PurchaseOrderItem {
   itemId: string;
+  /** Set when this line is for one specific variant (color/size/...) of itemId, not the base item. */
+  variantId?: string;
   name: string;
   quantity: number; // in bulk unit
   unit: string;
