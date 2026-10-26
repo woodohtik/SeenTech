@@ -50,6 +50,10 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
   const [rows, setRows] = useState<GeneratedRow[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Only meaningful in draft mode (no onSaveAll): there is nothing to persist
+  // here yet, so this is just a "looks right, I'm done" acknowledgement --
+  // the actual save happens when the caller's own outer form is submitted.
+  const [draftConfirmed, setDraftConfirmed] = useState(false);
 
   const updateAttributeName = (id: string, name: string) =>
     setAttributeDrafts((prev) => prev.map((a) => (a.id === id ? { ...a, name } : a)));
@@ -77,6 +81,7 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
   const goToRows = () => {
     const combos = generateVariantCombinations(attributeDrafts);
     setStep("rows");
+    setDraftConfirmed(false);
     setRowsAndNotify(
       combos.map((combo, index) => ({
         key: `row-${index}`,
@@ -90,12 +95,21 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
     );
   };
 
-  const updateRow = (key: string, field: keyof GeneratedRow, value: string) =>
+  const updateRow = (key: string, field: keyof GeneratedRow, value: string) => {
+    setDraftConfirmed(false);
     setRowsAndNotify(rows.map((r) => (r.key === key ? { ...r, [field]: value } : r)));
-  const removeRow = (key: string) => setRowsAndNotify(rows.filter((r) => r.key !== key));
+  };
+  const removeRow = (key: string) => {
+    setDraftConfirmed(false);
+    setRowsAndNotify(rows.filter((r) => r.key !== key));
+  };
 
-  const handleSaveAll = async () => {
-    if (!onSaveAll) return;
+  /** Prevent Enter in any of this builder's own inputs from submitting a caller's outer <form> (AddItemModal wraps this in one) before the merchant is done. */
+  const blockEnterSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") e.preventDefault();
+  };
+
+  const handlePrimaryAction = async () => {
     const missingSku = rows.find((r) => !r.sku.trim());
     if (missingSku) {
       setError(t("inventory.variants.sku_required_for", { name: missingSku.name, defaultValue: `رمز SKU مطلوب لـ "${missingSku.name}"` }));
@@ -107,6 +121,14 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
       return;
     }
     setError(null);
+
+    if (!onSaveAll) {
+      // Draft mode: nothing to persist yet -- just acknowledge so the
+      // merchant knows these rows are ready and where to actually save.
+      setDraftConfirmed(true);
+      return;
+    }
+
     setSaving(true);
     const { failed } = await onSaveAll(rows);
     setSaving(false);
@@ -127,6 +149,7 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
                 <input
                   value={attr.name}
                   onChange={(e) => updateAttributeName(attr.id, e.target.value)}
+                  onKeyDown={blockEnterSubmit}
                   placeholder={t("inventory.variants.attribute_name_placeholder", "اسم السمة، مثلاً: اللون")}
                   className="flex-1 min-w-0 px-4 py-2.5 bg-surface-muted border border-border rounded-xl font-bold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                 />
@@ -196,7 +219,20 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
           <p className="text-xs font-bold text-content-muted">
             {t("inventory.variants.rows_hint", "راجع كل سمة وعدّل SKU/السعر/المخزون.")}
           </p>
+          {!onSaveAll && (
+            <p className="text-xs font-bold text-brand bg-brand/10 p-2.5 rounded-lg">
+              {t(
+                "inventory.variants.draft_save_hint",
+                "هذه السمات ستُحفظ تلقائياً مع المنتج عند الضغط على زر \"حفظ المنتج\" بالأسفل -- لا حاجة لحفظها هنا بشكل منفصل."
+              )}
+            </p>
+          )}
           {error && <p className="text-xs font-bold text-danger">{error}</p>}
+          {draftConfirmed && !error && (
+            <p className="text-xs font-bold text-success">
+              {t("inventory.variants.draft_confirmed", "✓ جاهزة. أكمل حفظ المنتج بالأسفل لإتمام الإضافة.")}
+            </p>
+          )}
           {rows.map((row) => (
             <div key={row.key} className="p-3 rounded-lg bg-surface border border-border space-y-2">
               <div className="flex items-center justify-between gap-2">
@@ -216,6 +252,7 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
                   <input
                     value={row.sku}
                     onChange={(e) => updateRow(row.key, "sku", e.target.value)}
+                    onKeyDown={blockEnterSubmit}
                     className="w-full px-2.5 py-2 bg-surface-muted border border-border rounded-lg text-xs font-semibold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   />
                 </div>
@@ -224,6 +261,7 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
                   <input
                     value={row.barcode}
                     onChange={(e) => updateRow(row.key, "barcode", e.target.value)}
+                    onKeyDown={blockEnterSubmit}
                     className="w-full px-2.5 py-2 bg-surface-muted border border-border rounded-lg text-xs font-semibold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   />
                 </div>
@@ -234,6 +272,7 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
                     step="0.01"
                     value={row.priceAdjustment}
                     onChange={(e) => updateRow(row.key, "priceAdjustment", e.target.value)}
+                    onKeyDown={blockEnterSubmit}
                     className="w-full px-2.5 py-2 bg-surface-muted border border-border rounded-lg text-xs font-semibold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   />
                 </div>
@@ -244,6 +283,7 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
                     min="0"
                     value={row.openingStock}
                     onChange={(e) => updateRow(row.key, "openingStock", e.target.value)}
+                    onKeyDown={blockEnterSubmit}
                     className="w-full px-2.5 py-2 bg-surface-muted border border-border rounded-lg text-xs font-semibold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   />
                 </div>
@@ -254,16 +294,18 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
           {rows.length === 0 && <p className="text-xs text-content-muted">{t("inventory.variants.all_rows_removed", "لم يتبقَّ أي سمة.")}</p>}
 
           <div className="flex items-center gap-2 pt-1">
-            {onSaveAll && (
-              <button
-                type="button"
-                onClick={handleSaveAll}
-                disabled={saving || rows.length === 0}
-                className="px-4 py-2 rounded-lg bg-brand text-white font-bold text-sm disabled:opacity-50"
-              >
-                {saving ? t("common.saving", "جارٍ الحفظ...") : t("inventory.variants.save_all", "حفظ الكل")}
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handlePrimaryAction}
+              disabled={saving || rows.length === 0}
+              className="px-4 py-2 rounded-lg bg-brand text-white font-bold text-sm disabled:opacity-50"
+            >
+              {saving
+                ? t("common.saving", "جارٍ الحفظ...")
+                : onSaveAll
+                ? t("inventory.variants.save_all", "حفظ الكل")
+                : t("inventory.variants.confirm_rows", "تم ✓")}
+            </button>
             <button type="button" onClick={() => setStep("attributes")} className="px-4 py-2 rounded-lg text-content-muted font-bold text-sm hover:bg-surface">
               {t("common.back", "رجوع")}
             </button>
