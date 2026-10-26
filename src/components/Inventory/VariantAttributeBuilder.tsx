@@ -44,6 +44,14 @@ const EMPTY_ATTRIBUTE = (): AttributeDraft & { id: string } => ({ id: nextAttrId
 /** Mirrors InventoryManager's own generateSKU() fallback for the base item's SKU field when left blank -- a variant row deserves the same "optional, not required" treatment. */
 const generateFallbackSku = () => Math.floor(10000000 + Math.random() * 90000000).toString();
 
+/** The first attribute a merchant adds is almost always color, the second almost always size -- show examples matching what they're actually about to type instead of always suggesting "اللون". */
+const ATTRIBUTE_NAME_EXAMPLES = ["اللون", "المقاس"];
+const ATTRIBUTE_VALUE_EXAMPLES = ["أزرق", "M"];
+const attributeNamePlaceholder = (index: number) =>
+  ATTRIBUTE_NAME_EXAMPLES[index] ? `اسم السمة، مثلاً: ${ATTRIBUTE_NAME_EXAMPLES[index]}` : "اسم السمة";
+const attributeValuePlaceholder = (index: number) =>
+  ATTRIBUTE_VALUE_EXAMPLES[index] ? `قيمة، مثلاً: ${ATTRIBUTE_VALUE_EXAMPLES[index]}` : "قيمة";
+
 export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChange, onSaveAll, onSaved }: VariantAttributeBuilderProps) {
   const { t } = useTranslation();
   const [step, setStep] = useState<"attributes" | "rows">("attributes");
@@ -160,14 +168,14 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
     <div className="p-4 rounded-xl border-2 border-brand/40 bg-brand/5 space-y-4">
       {step === "attributes" ? (
         <>
-          {attributeDrafts.map((attr) => (
+          {attributeDrafts.map((attr, attrIndex) => (
             <div key={attr.id} className="space-y-2 p-3 rounded-lg bg-surface border border-border">
               <div className="flex items-center gap-2">
                 <input
                   value={attr.name}
                   onChange={(e) => updateAttributeName(attr.id, e.target.value)}
                   onKeyDown={blockEnterSubmit}
-                  placeholder={t("inventory.variants.attribute_name_placeholder", "اسم السمة، مثلاً: اللون")}
+                  placeholder={t("inventory.variants.attribute_name_placeholder", attributeNamePlaceholder(attrIndex))}
                   className="flex-1 min-w-0 px-4 py-2.5 bg-surface-muted border border-border rounded-xl font-bold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                 />
                 {attributeDrafts.length > 1 && (
@@ -201,7 +209,7 @@ export default function VariantAttributeBuilder({ baseSku, onCancel, onRowsChang
                         addValueToAttribute(attr.id);
                       }
                     }}
-                    placeholder={t("inventory.variants.value_placeholder", "قيمة، مثلاً: أزرق")}
+                    placeholder={t("inventory.variants.value_placeholder", attributeValuePlaceholder(attrIndex))}
                     className="w-32 px-3 py-1.5 bg-surface-muted border border-border rounded-full text-xs font-semibold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   />
                   <button type="button" onClick={() => addValueToAttribute(attr.id)} className="text-xs font-bold text-brand hover:underline whitespace-nowrap">
