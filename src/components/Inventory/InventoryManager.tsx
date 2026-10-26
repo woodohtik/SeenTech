@@ -2063,7 +2063,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
         </div>
 
         <form onSubmit={handleAdd} dir={dir} className="p-4 sm:p-8 space-y-4 sm:space-y-8 overflow-y-auto text-right">
-          <div className="space-y-4">
+          <div className="flex justify-center">
             <div className="flex items-center gap-2 bg-surface-muted p-1 rounded-2xl border border-border w-full sm:w-auto">
               <button
                 type="button"
@@ -2086,17 +2086,6 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
                 {t("inventory.variants.advanced_product_tab", "منتج متقدم (له سمات)")}
               </button>
             </div>
-
-            {productMode === "advanced" && (
-              <VariantAttributeBuilder
-                baseSku={formData.sku}
-                onCancel={() => {
-                  setProductMode("simple");
-                  setPendingVariantRows([]);
-                }}
-                onRowsChange={setPendingVariantRows}
-              />
-            )}
           </div>
 
           <ProductFormFields
@@ -2111,6 +2100,17 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
             handleError={handleError}
             showOpeningBalance={false}
           />
+
+          {productMode === "advanced" && (
+            <VariantAttributeBuilder
+              baseSku={formData.sku}
+              onCancel={() => {
+                setProductMode("simple");
+                setPendingVariantRows([]);
+              }}
+              onRowsChange={setPendingVariantRows}
+            />
+          )}
 
           <button
             type="submit"
