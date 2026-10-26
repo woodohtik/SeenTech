@@ -70,6 +70,9 @@ export interface Tenant {
   subscription_end_date?: string | null;
   trial_ends_at?: string | null;
   assistantEnabled?: boolean;
+  /** Set when a super admin has moved this tenant to the trash bin -- null/undefined means active (not trashed). */
+  trashedAt?: string | null;
+  trashedBy?: string | null;
 }
 
 export interface SaaSMetrics {

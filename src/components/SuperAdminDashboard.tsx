@@ -36,7 +36,8 @@ import {
   ShieldAlert,
   Bot,
   Plus,
-  Trash2
+  Trash2,
+  RotateCcw
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -69,7 +70,7 @@ export default function SuperAdminDashboard() {
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
   const { success: toastSuccess, error: toastError, handleError: toastHandleError } = useToast();
-  const { confirm } = useConfirm();
+  const { confirm, promptText } = useConfirm();
 
   const { setImpersonationTenantId, dbUser, user: currentAuthUser } = useAuth();
   const userRole = dbUser?.role;
@@ -110,6 +111,10 @@ export default function SuperAdminDashboard() {
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
   const [updatingTenantId, setUpdatingTenantId] = useState<string | null>(null);
   const [updatingAssistantTenantId, setUpdatingAssistantTenantId] = useState<string | null>(null);
+  // seen-ux-fixes-batch-task.md trash-bin feature -- deleting a subscriber
+  // never does a real DELETE directly; it moves them into this view first.
+  const [trashViewOpen, setTrashViewOpen] = useState(false);
+  const [deletingTenantId, setDeletingTenantId] = useState<string | null>(null);
 
   // Security audit trail filter
   const [auditSearch, setAuditSearch] = useState('');
@@ -159,7 +164,9 @@ export default function SuperAdminDashboard() {
           logoUrl: d.logo_url,
           defaultLayout: d.default_layout,
           isTest: d.is_test,
-          assistantEnabled: d.assistant_enabled !== false
+          assistantEnabled: d.assistant_enabled !== false,
+          trashedAt: d.trashed_at,
+          trashedBy: d.trashed_by
         }) as Tenant));
       }
 
@@ -404,10 +411,12 @@ export default function SuperAdminDashboard() {
     })).filter(p => p.value > 0);
   }, [tenants, plansList]);
 
-  // Filtering Tenants
+  // Filtering Tenants -- trashed tenants never appear in the normal list,
+  // only in the trash bin view below.
   const filteredTenants = useMemo(() => {
     return tenants.filter(t => {
-      const matchesSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      if (t.trashedAt) return false;
+      const matchesSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             t.ownerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             t.id.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || t.status === statusFilter;
@@ -415,6 +424,8 @@ export default function SuperAdminDashboard() {
       return matchesSearch && matchesStatus && matchesPlan;
     });
   }, [tenants, searchTerm, statusFilter, planFilter]);
+
+  const trashedTenants = useMemo(() => tenants.filter(t => !!t.trashedAt), [tenants]);
 
   // Action: Toggle tenant status with database update
   const handleToggleStatus = async (tenantId: string, currentStatus: string) => {
@@ -457,6 +468,132 @@ export default function SuperAdminDashboard() {
       toastHandleError(err, t('saas.tenants.status_update_failed'));
     } finally {
       setUpdatingTenantId(null);
+    }
+  };
+
+  // seen-ux-fixes-batch-task.md trash-bin feature -- "delete" never calls a
+  // real DELETE directly; every FK referencing tenants.id across the whole
+  // schema is ON DELETE CASCADE/SET NULL, so a real delete would succeed
+  // instantly and wipe the subscriber's entire history with nothing to stop
+  // it. trash_tenant/restore_tenant/permanently_delete_tenant (RPCs,
+  // 20261028000000_tenant_trash_bin.sql) are the only paths that ever touch
+  // this, each re-validating super_admin + (for the two destructive ones)
+  // the typed tenant name server-side -- never trust the client alone for
+  // something this consequential.
+  const handleDeleteTenant = async (tenant: Tenant) => {
+    if (userRole !== 'super_admin') {
+      toastError(t('saas.unauthorized_action'));
+      return;
+    }
+    const typed = await promptText({
+      title: t('saas.tenants.trash_confirm_title', 'نقل التاجر لسلة المهملات'),
+      description: t('saas.tenants.trash_confirm_desc', {
+        name: tenant.name,
+        defaultValue: `سينتقل "${tenant.name}" فوراً لسلة المهملات ويفقد كل وصول لنظامه. يمكنك استعادته لاحقاً من السلة. اكتب اسم التاجر بالضبط للتأكيد:`,
+      }),
+      placeholder: tenant.name,
+      confirmLabel: t('common.delete', 'حذف'),
+    });
+    if (typed === null) return;
+    if (typed !== tenant.name) {
+      toastError(t('saas.tenants.name_mismatch', 'الاسم المكتوب لا يطابق اسم التاجر بالضبط'));
+      return;
+    }
+    setDeletingTenantId(tenant.id);
+    try {
+      const { error } = await supabase.rpc('trash_tenant', { p_tenant_id: tenant.id, p_confirm_name: typed });
+      if (error) throw error;
+      const nowIso = new Date().toISOString();
+      setTenants(prev => prev.map(t2 => (t2.id === tenant.id ? { ...t2, trashedAt: nowIso } : t2)));
+      toastSuccess(t('saas.tenants.trashed_success', 'تم نقل التاجر لسلة المهملات'));
+      await supabase.from('audit_logs').insert({
+        action: 'Trash tenant',
+        performed_by: dbUser?.id || null,
+        performed_by_email: currentAuthUser?.email || 'Super Admin',
+        target_tenant_id: tenant.id,
+        details: `Merchant ${tenant.id} (${tenant.name}) moved to trash`,
+        type: 'security',
+        occurred_at: nowIso,
+      });
+    } catch (err) {
+      toastHandleError(err, t('saas.tenants.trash_failed', 'تعذّر نقل التاجر لسلة المهملات'));
+    } finally {
+      setDeletingTenantId(null);
+    }
+  };
+
+  const handleRestoreTenant = async (tenant: Tenant) => {
+    if (userRole !== 'super_admin') {
+      toastError(t('saas.unauthorized_action'));
+      return;
+    }
+    const ok = await confirm({
+      description: t('saas.tenants.restore_confirm', {
+        name: tenant.name,
+        defaultValue: `استعادة "${tenant.name}" من سلة المهملات؟ سيستعيد الوصول لنظامه فوراً.`,
+      }),
+    });
+    if (!ok) return;
+    setDeletingTenantId(tenant.id);
+    try {
+      const { error } = await supabase.rpc('restore_tenant', { p_tenant_id: tenant.id });
+      if (error) throw error;
+      setTenants(prev => prev.map(t2 => (t2.id === tenant.id ? { ...t2, trashedAt: null, trashedBy: null } : t2)));
+      toastSuccess(t('saas.tenants.restored_success', 'تمت استعادة التاجر'));
+      await supabase.from('audit_logs').insert({
+        action: 'Restore tenant',
+        performed_by: dbUser?.id || null,
+        performed_by_email: currentAuthUser?.email || 'Super Admin',
+        target_tenant_id: tenant.id,
+        details: `Merchant ${tenant.id} (${tenant.name}) restored from trash`,
+        type: 'security',
+        occurred_at: new Date().toISOString(),
+      });
+    } catch (err) {
+      toastHandleError(err, t('saas.tenants.restore_failed', 'تعذّرت استعادة التاجر'));
+    } finally {
+      setDeletingTenantId(null);
+    }
+  };
+
+  const handlePermanentlyDeleteTenant = async (tenant: Tenant) => {
+    if (userRole !== 'super_admin') {
+      toastError(t('saas.unauthorized_action'));
+      return;
+    }
+    const typed = await promptText({
+      title: t('saas.tenants.permanent_delete_title', 'حذف نهائي — لا يمكن التراجع'),
+      description: t('saas.tenants.permanent_delete_desc', {
+        name: tenant.name,
+        defaultValue: `هذا سيمسح كل بيانات "${tenant.name}" نهائياً (الطلبات، الفواتير، المخزون، كل شيء) ولا يمكن التراجع عنه إطلاقاً. اكتب اسم التاجر بالضبط للتأكيد:`,
+      }),
+      placeholder: tenant.name,
+      confirmLabel: t('saas.tenants.permanent_delete_confirm_label', 'حذف نهائي'),
+    });
+    if (typed === null) return;
+    if (typed !== tenant.name) {
+      toastError(t('saas.tenants.name_mismatch', 'الاسم المكتوب لا يطابق اسم التاجر بالضبط'));
+      return;
+    }
+    setDeletingTenantId(tenant.id);
+    try {
+      const { error } = await supabase.rpc('permanently_delete_tenant', { p_tenant_id: tenant.id, p_confirm_name: typed });
+      if (error) throw error;
+      setTenants(prev => prev.filter(t2 => t2.id !== tenant.id));
+      toastSuccess(t('saas.tenants.permanently_deleted_success', 'تم حذف التاجر نهائياً'));
+      await supabase.from('audit_logs').insert({
+        action: 'Permanently delete tenant',
+        performed_by: dbUser?.id || null,
+        performed_by_email: currentAuthUser?.email || 'Super Admin',
+        target_tenant_id: tenant.id,
+        details: `Merchant ${tenant.id} (${tenant.name}) permanently deleted`,
+        type: 'security',
+        occurred_at: new Date().toISOString(),
+      });
+    } catch (err) {
+      toastHandleError(err, t('saas.tenants.permanent_delete_failed', 'تعذّر الحذف النهائي'));
+    } finally {
+      setDeletingTenantId(null);
     }
   };
 
@@ -1008,9 +1145,61 @@ export default function SuperAdminDashboard() {
                     ...plansList.map(plan => ({ value: plan.id, label: plan.name })),
                   ]}
                 />
+
+                <button
+                  onClick={() => setTrashViewOpen(v => !v)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer border shrink-0",
+                    trashViewOpen
+                      ? "bg-danger/10 text-danger border-danger/30"
+                      : "bg-surface text-content-muted border-border hover:bg-surface-muted"
+                  )}
+                >
+                  <Trash2 size={14} />
+                  <span>{t('saas.tenants.trash_bin', 'سلة المهملات')} ({trashedTenants.length})</span>
+                </button>
               </div>
             </div>
 
+            {trashViewOpen ? (
+              /* Trash Bin View */
+              <div className="bg-surface rounded-2xl border border-border shadow-sm divide-y divide-border/60">
+                {trashedTenants.length === 0 && (
+                  <div className="p-8 text-center text-sm text-content-muted font-bold">
+                    {t('saas.tenants.trash_empty', 'سلة المهملات فارغة')}
+                  </div>
+                )}
+                {trashedTenants.map(tenant => (
+                  <div key={tenant.id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-black text-content leading-tight">{tenant.name}</h4>
+                      <p className="text-xs text-content-muted mt-0.5 font-bold">
+                        {tenant.ownerEmail} · {t('saas.tenants.trashed_at_label', 'نُقل للسلة')}: {tenant.trashedAt ? new Date(tenant.trashedAt).toLocaleDateString(localeOf(i18n.language)) : '-'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        disabled={deletingTenantId === tenant.id}
+                        onClick={() => handleRestoreTenant(tenant)}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-success/10 text-success border border-success/20 rounded-xl text-xs font-black hover:bg-success/20 transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        <RotateCcw size={14} />
+                        <span>{t('saas.tenants.restore', 'استعادة')}</span>
+                      </button>
+                      <button
+                        disabled={deletingTenantId === tenant.id}
+                        onClick={() => handlePermanentlyDeleteTenant(tenant)}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-danger/10 text-danger border border-danger/20 rounded-xl text-xs font-black hover:bg-danger/20 transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        <Trash2 size={14} />
+                        <span>{t('saas.tenants.permanent_delete', 'حذف نهائي')}</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+            <>
             {/* Mobile View - Card List */}
             <div className="block md:hidden space-y-4">
               {filteredTenants.map((tenant) => {
@@ -1097,6 +1286,15 @@ export default function SuperAdminDashboard() {
                         className="p-2.5 bg-surface hover:bg-surface-muted text-content-muted hover:text-content border border-border rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0"
                       >
                         <Eye size={14} />
+                      </button>
+
+                      <button
+                        disabled={deletingTenantId === tenant.id}
+                        onClick={() => handleDeleteTenant(tenant)}
+                        className="p-2.5 bg-danger/5 hover:bg-danger/10 text-danger border border-danger/10 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0 disabled:opacity-50"
+                        title={t('saas.tenants.move_to_trash', 'نقل لسلة المهملات')}
+                      >
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   </div>
@@ -1207,6 +1405,16 @@ export default function SuperAdminDashboard() {
                               >
                                 <Eye size={14} />
                               </button>
+
+                              {/* Move to Trash */}
+                              <button
+                                disabled={deletingTenantId === tenant.id}
+                                onClick={() => handleDeleteTenant(tenant)}
+                                className="p-2 bg-danger/5 hover:bg-danger/10 text-danger border border-danger/10 rounded-xl transition-all cursor-pointer disabled:opacity-50"
+                                title={t('saas.tenants.move_to_trash', 'نقل لسلة المهملات')}
+                              >
+                                <Trash2 size={14} />
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -1223,6 +1431,8 @@ export default function SuperAdminDashboard() {
                 </table>
               </div>
             </div>
+            </>
+            )}
           </motion.div>
         )}
 
