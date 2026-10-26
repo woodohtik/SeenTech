@@ -777,12 +777,12 @@ export default function Customers({ tenantId }: CustomersProps) {
           </div>
 
           {/* Action & Filter Controls */}
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="flex flex-nowrap items-center gap-2 shrink-0">
             {/* Advanced Filters Drawer Toggle Button */}
             <button
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
               className={cn(
-                "px-4 py-3 rounded-2xl border font-bold flex items-center gap-2 transition-all cursor-pointer text-xs sm:text-sm shadow-sm relative",
+                "px-3 sm:px-4 py-3 rounded-2xl border font-bold flex items-center gap-2 transition-all cursor-pointer text-xs sm:text-sm shadow-sm relative shrink-0",
                 showAdvancedFilters || balanceFilter !== 'all' || filter === 'b2b' || filter === 'b2c'
                   ? "bg-brand/10 text-brand border-brand/30"
                   : "bg-surface text-content border-border hover:bg-surface-muted"
@@ -799,7 +799,7 @@ export default function Customers({ tenantId }: CustomersProps) {
             <SmartSelect
               value={sortBy}
               onChange={(v) => setSortBy(v as any)}
-              className="w-auto min-w-[180px] rounded-2xl px-4 py-3 text-xs sm:text-sm"
+              className="w-auto min-w-[130px] sm:min-w-[180px] rounded-2xl px-3 sm:px-4 py-3 text-xs sm:text-sm"
               options={[
                 { value: 'date', label: t('customers.sort_recent') },
                 { value: 'date_asc', label: t('customers.sort_oldest') },
