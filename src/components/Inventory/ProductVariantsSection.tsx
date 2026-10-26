@@ -1,30 +1,26 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, X, Layers, ArrowRight } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Layers } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useToast } from "../../contexts/ToastContext";
 import { useConfirm } from "../../contexts/ConfirmContext";
 import { Branch, ProductVariant } from "../../types";
 import { listVariants, createVariant, updateVariant, deleteVariant } from "../../services/variantService";
-import { generateVariantCombinations, type AttributeDraft } from "../../utils/variantCombinations";
+import VariantAttributeBuilder, { type GeneratedRow } from "./VariantAttributeBuilder";
 
 /**
  * seen-ux-fixes-batch-task.md item 10 -- lets a merchant define per-item
  * variants (e.g. a fabric in several colors/sizes), each with its own
  * SKU/barcode/price adjustment and opening stock. Rendered only inside
  * EditItemModal (an item must already exist -- item_id is a required FK on
- * inventory_variants), never inside AddItemModal; AddItemModal instead
- * offers a "has variants" checkbox that, on save, opens EditItemModal with
- * `autoStartAdd` so the merchant lands directly in this builder.
+ * inventory_variants).
  *
- * Adding variants is attribute-driven, not one free-form row at a time: the
- * merchant names an attribute (e.g. "اللون") and lists its values (أزرق،
- * أخضر، أبيض), optionally repeating for a second attribute (e.g. "المقاس"),
- * and the cartesian product (generateVariantCombinations) becomes one
- * editable row per combination before saving. Editing an already-saved
- * variant stays a direct single-row field form -- there's no "regenerate
- * the combination" concept once a row is its own real record.
+ * Adding variants goes through the shared VariantAttributeBuilder
+ * (attribute name + value list -> generated combination rows); here it runs
+ * in "persist" mode (`onSaveAll`), creating each row immediately via
+ * variantService.createVariant since the item already has an id. Editing an
+ * already-saved variant stays a direct single-row field form below.
  */
 
 interface ProductVariantsSectionProps {
@@ -33,8 +29,6 @@ interface ProductVariantsSectionProps {
   branches: Branch[];
   /** Base item's own SKU, used only to pre-fill a suggested per-row SKU. */
   baseSku?: string;
-  /** Opens the attribute builder immediately on mount -- the Add-item "has variants" flow. */
-  autoStartAdd?: boolean;
 }
 
 interface OptionRow {
@@ -66,22 +60,7 @@ function optionsToRecord(rows: OptionRow[]): Record<string, string> {
   return record;
 }
 
-interface GeneratedRow {
-  key: string;
-  name: string;
-  options: Record<string, string>;
-  sku: string;
-  barcode: string;
-  priceAdjustment: string;
-  openingStock: string;
-}
-
-let attrIdCounter = 0;
-const nextAttrId = () => `attr-${++attrIdCounter}`;
-
-const EMPTY_ATTRIBUTE = (): AttributeDraft & { id: string } => ({ id: nextAttrId(), name: "", values: [] });
-
-export default function ProductVariantsSection({ tenantId, itemId, branches, baseSku, autoStartAdd }: ProductVariantsSectionProps) {
+export default function ProductVariantsSection({ tenantId, itemId, branches, baseSku }: ProductVariantsSectionProps) {
   const { t } = useTranslation();
   const { success: toastSuccess, handleError } = useToast();
   const { confirm } = useConfirm();
@@ -94,43 +73,13 @@ export default function ProductVariantsSection({ tenantId, itemId, branches, bas
     enabled: !!itemId,
   });
 
-  // Editing one already-saved variant (direct field form).
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditFormState>(EMPTY_EDIT_FORM);
   const [savingEdit, setSavingEdit] = useState(false);
-
-  // Adding new variants via the attribute builder.
   const [isBuilding, setIsBuilding] = useState(false);
-  const [builderStep, setBuilderStep] = useState<"attributes" | "rows">("attributes");
-  const [attributeDrafts, setAttributeDrafts] = useState<(AttributeDraft & { id: string })[]>([EMPTY_ATTRIBUTE()]);
-  const [valueInputs, setValueInputs] = useState<Record<string, string>>({});
-  const [generatedRows, setGeneratedRows] = useState<GeneratedRow[]>([]);
-  const [savingRows, setSavingRows] = useState(false);
 
   const totalStock = (variant: ProductVariant) =>
     Object.values(variant.stockByBranch || {}).reduce((sum, qty) => sum + qty, 0);
-
-  const startBuilder = () => {
-    setEditingId(null);
-    setAttributeDrafts([EMPTY_ATTRIBUTE()]);
-    setValueInputs({});
-    setGeneratedRows([]);
-    setBuilderStep("attributes");
-    setIsBuilding(true);
-  };
-
-  useEffect(() => {
-    if (autoStartAdd) startBuilder();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoStartAdd]);
-
-  const cancelBuilder = () => {
-    setIsBuilding(false);
-    setBuilderStep("attributes");
-    setAttributeDrafts([EMPTY_ATTRIBUTE()]);
-    setValueInputs({});
-    setGeneratedRows([]);
-  };
 
   const startEdit = (variant: ProductVariant) => {
     const rows = Object.entries(variant.options || {}).map(([key, value]) => ({ key, value }));
@@ -202,65 +151,10 @@ export default function ProductVariantsSection({ tenantId, itemId, branches, bas
     }
   };
 
-  // --- Attribute builder (step 1) ---
-
-  const updateAttributeName = (id: string, name: string) =>
-    setAttributeDrafts((prev) => prev.map((a) => (a.id === id ? { ...a, name } : a)));
-
-  const addAttributeRow = () => setAttributeDrafts((prev) => [...prev, EMPTY_ATTRIBUTE()]);
-  const removeAttributeRow = (id: string) => setAttributeDrafts((prev) => prev.filter((a) => a.id !== id));
-
-  const addValueToAttribute = (id: string) => {
-    const raw = (valueInputs[id] || "").trim();
-    if (!raw) return;
-    setAttributeDrafts((prev) =>
-      prev.map((a) => (a.id === id && !a.values.includes(raw) ? { ...a, values: [...a.values, raw] } : a))
-    );
-    setValueInputs((prev) => ({ ...prev, [id]: "" }));
-  };
-  const removeValueFromAttribute = (id: string, value: string) =>
-    setAttributeDrafts((prev) => prev.map((a) => (a.id === id ? { ...a, values: a.values.filter((v) => v !== value) } : a)));
-
-  const canGenerate = attributeDrafts.some((a) => a.name.trim() && a.values.length > 0);
-
-  const goToRows = () => {
-    const combos = generateVariantCombinations(attributeDrafts);
-    setGeneratedRows(
-      combos.map((combo, index) => ({
-        key: `row-${index}`,
-        name: combo.name,
-        options: combo.options,
-        sku: baseSku ? `${baseSku}-${index + 1}` : "",
-        barcode: "",
-        priceAdjustment: "0",
-        openingStock: "0",
-      }))
-    );
-    setBuilderStep("rows");
-  };
-
-  // --- Generated rows (step 2) ---
-
-  const updateRow = (key: string, field: keyof GeneratedRow, value: string) =>
-    setGeneratedRows((prev) => prev.map((r) => (r.key === key ? { ...r, [field]: value } : r)));
-  const removeRow = (key: string) => setGeneratedRows((prev) => prev.filter((r) => r.key !== key));
-
-  const handleSaveRows = async () => {
-    const missingSku = generatedRows.find((r) => !r.sku.trim());
-    if (missingSku) {
-      handleError(new Error(t("inventory.variants.sku_required_for", { name: missingSku.name, defaultValue: `رمز SKU مطلوب لـ "${missingSku.name}"` })));
-      return;
-    }
-    const skus = generatedRows.map((r) => r.sku.trim());
-    if (new Set(skus).size !== skus.length) {
-      handleError(new Error(t("inventory.variants.duplicate_sku", "لا يمكن تكرار نفس رمز SKU لأكثر من سمة")));
-      return;
-    }
-
-    setSavingRows(true);
+  const persistRows = async (rows: GeneratedRow[]) => {
+    const succeeded: GeneratedRow[] = [];
     const failed: GeneratedRow[] = [];
-    let savedCount = 0;
-    for (const row of generatedRows) {
+    for (const row of rows) {
       try {
         await createVariant({
           tenantId,
@@ -273,25 +167,17 @@ export default function ProductVariantsSection({ tenantId, itemId, branches, bas
           openingStock: Number(row.openingStock) || 0,
           branches,
         });
-        savedCount += 1;
+        succeeded.push(row);
       } catch (err) {
         handleError(err);
         failed.push(row);
       }
     }
-    setSavingRows(false);
     queryClient.invalidateQueries({ queryKey });
-
-    if (savedCount > 0) {
-      toastSuccess(
-        t("inventory.variants.bulk_added", { count: savedCount, defaultValue: `تمت إضافة ${savedCount} سمة` })
-      );
+    if (succeeded.length > 0) {
+      toastSuccess(t("inventory.variants.bulk_added", { count: succeeded.length, defaultValue: `تمت إضافة ${succeeded.length} سمة` }));
     }
-    if (failed.length === 0) {
-      cancelBuilder();
-    } else {
-      setGeneratedRows(failed);
-    }
+    return { succeeded, failed };
   };
 
   return (
@@ -447,179 +333,17 @@ export default function ProductVariantsSection({ tenantId, itemId, branches, bas
             </button>
           </div>
         </div>
-      ) : isBuilding && builderStep === "attributes" ? (
-        <div className="p-4 rounded-xl border-2 border-brand/40 bg-brand/5 space-y-4">
-          {attributeDrafts.map((attr) => (
-            <div key={attr.id} className="space-y-2 p-3 rounded-lg bg-surface border border-border">
-              <div className="flex items-center gap-2">
-                <input
-                  value={attr.name}
-                  onChange={(e) => updateAttributeName(attr.id, e.target.value)}
-                  placeholder={t("inventory.variants.attribute_name_placeholder", "اسم السمة، مثلاً: اللون")}
-                  className="flex-1 min-w-0 px-4 py-2.5 bg-surface-muted border border-border rounded-xl font-bold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
-                />
-                {attributeDrafts.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeAttributeRow(attr.id)}
-                    className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg text-content-muted hover:bg-surface-muted"
-                    aria-label={t("common.delete", "حذف")}
-                  >
-                    <X size={16} />
-                  </button>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2 flex-wrap">
-                {attr.values.map((value) => (
-                  <span
-                    key={value}
-                    className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-brand/10 text-brand"
-                  >
-                    {value}
-                    <button type="button" onClick={() => removeValueFromAttribute(attr.id, value)} aria-label={t("common.delete", "حذف")}>
-                      <X size={12} />
-                    </button>
-                  </span>
-                ))}
-                <div className="flex items-center gap-1">
-                  <input
-                    value={valueInputs[attr.id] || ""}
-                    onChange={(e) => setValueInputs((prev) => ({ ...prev, [attr.id]: e.target.value }))}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addValueToAttribute(attr.id);
-                      }
-                    }}
-                    placeholder={t("inventory.variants.value_placeholder", "قيمة، مثلاً: أزرق")}
-                    className="w-32 px-3 py-1.5 bg-surface-muted border border-border rounded-full text-xs font-semibold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => addValueToAttribute(attr.id)}
-                    className="text-xs font-bold text-brand hover:underline whitespace-nowrap"
-                  >
-                    + {t("inventory.variants.add_value", "أضف قيمة")}
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          <button type="button" onClick={addAttributeRow} className="text-xs font-bold text-brand hover:underline">
-            + {t("inventory.variants.add_another_attribute", "إضافة سمة أخرى (مثل المقاس)")}
-          </button>
-
-          <div className="flex items-center gap-2 pt-1">
-            <button
-              type="button"
-              onClick={goToRows}
-              disabled={!canGenerate}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand text-white font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {t("inventory.variants.generate", "توليد المتغيّرات")}
-              <ArrowRight size={14} className="rtl:rotate-180" />
-            </button>
-            <button type="button" onClick={cancelBuilder} className="px-4 py-2 rounded-lg text-content-muted font-bold text-sm hover:bg-surface">
-              {t("common.cancel", "إلغاء")}
-            </button>
-          </div>
-        </div>
-      ) : isBuilding && builderStep === "rows" ? (
-        <div className="p-4 rounded-xl border-2 border-brand/40 bg-brand/5 space-y-3">
-          <p className="text-xs font-bold text-content-muted">
-            {t("inventory.variants.rows_hint", "راجع كل سمة وعدّل SKU/السعر/المخزون قبل الحفظ.")}
-          </p>
-          {generatedRows.map((row) => (
-            <div key={row.key} className="p-3 rounded-lg bg-surface border border-border space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-bold text-content text-sm">{row.name}</span>
-                <button
-                  type="button"
-                  onClick={() => removeRow(row.key)}
-                  className="min-w-[32px] min-h-[32px] flex items-center justify-center rounded-lg text-content-muted hover:bg-surface-muted"
-                  aria-label={t("common.delete", "حذف")}
-                >
-                  <X size={14} />
-                </button>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black text-content-muted uppercase px-1">SKU</label>
-                  <input
-                    value={row.sku}
-                    onChange={(e) => updateRow(row.key, "sku", e.target.value)}
-                    className="w-full px-2.5 py-2 bg-surface-muted border border-border rounded-lg text-xs font-semibold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black text-content-muted uppercase px-1">
-                    {t("inventory.barcode", "الباركود")}
-                  </label>
-                  <input
-                    value={row.barcode}
-                    onChange={(e) => updateRow(row.key, "barcode", e.target.value)}
-                    className="w-full px-2.5 py-2 bg-surface-muted border border-border rounded-lg text-xs font-semibold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black text-content-muted uppercase px-1">
-                    {t("inventory.variants.price_adjustment", "فرق السعر")}
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={row.priceAdjustment}
-                    onChange={(e) => updateRow(row.key, "priceAdjustment", e.target.value)}
-                    className="w-full px-2.5 py-2 bg-surface-muted border border-border rounded-lg text-xs font-semibold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black text-content-muted uppercase px-1">
-                    {t("inventory.variants.opening_stock", "المخزون الافتتاحي")}
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={row.openingStock}
-                    onChange={(e) => updateRow(row.key, "openingStock", e.target.value)}
-                    className="w-full px-2.5 py-2 bg-surface-muted border border-border rounded-lg text-xs font-semibold text-content text-right outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {generatedRows.length === 0 && (
-            <p className="text-xs text-content-muted">{t("inventory.variants.all_rows_removed", "لم يتبقَّ أي سمة لحفظها.")}</p>
-          )}
-
-          <div className="flex items-center gap-2 pt-1">
-            <button
-              type="button"
-              onClick={handleSaveRows}
-              disabled={savingRows || generatedRows.length === 0}
-              className="px-4 py-2 rounded-lg bg-brand text-white font-bold text-sm disabled:opacity-50"
-            >
-              {savingRows ? t("common.saving", "جارٍ الحفظ...") : t("inventory.variants.save_all", "حفظ الكل")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setBuilderStep("attributes")}
-              className="px-4 py-2 rounded-lg text-content-muted font-bold text-sm hover:bg-surface"
-            >
-              {t("common.back", "رجوع")}
-            </button>
-            <button type="button" onClick={cancelBuilder} className="px-4 py-2 rounded-lg text-content-muted font-bold text-sm hover:bg-surface">
-              {t("common.cancel", "إلغاء")}
-            </button>
-          </div>
-        </div>
+      ) : isBuilding ? (
+        <VariantAttributeBuilder
+          baseSku={baseSku}
+          onCancel={() => setIsBuilding(false)}
+          onSaveAll={persistRows}
+          onSaved={() => setIsBuilding(false)}
+        />
       ) : (
         <button
           type="button"
-          onClick={startBuilder}
+          onClick={() => setIsBuilding(true)}
           className={cn(
             "w-full flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-dashed border-border text-content-muted font-bold hover:border-brand/40 hover:text-brand transition-colors min-h-[44px]"
           )}
