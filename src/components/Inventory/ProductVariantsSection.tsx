@@ -164,7 +164,6 @@ export default function ProductVariantsSection({ tenantId, itemId, branches, bas
           sku: row.sku.trim(),
           barcode: row.barcode.trim() || undefined,
           priceAdjustment: Number(row.priceAdjustment) || 0,
-          openingStock: Number(row.openingStock) || 0,
           branches,
         });
         succeeded.push(row);

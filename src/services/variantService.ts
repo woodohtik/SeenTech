@@ -93,11 +93,18 @@ export interface CreateVariantInput {
   sku: string;
   barcode?: string;
   priceAdjustment: number;
-  /** Opening stock, applied to the main branch only -- same convention as creating a new item (InventoryManager.tsx). */
-  openingStock: number;
   branches: Branch[];
 }
 
+/**
+ * Always creates at zero stock across every branch -- real quantity comes
+ * only through a Purchase Order's receipt (confirm_purchase_order), same
+ * rule as a brand-new base item (InventoryManager.tsx's AddItemModal). An
+ * opening-stock field here used to let a merchant set a real number at
+ * creation time via a raw, non-idempotent branch_inventory/stock_ledger
+ * insert, bypassing the apply_stock_movement path every other stock
+ * mutation in the app goes through -- removed entirely, not just hidden.
+ */
 export async function createVariant(input: CreateVariantInput): Promise<ProductVariant> {
   const { data: variantRow, error: variantError } = await supabase
     .from('inventory_variants')
@@ -114,30 +121,16 @@ export async function createVariant(input: CreateVariantInput): Promise<ProductV
     .single();
   if (variantError) throw variantError;
 
-  const mainBranch = input.branches.find((b) => b.isMain) || input.branches[0];
   const branchInventoryInserts = input.branches.map((branch) => ({
     tenant_id: input.tenantId,
     branch_id: branch.id,
     item_id: input.itemId,
     variant_id: variantRow.id,
-    quantity: branch.id === mainBranch?.id ? (input.openingStock || 0) : 0,
+    quantity: 0,
     updated_at: new Date().toISOString(),
   }));
   const { error: stockError } = await supabase.from('branch_inventory').insert(branchInventoryInserts);
   if (stockError) throw stockError;
-
-  if (input.openingStock > 0 && mainBranch) {
-    await supabase.from('stock_ledger').insert({
-      tenant_id: input.tenantId,
-      item_id: input.itemId,
-      variant_id: variantRow.id,
-      branch_id: mainBranch.id,
-      type: 'addition',
-      previous_quantity: 0,
-      new_quantity: input.openingStock,
-      change: input.openingStock,
-    });
-  }
 
   return { ...mapVariantRow(variantRow), stockByBranch: Object.fromEntries(branchInventoryInserts.map((r) => [r.branch_id, r.quantity])) };
 }

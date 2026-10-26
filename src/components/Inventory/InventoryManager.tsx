@@ -170,7 +170,6 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
     item: InventoryItem;
     branch: Branch;
   } | null>(null);
-  const [showOpeningBalanceModal, setShowOpeningBalanceModal] = useState(false);
   const [showProductImportModal, setShowProductImportModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [activeTab, setActiveTab] = useState<
@@ -496,15 +495,6 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
 
         <div id="tour-inventory-actions" data-tour="inventory-actions" className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full lg:w-auto">
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            {hasPermission("inventory.create") && (
-              <button
-                onClick={() => setShowOpeningBalanceModal(true)}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 bg-surface border-2 border-border px-3 sm:px-5 py-2.5 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm text-content-muted hover:border-success/20 hover:text-success transition-all shadow-sm"
-              >
-                <Download size={16} className="sm:size-[20px]" />
-                <span className="whitespace-nowrap">{t("inventory.opening_balance")}</span>
-              </button>
-            )}
             {hasPermission("inventory.transfer") && (
               <button
                 onClick={() => setShowTransferModal(true)}
@@ -1593,14 +1583,6 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
             branches={branches}
           />
         )}
-        {showOpeningBalanceModal && (
-          <OpeningBalanceModal
-            onClose={() => setShowOpeningBalanceModal(false)}
-            tenantId={tenantId}
-            branches={branches}
-            items={items}
-          />
-        )}
         {showProductImportModal && (
           <ProductImportModal
             onClose={() => setShowProductImportModal(false)}
@@ -2009,7 +1991,6 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
               sku: row.sku.trim(),
               barcode: row.barcode.trim() || undefined,
               priceAdjustment: Number(row.priceAdjustment) || 0,
-              openingStock: Number(row.openingStock) || 0,
               branches,
             });
             savedCount += 1;
@@ -2931,280 +2912,6 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch }: any) => {
   );
 };
 
-const OpeningBalanceModal = ({ onClose, tenantId, branches, items }: any) => {
-  const router = useRouter();
-  const { t } = useTranslation();
-  const { currentStaff } = useStaff();
-  const { error: toastError, success: toastSuccess, handleError } = useToast();
-  const [selectedBranch, setSelectedBranch] = useState("");
-  const [stockEntries, setStockEntries] = useState<any[]>([]);
-  const [skippedVariantRows, setSkippedVariantRows] = useState(0);
-  const [loading, setLoading] = useState(false);
-  // seen-ux-fixes-batch-task.md item 10 -- importing an opening balance for
-  // an item with variants isn't supported yet (deferred); those rows are
-  // skipped (and surfaced to the merchant) instead of silently landing on
-  // the item's own base stock row.
-  const [itemsWithVariants, setItemsWithVariants] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    if (!tenantId) return;
-    Promise.resolve(supabase.from("inventory_variants").select("item_id").eq("tenant_id", tenantId))
-      .then(({ data }) => setItemsWithVariants(new Set((data || []).map((r: any) => r.item_id))))
-      .catch(() => setItemsWithVariants(new Set()));
-  }, [tenantId]);
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const bstr = evt.target?.result;
-      const wb = XLSX.read(bstr, { type: "binary" });
-      const wsname = wb.SheetNames[0];
-      const ws = wb.Sheets[wsname];
-      const data = XLSX.utils.sheet_to_json(ws);
-
-      // Map Excel data to stock entries
-      // Expecting columns: SKU, Quantity
-      const allEntries = data
-        .map((row: any) => {
-          const item = items.find((it: any) => it.sku === row.SKU);
-          return {
-            itemId: item?.id,
-            sku: row.SKU,
-            name: item?.name,
-            quantity: Math.max(0, Number(row.Quantity) || 0),
-          };
-        })
-        .filter((e) => e.itemId);
-
-      const entries = allEntries.filter((e) => !itemsWithVariants.has(e.itemId));
-      setSkippedVariantRows(allEntries.length - entries.length);
-      setStockEntries(entries);
-    };
-    reader.readAsBinaryString(file);
-  };
-
-  const handleSave = async () => {
-    if (!selectedBranch) return;
-    setLoading(true);
-    try {
-      // 1. Fetch existing quantities to compute a real delta per item -- the
-      // previous version wrote entry.quantity as an absolute value (racy
-      // under concurrency, item 4.2) and logged every single row as a
-      // ledger "addition" regardless of whether it was actually a decrease
-      // (item 4.1). apply_stock_movement (via adjustStock) fixes both: it
-      // locks the row, derives the real previous/new/change from the actual
-      // data, and picks the correct ledger direction itself.
-      const { data: existingInventory, error: fetchErr } = await supabase
-        .from("branch_inventory")
-        .select("item_id, quantity")
-        .eq("branch_id", selectedBranch)
-        .is("variant_id", null);
-
-      if (fetchErr) throw fetchErr;
-
-      const existingMap = new Map((existingInventory || []).map(row => [row.item_id, Number(row.quantity) || 0]));
-      const batchId = crypto.randomUUID();
-
-      for (const entry of stockEntries) {
-        const currentQty = existingMap.get(entry.itemId) || 0;
-        const delta = entry.quantity - currentQty;
-        if (delta === 0) continue;
-        await adjustStock({
-          branchId: selectedBranch,
-          itemId: entry.itemId,
-          quantity: delta,
-          reason: "opening_balance_import",
-          type: delta > 0 ? "in" : "out",
-          staffId: currentStaff?.id || null,
-          tenantId,
-          operationId: `opening-balance:${batchId}:${entry.itemId}`,
-        });
-      }
-
-      toastSuccess(t("inventory.opening_balance_success"));
-      onClose();
-      router.refresh();
-    } catch (error) {
-      handleError(error as any, t("inventory.opening_balance_failed"));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4">
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-black/60 backdrop-blur-md"
-        onClick={onClose}
-      />
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-surface w-full max-w-4xl rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
-      >
-        <div className="p-4 sm:p-8 border-b border-border flex justify-between items-center bg-surface-muted/50">
-          <div className="flex items-center gap-4">
-            <div className="p-4 bg-success text-white rounded-2xl shadow-lg shadow-success/10">
-              <Download size={24} />
-            </div>
-            <div>
-              <h2 className="text-2xl font-black text-content">
-                {t("inventory.opening_balance")}
-              </h2>
-              <p className="text-xs text-content-muted font-bold uppercase tracking-widest">
-                {t("inventory.initial_stock_setup")}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-surface rounded-full transition-colors"
-          >
-            <X size={24} className="text-content-muted" />
-          </button>
-        </div>
-
-        <div className="p-4 sm:p-8 space-y-8 overflow-y-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-2">
-              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
-                {t("inventory.target_branch")}
-              </label>
-              <SmartSelect
-                value={selectedBranch}
-                onChange={(val) => setSelectedBranch(val)}
-                options={[
-                  { value: "", label: t("common.select") },
-                  ...branches.map((b: any) => ({ value: b.id, label: b.name })),
-                ]}
-                className=""
-              />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="inventory-import-file" className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
-                {t("inventory.import_excel")}
-              </label>
-              <div className="relative">
-                <input
-                  id="inventory-import-file"
-                  type="file"
-                  accept=".xlsx, .xls"
-                  onChange={handleFileUpload}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                />
-                <div className="w-full px-5 py-3 bg-brand/5 border-2 border-dashed border-brand/20 rounded-2xl flex items-center justify-center gap-2 text-brand font-bold">
-                  <Download size={20} />
-                  {t("inventory.choose_file")}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {skippedVariantRows > 0 && (
-            <p className="text-xs font-bold text-warning px-1">
-              {t(
-                "inventory.variants.import_rows_skipped",
-                "تم تجاهل {{count}} صف لمنتجات لها سمات -- غير مدعوم بعد في الاستيراد، عدّلها يدوياً من شاشة المخزون.",
-                { count: skippedVariantRows }
-              )}
-            </p>
-          )}
-
-          {stockEntries.length > 0 && (
-            <div className="space-y-4">
-              <h3 className="text-sm font-black text-content uppercase tracking-widest">
-                {t("inventory.preview_entries")} ({stockEntries.length})
-              </h3>
-              <div className="border border-border rounded-3xl overflow-hidden">
-                <ResponsiveTable
-                  breakpoint="sm"
-                  cards={
-                    <>
-                      {stockEntries.slice(0, 10).map((entry, i) => (
-                        <div key={i} className="px-6 py-4 flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="text-sm font-bold text-content truncate">{entry.name}</div>
-                            <div className="text-xs font-mono text-content-muted mt-0.5">{entry.sku}</div>
-                          </div>
-                          <div className="text-sm font-black text-content shrink-0">{entry.quantity}</div>
-                        </div>
-                      ))}
-                      {stockEntries.length > 10 && (
-                        <div className="px-6 py-4 text-center text-xs font-bold text-content-muted">
-                          + {stockEntries.length - 10} {t("common.more_items")}
-                        </div>
-                      )}
-                    </>
-                  }
-                  table={
-                    <table className="w-full text-left border-collapse min-w-max">
-                      <thead className="bg-surface-muted">
-                        <tr>
-                          <th className="px-6 py-4 text-[10px] font-black text-content-muted uppercase tracking-widest">
-                            {t("inventory.item")}
-                          </th>
-                          <th className="px-6 py-4 text-[10px] font-black text-content-muted uppercase tracking-widest">
-                            {t("inventory.sku")}
-                          </th>
-                          <th className="px-6 py-4 text-[10px] font-black text-content-muted uppercase tracking-widest">
-                            {t("inventory.qty")}
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border">
-                        {stockEntries.slice(0, 10).map((entry, i) => (
-                          <tr key={i}>
-                            <td className="px-6 py-4 text-sm font-bold text-content">
-                              {entry.name}
-                            </td>
-                            <td className="px-6 py-4 text-xs font-mono text-content-muted">
-                              {entry.sku}
-                            </td>
-                            <td className="px-6 py-4 text-sm font-black text-content">
-                              {entry.quantity}
-                            </td>
-                          </tr>
-                        ))}
-                        {stockEntries.length > 10 && (
-                          <tr>
-                            <td
-                              colSpan={3}
-                              className="px-6 py-4 text-center text-xs font-bold text-content-muted"
-                            >
-                              + {stockEntries.length - 10} {t("common.more_items")}
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  }
-                />
-              </div>
-            </div>
-          )}
-
-          <button
-            onClick={handleSave}
-            disabled={loading || !selectedBranch || stockEntries.length === 0}
-            className="w-full bg-success text-white py-4 rounded-2xl font-black text-lg shadow-xl shadow-success/10 hover:bg-success/90 transition-all disabled:opacity-50"
-          >
-            {loading
-              ? t("common.saving")
-              : t("inventory.confirm_opening_balance")}
-          </button>
-        </div>
-      </motion.div>
-    </div>
-  );
-};
-
 interface ProductImportRowView {
   rowNumber: number;
   name: string;
@@ -3219,8 +2926,8 @@ interface ProductImportRowView {
  * ثاني كيان من ثلاثة: عملاء/منتجات/موردين -- انظر Customers.tsx's
  * CustomerImportModal للكيان الأول). كل منتج جديد يُنشأ هنا برصيد صفر دائماً
  * في كل الفروع، بنفس القرار المعماري المتعمَّد المطبَّق في handleAdd أعلاه
- * (AddItemModal) -- OpeningBalanceModal الموجودة فعلاً (تربط بالـSKU) هي
- * الخطوة التالية لضخ الكميات الحقيقية، لا تُعاد هنا.
+ * (AddItemModal) -- أمر الشراء (PurchaseOrders.tsx) هو الطريقة الوحيدة
+ * لضخ الكميات الحقيقية لاحقاً، لا تُعاد هنا.
  *
  * الإدراج يحدث صفاً صفاً (لا إدراج جماعي واحد) عمداً: inventory_items.sku
  * وbarcode لهما قيد تكرار حقيقي في قاعدة البيانات
