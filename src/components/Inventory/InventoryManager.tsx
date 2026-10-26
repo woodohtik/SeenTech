@@ -2063,19 +2063,6 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
         </div>
 
         <form onSubmit={handleAdd} dir={dir} className="p-4 sm:p-8 space-y-4 sm:space-y-8 overflow-y-auto text-right">
-          <ProductFormFields
-            idPrefix="add-item"
-            tenantId={tenantId}
-            formData={formData}
-            setFormData={setFormData}
-            fieldErrors={fieldErrors}
-            setFieldErrors={setFieldErrors}
-            categoryPicker={categoryPicker}
-            suppliersList={suppliersList}
-            handleError={handleError}
-            showOpeningBalance={false}
-          />
-
           <div className="space-y-4">
             <div className="flex items-center gap-2 bg-surface-muted p-1 rounded-2xl border border-border w-full sm:w-auto">
               <button
@@ -2111,6 +2098,19 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
               />
             )}
           </div>
+
+          <ProductFormFields
+            idPrefix="add-item"
+            tenantId={tenantId}
+            formData={formData}
+            setFormData={setFormData}
+            fieldErrors={fieldErrors}
+            setFieldErrors={setFieldErrors}
+            categoryPicker={categoryPicker}
+            suppliersList={suppliersList}
+            handleError={handleError}
+            showOpeningBalance={false}
+          />
 
           <button
             type="submit"
