@@ -25,7 +25,8 @@ import {
   Lock,
   Eye,
   EyeOff,
-  Loader2
+  Loader2,
+  CreditCard
 } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
@@ -50,7 +51,7 @@ interface SaaSLayoutProps {
 
 interface SaaSNotification {
   id: string;
-  type: 'new_tenant' | 'trial_expiring';
+  type: 'new_tenant' | 'trial_expiring' | 'subscription_request';
   title: string;
   message: string;
   date: string;
@@ -63,6 +64,7 @@ const SAAS_MENU_ITEMS = [
   { id: 'tenants', labelKey: 'saas.menu_tenants', icon: Users, path: '/admin/tailors', roles: ['super_admin', 'support_tech', 'billing_admin', 'sales'] },
   { id: 'roles', labelKey: 'saas.menu_roles', icon: ShieldCheck, path: '/admin/roles', roles: ['super_admin'] },
   { id: 'reports', labelKey: 'saas.menu_reports', icon: BarChart3, path: '/admin/reports', roles: ['super_admin', 'billing_admin', 'sales'] },
+  { id: 'subscriptions', labelKey: 'saas.menu_subscriptions', icon: CreditCard, path: '/admin/subscriptions', roles: ['super_admin'] },
   { id: 'withdrawals', labelKey: 'saas.menu_withdrawals', icon: DollarSign, path: '/admin/withdrawals', roles: ['super_admin', 'billing_admin'] },
   { id: 'audit', labelKey: 'saas.menu_audit', icon: Shield, path: '/admin/audit', roles: ['super_admin'] },
   { id: 'team', labelKey: 'saas.menu_team', icon: Users, path: '/admin/team', roles: ['super_admin'] },
@@ -323,8 +325,34 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
           .from('plans')
           .select('id, name, price');
 
+        // SubscriptionRequestsAdminManager had no reachable nav link at all
+        // (reported: "ما في صفحة طلبات الاشتراك") -- surfacing pending
+        // requests here too so a new one is never silently missed between
+        // visits to that page, same as the existing new_tenant/trial alerts.
+        const { data: pendingRequests, error: pendingReqError } = await supabase
+          .from('subscription_requests')
+          .select('id, tenant_name, plan_name, created_at')
+          .eq('status', 'pending');
+        if (pendingReqError) throw pendingReqError;
+
         const newAlerts: SaaSNotification[] = [];
         const now = new Date();
+
+        pendingRequests?.forEach(req => {
+          newAlerts.push({
+            id: `subreq-${req.id}`,
+            type: 'subscription_request',
+            title: t('saas.notif_subscription_request_title', 'طلب اشتراك جديد'),
+            message: t('saas.notif_subscription_request_msg', {
+              name: req.tenant_name || t('saas.default_subscriber_name'),
+              plan: req.plan_name,
+              defaultValue: `${req.tenant_name || t('saas.default_subscriber_name')} يطلب تفعيل باقة ${req.plan_name}`,
+            }),
+            date: req.created_at,
+            read: false,
+            tenantId: '',
+          });
+        });
 
         tenantsData?.forEach(tenant => {
           const createdAt = new Date(tenant.created_at || new Date());
@@ -639,9 +667,13 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
                             >
                               <div className={cn(
                                 "w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm",
-                                notif.type === 'new_tenant' ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
+                                notif.type === 'new_tenant' ? "bg-success/10 text-success"
+                                  : notif.type === 'subscription_request' ? "bg-brand/10 text-brand"
+                                  : "bg-warning/10 text-warning"
                               )}>
-                                {notif.type === 'new_tenant' ? <User size={18} /> : <Clock size={18} />}
+                                {notif.type === 'new_tenant' ? <User size={18} />
+                                  : notif.type === 'subscription_request' ? <CreditCard size={18} />
+                                  : <Clock size={18} />}
                               </div>
                               <div className="flex-1 space-y-1">
                                 <h4 className={cn("font-bold text-sm", notif.read ? "text-content" : "text-brand")}>
