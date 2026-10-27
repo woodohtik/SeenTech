@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getFriendlyErrorMessage } from '../lib/firebase';
-import { cn } from '../lib/utils';
+import { cn, formatCurrency } from '../lib/utils';
 import { 
   CreditCard, 
   Zap, 
@@ -212,7 +212,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
     setSubmitting(true);
 
     try {
-      await createSubscriptionRequest({
+      const result = await createSubscriptionRequest({
         tenant_id: tenantId,
         tenant_name: tenant?.name || 'سين',
         tenant_email: tenant?.owner_email || '',
@@ -224,7 +224,11 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
         coupon_code: couponCode.trim() || null,
       });
 
-      showToast(t('billing.request_sent_success'));
+      showToast(
+        result.discount_amount > 0
+          ? t('billing.request_sent_success_discounted', { amount: formatCurrency(result.amount), defaultValue: `تم إرسال الطلب -- السعر بعد الخصم: ${formatCurrency(result.amount)} ر.س` })
+          : t('billing.request_sent_success')
+      );
       setShowUpgradeModal(false);
       setProofFile(null);
       setProofPreview(null);
@@ -314,6 +318,17 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                   planName: pendingRequests[0].plan_name,
                   date: new Date(pendingRequests[0].created_at).toLocaleDateString(isRtl ? 'ar-SA-u-nu-latn' : 'en-US')
                 })}
+              </p>
+              <p className="text-xs font-black text-warning mt-1 flex items-center gap-1.5 dir-ltr justify-start">
+                <PriceDisplay amount={pendingRequests[0].amount} />
+                {!!pendingRequests[0].discount_amount && (
+                  <span className="text-content-muted font-bold text-[11px] line-through">
+                    <PriceDisplay amount={pendingRequests[0].original_amount ?? pendingRequests[0].amount + pendingRequests[0].discount_amount} />
+                  </span>
+                )}
+                {pendingRequests[0].coupon_code && (
+                  <span className="text-content-muted font-bold text-[11px] not-italic">({pendingRequests[0].coupon_code})</span>
+                )}
               </p>
             </div>
           </div>
@@ -740,6 +755,18 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                       type="text"
                       value={couponCode}
                       onChange={(e) => { setCouponCode(e.target.value); setCouponPreview(null); setCouponError(null); }}
+                      onKeyDown={(e) => {
+                        // Enter inside this field used to submit the whole
+                        // upgrade form silently (the coupon discount still
+                        // applied server-side, but with no visible preview
+                        // -- reported as "the coupon works but the
+                        // discounted price never shows"). Run the check
+                        // instead, like clicking the button next to it.
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleCheckCoupon();
+                        }
+                      }}
                       placeholder={t('billing.modal_coupon_placeholder', 'مثال: OFF-AB12X7')}
                       className="w-full p-3.5 ps-10 bg-surface-muted border border-border rounded-xl text-xs font-bold text-content focus:border-brand focus:outline-none dir-ltr text-left"
                     />

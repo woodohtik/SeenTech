@@ -56,12 +56,22 @@ export interface CreateSubscriptionRequestInput {
   coupon_code?: string | null;
 }
 
+export interface CreateSubscriptionRequestResult {
+  id: string;
+  amount: number;
+  discount_amount: number;
+  original_amount: number;
+}
+
 /** Routes through create_subscription_request() (SECURITY DEFINER) instead of
  * a raw insert -- the RPC computes amount from plans.price itself (and
  * validates/reserves any coupon) rather than trusting a client-supplied
- * amount. See supabase/migrations/20261101000000_subscription_coupons.sql. */
-export async function createSubscriptionRequest(data: CreateSubscriptionRequestInput): Promise<void> {
-  const { error } = await supabase.rpc('create_subscription_request', {
+ * amount. Returns the resulting row's amount/discount so the caller can show
+ * the price actually applied without a second round-trip. See
+ * supabase/migrations/20261101000000_subscription_coupons.sql and
+ * 20261102000000_create_subscription_request_returns_amount.sql. */
+export async function createSubscriptionRequest(data: CreateSubscriptionRequestInput): Promise<CreateSubscriptionRequestResult> {
+  const { data: rows, error } = await supabase.rpc('create_subscription_request', {
     p_tenant_id: data.tenant_id,
     p_plan_id: data.plan_id,
     p_payment_method: data.payment_method,
@@ -73,6 +83,13 @@ export async function createSubscriptionRequest(data: CreateSubscriptionRequestI
     p_tenant_email: data.tenant_email || null,
   });
   if (error) throw error;
+  const row = Array.isArray(rows) ? rows[0] : rows;
+  return {
+    id: row?.id,
+    amount: Number(row?.amount) || 0,
+    discount_amount: Number(row?.discount_amount) || 0,
+    original_amount: Number(row?.original_amount) || 0,
+  };
 }
 
 export async function fetchSubscriptionRequests(): Promise<SubscriptionRequest[]> {
