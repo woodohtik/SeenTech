@@ -328,7 +328,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 // below for a fresh-signup's cold tailor_requests read.
                 let tenantRow: any = staffData.tenant ?? null;
                 if (!tenantRow && staffData.tenant_id) {
-                    for (let attempt = 0; attempt < 3 && !tenantRow; attempt++) {
+                    // 3 attempts (max ~2.4s extra wait) wasn't a wide enough
+                    // window for this race in practice -- reported as "account
+                    // not active" reliably on first login on both staging and
+                    // production, resolved every time by a manual retry
+                    // (which is this exact same loop, just re-run after the
+                    // user has spent a few more seconds reading the screen).
+                    // Widening it here means they never see that screen at
+                    // all; the user only sees the ordinary loading skeleton
+                    // for a bit longer while `loading` stays true.
+                    for (let attempt = 0; attempt < 6 && !tenantRow; attempt++) {
                         await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
                         const { data: fetchedTenant } = await supabase
                             .from('tenants')
