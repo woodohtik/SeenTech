@@ -90,7 +90,7 @@
     "file_too_large": "File is too large. Please choose a file smaller than 5 MB.",
     "free_trial_period": "14 Days",
     "history_empty_btn": "Send Payment Proof or Upgrade",
-    "history_empty_desc": "Once you submit a renewal request and attach the proof of payment, the super admin will approve and document it in your financial history.",
+    "history_empty_desc": "Once you submit a renewal request and attach the proof of payment, the Seen team will approve and document it in your financial history.",
     "history_empty_title": "No past payments recorded",
     "history_notes_fallback": "Seen POS subscription payment",
     "history_refresh_tip": "Refresh data",
@@ -124,7 +124,7 @@
     "modal_ref_label": "Reference / Transfer Number (Optional):",
     "modal_ref_placeholder": "e.g. REF-984210",
     "modal_submit": "Submit Subscription Request & Payment Proof",
-    "modal_submit_tip": "When submitting the request, notifications will go directly to the super admin for verification, approval, and account activation.",
+    "modal_submit_tip": "When submitting the request, notifications go directly to the Seen team for verification, approval, and account activation.",
     "modal_title": "Renew or Upgrade Subscription",
     "next_billing_date": "Next Renewal Date:",
     "payment_method_bank": "Bank Transfer",
@@ -132,7 +132,7 @@
     "payment_method_cash": "Cash",
     "payment_method_pos": "POS Network",
     "pending_request_desc": "Payment proof for ({{planName}}) received on {{date}}. Your account will be activated once approved.",
-    "pending_request_status": "Under Review by Super Admin",
+    "pending_request_status": "Under Review by the Seen Team",
     "pending_request_title": "Renewal / Upgrade Request Under Review",
     "plans": {
       "basic": {
@@ -169,7 +169,7 @@
     "pricing_eyebrow": "Transparent Subscription Plans",
     "pricing_title": "Choose the Right Plan for Your Store",
     "proof_required_alert": "Please attach a payment proof image or enter the reference/transfer number to complete the subscription request.",
-    "request_sent_success": "Subscription request and payment proof sent successfully. The super admin will approve and activate your plan shortly ✓",
+    "request_sent_success": "Subscription request and payment proof sent successfully. The Seen team will approve and activate your plan shortly ✓",
     "request_submit_error": "An error occurred while submitting the request: {{error}}",
     "status": {
       "active": "Active",
