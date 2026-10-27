@@ -8,6 +8,9 @@ export interface SubscriptionRequest {
   plan_id: string;
   plan_name: string;
   amount: number;
+  original_amount?: number;
+  coupon_code?: string | null;
+  discount_amount?: number;
   payment_method: 'bank_transfer' | 'card' | 'network' | 'cash';
   proof_url?: string | null;
   reference_no?: string | null;
@@ -27,6 +30,9 @@ function mapRow(d: any): SubscriptionRequest {
     plan_id: d.plan_id,
     plan_name: d.plan_name,
     amount: Number(d.amount) || 0,
+    original_amount: d.original_amount != null ? Number(d.original_amount) : undefined,
+    coupon_code: d.coupon_code || null,
+    discount_amount: Number(d.discount_amount) || 0,
     payment_method: d.payment_method,
     proof_url: d.proof_url,
     reference_no: d.reference_no,
@@ -38,28 +44,52 @@ function mapRow(d: any): SubscriptionRequest {
   };
 }
 
-export async function createSubscriptionRequest(
-  data: Omit<SubscriptionRequest, 'id' | 'status' | 'created_at'>
-): Promise<SubscriptionRequest> {
-  const { data: row, error } = await supabase
-    .from('subscription_requests')
-    .insert({
-      tenant_id: data.tenant_id,
-      tenant_name: data.tenant_name || null,
-      tenant_email: data.tenant_email || null,
-      plan_id: data.plan_id,
-      plan_name: data.plan_name,
-      amount: data.amount,
-      payment_method: data.payment_method,
-      proof_url: data.proof_url || null,
-      reference_no: data.reference_no || null,
-      notes: data.notes || null,
-    })
-    .select()
-    .single();
+export interface CreateSubscriptionRequestInput {
+  tenant_id: string;
+  tenant_name?: string;
+  tenant_email?: string;
+  plan_id: string;
+  payment_method: SubscriptionRequest['payment_method'];
+  proof_url?: string | null;
+  reference_no?: string | null;
+  notes?: string | null;
+  coupon_code?: string | null;
+}
 
+export interface CreateSubscriptionRequestResult {
+  id: string;
+  amount: number;
+  discount_amount: number;
+  original_amount: number;
+}
+
+/** Routes through create_subscription_request() (SECURITY DEFINER) instead of
+ * a raw insert -- the RPC computes amount from plans.price itself (and
+ * validates/reserves any coupon) rather than trusting a client-supplied
+ * amount. Returns the resulting row's amount/discount so the caller can show
+ * the price actually applied without a second round-trip. See
+ * supabase/migrations/20261101000000_subscription_coupons.sql and
+ * 20261102000000_create_subscription_request_returns_amount.sql. */
+export async function createSubscriptionRequest(data: CreateSubscriptionRequestInput): Promise<CreateSubscriptionRequestResult> {
+  const { data: rows, error } = await supabase.rpc('create_subscription_request', {
+    p_tenant_id: data.tenant_id,
+    p_plan_id: data.plan_id,
+    p_payment_method: data.payment_method,
+    p_proof_url: data.proof_url || null,
+    p_reference_no: data.reference_no || null,
+    p_notes: data.notes || null,
+    p_coupon_code: data.coupon_code || null,
+    p_tenant_name: data.tenant_name || null,
+    p_tenant_email: data.tenant_email || null,
+  });
   if (error) throw error;
-  return mapRow(row);
+  const row = Array.isArray(rows) ? rows[0] : rows;
+  return {
+    id: row?.id,
+    amount: Number(row?.amount) || 0,
+    discount_amount: Number(row?.discount_amount) || 0,
+    original_amount: Number(row?.original_amount) || 0,
+  };
 }
 
 export async function fetchSubscriptionRequests(): Promise<SubscriptionRequest[]> {

@@ -103,6 +103,7 @@ const SaaSAuditLogs = React.lazy(() => import('./components/SaaSAuditLogs'));
 const SaaSSystemSettings = React.lazy(() => import('./components/SaaSSystemSettings'));
 const SaaSAssistantSettings = React.lazy(() => import('./components/SaaSAssistantSettings'));
 const SaaSWithdrawals = React.lazy(() => import('./components/SaaSWithdrawals'));
+const SubscriptionRequestsAdminManager = React.lazy(() => import('./components/SubscriptionRequestsAdminManager'));
 import SaaSTeamManagement from './components/SaaSTeamManagement';
 import TenantAnalyticsDashboard from './components/TenantAnalyticsDashboard';
 import { RolePermissionsSettings } from './components/RolePermissionsSettings';
@@ -629,6 +630,18 @@ function AppContent() {
                         <RouteBoundary>
                           <RoleGuard allowedRoles={['super_admin', 'billing_admin']}>
                             <SaaSWithdrawals />
+                          </RoleGuard>
+                        </RouteBoundary>
+                      } />
+                      <Route path="/subscriptions" element={
+                        <RouteBoundary>
+                          {/* approve_subscription_request/reject_subscription_request are
+                              super_admin-only at the DB level (see
+                              20260908050000_subscription_requests_table.sql) -- billing_admin/
+                              sales could view this page but every approve/reject click would
+                              fail with a permission error, so it's super_admin-only here too. */}
+                          <RoleGuard allowedRoles={['super_admin']}>
+                            <SubscriptionRequestsAdminManager />
                           </RoleGuard>
                         </RouteBoundary>
                       } />

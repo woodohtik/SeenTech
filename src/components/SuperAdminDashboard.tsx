@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase/client';
-import { logImpersonationStart } from '../services/impersonationService';
 import { Tenant, AuditLog, EmployeeActivityLog } from '../types';
 import { 
   Users, 
@@ -20,24 +19,19 @@ import {
   PieChart as PieChartIcon,
   MousePointer2,
   Lock,
-  Globe,
   Database,
   Search,
   SlidersHorizontal,
   RefreshCw,
-  ExternalLink,
-  Eye,
   ChevronRight,
   ChevronLeft,
   X,
   CreditCard,
   UserCheck,
   AlertCircle,
-  ShieldAlert,
-  Bot,
   Plus,
   Trash2,
-  RotateCcw
+  Tag
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -63,23 +57,18 @@ import { Trans, useTranslation } from 'react-i18next';
 import { isRtlLang, localeOf } from '../lib/direction';
 import { validatePlanForm, PlanFormInput, PlanFormField } from '../utils/planValidation';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { Coupon, fetchCoupons, createCoupon, setCouponActive, deleteCoupon } from '../services/couponService';
 
-type TabType = 'overview' | 'tenants' | 'financials' | 'performance' | 'security' | 'plans';
+type TabType = 'overview' | 'financials' | 'performance' | 'security' | 'plans' | 'coupons';
 
 export default function SuperAdminDashboard() {
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
   const { success: toastSuccess, error: toastError, handleError: toastHandleError } = useToast();
-  const { confirm, promptText } = useConfirm();
+  const { confirm } = useConfirm();
 
-  const { setImpersonationTenantId, dbUser, user: currentAuthUser } = useAuth();
+  const { dbUser, user: currentAuthUser } = useAuth();
   const userRole = dbUser?.role;
-  const [supportModalTenant, setSupportModalTenant] = useState<{ id: string, name: string } | null>(null);
-  const [requestLoading, setRequestLoading] = useState(false);
-  const [pollingStatus, setPollingStatus] = useState<'pending' | 'approved' | 'rejected' | null>(null);
-
-  const pollingIntervalRef = useRef<any>(null);
-  const currentRequestRef = useRef<{ id: string, tenantId: string, isFallback: boolean } | null>(null);
 
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -97,6 +86,9 @@ export default function SuperAdminDashboard() {
   const [plansList, setPlansList] = useState<any[]>([]);
   const [planModalMode, setPlanModalMode] = useState<'create' | 'edit' | null>(null);
   const [editingPlan, setEditingPlan] = useState<any | null>(null);
+  const [couponsList, setCouponsList] = useState<Coupon[]>([]);
+  const [couponModalOpen, setCouponModalOpen] = useState(false);
+  const [updatingCouponId, setUpdatingCouponId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState<string>('Super Admin');
   
@@ -104,17 +96,6 @@ export default function SuperAdminDashboard() {
   const [dbLatency, setDbLatency] = useState<number | null>(null);
   const [testingLatency, setTestingLatency] = useState(false);
 
-  // Tenant list state management
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [planFilter, setPlanFilter] = useState('all');
-  const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
-  const [updatingTenantId, setUpdatingTenantId] = useState<string | null>(null);
-  const [updatingAssistantTenantId, setUpdatingAssistantTenantId] = useState<string | null>(null);
-  // seen-ux-fixes-batch-task.md trash-bin feature -- deleting a subscriber
-  // never does a real DELETE directly; it moves them into this view first.
-  const [trashViewOpen, setTrashViewOpen] = useState(false);
-  const [deletingTenantId, setDeletingTenantId] = useState<string | null>(null);
 
   // Security audit trail filter
   const [auditSearch, setAuditSearch] = useState('');
@@ -140,16 +121,19 @@ export default function SuperAdminDashboard() {
       const [
         { data: tenantsData },
         { data: saasUserData },
-        { data: plansData }
+        { data: plansData },
+        couponsData
       ] = await Promise.all([
         supabase.from('tenants').select('*'),
         supabase.from('saas_users').select('*').eq('uid', currentAuthUser?.id).single(),
-        supabase.from('plans').select('*')
+        supabase.from('plans').select('*'),
+        fetchCoupons().catch((e) => { console.error('Error fetching coupons:', e); return []; })
       ]);
 
       if (plansData) {
         setPlansList(plansData);
       }
+      setCouponsList(couponsData);
 
       if (tenantsData) {
         setTenants(tenantsData.map(d => ({
@@ -293,6 +277,33 @@ export default function SuperAdminDashboard() {
     await fetchData();
   };
 
+  const handleToggleCouponActive = async (coupon: Coupon) => {
+    setUpdatingCouponId(coupon.id);
+    try {
+      await setCouponActive(coupon.id, !coupon.is_active);
+      toastSuccess(t('saas.coupon_toggle_success', 'تم تحديث حالة الكوبون'));
+      await fetchData();
+    } catch (err) {
+      toastHandleError(err, t('saas.coupon_toggle_failed', 'تعذّر تحديث حالة الكوبون'));
+    } finally {
+      setUpdatingCouponId(null);
+    }
+  };
+
+  const handleDeleteCoupon = async (coupon: Coupon) => {
+    if (!(await confirm({ description: t('saas.coupon_delete_confirm', { code: coupon.code, defaultValue: `حذف كوبون "${coupon.code}" نهائياً؟ الطلبات التي استخدمته سابقاً تحتفظ بسجلّها.` }), danger: true }))) return;
+    setUpdatingCouponId(coupon.id);
+    try {
+      await deleteCoupon(coupon.id);
+      toastSuccess(t('saas.coupon_delete_success', 'تم حذف الكوبون'));
+      await fetchData();
+    } catch (err) {
+      toastHandleError(err, t('saas.coupon_delete_failed', 'تعذّر حذف الكوبون'));
+    } finally {
+      setUpdatingCouponId(null);
+    }
+  };
+
   // Real Dynamic Calculations (Zero Fallback Policy)
   const activeTenantsCount = useMemo(() => {
     return tenants.filter(t => t.status === 'active' || t.status === 'onboarding').length;
@@ -411,481 +422,6 @@ export default function SuperAdminDashboard() {
     })).filter(p => p.value > 0);
   }, [tenants, plansList]);
 
-  // Filtering Tenants -- trashed tenants never appear in the normal list,
-  // only in the trash bin view below.
-  const filteredTenants = useMemo(() => {
-    return tenants.filter(t => {
-      if (t.trashedAt) return false;
-      const matchesSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            t.ownerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            t.id.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || t.status === statusFilter;
-      const matchesPlan = planFilter === 'all' || t.planId === planFilter;
-      return matchesSearch && matchesStatus && matchesPlan;
-    });
-  }, [tenants, searchTerm, statusFilter, planFilter]);
-
-  const trashedTenants = useMemo(() => tenants.filter(t => !!t.trashedAt), [tenants]);
-
-  // Action: Toggle tenant status with database update
-  const handleToggleStatus = async (tenantId: string, currentStatus: string) => {
-    if (userRole !== 'super_admin') {
-      toastError(t('saas.unauthorized_action'));
-      return;
-    }
-    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-    if (newStatus === 'inactive') {
-      const ok = await confirm({
-        description: t('saas.tenants.suspend_confirm', 'سيتم تعليق هذا التاجر فوراً -- لن يتمكن من الدخول لنظامه حتى تُعيد تفعيله. تابع؟'),
-        danger: true,
-      });
-      if (!ok) return;
-    }
-    setUpdatingTenantId(tenantId);
-    try {
-      const { error } = await supabase
-        .from('tenants')
-        .update({ status: newStatus })
-        .eq('id', tenantId);
-
-      if (error) throw error;
-
-      setTenants(prev => prev.map(t => t.id === tenantId ? { ...t, status: newStatus } : t));
-      toastSuccess(t('saas.tenants.status_updated_success'));
-      
-      // Save an audit log of this event
-      await supabase.from('audit_logs').insert({
-        action: `Toggle status to ${newStatus}`,
-        performed_by: dbUser?.id || null,
-        performed_by_email: currentAuthUser?.email || 'Super Admin',
-        target_tenant_id: tenantId,
-        details: `Merchant ${tenantId} status changed to ${newStatus}`,
-        type: 'security',
-        occurred_at: new Date().toISOString()
-      });
-
-    } catch (err) {
-      toastHandleError(err, t('saas.tenants.status_update_failed'));
-    } finally {
-      setUpdatingTenantId(null);
-    }
-  };
-
-  // seen-ux-fixes-batch-task.md trash-bin feature -- "delete" never calls a
-  // real DELETE directly; every FK referencing tenants.id across the whole
-  // schema is ON DELETE CASCADE/SET NULL, so a real delete would succeed
-  // instantly and wipe the subscriber's entire history with nothing to stop
-  // it. trash_tenant/restore_tenant/permanently_delete_tenant (RPCs,
-  // 20261028000000_tenant_trash_bin.sql) are the only paths that ever touch
-  // this, each re-validating super_admin + (for the two destructive ones)
-  // the typed tenant name server-side -- never trust the client alone for
-  // something this consequential.
-  const handleDeleteTenant = async (tenant: Tenant) => {
-    if (userRole !== 'super_admin') {
-      toastError(t('saas.unauthorized_action'));
-      return;
-    }
-    const typed = await promptText({
-      title: t('saas.tenants.trash_confirm_title', 'نقل التاجر لسلة المهملات'),
-      description: t('saas.tenants.trash_confirm_desc', {
-        name: tenant.name,
-        defaultValue: `سينتقل "${tenant.name}" فوراً لسلة المهملات ويفقد كل وصول لنظامه. يمكنك استعادته لاحقاً من السلة. اكتب اسم التاجر بالضبط للتأكيد:`,
-      }),
-      placeholder: tenant.name,
-      confirmLabel: t('common.delete', 'حذف'),
-    });
-    if (typed === null) return;
-    if (typed !== tenant.name) {
-      toastError(t('saas.tenants.name_mismatch', 'الاسم المكتوب لا يطابق اسم التاجر بالضبط'));
-      return;
-    }
-    setDeletingTenantId(tenant.id);
-    try {
-      const { error } = await supabase.rpc('trash_tenant', { p_tenant_id: tenant.id, p_confirm_name: typed });
-      if (error) throw error;
-      const nowIso = new Date().toISOString();
-      setTenants(prev => prev.map(t2 => (t2.id === tenant.id ? { ...t2, trashedAt: nowIso } : t2)));
-      toastSuccess(t('saas.tenants.trashed_success', 'تم نقل التاجر لسلة المهملات'));
-      await supabase.from('audit_logs').insert({
-        action: 'Trash tenant',
-        performed_by: dbUser?.id || null,
-        performed_by_email: currentAuthUser?.email || 'Super Admin',
-        target_tenant_id: tenant.id,
-        details: `Merchant ${tenant.id} (${tenant.name}) moved to trash`,
-        type: 'security',
-        occurred_at: nowIso,
-      });
-    } catch (err) {
-      toastHandleError(err, t('saas.tenants.trash_failed', 'تعذّر نقل التاجر لسلة المهملات'));
-    } finally {
-      setDeletingTenantId(null);
-    }
-  };
-
-  const handleRestoreTenant = async (tenant: Tenant) => {
-    if (userRole !== 'super_admin') {
-      toastError(t('saas.unauthorized_action'));
-      return;
-    }
-    const ok = await confirm({
-      description: t('saas.tenants.restore_confirm', {
-        name: tenant.name,
-        defaultValue: `استعادة "${tenant.name}" من سلة المهملات؟ سيستعيد الوصول لنظامه فوراً.`,
-      }),
-    });
-    if (!ok) return;
-    setDeletingTenantId(tenant.id);
-    try {
-      const { error } = await supabase.rpc('restore_tenant', { p_tenant_id: tenant.id });
-      if (error) throw error;
-      setTenants(prev => prev.map(t2 => (t2.id === tenant.id ? { ...t2, trashedAt: null, trashedBy: null } : t2)));
-      toastSuccess(t('saas.tenants.restored_success', 'تمت استعادة التاجر'));
-      await supabase.from('audit_logs').insert({
-        action: 'Restore tenant',
-        performed_by: dbUser?.id || null,
-        performed_by_email: currentAuthUser?.email || 'Super Admin',
-        target_tenant_id: tenant.id,
-        details: `Merchant ${tenant.id} (${tenant.name}) restored from trash`,
-        type: 'security',
-        occurred_at: new Date().toISOString(),
-      });
-    } catch (err) {
-      toastHandleError(err, t('saas.tenants.restore_failed', 'تعذّرت استعادة التاجر'));
-    } finally {
-      setDeletingTenantId(null);
-    }
-  };
-
-  const handlePermanentlyDeleteTenant = async (tenant: Tenant) => {
-    if (userRole !== 'super_admin') {
-      toastError(t('saas.unauthorized_action'));
-      return;
-    }
-    const typed = await promptText({
-      title: t('saas.tenants.permanent_delete_title', 'حذف نهائي — لا يمكن التراجع'),
-      description: t('saas.tenants.permanent_delete_desc', {
-        name: tenant.name,
-        defaultValue: `هذا سيمسح كل بيانات "${tenant.name}" نهائياً (الطلبات، الفواتير، المخزون، كل شيء) ولا يمكن التراجع عنه إطلاقاً. اكتب اسم التاجر بالضبط للتأكيد:`,
-      }),
-      placeholder: tenant.name,
-      confirmLabel: t('saas.tenants.permanent_delete_confirm_label', 'حذف نهائي'),
-    });
-    if (typed === null) return;
-    if (typed !== tenant.name) {
-      toastError(t('saas.tenants.name_mismatch', 'الاسم المكتوب لا يطابق اسم التاجر بالضبط'));
-      return;
-    }
-    setDeletingTenantId(tenant.id);
-    try {
-      const { error } = await supabase.rpc('permanently_delete_tenant', { p_tenant_id: tenant.id, p_confirm_name: typed });
-      if (error) throw error;
-      setTenants(prev => prev.filter(t2 => t2.id !== tenant.id));
-      toastSuccess(t('saas.tenants.permanently_deleted_success', 'تم حذف التاجر نهائياً'));
-      await supabase.from('audit_logs').insert({
-        action: 'Permanently delete tenant',
-        performed_by: dbUser?.id || null,
-        performed_by_email: currentAuthUser?.email || 'Super Admin',
-        target_tenant_id: tenant.id,
-        details: `Merchant ${tenant.id} (${tenant.name}) permanently deleted`,
-        type: 'security',
-        occurred_at: new Date().toISOString(),
-      });
-    } catch (err) {
-      toastHandleError(err, t('saas.tenants.permanent_delete_failed', 'تعذّر الحذف النهائي'));
-    } finally {
-      setDeletingTenantId(null);
-    }
-  };
-
-  // Action: Toggle the Smart Assistant on/off for a single subscriber, on top
-  // of the platform-wide toggle in assistant_settings (Super Admin > AI
-  // Assistant Settings). tenants already has an "ALL" RLS policy scoped to
-  // app_is_super_admin() (same one status-toggle above relies on), so a
-  // direct client write is safe here too -- no dedicated API route needed.
-  const handleToggleAssistant = async (tenantId: string, currentlyEnabled: boolean) => {
-    if (userRole !== 'super_admin') {
-      toastError(t('saas.unauthorized_action'));
-      return;
-    }
-    setUpdatingAssistantTenantId(tenantId);
-    const nextEnabled = !currentlyEnabled;
-    try {
-      const { error } = await supabase
-        .from('tenants')
-        .update({ assistant_enabled: nextEnabled })
-        .eq('id', tenantId);
-
-      if (error) throw error;
-
-      setTenants(prev => prev.map(t => t.id === tenantId ? { ...t, assistantEnabled: nextEnabled } : t));
-      setSelectedTenant(prev => (prev && prev.id === tenantId ? { ...prev, assistantEnabled: nextEnabled } : prev));
-      toastSuccess(nextEnabled ? t('saas.tenants.assistant_enabled_success') : t('saas.tenants.assistant_disabled_success'));
-
-      await supabase.from('audit_logs').insert({
-        action: `Toggle assistant to ${nextEnabled ? 'enabled' : 'disabled'}`,
-        performed_by: dbUser?.id || null,
-        performed_by_email: currentAuthUser?.email || 'Super Admin',
-        target_tenant_id: tenantId,
-        details: `Merchant ${tenantId} assistant access changed to ${nextEnabled ? 'enabled' : 'disabled'}`,
-        type: 'security',
-        occurred_at: new Date().toISOString()
-      });
-    } catch (err) {
-      toastHandleError(err, t('saas.tenants.assistant_toggle_failed'));
-    } finally {
-      setUpdatingAssistantTenantId(null);
-    }
-  };
-
-  // Action: Start impersonation
-  const handleImpersonationClick = (tenantId: string, tenantName: string) => {
-    if (pollingIntervalRef.current) {
-      clearInterval(pollingIntervalRef.current);
-      pollingIntervalRef.current = null;
-    }
-    currentRequestRef.current = null;
-    setRequestLoading(false);
-    setPollingStatus(null);
-    setSupportModalTenant({ id: tenantId, name: tenantName });
-  };
-
-  const handleStealthSupportLogin = async (tenantId: string) => {
-    const canStealthLogin = userRole === 'super_admin' || userRole === 'owner' as any
-      || (dbUser as any)?.can_stealth_login === true || (dbUser as any)?.stealth_login_enabled === true;
-    if (!canStealthLogin) {
-      toastError(t('saas.tenants.stealth_login_permission_required'));
-      return;
-    }
-    try {
-      // الدخول الخفي كان يتابع حتى لو فشل سجل التدقيق الخاص به بالكامل --
-      // دخول بلا أي أثر تدقيقي إطلاقاً. الآن: فشل تسجيل التدقيق يمنع المتابعة
-      // صراحة بدل تجاهله بصمت (logImpersonationStart مشترك مع كل مسارات
-      // الانتحال الأخرى -- seen-admin-reengineering-task.md بند 2).
-      const logged = await logImpersonationStart(
-        tenantId,
-        { id: dbUser!.id, name: dbUser?.display_name || dbUser?.email || 'Admin' },
-        'stealth'
-      );
-
-      if (!logged) {
-        toastError(t('saas.tenants.stealth_audit_log_failed', 'تعذّر تسجيل عملية الدخول الخفي في سجل التدقيق -- لا يمكن المتابعة بلا سجل'));
-        return;
-      }
-
-      setImpersonationTenantId(tenantId);
-      toastSuccess(
-        t('saas.tenants.stealth_login_success')
-      );
-      setSupportModalTenant(null);
-    } catch (e) {
-      toastHandleError(e, t('saas.tenants.stealth_login_failed'));
-    }
-  };
-
-  const handleCancelSupportAccess = async (showToastMessage = true) => {
-    let wasActive = false;
-    if (pollingIntervalRef.current) {
-      clearInterval(pollingIntervalRef.current);
-      pollingIntervalRef.current = null;
-      wasActive = true;
-    }
-
-    if (currentRequestRef.current) {
-      wasActive = true;
-      const { id, isFallback } = currentRequestRef.current;
-      try {
-        if (!isFallback) {
-          await supabase
-            .from('support_access_requests')
-            .update({ status: 'cancelled' })
-            .eq('id', id);
-        } else {
-          const { data: setting } = await supabase
-            .from('saas_settings')
-            .select('*')
-            .eq('key', 'support_access_requests')
-            .maybeSingle();
-
-          if (setting?.value && Array.isArray(setting.value)) {
-            const updatedRequests = setting.value.map((r: any) => {
-              if (r.id === id) {
-                return { ...r, status: 'cancelled' };
-              }
-              return r;
-            });
-
-            await supabase.from('saas_settings').upsert({
-              key: 'support_access_requests',
-              value: updatedRequests,
-              updated_at: new Date().toISOString()
-            });
-          }
-        }
-      } catch (err) {
-        console.warn('Error cancelling support request:', err);
-      }
-      currentRequestRef.current = null;
-    }
-
-    setRequestLoading(false);
-    setPollingStatus(null);
-    if (wasActive && showToastMessage) {
-      toastSuccess(t('saas.tenants.access_request_cancelled') || 'تم إلغاء طلب الدخول بنجاح');
-    }
-  };
-
-  const handleRequestSupportAccess = async (tenantId: string) => {
-    try {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-      }
-
-      setRequestLoading(true);
-      setPollingStatus('pending');
-      
-      let requestObj: any = null;
-      let isFallback = false;
-
-      const newRequestData = {
-        tenant_id: tenantId,
-        saas_user_id: dbUser!.id,
-        saas_user_name: dbUser?.display_name || dbUser?.email || 'Support Representative',
-        status: 'pending',
-        requested_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 15 * 60000).toISOString() // 15 mins expiry
-      };
-
-      try {
-        const { data, error } = await supabase.from('support_access_requests').insert(newRequestData).select().single();
-        if (error) throw error;
-        requestObj = data;
-      } catch (err: any) {
-        console.warn('Direct support access requests insertion failed, trying fallback to saas_settings:', err);
-        isFallback = true;
-        const newId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-        requestObj = { id: newId, ...newRequestData };
-
-        try {
-          const { data: setting } = await supabase
-            .from('saas_settings')
-            .select('*')
-            .eq('key', 'support_access_requests')
-            .maybeSingle();
-
-          const existingRequests = setting?.value && Array.isArray(setting.value) ? setting.value : [];
-          existingRequests.push(requestObj);
-
-          await supabase.from('saas_settings').upsert({
-            key: 'support_access_requests',
-            value: existingRequests,
-            updated_at: new Date().toISOString()
-          });
-        } catch (fallbackErr) {
-          console.error('Fallback support request save failed:', fallbackErr);
-          throw fallbackErr;
-        }
-      }
-
-      currentRequestRef.current = {
-        id: requestObj.id,
-        tenantId: tenantId,
-        isFallback: isFallback
-      };
-
-      toastSuccess(
-        t('saas.tenants.access_request_waiting')
-      );
-      
-      // Poll for approval...
-      const interval = setInterval(async () => {
-        let currentStatus = 'pending';
-
-        if (!isFallback) {
-          const { data: checkData } = await supabase
-            .from('support_access_requests')
-            .select('status')
-            .eq('id', requestObj.id)
-            .single();
-          if (checkData) {
-            currentStatus = checkData.status;
-          }
-        } else {
-          const { data: setting } = await supabase
-            .from('saas_settings')
-            .select('*')
-            .eq('key', 'support_access_requests')
-            .maybeSingle();
-          if (setting?.value && Array.isArray(setting.value)) {
-            const req = setting.value.find((r: any) => r.id === requestObj.id);
-            if (req) {
-              currentStatus = req.status;
-            }
-          }
-        }
-          
-        if (currentStatus !== 'pending') {
-          clearInterval(interval);
-          if (pollingIntervalRef.current === interval) {
-            pollingIntervalRef.current = null;
-          }
-          currentRequestRef.current = null;
-          setRequestLoading(false);
-          setPollingStatus(currentStatus as any);
-          
-          if (currentStatus === 'approved') {
-            toastSuccess(
-              t('saas.tenants.access_request_approved')
-            );
-            
-            // نفس إصلاح handleStealthSupportLogin: لا انتحال بلا سجل تدقيق
-            // ناجح فعلياً -- logImpersonationStart مشترك الآن مع كل مسارات
-            // الانتحال الأخرى (seen-admin-reengineering-task.md بند 2).
-            const logged = await logImpersonationStart(
-              tenantId,
-              { id: dbUser!.id, name: dbUser?.display_name || dbUser?.email || 'Support Representative' },
-              'explicit'
-            );
-
-            if (!logged) {
-              toastHandleError(null, t('saas.tenants.stealth_audit_log_failed', 'تعذّر تسجيل عملية الدخول الخفي في سجل التدقيق -- لا يمكن المتابعة بلا سجل'));
-              setSupportModalTenant(null);
-              return;
-            }
-
-            setImpersonationTenantId(tenantId);
-            setSupportModalTenant(null);
-          } else {
-            toastHandleError(null, t('saas.tenants.access_rejected_by_owner'));
-            setSupportModalTenant(null);
-          }
-        }
-      }, 3000);
-
-      pollingIntervalRef.current = interval;
-      
-      // Stop polling after 15 minutes
-      setTimeout(() => {
-        clearInterval(interval);
-        if (pollingIntervalRef.current === interval) {
-          pollingIntervalRef.current = null;
-        }
-        if (currentRequestRef.current?.id === requestObj.id) {
-          currentRequestRef.current = null;
-        }
-        setRequestLoading(false);
-        setPollingStatus(null);
-        toastHandleError(null, t('saas.tenants.access_permission_expired'));
-        setSupportModalTenant(null);
-      }, 15 * 60000);
-
-    } catch (e) {
-      setRequestLoading(false);
-      setPollingStatus(null);
-      toastHandleError(e, t('saas.tenants.access_request_failed'));
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[450px] gap-4">
@@ -935,11 +471,11 @@ export default function SuperAdminDashboard() {
         <div className="flex gap-1.5 bg-surface p-1.5 rounded-2xl border border-border/80 shadow-sm w-max">
           {[
             { id: 'overview', label: t('saas.overview', 'الرئيسية'), icon: LayoutDashboard },
-            { id: 'tenants', label: t('saas.menu_tenants'), icon: Users },
             { id: 'financials', label: t('saas.financials', 'المالية'), icon: DollarSign },
             { id: 'performance', label: t('saas.performance', 'الأداء والتشغيل'), icon: Server },
             { id: 'security', label: t('saas.security', 'الأمان والتدقيق'), icon: Shield },
             { id: 'plans', label: t('saas.menu_plans', 'الباقات'), icon: CreditCard },
+            { id: 'coupons', label: t('saas.menu_coupons', 'كوبونات الخصم'), icon: Tag },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -1091,348 +627,6 @@ export default function SuperAdminDashboard() {
                 </div>
               </div>
             </div>
-          </motion.div>
-        )}
-
-        {/* TENANTS MANAGEMENT TAB */}
-        {activeTab === 'tenants' && (
-          <motion.div
-            key="tenants"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="space-y-6"
-          >
-            {/* Filter and Search Bar */}
-            <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
-              <IconInput
-                type="text"
-                startIcon={Search}
-                placeholder={t('saas.tenants.search_by_name_email_id')}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                containerClassName="w-full md:w-80"
-              />
-
-              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                <div className="flex items-center gap-2 bg-surface-muted p-1 rounded-xl border border-border">
-                  <button 
-                    onClick={() => setStatusFilter('all')} 
-                    className={cn("px-3 py-1.5 rounded-lg text-xs font-black cursor-pointer", statusFilter === 'all' ? "bg-white text-content shadow-sm" : "text-content-muted")}
-                  >
-                    {t('orders.all_statuses')}
-                  </button>
-                  <button 
-                    onClick={() => setStatusFilter('active')} 
-                    className={cn("px-3 py-1.5 rounded-lg text-xs font-black cursor-pointer", statusFilter === 'active' ? "bg-white text-success shadow-sm" : "text-content-muted")}
-                  >
-                    {t('saas.active_short')}
-                  </button>
-                  <button 
-                    onClick={() => setStatusFilter('inactive')} 
-                    className={cn("px-3 py-1.5 rounded-lg text-xs font-black cursor-pointer", statusFilter === 'inactive' ? "bg-white text-danger shadow-sm" : "text-content-muted")}
-                  >
-                    {t('saas.inactive_short')}
-                  </button>
-                </div>
-
-                <SmartSelect
-                  value={planFilter}
-                  onChange={(v) => setPlanFilter(v)}
-                  className="w-auto min-w-[160px] rounded-xl px-4 py-2.5 text-xs"
-                  options={[
-                    { value: 'all', label: t('saas.all_plans') },
-                    ...plansList.map(plan => ({ value: plan.id, label: plan.name })),
-                  ]}
-                />
-
-                <button
-                  onClick={() => setTrashViewOpen(v => !v)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer border shrink-0",
-                    trashViewOpen
-                      ? "bg-danger/10 text-danger border-danger/30"
-                      : "bg-surface text-content-muted border-border hover:bg-surface-muted"
-                  )}
-                >
-                  <Trash2 size={14} />
-                  <span>{t('saas.tenants.trash_bin', 'سلة المهملات')} ({trashedTenants.length})</span>
-                </button>
-              </div>
-            </div>
-
-            {trashViewOpen ? (
-              /* Trash Bin View */
-              <div className="bg-surface rounded-2xl border border-border shadow-sm divide-y divide-border/60">
-                {trashedTenants.length === 0 && (
-                  <div className="p-8 text-center text-sm text-content-muted font-bold">
-                    {t('saas.tenants.trash_empty', 'سلة المهملات فارغة')}
-                  </div>
-                )}
-                {trashedTenants.map(tenant => (
-                  <div key={tenant.id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <h4 className="text-sm font-black text-content leading-tight">{tenant.name}</h4>
-                      <p className="text-xs text-content-muted mt-0.5 font-bold">
-                        {tenant.ownerEmail} · {t('saas.tenants.trashed_at_label', 'نُقل للسلة')}: {tenant.trashedAt ? new Date(tenant.trashedAt).toLocaleDateString(localeOf(i18n.language)) : '-'}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        disabled={deletingTenantId === tenant.id}
-                        onClick={() => handleRestoreTenant(tenant)}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-success/10 text-success border border-success/20 rounded-xl text-xs font-black hover:bg-success/20 transition-all cursor-pointer disabled:opacity-50"
-                      >
-                        <RotateCcw size={14} />
-                        <span>{t('saas.tenants.restore', 'استعادة')}</span>
-                      </button>
-                      <button
-                        disabled={deletingTenantId === tenant.id}
-                        onClick={() => handlePermanentlyDeleteTenant(tenant)}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-danger/10 text-danger border border-danger/20 rounded-xl text-xs font-black hover:bg-danger/20 transition-all cursor-pointer disabled:opacity-50"
-                      >
-                        <Trash2 size={14} />
-                        <span>{t('saas.tenants.permanent_delete', 'حذف نهائي')}</span>
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-            <>
-            {/* Mobile View - Card List */}
-            <div className="block md:hidden space-y-4">
-              {filteredTenants.map((tenant) => {
-                const plan = plansList.find(p => p.id === tenant.planId);
-                return (
-                  <div key={tenant.id} className="bg-surface p-5 rounded-2xl border border-border shadow-sm flex flex-col gap-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-brand/5 border border-brand/10 flex items-center justify-center font-black text-brand text-sm shrink-0">
-                          {tenant.logoUrl ? (
-                            <img src={tenant.logoUrl} alt={tenant.name} className="w-full h-full object-cover rounded-xl" referrerPolicy="no-referrer" />
-                          ) : (
-                            tenant.name.substring(0, 2).toUpperCase()
-                          )}
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-black text-content leading-tight">{tenant.name}</h4>
-                          <p className="text-[11px] text-content-muted mt-1 font-bold leading-none break-all">{tenant.ownerEmail}</p>
-                        </div>
-                      </div>
-                      <span className={cn(
-                        "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider",
-                        tenant.status === 'active' && "bg-success/10 text-success",
-                        tenant.status === 'onboarding' && "bg-warning/10 text-warning",
-                        tenant.status === 'inactive' && "bg-danger/10 text-danger",
-                        tenant.status === 'suspended' && "bg-content-muted/10 text-content-muted",
-                      )}>
-                        <span className="w-1 h-1 rounded-full bg-current" />
-                        {t(`common.status_${tenant.status}`, tenant.status)}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 py-3 border-t border-b border-border/60 text-xs font-bold text-content">
-                      <div>
-                        <span className="text-[9px] font-black text-content-muted uppercase tracking-wider block mb-1">{t('saas.tenants.col_subscription_plan')}</span>
-                        <span className="inline-flex px-2 py-0.5 bg-brand/5 border border-brand/10 rounded text-brand capitalize">
-                          {plan?.name || tenant.planId}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[9px] font-black text-content-muted uppercase tracking-wider block mb-1">{t('saas.tenants.join_date')}</span>
-                        <span className="text-content-muted">
-                          {new Date(tenant.createdAt).toLocaleDateString(localeOf(i18n.language), { year: 'numeric', month: 'short', day: 'numeric' })}
-                        </span>
-                      </div>
-                      <div className="col-span-2">
-                        <span className="text-[9px] font-black text-content-muted uppercase tracking-wider block mb-1">{t('saas.tenants.col_register_and_vat')}</span>
-                        <div className="flex gap-4">
-                          <div>CR: <span className="text-content-muted font-bold">{tenant.commercialRegister || 'N/A'}</span></div>
-                          <div>VAT: <span className="text-content-muted font-bold">{tenant.vatNumber || 'N/A'}</span></div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 pt-1">
-                      <button
-                        onClick={() => handleImpersonationClick(tenant.id, tenant.name)}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-brand text-white rounded-xl text-xs font-black shadow-sm shadow-brand/15 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                      >
-                        <ExternalLink size={12} />
-                        <span>{t('saas.tenants.support_login_short')}</span>
-                      </button>
-
-                      <button
-                        disabled={updatingTenantId === tenant.id}
-                        onClick={() => handleToggleStatus(tenant.id, tenant.status)}
-                        className={cn(
-                          "p-2.5 rounded-xl text-xs font-black transition-all cursor-pointer border flex items-center justify-center shrink-0",
-                          tenant.status === 'active' 
-                            ? "bg-danger/5 text-danger border-danger/10 hover:bg-danger/10" 
-                            : "bg-success/5 text-success border-success/10 hover:bg-success/10"
-                        )}
-                        title={tenant.status === 'active' ? t('saas.tenants.deactivate') : t('saas.tenants.enable')}
-                      >
-                        {updatingTenantId === tenant.id ? (
-                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <Activity size={14} />
-                        )}
-                      </button>
-
-                      <button
-                        onClick={() => setSelectedTenant(tenant)}
-                        className="p-2.5 bg-surface hover:bg-surface-muted text-content-muted hover:text-content border border-border rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0"
-                      >
-                        <Eye size={14} />
-                      </button>
-
-                      <button
-                        disabled={deletingTenantId === tenant.id}
-                        onClick={() => handleDeleteTenant(tenant)}
-                        className="p-2.5 bg-danger/5 hover:bg-danger/10 text-danger border border-danger/10 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0 disabled:opacity-50"
-                        title={t('saas.tenants.move_to_trash', 'نقل لسلة المهملات')}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-              {filteredTenants.length === 0 && (
-                <div className="bg-surface p-8 text-center text-sm text-content-muted font-bold rounded-2xl border border-border shadow-sm">
-                  {t('saas.tenants.no_matching_subscribers')}
-                </div>
-              )}
-            </div>
-
-            {/* Desktop View - Table */}
-            <div className="hidden md:block bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left rtl:text-right border-collapse">
-                  <thead>
-                    <tr className="bg-surface-muted/50 border-b border-border/80">
-                      <th className="px-6 py-4 text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.tenants.col_subscriber_and_email')}</th>
-                      <th className="px-6 py-4 text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.tenants.col_subscription_plan')}</th>
-                      <th className="px-6 py-4 text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.tenants.col_register_and_vat')}</th>
-                      <th className="px-6 py-4 text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.tenants.join_date')}</th>
-                      <th className="px-6 py-4 text-[10px] font-black text-content-muted uppercase tracking-widest">{t('common.status')}</th>
-                      <th className="px-6 py-4 text-[10px] font-black text-content-muted uppercase tracking-widest text-center">{t('common.actions')}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/40">
-                    {filteredTenants.map((tenant) => {
-                      const plan = plansList.find(p => p.id === tenant.planId);
-                      return (
-                        <tr key={tenant.id} className="hover:bg-surface-muted/20 transition-all">
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-xl bg-brand/5 border border-brand/10 flex items-center justify-center font-black text-brand text-sm shrink-0">
-                                {tenant.logoUrl ? (
-                                  <img src={tenant.logoUrl} alt={tenant.name} className="w-full h-full object-cover rounded-xl" referrerPolicy="no-referrer" />
-                                ) : (
-                                  tenant.name.substring(0, 2).toUpperCase()
-                                )}
-                              </div>
-                              <div>
-                                <h4 className="text-sm font-black text-content leading-tight">{tenant.name}</h4>
-                                <p className="text-xs text-content-muted mt-0.5 font-bold leading-none">{tenant.ownerEmail}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="inline-flex px-3 py-1 bg-brand/5 border border-brand/10 rounded-lg text-xs font-black text-brand capitalize">
-                              {plan?.name || tenant.planId}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="text-xs font-bold text-content leading-tight">
-                              <div>CR: {tenant.commercialRegister || 'N/A'}</div>
-                              <div className="text-content-muted mt-0.5">VAT: {tenant.vatNumber || 'N/A'}</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-xs font-bold text-content-muted">
-                            {new Date(tenant.createdAt).toLocaleDateString(localeOf(i18n.language), { year: 'numeric', month: 'short', day: 'numeric' })}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={cn(
-                              "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
-                              tenant.status === 'active' && "bg-success/10 text-success",
-                              tenant.status === 'onboarding' && "bg-warning/10 text-warning",
-                              tenant.status === 'inactive' && "bg-danger/10 text-danger",
-                              tenant.status === 'suspended' && "bg-content-muted/10 text-content-muted",
-                            )}>
-                              <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                              {t(`common.status_${tenant.status}`, tenant.status)}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center justify-center gap-2">
-                              {/* Impersonate */}
-                              <button
-                                onClick={() => handleImpersonationClick(tenant.id, tenant.name)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-brand text-white rounded-xl text-[10px] font-black shadow-sm shadow-brand/15 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                                title={t('saas.tenants.login_as_shop_admin')}
-                              >
-                                <ExternalLink size={10} />
-                                <span>{t('saas.tenants.login_short')}</span>
-                              </button>
-
-                              {/* Toggle Status */}
-                              <button
-                                disabled={updatingTenantId === tenant.id}
-                                onClick={() => handleToggleStatus(tenant.id, tenant.status)}
-                                className={cn(
-                                  "p-2 rounded-xl text-xs font-black transition-all cursor-pointer border",
-                                  tenant.status === 'active' 
-                                    ? "bg-danger/5 text-danger border-danger/10 hover:bg-danger/10" 
-                                    : "bg-success/5 text-success border-success/10 hover:bg-success/10"
-                                )}
-                                title={tenant.status === 'active' ? t('saas.tenants.deactivate_account') : t('saas.tenants.enable_account')}
-                              >
-                                {updatingTenantId === tenant.id ? (
-                                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                                ) : (
-                                  <Activity size={14} />
-                                )}
-                              </button>
-
-                              {/* View Details */}
-                              <button
-                                onClick={() => setSelectedTenant(tenant)}
-                                className="p-2 bg-surface hover:bg-surface-muted text-content-muted hover:text-content border border-border rounded-xl transition-all cursor-pointer"
-                              >
-                                <Eye size={14} />
-                              </button>
-
-                              {/* Move to Trash */}
-                              <button
-                                disabled={deletingTenantId === tenant.id}
-                                onClick={() => handleDeleteTenant(tenant)}
-                                className="p-2 bg-danger/5 hover:bg-danger/10 text-danger border border-danger/10 rounded-xl transition-all cursor-pointer disabled:opacity-50"
-                                title={t('saas.tenants.move_to_trash', 'نقل لسلة المهملات')}
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {filteredTenants.length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="text-center py-12 text-sm text-content-muted font-bold">
-                          {t('saas.tenants.no_matching_subscribers')}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            </>
-            )}
           </motion.div>
         )}
 
@@ -1831,231 +1025,102 @@ export default function SuperAdminDashboard() {
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
 
-      {/* Tenant Detail Drawer/Modal */}
-      <AnimatePresence>
-        {selectedTenant && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedTenant(null)}
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            />
-            
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-lg bg-surface p-5 sm:p-8 rounded-3xl border border-border shadow-2xl flex flex-col gap-5 sm:gap-6 mx-4"
-            >
-              <div className="flex justify-between items-center pb-4 border-b border-border/80">
-                <h3 className="text-base sm:text-lg font-black text-content">
-                  {t('saas.tenants.full_details_title')}
-                </h3>
-                <button 
-                  onClick={() => setSelectedTenant(null)}
-                  className="p-1.5 hover:bg-surface-muted rounded-xl text-content-muted transition-all cursor-pointer"
-                >
-                  <X size={18} />
-                </button>
+        {/* COUPONS TAB */}
+        {activeTab === 'coupons' && (
+          <motion.div
+            key="coupons"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-6"
+          >
+            <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-black text-content">{t('saas.coupons_tab_title', 'كوبونات الخصم')}</h3>
+                <p className="text-content-muted font-bold text-xs mt-1">{t('saas.coupons_tab_subtitle', 'أنشئ كود خصم تعطيه لعميل عند الاتفاق على تخفيض سعر اشتراكه')}</p>
               </div>
+              <button
+                onClick={() => setCouponModalOpen(true)}
+                className="bg-brand text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-brand/90 transition-all cursor-pointer"
+              >
+                {t('saas.coupons_new_button', 'كوبون جديد')}
+              </button>
+            </div>
 
-              <div className="space-y-4 text-xs font-bold text-content overflow-y-auto max-h-[60vh] pr-1">
-                <div className="flex items-center gap-4 bg-surface-muted p-4 rounded-2xl border border-border">
-                  <div className="w-12 h-12 bg-brand/5 border border-brand/10 rounded-xl flex items-center justify-center font-black text-brand text-base shrink-0">
-                    {selectedTenant.logoUrl ? (
-                      <img src={selectedTenant.logoUrl} alt={selectedTenant.name} className="w-full h-full object-cover rounded-xl" referrerPolicy="no-referrer" />
-                    ) : (
-                      selectedTenant.name.substring(0, 2).toUpperCase()
-                    )}
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-black text-content leading-tight">{selectedTenant.name}</h4>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                  <div>
-                    <span className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.tenants.owner_email')}</span>
-                    <div className="text-xs font-black text-content mt-1 break-all">{selectedTenant.ownerEmail}</div>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('onboarding.fields.phone')}</span>
-                    <div className="text-xs font-black text-content mt-1">{selectedTenant.phone}</div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.tenants.commercial_register_cr')}</span>
-                    <div className="text-xs font-black text-content mt-1">{selectedTenant.commercialRegister || 'N/A'}</div>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('onboarding.fields.tax_number')}</span>
-                    <div className="text-xs font-black text-content mt-1">{selectedTenant.vatNumber || 'N/A'}</div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('procurement.account_status')}</span>
-                    <div className="mt-1">
-                      <span className={cn(
-                        "inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider",
-                        selectedTenant.status === 'active' ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
-                      )}>
-                        {t(`common.status_${selectedTenant.status}`, selectedTenant.status)}
-                      </span>
-                    </div>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.tenants.registration_date')}</span>
-                    <div className="text-xs font-black text-content mt-1">
-                      {new Date(selectedTenant.createdAt).toLocaleString(localeOf(i18n.language))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <span className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.tenants.shop_address')}</span>
-                  <div className="text-xs font-black text-content mt-1">{selectedTenant.address || 'N/A'}</div>
-                </div>
-
-                <div className="flex items-center justify-between gap-4 bg-surface-muted p-4 rounded-2xl border border-border">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 bg-brand/10 text-brand rounded-xl flex items-center justify-center shrink-0">
-                      <Bot size={16} />
-                    </div>
-                    <div>
-                      <div className="text-xs font-black text-content">{t('saas.tenants.assistant_toggle_label')}</div>
-                      <div className="text-[10px] text-content-muted font-bold mt-0.5">{t('saas.tenants.assistant_toggle_desc')}</div>
-                    </div>
-                  </div>
-                  <label className={cn("relative inline-flex items-center shrink-0", updatingAssistantTenantId === selectedTenant.id ? "opacity-50 pointer-events-none" : "cursor-pointer")}>
-                    <input
-                      type="checkbox"
-                      className="sr-only peer"
-                      checked={selectedTenant.assistantEnabled !== false}
-                      onChange={() => handleToggleAssistant(selectedTenant.id, selectedTenant.assistantEnabled !== false)}
-                    />
-                    <div className="w-12 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand"></div>
-                  </label>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 mt-4 border-t border-border pt-6">
-                <button
-                  onClick={() => {
-                    handleImpersonationClick(selectedTenant.id, selectedTenant.name);
-                    setSelectedTenant(null);
-                  }}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-brand text-white rounded-xl text-xs font-black shadow-md shadow-brand/15 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
-                >
-                  <ExternalLink size={14} />
-                  <span>{t('saas.tenants.impersonate_now')}</span>
-                </button>
-                <button 
-                  onClick={() => setSelectedTenant(null)}
-                  className="flex-1 py-3 bg-surface hover:bg-surface-muted text-content border border-border rounded-xl text-xs font-black transition-all cursor-pointer"
-                >
-                  {t('common.close')}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Support Access Popup Modal */}
-      <AnimatePresence>
-        {supportModalTenant && (
-          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-surface w-full max-w-md rounded-3xl shadow-2xl overflow-hidden relative z-10 border border-border flex flex-col p-6 text-right"
-              dir={isRtl ? 'rtl' : 'ltr'}
-            >
-              <div className="flex items-center gap-3 mb-6 border-b border-border pb-4">
-                <div className="w-10 h-10 bg-brand/10 text-brand rounded-full flex items-center justify-center">
-                  <ShieldAlert size={20} />
-                </div>
-                <div>
-                  <h3 className="font-black text-sm text-content">
-                    {t('saas.tenants.support_access_request_title')}
-                  </h3>
-                  <p className="text-[10px] font-bold text-content-muted mt-0.5">
-                    {supportModalTenant.name}
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-4 mb-6 text-right">
-                <p className="text-xs font-bold text-content leading-relaxed">
-                  {t('saas.tenants.support_access_request_desc')}
-                </p>
-
-                {pollingStatus === 'pending' && (
-                  <div className="p-4 bg-warning/10 border border-warning/20 rounded-2xl flex flex-col items-center justify-center text-center gap-2">
-                    <div className="w-6 h-6 border-2 border-warning border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-[11px] font-black text-warning">
-                      {t('saas.tenants.awaiting_client_approval')}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                {pollingStatus === 'pending' ? (
-                  <button
-                    onClick={() => handleCancelSupportAccess(true)}
-                    className="w-full bg-danger hover:bg-danger/90 text-white py-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 shadow-lg shadow-danger/15 cursor-pointer"
-                  >
-                    <X size={16} />
-                    {t('saas.tenants.cancel_access_request') || 'إلغاء طلب الدخول'}
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleRequestSupportAccess(supportModalTenant.id)}
-                    disabled={requestLoading}
-                    className="w-full bg-brand text-white py-3 rounded-xl text-xs font-black hover:bg-brand/90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand/15 disabled:opacity-50 cursor-pointer"
-                  >
-                    <Globe size={16} />
-                    {requestLoading 
-                      ? t('saas.tenants.sending_request')
-                      : t('saas.tenants.send_access_request')}
-                  </button>
-                )}
-
-                <button
-                  onClick={() => handleStealthSupportLogin(supportModalTenant.id)}
-                  disabled={requestLoading || !(userRole === 'super_admin' || userRole === 'owner' as any || (dbUser as any)?.can_stealth_login === true || (dbUser as any)?.stealth_login_enabled === true)}
-                  className="w-full bg-slate-900 text-white py-3 rounded-xl text-xs font-black hover:bg-black transition-all flex items-center justify-center gap-2 shadow-lg shadow-black/20 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                  title={!(userRole === 'super_admin' || userRole === 'owner' as any || (dbUser as any)?.can_stealth_login === true || (dbUser as any)?.stealth_login_enabled === true) ? t('saas.tenants.stealth_login_permission_required') : ""}
-                >
-                  <ShieldAlert size={16} />
-                  <span>{t('saas.tenants.stealth_admin_login')}</span>
-                  {!(userRole === 'super_admin' || userRole === 'owner' as any || (dbUser as any)?.can_stealth_login === true || (dbUser as any)?.stealth_login_enabled === true) && (
-                    <span className="text-[9px] bg-danger/20 text-danger px-1.5 py-0.5 rounded ml-1">{t('saas.tenants.locked_badge')}</span>
+            <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-surface-muted text-[10px] font-black text-content-muted uppercase tracking-widest border-b border-border">
+                    <th className="p-4 text-start">{t('saas.coupons_col_code', 'الكود')}</th>
+                    <th className="p-4 text-center">{t('saas.coupons_col_discount', 'الخصم')}</th>
+                    <th className="p-4 text-center">{t('saas.coupons_col_restriction', 'مخصَّص لـ')}</th>
+                    <th className="p-4 text-center">{t('saas.coupons_col_usage', 'الاستخدام')}</th>
+                    <th className="p-4 text-center">{t('saas.coupons_col_expiry', 'الانتهاء')}</th>
+                    <th className="p-4 text-center">{t('saas.plans_col_status', 'الحالة')}</th>
+                    <th className="p-4 text-center">{t('saas.plans_col_actions', 'إجراءات')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {couponsList.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="p-10 text-center text-content-muted font-bold text-sm">
+                        {t('saas.coupons_empty', 'لا توجد كوبونات بعد')}
+                      </td>
+                    </tr>
                   )}
-                </button>
-
-                <button
-                  onClick={() => {
-                    handleCancelSupportAccess(false);
-                    setSupportModalTenant(null);
-                  }}
-                  className="w-full bg-surface hover:bg-surface-muted text-content border border-border py-3 rounded-xl text-xs font-black transition-all cursor-pointer"
-                >
-                  {t('common.close')}
-                </button>
-              </div>
-            </motion.div>
-          </div>
+                  {couponsList.map((coupon) => {
+                    const restrictedTenant = coupon.restricted_tenant_id
+                      ? tenants.find((tn) => tn.id === coupon.restricted_tenant_id)
+                      : null;
+                    const restrictedPlan = coupon.plan_id
+                      ? plansList.find((p) => p.id === coupon.plan_id)
+                      : null;
+                    const expired = !!coupon.expires_at && new Date(coupon.expires_at) < new Date();
+                    return (
+                      <tr key={coupon.id}>
+                        <td className="p-4 font-mono font-black text-content dir-ltr">{coupon.code}</td>
+                        <td className="p-4 text-center font-mono text-brand font-black">
+                          {coupon.discount_type === 'percentage' ? `${coupon.discount_value}%` : <PriceDisplay amount={coupon.discount_value} />}
+                        </td>
+                        <td className="p-4 text-center text-xs font-bold text-content-muted">
+                          {restrictedTenant ? restrictedTenant.name : t('saas.coupons_restriction_any_tenant', 'أي تاجر')}
+                          {restrictedPlan && <span className="block text-[10px] mt-0.5">{restrictedPlan.name}</span>}
+                        </td>
+                        <td className="p-4 text-center font-mono">
+                          {coupon.redemption_count}{coupon.max_redemptions != null ? ` / ${coupon.max_redemptions}` : ''}
+                        </td>
+                        <td className={cn("p-4 text-center text-xs font-bold", expired ? "text-danger" : "text-content-muted")}>
+                          {coupon.expires_at ? new Date(coupon.expires_at).toLocaleDateString(localeOf(i18n.language)) : t('saas.coupons_no_expiry', 'بلا انتهاء')}
+                        </td>
+                        <td className="p-4 text-center">
+                          <button
+                            onClick={() => handleToggleCouponActive(coupon)}
+                            disabled={updatingCouponId === coupon.id}
+                            className={cn(
+                              "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wide cursor-pointer disabled:opacity-50",
+                              coupon.is_active ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
+                            )}
+                          >
+                            {coupon.is_active ? t('saas.plans_status_active', 'فعّالة') : t('saas.plans_status_inactive', 'معطّلة')}
+                          </button>
+                        </td>
+                        <td className="p-4 text-center">
+                          <button
+                            onClick={() => handleDeleteCoupon(coupon)}
+                            disabled={updatingCouponId === coupon.id}
+                            className="p-2 text-content-muted hover:text-danger bg-surface-muted hover:bg-danger/10 rounded-xl transition-all cursor-pointer disabled:opacity-50"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -2086,6 +1151,15 @@ export default function SuperAdminDashboard() {
           mode={planModalMode}
           plan={planModalMode === 'edit' ? editingPlan : null}
           onClose={() => { setPlanModalMode(null); setEditingPlan(null); }}
+          onSaved={fetchData}
+        />
+      )}
+
+      {couponModalOpen && (
+        <CouponFormModal
+          tenants={tenants}
+          plans={plansList}
+          onClose={() => setCouponModalOpen(false)}
           onSaved={fetchData}
         />
       )}
@@ -2329,6 +1403,190 @@ const PlanFormModal = ({
             className="px-6 py-2.5 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-brand/20 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
           >
             {t('saas.plan_save')}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+/** الموظف (سوبر أدمن) يُنشئ كوبون خصم ليُعطيه لعميل عند التفاوض على
+ * اشتراكه -- إما عام (restrictedTenantId فارغ) أو مخصَّص لتاجر واحد بعينه.
+ * التحقق النهائي (الصلاحية، الحد، تاريخ الانتهاء) يحدث دوماً في
+ * create_subscription_request على الخادم؛ هذا النموذج تحقق أساسي فقط. */
+const CouponFormModal = ({
+  tenants,
+  plans,
+  onClose,
+  onSaved,
+}: {
+  tenants: Tenant[];
+  plans: any[];
+  onClose: () => void;
+  onSaved: () => void;
+}) => {
+  const { t } = useTranslation();
+  const { success: toastSuccess, handleError: toastHandleError } = useToast();
+
+  const [code, setCode] = useState('');
+  const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage');
+  const [discountValue, setDiscountValue] = useState('10');
+  const [restrictedTenantId, setRestrictedTenantId] = useState('');
+  const [planId, setPlanId] = useState('');
+  const [maxRedemptions, setMaxRedemptions] = useState('');
+  const [expiresAt, setExpiresAt] = useState('');
+  const [notes, setNotes] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const discountTypeOptions = [
+    { value: 'percentage', label: t('saas.coupon_field_type_percentage', 'نسبة %') },
+    { value: 'fixed', label: t('saas.coupon_field_type_fixed', 'مبلغ ثابت (ر.س)') },
+  ];
+  const tenantOptions = [
+    { value: '', label: t('saas.coupons_restriction_any_tenant', 'أي تاجر (كوبون عام)') },
+    ...tenants.filter((tn) => !tn.trashedAt).map((tn) => ({ value: tn.id, label: tn.name })),
+  ];
+  const planOptions = [
+    { value: '', label: t('saas.coupon_field_plan_any', 'كل الباقات') },
+    ...plans.map((p) => ({ value: p.id, label: p.name })),
+  ];
+
+  const handleSubmit = async () => {
+    const value = Number(discountValue);
+    if (!value || value <= 0) {
+      setError(t('saas.coupon_error_value_required', 'أدخل قيمة خصم أكبر من صفر'));
+      return;
+    }
+    if (discountType === 'percentage' && value > 100) {
+      setError(t('saas.coupon_error_percentage_max', 'نسبة الخصم لا يمكن أن تتجاوز 100%'));
+      return;
+    }
+    setError(null);
+    setSaving(true);
+    try {
+      await createCoupon({
+        code: code.trim() || undefined,
+        discount_type: discountType,
+        discount_value: value,
+        restricted_tenant_id: restrictedTenantId || null,
+        plan_id: planId || null,
+        max_redemptions: maxRedemptions ? Number(maxRedemptions) : null,
+        expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
+        notes: notes.trim() || null,
+      });
+      toastSuccess(t('saas.coupon_create_success', 'تم إنشاء الكوبون'));
+      onSaved();
+      onClose();
+    } catch (err) {
+      toastHandleError(err, t('saas.coupon_create_failed', 'تعذّر إنشاء الكوبون'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-2 sm:p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} />
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        className="bg-surface w-full max-w-lg rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
+      >
+        <div className="p-4 sm:p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
+          <h2 className="text-lg font-black text-content">{t('saas.coupon_modal_title', 'كوبون خصم جديد')}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors">
+            <X size={20} className="text-content-muted" />
+          </button>
+        </div>
+
+        <div className="p-4 sm:p-6 space-y-4 overflow-y-auto">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.coupon_field_code', 'الكود')}</label>
+            <input
+              type="text"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder={t('saas.coupon_field_code_placeholder', 'اتركه فارغاً لإنشاء كود تلقائي')}
+              className="w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none dir-ltr text-left"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.coupon_field_discount_type', 'نوع الخصم')}</label>
+              <SmartSelect options={discountTypeOptions} value={discountType} onChange={(v) => setDiscountType(v as 'percentage' | 'fixed')} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.coupon_field_discount_value', 'القيمة')}</label>
+              <input
+                type="number"
+                value={discountValue}
+                onChange={(e) => setDiscountValue(e.target.value)}
+                className="w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none"
+              />
+            </div>
+          </div>
+          {error && <p className="text-[11px] text-danger font-bold">{error}</p>}
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.coupon_field_tenant', 'مخصَّص لتاجر (اختياري)')}</label>
+            <SmartSelect options={tenantOptions} value={restrictedTenantId} onChange={setRestrictedTenantId} searchPlaceholder={t('common.search')} />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.coupon_field_plan', 'مخصَّص لباقة (اختياري)')}</label>
+            <SmartSelect options={planOptions} value={planId} onChange={setPlanId} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.coupon_field_max_redemptions', 'الحد الأقصى للاستخدام')}</label>
+              <input
+                type="number"
+                value={maxRedemptions}
+                onChange={(e) => setMaxRedemptions(e.target.value)}
+                placeholder={t('saas.coupon_field_unlimited', 'بلا حد')}
+                className="w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.coupon_field_expiry', 'تاريخ الانتهاء')}</label>
+              <input
+                type="date"
+                value={expiresAt}
+                onChange={(e) => setExpiresAt(e.target.value)}
+                className="w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.coupon_field_notes', 'ملاحظة داخلية (اختياري)')}</label>
+            <textarea
+              rows={2}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder={t('saas.coupon_field_notes_placeholder', 'مثال: خصم مكالمة مع فاطمة - عرض رمضان')}
+              className="w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none resize-none"
+            />
+          </div>
+        </div>
+
+        <div className="sticky bottom-0 shrink-0 p-4 sm:p-6 border-t border-border bg-surface flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-6 py-2.5 bg-surface-muted text-content hover:bg-surface border border-border rounded-xl font-bold text-sm transition-all cursor-pointer"
+          >
+            {t('common.cancel')}
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={saving}
+            className="px-6 py-2.5 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-brand/20 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+          >
+            {t('saas.coupon_save', 'إنشاء الكوبون')}
           </button>
         </div>
       </motion.div>
