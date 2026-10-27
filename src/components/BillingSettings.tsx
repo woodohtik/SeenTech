@@ -226,7 +226,9 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
 
       showToast(
         result.discount_amount > 0
-          ? t('billing.request_sent_success_discounted', { amount: formatCurrency(result.amount), defaultValue: `تم إرسال الطلب -- السعر بعد الخصم: ${formatCurrency(result.amount)} ر.س` })
+          ? t('billing.request_sent_success_discounted', {
+              defaultValue: `تم إرسال الطلب -- قبل الخصم: ${formatCurrency(result.original_amount)} ر.س، الخصم: ${formatCurrency(result.discount_amount)} ر.س، بعد الخصم: ${formatCurrency(result.amount)} ر.س`,
+            })
           : t('billing.request_sent_success')
       );
       setShowUpgradeModal(false);
@@ -319,17 +321,22 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                   date: new Date(pendingRequests[0].created_at).toLocaleDateString(isRtl ? 'ar-SA-u-nu-latn' : 'en-US')
                 })}
               </p>
-              <p className="text-xs font-black text-warning mt-1 flex items-center gap-1.5 dir-ltr justify-start">
-                <PriceDisplay amount={pendingRequests[0].amount} />
-                {!!pendingRequests[0].discount_amount && (
+              {pendingRequests[0].discount_amount ? (
+                <p className="text-xs font-black text-warning mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 dir-ltr justify-start">
                   <span className="text-content-muted font-bold text-[11px] line-through">
                     <PriceDisplay amount={pendingRequests[0].original_amount ?? pendingRequests[0].amount + pendingRequests[0].discount_amount} />
                   </span>
-                )}
-                {pendingRequests[0].coupon_code && (
-                  <span className="text-content-muted font-bold text-[11px] not-italic">({pendingRequests[0].coupon_code})</span>
-                )}
-              </p>
+                  <span className="text-danger font-bold text-[11px]">-<PriceDisplay amount={pendingRequests[0].discount_amount} /></span>
+                  <span>→ <PriceDisplay amount={pendingRequests[0].amount} /></span>
+                  {pendingRequests[0].coupon_code && (
+                    <span className="text-content-muted font-bold text-[11px] not-italic">({pendingRequests[0].coupon_code})</span>
+                  )}
+                </p>
+              ) : (
+                <p className="text-xs font-black text-warning mt-1 dir-ltr flex justify-start">
+                  <PriceDisplay amount={pendingRequests[0].amount} />
+                </p>
+              )}
             </div>
           </div>
           <span className="px-4 py-1.5 bg-warning/20 border border-warning/40 rounded-full text-xs font-black text-warning shrink-0">
@@ -784,11 +791,22 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                   <p className="text-[11px] text-danger font-bold">{couponError}</p>
                 )}
                 {couponPreview && (
-                  <div className="p-3 bg-success/10 border border-success/20 rounded-xl text-xs font-black text-success flex items-center justify-between">
-                    <span>{t('billing.modal_coupon_applied', 'تم تطبيق الخصم 🎉')}</span>
-                    <span className="dir-ltr font-mono">
-                      -<PriceDisplay amount={couponPreview.discount_amount} /> → <PriceDisplay amount={couponPreview.final_amount} />
-                    </span>
+                  <div className="p-3.5 bg-success/10 border border-success/20 rounded-xl text-xs font-bold text-success space-y-1.5">
+                    <p className="font-black">{t('billing.modal_coupon_applied', 'تم تطبيق الخصم 🎉')}</p>
+                    <div className="flex items-center justify-between text-content-muted">
+                      <span>{t('billing.modal_coupon_price_before', 'السعر قبل الخصم')}</span>
+                      <span className="dir-ltr line-through">
+                        <PriceDisplay amount={couponPreview.discount_amount + couponPreview.final_amount} />
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-danger">
+                      <span>{t('billing.modal_coupon_discount_label', 'الخصم')}</span>
+                      <span className="dir-ltr">-<PriceDisplay amount={couponPreview.discount_amount} /></span>
+                    </div>
+                    <div className="flex items-center justify-between font-black text-sm pt-1.5 border-t border-success/20">
+                      <span>{t('billing.modal_coupon_price_after', 'السعر بعد الخصم')}</span>
+                      <span className="dir-ltr"><PriceDisplay amount={couponPreview.final_amount} /></span>
+                    </div>
                   </div>
                 )}
               </div>

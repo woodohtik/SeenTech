@@ -313,12 +313,17 @@ export default function SubscriptionRequestsAdminManager() {
                     <span>•</span>
                     <div>
                       <span>{t('common.amount')}: </span>
-                      <span className="text-success font-black dir-ltr inline-block">
-                        <PriceDisplay amount={req.amount} />
-                      </span>
-                      {!!req.discount_amount && (
-                        <span className="text-content-muted font-bold text-[11px] ms-1.5">
-                          ({t('subscription.requests.original_amount_was', 'بدلاً من')} <span className="line-through"><PriceDisplay amount={req.original_amount ?? req.amount + req.discount_amount} /></span>)
+                      {req.discount_amount ? (
+                        <span className="inline-flex items-center gap-2 dir-ltr">
+                          <span className="text-content-muted font-bold text-[11px] line-through">
+                            <PriceDisplay amount={req.original_amount ?? req.amount + req.discount_amount} />
+                          </span>
+                          <span className="text-danger font-black text-[11px]">-<PriceDisplay amount={req.discount_amount} /></span>
+                          <span className="text-success font-black">→ <PriceDisplay amount={req.amount} /></span>
+                        </span>
+                      ) : (
+                        <span className="text-success font-black dir-ltr inline-block">
+                          <PriceDisplay amount={req.amount} />
                         </span>
                       )}
                     </div>
