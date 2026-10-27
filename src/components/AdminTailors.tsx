@@ -433,13 +433,27 @@ export default function AdminTailors() {
         setConfirmDialog(null);
         try {
           const today = new Date().toISOString();
+          const newPlan = plans.find(p => p.id === newPlanId);
+          const isFreeOrTrial = newPlanId === 'free' || (newPlan && newPlan.price === 0) || newPlanId.includes('trial');
+          // Manually granting a paid plan here is a fresh grant starting
+          // now -- same subscription_end_date this screen's own expiry
+          // display and BillingSettings.tsx both read, so the change is
+          // actually visible instead of only touching created_at (the
+          // join date, unrelated to billing once subscription_end_date
+          // exists).
+          const updatePayload: Record<string, any> = { plan_id: newPlanId, updated_at: today };
+          if (!isFreeOrTrial) {
+            const oneYearFromNow = new Date();
+            oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+            updatePayload.subscription_end_date = oneYearFromNow.toISOString();
+          }
           const { error } = await supabase
             .from('tenants')
-            .update({ plan_id: newPlanId, created_at: today })
+            .update(updatePayload)
             .eq('id', tenantId);
-          
+
           if (error) throw error;
-          setTenants(prev => prev.map(t => t.id === tenantId ? { ...t, planId: newPlanId, createdAt: today } : t));
+          setTenants(prev => prev.map(t => t.id === tenantId ? { ...t, planId: newPlanId, ...(updatePayload.subscription_end_date ? { subscription_end_date: updatePayload.subscription_end_date } : {}) } : t));
           showToast(t('saas.tenants.plan_updated'), 'success');
         } catch (error) {
           console.warn("Error updating tenant plan:", error);
@@ -702,29 +716,47 @@ export default function AdminTailors() {
         setConfirmDialog(null);
         setLoading(true);
         try {
-          const now = new Date().toISOString();
+          const now = new Date();
+          // Mirrors approve_subscription_request's renewal math (see
+          // 20261106000000_fix_subscription_renewal_base_date.sql): extend
+          // a year from whichever is later, now or the tenant's existing
+          // cycle end -- falling back to createdAt+1y, the same estimate
+          // this screen used before subscription_end_date existed, so an
+          // early manual renewal here never loses the remaining paid
+          // period either. This used to reset created_at (the join date)
+          // instead, which this screen's own expiry display now ignores
+          // in favor of the real subscription_end_date.
+          const existingEnd = tenant.subscription_end_date ? new Date(tenant.subscription_end_date) : null;
+          const fallbackCycleEnd = new Date(tenant.createdAt);
+          fallbackCycleEnd.setFullYear(fallbackCycleEnd.getFullYear() + 1);
+          const base = new Date(Math.max(now.getTime(), (existingEnd || fallbackCycleEnd).getTime()));
+          const newEndDate = new Date(base);
+          newEndDate.setFullYear(newEndDate.getFullYear() + 1);
+          const newEndIso = newEndDate.toISOString();
+          const nowIso = now.toISOString();
+
           const { error } = await supabase
             .from('tenants')
-            .update({ 
+            .update({
               status: 'active',
-              created_at: now,
-              updated_at: now
+              subscription_end_date: newEndIso,
+              updated_at: nowIso
             })
             .eq('id', tenant.id);
-          
+
           if (error) throw error;
-          
+
           await supabase.from('audit_logs').insert({
             action: 'renew_subscription',
             target_tenant_id: tenant.id,
-            details: `Renewed subscription for ${tenant.name}. Clock reset to ${now}`,
-            occurred_at: now
+            details: `Renewed subscription for ${tenant.name}. New end date: ${newEndIso}`,
+            occurred_at: nowIso
           });
 
-          const updatedTenant = { ...tenant, status: 'active' as const, createdAt: now };
-          
+          const updatedTenant = { ...tenant, status: 'active' as const, subscription_end_date: newEndIso };
+
           setTenants(prev => prev.map(t => t.id === tenant.id ? updatedTenant : t));
-          
+
           if (selectedTenant?.id === tenant.id) {
             setSelectedTenant(updatedTenant);
           }
@@ -784,27 +816,34 @@ export default function AdminTailors() {
 
   const getSubscriptionInfo = (tenant: Tenant) => {
     const plan = plans.find(p => p.id === tenant.planId);
-    const isTrial = tenant.planId === 'free' || 
-                    (!plan && tenant.planId !== 'basic') || 
-                    (plan && plan.price === 0) || 
+    const isTrial = tenant.planId === 'free' ||
+                    (!plan && tenant.planId !== 'basic') ||
+                    (plan && plan.price === 0) ||
                     (tenant.planId && typeof tenant.planId === 'string' && tenant.planId.includes('trial'));
     const creationDate = new Date(tenant.createdAt);
     const now = new Date();
-    
+
     // Assume 14 days trial or 365 days pro based on standard logic if duration not in DB
     const durationDays = isTrial ? 14 : 365;
-    const expiryDate = new Date(creationDate);
-    expiryDate.setDate(expiryDate.getDate() + durationDays);
-    
+    // seen-billing-renewal-task.md -- a real subscription_end_date (set by
+    // approve_subscription_request / handleRenewSubscription below) is the
+    // actual paid-through date and must win over the createdAt+365d
+    // estimate; that estimate only ever applied before this column existed
+    // and this tenant had its first real renewal recorded.
+    const expiryDate = (!isTrial && tenant.subscription_end_date)
+      ? new Date(tenant.subscription_end_date)
+      : (() => { const d = new Date(creationDate); d.setDate(d.getDate() + durationDays); return d; })();
+
     const diffTime = expiryDate.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const totalSpanDays = Math.max(1, Math.ceil((expiryDate.getTime() - creationDate.getTime()) / (1000 * 60 * 60 * 24)));
 
     return {
       type: isTrial ? t('billing.plans.free.badge') : t('saas.tenants.paid_subscription'),
       isTrial,
       daysLeft: Math.max(0, diffDays),
       expiryDate,
-      progress: Math.min(100, Math.max(0, ( (durationDays - diffDays) / durationDays ) * 100))
+      progress: Math.min(100, Math.max(0, ( (totalSpanDays - diffDays) / totalSpanDays ) * 100))
     };
   };
 
