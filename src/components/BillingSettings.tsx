@@ -23,11 +23,13 @@ import {
   ChevronDown,
   ChevronUp,
   Download,
-  Lock
+  Lock,
+  Tag
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { PriceDisplay } from './PriceDisplay';
 import { createSubscriptionRequest, fetchMySubscriptionRequests, SubscriptionRequest } from '../services/subscriptionRequestService';
+import { previewCoupon, CouponPreview } from '../services/couponService';
 import { getBankTransferSettings, DEFAULT_BANK_TRANSFER_SETTINGS, BankTransferSettings } from '../services/bankTransferService';
 import { useToast } from '../contexts/ToastContext';
 
@@ -60,6 +62,10 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
+  const [couponCode, setCouponCode] = useState('');
+  const [couponPreview, setCouponPreview] = useState<CouponPreview | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [checkingCoupon, setCheckingCoupon] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -130,6 +136,18 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
     };
   }, [tenantId]);
 
+  // A coupon's discount can depend on the selected plan (plan-restricted
+  // coupons) -- switching plans invalidates any prior preview, so re-checking
+  // is required rather than carrying a stale discounted price forward.
+  useEffect(() => {
+    setCouponPreview(null);
+    setCouponError(null);
+  }, [selectedPlanId]);
+
+  useEffect(() => {
+    if (!showUpgradeModal) resetCouponState();
+  }, [showUpgradeModal]);
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 4000);
@@ -157,6 +175,28 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
     }
   };
 
+  const resetCouponState = () => {
+    setCouponCode('');
+    setCouponPreview(null);
+    setCouponError(null);
+  };
+
+  const handleCheckCoupon = async () => {
+    const targetPlan = plans.find(p => p.id === selectedPlanId) || plans[0];
+    if (!targetPlan || !couponCode.trim() || !tenantId) return;
+    setCheckingCoupon(true);
+    setCouponError(null);
+    setCouponPreview(null);
+    try {
+      const preview = await previewCoupon(couponCode.trim(), tenantId, targetPlan.id);
+      setCouponPreview(preview);
+    } catch (err: any) {
+      setCouponError(getFriendlyErrorMessage(err));
+    } finally {
+      setCheckingCoupon(false);
+    }
+  };
+
   const handleSubmitSubscriptionRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tenantId) return;
@@ -177,12 +217,11 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
         tenant_name: tenant?.name || 'سين',
         tenant_email: tenant?.owner_email || '',
         plan_id: targetPlan.id,
-        plan_name: targetPlan.name,
-        amount: targetPlan.price,
         payment_method: paymentMethod,
         proof_url: proofPreview || null,
         reference_no: referenceNo.trim() || null,
         notes: notes.trim() || null,
+        coupon_code: couponCode.trim() || null,
       });
 
       showToast(t('billing.request_sent_success'));
@@ -191,6 +230,7 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
       setProofPreview(null);
       setReferenceNo('');
       setNotes('');
+      resetCouponState();
       await fetchRealBillingData();
     } catch (err: any) {
       toastError(t('billing.request_submit_error', { error: getFriendlyErrorMessage(err) }));
@@ -686,6 +726,44 @@ export default function BillingSettings({ tenantId }: BillingSettingsProps) {
                   placeholder={t('billing.modal_ref_placeholder')}
                   className="w-full p-3.5 bg-surface-muted border border-border rounded-xl text-xs font-bold text-content focus:border-brand focus:outline-none"
                 />
+              </div>
+
+              {/* Coupon Code (كود الخصم) */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-content uppercase tracking-wider block">
+                  {t('billing.modal_coupon_label', 'كود الخصم (اختياري)')}
+                </label>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <Tag size={16} className="absolute top-1/2 -translate-y-1/2 start-3.5 text-content-muted" />
+                    <input
+                      type="text"
+                      value={couponCode}
+                      onChange={(e) => { setCouponCode(e.target.value); setCouponPreview(null); setCouponError(null); }}
+                      placeholder={t('billing.modal_coupon_placeholder', 'مثال: OFF-AB12X7')}
+                      className="w-full p-3.5 ps-10 bg-surface-muted border border-border rounded-xl text-xs font-bold text-content focus:border-brand focus:outline-none dir-ltr text-left"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCheckCoupon}
+                    disabled={!couponCode.trim() || checkingCoupon}
+                    className="px-4 py-3.5 bg-surface-muted hover:bg-border text-content font-black rounded-xl text-xs transition-all cursor-pointer disabled:opacity-50 shrink-0 flex items-center gap-1.5"
+                  >
+                    {checkingCoupon ? <RefreshCw size={14} className="animate-spin" /> : t('billing.modal_coupon_check', 'تحقق')}
+                  </button>
+                </div>
+                {couponError && (
+                  <p className="text-[11px] text-danger font-bold">{couponError}</p>
+                )}
+                {couponPreview && (
+                  <div className="p-3 bg-success/10 border border-success/20 rounded-xl text-xs font-black text-success flex items-center justify-between">
+                    <span>{t('billing.modal_coupon_applied', 'تم تطبيق الخصم 🎉')}</span>
+                    <span className="dir-ltr font-mono">
+                      -<PriceDisplay amount={couponPreview.discount_amount} /> → <PriceDisplay amount={couponPreview.final_amount} />
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Notes */}

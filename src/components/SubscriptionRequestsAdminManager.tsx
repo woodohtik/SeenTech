@@ -15,7 +15,8 @@ import {
   Mail, 
   ShieldCheck, 
   X,
-  AlertCircle
+  AlertCircle,
+  Tag
 } from 'lucide-react';
 import { PriceDisplay } from './PriceDisplay';
 import { IconInput } from './ui/IconInput';
@@ -315,7 +316,21 @@ export default function SubscriptionRequestsAdminManager() {
                       <span className="text-success font-black dir-ltr inline-block">
                         <PriceDisplay amount={req.amount} />
                       </span>
+                      {!!req.discount_amount && (
+                        <span className="text-content-muted font-bold text-[11px] ms-1.5">
+                          ({t('subscription.requests.original_amount_was', 'بدلاً من')} <span className="line-through"><PriceDisplay amount={req.original_amount ?? req.amount + req.discount_amount} /></span>)
+                        </span>
+                      )}
                     </div>
+                    {req.coupon_code && (
+                      <>
+                        <span>•</span>
+                        <div className="flex items-center gap-1.5">
+                          <Tag size={13} className="text-brand" />
+                          <span className="text-brand font-mono font-black">{req.coupon_code}</span>
+                        </div>
+                      </>
+                    )}
                     {req.reference_no && (
                       <>
                         <span>•</span>

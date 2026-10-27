@@ -30,7 +30,8 @@ import {
   UserCheck,
   AlertCircle,
   Plus,
-  Trash2
+  Trash2,
+  Tag
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -56,8 +57,9 @@ import { Trans, useTranslation } from 'react-i18next';
 import { isRtlLang, localeOf } from '../lib/direction';
 import { validatePlanForm, PlanFormInput, PlanFormField } from '../utils/planValidation';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { Coupon, fetchCoupons, createCoupon, setCouponActive, deleteCoupon } from '../services/couponService';
 
-type TabType = 'overview' | 'financials' | 'performance' | 'security' | 'plans';
+type TabType = 'overview' | 'financials' | 'performance' | 'security' | 'plans' | 'coupons';
 
 export default function SuperAdminDashboard() {
   const { t, i18n } = useTranslation();
@@ -84,6 +86,9 @@ export default function SuperAdminDashboard() {
   const [plansList, setPlansList] = useState<any[]>([]);
   const [planModalMode, setPlanModalMode] = useState<'create' | 'edit' | null>(null);
   const [editingPlan, setEditingPlan] = useState<any | null>(null);
+  const [couponsList, setCouponsList] = useState<Coupon[]>([]);
+  const [couponModalOpen, setCouponModalOpen] = useState(false);
+  const [updatingCouponId, setUpdatingCouponId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState<string>('Super Admin');
   
@@ -116,16 +121,19 @@ export default function SuperAdminDashboard() {
       const [
         { data: tenantsData },
         { data: saasUserData },
-        { data: plansData }
+        { data: plansData },
+        couponsData
       ] = await Promise.all([
         supabase.from('tenants').select('*'),
         supabase.from('saas_users').select('*').eq('uid', currentAuthUser?.id).single(),
-        supabase.from('plans').select('*')
+        supabase.from('plans').select('*'),
+        fetchCoupons().catch((e) => { console.error('Error fetching coupons:', e); return []; })
       ]);
 
       if (plansData) {
         setPlansList(plansData);
       }
+      setCouponsList(couponsData);
 
       if (tenantsData) {
         setTenants(tenantsData.map(d => ({
@@ -267,6 +275,33 @@ export default function SuperAdminDashboard() {
     }
     toastSuccess(t('saas.plan_delete_success'));
     await fetchData();
+  };
+
+  const handleToggleCouponActive = async (coupon: Coupon) => {
+    setUpdatingCouponId(coupon.id);
+    try {
+      await setCouponActive(coupon.id, !coupon.is_active);
+      toastSuccess(t('saas.coupon_toggle_success', 'تم تحديث حالة الكوبون'));
+      await fetchData();
+    } catch (err) {
+      toastHandleError(err, t('saas.coupon_toggle_failed', 'تعذّر تحديث حالة الكوبون'));
+    } finally {
+      setUpdatingCouponId(null);
+    }
+  };
+
+  const handleDeleteCoupon = async (coupon: Coupon) => {
+    if (!(await confirm({ description: t('saas.coupon_delete_confirm', { code: coupon.code, defaultValue: `حذف كوبون "${coupon.code}" نهائياً؟ الطلبات التي استخدمته سابقاً تحتفظ بسجلّها.` }), danger: true }))) return;
+    setUpdatingCouponId(coupon.id);
+    try {
+      await deleteCoupon(coupon.id);
+      toastSuccess(t('saas.coupon_delete_success', 'تم حذف الكوبون'));
+      await fetchData();
+    } catch (err) {
+      toastHandleError(err, t('saas.coupon_delete_failed', 'تعذّر حذف الكوبون'));
+    } finally {
+      setUpdatingCouponId(null);
+    }
   };
 
   // Real Dynamic Calculations (Zero Fallback Policy)
@@ -440,6 +475,7 @@ export default function SuperAdminDashboard() {
             { id: 'performance', label: t('saas.performance', 'الأداء والتشغيل'), icon: Server },
             { id: 'security', label: t('saas.security', 'الأمان والتدقيق'), icon: Shield },
             { id: 'plans', label: t('saas.menu_plans', 'الباقات'), icon: CreditCard },
+            { id: 'coupons', label: t('saas.menu_coupons', 'كوبونات الخصم'), icon: Tag },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -989,6 +1025,103 @@ export default function SuperAdminDashboard() {
             </div>
           </motion.div>
         )}
+
+        {/* COUPONS TAB */}
+        {activeTab === 'coupons' && (
+          <motion.div
+            key="coupons"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-6"
+          >
+            <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-black text-content">{t('saas.coupons_tab_title', 'كوبونات الخصم')}</h3>
+                <p className="text-content-muted font-bold text-xs mt-1">{t('saas.coupons_tab_subtitle', 'أنشئ كود خصم تعطيه لعميل عند الاتفاق على تخفيض سعر اشتراكه')}</p>
+              </div>
+              <button
+                onClick={() => setCouponModalOpen(true)}
+                className="bg-brand text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-brand/90 transition-all cursor-pointer"
+              >
+                {t('saas.coupons_new_button', 'كوبون جديد')}
+              </button>
+            </div>
+
+            <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-surface-muted text-[10px] font-black text-content-muted uppercase tracking-widest border-b border-border">
+                    <th className="p-4 text-start">{t('saas.coupons_col_code', 'الكود')}</th>
+                    <th className="p-4 text-center">{t('saas.coupons_col_discount', 'الخصم')}</th>
+                    <th className="p-4 text-center">{t('saas.coupons_col_restriction', 'مخصَّص لـ')}</th>
+                    <th className="p-4 text-center">{t('saas.coupons_col_usage', 'الاستخدام')}</th>
+                    <th className="p-4 text-center">{t('saas.coupons_col_expiry', 'الانتهاء')}</th>
+                    <th className="p-4 text-center">{t('saas.plans_col_status', 'الحالة')}</th>
+                    <th className="p-4 text-center">{t('saas.plans_col_actions', 'إجراءات')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {couponsList.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="p-10 text-center text-content-muted font-bold text-sm">
+                        {t('saas.coupons_empty', 'لا توجد كوبونات بعد')}
+                      </td>
+                    </tr>
+                  )}
+                  {couponsList.map((coupon) => {
+                    const restrictedTenant = coupon.restricted_tenant_id
+                      ? tenants.find((tn) => tn.id === coupon.restricted_tenant_id)
+                      : null;
+                    const restrictedPlan = coupon.plan_id
+                      ? plansList.find((p) => p.id === coupon.plan_id)
+                      : null;
+                    const expired = !!coupon.expires_at && new Date(coupon.expires_at) < new Date();
+                    return (
+                      <tr key={coupon.id}>
+                        <td className="p-4 font-mono font-black text-content dir-ltr">{coupon.code}</td>
+                        <td className="p-4 text-center font-mono text-brand font-black">
+                          {coupon.discount_type === 'percentage' ? `${coupon.discount_value}%` : <PriceDisplay amount={coupon.discount_value} />}
+                        </td>
+                        <td className="p-4 text-center text-xs font-bold text-content-muted">
+                          {restrictedTenant ? restrictedTenant.name : t('saas.coupons_restriction_any_tenant', 'أي تاجر')}
+                          {restrictedPlan && <span className="block text-[10px] mt-0.5">{restrictedPlan.name}</span>}
+                        </td>
+                        <td className="p-4 text-center font-mono">
+                          {coupon.redemption_count}{coupon.max_redemptions != null ? ` / ${coupon.max_redemptions}` : ''}
+                        </td>
+                        <td className={cn("p-4 text-center text-xs font-bold", expired ? "text-danger" : "text-content-muted")}>
+                          {coupon.expires_at ? new Date(coupon.expires_at).toLocaleDateString(localeOf(i18n.language)) : t('saas.coupons_no_expiry', 'بلا انتهاء')}
+                        </td>
+                        <td className="p-4 text-center">
+                          <button
+                            onClick={() => handleToggleCouponActive(coupon)}
+                            disabled={updatingCouponId === coupon.id}
+                            className={cn(
+                              "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wide cursor-pointer disabled:opacity-50",
+                              coupon.is_active ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
+                            )}
+                          >
+                            {coupon.is_active ? t('saas.plans_status_active', 'فعّالة') : t('saas.plans_status_inactive', 'معطّلة')}
+                          </button>
+                        </td>
+                        <td className="p-4 text-center">
+                          <button
+                            onClick={() => handleDeleteCoupon(coupon)}
+                            disabled={updatingCouponId === coupon.id}
+                            className="p-2 text-content-muted hover:text-danger bg-surface-muted hover:bg-danger/10 rounded-xl transition-all cursor-pointer disabled:opacity-50"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Sticky Support Widget */}
@@ -1018,6 +1151,15 @@ export default function SuperAdminDashboard() {
           mode={planModalMode}
           plan={planModalMode === 'edit' ? editingPlan : null}
           onClose={() => { setPlanModalMode(null); setEditingPlan(null); }}
+          onSaved={fetchData}
+        />
+      )}
+
+      {couponModalOpen && (
+        <CouponFormModal
+          tenants={tenants}
+          plans={plansList}
+          onClose={() => setCouponModalOpen(false)}
           onSaved={fetchData}
         />
       )}
@@ -1261,6 +1403,190 @@ const PlanFormModal = ({
             className="px-6 py-2.5 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-brand/20 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
           >
             {t('saas.plan_save')}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+/** الموظف (سوبر أدمن) يُنشئ كوبون خصم ليُعطيه لعميل عند التفاوض على
+ * اشتراكه -- إما عام (restrictedTenantId فارغ) أو مخصَّص لتاجر واحد بعينه.
+ * التحقق النهائي (الصلاحية، الحد، تاريخ الانتهاء) يحدث دوماً في
+ * create_subscription_request على الخادم؛ هذا النموذج تحقق أساسي فقط. */
+const CouponFormModal = ({
+  tenants,
+  plans,
+  onClose,
+  onSaved,
+}: {
+  tenants: Tenant[];
+  plans: any[];
+  onClose: () => void;
+  onSaved: () => void;
+}) => {
+  const { t } = useTranslation();
+  const { success: toastSuccess, handleError: toastHandleError } = useToast();
+
+  const [code, setCode] = useState('');
+  const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage');
+  const [discountValue, setDiscountValue] = useState('10');
+  const [restrictedTenantId, setRestrictedTenantId] = useState('');
+  const [planId, setPlanId] = useState('');
+  const [maxRedemptions, setMaxRedemptions] = useState('');
+  const [expiresAt, setExpiresAt] = useState('');
+  const [notes, setNotes] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const discountTypeOptions = [
+    { value: 'percentage', label: t('saas.coupon_field_type_percentage', 'نسبة %') },
+    { value: 'fixed', label: t('saas.coupon_field_type_fixed', 'مبلغ ثابت (ر.س)') },
+  ];
+  const tenantOptions = [
+    { value: '', label: t('saas.coupons_restriction_any_tenant', 'أي تاجر (كوبون عام)') },
+    ...tenants.filter((tn) => !tn.trashedAt).map((tn) => ({ value: tn.id, label: tn.name })),
+  ];
+  const planOptions = [
+    { value: '', label: t('saas.coupon_field_plan_any', 'كل الباقات') },
+    ...plans.map((p) => ({ value: p.id, label: p.name })),
+  ];
+
+  const handleSubmit = async () => {
+    const value = Number(discountValue);
+    if (!value || value <= 0) {
+      setError(t('saas.coupon_error_value_required', 'أدخل قيمة خصم أكبر من صفر'));
+      return;
+    }
+    if (discountType === 'percentage' && value > 100) {
+      setError(t('saas.coupon_error_percentage_max', 'نسبة الخصم لا يمكن أن تتجاوز 100%'));
+      return;
+    }
+    setError(null);
+    setSaving(true);
+    try {
+      await createCoupon({
+        code: code.trim() || undefined,
+        discount_type: discountType,
+        discount_value: value,
+        restricted_tenant_id: restrictedTenantId || null,
+        plan_id: planId || null,
+        max_redemptions: maxRedemptions ? Number(maxRedemptions) : null,
+        expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
+        notes: notes.trim() || null,
+      });
+      toastSuccess(t('saas.coupon_create_success', 'تم إنشاء الكوبون'));
+      onSaved();
+      onClose();
+    } catch (err) {
+      toastHandleError(err, t('saas.coupon_create_failed', 'تعذّر إنشاء الكوبون'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-2 sm:p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} />
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        className="bg-surface w-full max-w-lg rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
+      >
+        <div className="p-4 sm:p-6 border-b border-border flex justify-between items-center bg-surface-muted/50">
+          <h2 className="text-lg font-black text-content">{t('saas.coupon_modal_title', 'كوبون خصم جديد')}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-surface rounded-full transition-colors">
+            <X size={20} className="text-content-muted" />
+          </button>
+        </div>
+
+        <div className="p-4 sm:p-6 space-y-4 overflow-y-auto">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.coupon_field_code', 'الكود')}</label>
+            <input
+              type="text"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder={t('saas.coupon_field_code_placeholder', 'اتركه فارغاً لإنشاء كود تلقائي')}
+              className="w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none dir-ltr text-left"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.coupon_field_discount_type', 'نوع الخصم')}</label>
+              <SmartSelect options={discountTypeOptions} value={discountType} onChange={(v) => setDiscountType(v as 'percentage' | 'fixed')} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.coupon_field_discount_value', 'القيمة')}</label>
+              <input
+                type="number"
+                value={discountValue}
+                onChange={(e) => setDiscountValue(e.target.value)}
+                className="w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none"
+              />
+            </div>
+          </div>
+          {error && <p className="text-[11px] text-danger font-bold">{error}</p>}
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.coupon_field_tenant', 'مخصَّص لتاجر (اختياري)')}</label>
+            <SmartSelect options={tenantOptions} value={restrictedTenantId} onChange={setRestrictedTenantId} searchPlaceholder={t('common.search')} />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.coupon_field_plan', 'مخصَّص لباقة (اختياري)')}</label>
+            <SmartSelect options={planOptions} value={planId} onChange={setPlanId} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.coupon_field_max_redemptions', 'الحد الأقصى للاستخدام')}</label>
+              <input
+                type="number"
+                value={maxRedemptions}
+                onChange={(e) => setMaxRedemptions(e.target.value)}
+                placeholder={t('saas.coupon_field_unlimited', 'بلا حد')}
+                className="w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.coupon_field_expiry', 'تاريخ الانتهاء')}</label>
+              <input
+                type="date"
+                value={expiresAt}
+                onChange={(e) => setExpiresAt(e.target.value)}
+                className="w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-content-muted uppercase tracking-widest">{t('saas.coupon_field_notes', 'ملاحظة داخلية (اختياري)')}</label>
+            <textarea
+              rows={2}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder={t('saas.coupon_field_notes_placeholder', 'مثال: خصم مكالمة مع فاطمة - عرض رمضان')}
+              className="w-full bg-surface border border-border rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none resize-none"
+            />
+          </div>
+        </div>
+
+        <div className="sticky bottom-0 shrink-0 p-4 sm:p-6 border-t border-border bg-surface flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-6 py-2.5 bg-surface-muted text-content hover:bg-surface border border-border rounded-xl font-bold text-sm transition-all cursor-pointer"
+          >
+            {t('common.cancel')}
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={saving}
+            className="px-6 py-2.5 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-brand/20 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+          >
+            {t('saas.coupon_save', 'إنشاء الكوبون')}
           </button>
         </div>
       </motion.div>
