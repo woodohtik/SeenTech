@@ -61,20 +61,23 @@ function useSpeechRecognition(): UseSpeechRecognitionResult
 
 لا دعم كسور عشرية منطوقة في الإصدار الأول (مثل "أربعين ونص") — الحقول الرقمية تبقى قابلة للتعديل اليدوي الدقيق بعد التعبئة الصوتية دوماً، فهذا القيد غير حادّ.
 
-### 3) ربط البحث والإدخال العام — خاصية جديدة على `IconInput`
+### 3) ربط البحث والإدخال العام — مكوّن `VoiceMicButton` مستقل
+
+**تحديث بعد فحص الكود عند كتابة خطة التنفيذ:** خانة `endIcon` في `IconInput` مستخدَمة فعلياً كعنصر تفاعلي في بعض الشاشات (مثال: زر مسح الباركود في `POS.tsx`/`Orders.tsx`) — خاصية boolean جديدة (`voiceEnabled`) على `IconInput` نفسها كانت ستتعارض مع هذا الاستخدام أو تحتاج منطقاً إضافياً لدمج الحالتين داخل المكوّن المشترك. الأبسط والأقل خطراً: مكوّن مستقل صغير `VoiceMicButton` (يُستخدَم كقيمة لـ`endIcon` مباشرة، أو بجانب أي أيقونة أخرى فيه)، بلا أي تعديل على `IconInput` نفسه إطلاقاً — يحافظ هذا على نفس فكرة التصميم الأصلية (نقطة إلحاق عبر `endIcon` الموجودة فعلاً) بأقل تغيير ممكن على مكوّن مشترك يستخدمه 34+ ملفاً.
 
 ```ts
-interface IconInputProps {
-  // ...الموجود فعلاً
-  voiceEnabled?: boolean; // اختياري، يُضاف خاصية جديدة فقط -- لا كسر لأي استخدام حالي
+interface VoiceMicButtonProps {
+  onResult: (transcript: string) => void;
+  ariaLabel?: string;
 }
+function VoiceMicButton(props: VoiceMicButtonProps): JSX.Element | null
 ```
 
-عند `true` و`useSpeechRecognition().isSupported`: زر مايك صغير في خانة الأيقونة النهائية الموجودة فعلاً. ضغطه يستدعي `start()`، والنتيجة (`transcript`) تُمرَّر مباشرة لـ`onChange` الموجود للمكوّن (نفس مسار الكتابة اليدوية تماماً، فلا حاجة لأي منطق فلترة/حفظ جديد في أي شاشة تستهلكها).
+يُرجع `null` حين `!useSpeechRecognition().isSupported` (لا زر إطلاقاً). ضغطه يستدعي `start()`، والنتيجة (`transcript`) تُمرَّر لـ`onResult` الذي يستدعيه كل موضع استخدام بنفس مسار الكتابة اليدوية تماماً (`onChange`/`setValue`/`setFormData` بحسب الشاشة) — فلا حاجة لأي منطق فلترة/حفظ جديد في أي شاشة تستهلكه.
 
-نقاط التفعيل (سطر واحد في كل موضع):
-- بحث: `POS.tsx`, `Orders.tsx`, `Customers.tsx`, `InventoryManager.tsx`.
-- إدخال عام: اسم/ملاحظات العميل (`Customers.tsx`)، اسم المنتج (`InventoryManager.tsx`)، اسم الموظف (`AddEmployeeModal.tsx`)، ملاحظات الطلب (`Orders.tsx`).
+نقاط التفعيل (سطر إلى بضعة أسطر في كل موضع، بحسب نمط الحقل الموجود):
+- بحث (`endIcon`، أحياناً بجانب زر موجود فعلاً): `POS.tsx`, `Orders.tsx`, `Customers.tsx`, `InventoryManager.tsx`.
+- إدخال عام (`endIcon` لو `IconInput`، أو غلاف صغير لو حقل عادي/`textarea`): اسم/ملاحظات العميل (`Customers.tsx`، عبر `react-hook-form`)، اسم المنتج (`ProductFormFields.tsx`، عبر `formData`/`setFormData` عادي)، اسم الموظف (`AddEmployeeModal.tsx`، عبر `react-hook-form`)، ملاحظات الطلب (`Orders.tsx`، عبر `react-hook-form`).
 
 ### 4) معالج المقاسات الصوتي — `VoiceMeasurementWizard` (مكوّن جديد)
 
