@@ -1,10 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb, Mic } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Measurements } from '../types';
 import Branding from './Branding';
+import VoiceMeasurementWizard from './VoiceMeasurementWizard';
+import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 
 interface ThobeMeasurementSelectorProps {
   values: Measurements;
@@ -14,7 +16,7 @@ interface ThobeMeasurementSelectorProps {
 
 type ThobePart = 'neck' | 'chest' | 'waist' | 'hips' | 'shoulder' | 'sleeve' | 'length' | 'bottomWidth';
 
-const PART_LABELS: Record<ThobePart, string> = {
+export const PART_LABELS: Record<ThobePart, string> = {
   neck: 'measurements.part_label.neck',
   chest: 'measurements.part_label.chest',
   waist: 'measurements.part_label.waist',
@@ -41,6 +43,7 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
   const [activePart, setActivePart] = useState<ThobePart | null>(null);
   const [isInstructionMode, setIsInstructionMode] = useState(false);
   const [activeHint, setActiveHint] = useState<ThobePart | null>(null);
+  const [wizardOpen, setWizardOpen] = useState(false);
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const handlePartClick = (part: ThobePart) => {
@@ -382,6 +385,19 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
               <Lightbulb size={24} />
             </button>
           </div>
+
+          {useSpeechRecognition().isSupported && (
+            <button
+              type="button"
+              onClick={() => setWizardOpen(true)}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-brand/30 bg-brand/5 text-brand font-bold hover:bg-brand/10 transition-colors"
+            >
+              <Mic size={16} /> {t('measurements.voice_fill_button', 'تعبئة المقاسات بالصوت')}
+            </button>
+          )}
+          {wizardOpen && (
+            <VoiceMeasurementWizard values={values} onChange={onChange} onClose={() => setWizardOpen(false)} />
+          )}
 
           <div className="grid grid-cols-1 gap-4">
             {(Object.keys(PART_LABELS) as ThobePart[]).map((part) => (
