@@ -1,5 +1,6 @@
 dist/
 dist-customer/
+.worktrees/
 node_modules/
 coverage/
 .DS_Store
