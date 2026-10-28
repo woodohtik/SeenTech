@@ -31,7 +31,10 @@ export default function VoiceMeasurementWizard({ values, onChange, onClose }: Vo
 
   const [stepIndex, setStepIndex] = useState(-1);
   const [lastResult, setLastResult] = useState<{ part: ThobePart; value: number } | null>(null);
-  const [awaitingRetry, setAwaitingRetry] = useState(false);
+  // 'unrecognized' covers both an unparseable transcript and a 'no-speech'
+  // error (same retry-this-field UI + message). 'not-allowed' and 'network'
+  // get their own distinct messages.
+  const [retryError, setRetryError] = useState<'unrecognized' | 'not-allowed' | 'network' | null>(null);
   const [manualEditPart, setManualEditPart] = useState<ThobePart | null>(null);
   const [manualValue, setManualValue] = useState('');
 
@@ -40,6 +43,18 @@ export default function VoiceMeasurementWizard({ values, onChange, onClose }: Vo
   // is called, ahead of any re-render.
   const currentPartRef = useRef<ThobePart | null>(null);
   const advanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Set synchronously (not via setState) the instant teardown begins — in
+  // handleCancel and in the unmount cleanup effect — and checked inside the
+  // TTS utterance's onend/onerror before they call start(). Those handlers
+  // fire asynchronously: speechSynthesis.cancel() still delivers onend/
+  // onerror to the utterance that was in flight when cancel() was called,
+  // so without this guard a Cancel tap or an unmount can still spin up a
+  // brand-new SpeechRecognition instance after the wizard is already gone,
+  // and nothing would ever stop it. A ref (not state) because it must be
+  // readable synchronously inside those callbacks without waiting for a
+  // re-render, and it never needs to flip back to false on this instance —
+  // a fresh wizard mount gets a fresh ref (initialized false) via useRef.
+  const closingRef = useRef(false);
 
   const part = getNextMeasurementStep(stepIndex);
 
@@ -52,7 +67,7 @@ export default function VoiceMeasurementWizard({ values, onChange, onClose }: Vo
       advanceTimeoutRef.current = null;
     }
     setLastResult(null);
-    setAwaitingRetry(false);
+    setRetryError(null);
     setManualEditPart(null);
 
     const nextPart = getNextMeasurementStep(stepIndex);
@@ -66,8 +81,18 @@ export default function VoiceMeasurementWizard({ values, onChange, onClose }: Vo
     const promptText = 'قل مقاس ' + arabicT(PART_LABELS[nextPart]);
     const utterance = new SpeechSynthesisUtterance(promptText);
     utterance.lang = 'ar-SA';
-    utterance.onend = () => start();
-    utterance.onerror = () => start(); // graceful degradation per spec: skip straight to listening
+    // Guarded: speechSynthesis.cancel() (called by handleCancel/unmount)
+    // still asynchronously fires onend/onerror for the utterance that was
+    // in flight. Once closingRef is true the wizard is logically torn down,
+    // so these must not start a new recognition session behind it.
+    utterance.onend = () => {
+      if (closingRef.current) return;
+      start();
+    };
+    utterance.onerror = () => {
+      if (closingRef.current) return;
+      start(); // graceful degradation per spec: skip straight to listening
+    };
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.speak(utterance);
     } else {
@@ -86,13 +111,13 @@ export default function VoiceMeasurementWizard({ values, onChange, onClose }: Vo
 
     const value = parseArabicNumber(transcript);
     if (value === null) {
-      setAwaitingRetry(true);
+      setRetryError('unrecognized');
       return;
     }
 
     onChange({ ...values, [activePart]: value });
     setLastResult({ part: activePart, value });
-    setAwaitingRetry(false);
+    setRetryError(null);
 
     advanceTimeoutRef.current = setTimeout(() => {
       setStepIndex((i) => i + 1);
@@ -100,10 +125,19 @@ export default function VoiceMeasurementWizard({ values, onChange, onClose }: Vo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transcript]);
 
-  // 'no-speech' gets the same retry-this-field treatment as an unparseable transcript.
+  // 'no-speech' gets the same retry-this-field treatment as an unparseable
+  // transcript. 'not-allowed' (mic permission denied) and 'network' (Chrome's
+  // Web Speech API round-trips to Google's servers) each get their own
+  // distinct message, per the spec's error-handling section, but use the
+  // same retry-this-field UI pattern. 'other' is intentionally left
+  // unhandled, matching the brief's scope.
   useEffect(() => {
     if (error === 'no-speech') {
-      setAwaitingRetry(true);
+      setRetryError('unrecognized');
+    } else if (error === 'not-allowed') {
+      setRetryError('not-allowed');
+    } else if (error === 'network') {
+      setRetryError('network');
     }
   }, [error]);
 
@@ -111,6 +145,10 @@ export default function VoiceMeasurementWizard({ values, onChange, onClose }: Vo
   // behind a closed wizard.
   useEffect(() => {
     return () => {
+      // Mark teardown before cancel()/stop() so the in-flight utterance's
+      // onend/onerror (fired asynchronously by cancel()) sees closingRef
+      // already true and does not call start() behind the unmounted wizard.
+      closingRef.current = true;
       if (advanceTimeoutRef.current) clearTimeout(advanceTimeoutRef.current);
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel();
@@ -121,11 +159,14 @@ export default function VoiceMeasurementWizard({ values, onChange, onClose }: Vo
   }, []);
 
   const handleRetry = () => {
-    setAwaitingRetry(false);
+    setRetryError(null);
     start();
   };
 
   const handleCancel = () => {
+    // Same ordering reason as the unmount cleanup above: set the guard
+    // before cancel() so the late onend/onerror it triggers is a no-op.
+    closingRef.current = true;
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
@@ -220,10 +261,18 @@ export default function VoiceMeasurementWizard({ values, onChange, onClose }: Vo
           </button>
         )}
 
-        {!manualEditPart && awaitingRetry && (
+        {!manualEditPart && retryError && (
           <div className="space-y-2">
             <p className="text-sm font-bold text-warning">
-              {t('measurements.voice_wizard_no_understand', 'لم أفهم، حاول مرة أخرى')}
+              {retryError === 'not-allowed' &&
+                t(
+                  'measurements.voice_wizard_not_allowed',
+                  'يحتاج الوصول للمايكروفون. فعّله من إعدادات المتصفح.'
+                )}
+              {retryError === 'network' &&
+                t('measurements.voice_wizard_network_error', 'تحقّق من الاتصال بالإنترنت')}
+              {retryError === 'unrecognized' &&
+                t('measurements.voice_wizard_no_understand', 'لم أفهم، حاول مرة أخرى')}
             </p>
             <button
               type="button"
