@@ -21,3 +21,18 @@ test.each([
 test.each(['', 'كلام غير مفهوم', 'xyz', '12 كيلو'])('returns null for unparseable input %s', (input) => {
   expect(parseArabicNumber(input)).toBeNull();
 });
+
+// Speech recognition sometimes adds/drops/swaps a single letter -- these
+// should still resolve to the closest number word rather than failing.
+test.each([
+  ['اربعيين', 40],   // "أربعين" (40) with an extra ي
+  ['اربغين', 40],    // "أربعين" (40) with ع misheard as غ
+  ['تسعيين', 90],    // "تسعين" (90) with an extra ي
+  ['مانين', 80],     // "ثمانين" (80) missing the ث
+])('fuzzy-resolves %s to %d despite a one-letter speech-recognition error', (input, expected) => {
+  expect(parseArabicNumber(input)).toBe(expected);
+});
+
+test('does not fuzzy-resolve input that is too far from any number word', () => {
+  expect(parseArabicNumber('بيت')).toBeNull();
+});

@@ -43,6 +43,13 @@ test('start() sets isListening, onresult sets transcript and clears isListening'
   expect(result.current.isListening).toBe(false);
 });
 
+test('strips a trailing period the recognizer appends to the transcript', () => {
+  const { result } = renderHook(() => useSpeechRecognition());
+  act(() => result.current.start());
+  act(() => instances[0].onresult!({ results: [[{ transcript: 'أربعين.' }]] }));
+  expect(result.current.transcript).toBe('أربعين');
+});
+
 test('onerror with not-allowed sets error and clears isListening', () => {
   const { result } = renderHook(() => useSpeechRecognition());
   act(() => result.current.start());

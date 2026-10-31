@@ -13,7 +13,7 @@ export interface VoiceMicButtonProps {
 export function VoiceMicButton({ onResult, ariaLabel }: VoiceMicButtonProps) {
   const { t } = useTranslation();
   const { error: toastError } = useToast();
-  const { isSupported, isListening, transcript, error, start } = useSpeechRecognition();
+  const { isSupported, isListening, transcript, error, start, stop } = useSpeechRecognition();
 
   useEffect(() => {
     if (transcript) onResult(transcript);
@@ -42,7 +42,7 @@ export function VoiceMicButton({ onResult, ariaLabel }: VoiceMicButtonProps) {
   return (
     <button
       type="button"
-      onClick={start}
+      onClick={isListening ? stop : start}
       aria-label={ariaLabel ?? t('common.voice_input', 'إدخال صوتي')}
       className={cn('cursor-pointer transition-colors', isListening && 'text-brand animate-pulse')}
     >

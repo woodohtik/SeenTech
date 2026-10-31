@@ -1,6 +1,7 @@
 import { ThermalInvoice, StandardInvoice, InvoiceData } from "./printing/InvoiceReceipt";
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { formatSaudiPhone } from '../utils/phoneUtils';
+import { fuzzyIncludes } from '../utils/fuzzySearch';
 import { flushSync } from 'react-dom';
 import { 
   Search, 
@@ -725,13 +726,24 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     }
   };
 
-  const filteredInventory = useMemo(() => inventory.filter(item =>
-    item.showInPos !== false &&
-    (selectedCategory === 'all' || (item.category_key || item.category) === selectedCategory) &&
-    (item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-     item.barcode?.includes(searchQuery) ||
-     item.sku?.includes(searchQuery))
-  ), [inventory, selectedCategory, searchQuery]);
+  const filteredInventory = useMemo(() => {
+    const matchesNonSearch = (item: InventoryItem) =>
+      item.showInPos !== false &&
+      (selectedCategory === 'all' || (item.category_key || item.category) === selectedCategory);
+
+    const exact = inventory.filter(item =>
+      matchesNonSearch(item) &&
+      (item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+       item.barcode?.includes(searchQuery) ||
+       item.sku?.includes(searchQuery))
+    );
+    if (exact.length > 0 || !searchQuery.trim()) return exact;
+
+    // Exact match found nothing -- voice search may have mis-transcribed a
+    // letter in the item name. Barcode/SKU aren't fuzzy-matched: they're
+    // scanned or typed exactly, never spoken.
+    return inventory.filter(item => matchesNonSearch(item) && fuzzyIncludes(item.name, searchQuery));
+  }, [inventory, selectedCategory, searchQuery]);
 
   const handleScan = (decodedText: string) => {
     const item = inventory.find(i => i.barcode === decodedText || i.sku === decodedText);

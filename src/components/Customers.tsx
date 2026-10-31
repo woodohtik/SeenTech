@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import DateTimeDisplay from './DateTimeDisplay';
 import { formatSaudiPhone } from '../utils/phoneUtils';
+import { fuzzyIncludes } from '../utils/fuzzySearch';
 import { 
   Plus, 
   Search, 
@@ -661,19 +662,8 @@ export default function Customers({ tenantId }: CustomersProps) {
     }
   };
 
-  const filteredCustomers = useMemo(() => customers
-    .filter(c => {
-      // Search filter
-      const searchLower = debouncedSearch.toLowerCase().trim();
-      const matchesSearch = !searchLower || searchLower.split(/\s+/).every(term => 
-        c.name.toLowerCase().includes(term) || 
-        c.phone.includes(term) ||
-        (c.companyName && c.companyName.toLowerCase().includes(term)) ||
-        (c.trn && c.trn.includes(term)) ||
-        (c.styles?.city && c.styles.city.toLowerCase().includes(term))
-      );
-      if (!matchesSearch) return false;
-
+  const filteredCustomers = useMemo(() => {
+    const matchesOtherFilters = (c: Customer) => {
       // Category filter
       if (filter === 'measurements') {
         const hasMeasurements = c.measurements && Object.values(c.measurements).some(v => v !== undefined && v !== null && v !== '' && v !== 0);
@@ -699,10 +689,21 @@ export default function Customers({ tenantId }: CustomersProps) {
       if (balanceFilter === 'debtor' && balance <= 0) return false;
       if (balanceFilter === 'creditor' && balance >= 0) return false;
       if (balanceFilter === 'balanced' && balance !== 0) return false;
-      
+
       return true;
-    })
-    .sort((a, b) => {
+    };
+
+    const searchLower = debouncedSearch.toLowerCase().trim();
+    const matchesSearchExact = (c: Customer) =>
+      !searchLower || searchLower.split(/\s+/).every(term =>
+        c.name.toLowerCase().includes(term) ||
+        c.phone.includes(term) ||
+        (c.companyName && c.companyName.toLowerCase().includes(term)) ||
+        (c.trn && c.trn.includes(term)) ||
+        (c.styles?.city && c.styles.city.toLowerCase().includes(term))
+      );
+
+    const sortCustomers = (list: Customer[]) => [...list].sort((a, b) => {
       if (sortBy === 'name') return a.name.localeCompare(b.name, 'ar');
       if (sortBy === 'date_asc') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       if (sortBy === 'balance_desc') {
@@ -711,7 +712,20 @@ export default function Customers({ tenantId }: CustomersProps) {
         return balB - balA;
       }
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    }), [customers, debouncedSearch, filter, balanceFilter, customerBalances, sortBy]);
+    });
+
+    const exact = customers.filter(c => matchesOtherFilters(c) && matchesSearchExact(c));
+    if (exact.length > 0 || !searchLower) return sortCustomers(exact);
+
+    // Exact match found nothing -- voice search may have mis-transcribed a
+    // letter in the name/company/city. Phone and TRN aren't fuzzy-matched:
+    // they're digits, never spoken as words.
+    const fuzzy = customers.filter(c =>
+      matchesOtherFilters(c) &&
+      fuzzyIncludes([c.name, c.companyName, c.styles?.city].filter(Boolean).join(' '), debouncedSearch)
+    );
+    return sortCustomers(fuzzy);
+  }, [customers, debouncedSearch, filter, balanceFilter, customerBalances, sortBy]);
 
 
 

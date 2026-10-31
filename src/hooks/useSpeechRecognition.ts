@@ -75,7 +75,12 @@ export function useSpeechRecognition(lang: string = 'ar-SA'): UseSpeechRecogniti
     rec.interimResults = false;
 
     rec.onresult = (e: any) => {
-      setTranscript(e.results[0][0].transcript);
+      const raw: string = e.results[0][0].transcript;
+      // The recognizer sometimes appends closing punctuation that was never
+      // spoken (e.g. "أربعين." for "أربعين") -- strip it so callers parsing
+      // or matching the transcript don't see a trailing character they
+      // didn't ask for.
+      setTranscript(raw.replace(/[.؟!،؛]+$/, '').trimEnd());
       listeningRef.current = false;
       setIsListening(false);
     };

@@ -6,6 +6,9 @@
  * anything it cannot parse exactly, so callers never act on a guessed value.
  */
 
+import { normalizeArabicText } from './normalizeArabic';
+import { levenshteinDistance } from './levenshtein';
+
 type PartKind = 'hundred' | 'teen' | 'tens' | 'ones';
 
 interface Part {
@@ -15,15 +18,11 @@ interface Part {
 
 /** Normalizes Arabic text so that spelling variants map to the same key. */
 function normalize(text: string): string {
-  return text
-    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
-    .replace(/٫/g, '.') // Arabic decimal separator, e.g. "٤٥٫٥"
-    .replace(/[ً-ْـ]/g, '') // harakat and tatweel
-    .replace(/[أإآ]/g, 'ا')
-    .replace(/ة/g, 'ه')
-    .replace(/ى/g, 'ي')
-    .replace(/[ئؤ]/g, 'ء')
-    .trim();
+  return normalizeArabicText(
+    text
+      .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+      .replace(/٫/g, '.') // Arabic decimal separator, e.g. "٤٥٫٥"
+  );
 }
 
 function build(entries: Array<[string, number, PartKind]>): Map<string, Part> {
@@ -86,9 +85,39 @@ const TEEN_PHRASES = build([
 ]);
 
 /**
+ * Speech recognition sometimes adds, drops, or swaps a single letter in a
+ * spoken number word (e.g. "أربعين" transcribed as "اربعيين" or "اربعن").
+ * Falls back to the closest SINGLE entry within edit distance 1 -- never 2+,
+ * since these words are short enough that a larger distance risks matching
+ * the wrong number. Requires a unique closest match; an ambiguous tie
+ * (two entries equally close) returns null rather than guessing.
+ */
+function fuzzyLookupSingle(word: string): Part | null {
+  let best: Part | null = null;
+  let bestDistance = Infinity;
+  let ambiguous = false;
+
+  for (const [key, part] of SINGLE) {
+    const distance = levenshteinDistance(word, key);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = part;
+      ambiguous = false;
+    } else if (distance === bestDistance && best && (part.value !== best.value || part.kind !== best.kind)) {
+      // Only a real ambiguity if the tied entry would change the outcome --
+      // two spellings of the same number (e.g. "ثمانون"/"ثمانين", both 80)
+      // tying is not a conflict.
+      ambiguous = true;
+    }
+  }
+
+  return bestDistance <= 1 && !ambiguous ? best : null;
+}
+
+/**
  * Splits the normalized text into number parts. Handles the conjunction "و"
  * attached to a word (e.g. "وأربعين") as well as a standalone "و".
- * Returns null if any word matches nothing.
+ * Returns null if any word matches nothing (even fuzzily).
  */
 function tokenize(normalized: string): Part[] | null {
   const words = normalized.split(/\s+/).filter((w) => w.length > 0);
@@ -122,6 +151,14 @@ function tokenize(normalized: string): Part[] | null {
         parts.push(stripped);
         continue;
       }
+    }
+
+    const fuzzy = word.startsWith('و')
+      ? fuzzyLookupSingle(word.slice(1))
+      : fuzzyLookupSingle(word);
+    if (fuzzy) {
+      parts.push(fuzzy);
+      continue;
     }
 
     return null;

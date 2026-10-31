@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { formatSaudiPhone } from '../utils/phoneUtils';
+import { fuzzyIncludes } from '../utils/fuzzySearch';
 import { calculateItemTax } from '../utils/b2bHelper';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { createPortal } from 'react-dom';
@@ -1483,31 +1484,44 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     }
   };
 
-  const filteredOrders = useMemo(() => orders.filter(o => {
+  const filteredOrders = useMemo(() => {
+    const matchesNonSearch = (o: Order) => {
+      const matchesStatus = !statusFilter || o.status === statusFilter;
+
+      // Date comparison
+      const orderDate = (o.orderDate || '').split('T')[0];
+      const matchesDate = (!startDate || orderDate >= startDate) &&
+                         (!endDate || orderDate <= endDate);
+
+      // Tab filtering
+      const matchesTab = activeTab === 'active' ? o.status !== 'delivered' : o.status === 'delivered';
+
+      return matchesStatus && matchesDate && matchesTab;
+    };
+
     const searchLower = debouncedSearch.toLowerCase();
-    const orderNumberStr = o.orderNumber ? o.orderNumber.toString() : '';
-    // Handle potential invoice number inside the order object if it exists
-    const invoiceNumberStr = (o as any).invoiceNumber ? String((o as any).invoiceNumber).toLowerCase() : '';
+    const matchesSearchExact = (o: Order) => {
+      const orderNumberStr = o.orderNumber ? o.orderNumber.toString() : '';
+      // Handle potential invoice number inside the order object if it exists
+      const invoiceNumberStr = (o as any).invoiceNumber ? String((o as any).invoiceNumber).toLowerCase() : '';
 
-    // Support scanning the full URL QR code by checking if the search string contains the ID
-    const matchesSearch = (o.customerName || '').toLowerCase().includes(searchLower) ||
-                         o.id.toLowerCase().includes(searchLower) ||
-                         searchLower.includes(o.id.toLowerCase()) ||
-                         orderNumberStr.includes(searchLower) ||
-                         invoiceNumberStr.includes(searchLower) ||
-                         searchLower.includes(invoiceNumberStr);
-    const matchesStatus = !statusFilter || o.status === statusFilter;
+      // Support scanning the full URL QR code by checking if the search string contains the ID
+      return (o.customerName || '').toLowerCase().includes(searchLower) ||
+             o.id.toLowerCase().includes(searchLower) ||
+             searchLower.includes(o.id.toLowerCase()) ||
+             orderNumberStr.includes(searchLower) ||
+             invoiceNumberStr.includes(searchLower) ||
+             searchLower.includes(invoiceNumberStr);
+    };
 
-    // Date comparison
-    const orderDate = (o.orderDate || '').split('T')[0];
-    const matchesDate = (!startDate || orderDate >= startDate) &&
-                       (!endDate || orderDate <= endDate);
+    const exact = orders.filter(o => matchesNonSearch(o) && matchesSearchExact(o));
+    if (exact.length > 0 || !searchLower.trim()) return exact;
 
-    // Tab filtering
-    const matchesTab = activeTab === 'active' ? o.status !== 'delivered' : o.status === 'delivered';
-
-    return matchesSearch && matchesStatus && matchesDate && matchesTab;
-  }), [orders, debouncedSearch, statusFilter, startDate, endDate, activeTab]);
+    // Exact match found nothing -- voice search may have mis-transcribed a
+    // letter in the customer's name. Order/invoice numbers aren't
+    // fuzzy-matched: they're scanned or typed exactly, never spoken.
+    return orders.filter(o => matchesNonSearch(o) && fuzzyIncludes(o.customerName || '', debouncedSearch));
+  }, [orders, debouncedSearch, statusFilter, startDate, endDate, activeTab]);
 
   // Groups unpaidOrders by customerId once (O(n)) instead of re-filtering
   // the whole unpaidOrders array for every row rendered below (was O(n*m)
