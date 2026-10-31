@@ -13,10 +13,11 @@ test.each([
   ['مئتان', 200],
   ['ثلاثمئة', 300],
   ['صفر', 0],
+  ['٤٥٫٥', 45.5],                      // Arabic-Indic digits + Arabic decimal separator
 ])('parses %s as %d', (input, expected) => {
   expect(parseArabicNumber(input)).toBe(expected);
 });
 
-test.each(['', 'كلام غير مفهوم', 'xyz'])('returns null for unparseable input %s', (input) => {
+test.each(['', 'كلام غير مفهوم', 'xyz', '12 كيلو'])('returns null for unparseable input %s', (input) => {
   expect(parseArabicNumber(input)).toBeNull();
 });

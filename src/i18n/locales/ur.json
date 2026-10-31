@@ -499,6 +499,7 @@
     "view_all": "سب دیکھیں",
     "view_density": "نمائش کا انداز",
     "view_details": "مکمل تفصیلات دیکھیں",
+    "voice_input": "صوتی اندراج",
     "warning": "انتباہ / جائزہ",
     "website_url": "سرکاری ویب سائٹ کا لنک",
     "weekday_short": {
@@ -1655,6 +1656,13 @@
     "sleeve": "آستین",
     "visual_selector_desc": "فوری جائزے کے لیے پیمائش درست درج کریں",
     "visual_selector_title": "بصری پیمائش سلیکٹر",
+    "voice_fill_button": "آواز سے پیمائش درج کریں",
+    "voice_wizard_cancel": "منسوخ کریں",
+    "voice_wizard_network_error": "اپنا انٹرنیٹ کنکشن چیک کریں",
+    "voice_wizard_no_understand": "کچھ سنائی/سمجھ نہیں آیا، دوبارہ کوشش کریں",
+    "voice_wizard_not_allowed": "مائیکروفون تک رسائی درکار ہے۔ اسے اپنے براؤزر کی سیٹنگز میں فعال کریں۔",
+    "voice_wizard_retry": "دوبارہ کوشش کریں",
+    "voice_wizard_title": "آواز سے پیمائش درج کریں",
     "waist": "کمر",
     "zipper": "زپ"
   },

@@ -44,6 +44,7 @@ import { cn, generateOrderNumber } from '../lib/utils';
 import { SmartSelect } from './ui/SmartSelect';
 import { IconInput } from './ui/IconInput';
 import { VoiceMicButton } from './ui/VoiceMicButton';
+import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { PriceDisplay } from './PriceDisplay';
 import { decodeInventoryDescription, hasValidTaxSettings } from '../utils/b2bHelper';
@@ -109,6 +110,11 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const { confirm, alertModal } = useConfirm();
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
+  // Unsupported browsers render VoiceMicButton as null -- without this
+  // gate, IconInput's endIcon array would still include the (now-empty)
+  // mic wrapper span, showing a blank bordered icon box next to the scan
+  // button where none existed before voice input.
+  const voiceSupported = isSpeechRecognitionSupported();
   // prefers-reduced-motion: skip the slide/spring enter animation and jump
   // straight to the resting state for every drawer/sheet below.
   const shouldReduceMotion = useReducedMotion();
@@ -1738,9 +1744,11 @@ const invoiceData: InvoiceData | null = completedOrder ? {
             type="text"
             startIcon={Search}
             endIcon={[
-              <span key="mic" className="me-2 inline-flex">
-                <VoiceMicButton onResult={setSearchQuery} />
-              </span>,
+              ...(voiceSupported ? [
+                <span key="mic" className="me-2 inline-flex">
+                  <VoiceMicButton onResult={setSearchQuery} />
+                </span>,
+              ] : []),
               <button
                 key="scan"
                 type="button"

@@ -29,6 +29,18 @@ function getRecognitionCtor(): RecognitionCtor | null {
   return (w.SpeechRecognition || w.webkitSpeechRecognition || null) as RecognitionCtor | null;
 }
 
+/**
+ * Plain, hook-free support check -- safe to call anywhere (including
+ * conditionally, inside JSX, or in a loop) since it does not create any
+ * React state or instantiate a SpeechRecognition instance. Use this instead
+ * of `useSpeechRecognition().isSupported` whenever only the boolean is
+ * needed, so callers don't have to respect the rules of hooks just to read
+ * a `typeof window` check.
+ */
+export function isSpeechRecognitionSupported(): boolean {
+  return !!getRecognitionCtor();
+}
+
 function mapErrorCode(native: string): SpeechRecognitionErrorCode {
   switch (native) {
     case 'not-allowed':

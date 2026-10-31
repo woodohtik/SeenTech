@@ -82,6 +82,7 @@ import { SmartSelect } from './ui/SmartSelect';
 import { DatePicker } from './ui/DatePicker';
 import { IconInput } from './ui/IconInput';
 import { VoiceMicButton } from './ui/VoiceMicButton';
+import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
 import { checkStockAvailability, deductStock } from '../services/inventoryService';
 import { useStaff } from '../contexts/StaffContext';
 import { useBranding } from '../contexts/BrandingContext';
@@ -299,6 +300,11 @@ const DynamicOrderItemFields = ({
 
 export default function Orders({ tenantId }: { tenantId: string }) {
   const { t, i18n } = useTranslation();
+  // Unsupported browsers render VoiceMicButton as null -- without this
+  // gate, the empty mic wrapper would still show as a blank bordered icon
+  // box next to the scan button / notes textarea where none existed
+  // before voice input.
+  const voiceSupported = isSpeechRecognitionSupported();
   const router = useRouter();
   const refreshCounter = useRefreshCounter();
   const { settings: branding } = useBranding();
@@ -399,7 +405,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     isTest: false
   }), [isLegacyVertical, workflowStages]);
 
-  const { register, control, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting, isValid } } = useForm({
+  const { register, control, handleSubmit, reset, watch, setValue, getValues, formState: { errors, isSubmitting, isValid } } = useForm({
     resolver: zodResolver(orderSchema),
     defaultValues: defaultOrderValues as any
   });
@@ -2414,9 +2420,11 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             type="text"
             startIcon={Search}
             endIcon={[
-              <span key="mic" className="me-2 inline-flex">
-                <VoiceMicButton onResult={setSearch} />
-              </span>,
+              ...(voiceSupported ? [
+                <span key="mic" className="me-2 inline-flex">
+                  <VoiceMicButton onResult={setSearch} />
+                </span>,
+              ] : []),
               <button
                 key="scan"
                 type="button"
@@ -3316,9 +3324,11 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                           placeholder={t('orders.additional_instructions')}
                           className="w-full bg-surface border border-border rounded-xl p-4 pe-10 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold h-32 resize-none text-content"
                         />
-                        <div className="absolute top-2 end-2">
-                          <VoiceMicButton onResult={(text) => setValue('notes', text)} />
-                        </div>
+                        {voiceSupported && (
+                          <div className="absolute top-2 end-2">
+                            <VoiceMicButton onResult={(text) => setValue('notes', [getValues('notes'), text].filter(Boolean).join(' '))} />
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

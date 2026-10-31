@@ -499,6 +499,7 @@
     "view_all": "View All",
     "view_density": "View Density",
     "view_details": "View Full Details",
+    "voice_input": "Voice input",
     "warning": "Warning / Review",
     "website_url": "Official Website URL",
     "weekday_short": {
@@ -1655,6 +1656,13 @@
     "sleeve": "Sleeve",
     "visual_selector_desc": "Enter measurements accurately for instant review",
     "visual_selector_title": "Visual Measurement Selector",
+    "voice_fill_button": "Fill measurements by voice",
+    "voice_wizard_cancel": "Cancel",
+    "voice_wizard_network_error": "Check your internet connection",
+    "voice_wizard_no_understand": "Didn't hear/understand that, try again",
+    "voice_wizard_not_allowed": "Microphone access is needed. Enable it in your browser settings.",
+    "voice_wizard_retry": "Try again",
+    "voice_wizard_title": "Fill measurements by voice",
     "waist": "Waist",
     "zipper": "Zipper"
   },

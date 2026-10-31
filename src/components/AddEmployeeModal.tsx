@@ -13,6 +13,7 @@ import { useDirection } from '../lib/direction';
 import { getFriendlyErrorMessage } from '../lib/firebase';
 import { IconInput } from './ui/IconInput';
 import { VoiceMicButton } from './ui/VoiceMicButton';
+import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
 import { PasswordInput } from './ui/PasswordInput';
 import { SmartSelect } from './ui/SmartSelect';
 
@@ -51,6 +52,10 @@ export default function AddEmployeeModal({
   currentStaffEmail
 }: AddEmployeeModalProps) {
   const { t, dir } = useDirection();
+  // Unsupported browsers render VoiceMicButton as null -- without this
+  // gate, IconInput's endIcon would still count as present and show a
+  // blank bordered icon box where none existed before voice input.
+  const voiceSupported = isSpeechRecognitionSupported();
   const { user: currentAuthUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -240,7 +245,7 @@ export default function AddEmployeeModal({
             label={t('common.full_name')}
             startIcon={User}
             error={errors.name?.message ? t(errors.name.message as string) : undefined}
-            endIcon={<VoiceMicButton onResult={(text) => setValue('name', text)} />}
+            endIcon={voiceSupported ? <VoiceMicButton onResult={(text) => setValue('name', text)} /> : undefined}
           />
 
           <div className="space-y-1.5">

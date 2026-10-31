@@ -239,6 +239,12 @@ export default function VoiceMeasurementWizard({ values, onChange, onClose }: Vo
               autoFocus
               value={manualValue}
               onChange={(e) => setManualValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleManualConfirm();
+                }
+              }}
               className="flex-1 bg-surface-muted border border-border rounded-xl px-3 py-2 text-center text-xl font-black text-content focus:ring-0"
             />
             <button
@@ -272,7 +278,7 @@ export default function VoiceMeasurementWizard({ values, onChange, onClose }: Vo
               {retryError === 'network' &&
                 t('measurements.voice_wizard_network_error', 'تحقّق من الاتصال بالإنترنت')}
               {retryError === 'unrecognized' &&
-                t('measurements.voice_wizard_no_understand', 'لم أفهم، حاول مرة أخرى')}
+                t('measurements.voice_wizard_no_understand', 'لم أسمع/أفهم شيئاً، حاول مرة أخرى')}
             </p>
             <button
               type="button"

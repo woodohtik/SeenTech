@@ -17,6 +17,7 @@ interface Part {
 function normalize(text: string): string {
   return text
     .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/٫/g, '.') // Arabic decimal separator, e.g. "٤٥٫٥"
     .replace(/[ً-ْـ]/g, '') // harakat and tatweel
     .replace(/[أإآ]/g, 'ا')
     .replace(/ة/g, 'ه')
@@ -171,12 +172,20 @@ function combine(parts: Part[]): number | null {
   return null;
 }
 
+// Only trust a direct numeric parse when the ENTIRE normalized string is a
+// plain integer or decimal -- e.g. "12 كيلو" must fall through to
+// word-parsing (and ultimately null) instead of silently parseFloat-ing a
+// leading "12" off of trailing garbage.
+const PLAIN_NUMBER_RE = /^\d+(\.\d+)?$/;
+
 export function parseArabicNumber(text: string): number | null {
   const normalized = normalize(text);
   if (normalized.length === 0) return null;
 
-  const numeric = parseFloat(normalized);
-  if (Number.isFinite(numeric)) return numeric;
+  if (PLAIN_NUMBER_RE.test(normalized)) {
+    const numeric = parseFloat(normalized);
+    if (Number.isFinite(numeric)) return numeric;
+  }
 
   const parts = tokenize(normalized);
   if (parts === null) return null;

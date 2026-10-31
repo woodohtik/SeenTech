@@ -5,6 +5,7 @@ import { Shirt } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { SmartSelect } from "../ui/SmartSelect";
 import { VoiceMicButton } from "../ui/VoiceMicButton";
+import { isSpeechRecognitionSupported } from "../../hooks/useSpeechRecognition";
 import ProductImageUploader from "./ProductImageUploader";
 import { ADD_NEW_CATEGORY_VALUE, useTenantCategoryPicker } from "../../hooks/useTenantCategoryPicker";
 
@@ -76,6 +77,10 @@ export default function ProductFormFields({
   showOpeningBalance = true,
 }: ProductFormFieldsProps) {
   const { t } = useTranslation();
+  // Unsupported browsers render VoiceMicButton as null -- without this
+  // gate, the empty mic wrapper would still show as a blank bordered icon
+  // box next to the name field where none existed before voice input.
+  const voiceSupported = isSpeechRecognitionSupported();
 
   return (
     <>
@@ -109,9 +114,11 @@ export default function ProductFormFields({
                   fieldErrors.name && "ring-2 ring-danger border-danger"
                 )}
               />
-              <div className="absolute top-2 end-2">
-                <VoiceMicButton onResult={(text) => setFormData({ ...formData, name: text })} />
-              </div>
+              {voiceSupported && (
+                <div className="absolute top-2 end-2">
+                  <VoiceMicButton onResult={(text) => setFormData({ ...formData, name: text })} />
+                </div>
+              )}
             </div>
           </div>
           <div className="space-y-2 col-span-1 md:col-span-6 text-right">

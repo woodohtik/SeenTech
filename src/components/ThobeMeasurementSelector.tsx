@@ -6,7 +6,7 @@ import { cn } from '../lib/utils';
 import { Measurements } from '../types';
 import Branding from './Branding';
 import VoiceMeasurementWizard from './VoiceMeasurementWizard';
-import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
 
 interface ThobeMeasurementSelectorProps {
   values: Measurements;
@@ -386,7 +386,7 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
             </button>
           </div>
 
-          {useSpeechRecognition().isSupported && (
+          {isSpeechRecognitionSupported() && (
             <button
               type="button"
               onClick={() => setWizardOpen(true)}
