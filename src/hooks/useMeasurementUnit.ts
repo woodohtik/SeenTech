@@ -7,6 +7,7 @@ export function useMeasurementUnit(tenantId: string): MeasurementUnit {
 
   useEffect(() => {
     let cancelled = false;
+    setUnit('inch');
 
     supabase
       .from('tenants')
