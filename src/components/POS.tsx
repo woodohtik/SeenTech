@@ -907,7 +907,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     }
 
     // Separate numeric measurements and styling fields
-    const measurementKeys = ['neck', 'chest', 'waist', 'hips', 'shoulder', 'sleeve', 'length', 'bottomWidth'];
+    const measurementKeys = ['neck', 'chest', 'waist', 'hips', 'shoulder', 'sleeve', 'length', 'bottomWidth', 'handWidth', 'midSleeveWidth', 'cuffLength'];
     
     const numericMeasurements: any = {};
     const stylingFields: any = {};

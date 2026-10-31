@@ -296,7 +296,14 @@ export default function Settings({ tenantId }: SettingsProps) {
       postalCode: d.postalCode,
       inventoryStrategy: 'decentralized',
       logoUrl: d.logoUrl,
-      measurementUnit: d.measurementUnit,
+      // d may come straight from the localStorage lastKnownCache snapshot
+      // (initialData above, staleTime: Infinity) rather than a fresh fetch,
+      // so a cache written before this field existed has measurementUnit
+      // undefined -- normalize it the same way the fetch itself does
+      // (lines 215/273) instead of letting reset() pass undefined through,
+      // which the native <select> silently reads as its first option
+      // ('cm') and the next save would then persist.
+      measurementUnit: isValidMeasurementUnit(d.measurementUnit) ? d.measurementUnit : 'inch',
       taxSettings: d.taxSettings as any,
       notificationSettings: d.notificationSettings as any
     });
