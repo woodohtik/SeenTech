@@ -193,7 +193,7 @@ export default function VoiceMeasurementWizard({ values, onChange, onClose, meas
   const handleManualConfirm = () => {
     if (!manualEditPart) return;
     const numValue = Math.max(0, parseFloat(manualValue) || 0);
-    onChange({ ...values, [manualEditPart]: numValue });
+    onChange({ ...values, [manualEditPart]: displayUnitToCm(numValue, measurementUnit) });
     setManualEditPart(null);
     setStepIndex((i) => i + 1);
   };
