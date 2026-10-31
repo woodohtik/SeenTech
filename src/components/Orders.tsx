@@ -4,6 +4,8 @@ import { formatSaudiPhone } from '../utils/phoneUtils';
 import { fuzzyIncludes } from '../utils/fuzzySearch';
 import { calculateItemTax } from '../utils/b2bHelper';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
+import { cmToDisplayUnit, displayUnitToCm, unitLabelKey } from '../utils/measurementUnits';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
@@ -311,6 +313,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const { settings: branding } = useBranding();
   const { error: toastError, success: toastSuccess, warning: toastWarning, handleError } = useToast();
   const { confirm } = useConfirm();
+  const measurementUnit = useMeasurementUnit(tenantId);
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -1061,13 +1064,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   <div className="w-1.5 h-4 bg-brand rounded-full" />
                   {t('orders.visual_measurement_selector')}
                 </h3>
-                <ThobeMeasurementSelector 
+                <ThobeMeasurementSelector
                   values={(watchCustMeasurements as Measurements) || {}}
                   onChange={(newMeasurements) => {
                     Object.entries(newMeasurements).forEach(([key, value]) => {
                       setCustValue(`measurements.${key}` as any, value);
                     });
                   }}
+                  measurementUnit={measurementUnit}
                 />
               </div>
             </div>
@@ -1943,12 +1947,18 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                       { label: t('measurements.sleeve'), value: customers.find(c => c.id === order.customerId)?.measurements?.sleeve },
                       { label: t('measurements.length'), value: customers.find(c => c.id === order.customerId)?.measurements?.length },
                       { label: t('measurements.bottomWidth'), value: customers.find(c => c.id === order.customerId)?.measurements?.bottomWidth },
-                    ].filter(m => m.value).map((m, i) => (
-                      <div key={i} className="text-center">
-                        <span className="block text-[10px] text-content-muted font-bold mb-1">{m.label}</span>
-                        <span className="text-lg font-black text-brand">{m.value}</span>
-                      </div>
-                    ))}
+                      { label: t('measurements.handWidth'), value: customers.find(c => c.id === order.customerId)?.measurements?.handWidth },
+                      { label: t('measurements.midSleeveWidth'), value: customers.find(c => c.id === order.customerId)?.measurements?.midSleeveWidth },
+                      { label: t('measurements.cuffLength'), value: customers.find(c => c.id === order.customerId)?.measurements?.cuffLength },
+                    ].filter(m => m.value).map((m, i) => {
+                      const displayValue = typeof m.value === 'number' ? cmToDisplayUnit(m.value, measurementUnit) : m.value;
+                      return (
+                        <div key={i} className="text-center">
+                          <span className="block text-[10px] text-content-muted font-bold mb-1">{m.label}</span>
+                          <span className="text-lg font-black text-brand">{displayValue} <span className="text-[10px] text-content-muted font-bold">{t(unitLabelKey(measurementUnit))}</span></span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </section>
@@ -3237,12 +3247,20 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                   { label: t('measurements.hips'), value: selectedCustomer.measurements?.hips },
                                   { label: t('measurements.sleeve'), value: selectedCustomer.measurements?.sleeve },
                                   { label: t('measurements.neck'), value: selectedCustomer.measurements?.neck },
-                                ].map((m) => (
-                                  <div key={m.label} className="bg-surface p-2 rounded-xl border border-brand/10 text-center">
-                                    <p className="text-[10px] text-content-muted font-bold">{m.label}</p>
-                                    <p className="text-sm font-black text-brand">{m.value || '-'}</p>
-                                  </div>
-                                ))}
+                                  { label: t('measurements.handWidth'), value: selectedCustomer.measurements?.handWidth },
+                                  { label: t('measurements.midSleeveWidth'), value: selectedCustomer.measurements?.midSleeveWidth },
+                                  { label: t('measurements.cuffLength'), value: selectedCustomer.measurements?.cuffLength },
+                                ].map((m) => {
+                                  const displayValue = typeof m.value === 'number' ? cmToDisplayUnit(m.value, measurementUnit) : m.value;
+                                  return (
+                                    <div key={m.label} className="bg-surface p-2 rounded-xl border border-brand/10 text-center">
+                                      <p className="text-[10px] text-content-muted font-bold">{m.label}</p>
+                                      <p className="text-sm font-black text-brand">
+                                        {displayValue ? <>{displayValue} <span className="text-[9px] text-content-muted font-bold">{t(unitLabelKey(measurementUnit))}</span></> : '-'}
+                                      </p>
+                                    </div>
+                                  );
+                                })}
                               </div>
                               
                               {/* Visual Details Display */}
@@ -3273,22 +3291,29 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                   { key: 'sleeve', label: t('measurements.sleeve') },
                                   { key: 'neck', label: t('measurements.neck') },
                                   { key: 'bottomWidth', label: t('measurements.bottomWidth') },
-                                ].map((item) => (
-                                  <div key={item.key} className="bg-surface p-2 rounded-xl border border-brand/10">
-                                    <label className="text-[10px] text-content-muted font-bold block mb-1">{item.label}</label>
-                                    <input
-                                      type="number"
-                                      step="0.1"
-                                      min="0"
-                                      value={(tempMeasurements as any)[item.key] ?? ''}
-                                      onChange={(e) => setTempMeasurements(prev => ({
-                                        ...prev,
-                                        [item.key]: e.target.value === '' ? '' : Number(e.target.value)
-                                      }))}
-                                      className="w-full bg-surface text-sm font-bold text-brand text-center p-1.5 rounded-xl outline-none border border-border focus:border-brand focus:ring-2 focus:ring-brand/20"
-                                    />
-                                  </div>
-                                ))}
+                                  { key: 'handWidth', label: t('measurements.handWidth') },
+                                  { key: 'midSleeveWidth', label: t('measurements.midSleeveWidth') },
+                                  { key: 'cuffLength', label: t('measurements.cuffLength') },
+                                ].map((item) => {
+                                  const rawValue = (tempMeasurements as any)[item.key];
+                                  const displayValue = typeof rawValue === 'number' ? cmToDisplayUnit(rawValue, measurementUnit) : rawValue;
+                                  return (
+                                    <div key={item.key} className="bg-surface p-2 rounded-xl border border-brand/10">
+                                      <label className="text-[10px] text-content-muted font-bold block mb-1">{item.label} <span className="text-content-muted/70">({t(unitLabelKey(measurementUnit))})</span></label>
+                                      <input
+                                        type="number"
+                                        step="0.1"
+                                        min="0"
+                                        value={displayValue ?? ''}
+                                        onChange={(e) => setTempMeasurements(prev => ({
+                                          ...prev,
+                                          [item.key]: e.target.value === '' ? '' : displayUnitToCm(Number(e.target.value), measurementUnit)
+                                        }))}
+                                        className="w-full bg-surface text-sm font-bold text-brand text-center p-1.5 rounded-xl outline-none border border-border focus:border-brand focus:ring-2 focus:ring-brand/20"
+                                      />
+                                    </div>
+                                  );
+                                })}
                               </div>
 
                               <p className="text-xs font-bold text-content-muted pt-2 border-t border-brand/10">{t('orders.edit_style_details')}</p>

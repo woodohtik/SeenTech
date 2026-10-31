@@ -73,6 +73,8 @@ import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
 import VariantPickerModal from './ui/VariantPickerModal';
 
 import { isRtlLang } from '../lib/direction';
+import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
+import { cmToDisplayUnit, unitLabelKey } from '../utils/measurementUnits';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import { useTenantCategoryPicker } from '../hooks/useTenantCategoryPicker';
 import { LEGACY_INVENTORY_CATEGORY_SEED } from '../services/categoryService';
@@ -111,6 +113,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const { confirm, alertModal } = useConfirm();
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
+  const measurementUnit = useMeasurementUnit(tenantId);
   // Unsupported browsers render VoiceMicButton as null -- without this
   // gate, IconInput's endIcon array would still include the (now-empty)
   // mic wrapper span, showing a blank bordered icon box next to the scan
@@ -2753,12 +2756,17 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                         { label: t('measurements.shoulder'), value: selectedCustomer.measurements?.shoulder },
                         { label: t('measurements.chest'), value: selectedCustomer.measurements?.chest },
                         { label: t('measurements.sleeve'), value: selectedCustomer.measurements?.sleeve },
-                      ].map((m) => (
-                        <div key={m.label} className="bg-surface p-2 rounded-lg border border-brand/10 text-center">
-                          <p className="text-[10px] text-content-muted">{m.label}</p>
-                          <p className="text-sm font-bold text-brand">{m.value || '-'}</p>
-                        </div>
-                      ))}
+                      ].map((m) => {
+                        const displayValue = typeof m.value === 'number' ? cmToDisplayUnit(m.value, measurementUnit) : m.value;
+                        return (
+                          <div key={m.label} className="bg-surface p-2 rounded-lg border border-brand/10 text-center">
+                            <p className="text-[10px] text-content-muted">{m.label}</p>
+                            <p className="text-sm font-bold text-brand">
+                              {displayValue ? <>{displayValue} <span className="text-[9px] text-content-muted">{t(unitLabelKey(measurementUnit))}</span></> : '-'}
+                            </p>
+                          </div>
+                        );
+                      })}
                     </div>
                     <p className="text-xs text-content-muted mt-2 flex items-center gap-1">
                       <Zap size={12} />
@@ -2782,9 +2790,10 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       <div className="w-1.5 h-4 bg-brand rounded-full" />
                       {t('pos.interactive_visual_measurement_selector')}
                     </h3>
-                    <ThobeMeasurementSelector 
+                    <ThobeMeasurementSelector
                       values={customMeasurements as any || {}}
                       onChange={(newMeasurements) => setCustomMeasurements({...customMeasurements, ...newMeasurements})}
+                      measurementUnit={measurementUnit}
                     />
                   </div>
                 </div>

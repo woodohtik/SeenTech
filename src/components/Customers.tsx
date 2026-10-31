@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
+import { cmToDisplayUnit, unitLabelKey, type MeasurementUnit } from '../utils/measurementUnits';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import DateTimeDisplay from './DateTimeDisplay';
@@ -100,6 +102,7 @@ export default function Customers({ tenantId }: CustomersProps) {
   const isRtl = isRtlLang(i18n.language);
   const { error: toastError, success: toastSuccess, warning: toastWarning, handleError } = useToast();
   const { confirm } = useConfirm();
+  const measurementUnit = useMeasurementUnit(tenantId);
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   // مراجعة-الفريق-التقني-الكامل-2026-10-19.md (أداء): نفس إصلاح Orders.tsx/
@@ -1802,13 +1805,14 @@ export default function Customers({ tenantId }: CustomersProps) {
                     <div className="w-1.5 h-4 bg-brand rounded-full" />
                     {t('customers.interactive_measurement_selector')}
                   </h3>
-                  <ThobeMeasurementSelector 
+                  <ThobeMeasurementSelector
                     values={(watchMeasurements as Measurements) || {}}
                     onChange={(newMeasurements) => {
                       Object.entries(newMeasurements).forEach(([key, value]) => {
                         setValue(`measurements.${key}` as any, value);
                       });
                     }}
+                    measurementUnit={measurementUnit}
                   />
                 </div>
 
@@ -1869,14 +1873,15 @@ export default function Customers({ tenantId }: CustomersProps) {
 
       <AnimatePresence>
         {isDetailsOpen && selectedCustomer && (
-          <CustomerDetailsModal 
-            customer={selectedCustomer} 
+          <CustomerDetailsModal
+            customer={selectedCustomer}
             onClose={() => setIsDetailsOpen(false)}
             onEdit={() => { setIsDetailsOpen(false); openEditModal(selectedCustomer); }}
             orders={customerOrders}
             onNewOrder={() => navigate(`/orders?customerId=${selectedCustomer.id}`)}
             visualLabels={VISUAL_LABELS}
             visualIcons={VISUAL_ICONS}
+            measurementUnit={measurementUnit}
           />
         )}
       </AnimatePresence>
@@ -1948,22 +1953,24 @@ const DetailSection = ({ title, icon: Icon, children, defaultOpen = true }: any)
   );
 };
 
-const CustomerDetailsModal = ({ 
-  customer, 
-  onClose, 
-  onEdit, 
+const CustomerDetailsModal = ({
+  customer,
+  onClose,
+  onEdit,
   orders,
   onNewOrder,
   visualLabels,
-  visualIcons
-}: { 
-  customer: Customer, 
+  visualIcons,
+  measurementUnit
+}: {
+  customer: Customer,
   onClose: () => void,
   onEdit: () => void,
   orders: Order[],
   onNewOrder: () => void,
   visualLabels: Record<string, string>,
-  visualIcons: Record<string, React.ReactNode>
+  visualIcons: Record<string, React.ReactNode>,
+  measurementUnit: MeasurementUnit
 }) => {
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
@@ -2030,20 +2037,26 @@ const CustomerDetailsModal = ({
                 { label: t('customers.hips'), value: customer.measurements?.hips, icon: <ChevronDown size={14} />, color: 'bg-danger/10 text-danger' },
                 { label: t('customers.sleeve'), value: customer.measurements?.sleeve, icon: <Scissors size={14} />, color: 'bg-info/10 text-info' },
                 { label: t('customers.neck'), value: customer.measurements?.neck, icon: <User size={14} />, color: 'bg-brand/10 text-brand' },
-              ].map((m) => (
-                <div key={m.label} className="bg-surface p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-border hover:border-brand/20 transition-all group shadow-sm">
-                  <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-                    <div className={cn("p-1.5 rounded-lg", m.color)}>
-                      {m.icon}
+                { label: t('measurements.handWidth'), value: customer.measurements?.handWidth, icon: <ArrowLeftRight size={14} />, color: 'bg-brand/10 text-brand' },
+                { label: t('measurements.midSleeveWidth'), value: customer.measurements?.midSleeveWidth, icon: <ArrowLeftRight size={14} />, color: 'bg-info/10 text-info' },
+                { label: t('measurements.cuffLength'), value: customer.measurements?.cuffLength, icon: <Scissors size={14} />, color: 'bg-success/10 text-success' },
+              ].map((m) => {
+                const displayValue = typeof m.value === 'number' ? cmToDisplayUnit(m.value, measurementUnit) : m.value;
+                return (
+                  <div key={m.label} className="bg-surface p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-border hover:border-brand/20 transition-all group shadow-sm">
+                    <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                      <div className={cn("p-1.5 rounded-lg", m.color)}>
+                        {m.icon}
+                      </div>
+                      <p className="text-[10px] text-content-muted font-black uppercase tracking-wider">{m.label}</p>
                     </div>
-                    <p className="text-[10px] text-content-muted font-black uppercase tracking-wider">{m.label}</p>
+                    <p className="text-base sm:text-xl font-black text-content">
+                      {displayValue || '-'}
+                      <span className="text-[10px] text-content-muted mr-1 font-bold">{t(unitLabelKey(measurementUnit))}</span>
+                    </p>
                   </div>
-                  <p className="text-base sm:text-xl font-black text-content">
-                    {m.value || '-'} 
-                    <span className="text-[10px] text-content-muted mr-1 font-bold">{t('customers.cm')}</span>
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </DetailSection>
 
@@ -2074,10 +2087,11 @@ const CustomerDetailsModal = ({
           {/* Garment Blueprint Section */}
           <DetailSection title={t('customers.garment_blueprint')} icon={Scissors}>
             <div className="bg-surface-muted/30 rounded-2xl p-2 sm:p-4 border border-border pointer-events-none overflow-x-auto scrollbar-hide">
-              <ThobeMeasurementSelector 
+              <ThobeMeasurementSelector
                 values={(customer.measurements as Measurements) || {}}
                 onChange={() => {}} // Read-only in details view
                 readOnly={true}
+                measurementUnit={measurementUnit}
               />
             </div>
           </DetailSection>
