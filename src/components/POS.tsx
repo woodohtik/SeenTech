@@ -74,7 +74,7 @@ import VariantPickerModal from './ui/VariantPickerModal';
 
 import { isRtlLang } from '../lib/direction';
 import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
-import { cmToDisplayUnit, unitLabelKey } from '../utils/measurementUnits';
+import { cmToDisplayUnit, unitLabelKey, type MeasurementUnit } from '../utils/measurementUnits';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import { useTenantCategoryPicker } from '../hooks/useTenantCategoryPicker';
 import { LEGACY_INVENTORY_CATEGORY_SEED } from '../services/categoryService';
@@ -86,7 +86,8 @@ import { LEGACY_INVENTORY_CATEGORY_SEED } from '../services/categoryService';
 function buildInvoiceMeasurements(
   item: { type?: string },
   customer: Customer | null,
-  t: (key: string) => string
+  t: (key: string) => string,
+  measurementUnit: MeasurementUnit
 ): { label: string; value: string | number }[] | undefined {
   if (item.type !== 'custom' || !customer?.measurements) return undefined;
   const m = customer.measurements;
@@ -99,10 +100,19 @@ function buildInvoiceMeasurements(
     ['sleeve', 'sleeve'],
     ['neck', 'neck'],
     ['bottomWidth', 'bottomWidth'],
+    ['handWidth', 'handWidth'],
+    ['midSleeveWidth', 'midSleeveWidth'],
+    ['cuffLength', 'cuffLength'],
   ];
   const list = fields
     .filter(([, key]) => m[key] !== undefined && m[key] !== null && m[key] !== ('' as any))
-    .map(([labelKey, key]) => ({ label: t(`measurements.${labelKey}`), value: m[key] as any }));
+    .map(([labelKey, key]) => {
+      const raw = m[key] as any;
+      const value = typeof raw === 'number'
+        ? `${cmToDisplayUnit(raw, measurementUnit)} ${t(unitLabelKey(measurementUnit))}`
+        : raw;
+      return { label: t(`measurements.${labelKey}`), value };
+    });
   return list.length > 0 ? list : undefined;
 }
 
@@ -1279,7 +1289,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
            name: item.name || item.garmentType || 'منتج مخصص',
            quantity: item.quantity,
            price: item.price,
-           measurements: buildInvoiceMeasurements(item, selectedCustomer, t)
+           measurements: buildInvoiceMeasurements(item, selectedCustomer, t, measurementUnit)
          })),
          qrCode: qrCodeBase64,
          issuedAt: timestamp

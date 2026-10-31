@@ -572,6 +572,9 @@ export default function Customers({ tenantId }: CustomersProps) {
     }
 
     try {
+      const formatMeasurementCell = (value: unknown): string =>
+        typeof value === 'number' ? `${cmToDisplayUnit(value, measurementUnit)} ${t(unitLabelKey(measurementUnit))}` : '-';
+
       const exportData = listToExport.map((c, index) => {
         const balance = customerBalances[c.id] || 0;
         let balanceStatus = t('customers.balanced');
@@ -589,13 +592,13 @@ export default function Customers({ tenantId }: CustomersProps) {
           [t('customers.balance_status')]: balanceStatus,
           [t('onboarding.fields.city')]: c.styles?.city || c.city || '-',
           [t('procurement.address')]: c.styles?.address || c.address || '-',
-          [t('customers.export_col_length')]: c.measurements?.length || '-',
-          [t('customers.export_col_shoulder')]: c.measurements?.shoulder || '-',
-          [t('customers.export_col_chest')]: c.measurements?.chest || '-',
-          [t('customers.export_col_waist')]: c.measurements?.waist || '-',
-          [t('customers.export_col_hips')]: c.measurements?.hips || '-',
-          [t('customers.export_col_sleeve')]: c.measurements?.sleeve || '-',
-          [t('customers.export_col_neck')]: c.measurements?.neck || '-',
+          [t('customers.export_col_length')]: formatMeasurementCell(c.measurements?.length),
+          [t('customers.export_col_shoulder')]: formatMeasurementCell(c.measurements?.shoulder),
+          [t('customers.export_col_chest')]: formatMeasurementCell(c.measurements?.chest),
+          [t('customers.export_col_waist')]: formatMeasurementCell(c.measurements?.waist),
+          [t('customers.export_col_hips')]: formatMeasurementCell(c.measurements?.hips),
+          [t('customers.export_col_sleeve')]: formatMeasurementCell(c.measurements?.sleeve),
+          [t('customers.export_col_neck')]: formatMeasurementCell(c.measurements?.neck),
           [t('common.notes')]: c.notes || '-',
           [t('saas.tenants.registration_date')]: c.createdAt ? new Date(c.createdAt).toLocaleDateString(localeOf(i18n.language)) : '-'
         };
