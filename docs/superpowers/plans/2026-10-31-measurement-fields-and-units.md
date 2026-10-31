@@ -468,7 +468,7 @@ git commit -m "feat: show unit-converted measurements (including legacy fields) 
 - Create: `src/services/aiService.test.ts`
 
 **Interfaces:**
-- Consumes: `MeasurementUnit`, `cmToDisplayUnit` from Task 1.
+- Consumes: `MeasurementUnit`, `cmToDisplayUnit`, `unitLabelKey` from Task 1.
 - Produces: `ruleBasedMeasurementChecks(current: Measurements, history: Measurements[] = [], unit: MeasurementUnit = 'cm'): MeasurementFlag[]` — unchanged return shape, new optional third parameter. `checkMeasurementAnomalies` is not changed in this task (it has no caller anywhere in the app — out of scope per the spec; only `ruleBasedMeasurementChecks` itself needs updating, and `checkMeasurementAnomalies`'s own call to it can stay with the default `'cm'` unit).
 
 - [ ] **Step 1: Write the failing tests**
