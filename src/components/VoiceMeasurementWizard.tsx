@@ -9,6 +9,7 @@ import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { parseArabicNumber } from '../utils/parseArabicNumber';
 import { ThobePart, getNextMeasurementStep } from '../utils/measurementWizardSteps';
 import { PART_LABELS } from './ThobeMeasurementSelector';
+import { MeasurementUnit, displayUnitToCm, cmToDisplayUnit } from '../utils/measurementUnits';
 
 // Global Constraint: TTS/recognition for the voice wizard stay Arabic
 // regardless of the merchant's active UI language. `t()` (below, for
@@ -19,13 +20,14 @@ export interface VoiceMeasurementWizardProps {
   values: Measurements;
   onChange: (values: Measurements) => void;
   onClose: () => void;
+  measurementUnit: MeasurementUnit;
 }
 
 // How long the "✓ label: value" confirmation stays tappable before the
 // wizard auto-advances to the next field.
 const CONFIRM_DISPLAY_MS = 1500;
 
-export default function VoiceMeasurementWizard({ values, onChange, onClose }: VoiceMeasurementWizardProps) {
+export default function VoiceMeasurementWizard({ values, onChange, onClose, measurementUnit }: VoiceMeasurementWizardProps) {
   const { t } = useTranslation();
   const { isListening, transcript, error, start, stop } = useSpeechRecognition();
 
@@ -115,8 +117,9 @@ export default function VoiceMeasurementWizard({ values, onChange, onClose }: Vo
       return;
     }
 
-    onChange({ ...values, [activePart]: value });
-    setLastResult({ part: activePart, value });
+    const valueInCm = displayUnitToCm(value, measurementUnit);
+    onChange({ ...values, [activePart]: valueInCm });
+    setLastResult({ part: activePart, value: cmToDisplayUnit(valueInCm, measurementUnit) });
     setRetryError(null);
 
     advanceTimeoutRef.current = setTimeout(() => {
