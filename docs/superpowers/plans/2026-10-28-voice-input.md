@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - Voice recognition and TTS prompts are **Arabic only** (`ar-SA`), regardless of the merchant's selected UI language (en/ur included) — this is a spec decision, not a technical limit.
-- No new npm dependency. No migration, no RPC, no server change — 100% client-side.
+- No new **runtime/production** npm dependency (no external speech-to-text SaaS SDK, no paid API client) — Web Speech API is browser-native. No migration, no RPC, no server change — 100% client-side. New **devDependencies** for testing (e.g. `jsdom`, `@testing-library/react`) are in scope when a task's own tests need them.
 - If `!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window)`, every voice affordance (mic buttons, the measurement wizard's trigger) must not render at all — never a disabled button or an error state for this case.
 - A voice result **never overwrites a field with a value the user didn't confirm seeing**: text fields show the recognized text in the input immediately (so a wrong result is as obvious and as easy to fix as a typo); the measurement wizard's per-field confirm window (Task 6) is this same rule applied to a flow the user isn't watching every field of.
 - No decimal word parsing in `parseArabicNumber` (e.g. "أربعين ونص") — explicit spec exclusion. Manual edit after the fact remains available for precision.
