@@ -499,6 +499,7 @@
     "view_all": "عرض الكل",
     "view_density": "طريقة العرض",
     "view_details": "عرض كامل التفاصيل",
+    "voice_input": "إدخال صوتي",
     "warning": "تنبيه / مراجعة",
     "website_url": "رابط الموقع الرسمي",
     "weekday_short": {
@@ -1655,6 +1656,13 @@
     "sleeve": "الكم",
     "visual_selector_desc": "أدخل المقاسات بدقة للمراجعة الفورية",
     "visual_selector_title": "مُحدد المقاسات البصري",
+    "voice_fill_button": "تعبئة المقاسات بالصوت",
+    "voice_wizard_cancel": "إلغاء",
+    "voice_wizard_network_error": "تحقّق من الاتصال بالإنترنت",
+    "voice_wizard_no_understand": "لم أسمع/أفهم شيئاً، حاول مرة أخرى",
+    "voice_wizard_not_allowed": "يحتاج الوصول للمايكروفون. فعّله من إعدادات المتصفح.",
+    "voice_wizard_retry": "حاول مرة أخرى",
+    "voice_wizard_title": "تعبئة المقاسات بالصوت",
     "waist": "الخصر",
     "zipper": "سحاب"
   },

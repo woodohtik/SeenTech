@@ -71,6 +71,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../../lib/utils";
 import { ResponsiveTable } from "../ui/ResponsiveTable";
 import { IconInput } from "../ui/IconInput";
+import { VoiceMicButton } from "../ui/VoiceMicButton";
+import { isSpeechRecognitionSupported } from "../../hooks/useSpeechRecognition";
 import Branding from "../Branding";
 import Select, { SmartSelect } from "../ui/SmartSelect";
 import { useToast } from "../../contexts/ToastContext";
@@ -114,6 +116,10 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
   const router = useRouter();
   const refreshCounter = useRefreshCounter();
   const { t } = useTranslation();
+  // Unsupported browsers render VoiceMicButton as null -- without this
+  // gate, IconInput's endIcon would still count as present and show a
+  // blank bordered icon box where none existed before voice input.
+  const voiceSupported = isSpeechRecognitionSupported();
   const { currentStaff } = useStaff();
   const { hasPermission } = usePermissions(currentStaff);
   const { error: toastError, success: toastSuccess, warning: toastWarning, handleError } = useToast();
@@ -661,6 +667,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
             <IconInput
               type="text"
               startIcon={Search}
+              endIcon={voiceSupported ? <VoiceMicButton onResult={setSearchTerm} /> : undefined}
               placeholder={t("inventory.search_placeholder")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}

@@ -81,6 +81,8 @@ import ScannerModal from './ScannerModal';
 import { SmartSelect } from './ui/SmartSelect';
 import { DatePicker } from './ui/DatePicker';
 import { IconInput } from './ui/IconInput';
+import { VoiceMicButton } from './ui/VoiceMicButton';
+import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
 import { checkStockAvailability, deductStock } from '../services/inventoryService';
 import { useStaff } from '../contexts/StaffContext';
 import { useBranding } from '../contexts/BrandingContext';
@@ -298,6 +300,11 @@ const DynamicOrderItemFields = ({
 
 export default function Orders({ tenantId }: { tenantId: string }) {
   const { t, i18n } = useTranslation();
+  // Unsupported browsers render VoiceMicButton as null -- without this
+  // gate, the empty mic wrapper would still show as a blank bordered icon
+  // box next to the scan button / notes textarea where none existed
+  // before voice input.
+  const voiceSupported = isSpeechRecognitionSupported();
   const router = useRouter();
   const refreshCounter = useRefreshCounter();
   const { settings: branding } = useBranding();
@@ -398,7 +405,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     isTest: false
   }), [isLegacyVertical, workflowStages]);
 
-  const { register, control, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting, isValid } } = useForm({
+  const { register, control, handleSubmit, reset, watch, setValue, getValues, formState: { errors, isSubmitting, isValid } } = useForm({
     resolver: zodResolver(orderSchema),
     defaultValues: defaultOrderValues as any
   });
@@ -2412,16 +2419,22 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           <IconInput
             type="text"
             startIcon={Search}
-            endIcon={
+            endIcon={[
+              ...(voiceSupported ? [
+                <span key="mic" className="me-2 inline-flex">
+                  <VoiceMicButton onResult={setSearch} />
+                </span>,
+              ] : []),
               <button
+                key="scan"
                 type="button"
                 onClick={() => setIsScannerOpen(true)}
                 aria-label={t('pos.scan_barcode')}
                 className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded cursor-pointer"
               >
                 <Barcode size={18} />
-              </button>
-            }
+              </button>,
+            ]}
             placeholder={t('orders.search_placeholder')}
             data-orders-search="true"
             value={search}
@@ -3305,11 +3318,18 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
                     <div className="space-y-2">
                       <label className="text-sm font-black text-content-muted uppercase tracking-widest">{t('orders.general_notes')}</label>
-                      <textarea 
-                        {...register('notes')} 
-                        placeholder={t('orders.additional_instructions')}
-                        className="w-full bg-surface border border-border rounded-xl p-4 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold h-32 resize-none text-content"
-                      />
+                      <div className="relative">
+                        <textarea
+                          {...register('notes')}
+                          placeholder={t('orders.additional_instructions')}
+                          className="w-full bg-surface border border-border rounded-xl p-4 pe-10 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold h-32 resize-none text-content"
+                        />
+                        {voiceSupported && (
+                          <div className="absolute top-2 end-2">
+                            <VoiceMicButton onResult={(text) => setValue('notes', [getValues('notes'), text].filter(Boolean).join(' '))} />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

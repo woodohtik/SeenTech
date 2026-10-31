@@ -67,6 +67,8 @@ import { PriceDisplay } from './PriceDisplay';
 import PageSkeleton from "./PageSkeleton";
 import Header from './Header';
 import { IconInput } from './ui/IconInput';
+import { VoiceMicButton } from './ui/VoiceMicButton';
+import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
 import ThobeMeasurementSelector from './ThobeMeasurementSelector';
 import VisualMeasurements from './VisualMeasurements';
 import { useStaff } from '../contexts/StaffContext';
@@ -89,6 +91,11 @@ interface CustomersProps {
 
 export default function Customers({ tenantId }: CustomersProps) {
   const { t, i18n } = useTranslation();
+  // Unsupported browsers render VoiceMicButton as null -- without this
+  // gate, IconInput's endIcon (array or single element) would still count
+  // as present and show a blank bordered icon box where none existed
+  // before voice input.
+  const voiceSupported = isSpeechRecognitionSupported();
   const isRtl = isRtlLang(i18n.language);
   const { error: toastError, success: toastSuccess, warning: toastWarning, handleError } = useToast();
   const { confirm } = useConfirm();
@@ -172,7 +179,7 @@ export default function Customers({ tenantId }: CustomersProps) {
   const canEdit = hasPermission('customers.edit');
   const canDelete = hasPermission('customers.delete');
 
-  const { register, handleSubmit, reset, setValue, watch, control, formState: { errors, isSubmitting } } = useForm({
+  const { register, handleSubmit, reset, setValue, getValues, watch, control, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(customerSchema),
     defaultValues: {
       name: '',
@@ -761,15 +768,26 @@ export default function Customers({ tenantId }: CustomersProps) {
             <IconInput
               type="text"
               startIcon={Search}
-              endIcon={search ? (
-                <button
-                  type="button"
-                  onClick={() => setSearch('')}
-                  className="text-content-muted hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded cursor-pointer"
-                >
-                  <X size={16} />
-                </button>
-              ) : undefined}
+              endIcon={(() => {
+                const icons = [
+                  voiceSupported ? (
+                    <span key="mic" className="me-2 inline-flex">
+                      <VoiceMicButton onResult={setSearch} />
+                    </span>
+                  ) : null,
+                  search ? (
+                    <button
+                      key="clear"
+                      type="button"
+                      onClick={() => setSearch('')}
+                      className="text-content-muted hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded cursor-pointer"
+                    >
+                      <X size={16} />
+                    </button>
+                  ) : null,
+                ].filter(Boolean);
+                return icons.length > 0 ? icons : undefined;
+              })()}
               placeholder={t('customers.search_placeholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -1697,6 +1715,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                       id="customer-name"
                       {...register('name')}
                       error={errors.name?.message}
+                      endIcon={voiceSupported ? <VoiceMicButton onResult={(text) => setValue('name', text)} /> : undefined}
                     />
                   </div>
                   <div className="space-y-2">
@@ -1781,7 +1800,14 @@ export default function Customers({ tenantId }: CustomersProps) {
 
                 <div className="space-y-2 mb-8 mt-8 pt-8 border-t border-border">
                   <label htmlFor="customer-notes" className="text-sm font-bold text-content-muted">{t('customers.additional_notes')}</label>
-                  <textarea id="customer-notes" {...register('notes')} className={cn("w-full bg-surface border border-border rounded-xl p-3 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold h-24 text-content", isRtl ? "text-right" : "text-left")} />
+                  <div className="relative">
+                    <textarea id="customer-notes" {...register('notes')} className={cn("w-full bg-surface border border-border rounded-xl p-3 pe-10 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold h-24 text-content", isRtl ? "text-right" : "text-left")} />
+                    {voiceSupported && (
+                      <div className="absolute top-2 end-2">
+                        <VoiceMicButton onResult={(text) => setValue('notes', [getValues('notes'), text].filter(Boolean).join(' '))} />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* isTest Flag */}
