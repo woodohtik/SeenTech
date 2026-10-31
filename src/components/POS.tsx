@@ -43,6 +43,7 @@ import { Customer, InventoryItem, OrderItem, Order, PaymentMethod, OrderStatus, 
 import { cn, generateOrderNumber } from '../lib/utils';
 import { SmartSelect } from './ui/SmartSelect';
 import { IconInput } from './ui/IconInput';
+import { VoiceMicButton } from './ui/VoiceMicButton';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { PriceDisplay } from './PriceDisplay';
 import { decodeInventoryDescription, hasValidTaxSettings } from '../utils/b2bHelper';
@@ -1736,16 +1737,20 @@ const invoiceData: InvoiceData | null = completedOrder ? {
             ref={searchInputRef}
             type="text"
             startIcon={Search}
-            endIcon={
+            endIcon={[
+              <span key="mic" className="me-2 inline-flex">
+                <VoiceMicButton onResult={setSearchQuery} />
+              </span>,
               <button
+                key="scan"
                 type="button"
                 onClick={() => setIsScannerOpen(true)}
                 aria-label={t('pos.scan_barcode')}
                 className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded cursor-pointer"
               >
                 <Barcode size={18} />
-              </button>
-            }
+              </button>,
+            ]}
             placeholder={t('pos.search_placeholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

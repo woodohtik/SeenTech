@@ -81,6 +81,7 @@ import ScannerModal from './ScannerModal';
 import { SmartSelect } from './ui/SmartSelect';
 import { DatePicker } from './ui/DatePicker';
 import { IconInput } from './ui/IconInput';
+import { VoiceMicButton } from './ui/VoiceMicButton';
 import { checkStockAvailability, deductStock } from '../services/inventoryService';
 import { useStaff } from '../contexts/StaffContext';
 import { useBranding } from '../contexts/BrandingContext';
@@ -2412,16 +2413,20 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           <IconInput
             type="text"
             startIcon={Search}
-            endIcon={
+            endIcon={[
+              <span key="mic" className="me-2 inline-flex">
+                <VoiceMicButton onResult={setSearch} />
+              </span>,
               <button
+                key="scan"
                 type="button"
                 onClick={() => setIsScannerOpen(true)}
                 aria-label={t('pos.scan_barcode')}
                 className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded cursor-pointer"
               >
                 <Barcode size={18} />
-              </button>
-            }
+              </button>,
+            ]}
             placeholder={t('orders.search_placeholder')}
             data-orders-search="true"
             value={search}

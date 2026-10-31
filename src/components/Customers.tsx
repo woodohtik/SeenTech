@@ -67,6 +67,7 @@ import { PriceDisplay } from './PriceDisplay';
 import PageSkeleton from "./PageSkeleton";
 import Header from './Header';
 import { IconInput } from './ui/IconInput';
+import { VoiceMicButton } from './ui/VoiceMicButton';
 import ThobeMeasurementSelector from './ThobeMeasurementSelector';
 import VisualMeasurements from './VisualMeasurements';
 import { useStaff } from '../contexts/StaffContext';
@@ -761,15 +762,21 @@ export default function Customers({ tenantId }: CustomersProps) {
             <IconInput
               type="text"
               startIcon={Search}
-              endIcon={search ? (
-                <button
-                  type="button"
-                  onClick={() => setSearch('')}
-                  className="text-content-muted hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded cursor-pointer"
-                >
-                  <X size={16} />
-                </button>
-              ) : undefined}
+              endIcon={[
+                <span key="mic" className="me-2 inline-flex">
+                  <VoiceMicButton onResult={setSearch} />
+                </span>,
+                search ? (
+                  <button
+                    key="clear"
+                    type="button"
+                    onClick={() => setSearch('')}
+                    className="text-content-muted hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded cursor-pointer"
+                  >
+                    <X size={16} />
+                  </button>
+                ) : null,
+              ]}
               placeholder={t('customers.search_placeholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}

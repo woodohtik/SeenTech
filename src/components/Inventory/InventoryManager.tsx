@@ -71,6 +71,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../../lib/utils";
 import { ResponsiveTable } from "../ui/ResponsiveTable";
 import { IconInput } from "../ui/IconInput";
+import { VoiceMicButton } from "../ui/VoiceMicButton";
 import Branding from "../Branding";
 import Select, { SmartSelect } from "../ui/SmartSelect";
 import { useToast } from "../../contexts/ToastContext";
@@ -661,6 +662,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
             <IconInput
               type="text"
               startIcon={Search}
+              endIcon={<VoiceMicButton onResult={setSearchTerm} />}
               placeholder={t("inventory.search_placeholder")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
