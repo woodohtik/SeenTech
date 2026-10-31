@@ -18,6 +18,7 @@
 import i18n from 'i18next';
 
 import type { Measurements } from '../types';
+import { cmToDisplayUnit, unitLabelKey, type MeasurementUnit } from '../utils/measurementUnits';
 
 export interface MeasurementFlag {
   field: keyof Measurements | string;
@@ -36,10 +37,11 @@ const SANE_RANGES: Partial<Record<keyof Measurements, [number, number]>> = {
   length: [120, 180],
   shoulder: [40, 60],
   chest: [85, 140],
-  waist: [70, 140],
-  hips: [80, 150],
   sleeve: [50, 70],
   neck: [33, 50],
+  handWidth: [18, 28],
+  midSleeveWidth: [10, 18],
+  cuffLength: [5, 12],
 };
 
 /** نسبة الانحراف عن متوسط سجل العميل التي تستدعي تنبيهاً. */
@@ -50,7 +52,8 @@ const HISTORY_DEVIATION_PCT = 0.18; // 18%
  */
 export function ruleBasedMeasurementChecks(
   current: Measurements,
-  history: Measurements[] = []
+  history: Measurements[] = [],
+  unit: MeasurementUnit = 'cm'
 ): MeasurementFlag[] {
   const flags: MeasurementFlag[] = [];
 
@@ -71,9 +74,10 @@ export function ruleBasedMeasurementChecks(
           severity: 'warning',
           message: i18n.t('measurements.flag_out_of_range', {
             field: labelOf(field),
-            value: val,
-            min: range[0],
-            max: range[1],
+            value: cmToDisplayUnit(val, unit),
+            min: cmToDisplayUnit(range[0], unit),
+            max: cmToDisplayUnit(range[1], unit),
+            unit: unitLabelKey(unit),
           }),
         });
       }
@@ -177,6 +181,9 @@ function labelOf(field: keyof Measurements | string): string {
     chest: 'measurements.label.chest', waist: 'measurements.label.waist',
     hips: 'measurements.label.hips', sleeve: 'measurements.label.sleeve',
     neck: 'measurements.label.neck',
+    handWidth: 'measurements.label.handWidth',
+    midSleeveWidth: 'measurements.label.midSleeveWidth',
+    cuffLength: 'measurements.label.cuffLength',
   };
   const key = map[field as string];
   return key ? i18n.t(key) : (field as string);
