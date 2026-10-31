@@ -1624,7 +1624,7 @@
     "flag_chest_le_neck": "Chest is less than or equal to neck — likely a data entry error.",
     "flag_history_deviation": "«{{field}}» = {{value}} differs by {{percent}}% from this customer's average ({{average}}). Please verify.",
     "flag_invalid_value": "«{{field}}» value is invalid ({{value}}).",
-    "flag_out_of_range": "«{{field}}» = {{value}} cm is outside the usual range ({{min}}–{{max}}). Check the entry.",
+    "flag_out_of_range": "«{{field}}» = {{value}} {{unitLabel}} is outside the usual range ({{min}}–{{max}}). Check the entry.",
     "flag_sleeve_ge_length": "Sleeve length ≥ thobe length — likely a data entry error.",
     "handWidth": "Hand Width",
     "hips": "Hips",

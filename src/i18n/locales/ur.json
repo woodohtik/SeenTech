@@ -1624,7 +1624,7 @@
     "flag_chest_le_neck": "سینہ گردن سے کم یا اس کے برابر ہے — غالباً اندراج کی غلطی ہے۔",
     "flag_history_deviation": "«{{field}}» = {{value}} اس گاہک کے اوسط ({{percent}}) سے {{average}}% مختلف ہے۔ تصدیق کریں۔",
     "flag_invalid_value": "«{{field}}» کی قیمت غیر درست ہے ({{value}})۔",
-    "flag_out_of_range": "«{{field}}» = {{value}} سینٹی میٹر معمول کی حد ({{min}}–{{max}}) سے باہر ہے۔ اندراج کی تصدیق کریں۔",
+    "flag_out_of_range": "«{{field}}» = {{value}} {{unitLabel}} معمول کی حد ({{min}}–{{max}}) سے باہر ہے۔ اندراج کی تصدیق کریں۔",
     "flag_sleeve_ge_length": "آستین کی لمبائی ≥ ثوب کی لمبائی — غالباً اندراج کی غلطی ہے۔",
     "handWidth": "ہاتھ کی چوڑائی",
     "hips": "کولہے",

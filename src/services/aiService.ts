@@ -78,6 +78,8 @@ export function ruleBasedMeasurementChecks(
             min: cmToDisplayUnit(range[0], unit),
             max: cmToDisplayUnit(range[1], unit),
             unit: unitLabelKey(unit),
+            // Resolved unit word for the template; `unit` above stays the key (tests assert it).
+            unitLabel: i18n.t(unitLabelKey(unit)),
           }),
         });
       }
