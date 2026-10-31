@@ -185,6 +185,7 @@ export const settingsSchema = z.object({
   inventoryStrategy: z.enum(['centralized', 'decentralized']),
   logoUrl: z.string().optional(),
   currencySymbol: z.string().optional(),
+  measurementUnit: z.enum(['cm', 'inch']).optional(),
   taxSettings: z.object({
     enabled: z.boolean(),
     trn: z.string().optional().or(z.literal('')),

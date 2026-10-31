@@ -3967,6 +3967,7 @@
       "decentralized_desc": "Each branch controls its own inventory independently.",
       "email_protected": "Email Address (Read-only)",
       "inventory_strategy": "Inventory Management Architecture",
+      "measurement_unit": "Default Measurement Unit",
       "no_email": "No registered email",
       "official_protected": "Official & Secured",
       "phone": "Unified Contact Number",

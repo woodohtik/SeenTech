@@ -7,6 +7,7 @@ import { globalRateLimiter } from "./src/server/rateLimiter.ts";
 import { authenticate, authorize } from "./src/server/middleware/authMiddleware.ts";
 import { registerPrintRelay } from "./src/server/printRelay.ts";
 import { initServerLogger, captureServerException, logger } from "./src/server/logger.ts";
+import { isValidMeasurementUnit } from "./src/utils/measurementUnits.ts";
 
 // { path: [...] }, not bare dotenv.config() -- this repo has no .env file,
 // only .env.local (written by `vercel env pull`); bare dotenv.config() only
@@ -1274,6 +1275,7 @@ app.get("/api/tenant/settings", authenticate, authorize(['owner', 'admin', 'mana
       city: tenant.city || '',
       postalCode: tenant.postal_code || '',
       logoUrl: tenant.logo_url || '',
+      measurementUnit: isValidMeasurementUnit(tenant.measurement_unit) ? tenant.measurement_unit : 'inch',
       taxSettings,
       notificationSettings
     });
@@ -1319,6 +1321,10 @@ app.post("/api/tenant/settings", authenticate, authorize(['owner', 'admin']), as
       }
     }
 
+    if (data.measurementUnit !== undefined && !isValidMeasurementUnit(data.measurementUnit)) {
+      return res.status(400).json({ error: 'وحدة القياس يجب أن تكون سم أو إنش' });
+    }
+
     const tax_settings = {
       ...data.taxSettings,
       notificationSettings: data.notificationSettings
@@ -1339,6 +1345,10 @@ app.post("/api/tenant/settings", authenticate, authorize(['owner', 'admin']), as
       legacy_id: JSON.stringify(tax_settings), // Store the complete JSON metadata in legacy_id
       updated_at: new Date().toISOString()
     };
+
+    if (data.measurementUnit !== undefined) {
+      updatePayload.measurement_unit = data.measurementUnit;
+    }
 
     const { error } = await supabaseAdmin
       .from("tenants")
