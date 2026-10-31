@@ -18,6 +18,9 @@ export interface Measurements {
   sleeve?: number;
   neck?: number;
   bottomWidth?: number;
+  handWidth?: number;
+  midSleeveWidth?: number;
+  cuffLength?: number;
   // Visual/Sector specific fields
   collarType?: string; // الياقة
   cuffType?: string;   // الكبك
@@ -66,6 +69,7 @@ export interface Tenant {
   isTest?: boolean; // For deleting test data
   taxSettings?: TaxSettings;
   currencySymbol?: string;
+  measurementUnit?: 'cm' | 'inch';
   subscription_status?: string | null;
   subscription_end_date?: string | null;
   trial_ends_at?: string | null;
