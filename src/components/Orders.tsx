@@ -3310,11 +3310,16 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
                     <div className="space-y-2">
                       <label className="text-sm font-black text-content-muted uppercase tracking-widest">{t('orders.general_notes')}</label>
-                      <textarea 
-                        {...register('notes')} 
-                        placeholder={t('orders.additional_instructions')}
-                        className="w-full bg-surface border border-border rounded-xl p-4 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold h-32 resize-none text-content"
-                      />
+                      <div className="relative">
+                        <textarea
+                          {...register('notes')}
+                          placeholder={t('orders.additional_instructions')}
+                          className="w-full bg-surface border border-border rounded-xl p-4 pe-10 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold h-32 resize-none text-content"
+                        />
+                        <div className="absolute top-2 end-2">
+                          <VoiceMicButton onResult={(text) => setValue('notes', text)} />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

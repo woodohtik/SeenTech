@@ -12,6 +12,7 @@ import { generateSecurePin, hashPin } from '../services/staffService';
 import { useDirection } from '../lib/direction';
 import { getFriendlyErrorMessage } from '../lib/firebase';
 import { IconInput } from './ui/IconInput';
+import { VoiceMicButton } from './ui/VoiceMicButton';
 import { PasswordInput } from './ui/PasswordInput';
 import { SmartSelect } from './ui/SmartSelect';
 
@@ -55,7 +56,7 @@ export default function AddEmployeeModal({
   const [errorMsg, setErrorMsg] = useState('');
   const [enablePin, setEnablePin] = useState(false);
 
-  const { register, handleSubmit, control, formState: { errors }, reset } = useForm({
+  const { register, handleSubmit, control, formState: { errors }, reset, setValue } = useForm({
     resolver: zodResolver(baseStaffSchema),
     defaultValues: {
       name: '',
@@ -239,6 +240,7 @@ export default function AddEmployeeModal({
             label={t('common.full_name')}
             startIcon={User}
             error={errors.name?.message ? t(errors.name.message as string) : undefined}
+            endIcon={<VoiceMicButton onResult={(text) => setValue('name', text)} />}
           />
 
           <div className="space-y-1.5">

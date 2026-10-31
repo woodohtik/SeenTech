@@ -1704,6 +1704,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                       id="customer-name"
                       {...register('name')}
                       error={errors.name?.message}
+                      endIcon={<VoiceMicButton onResult={(text) => setValue('name', text)} />}
                     />
                   </div>
                   <div className="space-y-2">
@@ -1788,7 +1789,12 @@ export default function Customers({ tenantId }: CustomersProps) {
 
                 <div className="space-y-2 mb-8 mt-8 pt-8 border-t border-border">
                   <label htmlFor="customer-notes" className="text-sm font-bold text-content-muted">{t('customers.additional_notes')}</label>
-                  <textarea id="customer-notes" {...register('notes')} className={cn("w-full bg-surface border border-border rounded-xl p-3 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold h-24 text-content", isRtl ? "text-right" : "text-left")} />
+                  <div className="relative">
+                    <textarea id="customer-notes" {...register('notes')} className={cn("w-full bg-surface border border-border rounded-xl p-3 pe-10 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold h-24 text-content", isRtl ? "text-right" : "text-left")} />
+                    <div className="absolute top-2 end-2">
+                      <VoiceMicButton onResult={(text) => setValue('notes', text)} />
+                    </div>
+                  </div>
                 </div>
 
                 {/* isTest Flag */}
