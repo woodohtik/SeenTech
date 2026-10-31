@@ -153,41 +153,6 @@ h1, h2, h3, h4, h5, h6 {
   --info: #60A5FA;
 }
 
-.elegant {
-  --brand: #5A5A40;
-  --surface: #F5F2ED;
-  --surface-muted: #EBE8E0;
-  --content: #1A1A1A;
-  --content-muted: #5A5A40;
-  --border: #D1CDC2;
-  --radius-card: 2rem;
-  font-family: var(--font-serif);
-}
-
-.elegant h1, .elegant h2, .elegant h3 {
-  font-family: var(--font-serif);
-  font-weight: 300;
-  letter-spacing: -0.02em;
-}
-
-.modern {
-  --brand: #000000;
-  --surface: #F3F4F6;
-  --surface-muted: #E5E7EB;
-  --content: #000000;
-  --content-muted: #4B5563;
-  --border: #000000;
-  --radius-card: 0;
-  font-family: var(--font-mono);
-}
-
-.modern h1, .modern h2, .modern h3 {
-  font-family: var(--font-sans);
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: -0.05em;
-}
-
 body {
   background-color: var(--surface);
   color: var(--content);

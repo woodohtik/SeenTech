@@ -129,7 +129,7 @@ export default function UserPreferencesMenu({
   };
 
   const handleThemeToggle = () => {
-    const themes: ThemeType[] = ['light', 'dark', 'elegant', 'modern'];
+    const themes: ThemeType[] = ['light', 'dark'];
     const currentIndex = themes.indexOf(theme);
     const nextIndex = (currentIndex + 1) % themes.length;
     setTheme(themes[nextIndex]);
@@ -139,8 +139,6 @@ export default function UserPreferencesMenu({
     switch (themeVal) {
       case 'light': return t('common.theme_light');
       case 'dark': return t('common.theme_dark');
-      case 'elegant': return t('common.theme_elegant');
-      case 'modern': return t('common.theme_modern');
       default: return themeVal;
     }
   };

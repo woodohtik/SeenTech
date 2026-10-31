@@ -478,10 +478,8 @@
     "test": "تجريبي",
     "test_data": "بيانات تجريبية",
     "theme_dark": "داكن",
-    "theme_elegant": "كلاسيكي",
     "theme_light": "فاتح",
     "theme_mode": "مظهر الواجهة",
-    "theme_modern": "عصري",
     "to_label": "إلى:",
     "too_many_attempts": "محاولات كثيرة جداً. حاول مرة أخرى بعد {{seconds}} ثانية.",
     "total": "الإجمالي",
@@ -4925,9 +4923,7 @@
   },
   "themes": {
     "dark": "Dark",
-    "elegant": "Elegant",
-    "light": "Light",
-    "modern": "Modern"
+    "light": "Light"
   },
   "tour": {
     "controls": {

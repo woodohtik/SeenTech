@@ -478,10 +478,8 @@
     "test": "ٹیسٹ",
     "test_data": "ٹیسٹ ڈیٹا",
     "theme_dark": "گہرا",
-    "theme_elegant": "کلاسیکی",
     "theme_light": "روشن",
     "theme_mode": "انٹرفیس کی ظاہری شکل",
-    "theme_modern": "جدید",
     "to_label": "تا:",
     "too_many_attempts": "بہت زیادہ کوششیں۔ {{seconds}} سیکنڈ بعد دوبارہ کوشش کریں۔",
     "total": "کل",
@@ -4922,9 +4920,7 @@
   },
   "themes": {
     "dark": "ڈارک",
-    "elegant": "ایلیگنٹ",
-    "light": "لائٹ",
-    "modern": "ماڈرن"
+    "light": "لائٹ"
   },
   "tour": {
     "controls": {

@@ -478,10 +478,8 @@
     "test": "Test",
     "test_data": "Test Data",
     "theme_dark": "Dark",
-    "theme_elegant": "Elegant",
     "theme_light": "Light",
     "theme_mode": "Interface Theme",
-    "theme_modern": "Modern",
     "to_label": "To:",
     "too_many_attempts": "Too many attempts. Try again in {{seconds}} seconds.",
     "total": "Total",
@@ -4922,9 +4920,7 @@
   },
   "themes": {
     "dark": "Dark",
-    "elegant": "Elegant",
-    "light": "Light",
-    "modern": "Modern"
+    "light": "Light"
   },
   "tour": {
     "controls": {
