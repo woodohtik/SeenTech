@@ -23,8 +23,9 @@ export interface BlogPost {
   coverImageUrl: string | null;
   metaTitle: string | null;
   metaDescription: string | null;
-  status: 'draft' | 'published';
+  status: 'draft' | 'scheduled' | 'published';
   publishedAt: string | null;
+  scheduledFor: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -39,6 +40,23 @@ export class DuplicateSlugError extends Error {
   }
 }
 
+export class InvalidScheduleError extends Error {
+  constructor(message = 'A scheduled post requires a future scheduledFor date.') {
+    super(message);
+    this.name = 'InvalidScheduleError';
+  }
+}
+
+/** يتحقق من صحة الجدولة قبل الإرسال لقاعدة البيانات -- دفاع إضافي بجانب تحقق الواجهة. */
+function validateSchedule(status: BlogPost['status'] | undefined, scheduledFor: string | null | undefined): void {
+  if (status !== 'scheduled') return;
+  if (!scheduledFor) throw new InvalidScheduleError();
+  const date = new Date(scheduledFor);
+  if (Number.isNaN(date.getTime()) || date.getTime() <= Date.now()) {
+    throw new InvalidScheduleError();
+  }
+}
+
 /** صف الجدول (snake_case) كما يرجعه Supabase. */
 interface BlogPostRow {
   id: string;
@@ -49,8 +67,9 @@ interface BlogPostRow {
   cover_image_url: string | null;
   meta_title: string | null;
   meta_description: string | null;
-  status: 'draft' | 'published';
+  status: 'draft' | 'scheduled' | 'published';
   published_at: string | null;
+  scheduled_for: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -67,6 +86,7 @@ function rowToPost(row: BlogPostRow): BlogPost {
     metaDescription: row.meta_description,
     status: row.status,
     publishedAt: row.published_at,
+    scheduledFor: row.scheduled_for,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -84,6 +104,7 @@ function postPatchToRow(patch: Partial<Omit<BlogPost, 'id' | 'createdAt'>>): Rec
   if ('metaDescription' in patch) row.meta_description = patch.metaDescription;
   if ('status' in patch) row.status = patch.status;
   if ('publishedAt' in patch) row.published_at = patch.publishedAt;
+  if ('scheduledFor' in patch) row.scheduled_for = patch.scheduledFor;
   if ('updatedAt' in patch) row.updated_at = patch.updatedAt;
   return row;
 }
@@ -138,6 +159,7 @@ export async function listAllPostsForAdmin(): Promise<BlogPost[]> {
 export async function createPost(
   input: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt'>,
 ): Promise<BlogPost> {
+  validateSchedule(input.status, input.scheduledFor);
   const row = {
     title: input.title,
     slug: input.slug,
@@ -148,6 +170,7 @@ export async function createPost(
     meta_description: input.metaDescription,
     status: input.status,
     published_at: input.publishedAt,
+    scheduled_for: input.scheduledFor,
   };
   const { data, error } = await supabase
     .from('blog_posts')
@@ -166,6 +189,7 @@ export async function updatePost(
   id: string,
   patch: Partial<Omit<BlogPost, 'id' | 'createdAt'>>,
 ): Promise<BlogPost> {
+  validateSchedule(patch.status, patch.scheduledFor);
   const row = {
     ...postPatchToRow(patch),
     updated_at: new Date().toISOString(),

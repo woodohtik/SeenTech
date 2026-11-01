@@ -33,6 +33,7 @@ import {
   updatePost,
   deletePost,
   DuplicateSlugError,
+  InvalidScheduleError,
 } from '../services/blogService';
 
 interface FormState {
@@ -43,7 +44,9 @@ interface FormState {
   coverImageUrl: string | null;
   metaTitle: string;
   metaDescription: string;
-  status: 'draft' | 'published';
+  status: 'draft' | 'scheduled' | 'published';
+  /** قيمة حقل datetime-local (محلي، بلا منطقة زمنية) -- فارغة يعني لا جدولة. */
+  scheduledFor: string;
 }
 
 const emptyForm: FormState = {
@@ -55,7 +58,24 @@ const emptyForm: FormState = {
   metaTitle: '',
   metaDescription: '',
   status: 'draft',
+  scheduledFor: '',
 };
+
+/** يحوّل ISO المخزّن بقاعدة البيانات إلى قيمة محلية لحقل datetime-local. */
+function isoToLocalInputValue(iso: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** يحوّل قيمة حقل datetime-local المحلية إلى ISO لتخزينها بقاعدة البيانات. */
+function localInputValueToIso(value: string): string | null {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
 
 export default function AdminBlog() {
   const { t, i18n } = useTranslation();
@@ -79,6 +99,7 @@ export default function AdminBlog() {
   // the slug keeps auto-filling from slugify(title) as the user types.
   const [slugTouched, setSlugTouched] = useState(false);
   const [slugError, setSlugError] = useState(false);
+  const [scheduleError, setScheduleError] = useState(false);
 
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [coverUploadError, setCoverUploadError] = useState<string | null>(null);
@@ -103,6 +124,7 @@ export default function AdminBlog() {
 
   const handleOpenModal = (post?: BlogPost) => {
     setSlugError(false);
+    setScheduleError(false);
     setCoverUploadError(null);
     if (post) {
       setEditingPost(post);
@@ -115,6 +137,7 @@ export default function AdminBlog() {
         metaTitle: post.metaTitle || '',
         metaDescription: post.metaDescription || '',
         status: post.status,
+        scheduledFor: isoToLocalInputValue(post.scheduledFor),
       });
       // Editing an existing post -- its slug is already set and must never
       // be silently overwritten by further title edits.
@@ -177,10 +200,21 @@ export default function AdminBlog() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSlugError(false);
+    setScheduleError(false);
 
     if (!formData.title.trim() || !formData.slug.trim()) {
       toastError(t('blog_admin.title_slug_required', 'العنوان والرابط المختصر مطلوبان'));
       return;
+    }
+
+    let scheduledForIso: string | null = null;
+    if (formData.status === 'scheduled') {
+      scheduledForIso = localInputValueToIso(formData.scheduledFor);
+      if (!scheduledForIso || new Date(scheduledForIso).getTime() <= Date.now()) {
+        setScheduleError(true);
+        toastError(t('blog_admin.schedule_future_required', 'يجب تحديد تاريخ ووقت مستقبلي للجدولة'));
+        return;
+      }
     }
 
     // A hand-edited slug may still contain characters like '/', '?', '#' or
@@ -207,6 +241,7 @@ export default function AdminBlog() {
           metaTitle: formData.metaTitle || null,
           metaDescription: formData.metaDescription || null,
           status: formData.status,
+          scheduledFor: scheduledForIso,
         };
         // Only stamp publishedAt the first time a post goes live -- never
         // overwrite an already-published post's original publish date.
@@ -226,6 +261,7 @@ export default function AdminBlog() {
           metaDescription: formData.metaDescription || null,
           status: formData.status,
           publishedAt: formData.status === 'published' ? new Date().toISOString() : null,
+          scheduledFor: scheduledForIso,
         });
         success(t('blog_admin.create_success', 'تمت إضافة التدوينة بنجاح'));
       }
@@ -236,6 +272,9 @@ export default function AdminBlog() {
       if (err instanceof DuplicateSlugError) {
         setSlugError(true);
         toastError(t('blog_admin.duplicate_slug', 'هذا الرابط المختصر مستخدم في تدوينة أخرى، يرجى اختيار رابط آخر'));
+      } else if (err instanceof InvalidScheduleError) {
+        setScheduleError(true);
+        toastError(t('blog_admin.schedule_future_required', 'يجب تحديد تاريخ ووقت مستقبلي للجدولة'));
       } else {
         console.error('Error saving blog post:', err);
         toastError(t('blog_admin.save_failed', 'حدث خطأ أثناء حفظ التدوينة'));
@@ -372,6 +411,16 @@ export default function AdminBlog() {
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-success/10 text-success">
                           <CheckCircle2 size={14} />
                           {t('blog_admin.status_published', 'منشور')}
+                        </span>
+                      ) : post.status === 'scheduled' ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-info/10 text-info">
+                          <Clock size={14} />
+                          {t('blog_admin.status_scheduled', 'مجدولة')}
+                          {post.scheduledFor && (
+                            <span className="font-medium opacity-80">
+                              · {new Date(post.scheduledFor).toLocaleString(localeOf(i18n.language))}
+                            </span>
+                          )}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-warning/10 text-warning">
@@ -584,13 +633,42 @@ export default function AdminBlog() {
                   <label className="text-xs font-bold text-content-muted">{t('common.status', 'الحالة')}</label>
                   <SmartSelect
                     value={formData.status}
-                    onChange={(v) => setFormData((prev) => ({ ...prev, status: v as 'draft' | 'published' }))}
+                    onChange={(v) =>
+                      setFormData((prev) => ({ ...prev, status: v as 'draft' | 'scheduled' | 'published' }))
+                    }
                     options={[
                       { value: 'draft', label: t('blog_admin.status_draft', 'مسودة') },
+                      { value: 'scheduled', label: t('blog_admin.status_scheduled', 'مجدولة') },
                       { value: 'published', label: t('blog_admin.status_published', 'منشور') },
                     ]}
                   />
                 </div>
+
+                {formData.status === 'scheduled' && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-content-muted">
+                      {t('blog_admin.field_scheduled_for', 'تاريخ ووقت النشر')}
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={formData.scheduledFor}
+                      onChange={(e) => {
+                        setScheduleError(false);
+                        setFormData((prev) => ({ ...prev, scheduledFor: e.target.value }));
+                      }}
+                      required
+                      className={cn(
+                        'w-full px-4 py-3 bg-surface-muted border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content text-sm',
+                        scheduleError ? 'border-danger' : 'border-border'
+                      )}
+                    />
+                    {scheduleError && (
+                      <p className="text-xs text-danger font-bold">
+                        {t('blog_admin.schedule_future_required', 'يجب تحديد تاريخ ووقت مستقبلي للجدولة')}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex gap-3 pt-6 mt-6">
                   <button
