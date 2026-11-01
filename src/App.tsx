@@ -98,6 +98,7 @@ import AccessDenied from './components/AccessDenied';
 // Lazy loaded SaaS Super Admin components
 const SuperAdminDashboard = React.lazy(() => import('./components/SuperAdminDashboard'));
 const AdminTailors = React.lazy(() => import('./components/AdminTailors'));
+const AdminBlog = React.lazy(() => import('./components/AdminBlog'));
 const SaaSReports = React.lazy(() => import('./components/SaaSReports'));
 const SaaSAuditLogs = React.lazy(() => import('./components/SaaSAuditLogs'));
 const SaaSSystemSettings = React.lazy(() => import('./components/SaaSSystemSettings'));
@@ -670,6 +671,13 @@ function AppContent() {
                         <RouteBoundary>
                           <RoleGuard allowedRoles={['super_admin']}>
                             <SaaSTeamManagement />
+                          </RoleGuard>
+                        </RouteBoundary>
+                      } />
+                      <Route path="/blog" element={
+                        <RouteBoundary>
+                          <RoleGuard allowedRoles={['super_admin']}>
+                            <AdminBlog />
                           </RoleGuard>
                         </RouteBoundary>
                       } />
