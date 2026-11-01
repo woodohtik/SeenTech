@@ -71,10 +71,13 @@ import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../../lib/utils";
 import { ResponsiveTable } from "../ui/ResponsiveTable";
 import { IconInput } from "../ui/IconInput";
+import { VoiceMicButton } from "../ui/VoiceMicButton";
+import { isSpeechRecognitionSupported } from "../../hooks/useSpeechRecognition";
 import Branding from "../Branding";
 import Select, { SmartSelect } from "../ui/SmartSelect";
 import { useToast } from "../../contexts/ToastContext";
 import { decodeInventoryDescription, encodeInventoryDescription } from "../../utils/b2bHelper";
+import { fuzzyIncludes } from "../../utils/fuzzySearch";
 import { adjustStock } from "../../services/inventoryService";
 import { Menu, Transition } from "@headlessui/react";
 import { Fragment } from "react";
@@ -114,6 +117,10 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
   const router = useRouter();
   const refreshCounter = useRefreshCounter();
   const { t } = useTranslation();
+  // Unsupported browsers render VoiceMicButton as null -- without this
+  // gate, IconInput's endIcon would still count as present and show a
+  // blank bordered icon box where none existed before voice input.
+  const voiceSupported = isSpeechRecognitionSupported();
   const { currentStaff } = useStaff();
   const { hasPermission } = usePermissions(currentStaff);
   const { error: toastError, success: toastSuccess, warning: toastWarning, handleError } = useToast();
@@ -462,22 +469,27 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
     }
   };
 
-  const filteredItems = useMemo(() => items.filter((item) => {
-    const totalStock = getTotalStock(item.id);
-    const isLowStock = totalStock <= (item.minThreshold || 0);
+  const filteredItems = useMemo(() => {
+    const matchesNonSearch = (item: (typeof items)[number]) => {
+      const totalStock = getTotalStock(item.id);
+      const isLowStock = totalStock <= (item.minThreshold || 0);
+      if (isLowStockOnly && !isLowStock) return false;
+      const matchesCategory =
+        selectedCategory === "all" ||
+        (isLegacyVertical ? item.category : item.category_key) === selectedCategory;
+      return matchesCategory;
+    };
 
-    if (isLowStockOnly && !isLowStock) return false;
+    const exact = items.filter(
+      (item) => matchesNonSearch(item) && item.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    if (exact.length > 0 || !searchTerm.trim()) return exact;
 
-    const matchesSearch = item.name
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "all" ||
-      (isLegacyVertical ? item.category : item.category_key) === selectedCategory;
-    return matchesSearch && matchesCategory;
+    // Voice search may have mis-transcribed a letter in the item name.
+    return items.filter((item) => matchesNonSearch(item) && fuzzyIncludes(item.name, searchTerm));
     // getTotalStock reads branchStock via closure -- depend on branchStock
     // directly rather than the function reference, which is recreated every render.
-  }), [items, branchStock, isLowStockOnly, searchTerm, selectedCategory, isLegacyVertical]);
+  }, [items, branchStock, isLowStockOnly, searchTerm, selectedCategory, isLegacyVertical]);
 
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
@@ -661,6 +673,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
             <IconInput
               type="text"
               startIcon={Search}
+              endIcon={voiceSupported ? <VoiceMicButton onResult={setSearchTerm} /> : undefined}
               placeholder={t("inventory.search_placeholder")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}

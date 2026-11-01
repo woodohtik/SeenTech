@@ -1,46 +1,51 @@
 import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb, Mic } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Measurements } from '../types';
 import Branding from './Branding';
+import VoiceMeasurementWizard from './VoiceMeasurementWizard';
+import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
+import { MeasurementUnit, cmToDisplayUnit, displayUnitToCm, unitLabelKey } from '../utils/measurementUnits';
 
 interface ThobeMeasurementSelectorProps {
   values: Measurements;
   onChange: (values: Measurements) => void;
   readOnly?: boolean;
+  measurementUnit: MeasurementUnit;
 }
 
-type ThobePart = 'neck' | 'chest' | 'waist' | 'hips' | 'shoulder' | 'sleeve' | 'length' | 'bottomWidth';
+type ThobePart = 'neck' | 'chest' | 'shoulder' | 'sleeve' | 'length' | 'handWidth' | 'midSleeveWidth' | 'cuffLength';
 
-const PART_LABELS: Record<ThobePart, string> = {
-  neck: 'measurements.part_label.neck',
-  chest: 'measurements.part_label.chest',
-  waist: 'measurements.part_label.waist',
-  hips: 'measurements.part_label.hips',
+export const PART_LABELS: Record<ThobePart, string> = {
+  length: 'measurements.part_label.length',
   shoulder: 'measurements.part_label.shoulder',
   sleeve: 'measurements.part_label.sleeve',
-  length: 'measurements.part_label.length',
-  bottomWidth: 'measurements.part_label.bottomWidth',
+  chest: 'measurements.part_label.chest',
+  neck: 'measurements.part_label.neck',
+  handWidth: 'measurements.part_label.handWidth',
+  midSleeveWidth: 'measurements.part_label.midSleeveWidth',
+  cuffLength: 'measurements.part_label.cuffLength',
 };
 
 const PART_HINTS: Record<ThobePart, string> = {
-  neck: 'measurements.part_hint.neck',
-  chest: 'measurements.part_hint.chest',
-  waist: 'measurements.part_hint.waist',
-  hips: 'measurements.part_hint.hips',
+  length: 'measurements.part_hint.length',
   shoulder: 'measurements.part_hint.shoulder',
   sleeve: 'measurements.part_hint.sleeve',
-  length: 'measurements.part_hint.length',
-  bottomWidth: 'measurements.part_hint.bottomWidth'
+  chest: 'measurements.part_hint.chest',
+  neck: 'measurements.part_hint.neck',
+  handWidth: 'measurements.part_hint.handWidth',
+  midSleeveWidth: 'measurements.part_hint.midSleeveWidth',
+  cuffLength: 'measurements.part_hint.cuffLength'
 };
 
-export default function ThobeMeasurementSelector({ values, onChange, readOnly = false }: ThobeMeasurementSelectorProps) {
+export default function ThobeMeasurementSelector({ values, onChange, readOnly = false, measurementUnit }: ThobeMeasurementSelectorProps) {
   const { t } = useTranslation();
   const [activePart, setActivePart] = useState<ThobePart | null>(null);
   const [isInstructionMode, setIsInstructionMode] = useState(false);
   const [activeHint, setActiveHint] = useState<ThobePart | null>(null);
+  const [wizardOpen, setWizardOpen] = useState(false);
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const handlePartClick = (part: ThobePart) => {
@@ -59,7 +64,7 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
   const handleInputChange = (part: ThobePart, value: string) => {
     if (readOnly) return;
     const numValue = Math.max(0, parseFloat(value) || 0);
-    onChange({ ...values, [part]: numValue });
+    onChange({ ...values, [part]: displayUnitToCm(numValue, measurementUnit) });
   };
 
   const highlightColor = "#0F6E96";
@@ -197,44 +202,6 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
             }}
           />
 
-          {/* Waist Area */}
-          <motion.path
-            id="part-waist"
-            d="M75,310 L325,310 L315,400 L85,400 Z"
-            fill={activePart === 'waist' ? `${highlightColor}33` : 'transparent'}
-            stroke={activePart === 'waist' ? highlightColor : 'transparent'}
-            strokeWidth="3"
-            className="cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
-            role="button"
-            tabIndex={readOnly ? -1 : 0}
-            aria-label={t(PART_LABELS.waist)}
-            onClick={() => handlePartClick('waist')}
-            onKeyDown={handlePartKeyDown('waist')}
-            whileHover={{ fill: `${highlightColor}11` }}
-            animate={{ 
-              opacity: activePart && activePart !== 'waist' ? 0.3 : 1,
-            }}
-          />
-
-          {/* Hips Area */}
-          <motion.path
-            id="part-hips"
-            d="M85,400 L315,400 L295,500 L105,500 Z"
-            fill={activePart === 'hips' ? `${highlightColor}33` : 'transparent'}
-            stroke={activePart === 'hips' ? highlightColor : 'transparent'}
-            strokeWidth="3"
-            className="cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
-            role="button"
-            tabIndex={readOnly ? -1 : 0}
-            aria-label={t(PART_LABELS.hips)}
-            onClick={() => handlePartClick('hips')}
-            onKeyDown={handlePartKeyDown('hips')}
-            whileHover={{ fill: `${highlightColor}11` }}
-            animate={{ 
-              opacity: activePart && activePart !== 'hips' ? 0.3 : 1,
-            }}
-          />
-
           {/* Sleeves with Cuffs */}
           <motion.g
             id="part-sleeve"
@@ -271,6 +238,87 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
             </g>
           </motion.g>
 
+          {/* Hand Width (wrist tips) */}
+          <motion.g
+            id="part-handWidth"
+            className="cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+            role="button"
+            tabIndex={readOnly ? -1 : 0}
+            aria-label={t(PART_LABELS.handWidth)}
+            onClick={() => handlePartClick('handWidth')}
+            onKeyDown={handlePartKeyDown('handWidth')}
+            animate={{
+              opacity: activePart && activePart !== 'handWidth' ? 0.3 : 1,
+            }}
+          >
+            <circle
+              cx="35" cy="495" r="12"
+              fill={activePart === 'handWidth' ? `${highlightColor}33` : 'transparent'}
+              stroke={activePart === 'handWidth' ? highlightColor : '#94a3b8'}
+              strokeWidth={activePart === 'handWidth' ? "3" : "1"}
+            />
+            <circle
+              cx="365" cy="495" r="12"
+              fill={activePart === 'handWidth' ? `${highlightColor}33` : 'transparent'}
+              stroke={activePart === 'handWidth' ? highlightColor : '#94a3b8'}
+              strokeWidth={activePart === 'handWidth' ? "3" : "1"}
+            />
+          </motion.g>
+
+          {/* Mid-Sleeve Width */}
+          <motion.g
+            id="part-midSleeveWidth"
+            className="cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+            role="button"
+            tabIndex={readOnly ? -1 : 0}
+            aria-label={t(PART_LABELS.midSleeveWidth)}
+            onClick={() => handlePartClick('midSleeveWidth')}
+            onKeyDown={handlePartKeyDown('midSleeveWidth')}
+            animate={{
+              opacity: activePart && activePart !== 'midSleeveWidth' ? 0.3 : 1,
+            }}
+          >
+            <circle
+              cx="40" cy="330" r="12"
+              fill={activePart === 'midSleeveWidth' ? `${highlightColor}33` : 'transparent'}
+              stroke={activePart === 'midSleeveWidth' ? highlightColor : '#94a3b8'}
+              strokeWidth={activePart === 'midSleeveWidth' ? "3" : "1"}
+            />
+            <circle
+              cx="360" cy="330" r="12"
+              fill={activePart === 'midSleeveWidth' ? `${highlightColor}33` : 'transparent'}
+              stroke={activePart === 'midSleeveWidth' ? highlightColor : '#94a3b8'}
+              strokeWidth={activePart === 'midSleeveWidth' ? "3" : "1"}
+            />
+          </motion.g>
+
+          {/* Cuff Length */}
+          <motion.g
+            id="part-cuffLength"
+            className="cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+            role="button"
+            tabIndex={readOnly ? -1 : 0}
+            aria-label={t(PART_LABELS.cuffLength)}
+            onClick={() => handlePartClick('cuffLength')}
+            onKeyDown={handlePartKeyDown('cuffLength')}
+            animate={{
+              opacity: activePart && activePart !== 'cuffLength' ? 0.3 : 1,
+            }}
+          >
+            <circle
+              cx="35" cy="470" r="12"
+              fill={activePart === 'cuffLength' ? `${highlightColor}33` : 'transparent'}
+              stroke={activePart === 'cuffLength' ? highlightColor : '#94a3b8'}
+              strokeWidth={activePart === 'cuffLength' ? "3" : "1"}
+            />
+            <circle
+              cx="365" cy="470" r="12"
+              fill={activePart === 'cuffLength' ? `${highlightColor}33` : 'transparent'}
+              stroke={activePart === 'cuffLength' ? highlightColor : '#94a3b8'}
+              strokeWidth={activePart === 'cuffLength' ? "3" : "1"}
+            />
+          </motion.g>
+
           {/* Length Measurement Line */}
           <motion.g
             id="part-length"
@@ -294,26 +342,6 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
             <path d="M190,70 L200,60 L210,70 M190,750 L200,760 L210,750" fill="none" stroke={activePart === 'length' ? highlightColor : "#94a3b8"} strokeWidth="2" />
           </motion.g>
 
-          {/* Bottom Width Area */}
-          <motion.path
-            id="part-bottomWidth"
-            d="M40,750 C140,770 260,770 360,750 L365,790 C260,810 140,810 35,790 Z"
-            fill={activePart === 'bottomWidth' ? `${highlightColor}33` : 'transparent'}
-            stroke={activePart === 'bottomWidth' ? highlightColor : '#94a3b8'}
-            strokeWidth={activePart === 'bottomWidth' ? "3" : "1"}
-            strokeDasharray={activePart === 'bottomWidth' ? "none" : "5,3"}
-            className="cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
-            role="button"
-            tabIndex={readOnly ? -1 : 0}
-            aria-label={t(PART_LABELS.bottomWidth)}
-            onClick={() => handlePartClick('bottomWidth')}
-            onKeyDown={handlePartKeyDown('bottomWidth')}
-            whileHover={{ fill: `${highlightColor}11` }}
-            animate={{ 
-              opacity: activePart && activePart !== 'bottomWidth' ? 0.3 : 1,
-            }}
-          />
-
           {/* Value Labels */}
           <AnimatePresence>
             {Object.entries(values).map(([key, val]) => {
@@ -324,11 +352,11 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
                 case 'neck': coords = { x: 200, y: 90 }; break;
                 case 'shoulder': coords = { x: 200, y: 145 }; break;
                 case 'chest': coords = { x: 200, y: 270 }; break;
-                case 'waist': coords = { x: 200, y: 350 }; break;
-                case 'hips': coords = { x: 200, y: 430 }; break;
                 case 'sleeve': coords = { x: 50, y: 350 }; break;
                 case 'length': coords = { x: 240, y: 500 }; break;
-                case 'bottomWidth': coords = { x: 200, y: 780 }; break;
+                case 'handWidth': coords = { x: 35, y: 495 }; break;
+                case 'midSleeveWidth': coords = { x: 40, y: 330 }; break;
+                case 'cuffLength': coords = { x: 35, y: 470 }; break;
                 default: return null;
               }
               return (
@@ -352,7 +380,7 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
                     fontWeight="900"
                     className="pointer-events-none"
                   >
-                    {val}
+                    {cmToDisplayUnit(val as number, measurementUnit)}
                   </text>
                 </motion.g>
               );
@@ -382,6 +410,19 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
               <Lightbulb size={24} />
             </button>
           </div>
+
+          {isSpeechRecognitionSupported() && (
+            <button
+              type="button"
+              onClick={() => setWizardOpen(true)}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-brand/30 bg-brand/5 text-brand font-bold hover:bg-brand/10 transition-colors"
+            >
+              <Mic size={16} /> {t('measurements.voice_fill_button', 'تعبئة المقاسات بالصوت')}
+            </button>
+          )}
+          {wizardOpen && (
+            <VoiceMeasurementWizard values={values} onChange={onChange} onClose={() => setWizardOpen(false)} measurementUnit={measurementUnit} />
+          )}
 
           <div className="grid grid-cols-1 gap-4">
             {(Object.keys(PART_LABELS) as ThobePart[]).map((part) => (
@@ -431,14 +472,14 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
                     type="number"
                     min="0"
                     step="0.1"
-                    value={(values as any)[part] || ''}
+                    value={(values as any)[part] ? cmToDisplayUnit((values as any)[part], measurementUnit) : ''}
                     onChange={(e) => handleInputChange(part, e.target.value)}
                     onFocus={() => setActivePart(part)}
                     onBlur={() => setActivePart(null)}
                     placeholder="0.0"
                     className="w-full bg-transparent border-none p-0 text-3xl font-black text-content focus:ring-0 placeholder:text-content-muted/30"
                   />
-                  <span className="text-sm font-bold text-content-muted">{t('customers.cm')}</span>
+                  <span className="text-sm font-bold text-content-muted">{t(unitLabelKey(measurementUnit))}</span>
                 </div>
               </div>
             ))}

@@ -26,7 +26,8 @@ import {
   Eye,
   EyeOff,
   Loader2,
-  CreditCard
+  CreditCard,
+  Newspaper
 } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
@@ -43,6 +44,7 @@ import TwoFactorChallenge from './TwoFactorChallenge';
 import { IconInput } from './ui/IconInput';
 
 import { isRtlLang, localeOf } from '../lib/direction';
+import { useIdleTimeout } from '../hooks/useIdleTimeout';
 
 interface SaaSLayoutProps {
   children: React.ReactNode;
@@ -67,6 +69,7 @@ const SAAS_MENU_ITEMS = [
   { id: 'subscriptions', labelKey: 'saas.menu_subscriptions', icon: CreditCard, path: '/admin/subscriptions', roles: ['super_admin'] },
   { id: 'withdrawals', labelKey: 'saas.menu_withdrawals', icon: DollarSign, path: '/admin/withdrawals', roles: ['super_admin', 'billing_admin'] },
   { id: 'audit', labelKey: 'saas.menu_audit', icon: Shield, path: '/admin/audit', roles: ['super_admin'] },
+  { id: 'blog', labelKey: 'saas.menu_blog', icon: Newspaper, path: '/admin/blog', roles: ['super_admin'] },
   { id: 'team', labelKey: 'saas.menu_team', icon: Users, path: '/admin/team', roles: ['super_admin'] },
   { id: 'system', labelKey: 'saas.menu_system', icon: Settings, path: '/admin/system', roles: ['super_admin'] },
   { id: 'assistant', labelKey: 'saas.menu_assistant', icon: Bot, path: '/admin/assistant-settings', roles: ['super_admin'] },
@@ -218,8 +221,6 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
   // System Settings, ...) gets a chance to stay signed in instead of losing
   // unsaved input with no notice.
   const IDLE_WARNING_LEAD = 60 * 1000; // 60 seconds
-  const [lastActivity, setLastActivity] = useState(Date.now());
-  const [showIdleWarning, setShowIdleWarning] = useState(false);
 
   const handleLogout = useCallback(async () => {
     await logSaaSSecurityEvent('saas_logout', 'User logged out or session timed out');
@@ -233,38 +234,17 @@ export default function SaaSLayout({ children, userRole }: SaaSLayoutProps) {
     window.location.replace('/login');
   }, [navigate]);
 
-  const stayLoggedIn = useCallback(() => {
-    setLastActivity(Date.now());
-    setShowIdleWarning(false);
-  }, []);
-
-  useEffect(() => {
-    const handleActivity = () => {
-      setLastActivity(Date.now());
-      setShowIdleWarning(false);
-    };
-    window.addEventListener('mousemove', handleActivity);
-    window.addEventListener('keydown', handleActivity);
-    window.addEventListener('scroll', handleActivity);
-
-    // Checked more often than the warning window itself, so a 60s-granularity
-    // poll can never skip straight from "no warning" to "logged out".
-    const interval = setInterval(() => {
-      const idleFor = Date.now() - lastActivity;
-      if (idleFor > IDLE_TIMEOUT) {
-        handleLogout();
-      } else if (idleFor > IDLE_TIMEOUT - IDLE_WARNING_LEAD) {
-        setShowIdleWarning(true);
-      }
-    }, 15000);
-
-    return () => {
-      window.removeEventListener('mousemove', handleActivity);
-      window.removeEventListener('keydown', handleActivity);
-      window.removeEventListener('scroll', handleActivity);
-      clearInterval(interval);
-    };
-  }, [lastActivity, handleLogout]);
+  // useIdleTimeout keeps activity timestamps in a ref, not React state --
+  // the previous inline version stored lastActivity via useState and
+  // listed it as this effect's dependency, so every single mousemove tore
+  // down and recreated the window listeners + interval and forced a full
+  // layout re-render (confirmed live: a few dozen rapid mousemove events
+  // froze the tab).
+  const { showWarning: showIdleWarning, resetActivity: stayLoggedIn } = useIdleTimeout(
+    IDLE_TIMEOUT,
+    IDLE_WARNING_LEAD,
+    handleLogout
+  );
 
   // 2. 2FA Verification Check -- seen-admin-reengineering-task.md بند 7.
   // nextLevel هو 'aal2' فقط إذا كان الحساب يملك عامل TOTP موثَّق فعلاً؛

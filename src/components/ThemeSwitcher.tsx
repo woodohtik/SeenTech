@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sun, Moon, Palette, Zap, Check } from 'lucide-react';
+import { Sun, Moon, Check } from 'lucide-react';
 import { useTheme, ThemeType } from '../contexts/ThemeContext';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -12,8 +12,6 @@ const ThemeSwitcher: React.FC = () => {
   const themes: { id: ThemeType; name: string; icon: any; color: string; iconColor: string }[] = [
     { id: 'light', name: t('themes.light', 'Light'), icon: Sun, color: 'bg-white border border-border', iconColor: 'text-warning' },
     { id: 'dark', name: t('themes.dark', 'Dark'), icon: Moon, color: 'bg-slate-900', iconColor: 'text-info' },
-    { id: 'elegant', name: t('themes.elegant', 'Elegant'), icon: Palette, color: 'bg-[#F5F2ED]', iconColor: 'text-brand' },
-    { id: 'modern', name: t('themes.modern', 'Modern'), icon: Zap, color: 'bg-zinc-800', iconColor: 'text-brand' },
   ];
 
   return (

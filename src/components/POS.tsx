@@ -1,6 +1,7 @@
 import { ThermalInvoice, StandardInvoice, InvoiceData } from "./printing/InvoiceReceipt";
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { formatSaudiPhone } from '../utils/phoneUtils';
+import { fuzzyIncludes } from '../utils/fuzzySearch';
 import { flushSync } from 'react-dom';
 import { 
   Search, 
@@ -43,6 +44,8 @@ import { Customer, InventoryItem, OrderItem, Order, PaymentMethod, OrderStatus, 
 import { cn, generateOrderNumber } from '../lib/utils';
 import { SmartSelect } from './ui/SmartSelect';
 import { IconInput } from './ui/IconInput';
+import { VoiceMicButton } from './ui/VoiceMicButton';
+import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { PriceDisplay } from './PriceDisplay';
 import { decodeInventoryDescription, hasValidTaxSettings } from '../utils/b2bHelper';
@@ -70,6 +73,8 @@ import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
 import VariantPickerModal from './ui/VariantPickerModal';
 
 import { isRtlLang } from '../lib/direction';
+import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
+import { cmToDisplayUnit, unitLabelKey, type MeasurementUnit } from '../utils/measurementUnits';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import { useTenantCategoryPicker } from '../hooks/useTenantCategoryPicker';
 import { LEGACY_INVENTORY_CATEGORY_SEED } from '../services/categoryService';
@@ -81,7 +86,8 @@ import { LEGACY_INVENTORY_CATEGORY_SEED } from '../services/categoryService';
 function buildInvoiceMeasurements(
   item: { type?: string },
   customer: Customer | null,
-  t: (key: string) => string
+  t: (key: string) => string,
+  measurementUnit: MeasurementUnit
 ): { label: string; value: string | number }[] | undefined {
   if (item.type !== 'custom' || !customer?.measurements) return undefined;
   const m = customer.measurements;
@@ -94,10 +100,19 @@ function buildInvoiceMeasurements(
     ['sleeve', 'sleeve'],
     ['neck', 'neck'],
     ['bottomWidth', 'bottomWidth'],
+    ['handWidth', 'handWidth'],
+    ['midSleeveWidth', 'midSleeveWidth'],
+    ['cuffLength', 'cuffLength'],
   ];
   const list = fields
     .filter(([, key]) => m[key] !== undefined && m[key] !== null && m[key] !== ('' as any))
-    .map(([labelKey, key]) => ({ label: t(`measurements.${labelKey}`), value: m[key] as any }));
+    .map(([labelKey, key]) => {
+      const raw = m[key] as any;
+      const value = typeof raw === 'number'
+        ? `${cmToDisplayUnit(raw, measurementUnit)} ${t(unitLabelKey(measurementUnit))}`
+        : raw;
+      return { label: t(`measurements.${labelKey}`), value };
+    });
   return list.length > 0 ? list : undefined;
 }
 
@@ -108,6 +123,12 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const { confirm, alertModal } = useConfirm();
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
+  const measurementUnit = useMeasurementUnit(tenantId);
+  // Unsupported browsers render VoiceMicButton as null -- without this
+  // gate, IconInput's endIcon array would still include the (now-empty)
+  // mic wrapper span, showing a blank bordered icon box next to the scan
+  // button where none existed before voice input.
+  const voiceSupported = isSpeechRecognitionSupported();
   // prefers-reduced-motion: skip the slide/spring enter animation and jump
   // straight to the resting state for every drawer/sheet below.
   const shouldReduceMotion = useReducedMotion();
@@ -718,13 +739,24 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     }
   };
 
-  const filteredInventory = useMemo(() => inventory.filter(item =>
-    item.showInPos !== false &&
-    (selectedCategory === 'all' || (item.category_key || item.category) === selectedCategory) &&
-    (item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-     item.barcode?.includes(searchQuery) ||
-     item.sku?.includes(searchQuery))
-  ), [inventory, selectedCategory, searchQuery]);
+  const filteredInventory = useMemo(() => {
+    const matchesNonSearch = (item: InventoryItem) =>
+      item.showInPos !== false &&
+      (selectedCategory === 'all' || (item.category_key || item.category) === selectedCategory);
+
+    const exact = inventory.filter(item =>
+      matchesNonSearch(item) &&
+      (item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+       item.barcode?.includes(searchQuery) ||
+       item.sku?.includes(searchQuery))
+    );
+    if (exact.length > 0 || !searchQuery.trim()) return exact;
+
+    // Exact match found nothing -- voice search may have mis-transcribed a
+    // letter in the item name. Barcode/SKU aren't fuzzy-matched: they're
+    // scanned or typed exactly, never spoken.
+    return inventory.filter(item => matchesNonSearch(item) && fuzzyIncludes(item.name, searchQuery));
+  }, [inventory, selectedCategory, searchQuery]);
 
   const handleScan = (decodedText: string) => {
     const item = inventory.find(i => i.barcode === decodedText || i.sku === decodedText);
@@ -875,7 +907,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     }
 
     // Separate numeric measurements and styling fields
-    const measurementKeys = ['neck', 'chest', 'waist', 'hips', 'shoulder', 'sleeve', 'length', 'bottomWidth'];
+    const measurementKeys = ['neck', 'chest', 'waist', 'hips', 'shoulder', 'sleeve', 'length', 'bottomWidth', 'handWidth', 'midSleeveWidth', 'cuffLength'];
     
     const numericMeasurements: any = {};
     const stylingFields: any = {};
@@ -1257,7 +1289,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
            name: item.name || item.garmentType || 'منتج مخصص',
            quantity: item.quantity,
            price: item.price,
-           measurements: buildInvoiceMeasurements(item, selectedCustomer, t)
+           measurements: buildInvoiceMeasurements(item, selectedCustomer, t, measurementUnit)
          })),
          qrCode: qrCodeBase64,
          issuedAt: timestamp
@@ -1736,16 +1768,22 @@ const invoiceData: InvoiceData | null = completedOrder ? {
             ref={searchInputRef}
             type="text"
             startIcon={Search}
-            endIcon={
+            endIcon={[
+              ...(voiceSupported ? [
+                <span key="mic" className="me-2 inline-flex">
+                  <VoiceMicButton onResult={setSearchQuery} />
+                </span>,
+              ] : []),
               <button
+                key="scan"
                 type="button"
                 onClick={() => setIsScannerOpen(true)}
                 aria-label={t('pos.scan_barcode')}
                 className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded cursor-pointer"
               >
                 <Barcode size={18} />
-              </button>
-            }
+              </button>,
+            ]}
             placeholder={t('pos.search_placeholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -2728,12 +2766,17 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                         { label: t('measurements.shoulder'), value: selectedCustomer.measurements?.shoulder },
                         { label: t('measurements.chest'), value: selectedCustomer.measurements?.chest },
                         { label: t('measurements.sleeve'), value: selectedCustomer.measurements?.sleeve },
-                      ].map((m) => (
-                        <div key={m.label} className="bg-surface p-2 rounded-lg border border-brand/10 text-center">
-                          <p className="text-[10px] text-content-muted">{m.label}</p>
-                          <p className="text-sm font-bold text-brand">{m.value || '-'}</p>
-                        </div>
-                      ))}
+                      ].map((m) => {
+                        const displayValue = typeof m.value === 'number' ? cmToDisplayUnit(m.value, measurementUnit) : m.value;
+                        return (
+                          <div key={m.label} className="bg-surface p-2 rounded-lg border border-brand/10 text-center">
+                            <p className="text-[10px] text-content-muted">{m.label}</p>
+                            <p className="text-sm font-bold text-brand">
+                              {displayValue ? <>{displayValue} <span className="text-[9px] text-content-muted">{t(unitLabelKey(measurementUnit))}</span></> : '-'}
+                            </p>
+                          </div>
+                        );
+                      })}
                     </div>
                     <p className="text-xs text-content-muted mt-2 flex items-center gap-1">
                       <Zap size={12} />
@@ -2757,9 +2800,10 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       <div className="w-1.5 h-4 bg-brand rounded-full" />
                       {t('pos.interactive_visual_measurement_selector')}
                     </h3>
-                    <ThobeMeasurementSelector 
+                    <ThobeMeasurementSelector
                       values={customMeasurements as any || {}}
                       onChange={(newMeasurements) => setCustomMeasurements({...customMeasurements, ...newMeasurements})}
+                      measurementUnit={measurementUnit}
                     />
                   </div>
                 </div>

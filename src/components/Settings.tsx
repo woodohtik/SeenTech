@@ -37,6 +37,7 @@ import { deleteTestDataForTenant } from '../services/trialService';
 
 import { isRtlLang, localeOf } from '../lib/direction';
 import { useToast } from '../contexts/ToastContext';
+import { isValidMeasurementUnit, type MeasurementUnit } from '../utils/measurementUnits';
 
 interface SettingsProps {
   tenantId: string;
@@ -52,6 +53,7 @@ interface SettingsData {
   city: string;
   postalCode: string;
   logoUrl: string;
+  measurementUnit: MeasurementUnit;
   taxSettings: unknown;
   notificationSettings: unknown;
   ownerEmail?: string;
@@ -147,6 +149,7 @@ export default function Settings({ tenantId }: SettingsProps) {
       city: '',
       postalCode: '',
       currencySymbol: 'SR',
+      measurementUnit: 'inch' as const,
       inventoryStrategy: 'decentralized' as const,
       logoUrl: '',
       taxSettings: {
@@ -209,6 +212,7 @@ export default function Settings({ tenantId }: SettingsProps) {
           city: loadedData.city || '',
           postalCode: loadedData.postalCode || '',
           logoUrl: loadedData.logoUrl || '',
+          measurementUnit: isValidMeasurementUnit(loadedData.measurementUnit) ? loadedData.measurementUnit : 'inch',
           taxSettings: loadedData.taxSettings,
           notificationSettings: loadedData.notificationSettings,
         };
@@ -266,6 +270,7 @@ export default function Settings({ tenantId }: SettingsProps) {
         city: data.city || '',
         postalCode: data.postal_code || '',
         logoUrl: data.logo_url || '',
+        measurementUnit: isValidMeasurementUnit(data.measurement_unit) ? data.measurement_unit : 'inch',
         taxSettings: loadedTaxSettings,
         notificationSettings: loadedNotificationSettings,
         ownerEmail: data.owner_email || undefined,
@@ -291,6 +296,14 @@ export default function Settings({ tenantId }: SettingsProps) {
       postalCode: d.postalCode,
       inventoryStrategy: 'decentralized',
       logoUrl: d.logoUrl,
+      // d may come straight from the localStorage lastKnownCache snapshot
+      // (initialData above, staleTime: Infinity) rather than a fresh fetch,
+      // so a cache written before this field existed has measurementUnit
+      // undefined -- normalize it the same way the fetch itself does
+      // (lines 215/273) instead of letting reset() pass undefined through,
+      // which the native <select> silently reads as its first option
+      // ('cm') and the next save would then persist.
+      measurementUnit: isValidMeasurementUnit(d.measurementUnit) ? d.measurementUnit : 'inch',
       taxSettings: d.taxSettings as any,
       notificationSettings: d.notificationSettings as any
     });
@@ -363,6 +376,7 @@ export default function Settings({ tenantId }: SettingsProps) {
             city: data.city,
             postalCode: data.postalCode,
             logoUrl: data.logoUrl,
+            measurementUnit: data.measurementUnit,
             taxSettings: data.taxSettings,
             notificationSettings: data.notificationSettings
           })
@@ -385,6 +399,7 @@ export default function Settings({ tenantId }: SettingsProps) {
           postal_code: data.postalCode,
           inventory_strategy: 'decentralized',
           logo_url: data.logoUrl,
+          measurement_unit: data.measurementUnit,
           vat_number: data.taxSettings?.trn || '',
           is_tax_enabled: Boolean(data.taxSettings?.enabled),
           default_tax_rate: data.taxSettings?.vatRate || 15,
@@ -430,6 +445,7 @@ export default function Settings({ tenantId }: SettingsProps) {
         city: data.city || '',
         postalCode: data.postalCode || '',
         logoUrl: data.logoUrl || '',
+        measurementUnit: isValidMeasurementUnit(data.measurementUnit) ? data.measurementUnit : 'inch',
         taxSettings: data.taxSettings,
         notificationSettings: data.notificationSettings,
       };
@@ -727,6 +743,19 @@ export default function Settings({ tenantId }: SettingsProps) {
                         maxLength={10}
                         dir="ltr"
                       />
+                    </div>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between px-1">
+                        <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.measurement_unit', 'وحدة القياس الافتراضية للمقاسات')}</label>
+                        <HelpCircle size={14} className="text-content-muted/40 cursor-help" />
+                      </div>
+                      <select
+                        {...register('measurementUnit')}
+                        className="w-full h-11 px-3 rounded-xl border border-border bg-surface text-sm font-bold text-content focus:outline-none focus:ring-2 focus:ring-brand/30"
+                      >
+                        <option value="cm">{t('measurements.unit_cm', 'سم')}</option>
+                        <option value="inch">{t('measurements.unit_inch', 'إنش')}</option>
+                      </select>
                     </div>
                   </div>
 

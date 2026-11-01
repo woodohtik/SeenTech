@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect } from 'react';
 import { ThemeProvider as NextThemesProvider, useTheme as useNextTheme } from 'next-themes';
 
-export type ThemeType = 'light' | 'dark' | 'elegant' | 'modern';
+export type ThemeType = 'light' | 'dark';
 
 interface ThemeContextType {
   theme: ThemeType;
@@ -16,7 +16,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       attribute="class" 
       defaultTheme="light" 
       enableSystem={false} 
-      themes={['light', 'dark', 'elegant', 'modern']}
+      themes={['light', 'dark']}
     >
       <ThemeValueProvider>{children}</ThemeValueProvider>
     </NextThemesProvider>

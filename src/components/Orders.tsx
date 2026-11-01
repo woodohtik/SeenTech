@@ -1,8 +1,11 @@
 "use client";
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { formatSaudiPhone } from '../utils/phoneUtils';
+import { fuzzyIncludes } from '../utils/fuzzySearch';
 import { calculateItemTax } from '../utils/b2bHelper';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
+import { cmToDisplayUnit, displayUnitToCm, unitLabelKey } from '../utils/measurementUnits';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
@@ -81,6 +84,8 @@ import ScannerModal from './ScannerModal';
 import { SmartSelect } from './ui/SmartSelect';
 import { DatePicker } from './ui/DatePicker';
 import { IconInput } from './ui/IconInput';
+import { VoiceMicButton } from './ui/VoiceMicButton';
+import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
 import { checkStockAvailability, deductStock } from '../services/inventoryService';
 import { useStaff } from '../contexts/StaffContext';
 import { useBranding } from '../contexts/BrandingContext';
@@ -298,11 +303,17 @@ const DynamicOrderItemFields = ({
 
 export default function Orders({ tenantId }: { tenantId: string }) {
   const { t, i18n } = useTranslation();
+  // Unsupported browsers render VoiceMicButton as null -- without this
+  // gate, the empty mic wrapper would still show as a blank bordered icon
+  // box next to the scan button / notes textarea where none existed
+  // before voice input.
+  const voiceSupported = isSpeechRecognitionSupported();
   const router = useRouter();
   const refreshCounter = useRefreshCounter();
   const { settings: branding } = useBranding();
   const { error: toastError, success: toastSuccess, warning: toastWarning, handleError } = useToast();
   const { confirm } = useConfirm();
+  const measurementUnit = useMeasurementUnit(tenantId);
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -398,7 +409,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     isTest: false
   }), [isLegacyVertical, workflowStages]);
 
-  const { register, control, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting, isValid } } = useForm({
+  const { register, control, handleSubmit, reset, watch, setValue, getValues, formState: { errors, isSubmitting, isValid } } = useForm({
     resolver: zodResolver(orderSchema),
     defaultValues: defaultOrderValues as any
   });
@@ -1053,13 +1064,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   <div className="w-1.5 h-4 bg-brand rounded-full" />
                   {t('orders.visual_measurement_selector')}
                 </h3>
-                <ThobeMeasurementSelector 
+                <ThobeMeasurementSelector
                   values={(watchCustMeasurements as Measurements) || {}}
                   onChange={(newMeasurements) => {
                     Object.entries(newMeasurements).forEach(([key, value]) => {
                       setCustValue(`measurements.${key}` as any, value);
                     });
                   }}
+                  measurementUnit={measurementUnit}
                 />
               </div>
             </div>
@@ -1476,31 +1488,44 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     }
   };
 
-  const filteredOrders = useMemo(() => orders.filter(o => {
+  const filteredOrders = useMemo(() => {
+    const matchesNonSearch = (o: Order) => {
+      const matchesStatus = !statusFilter || o.status === statusFilter;
+
+      // Date comparison
+      const orderDate = (o.orderDate || '').split('T')[0];
+      const matchesDate = (!startDate || orderDate >= startDate) &&
+                         (!endDate || orderDate <= endDate);
+
+      // Tab filtering
+      const matchesTab = activeTab === 'active' ? o.status !== 'delivered' : o.status === 'delivered';
+
+      return matchesStatus && matchesDate && matchesTab;
+    };
+
     const searchLower = debouncedSearch.toLowerCase();
-    const orderNumberStr = o.orderNumber ? o.orderNumber.toString() : '';
-    // Handle potential invoice number inside the order object if it exists
-    const invoiceNumberStr = (o as any).invoiceNumber ? String((o as any).invoiceNumber).toLowerCase() : '';
+    const matchesSearchExact = (o: Order) => {
+      const orderNumberStr = o.orderNumber ? o.orderNumber.toString() : '';
+      // Handle potential invoice number inside the order object if it exists
+      const invoiceNumberStr = (o as any).invoiceNumber ? String((o as any).invoiceNumber).toLowerCase() : '';
 
-    // Support scanning the full URL QR code by checking if the search string contains the ID
-    const matchesSearch = (o.customerName || '').toLowerCase().includes(searchLower) ||
-                         o.id.toLowerCase().includes(searchLower) ||
-                         searchLower.includes(o.id.toLowerCase()) ||
-                         orderNumberStr.includes(searchLower) ||
-                         invoiceNumberStr.includes(searchLower) ||
-                         searchLower.includes(invoiceNumberStr);
-    const matchesStatus = !statusFilter || o.status === statusFilter;
+      // Support scanning the full URL QR code by checking if the search string contains the ID
+      return (o.customerName || '').toLowerCase().includes(searchLower) ||
+             o.id.toLowerCase().includes(searchLower) ||
+             searchLower.includes(o.id.toLowerCase()) ||
+             orderNumberStr.includes(searchLower) ||
+             invoiceNumberStr.includes(searchLower) ||
+             searchLower.includes(invoiceNumberStr);
+    };
 
-    // Date comparison
-    const orderDate = (o.orderDate || '').split('T')[0];
-    const matchesDate = (!startDate || orderDate >= startDate) &&
-                       (!endDate || orderDate <= endDate);
+    const exact = orders.filter(o => matchesNonSearch(o) && matchesSearchExact(o));
+    if (exact.length > 0 || !searchLower.trim()) return exact;
 
-    // Tab filtering
-    const matchesTab = activeTab === 'active' ? o.status !== 'delivered' : o.status === 'delivered';
-
-    return matchesSearch && matchesStatus && matchesDate && matchesTab;
-  }), [orders, debouncedSearch, statusFilter, startDate, endDate, activeTab]);
+    // Exact match found nothing -- voice search may have mis-transcribed a
+    // letter in the customer's name. Order/invoice numbers aren't
+    // fuzzy-matched: they're scanned or typed exactly, never spoken.
+    return orders.filter(o => matchesNonSearch(o) && fuzzyIncludes(o.customerName || '', debouncedSearch));
+  }, [orders, debouncedSearch, statusFilter, startDate, endDate, activeTab]);
 
   // Groups unpaidOrders by customerId once (O(n)) instead of re-filtering
   // the whole unpaidOrders array for every row rendered below (was O(n*m)
@@ -1922,12 +1947,18 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                       { label: t('measurements.sleeve'), value: customers.find(c => c.id === order.customerId)?.measurements?.sleeve },
                       { label: t('measurements.length'), value: customers.find(c => c.id === order.customerId)?.measurements?.length },
                       { label: t('measurements.bottomWidth'), value: customers.find(c => c.id === order.customerId)?.measurements?.bottomWidth },
-                    ].filter(m => m.value).map((m, i) => (
-                      <div key={i} className="text-center">
-                        <span className="block text-[10px] text-content-muted font-bold mb-1">{m.label}</span>
-                        <span className="text-lg font-black text-brand">{m.value}</span>
-                      </div>
-                    ))}
+                      { label: t('measurements.handWidth'), value: customers.find(c => c.id === order.customerId)?.measurements?.handWidth },
+                      { label: t('measurements.midSleeveWidth'), value: customers.find(c => c.id === order.customerId)?.measurements?.midSleeveWidth },
+                      { label: t('measurements.cuffLength'), value: customers.find(c => c.id === order.customerId)?.measurements?.cuffLength },
+                    ].filter(m => m.value).map((m, i) => {
+                      const displayValue = typeof m.value === 'number' ? cmToDisplayUnit(m.value, measurementUnit) : m.value;
+                      return (
+                        <div key={i} className="text-center">
+                          <span className="block text-[10px] text-content-muted font-bold mb-1">{m.label}</span>
+                          <span className="text-lg font-black text-brand">{displayValue} <span className="text-[10px] text-content-muted font-bold">{t(unitLabelKey(measurementUnit))}</span></span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </section>
@@ -2412,16 +2443,22 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           <IconInput
             type="text"
             startIcon={Search}
-            endIcon={
+            endIcon={[
+              ...(voiceSupported ? [
+                <span key="mic" className="me-2 inline-flex">
+                  <VoiceMicButton onResult={setSearch} />
+                </span>,
+              ] : []),
               <button
+                key="scan"
                 type="button"
                 onClick={() => setIsScannerOpen(true)}
                 aria-label={t('pos.scan_barcode')}
                 className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded cursor-pointer"
               >
                 <Barcode size={18} />
-              </button>
-            }
+              </button>,
+            ]}
             placeholder={t('orders.search_placeholder')}
             data-orders-search="true"
             value={search}
@@ -3210,12 +3247,20 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                   { label: t('measurements.hips'), value: selectedCustomer.measurements?.hips },
                                   { label: t('measurements.sleeve'), value: selectedCustomer.measurements?.sleeve },
                                   { label: t('measurements.neck'), value: selectedCustomer.measurements?.neck },
-                                ].map((m) => (
-                                  <div key={m.label} className="bg-surface p-2 rounded-xl border border-brand/10 text-center">
-                                    <p className="text-[10px] text-content-muted font-bold">{m.label}</p>
-                                    <p className="text-sm font-black text-brand">{m.value || '-'}</p>
-                                  </div>
-                                ))}
+                                  { label: t('measurements.handWidth'), value: selectedCustomer.measurements?.handWidth },
+                                  { label: t('measurements.midSleeveWidth'), value: selectedCustomer.measurements?.midSleeveWidth },
+                                  { label: t('measurements.cuffLength'), value: selectedCustomer.measurements?.cuffLength },
+                                ].map((m) => {
+                                  const displayValue = typeof m.value === 'number' ? cmToDisplayUnit(m.value, measurementUnit) : m.value;
+                                  return (
+                                    <div key={m.label} className="bg-surface p-2 rounded-xl border border-brand/10 text-center">
+                                      <p className="text-[10px] text-content-muted font-bold">{m.label}</p>
+                                      <p className="text-sm font-black text-brand">
+                                        {displayValue ? <>{displayValue} <span className="text-[9px] text-content-muted font-bold">{t(unitLabelKey(measurementUnit))}</span></> : '-'}
+                                      </p>
+                                    </div>
+                                  );
+                                })}
                               </div>
                               
                               {/* Visual Details Display */}
@@ -3241,27 +3286,31 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                   { key: 'length', label: t('measurements.length') },
                                   { key: 'shoulder', label: t('measurements.shoulder') },
                                   { key: 'chest', label: t('measurements.chest') },
-                                  { key: 'waist', label: t('measurements.waist') },
-                                  { key: 'hips', label: t('measurements.hips') },
                                   { key: 'sleeve', label: t('measurements.sleeve') },
                                   { key: 'neck', label: t('measurements.neck') },
-                                  { key: 'bottomWidth', label: t('measurements.bottomWidth') },
-                                ].map((item) => (
-                                  <div key={item.key} className="bg-surface p-2 rounded-xl border border-brand/10">
-                                    <label className="text-[10px] text-content-muted font-bold block mb-1">{item.label}</label>
-                                    <input
-                                      type="number"
-                                      step="0.1"
-                                      min="0"
-                                      value={(tempMeasurements as any)[item.key] ?? ''}
-                                      onChange={(e) => setTempMeasurements(prev => ({
-                                        ...prev,
-                                        [item.key]: e.target.value === '' ? '' : Number(e.target.value)
-                                      }))}
-                                      className="w-full bg-surface text-sm font-bold text-brand text-center p-1.5 rounded-xl outline-none border border-border focus:border-brand focus:ring-2 focus:ring-brand/20"
-                                    />
-                                  </div>
-                                ))}
+                                  { key: 'handWidth', label: t('measurements.handWidth') },
+                                  { key: 'midSleeveWidth', label: t('measurements.midSleeveWidth') },
+                                  { key: 'cuffLength', label: t('measurements.cuffLength') },
+                                ].map((item) => {
+                                  const rawValue = (tempMeasurements as any)[item.key];
+                                  const displayValue = typeof rawValue === 'number' ? cmToDisplayUnit(rawValue, measurementUnit) : rawValue;
+                                  return (
+                                    <div key={item.key} className="bg-surface p-2 rounded-xl border border-brand/10">
+                                      <label className="text-[10px] text-content-muted font-bold block mb-1">{item.label} <span className="text-content-muted/70">({t(unitLabelKey(measurementUnit))})</span></label>
+                                      <input
+                                        type="number"
+                                        step="0.1"
+                                        min="0"
+                                        value={displayValue ?? ''}
+                                        onChange={(e) => setTempMeasurements(prev => ({
+                                          ...prev,
+                                          [item.key]: e.target.value === '' ? '' : displayUnitToCm(Number(e.target.value), measurementUnit)
+                                        }))}
+                                        className="w-full bg-surface text-sm font-bold text-brand text-center p-1.5 rounded-xl outline-none border border-border focus:border-brand focus:ring-2 focus:ring-brand/20"
+                                      />
+                                    </div>
+                                  );
+                                })}
                               </div>
 
                               <p className="text-xs font-bold text-content-muted pt-2 border-t border-brand/10">{t('orders.edit_style_details')}</p>
@@ -3305,11 +3354,18 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
                     <div className="space-y-2">
                       <label className="text-sm font-black text-content-muted uppercase tracking-widest">{t('orders.general_notes')}</label>
-                      <textarea 
-                        {...register('notes')} 
-                        placeholder={t('orders.additional_instructions')}
-                        className="w-full bg-surface border border-border rounded-xl p-4 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold h-32 resize-none text-content"
-                      />
+                      <div className="relative">
+                        <textarea
+                          {...register('notes')}
+                          placeholder={t('orders.additional_instructions')}
+                          className="w-full bg-surface border border-border rounded-xl p-4 pe-10 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold h-32 resize-none text-content"
+                        />
+                        {voiceSupported && (
+                          <div className="absolute top-2 end-2">
+                            <VoiceMicButton onResult={(text) => setValue('notes', [getValues('notes'), text].filter(Boolean).join(' '))} />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

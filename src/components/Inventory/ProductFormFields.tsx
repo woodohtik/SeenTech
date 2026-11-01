@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { Shirt } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { SmartSelect } from "../ui/SmartSelect";
+import { VoiceMicButton } from "../ui/VoiceMicButton";
+import { isSpeechRecognitionSupported } from "../../hooks/useSpeechRecognition";
 import ProductImageUploader from "./ProductImageUploader";
 import { ADD_NEW_CATEGORY_VALUE, useTenantCategoryPicker } from "../../hooks/useTenantCategoryPicker";
 
@@ -75,6 +77,10 @@ export default function ProductFormFields({
   showOpeningBalance = true,
 }: ProductFormFieldsProps) {
   const { t } = useTranslation();
+  // Unsupported browsers render VoiceMicButton as null -- without this
+  // gate, the empty mic wrapper would still show as a blank bordered icon
+  // box next to the name field where none existed before voice input.
+  const voiceSupported = isSpeechRecognitionSupported();
 
   return (
     <>
@@ -93,20 +99,27 @@ export default function ProductFormFields({
             <label htmlFor={`${idPrefix}-name`} className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
               {t("inventory.item_name")}<span className="text-danger">*</span>
             </label>
-            <input
-              id={`${idPrefix}-name`}
-              aria-invalid={fieldErrors.name}
-              value={formData.name}
-              onChange={(e) => {
-                setFormData({ ...formData, name: e.target.value });
-                if (fieldErrors.name) setFieldErrors({ ...fieldErrors, name: false });
-              }}
-              placeholder={t("inventory.item_name_placeholder")}
-              className={cn(
-                "w-full px-5 py-3 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none font-semibold text-content text-right transition-all",
-                fieldErrors.name && "ring-2 ring-danger border-danger"
+            <div className="relative">
+              <input
+                id={`${idPrefix}-name`}
+                aria-invalid={fieldErrors.name}
+                value={formData.name}
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  if (fieldErrors.name) setFieldErrors({ ...fieldErrors, name: false });
+                }}
+                placeholder={t("inventory.item_name_placeholder")}
+                className={cn(
+                  "w-full px-5 py-3 pe-10 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none font-semibold text-content text-right transition-all",
+                  fieldErrors.name && "ring-2 ring-danger border-danger"
+                )}
+              />
+              {voiceSupported && (
+                <div className="absolute top-2 end-2">
+                  <VoiceMicButton onResult={(text) => setFormData({ ...formData, name: text })} />
+                </div>
               )}
-            />
+            </div>
           </div>
           <div className="space-y-2 col-span-1 md:col-span-6 text-right">
             <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">

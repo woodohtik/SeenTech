@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
+import { cmToDisplayUnit, unitLabelKey, type MeasurementUnit } from '../utils/measurementUnits';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import DateTimeDisplay from './DateTimeDisplay';
 import { formatSaudiPhone } from '../utils/phoneUtils';
+import { fuzzyIncludes } from '../utils/fuzzySearch';
 import { 
   Plus, 
   Search, 
@@ -67,6 +70,8 @@ import { PriceDisplay } from './PriceDisplay';
 import PageSkeleton from "./PageSkeleton";
 import Header from './Header';
 import { IconInput } from './ui/IconInput';
+import { VoiceMicButton } from './ui/VoiceMicButton';
+import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
 import ThobeMeasurementSelector from './ThobeMeasurementSelector';
 import VisualMeasurements from './VisualMeasurements';
 import { useStaff } from '../contexts/StaffContext';
@@ -89,9 +94,15 @@ interface CustomersProps {
 
 export default function Customers({ tenantId }: CustomersProps) {
   const { t, i18n } = useTranslation();
+  // Unsupported browsers render VoiceMicButton as null -- without this
+  // gate, IconInput's endIcon (array or single element) would still count
+  // as present and show a blank bordered icon box where none existed
+  // before voice input.
+  const voiceSupported = isSpeechRecognitionSupported();
   const isRtl = isRtlLang(i18n.language);
   const { error: toastError, success: toastSuccess, warning: toastWarning, handleError } = useToast();
   const { confirm } = useConfirm();
+  const measurementUnit = useMeasurementUnit(tenantId);
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   // مراجعة-الفريق-التقني-الكامل-2026-10-19.md (أداء): نفس إصلاح Orders.tsx/
@@ -172,7 +183,7 @@ export default function Customers({ tenantId }: CustomersProps) {
   const canEdit = hasPermission('customers.edit');
   const canDelete = hasPermission('customers.delete');
 
-  const { register, handleSubmit, reset, setValue, watch, control, formState: { errors, isSubmitting } } = useForm({
+  const { register, handleSubmit, reset, setValue, getValues, watch, control, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(customerSchema),
     defaultValues: {
       name: '',
@@ -561,6 +572,9 @@ export default function Customers({ tenantId }: CustomersProps) {
     }
 
     try {
+      const formatMeasurementCell = (value: unknown): string =>
+        typeof value === 'number' ? `${cmToDisplayUnit(value, measurementUnit)} ${t(unitLabelKey(measurementUnit))}` : '-';
+
       const exportData = listToExport.map((c, index) => {
         const balance = customerBalances[c.id] || 0;
         let balanceStatus = t('customers.balanced');
@@ -578,13 +592,13 @@ export default function Customers({ tenantId }: CustomersProps) {
           [t('customers.balance_status')]: balanceStatus,
           [t('onboarding.fields.city')]: c.styles?.city || c.city || '-',
           [t('procurement.address')]: c.styles?.address || c.address || '-',
-          [t('customers.export_col_length')]: c.measurements?.length || '-',
-          [t('customers.export_col_shoulder')]: c.measurements?.shoulder || '-',
-          [t('customers.export_col_chest')]: c.measurements?.chest || '-',
-          [t('customers.export_col_waist')]: c.measurements?.waist || '-',
-          [t('customers.export_col_hips')]: c.measurements?.hips || '-',
-          [t('customers.export_col_sleeve')]: c.measurements?.sleeve || '-',
-          [t('customers.export_col_neck')]: c.measurements?.neck || '-',
+          [t('customers.export_col_length')]: formatMeasurementCell(c.measurements?.length),
+          [t('customers.export_col_shoulder')]: formatMeasurementCell(c.measurements?.shoulder),
+          [t('customers.export_col_chest')]: formatMeasurementCell(c.measurements?.chest),
+          [t('customers.export_col_waist')]: formatMeasurementCell(c.measurements?.waist),
+          [t('customers.export_col_hips')]: formatMeasurementCell(c.measurements?.hips),
+          [t('customers.export_col_sleeve')]: formatMeasurementCell(c.measurements?.sleeve),
+          [t('customers.export_col_neck')]: formatMeasurementCell(c.measurements?.neck),
           [t('common.notes')]: c.notes || '-',
           [t('saas.tenants.registration_date')]: c.createdAt ? new Date(c.createdAt).toLocaleDateString(localeOf(i18n.language)) : '-'
         };
@@ -654,19 +668,8 @@ export default function Customers({ tenantId }: CustomersProps) {
     }
   };
 
-  const filteredCustomers = useMemo(() => customers
-    .filter(c => {
-      // Search filter
-      const searchLower = debouncedSearch.toLowerCase().trim();
-      const matchesSearch = !searchLower || searchLower.split(/\s+/).every(term => 
-        c.name.toLowerCase().includes(term) || 
-        c.phone.includes(term) ||
-        (c.companyName && c.companyName.toLowerCase().includes(term)) ||
-        (c.trn && c.trn.includes(term)) ||
-        (c.styles?.city && c.styles.city.toLowerCase().includes(term))
-      );
-      if (!matchesSearch) return false;
-
+  const filteredCustomers = useMemo(() => {
+    const matchesOtherFilters = (c: Customer) => {
       // Category filter
       if (filter === 'measurements') {
         const hasMeasurements = c.measurements && Object.values(c.measurements).some(v => v !== undefined && v !== null && v !== '' && v !== 0);
@@ -692,10 +695,21 @@ export default function Customers({ tenantId }: CustomersProps) {
       if (balanceFilter === 'debtor' && balance <= 0) return false;
       if (balanceFilter === 'creditor' && balance >= 0) return false;
       if (balanceFilter === 'balanced' && balance !== 0) return false;
-      
+
       return true;
-    })
-    .sort((a, b) => {
+    };
+
+    const searchLower = debouncedSearch.toLowerCase().trim();
+    const matchesSearchExact = (c: Customer) =>
+      !searchLower || searchLower.split(/\s+/).every(term =>
+        c.name.toLowerCase().includes(term) ||
+        c.phone.includes(term) ||
+        (c.companyName && c.companyName.toLowerCase().includes(term)) ||
+        (c.trn && c.trn.includes(term)) ||
+        (c.styles?.city && c.styles.city.toLowerCase().includes(term))
+      );
+
+    const sortCustomers = (list: Customer[]) => [...list].sort((a, b) => {
       if (sortBy === 'name') return a.name.localeCompare(b.name, 'ar');
       if (sortBy === 'date_asc') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       if (sortBy === 'balance_desc') {
@@ -704,7 +718,20 @@ export default function Customers({ tenantId }: CustomersProps) {
         return balB - balA;
       }
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    }), [customers, debouncedSearch, filter, balanceFilter, customerBalances, sortBy]);
+    });
+
+    const exact = customers.filter(c => matchesOtherFilters(c) && matchesSearchExact(c));
+    if (exact.length > 0 || !searchLower) return sortCustomers(exact);
+
+    // Exact match found nothing -- voice search may have mis-transcribed a
+    // letter in the name/company/city. Phone and TRN aren't fuzzy-matched:
+    // they're digits, never spoken as words.
+    const fuzzy = customers.filter(c =>
+      matchesOtherFilters(c) &&
+      fuzzyIncludes([c.name, c.companyName, c.styles?.city].filter(Boolean).join(' '), debouncedSearch)
+    );
+    return sortCustomers(fuzzy);
+  }, [customers, debouncedSearch, filter, balanceFilter, customerBalances, sortBy]);
 
 
 
@@ -761,15 +788,26 @@ export default function Customers({ tenantId }: CustomersProps) {
             <IconInput
               type="text"
               startIcon={Search}
-              endIcon={search ? (
-                <button
-                  type="button"
-                  onClick={() => setSearch('')}
-                  className="text-content-muted hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded cursor-pointer"
-                >
-                  <X size={16} />
-                </button>
-              ) : undefined}
+              endIcon={(() => {
+                const icons = [
+                  voiceSupported ? (
+                    <span key="mic" className="me-2 inline-flex">
+                      <VoiceMicButton onResult={setSearch} />
+                    </span>
+                  ) : null,
+                  search ? (
+                    <button
+                      key="clear"
+                      type="button"
+                      onClick={() => setSearch('')}
+                      className="text-content-muted hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded cursor-pointer"
+                    >
+                      <X size={16} />
+                    </button>
+                  ) : null,
+                ].filter(Boolean);
+                return icons.length > 0 ? icons : undefined;
+              })()}
               placeholder={t('customers.search_placeholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -1697,6 +1735,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                       id="customer-name"
                       {...register('name')}
                       error={errors.name?.message}
+                      endIcon={voiceSupported ? <VoiceMicButton onResult={(text) => setValue('name', text)} /> : undefined}
                     />
                   </div>
                   <div className="space-y-2">
@@ -1769,19 +1808,27 @@ export default function Customers({ tenantId }: CustomersProps) {
                     <div className="w-1.5 h-4 bg-brand rounded-full" />
                     {t('customers.interactive_measurement_selector')}
                   </h3>
-                  <ThobeMeasurementSelector 
+                  <ThobeMeasurementSelector
                     values={(watchMeasurements as Measurements) || {}}
                     onChange={(newMeasurements) => {
                       Object.entries(newMeasurements).forEach(([key, value]) => {
                         setValue(`measurements.${key}` as any, value);
                       });
                     }}
+                    measurementUnit={measurementUnit}
                   />
                 </div>
 
                 <div className="space-y-2 mb-8 mt-8 pt-8 border-t border-border">
                   <label htmlFor="customer-notes" className="text-sm font-bold text-content-muted">{t('customers.additional_notes')}</label>
-                  <textarea id="customer-notes" {...register('notes')} className={cn("w-full bg-surface border border-border rounded-xl p-3 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold h-24 text-content", isRtl ? "text-right" : "text-left")} />
+                  <div className="relative">
+                    <textarea id="customer-notes" {...register('notes')} className={cn("w-full bg-surface border border-border rounded-xl p-3 pe-10 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold h-24 text-content", isRtl ? "text-right" : "text-left")} />
+                    {voiceSupported && (
+                      <div className="absolute top-2 end-2">
+                        <VoiceMicButton onResult={(text) => setValue('notes', [getValues('notes'), text].filter(Boolean).join(' '))} />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* isTest Flag */}
@@ -1829,14 +1876,15 @@ export default function Customers({ tenantId }: CustomersProps) {
 
       <AnimatePresence>
         {isDetailsOpen && selectedCustomer && (
-          <CustomerDetailsModal 
-            customer={selectedCustomer} 
+          <CustomerDetailsModal
+            customer={selectedCustomer}
             onClose={() => setIsDetailsOpen(false)}
             onEdit={() => { setIsDetailsOpen(false); openEditModal(selectedCustomer); }}
             orders={customerOrders}
             onNewOrder={() => navigate(`/orders?customerId=${selectedCustomer.id}`)}
             visualLabels={VISUAL_LABELS}
             visualIcons={VISUAL_ICONS}
+            measurementUnit={measurementUnit}
           />
         )}
       </AnimatePresence>
@@ -1908,22 +1956,24 @@ const DetailSection = ({ title, icon: Icon, children, defaultOpen = true }: any)
   );
 };
 
-const CustomerDetailsModal = ({ 
-  customer, 
-  onClose, 
-  onEdit, 
+const CustomerDetailsModal = ({
+  customer,
+  onClose,
+  onEdit,
   orders,
   onNewOrder,
   visualLabels,
-  visualIcons
-}: { 
-  customer: Customer, 
+  visualIcons,
+  measurementUnit
+}: {
+  customer: Customer,
   onClose: () => void,
   onEdit: () => void,
   orders: Order[],
   onNewOrder: () => void,
   visualLabels: Record<string, string>,
-  visualIcons: Record<string, React.ReactNode>
+  visualIcons: Record<string, React.ReactNode>,
+  measurementUnit: MeasurementUnit
 }) => {
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
@@ -1990,20 +2040,26 @@ const CustomerDetailsModal = ({
                 { label: t('customers.hips'), value: customer.measurements?.hips, icon: <ChevronDown size={14} />, color: 'bg-danger/10 text-danger' },
                 { label: t('customers.sleeve'), value: customer.measurements?.sleeve, icon: <Scissors size={14} />, color: 'bg-info/10 text-info' },
                 { label: t('customers.neck'), value: customer.measurements?.neck, icon: <User size={14} />, color: 'bg-brand/10 text-brand' },
-              ].map((m) => (
-                <div key={m.label} className="bg-surface p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-border hover:border-brand/20 transition-all group shadow-sm">
-                  <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-                    <div className={cn("p-1.5 rounded-lg", m.color)}>
-                      {m.icon}
+                { label: t('measurements.handWidth'), value: customer.measurements?.handWidth, icon: <ArrowLeftRight size={14} />, color: 'bg-brand/10 text-brand' },
+                { label: t('measurements.midSleeveWidth'), value: customer.measurements?.midSleeveWidth, icon: <ArrowLeftRight size={14} />, color: 'bg-info/10 text-info' },
+                { label: t('measurements.cuffLength'), value: customer.measurements?.cuffLength, icon: <Scissors size={14} />, color: 'bg-success/10 text-success' },
+              ].map((m) => {
+                const displayValue = typeof m.value === 'number' ? cmToDisplayUnit(m.value, measurementUnit) : m.value;
+                return (
+                  <div key={m.label} className="bg-surface p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-border hover:border-brand/20 transition-all group shadow-sm">
+                    <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                      <div className={cn("p-1.5 rounded-lg", m.color)}>
+                        {m.icon}
+                      </div>
+                      <p className="text-[10px] text-content-muted font-black uppercase tracking-wider">{m.label}</p>
                     </div>
-                    <p className="text-[10px] text-content-muted font-black uppercase tracking-wider">{m.label}</p>
+                    <p className="text-base sm:text-xl font-black text-content">
+                      {displayValue || '-'}
+                      <span className="text-[10px] text-content-muted mr-1 font-bold">{t(unitLabelKey(measurementUnit))}</span>
+                    </p>
                   </div>
-                  <p className="text-base sm:text-xl font-black text-content">
-                    {m.value || '-'} 
-                    <span className="text-[10px] text-content-muted mr-1 font-bold">{t('customers.cm')}</span>
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </DetailSection>
 
@@ -2034,10 +2090,11 @@ const CustomerDetailsModal = ({
           {/* Garment Blueprint Section */}
           <DetailSection title={t('customers.garment_blueprint')} icon={Scissors}>
             <div className="bg-surface-muted/30 rounded-2xl p-2 sm:p-4 border border-border pointer-events-none overflow-x-auto scrollbar-hide">
-              <ThobeMeasurementSelector 
+              <ThobeMeasurementSelector
                 values={(customer.measurements as Measurements) || {}}
                 onChange={() => {}} // Read-only in details view
                 readOnly={true}
+                measurementUnit={measurementUnit}
               />
             </div>
           </DetailSection>

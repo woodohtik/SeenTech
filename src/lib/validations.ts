@@ -32,6 +32,10 @@ export const customerSchema = z.object({
     hips: z.coerce.number().min(0).max(200).optional(),
     sleeve: z.coerce.number().min(0).max(150).optional(),
     neck: z.coerce.number().min(0).max(100).optional(),
+    bottomWidth: z.coerce.number().min(0).max(200).optional(),
+    handWidth: z.coerce.number().min(0).max(100).optional(),
+    midSleeveWidth: z.coerce.number().min(0).max(100).optional(),
+    cuffLength: z.coerce.number().min(0).max(100).optional(),
     collarType: z.string().optional(),
     cuffType: z.string().optional(),
     pocketType: z.string().optional(),
@@ -185,6 +189,7 @@ export const settingsSchema = z.object({
   inventoryStrategy: z.enum(['centralized', 'decentralized']),
   logoUrl: z.string().optional(),
   currencySymbol: z.string().optional(),
+  measurementUnit: z.enum(['cm', 'inch']).optional(),
   taxSettings: z.object({
     enabled: z.boolean(),
     trn: z.string().optional().or(z.literal('')),
