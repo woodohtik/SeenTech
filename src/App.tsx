@@ -63,6 +63,8 @@ const Referral = React.lazy(() => import('./components/Referral'));
 const Onboarding = React.lazy(() => import('./components/Onboarding'));
 const ResetPassword = React.lazy(() => import('./components/ResetPassword'));
 const PublicInvoice = React.lazy(() => import('./pages/PublicInvoice'));
+const BlogList = React.lazy(() => import('./pages/BlogList'));
+const BlogPost = React.lazy(() => import('./pages/BlogPost'));
 
 import PinLogin from './components/PinLogin';
 import ForcePinSetup from './components/ForcePinSetup';
@@ -576,6 +578,23 @@ function AppContent() {
             } 
           />
           <Route path="/track/:token" element={<TrackRoute />} />
+          {/* Public blog (no auth) */}
+          <Route
+            path="/blog"
+            element={
+              <React.Suspense fallback={<PageSkeleton />}>
+                <BlogList />
+              </React.Suspense>
+            }
+          />
+          <Route
+            path="/blog/:slug"
+            element={
+              <React.Suspense fallback={<PageSkeleton />}>
+                <BlogPost />
+              </React.Suspense>
+            }
+          />
           <Route
             path="/reset-password"
             element={
