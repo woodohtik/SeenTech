@@ -56,6 +56,7 @@ export default function BlogPost() {
     const prevTitle = document.title;
     document.title = post.metaTitle || post.title;
     let meta = document.querySelector('meta[name="description"]');
+    const createdByThisEffect = !meta;
     if (!meta) {
       meta = document.createElement('meta');
       meta.setAttribute('name', 'description');
@@ -65,7 +66,13 @@ export default function BlogPost() {
     meta.setAttribute('content', post.metaDescription || post.excerpt);
     return () => {
       document.title = prevTitle;
-      if (prevContent !== null) meta!.setAttribute('content', prevContent);
+      if (createdByThisEffect) {
+        // لم يكن هناك وسم description أصلاً -- نحذفه بدل محاولة "استرجاع"
+        // قيمة لم تكن موجودة أبداً، فلا يبقى وصف المقال عالقاً في DOM.
+        meta!.remove();
+      } else if (prevContent !== null) {
+        meta!.setAttribute('content', prevContent);
+      }
     };
   }, [post]);
 

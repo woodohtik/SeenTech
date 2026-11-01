@@ -183,12 +183,24 @@ export default function AdminBlog() {
       return;
     }
 
+    // A hand-edited slug may still contain characters like '/', '?', '#' or
+    // spaces (the DB only enforces UNIQUE, not a character set), which would
+    // break or truncate the public /blog/:slug link. Always normalize through
+    // slugify() before persisting, so a manual edit gets the same treatment
+    // as an auto-filled slug.
+    const normalizedSlug = slugify(formData.slug);
+    if (!normalizedSlug) {
+      setSlugError(true);
+      toastError(t('blog_admin.title_slug_required', 'العنوان والرابط المختصر مطلوبان'));
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       if (editingPost) {
         const patch: Partial<Omit<BlogPost, 'id' | 'createdAt'>> = {
           title: formData.title,
-          slug: formData.slug,
+          slug: normalizedSlug,
           excerpt: formData.excerpt,
           content: formData.content,
           coverImageUrl: formData.coverImageUrl,
@@ -206,7 +218,7 @@ export default function AdminBlog() {
       } else {
         await createPost({
           title: formData.title,
-          slug: formData.slug,
+          slug: normalizedSlug,
           excerpt: formData.excerpt,
           content: formData.content,
           coverImageUrl: formData.coverImageUrl,
