@@ -1,5 +1,5 @@
+// @vitest-environment jsdom
 import { test, expect } from 'vitest';
-import { JSDOM } from 'jsdom';
 import { renderMarkdown } from './renderMarkdown';
 
 test('converts basic markdown to HTML', () => {
@@ -37,12 +37,15 @@ test('a normal https link still renders as a working anchor', () => {
 // A raw substring check on the output ("not.toContain('javascript:')")
 // would NOT have caught this -- the serialized HTML literally contains
 // "&#106;avascript:", not the substring "javascript:". So this test
-// parses the actual DOM and inspects the decoded `href` attribute value,
-// the way a browser would resolve it.
+// parses the actual output into a real DOM (this file runs under the
+// jsdom test environment -- see the `@vitest-environment jsdom` pragma
+// at the top) and inspects the decoded `href` attribute value, the way
+// a browser would resolve it.
 test('HTML character-reference obfuscated javascript: scheme does not produce a live javascript: href', () => {
   const html = renderMarkdown('[text](&#106;avascript:alert(1))');
-  const dom = new JSDOM(`<!DOCTYPE html><body>${html}</body>`);
-  const anchor = dom.window.document.querySelector('a');
+  const container = document.createElement('div');
+  container.innerHTML = html;
+  const anchor = container.querySelector('a');
   const href = anchor?.getAttribute('href') ?? null;
   expect(href === null || !/^javascript:/i.test(href)).toBe(true);
 });
