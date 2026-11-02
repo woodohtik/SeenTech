@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabase/client';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
@@ -39,8 +40,12 @@ export default function SaaSTeamManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [toast, setToast] = useState<{message: string, type: 'success'|'error'} | null>(null);
 
-  // Row "more actions" menu
+  // Row "more actions" menu -- portaled to document.body (see render below)
+  // so it isn't clipped by the table card's overflow-hidden/overflow-x-auto
+  // wrappers, which a plain absolutely-positioned dropdown nested inside
+  // them was.
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [menuAnchorRect, setMenuAnchorRect] = useState<DOMRect | null>(null);
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -415,39 +420,48 @@ export default function SaaSTeamManagement() {
                       )}
                     </td>
                     <td className="px-6 py-4 text-end rtl:text-left ltr:text-right">
-                      <div className="relative inline-block">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveMenuId(activeMenuId === member.uid ? null : member.uid);
-                          }}
-                          className={cn(
-                            "p-2 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all cursor-pointer",
-                            activeMenuId === member.uid ? "bg-brand/10 text-brand" : ""
-                          )}
-                          title={t('common.actions', 'إجراءات')}
-                        >
-                          <MoreVertical size={18} />
-                        </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (activeMenuId === member.uid) {
+                            setActiveMenuId(null);
+                            return;
+                          }
+                          setMenuAnchorRect(e.currentTarget.getBoundingClientRect());
+                          setActiveMenuId(member.uid);
+                        }}
+                        className={cn(
+                          "p-2 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all cursor-pointer",
+                          activeMenuId === member.uid ? "bg-brand/10 text-brand" : ""
+                        )}
+                        title={t('common.actions', 'إجراءات')}
+                      >
+                        <MoreVertical size={18} />
+                      </button>
 
+                      {typeof document !== 'undefined' && createPortal(
                         <AnimatePresence>
-                          {activeMenuId === member.uid && (
+                          {activeMenuId === member.uid && menuAnchorRect && (
                             <>
                               <div
-                                className="fixed inset-0 z-30 cursor-default"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setActiveMenuId(null);
-                                }}
+                                className="fixed inset-0 z-[60] cursor-default"
+                                onClick={() => setActiveMenuId(null)}
                               />
                               <motion.div
                                 initial={{ opacity: 0, scale: 0.95, y: -10 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                style={{
+                                  position: 'fixed',
+                                  top: menuAnchorRect.bottom + 6,
+                                  ...(isRtl
+                                    ? { left: menuAnchorRect.left }
+                                    : { right: window.innerWidth - menuAnchorRect.right }),
+                                }}
                                 className={cn(
-                                  "absolute z-50 bg-surface/95 backdrop-blur-md border border-border shadow-2xl rounded-2xl p-2 min-w-[180px] flex flex-col gap-0.5 mt-1.5 top-full",
-                                  isRtl ? "left-0 origin-top-left" : "right-0 origin-top-right"
+                                  "z-[70] bg-surface/95 backdrop-blur-md border border-border shadow-2xl rounded-2xl p-2 min-w-[180px] flex flex-col gap-0.5",
+                                  isRtl ? "origin-top-left" : "origin-top-right"
                                 )}
                                 onClick={(e) => e.stopPropagation()}
                               >
@@ -488,8 +502,9 @@ export default function SaaSTeamManagement() {
                               </motion.div>
                             </>
                           )}
-                        </AnimatePresence>
-                      </div>
+                        </AnimatePresence>,
+                        document.body
+                      )}
                     </td>
                   </tr>
                 ))
