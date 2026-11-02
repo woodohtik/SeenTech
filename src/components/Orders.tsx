@@ -85,6 +85,7 @@ import { SmartSelect } from './ui/SmartSelect';
 import { DatePicker } from './ui/DatePicker';
 import { IconInput } from './ui/IconInput';
 import { VoiceMicButton } from './ui/VoiceMicButton';
+import { FractionPicker } from './ui/FractionPicker';
 import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
 import { checkStockAvailability, deductStock } from '../services/inventoryService';
 import { useStaff } from '../contexts/StaffContext';
@@ -3307,6 +3308,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                           [item.key]: e.target.value === '' ? '' : displayUnitToCm(Number(e.target.value), measurementUnit)
                                         }))}
                                         className="w-full bg-surface text-sm font-bold text-brand text-center p-1.5 rounded-xl outline-none border border-border focus:border-brand focus:ring-2 focus:ring-brand/20"
+                                      />
+                                      <FractionPicker
+                                        value={typeof displayValue === 'number' ? displayValue : 0}
+                                        onSelect={(newValue) => setTempMeasurements(prev => ({
+                                          ...prev,
+                                          [item.key]: displayUnitToCm(newValue, measurementUnit)
+                                        }))}
+                                        className="mt-1.5 justify-center"
                                       />
                                     </div>
                                   );

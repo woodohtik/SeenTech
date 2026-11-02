@@ -9,7 +9,7 @@
 import { normalizeArabicText } from './normalizeArabic';
 import { levenshteinDistance } from './levenshtein';
 
-type PartKind = 'hundred' | 'teen' | 'tens' | 'ones';
+type PartKind = 'hundred' | 'teen' | 'tens' | 'ones' | 'fraction';
 
 interface Part {
   value: number;
@@ -68,6 +68,19 @@ const SINGLE = build([
   ['مئتان', 200, 'hundred'],
   ['مئتين', 200, 'hundred'],
   ['ثلاثمئة', 300, 'hundred'],
+]);
+
+// Spoken fraction words -- quarter precision only (the granularity tailors
+// actually speak/measure in; eighths are never said out loud here).
+const FRACTIONS = build([
+  ['نص', 0.5, 'fraction'],
+  ['نصف', 0.5, 'fraction'],
+  ['ربع', 0.25, 'fraction'],
+]);
+
+// Two-word fraction phrase.
+const FRACTION_PHRASES = build([
+  ['ثلاثة أرباع', 0.75, 'fraction'],
 ]);
 
 // Two-word teens (11-19), e.g. "أحد عشر". Keys are the normalized pair.
@@ -129,9 +142,16 @@ function tokenize(normalized: string): Part[] | null {
 
     if (word === 'و') continue;
 
+    const wordNoAnd = word.startsWith('و') ? word.slice(1) : null;
+
     const next = words[i + 1];
     if (next !== undefined) {
-      const pair = TEEN_PHRASES.get(`${word} ${next}`);
+      const pair =
+        TEEN_PHRASES.get(`${word} ${next}`) ||
+        FRACTION_PHRASES.get(`${word} ${next}`) ||
+        (wordNoAnd !== null
+          ? TEEN_PHRASES.get(`${wordNoAnd} ${next}`) || FRACTION_PHRASES.get(`${wordNoAnd} ${next}`)
+          : undefined);
       if (pair) {
         parts.push(pair);
         i++;
@@ -139,14 +159,14 @@ function tokenize(normalized: string): Part[] | null {
       }
     }
 
-    const direct = SINGLE.get(word);
+    const direct = SINGLE.get(word) || FRACTIONS.get(word);
     if (direct) {
       parts.push(direct);
       continue;
     }
 
-    if (word.startsWith('و')) {
-      const stripped = SINGLE.get(word.slice(1));
+    if (wordNoAnd !== null) {
+      const stripped = SINGLE.get(wordNoAnd) || FRACTIONS.get(wordNoAnd);
       if (stripped) {
         parts.push(stripped);
         continue;
@@ -168,13 +188,36 @@ function tokenize(normalized: string): Part[] | null {
 }
 
 /**
- * Combines parts into one value. Shape:
+ * Combines parts into one value, with an optional trailing spoken fraction
+ * ("أربعين ونص" = 40 + 0.5). The fraction, if present, must be the last
+ * part -- "ونص أربعين" is not how this is said, so treating it as grammar
+ * rather than accepting a fraction anywhere keeps this from mis-parsing
+ * unrelated word order as a fraction.
+ */
+function combine(parts: Part[]): number | null {
+  if (parts.length === 0) return null;
+
+  const fractionIndex = parts.findIndex((p) => p.kind === 'fraction');
+  if (fractionIndex !== -1) {
+    if (fractionIndex !== parts.length - 1) return null;
+    const fractionPart = parts[fractionIndex]!;
+    const wholeParts = parts.slice(0, fractionIndex);
+    if (wholeParts.length === 0) return fractionPart.value;
+    const whole = combineWhole(wholeParts);
+    return whole === null ? null : whole + fractionPart.value;
+  }
+
+  return combineWhole(parts);
+}
+
+/**
+ * Combines whole-number parts only. Shape:
  *   [hundreds]? then at most two remaining parts.
  * Two remaining parts must be one tens and one ones, in either order
  * ("خمسة وأربعين" = ones before tens, which is the spoken Arabic order).
  * Zero only stands alone.
  */
-function combine(parts: Part[]): number | null {
+function combineWhole(parts: Part[]): number | null {
   if (parts.length === 0) return null;
   if (parts.length > 1 && parts.some((p) => p.value === 0)) return null;
 

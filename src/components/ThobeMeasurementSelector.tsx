@@ -8,6 +8,7 @@ import Branding from './Branding';
 import VoiceMeasurementWizard from './VoiceMeasurementWizard';
 import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
 import { MeasurementUnit, cmToDisplayUnit, displayUnitToCm, unitLabelKey } from '../utils/measurementUnits';
+import { FractionPicker } from './ui/FractionPicker';
 
 interface ThobeMeasurementSelectorProps {
   values: Measurements;
@@ -481,6 +482,13 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
                   />
                   <span className="text-sm font-bold text-content-muted">{t(unitLabelKey(measurementUnit))}</span>
                 </div>
+                {!readOnly && (
+                  <FractionPicker
+                    value={(values as any)[part] ? cmToDisplayUnit((values as any)[part], measurementUnit) : 0}
+                    onSelect={(newValue) => handleInputChange(part, String(newValue))}
+                    className="mt-2"
+                  />
+                )}
               </div>
             ))}
           </div>
