@@ -3512,35 +3512,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                 onChange={(field, val) => setValue(`items.${index}.${field}` as any, val)}
                               />
 
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="space-y-2">
-                                  <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.padding_type')}</label>
-                                  <div className="flex gap-2">
-                                    <button
-                                      type="button"
-                                      onClick={() => setValue(`items.${index}.collarPadding` as any, 'hard')}
-                                      className={cn(
-                                        "flex-1 flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all",
-                                        watch(`items.${index}.collarPadding` as any) === 'hard' ? "border-brand bg-brand/10 text-brand" : "border-border bg-surface text-content-muted"
-                                      )}
-                                    >
-                                      <Shield size={18} />
-                                      <span className="text-[10px] font-bold">{t('orders.padding_hard')}</span>
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => setValue(`items.${index}.collarPadding` as any, 'soft')}
-                                      className={cn(
-                                        "flex-1 flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all",
-                                        watch(`items.${index}.collarPadding` as any) === 'soft' ? "border-brand bg-brand/10 text-brand" : "border-border bg-surface text-content-muted"
-                                      )}
-                                    >
-                                      <Clock size={18} />
-                                      <span className="text-[10px] font-bold">{t('orders.padding_soft')}</span>
-                                    </button>
-                                  </div>
-                                </div>
-
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                   <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.other_additions')}</label>
                                   <input
