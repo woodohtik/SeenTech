@@ -1,5 +1,5 @@
 import { test, expect, vi } from 'vitest';
-import { createOrUpdateStaffAccount } from './staffAccountService';
+import { createOrUpdateStaffAccount, resetStaffPassword } from './staffAccountService';
 
 function buildSupabaseAdmin(overrides: {
   createUser: (args: any) => Promise<{ data: any; error: any }>;
@@ -88,4 +88,23 @@ test('surfaces a failed password reset on the already-existed path as a 400', as
   const result = await createOrUpdateStaffAccount(supabaseAdmin, { email: 'existing@example.com', password: 'newpass123' });
 
   expect(result).toEqual({ ok: false, status: 400, error: 'update failed' });
+});
+
+test('resetStaffPassword updates the account password and returns ok', async () => {
+  const updateUserById = vi.fn().mockResolvedValue({ data: {}, error: null });
+  const supabaseAdmin = buildSupabaseAdmin({ createUser: vi.fn(), updateUserById });
+
+  const result = await resetStaffPassword(supabaseAdmin, 'member-uid', 'brandnewpass');
+
+  expect(updateUserById).toHaveBeenCalledWith('member-uid', { password: 'brandnewpass' });
+  expect(result).toEqual({ ok: true });
+});
+
+test('resetStaffPassword surfaces an Admin API failure as a 400', async () => {
+  const updateUserById = vi.fn().mockResolvedValue({ data: null, error: { message: 'user not found' } });
+  const supabaseAdmin = buildSupabaseAdmin({ createUser: vi.fn(), updateUserById });
+
+  const result = await resetStaffPassword(supabaseAdmin, 'missing-uid', 'brandnewpass');
+
+  expect(result).toEqual({ ok: false, status: 400, error: 'user not found' });
 });

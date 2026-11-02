@@ -63,3 +63,18 @@ export async function createOrUpdateStaffAccount(
 
   return { ok: true, uid: match.id, alreadyExisted: true };
 }
+
+export type ResetStaffPasswordResult = { ok: true } | { ok: false; status: 400; error: string };
+
+/** Resets an existing staff/SaaS-team member's password via the Admin API (super_admin-only caller, enforced by the route). */
+export async function resetStaffPassword(
+  supabaseAdmin: SupabaseClient,
+  uid: string,
+  password: string,
+): Promise<ResetStaffPasswordResult> {
+  const { error } = await supabaseAdmin.auth.admin.updateUserById(uid, { password });
+  if (error) {
+    return { ok: false, status: 400, error: error.message };
+  }
+  return { ok: true };
+}

@@ -12,7 +12,10 @@ import {
   User,
   CheckCircle,
   XCircle,
-  Clock
+  Clock,
+  MoreVertical,
+  KeyRound,
+  Trash2
 } from 'lucide-react';
 import { IconInput } from './ui/IconInput';
 import { SmartSelect } from './ui/SmartSelect';
@@ -20,6 +23,7 @@ import { SaasUser, SaasUserRole } from '../types/supabase';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { getFriendlyErrorMessage } from '../lib/firebase';
+import { useConfirm } from '../contexts/ConfirmContext';
 
 import { isRtlLang } from '../lib/direction';
 
@@ -28,16 +32,25 @@ export default function SaaSTeamManagement() {
   const isRtl = isRtlLang(i18n.language);
 
   const { dbUser } = useAuth();
+  const { confirm } = useConfirm();
   const userRole = dbUser?.role;
   const [team, setTeam] = useState<SaasUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [toast, setToast] = useState<{message: string, type: 'success'|'error'} | null>(null);
-  
+
+  // Row "more actions" menu
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingUser, setEditingUser] = useState<SaasUser | null>(null);
+
+  // Reset-password modal state
+  const [resetPasswordUser, setResetPasswordUser] = useState<SaasUser | null>(null);
+  const [resetPasswordValue, setResetPasswordValue] = useState('');
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -229,6 +242,69 @@ export default function SaaSTeamManagement() {
     }
   };
 
+  const openResetPasswordModal = (member: SaasUser) => {
+    setResetPasswordUser(member);
+    setResetPasswordValue('');
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetPasswordUser) return;
+    if (resetPasswordValue.length < 6) {
+      setToast({ message: t('saas.password_too_short', 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'), type: 'error' });
+      return;
+    }
+
+    setIsResettingPassword(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/saas/reset-member-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token || ''}`
+        },
+        body: JSON.stringify({ uid: resetPasswordUser.uid, password: resetPasswordValue })
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed to reset password');
+
+      setToast({ message: t('saas.password_reset_success', 'تمت إعادة تعيين كلمة المرور بنجاح'), type: 'success' });
+      setResetPasswordUser(null);
+    } catch (error: any) {
+      console.error(error);
+      setToast({ message: error ? getFriendlyErrorMessage(error) : t('saas.error_saving', 'حدث خطأ أثناء حفظ البيانات'), type: 'error' });
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
+  const handleDeleteMember = async (member: SaasUser) => {
+    setActiveMenuId(null);
+    if (member.role === 'super_admin') return;
+
+    const ok = await confirm({
+      title: t('saas.delete_member_confirm_title', 'حذف الموظف'),
+      description: t('saas.delete_member_confirm_desc', {
+        name: member.name,
+        defaultValue: `سيتم حذف "${member.name}" نهائياً من فريق إدارة المنصة. هل تريد المتابعة؟`,
+      }),
+      confirmLabel: t('common.delete', 'حذف'),
+      danger: true,
+    });
+    if (!ok) return;
+
+    try {
+      const { error } = await supabase.from('saas_users').delete().eq('uid', member.uid);
+      if (error) throw error;
+      setTeam((prev) => prev.filter((m) => m.uid !== member.uid));
+      setToast({ message: t('saas.delete_member_success', 'تم حذف الموظف بنجاح'), type: 'success' });
+    } catch (error: any) {
+      console.error(error);
+      setToast({ message: error ? getFriendlyErrorMessage(error) : t('saas.error_saving', 'حدث خطأ أثناء حفظ البيانات'), type: 'error' });
+    }
+  };
+
   useEffect(() => {
     if (toast) {
       const timer = setTimeout(() => setToast(null), 3000);
@@ -339,12 +415,81 @@ export default function SaaSTeamManagement() {
                       )}
                     </td>
                     <td className="px-6 py-4 text-end rtl:text-left ltr:text-right">
-                      <button
-                        onClick={() => handleOpenModal(member)}
-                        className="p-2 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all cursor-pointer"
-                      >
-                        <Edit size={18} />
-                      </button>
+                      <div className="relative inline-block">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenuId(activeMenuId === member.uid ? null : member.uid);
+                          }}
+                          className={cn(
+                            "p-2 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all cursor-pointer",
+                            activeMenuId === member.uid ? "bg-brand/10 text-brand" : ""
+                          )}
+                          title={t('common.actions', 'إجراءات')}
+                        >
+                          <MoreVertical size={18} />
+                        </button>
+
+                        <AnimatePresence>
+                          {activeMenuId === member.uid && (
+                            <>
+                              <div
+                                className="fixed inset-0 z-30 cursor-default"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveMenuId(null);
+                                }}
+                              />
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                className={cn(
+                                  "absolute z-50 bg-surface/95 backdrop-blur-md border border-border shadow-2xl rounded-2xl p-2 min-w-[180px] flex flex-col gap-0.5 mt-1.5 top-full",
+                                  isRtl ? "left-0 origin-top-left" : "right-0 origin-top-right"
+                                )}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveMenuId(null);
+                                    handleOpenModal(member);
+                                  }}
+                                  className="w-full flex items-center gap-2.5 px-2.5 py-2 text-start rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer"
+                                >
+                                  <Edit size={14} />
+                                  {t('common.edit', 'تعديل')}
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveMenuId(null);
+                                    openResetPasswordModal(member);
+                                  }}
+                                  className="w-full flex items-center gap-2.5 px-2.5 py-2 text-start rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer"
+                                >
+                                  <KeyRound size={14} />
+                                  {t('saas.reset_password_btn', 'إعادة تعيين كلمة المرور')}
+                                </button>
+
+                                {member.role !== 'super_admin' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteMember(member)}
+                                    className="w-full flex items-center gap-2.5 px-2.5 py-2 text-start rounded-xl text-xs font-bold text-danger hover:bg-danger/5 transition-all cursor-pointer"
+                                  >
+                                    <Trash2 size={14} />
+                                    {t('common.delete', 'حذف')}
+                                  </button>
+                                )}
+                              </motion.div>
+                            </>
+                          )}
+                        </AnimatePresence>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -463,6 +608,70 @@ export default function SaaSTeamManagement() {
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                     ) : (
                        editingUser ? t('common.save_changes', 'حفظ التعديلات') : t('saas.add_member_btn', 'إضافة موظف')
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Reset Password Modal */}
+      <AnimatePresence>
+        {resetPasswordUser && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={() => !isResettingPassword && setResetPasswordUser(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-surface w-full max-w-md rounded-3xl shadow-2xl relative z-10 border border-border p-8"
+            >
+              <h2 className="text-2xl font-black text-content mb-2">
+                {t('saas.reset_password_title', 'إعادة تعيين كلمة المرور')}
+              </h2>
+              <p className="text-content-muted text-sm mb-6">{resetPasswordUser.name} · {resetPasswordUser.email}</p>
+
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-content-muted">{t('saas.new_password_label', 'كلمة المرور الجديدة')}</label>
+                  <IconInput
+                    type="password"
+                    startIcon={Shield}
+                    value={resetPasswordValue}
+                    onChange={(e) => setResetPasswordValue(e.target.value)}
+                    placeholder="******"
+                    required
+                    minLength={6}
+                    className="bg-surface-muted"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-6 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setResetPasswordUser(null)}
+                    disabled={isResettingPassword}
+                    className="flex-1 py-3 bg-surface-muted text-content font-bold rounded-2xl hover:bg-border transition-colors disabled:opacity-50 cursor-pointer"
+                  >
+                    {t('common.cancel', 'إلغاء')}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isResettingPassword}
+                    className="flex-1 py-3 bg-brand text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-brand/20 hover:bg-brand/90 transition-all disabled:opacity-50 cursor-pointer"
+                  >
+                    {isResettingPassword ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    ) : (
+                      t('saas.reset_password_btn', 'إعادة تعيين كلمة المرور')
                     )}
                   </button>
                 </div>
