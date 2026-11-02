@@ -36,3 +36,17 @@ test.each([
 test('does not fuzzy-resolve input that is too far from any number word', () => {
   expect(parseArabicNumber('بيت')).toBeNull();
 });
+
+test.each([
+  ['أربعين ونص', 40.5],
+  ['أربعين وربع', 40.25],
+  ['أربعين وثلاثة أرباع', 40.75],
+  ['نص', 0.5],
+  ['نصف', 0.5],
+  ['ربع', 0.25],
+  ['ثلاثة أرباع', 0.75],
+  ['خمسة وأربعين ونص', 45.5],
+  ['مئة ونص', 100.5],
+])('parses the spoken fraction in %s as %d', (input, expected) => {
+  expect(parseArabicNumber(input)).toBe(expected);
+});

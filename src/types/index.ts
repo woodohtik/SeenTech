@@ -27,6 +27,8 @@ export interface Measurements {
   pocketType?: string; // الجيب
   chestStyle?: string; // الصدر
   shoulderStyle?: string; // الكتف
+  cuttingType?: string; // نوع التفصيل (قصّة إقليمية)
+  collarPadding?: 'hard' | 'soft'; // الحشوة
   thobeMeasurements?: ThobeMeasurements;
   // New fields for customization
   closureType?: 'zipper' | 'buttons'; // سحاب/أزرار
@@ -374,6 +376,8 @@ export interface InventoryItem {
   cuffType?: string;
   pocketType?: string;
   chestStyle?: string;
+  shoulderStyle?: string;
+  cuttingType?: string;
   isTest?: boolean;
   showInPos?: boolean;
   openingBalance?: number;
@@ -509,6 +513,8 @@ export interface OrderItem {
   cuffType?: string;
   pocketType?: string;
   chestStyle?: string;
+  shoulderStyle?: string;
+  cuttingType?: string;
   collarPadding?: 'hard' | 'soft';
   additions?: string;
   embroidery?: string;

@@ -1173,6 +1173,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
           cuff_type: item.cuffType || null,
           pocket_type: item.pocketType || null,
           chest_style: item.chestStyle || null,
+          shoulder_style: item.shoulderStyle || null,
+          cutting_type: item.cuttingType || null,
           collar_padding: item.collarPadding || null,
           additions: item.additions || null,
           embroidery: item.embroidery || null,

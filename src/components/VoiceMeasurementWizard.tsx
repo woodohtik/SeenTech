@@ -10,6 +10,7 @@ import { parseArabicNumber } from '../utils/parseArabicNumber';
 import { ThobePart, getNextMeasurementStep } from '../utils/measurementWizardSteps';
 import { PART_LABELS } from './ThobeMeasurementSelector';
 import { MeasurementUnit, displayUnitToCm, cmToDisplayUnit } from '../utils/measurementUnits';
+import { FractionPicker } from './ui/FractionPicker';
 
 // Global Constraint: TTS/recognition for the voice wizard stay Arabic
 // regardless of the merchant's active UI language. `t()` (below, for
@@ -257,6 +258,15 @@ export default function VoiceMeasurementWizard({ values, onChange, onClose, meas
             >
               <Check size={18} />
             </button>
+          </div>
+        )}
+
+        {manualEditPart && (
+          <div className="flex justify-center">
+            <FractionPicker
+              value={parseFloat(manualValue) || 0}
+              onSelect={(newValue) => setManualValue(String(newValue))}
+            />
           </div>
         )}
 

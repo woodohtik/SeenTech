@@ -1,6 +1,9 @@
 import React from 'react';
-import { 
+import {
   Check,
+  Scissors,
+  Shield,
+  Feather,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useDirection } from '../lib/direction';
@@ -12,6 +15,8 @@ interface VisualMeasurementsProps {
     pocketType?: string;
     chestStyle?: string;
     shoulderStyle?: string;
+    cuttingType?: string;
+    collarPadding?: 'hard' | 'soft';
     closureType?: 'zipper' | 'buttons';
     closureVisibility?: 'hidden' | 'visible';
   };
@@ -43,6 +48,13 @@ const SHOULDER_STYLES = [
   { id: 'plain', labelKey: 'inventory.chest_plain', icon: () => <div className="w-8 h-8 border-2 border-current" /> },
   { id: 'padded', labelKey: 'customers.visual_padded', icon: () => <div className="w-8 h-8 border-2 border-current flex items-center justify-center"><div className="w-6 h-2 bg-current opacity-20"/></div> },
   { id: 'double', labelKey: 'customers.visual_double', icon: () => <div className="w-8 h-8 border-2 border-current flex flex-col gap-1 p-1 justify-center"><div className="h-px w-full bg-current"/><div className="h-px w-full bg-current"/></div> },
+];
+
+const CUTTING_TYPES = [
+  { id: 'saudi', labelKey: 'customers.cutting_saudi', icon: Scissors },
+  { id: 'kuwaiti', labelKey: 'customers.cutting_kuwaiti', icon: Scissors },
+  { id: 'omani', labelKey: 'customers.cutting_omani', icon: Scissors },
+  { id: 'emirati', labelKey: 'customers.cutting_emirati', icon: Scissors },
 ];
 
 export default function VisualMeasurements({ values, onChange, readOnly }: VisualMeasurementsProps) {
@@ -94,9 +106,41 @@ export default function VisualMeasurements({ values, onChange, readOnly }: Visua
         <Section title={t('inventory.pocket_type')} field="pocketType" options={POCKET_TYPES} />
         <Section title={t('measurements.chest_design')} field="chestStyle" options={CHEST_STYLES} />
         <Section title={t('measurements.shoulder_design')} field="shoulderStyle" options={SHOULDER_STYLES} />
+        <Section title={t('measurements.cutting_type')} field="cuttingType" options={CUTTING_TYPES} />
       </div>
 
-      <div className="pt-6 border-t border-border grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="pt-6 border-t border-border grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* Collar Padding */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-black text-content flex items-center gap-2">
+            <div className="w-1.5 h-4 bg-brand rounded-full" />
+            {t('orders.padding_type')}
+          </h3>
+          <div className="flex gap-3">
+            {[
+              { id: 'hard', labelKey: 'orders.padding_hard', icon: Shield },
+              { id: 'soft', labelKey: 'orders.padding_soft', icon: Feather },
+            ].map((opt) => (
+              <button
+                type="button"
+                key={opt.id}
+                disabled={readOnly}
+                aria-pressed={values.collarPadding === opt.id}
+                onClick={() => onChange('collarPadding', opt.id)}
+                className={cn(
+                  "flex-1 flex flex-col items-center gap-1 py-3 rounded-xl border-2 font-bold text-sm transition-all",
+                  values.collarPadding === opt.id
+                    ? "border-brand bg-brand text-white shadow-md shadow-brand/20"
+                    : "border-border bg-surface text-content-muted hover:border-brand/30"
+                )}
+              >
+                <opt.icon size={18} />
+                {t(opt.labelKey)}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Closure Type */}
         <div className="space-y-4">
           <h3 className="text-sm font-black text-content flex items-center gap-2">
