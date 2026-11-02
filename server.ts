@@ -1005,37 +1005,13 @@ app.post("/api/staff/create-account", authenticate, authorize(['super_admin', 'o
     }
 
     const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
-    const normalizedEmail = String(email).toLowerCase();
+    const { createOrUpdateStaffAccount } = await import("./src/server/staffAccountService.ts");
 
-    const { data, error } = await supabaseAdmin.auth.admin.createUser({
-      email: normalizedEmail,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name: name || '' },
-    });
-
-    if (error) {
-      const alreadyRegistered = /already been registered|already registered/i.test(error.message || '');
-      if (alreadyRegistered) {
-        // SECURITY: do NOT use auth.admin.listUsers() here — it would let any
-        // manager/admin/owner enumerate every registered email on the whole
-        // platform (and learn other tenants'/SaaS staff's raw Auth UIDs).
-        // Only resolve via this app's own `users` mirror table, which is the
-        // same lookup the original client-side fallback used.
-        const { data: match } = await supabaseAdmin
-          .from('users')
-          .select('id')
-          .eq('email', normalizedEmail)
-          .maybeSingle();
-        if (match) {
-          return res.json({ uid: match.id, alreadyExisted: true });
-        }
-        return res.status(409).json({ error: 'email_already_in_use_no_match' });
-      }
-      return res.status(400).json({ error: error.message });
+    const result = await createOrUpdateStaffAccount(supabaseAdmin, { email: String(email), password, name });
+    if (result.ok === false) {
+      return res.status(result.status).json({ error: result.error });
     }
-
-    res.json({ uid: data.user!.id, alreadyExisted: false });
+    res.json({ uid: result.uid, alreadyExisted: result.alreadyExisted });
   } catch (err: any) {
     internalError(res, "Error creating staff account:", err);
   }
