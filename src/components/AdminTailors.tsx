@@ -65,6 +65,7 @@ import {
 } from 'recharts';
 import { localeOf } from '../lib/direction';
 import i18n from '../i18n/config';
+import { getPlanName as getPlanNameShared, getSubscriptionInfo as getSubscriptionInfoShared } from '../utils/tenantSubscription';
 
 export default function AdminTailors() {
   const { t } = useTranslation();
@@ -74,7 +75,6 @@ export default function AdminTailors() {
   const { promptText } = useConfirm();
   const navigate = useNavigate();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState<'tenants' | 'subscriptions'>('tenants');
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [statusFilter, setStatusFilter] = useState('all');
@@ -422,74 +422,6 @@ export default function AdminTailors() {
     }
   };
 
-  const handleUpdateTenantPlan = (tenantId: string, newPlanId: string) => {
-    if (dbUser?.role !== 'super_admin') {
-      showToast(t('saas.unauthorized_action'), 'error');
-      return;
-    }
-    setConfirmDialog({
-      title: t('saas.tenants.confirm_change_plan'),
-      onConfirm: async () => {
-        setConfirmDialog(null);
-        try {
-          const today = new Date().toISOString();
-          const newPlan = plans.find(p => p.id === newPlanId);
-          const isFreeOrTrial = newPlanId === 'free' || (newPlan && newPlan.price === 0) || newPlanId.includes('trial');
-          // Manually granting a paid plan here is a fresh grant starting
-          // now -- same subscription_end_date this screen's own expiry
-          // display and BillingSettings.tsx both read, so the change is
-          // actually visible instead of only touching created_at (the
-          // join date, unrelated to billing once subscription_end_date
-          // exists).
-          const updatePayload: Record<string, any> = { plan_id: newPlanId, updated_at: today };
-          if (!isFreeOrTrial) {
-            const oneYearFromNow = new Date();
-            oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
-            updatePayload.subscription_end_date = oneYearFromNow.toISOString();
-          }
-          const { error } = await supabase
-            .from('tenants')
-            .update(updatePayload)
-            .eq('id', tenantId);
-
-          if (error) throw error;
-          setTenants(prev => prev.map(t => t.id === tenantId ? { ...t, planId: newPlanId, ...(updatePayload.subscription_end_date ? { subscription_end_date: updatePayload.subscription_end_date } : {}) } : t));
-          showToast(t('saas.tenants.plan_updated'), 'success');
-        } catch (error) {
-          console.warn("Error updating tenant plan:", error);
-          showToast(t('saas.tenants.plan_update_failed'), 'error');
-        }
-      }
-    });
-  };
-
-  const handleExtendTrial = (tenantId: string) => {
-    if (dbUser?.role !== 'super_admin') {
-      showToast(t('saas.unauthorized_action'), 'error');
-      return;
-    }
-    setConfirmDialog({
-      title: t('saas.tenants.confirm_extend_trial'),
-      onConfirm: async () => {
-        setConfirmDialog(null);
-        try {
-          const today = new Date().toISOString();
-          const { error } = await supabase
-            .from('tenants')
-            .update({ created_at: today })
-            .eq('id', tenantId);
-          
-          if (error) throw error;
-          setTenants(prev => prev.map(t => t.id === tenantId ? { ...t, createdAt: today } : t));
-          showToast(t('saas.tenants.trial_extended'), 'success');
-        } catch (error) {
-          console.warn("Error extending trial:", error);
-          showToast(t('saas.tenants.trial_extend_failed'), 'error');
-        }
-      }
-    });
-  };
-
   const handleToggleStatus = async (tenant: Tenant) => {
     if (dbUser?.role !== 'super_admin') {
       showToast(t('saas.unauthorized_action'), 'error');
@@ -810,42 +742,14 @@ export default function AdminTailors() {
     });
   };
 
-  const getPlanName = (planId: string) => {
-    return plans.find(p => p.id === planId)?.name || t('saas.tenants.custom_plan');
-  };
+  const getPlanName = (planId: string) =>
+    getPlanNameShared(plans, planId, t('saas.tenants.custom_plan'));
 
-  const getSubscriptionInfo = (tenant: Tenant) => {
-    const plan = plans.find(p => p.id === tenant.planId);
-    const isTrial = tenant.planId === 'free' ||
-                    (!plan && tenant.planId !== 'basic') ||
-                    (plan && plan.price === 0) ||
-                    (tenant.planId && typeof tenant.planId === 'string' && tenant.planId.includes('trial'));
-    const creationDate = new Date(tenant.createdAt);
-    const now = new Date();
-
-    // Assume 14 days trial or 365 days pro based on standard logic if duration not in DB
-    const durationDays = isTrial ? 14 : 365;
-    // seen-billing-renewal-task.md -- a real subscription_end_date (set by
-    // approve_subscription_request / handleRenewSubscription below) is the
-    // actual paid-through date and must win over the createdAt+365d
-    // estimate; that estimate only ever applied before this column existed
-    // and this tenant had its first real renewal recorded.
-    const expiryDate = (!isTrial && tenant.subscription_end_date)
-      ? new Date(tenant.subscription_end_date)
-      : (() => { const d = new Date(creationDate); d.setDate(d.getDate() + durationDays); return d; })();
-
-    const diffTime = expiryDate.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    const totalSpanDays = Math.max(1, Math.ceil((expiryDate.getTime() - creationDate.getTime()) / (1000 * 60 * 60 * 24)));
-
-    return {
-      type: isTrial ? t('billing.plans.free.badge') : t('saas.tenants.paid_subscription'),
-      isTrial,
-      daysLeft: Math.max(0, diffDays),
-      expiryDate,
-      progress: Math.min(100, Math.max(0, ( (totalSpanDays - diffDays) / totalSpanDays ) * 100))
-    };
-  };
+  const getSubscriptionInfo = (tenant: Tenant) =>
+    getSubscriptionInfoShared(plans, tenant, {
+      trialBadge: t('billing.plans.free.badge'),
+      paidSubscription: t('saas.tenants.paid_subscription'),
+    });
 
   // Derived analytical metrics -- a trashed tenant counts toward none of
   // these, same as it's excluded from the main list above.
@@ -886,25 +790,6 @@ export default function AdminTailors() {
             {t('saas.tenants.title')}
           </h2>
           <p className="text-content-muted font-bold text-sm mt-1">{t('saas.tenants.subtitle')}</p>
-        </div>
-        
-        <div className="flex bg-surface rounded-2xl p-1 border border-border shadow-sm">
-          <button
-            onClick={() => setActiveTab('tenants')}
-            className={`px-6 py-2 rounded-xl text-sm font-black transition-all ${
-              activeTab === 'tenants' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-content-muted hover:text-content'
-            }`}
-          >
-            {t('saas.menu_tenants')}
-          </button>
-          <button
-            onClick={() => setActiveTab('subscriptions')}
-            className={`px-6 py-2 rounded-xl text-sm font-black transition-all ${
-              activeTab === 'subscriptions' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-content-muted hover:text-content'
-            }`}
-          >
-            {t('saas.tenants.tab_subscriptions')}
-          </button>
         </div>
       </header>
 
@@ -991,7 +876,7 @@ export default function AdminTailors() {
         </div>
       </div>
 
-      {activeTab === 'tenants' ? (
+      {(
         <motion.div
           key="tenants-tab"
           initial={{ opacity: 0, y: 10 }}
@@ -1222,120 +1107,6 @@ export default function AdminTailors() {
           </div>
           </>
           )}
-        </motion.div>
-      ) : (
-        <motion.div
-           key="subscriptions-tab"
-           initial={{ opacity: 0, y: 10 }}
-           animate={{ opacity: 1, y: 0 }}
-           className="space-y-10"
-        >
-
-          <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
-            <div className="p-8 border-b border-border bg-brand/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <h3 className="text-xl font-black text-content">{t('saas.tenants.licenses_title')}</h3>
-                <p className="text-content-muted text-xs font-bold mt-1">{t('saas.tenants.licenses_subtitle')}</p>
-              </div>
-              <div className="w-full sm:w-80">
-                <IconInput 
-                  type="text" 
-                  placeholder={t('saas.tenants.quick_search_placeholder')}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  startIcon={Search}
-                  className="rounded-xl bg-surface-muted/60"
-                />
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-right min-w-[900px]">
-                <thead>
-                  <tr className="bg-surface-muted/30 border-b border-border">
-                    <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest text-center">{t('saas.tenants.col_subscriber')}</th>
-                    <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest text-center">{t('saas.tenants.col_current_plan')}</th>
-                    <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest text-center">{t('saas.tenants.col_remaining_period')}</th>
-                    <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest text-center">{t('saas.tenants.col_change_plan')}</th>
-                    <th className="px-8 py-5 text-[10px] font-black text-content-muted uppercase tracking-widest text-left">{t('shift_history.actions')}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {visibleTenants
-                    .filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()) || t.ownerEmail.toLowerCase().includes(searchTerm.toLowerCase()))
-                    .map(tenant => {
-                      const sub = getSubscriptionInfo(tenant);
-
-                      return (
-                        <tr key={tenant.id} className="hover:bg-surface-muted/20 transition-all">
-                          <td className="px-8 py-6">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-brand/5 border border-brand/10 text-brand rounded-2xl flex items-center justify-center shrink-0">
-                                <Crown size={18} />
-                              </div>
-                              <div>
-                                <div className="font-black text-sm text-content">{tenant.name}</div>
-                                <div className="text-[10px] font-bold text-content-muted">{tenant.ownerEmail}</div>
-                              </div>
-                            </div>
-                          </td>
-
-                          <td className="px-8 py-6 text-center">
-                            <span className={cn(
-                              "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
-                              tenant.planId === 'basic' ? "bg-info/10 text-info border border-info/20" :
-                              tenant.planId === 'free' ? "bg-success/10 text-success border border-success/20" :
-                              "bg-surface-muted text-content-muted shadow-sm"
-                            )}>
-                              {getPlanName(tenant.planId)}
-                            </span>
-                          </td>
-
-                          <td className="px-8 py-6">
-                            <div className="flex items-center gap-3">
-                              <div className="flex-1 bg-surface-muted h-2.5 rounded-full overflow-hidden border border-border max-w-[120px]">
-                                <div 
-                                  className={cn("h-full rounded-full transition-all duration-700", sub.daysLeft < 7 ? "bg-danger shadow-[0_0_8px_rgba(206,5,0,0.4)]" : "bg-brand shadow-[0_0_8px_rgba(var(--brand-rgb),0.4)]")}
-                                  style={{ width: `${sub.progress}%` }}
-                                />
-                              </div>
-                              <span className={cn("text-xs font-black min-w-[60px]", sub.daysLeft < 7 ? "text-danger animate-pulse" : "text-brand")}>
-                                {t('saas.tenants.days_left', { days: sub.daysLeft })}
-                              </span>
-                            </div>
-                          </td>
-
-                          <td className="px-8 py-6 text-center">
-                            <div className="w-48 mx-auto">
-                              <SmartSelect
-                                startIcon={Crown}
-                                value={tenant.planId || 'free'}
-                                onChange={(v) => handleUpdateTenantPlan(tenant.id, v)}
-                                className="w-full rounded-xl text-xs"
-                                options={[
-                                  { value: 'free', label: t('saas.tenants.plan_option_free') },
-                                  { value: 'basic', label: t('saas.tenants.plan_option_basic') },
-                                ]}
-                              />
-                            </div>
-                          </td>
-
-                          <td className="px-8 py-6 text-left">
-                            <button
-                              onClick={() => handleExtendTrial(tenant.id)}
-                              className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-brand text-white hover:bg-brand/90 rounded-2xl text-xs font-black shadow-lg shadow-brand/20 transition-all active:scale-95 group"
-                            >
-                              <Clock size={16} className="group-hover:rotate-12 transition-transform" />
-                              {t('saas.tenants.extend_period')}
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-            </div>
-          </div>
         </motion.div>
       )}
 

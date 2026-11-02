@@ -27,7 +27,8 @@ import {
   EyeOff,
   Loader2,
   CreditCard,
-  Newspaper
+  Newspaper,
+  Crown
 } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
@@ -64,6 +65,7 @@ interface SaaSNotification {
 const SAAS_MENU_ITEMS = [
   { id: 'overview', labelKey: 'saas.menu_overview', icon: LayoutDashboard, path: '/admin/dashboard', roles: ['super_admin', 'support_tech', 'billing_admin', 'sales'] },
   { id: 'tenants', labelKey: 'saas.menu_tenants', icon: Users, path: '/admin/tailors', roles: ['super_admin', 'support_tech', 'billing_admin', 'sales'] },
+  { id: 'licenses', labelKey: 'saas.menu_licenses', icon: Crown, path: '/admin/licenses', roles: ['super_admin', 'support_tech', 'billing_admin', 'sales'] },
   { id: 'roles', labelKey: 'saas.menu_roles', icon: ShieldCheck, path: '/admin/roles', roles: ['super_admin'] },
   { id: 'reports', labelKey: 'saas.menu_reports', icon: BarChart3, path: '/admin/reports', roles: ['super_admin', 'billing_admin', 'sales'] },
   { id: 'subscriptions', labelKey: 'saas.menu_subscriptions', icon: CreditCard, path: '/admin/subscriptions', roles: ['super_admin'] },
