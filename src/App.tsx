@@ -345,8 +345,19 @@ function AppContent() {
    * يكتمل بعد — نُوجّه مباشرة لصفحة التهيئة بدل عرض شاشة "تعذّر التحقق"
    * (AccountIssueScreen، متغيّر no_profile) التي كانت تتطلّب من المستخدم
    * الضغط على "إعادة المحاولة" أو "تسجيل الخروج" يدوياً بلا داعٍ.
+   *
+   * onboardingStep < 4 وحدها لا تكفي: حساب لديه tailor_requests معتمد
+   * (approved) بـonboarding_step = 4 لكن بلا أي متجر فعلي فعلاً (tenantId
+   * null -- السيناريو الذي يغطيه الشفاء الذاتي في Onboarding.tsx نفسه،
+   * "لا متجر مرتبط بهذا الحساب على الإطلاق") كان يمر من هذا الشرط دون أن
+   * يُوجَّه لصفحة التهيئة أبداً، فيدخل التطبيق الرئيسي بـtenantId فارغ إلى
+   * الأبد -- كل صفحة تعتمد عليه (الطلبات، المبيعات) تبقى عالقة في شاشة
+   * التحميل بلا نهاية. إضافة `!tenantId` هنا آمنة: هذا الفرع من
+   * AuthContext.resolveIdentity (قسم 4، "Onboarding request") هو المصدر
+   * الوحيد لـtenantId=null مع userRole='owner' -- أي حساب staff/tenant
+   * فعلي يُحسَم في قسم أسبق بـtenantId حقيقي، فلا يصل لهذا الشرط إطلاقاً.
    */
-  const needsOnboarding = (user && isApproved && userRole === 'owner' && onboardingStep > 0 && onboardingStep < 4)
+  const needsOnboarding = (user && isApproved && userRole === 'owner' && (!tenantId || (onboardingStep > 0 && onboardingStep < 4)))
     || (user && hasNoProfile);
   const isTenantOwner = userRole === 'owner' || userRole === 'admin';
   
