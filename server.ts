@@ -1005,39 +1005,70 @@ app.post("/api/staff/create-account", authenticate, authorize(['super_admin', 'o
     }
 
     const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
-    const normalizedEmail = String(email).toLowerCase();
+    const { createOrUpdateStaffAccount } = await import("./src/server/staffAccountService.ts");
 
-    const { data, error } = await supabaseAdmin.auth.admin.createUser({
-      email: normalizedEmail,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name: name || '' },
-    });
-
-    if (error) {
-      const alreadyRegistered = /already been registered|already registered/i.test(error.message || '');
-      if (alreadyRegistered) {
-        // SECURITY: do NOT use auth.admin.listUsers() here — it would let any
-        // manager/admin/owner enumerate every registered email on the whole
-        // platform (and learn other tenants'/SaaS staff's raw Auth UIDs).
-        // Only resolve via this app's own `users` mirror table, which is the
-        // same lookup the original client-side fallback used.
-        const { data: match } = await supabaseAdmin
-          .from('users')
-          .select('id')
-          .eq('email', normalizedEmail)
-          .maybeSingle();
-        if (match) {
-          return res.json({ uid: match.id, alreadyExisted: true });
-        }
-        return res.status(409).json({ error: 'email_already_in_use_no_match' });
-      }
-      return res.status(400).json({ error: error.message });
+    const result = await createOrUpdateStaffAccount(supabaseAdmin, { email: String(email), password, name });
+    if (result.ok === false) {
+      return res.status(result.status).json({ error: result.error });
     }
-
-    res.json({ uid: data.user!.id, alreadyExisted: false });
+    res.json({ uid: result.uid, alreadyExisted: result.alreadyExisted });
   } catch (err: any) {
     internalError(res, "Error creating staff account:", err);
+  }
+});
+
+// Resets a SaaS team member's password (super_admin-only -- "forgot
+// password" from /admin/team). Scoped to saas_users specifically: the
+// target `uid` must already be a SaaS team member, so this endpoint can't
+// be used to reset an arbitrary account's password platform-wide just
+// because the caller is a super_admin. Also flags the account as having a
+// temporary password (same as account creation), forcing the member to
+// pick their own on next login instead of the admin's choice staying
+// permanent.
+app.post("/api/saas/reset-member-password", authenticate, authorize(['super_admin']), async (req: any, res) => {
+  try {
+    const { uid, password } = req.body;
+    if (!uid || !password) {
+      return res.status(400).json({ error: 'uid and password are required' });
+    }
+    if (String(password).length < 6) {
+      return res.status(400).json({ error: 'password must be at least 6 characters' });
+    }
+
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+
+    const { data: member } = await supabaseAdmin.from('saas_users').select('uid').eq('uid', uid).maybeSingle();
+    if (!member) {
+      return res.status(404).json({ error: 'saas_team_member_not_found' });
+    }
+
+    const { resetStaffPassword } = await import("./src/server/staffAccountService.ts");
+    const result = await resetStaffPassword(supabaseAdmin, String(uid), String(password));
+    if (result.ok === false) {
+      return res.status(result.status).json({ error: result.error });
+    }
+
+    // Same temp_passwords bookkeeping as account creation -- see
+    // /api/saas/complete-temp-password above for how it's cleared.
+    const { data: tempPassSetting } = await supabaseAdmin
+      .from('saas_settings')
+      .select('*')
+      .eq('key', 'temp_passwords')
+      .maybeSingle();
+    const currentTempPasswords = tempPassSetting?.value && typeof tempPassSetting.value === 'object'
+      ? (tempPassSetting.value as Record<string, boolean>)
+      : {};
+    await supabaseAdmin
+      .from('saas_settings')
+      .upsert({
+        key: 'temp_passwords',
+        value: { ...currentTempPasswords, [uid]: true },
+        updated_at: new Date().toISOString()
+      });
+
+    res.json({ success: true });
+  } catch (err: any) {
+    internalError(res, "Error resetting SaaS member password:", err);
   }
 });
 
