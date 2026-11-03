@@ -33,9 +33,9 @@ function wrapTablesInHtml(html: string): string {
   return html.replace(/<table>/g, '<div class="tbl"><table>').replace(/<\/table>/g, '</table></div>');
 }
 
-function formatArabicDate(isoDate: string): string {
-  const [year, month, day] = isoDate.split('-').map(Number);
-  return `${day} ${ARABIC_MONTHS[month - 1]} ${year}`;
+function formatArabicDate(isoDateTime: string): string {
+  const d = new Date(isoDateTime);
+  return `${d.getUTCDate()} ${ARABIC_MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
 
 function buildSummarizeLinks(canonicalUrl: string): string {

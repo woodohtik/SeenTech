@@ -62,6 +62,12 @@ test('index page cta panel omits the WhatsApp button when whatsappNumber is unse
   expect(renderIndexPage([article])).not.toContain('wa.me');
 });
 
+test('byline date formats correctly even when publishDate carries a time component', () => {
+  const withTime = { ...article, frontmatter: { ...article.frontmatter, publishDate: '2026-11-04T23:25:00+03:00' } };
+  const html = renderIndexPage([withTime]);
+  expect(html).toContain('4 نوفمبر 2026');
+});
+
 test('card title and description are HTML-escaped', () => {
   const dangerous = { ...article, frontmatter: { ...article.frontmatter, title: 'عنوان <script>', metaDescription: 'وصف "خاص"' } };
   const html = renderIndexPage([dangerous]);

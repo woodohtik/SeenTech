@@ -91,3 +91,9 @@ test('includes Article json-ld script tag', () => {
   const html = renderArticlePage(baseArticle, parsed, [baseArticle]);
   expect(html).toContain('"@type":"Article"');
 });
+
+test('byline date formats correctly even when publishDate carries a time component', () => {
+  const withTime = { ...baseArticle, frontmatter: { ...baseArticle.frontmatter, publishDate: '2026-11-04T23:25:00+03:00' } };
+  const html = renderArticlePage(withTime, parsed, [withTime]);
+  expect(html).toContain('4 نوفمبر 2026');
+});

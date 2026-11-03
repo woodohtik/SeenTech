@@ -18,13 +18,13 @@ const ARABIC_MONTHS = [
   'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
 ];
 
-function formatArabicDate(isoDate: string): string {
-  const [year, month, day] = isoDate.split('-').map(Number);
-  return `${day} ${ARABIC_MONTHS[month - 1]} ${year}`;
+function formatArabicDate(isoDateTime: string): string {
+  const d = new Date(isoDateTime);
+  return `${d.getUTCDate()} ${ARABIC_MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
 
 function sortByDateDesc(articles: LoadedArticle[]): LoadedArticle[] {
-  return [...articles].sort((a, b) => b.frontmatter.publishDate.localeCompare(a.frontmatter.publishDate));
+  return [...articles].sort((a, b) => new Date(b.frontmatter.publishDate).getTime() - new Date(a.frontmatter.publishDate).getTime());
 }
 
 function renderArticleCard(article: LoadedArticle, big = false): string {
