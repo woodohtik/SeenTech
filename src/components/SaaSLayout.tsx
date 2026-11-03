@@ -27,7 +27,6 @@ import {
   EyeOff,
   Loader2,
   CreditCard,
-  Newspaper,
   Crown
 } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
@@ -71,7 +70,6 @@ const SAAS_MENU_ITEMS = [
   { id: 'subscriptions', labelKey: 'saas.menu_subscriptions', icon: CreditCard, path: '/admin/subscriptions', roles: ['super_admin'] },
   { id: 'withdrawals', labelKey: 'saas.menu_withdrawals', icon: DollarSign, path: '/admin/withdrawals', roles: ['super_admin', 'billing_admin'] },
   { id: 'audit', labelKey: 'saas.menu_audit', icon: Shield, path: '/admin/audit', roles: ['super_admin'] },
-  { id: 'blog', labelKey: 'saas.menu_blog', icon: Newspaper, path: '/admin/blog', roles: ['super_admin'] },
   { id: 'team', labelKey: 'saas.menu_team', icon: Users, path: '/admin/team', roles: ['super_admin'] },
   { id: 'system', labelKey: 'saas.menu_system', icon: Settings, path: '/admin/system', roles: ['super_admin'] },
   { id: 'assistant', labelKey: 'saas.menu_assistant', icon: Bot, path: '/admin/assistant-settings', roles: ['super_admin'] },
