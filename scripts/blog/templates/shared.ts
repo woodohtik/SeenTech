@@ -211,6 +211,18 @@ export function renderStickyMobileCta(): string {
   return `<div class="sticky-cta"><a class="btn btn-cta" href="${blogConfig.ctaUrl}" data-track="cta_sticky">${blogConfig.ctaLabel}</a><a class="btn btn-ghost" href="https://wa.me/${blogConfig.whatsappNumber}" aria-label="واتساب" data-track="whatsapp_sticky"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9" /><path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1" /></svg></a></div>`;
 }
 
+// Verbatim from both reference files (identical in
+// seen-blog-reference/01_المدونة_من_الخارج.html lines 654-655 and
+// seen-blog-reference/02_المقالة_من_الداخل.html lines 482-483) -- every
+// page type ships CTA/WhatsApp buttons with data-track attributes, so this
+// is shared chrome, not article-specific.
+export function renderTrackingScript(): string {
+  return `<script>
+window.dataLayer=window.dataLayer||[];
+document.addEventListener('click',function(e){var t=e.target.closest('[data-track]');if(t)window.dataLayer.push({event:'click',label:t.getAttribute('data-track'),page:location.pathname})});
+</script>`;
+}
+
 // Verbatim from seen-blog-reference/02_المقالة_من_الداخل.html lines 371-393,
 // aria-label and CTA anchor text/href replaced with blogConfig. Only used by
 // the article template -- hidden on mobile by its own `.side-cta` CSS

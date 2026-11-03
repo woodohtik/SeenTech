@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest';
-import { STYLE_BLOCK, renderSiteHeader, renderSiteFooter, renderStickyMobileCta, renderSideCta } from './shared';
+import { STYLE_BLOCK, renderSiteHeader, renderSiteFooter, renderStickyMobileCta, renderSideCta, renderTrackingScript } from './shared';
 
 test('style block is non-empty css with no style tags', () => {
   expect(STYLE_BLOCK.length).toBeGreaterThan(100);
@@ -27,4 +27,10 @@ test('site header marks the "المدونة" nav link as current, on every page 
 
 test('footer renders without throwing', () => {
   expect(renderSiteFooter().length).toBeGreaterThan(0);
+});
+
+test('tracking script pushes data-track clicks to dataLayer', () => {
+  const script = renderTrackingScript();
+  expect(script).toContain('window.dataLayer');
+  expect(script).toContain('data-track');
 });
