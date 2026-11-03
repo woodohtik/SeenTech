@@ -42,7 +42,7 @@ function renderChipsNav(): string {
   const chips = CATEGORIES.map(c =>
     `<a class="chip" href="https://seentech.io/blog/category/${c.slug}" data-f="${c.slug}">${c.icon}<span>${c.label}</span></a>`
   ).join('');
-  return `<nav class="chips wrap" aria-label="المحاور"><a class="chip on" href="https://seentech.io/blog/" aria-current="page">الكل</a>${chips}</nav>`;
+  return `<nav class="chips wrap" aria-label="المحاور"><a class="chip on" href="https://seentech.io/blog/" data-f="all" aria-current="page">الكل</a>${chips}</nav>`;
 }
 
 function renderCtaPanel(): string {
@@ -67,6 +67,24 @@ ${FONTS_PRECONNECT}
 </head>`;
 }
 
+// Progressive enhancement only: the chips are real links to the real
+// /blog/category/{slug}/ pages (the authoritative, always-crawlable
+// filter per 00_تسليم_لنعمان.md section 3), so this script's only job is
+// to intercept the click and filter the cards already present in this
+// page's own server-rendered HTML instead of navigating away -- no
+// content is produced by script, only shown/hidden.
+function renderChipsFilterScript(): string {
+  return `<script>
+(function(){var chips=document.querySelectorAll('.chips a');var cards=document.querySelectorAll('#grid [data-pillar]');
+chips.forEach(function(chip){chip.addEventListener('click',function(e){
+  var f=chip.getAttribute('data-f');if(!f)return;e.preventDefault();
+  chips.forEach(function(c){c.classList.remove('on');c.removeAttribute('aria-current')});
+  chip.classList.add('on');chip.setAttribute('aria-current','page');
+  cards.forEach(function(card){card.style.display=(f==='all'||card.getAttribute('data-pillar')===f)?'':'none'});
+})})})();
+</script>`;
+}
+
 function renderPageShell(head: string, mainContent: string): string {
   return `<!doctype html>
 <html lang="ar" dir="rtl">
@@ -80,6 +98,7 @@ ${renderCtaPanel()}
 ${renderSiteFooter()}
 ${renderStickyMobileCta()}
 ${renderTrackingScript()}
+${renderChipsFilterScript()}
 </body></html>`;
 }
 

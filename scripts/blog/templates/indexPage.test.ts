@@ -30,3 +30,10 @@ test('cta buttons say "ابدأ الآن" on both page types', () => {
   expect(renderIndexPage([article])).toContain('ابدأ الآن');
   expect(renderCategoryPage(CATEGORIES[0], [])).toContain('ابدأ الآن');
 });
+
+test('index page chips carry data-f and the grid cards carry data-pillar, for the instant client-side filter', () => {
+  const html = renderIndexPage([article]);
+  expect(html).toContain('data-f="orders"');
+  expect(html).toContain('data-pillar="orders"');
+  expect(html).toContain("querySelectorAll('.chips a')");
+});
