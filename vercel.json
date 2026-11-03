@@ -11,7 +11,7 @@
       "destination": "/api/index"
     },
     {
-      "source": "/((?!api/).*)",
+      "source": "/((?!api/|blog(?:/|$)).*)",
       "destination": "/index.html"
     }
   ],

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "build": "vite build && tsx scripts/build-blog.ts && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "build:customer": "vite build --config vite.customer.config.ts && node -e \"require('fs').renameSync('dist-customer/index.customer.html','dist-customer/index.html')\"",
     "start": "node dist/server.cjs",
     "preview": "vite preview",

@@ -62,6 +62,10 @@ export default defineConfig(({mode}) => {
             '**/assets/SaaS*.js',
             '**/assets/SuperAdminDashboard-*.js',
             '**/assets/AdminTailors-*.js',
+            // Static blog pages (scripts/build-blog.ts output) are separate
+            // pre-rendered pages, not part of the app shell -- no reason to
+            // precache every one of them into every tenant's SW install.
+            'blog/**',
           ],
           // Even after seen-offline-coverage-and-performance-task.md Phase
           // 6 (lazy-loaded locale files, vendor chunk splitting) the
