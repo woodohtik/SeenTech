@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest';
-import { STYLE_BLOCK, renderSiteHeader, renderSiteFooter, renderStickyMobileCta, renderSideCta, renderTrackingScript } from './shared';
+import { STYLE_BLOCK, FONTS_PRECONNECT, renderSiteHeader, renderSiteFooter, renderStickyMobileCta, renderSideCta, renderTrackingScript } from './shared';
 
 test('style block is non-empty css with no style tags', () => {
   expect(STYLE_BLOCK.length).toBeGreaterThan(100);
@@ -27,6 +27,12 @@ test('site header marks the "المدونة" nav link as current, on every page 
 
 test('footer renders without throwing', () => {
   expect(renderSiteFooter().length).toBeGreaterThan(0);
+});
+
+test('fonts preconnect block references Tajawal and IBM Plex Sans Arabic', () => {
+  expect(FONTS_PRECONNECT).toContain('fonts.googleapis.com');
+  expect(FONTS_PRECONNECT).toContain('Tajawal');
+  expect(FONTS_PRECONNECT).toContain('IBM+Plex+Sans+Arabic');
 });
 
 test('tracking script pushes data-track clicks to dataLayer', () => {
