@@ -27,7 +27,7 @@ function countWords(text: string): number {
 }
 
 export function loadArticles(contentDir: string): LoadedArticle[] {
-  const filenames = readdirSync(contentDir).filter(f => f.endsWith('.md'));
+  const filenames = readdirSync(contentDir).filter(f => f.endsWith('.md') && f.toLowerCase() !== 'readme.md');
 
   return filenames.map(filename => {
     const filePath = path.join(contentDir, filename);

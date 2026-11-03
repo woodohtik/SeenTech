@@ -25,6 +25,16 @@ test('read time floors at 2 minutes for a short article', () => {
   rmSync(dir, { recursive: true });
 });
 
+test('skips README.md instead of treating it as an article', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'blog-'));
+  writeFileSync(path.join(dir, 'README.md'), '# not an article, just docs for whoever adds one');
+  writeArticle(dir, 'how-to.md', 'title: "عنوان"\nmeta_description: "وصف"\ncluster: orders\npublish_date: "2026-11-03"\nrelated: []', 'نص.');
+  const articles = loadArticles(dir);
+  expect(articles).toHaveLength(1);
+  expect(articles[0].slug).toBe('how-to');
+  rmSync(dir, { recursive: true });
+});
+
 test('throws with the file name when cluster is not one of the eight fixed slugs', () => {
   const dir = mkdtempSync(path.join(tmpdir(), 'blog-'));
   writeArticle(dir, 'bad.md', 'title: "ق"\nmeta_description: "و"\ncluster: not-a-cluster\npublish_date: "2026-11-03"\nrelated: []', 'نص.');
