@@ -18,6 +18,7 @@ export interface ParsedArticle {
   whereSeenFitsHtml: string | null;
   aboutSeenHtml: string | null;
   faq: FaqItem[];
+  editedBy: string | null;
 }
 
 const WHERE_SEEN_FITS_HEADING = 'وين تدخل منصة سين؟';
@@ -29,8 +30,10 @@ function renderMd(src: string): string {
   return typeof html === 'string' ? html : '';
 }
 
-function stripEditedByLine(body: string): string {
-  return body.replace(/^تحرير:.*$/m, '').trim();
+function extractEditedByLine(body: string): { editedBy: string | null; rest: string } {
+  const match = body.match(/^تحرير:\s*(.*)$/m);
+  if (!match) return { editedBy: null, rest: body };
+  return { editedBy: match[1].trim(), rest: body.replace(match[0], '').trim() };
 }
 
 function extractLeadingParagraph(text: string, prefix: string): { match: string | null; rest: string } {
@@ -48,7 +51,7 @@ function stripBoldPrefix(paragraph: string, label: string): string {
 }
 
 export function parseArticleSections(markdownBody: string): ParsedArticle {
-  const body = stripEditedByLine(markdownBody);
+  const { editedBy, rest: body } = extractEditedByLine(markdownBody);
 
   const firstHeadingMatch = body.match(/^## .+$/m);
   const splitIndex = firstHeadingMatch?.index ?? body.length;
@@ -102,7 +105,7 @@ export function parseArticleSections(markdownBody: string): ParsedArticle {
     });
   }
 
-  return { summaryHtml, sections, whereSeenFitsHtml, aboutSeenHtml, faq };
+  return { summaryHtml, sections, whereSeenFitsHtml, aboutSeenHtml, faq, editedBy };
 }
 
 function parseFaqBlock(content: string): FaqItem[] {

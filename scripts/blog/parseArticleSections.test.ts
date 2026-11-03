@@ -60,7 +60,13 @@ test('a plain section is not flagged isModel', () => {
   expect(r.sections[0].isModel).toBe(false);
 });
 
-test('a trailing "تحرير: ..." line is stripped from the body', () => {
+test('a trailing "تحرير: ..." line is stripped from the body and captured as editedBy', () => {
   const r = parseArticleSections('## قسم\nنص المقالة.\n\nتحرير: فلان، 2026-11-03');
   expect(r.sections[0].bodyHtml).not.toContain('تحرير:');
+  expect(r.editedBy).toBe('فلان، 2026-11-03');
+});
+
+test('no "تحرير:" line leaves editedBy null', () => {
+  const r = parseArticleSections('## قسم\nنص.');
+  expect(r.editedBy).toBeNull();
 });
