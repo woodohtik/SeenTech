@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { loadArticles } from './blog/frontmatter';
 import { parseArticleSections } from './blog/parseArticleSections';
 import { renderArticlePage } from './blog/templates/articlePage';
@@ -53,7 +54,13 @@ export async function buildBlog(contentDir: string, outDir: string): Promise<voi
   writeFileSync(path.join(outDir, 'robots.txt'), buildRobotsTxt('https://seentech.io/sitemap.xml'));
 }
 
-if (require.main === module) {
+// Project is "type": "module" -- require.main/module aren't available
+// under ESM, so detect direct execution the ESM way instead. Comparing
+// import.meta.url to a hand-built `file://${process.argv[1]}` string
+// breaks on Windows (backslash path vs the forward-slash/percent-encoded
+// URL import.meta.url actually produces) -- pathToFileURL does the
+// platform-correct conversion on both sides.
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   buildBlog('content/blog', 'dist').catch(err => {
     console.error('[blog] build failed:', err.message);
     process.exit(1);
