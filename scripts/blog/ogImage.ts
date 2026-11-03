@@ -24,51 +24,66 @@ function getTajawalFont(): Buffer {
   return tajawalFont;
 }
 
+const PADDING = 80;
+
+// Extracted as a pure, satori-independent tree builder so a long title's
+// wrapping behavior can be asserted directly instead of only through a
+// rendered PNG's pixels. The title div previously had no explicit width,
+// so satori had nothing to wrap against and let long titles overflow the
+// fixed 1200x630 canvas instead of wrapping onto a second/third line.
+export function buildOgImageTree(title: string): object {
+  return {
+    type: 'div',
+    props: {
+      style: {
+        width: WIDTH,
+        height: HEIGHT,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        padding: PADDING,
+        backgroundColor: INK,
+      },
+      children: [
+        {
+          type: 'div',
+          props: {
+            style: {
+              width: WIDTH - PADDING * 2,
+              color: '#fff',
+              fontSize: 56,
+              fontWeight: 800,
+              lineHeight: 1.3,
+              direction: 'rtl',
+              textAlign: 'right',
+              display: 'flex',
+              flexWrap: 'wrap',
+            },
+            children: title,
+          },
+        },
+        {
+          type: 'div',
+          props: {
+            style: {
+              height: 20,
+              marginTop: 36,
+              opacity: 0.4,
+              background: RULER_BACKGROUND,
+            },
+          },
+        },
+      ],
+    },
+  };
+}
+
 export async function renderOgImagePng(title: string): Promise<Buffer> {
   const svg = await satori(
     // satori's TS types expect a React.ReactNode; this is a plain Node
     // build script with no React/JSX pragma, and satori's actual runtime
     // contract is a duck-typed {type,props} tree, not real React elements.
-    {
-      type: 'div',
-      props: {
-        style: {
-          width: WIDTH,
-          height: HEIGHT,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          padding: 80,
-          backgroundColor: INK,
-        },
-        children: [
-          {
-            type: 'div',
-            props: {
-              style: {
-                color: '#fff',
-                fontSize: 56,
-                fontWeight: 800,
-                lineHeight: 1.3,
-                direction: 'rtl',
-              },
-              children: title,
-            },
-          },
-          {
-            type: 'div',
-            props: {
-              style: {
-                height: 20,
-                marginTop: 36,
-                opacity: 0.4,
-                background: RULER_BACKGROUND,
-              },
-            },
-          },
-        ],
-      },
-    } as Parameters<typeof satori>[0],
+    buildOgImageTree(title) as Parameters<typeof satori>[0],
     {
       width: WIDTH,
       height: HEIGHT,

@@ -14,6 +14,7 @@ export interface ParsedSection {
 
 export interface ParsedArticle {
   summaryHtml: string | null;
+  leadingHtml: string | null;
   sections: ParsedSection[];
   whereSeenFitsHtml: string | null;
   aboutSeenHtml: string | null;
@@ -51,7 +52,20 @@ function stripBoldPrefix(paragraph: string, label: string): string {
 }
 
 export function parseArticleSections(markdownBody: string): ParsedArticle {
-  const { editedBy, rest: body } = extractEditedByLine(markdownBody);
+  const { editedBy, rest: afterByline } = extractEditedByLine(markdownBody);
+
+  // The about-Seen box can sit anywhere in the article (commonly near the
+  // end, not only before the first heading) -- search the WHOLE body, not
+  // just the preamble, so it isn't silently absorbed into whatever
+  // section or FAQ answer happens to precede it. extractLeadingParagraph
+  // splits purely on blank-line paragraph boundaries, so this is safe to
+  // run before the heading split below: removing one matched paragraph
+  // leaves every "## heading" line and surrounding content untouched.
+  const aboutExtract = extractLeadingParagraph(afterByline, '> **عن منصة سين:**');
+  const aboutSeenHtml = aboutExtract.match
+    ? renderMd(aboutExtract.match.replace(/^>\s*/m, '').replace(/^\*\*عن منصة سين:?\*\*\s*/, ''))
+    : null;
+  const body = aboutExtract.rest;
 
   const firstHeadingMatch = body.match(/^## .+$/m);
   const splitIndex = firstHeadingMatch?.index ?? body.length;
@@ -62,10 +76,10 @@ export function parseArticleSections(markdownBody: string): ParsedArticle {
   preamble = summaryExtract.rest;
   const summaryHtml = summaryExtract.match ? renderMd(stripBoldPrefix(summaryExtract.match, 'الجواب المختصر')) : null;
 
-  const aboutExtract = extractLeadingParagraph(preamble, '> **عن منصة سين:**');
-  const aboutSeenHtml = aboutExtract.match
-    ? renderMd(aboutExtract.match.replace(/^>\s*/m, '').replace(/^\*\*عن منصة سين:?\*\*\s*/, ''))
-    : null;
+  // Whatever preamble text is left (not the summary box, not a heading) was
+  // previously computed and then silently dropped -- render and return it
+  // instead of discarding real article content.
+  const leadingHtml = preamble.trim() ? renderMd(preamble) : null;
 
   // Split the remainder into blocks per "## heading" occurrence.
   const blocks: { heading: string; content: string }[] = [];
@@ -105,7 +119,7 @@ export function parseArticleSections(markdownBody: string): ParsedArticle {
     });
   }
 
-  return { summaryHtml, sections, whereSeenFitsHtml, aboutSeenHtml, faq, editedBy };
+  return { summaryHtml, leadingHtml, sections, whereSeenFitsHtml, aboutSeenHtml, faq, editedBy };
 }
 
 function parseFaqBlock(content: string): FaqItem[] {

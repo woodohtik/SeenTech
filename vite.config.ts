@@ -91,6 +91,14 @@ export default defineConfig(({mode}) => {
           // needs.
           skipWaiting: true,
           clientsClaim: true,
+          // globIgnores above only keeps /blog/** out of the precache
+          // manifest -- it does NOT stop the SW's navigation-fallback
+          // routing from intercepting a navigation to /blog for a visitor
+          // who already has this SW installed and serving the SPA shell,
+          // which then has no /blog route and bounces the visitor away.
+          // These are real static pages built by scripts/build-blog.ts,
+          // not SPA routes, so they must never hit the fallback.
+          navigateFallbackDenylist: [/^\/blog(\/|$)/, /^\/sitemap\.xml$/, /^\/robots\.txt$/],
         },
       }),
     ],

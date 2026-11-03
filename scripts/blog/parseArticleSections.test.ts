@@ -30,6 +30,22 @@ test('a blockquote starting with "**عن منصة سين:**" becomes the about b
   expect(r.aboutSeenHtml).toContain('منصة سعودية');
 });
 
+test('the about box is extracted even when it appears after the last section, not just in the preamble', () => {
+  const r = parseArticleSections('## قسم\nنص القسم.\n\n> **عن منصة سين:** منصة سعودية لتشغيل محلات التفصيل.');
+  expect(r.aboutSeenHtml).toContain('منصة سعودية');
+  expect(r.sections[0].bodyHtml).not.toContain('عن منصة سين');
+});
+
+test('leading text before the summary/about boxes and the first heading is rendered as leadingHtml, not dropped', () => {
+  const r = parseArticleSections('نص مقدمة عادي قبل أي شيء.\n\n## قسم\nنص.');
+  expect(r.leadingHtml).toContain('نص مقدمة عادي');
+});
+
+test('no leftover preamble text leaves leadingHtml null', () => {
+  const r = parseArticleSections('## قسم\nنص.');
+  expect(r.leadingHtml).toBeNull();
+});
+
 test('"## أسئلة شائعة" with ### children becomes the faq list, and is excluded from sections', () => {
   const r = parseArticleSections('## أسئلة شائعة\n### سؤال أول؟\nجواب أول.\n### سؤال ثاني؟\nجواب ثاني.');
   expect(r.faq).toEqual([

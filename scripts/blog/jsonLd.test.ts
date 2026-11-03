@@ -10,6 +10,10 @@ test('article json-ld carries headline, description and canonical url', () => {
   expect(ld.headline).toBe('عنوان');
   expect(ld.mainEntityOfPage).toBe('https://seentech.io/blog/x');
   expect(ld.datePublished).toBe('2026-11-03');
+  expect(ld.inLanguage).toBe('ar-SA');
+  expect(ld.image).toBe('https://seentech.io/blog/og/x.png');
+  expect(ld.author).toEqual({ '@type': 'Organization', name: 'سين', url: 'https://seentech.io' });
+  expect(ld.publisher).toEqual({ '@type': 'Organization', name: 'سين', url: 'https://seentech.io' });
 });
 
 test('faq json-ld maps question/answer pairs', () => {

@@ -1,6 +1,6 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, copyFileSync } from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { pathToFileURL, fileURLToPath } from 'node:url';
 import { loadArticles } from './blog/frontmatter';
 import { parseArticleSections } from './blog/parseArticleSections';
 import { renderArticlePage } from './blog/templates/articlePage';
@@ -9,7 +9,13 @@ import { renderSearchPage } from './blog/templates/searchPage';
 import { buildSearchIndex } from './blog/search';
 import { renderOgImagePng } from './blog/ogImage';
 import { buildSitemapXml, buildRobotsTxt } from './blog/sitemap';
+import { buildAnalyticsInitScript } from './blog/analytics';
 import { CATEGORIES } from './blog/categories';
+
+// This project is "type": "module" -- __dirname doesn't exist under ESM
+// (same class of bug as the entry-point check below: a CommonJS global
+// that's simply undefined here, not a runtime error from a missing file).
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function writePage(outDir: string, relativePath: string, html: string): void {
   const filePath = path.join(outDir, relativePath, 'index.html');
@@ -33,6 +39,18 @@ export async function buildBlog(contentDir: string, outDir: string): Promise<voi
   }
 
   writePage(outDir, 'blog/search', renderSearchPage());
+
+  const blogDir = path.join(outDir, 'blog');
+  mkdirSync(blogDir, { recursive: true });
+  // The one external <script> every blog template loads
+  // (scripts/blog/templates/shared.ts's BLOG_CLIENT_SCRIPT_TAG) -- copied
+  // verbatim, not transformed, since it's already plain static JS and
+  // CSP's script-src 'self' requires it to be same-origin.
+  copyFileSync(path.join(__dirname, 'blog/assets/blog-client.js'), path.join(blogDir, 'blog.js'));
+  // Analytics init calls baked in at build time from blogConfig's
+  // (git-committed, trusted) tracking IDs -- see scripts/blog/analytics.ts.
+  // Only ever referenced by a page when at least one id is configured.
+  writeFileSync(path.join(blogDir, 'blog-config.js'), buildAnalyticsInitScript());
 
   const searchIndexPath = path.join(outDir, 'blog', 'search-index.json');
   mkdirSync(path.dirname(searchIndexPath), { recursive: true });

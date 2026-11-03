@@ -1,5 +1,19 @@
 import { blogConfig } from '../../../content/blog.config';
 
+// Content is trusted (git-committed, not user-submitted at runtime), so
+// this is a correctness fix, not an XSS one: an ASCII quote or `&` in a
+// frontmatter title/description otherwise corrupts the HTML attribute or
+// text node it's interpolated into. Safe for both text nodes and
+// double-quoted attributes.
+export function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 // Logo images copied verbatim as the inlined base64 data URIs the reference
 // design ships (seen-blog-reference/01_المدونة_من_الخارج.html lines 190 and
 // 634) -- header and footer use two DIFFERENT images at different aspect
@@ -75,7 +89,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(246,247,248,.94);bac
 .search input:focus{outline:none}
 .chips{display:flex;gap:8px;overflow-x:auto;padding:22px 0 6px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
-.chip{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;font:inherit;font-size:15px;color:var(--ink);cursor:pointer}
+.chip{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;font:inherit;font-size:15px;color:var(--ink);cursor:pointer;text-decoration:none}
 .chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
 .feat-row{display:grid;gap:18px;margin-top:22px}
 @media(min-width:900px){.feat-row{grid-template-columns:1.5fr 1fr}}
@@ -216,19 +230,44 @@ export function renderSiteFooter(): string {
 // CTA anchor text/href replaced with blogConfig, WhatsApp number replaced
 // with blogConfig.whatsappNumber.
 export function renderStickyMobileCta(): string {
-  return `<div class="sticky-cta"><a class="btn btn-cta" href="${blogConfig.ctaUrl}" data-track="cta_sticky">${blogConfig.ctaLabel}</a><a class="btn btn-ghost" href="https://wa.me/${blogConfig.whatsappNumber}" aria-label="واتساب" data-track="whatsapp_sticky"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9" /><path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1" /></svg></a></div>`;
+  // blogConfig.whatsappNumber is an intentionally-empty "fill in later"
+  // value (content/blog.config.ts) -- rendering the WhatsApp button
+  // against it unconditionally produced a dead `https://wa.me/` link with
+  // no number on every page until someone supplies it.
+  const whatsappLink = blogConfig.whatsappNumber
+    ? `<a class="btn btn-ghost" href="https://wa.me/${blogConfig.whatsappNumber}" aria-label="واتساب" data-track="whatsapp_sticky"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9" /><path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1" /></svg></a>`
+    : '';
+  return `<div class="sticky-cta"><a class="btn btn-cta" href="${blogConfig.ctaUrl}" data-track="cta_sticky">${blogConfig.ctaLabel}</a>${whatsappLink}</div>`;
 }
 
-// Verbatim from both reference files (identical in
-// seen-blog-reference/01_المدونة_من_الخارج.html lines 654-655 and
-// seen-blog-reference/02_المقالة_من_الداخل.html lines 482-483) -- every
-// page type ships CTA/WhatsApp buttons with data-track attributes, so this
-// is shared chrome, not article-specific.
-export function renderTrackingScript(): string {
-  return `<script>
-window.dataLayer=window.dataLayer||[];
-document.addEventListener('click',function(e){var t=e.target.closest('[data-track]');if(t)window.dataLayer.push({event:'click',label:t.getAttribute('data-track'),page:location.pathname})});
-</script>`;
+// The click-tracking, chip-filter, TOC-scrollspy/print and search-page
+// scripts (previously four separate inline <script> blocks) are now one
+// external, same-origin file -- vercel.json's CSP ships
+// `script-src 'self'` with no `unsafe-inline`, which silently blocked
+// every inline <script> on every blog page in production. Every template
+// includes this single tag once; scripts/build-blog.ts copies the source
+// file to dist/blog/blog.js verbatim.
+export const BLOG_CLIENT_SCRIPT_TAG = '<script src="/blog/blog.js" defer></script>';
+
+// Loader tags for GA4/Snapchat/Meta -- external <script src>/<noscript>
+// elements only, so nothing here needs CSP's script-src to allow inline
+// script. The actual init calls (which DO need the real IDs) are baked at
+// build time into dist/blog/blog-config.js by scripts/blog/analytics.ts,
+// never inlined on the page. Returns '' per-provider when its id is unset.
+export function renderAnalyticsLoaderTags(): string {
+  const tags: string[] = [];
+  if (blogConfig.ga4MeasurementId) {
+    tags.push(`<script async src="https://www.googletagmanager.com/gtag/js?id=${blogConfig.ga4MeasurementId}"></script>`);
+  }
+  if (blogConfig.metaPixelId) {
+    tags.push(`<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=${blogConfig.metaPixelId}&ev=PageView&noscript=1" alt=""></noscript>`);
+  }
+  return tags.join('\n');
+}
+
+export function renderAnalyticsConfigScriptTag(): string {
+  const anyConfigured = !!(blogConfig.ga4MeasurementId || blogConfig.snapchatPixelId || blogConfig.metaPixelId);
+  return anyConfigured ? '<script src="/blog/blog-config.js" defer></script>' : '';
 }
 
 // Verbatim from seen-blog-reference/02_المقالة_من_الداخل.html lines 371-393,
@@ -236,13 +275,16 @@ document.addEventListener('click',function(e){var t=e.target.closest('[data-trac
 // the article template -- hidden on mobile by its own `.side-cta` CSS
 // (@media(max-width:1023px)) already in STYLE_BLOCK.
 export function renderSideCta(): string {
+  const whatsappLink = blogConfig.whatsappNumber
+    ? `<a class="side-wa" href="https://wa.me/${blogConfig.whatsappNumber}" data-track="whatsapp_side"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9" /><path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1" /></svg> أو راسلنا واتساب</a>`
+    : '';
   return `<aside class="side-cta" aria-label="${blogConfig.ctaLabel}">
     <div class="side-card">
       <span class="side-ic"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2"/><path d="M12 3v4"/><path d="M9 14h6"/><path d="M9 17h3"/><path d="M12 10.5h.01"/></svg></span>
       <h3>كل طلب بمرحلته وموعده</h3>
       <p>نجيك ربع ساعة ونوريك طلباتك أنت في سين.</p>
       <a class="btn btn-cta" href="${blogConfig.ctaUrl}" data-track="cta_side">${blogConfig.ctaLabel}</a>
-      <a class="side-wa" href="https://wa.me/${blogConfig.whatsappNumber}" data-track="whatsapp_side"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9" /><path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1" /></svg> أو راسلنا واتساب</a>
+      ${whatsappLink}
     </div>
   </aside>`;
 }

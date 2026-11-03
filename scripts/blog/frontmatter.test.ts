@@ -41,3 +41,31 @@ test('throws with the file name when cluster is not one of the eight fixed slugs
   expect(() => loadArticles(dir)).toThrow(/bad\.md/);
   rmSync(dir, { recursive: true });
 });
+
+test('throws with the file name when title is missing', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'blog-'));
+  writeArticle(dir, 'bad.md', 'meta_description: "و"\ncluster: orders\npublish_date: "2026-11-03"\nrelated: []', 'نص.');
+  expect(() => loadArticles(dir)).toThrow(/bad\.md/);
+  rmSync(dir, { recursive: true });
+});
+
+test('throws with the file name when meta_description is empty', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'blog-'));
+  writeArticle(dir, 'bad.md', 'title: "ق"\nmeta_description: ""\ncluster: orders\npublish_date: "2026-11-03"\nrelated: []', 'نص.');
+  expect(() => loadArticles(dir)).toThrow(/bad\.md/);
+  rmSync(dir, { recursive: true });
+});
+
+test('throws with the file name when publish_date is not a YYYY-MM-DD string', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'blog-'));
+  writeArticle(dir, 'bad.md', 'title: "ق"\nmeta_description: "و"\ncluster: orders\npublish_date: "3 نوفمبر 2026"\nrelated: []', 'نص.');
+  expect(() => loadArticles(dir)).toThrow(/bad\.md/);
+  rmSync(dir, { recursive: true });
+});
+
+test('throws with the file name when related is present but not an array', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'blog-'));
+  writeArticle(dir, 'bad.md', 'title: "ق"\nmeta_description: "و"\ncluster: orders\npublish_date: "2026-11-03"\nrelated: "not-an-array"', 'نص.');
+  expect(() => loadArticles(dir)).toThrow(/bad\.md/);
+  rmSync(dir, { recursive: true });
+});

@@ -10,6 +10,18 @@ export function buildArticleJsonLd(article: LoadedArticle): object {
     mainEntityOfPage: article.canonicalUrl,
     datePublished: article.frontmatter.publishDate,
     dateModified: article.frontmatter.publishDate,
+    inLanguage: 'ar-SA',
+    image: `https://seentech.io/blog/og/${article.slug}.png`,
+    author: {
+      '@type': 'Organization',
+      name: 'سين',
+      url: 'https://seentech.io',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'سين',
+      url: 'https://seentech.io',
+    },
   };
 }
 

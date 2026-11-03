@@ -9,13 +9,29 @@ import {
   renderSiteFooter,
   renderStickyMobileCta,
   renderSideCta,
-  renderTrackingScript,
+  BLOG_CLIENT_SCRIPT_TAG,
+  renderAnalyticsLoaderTags,
+  renderAnalyticsConfigScriptTag,
+  escapeHtml,
 } from './shared';
 
 const ARABIC_MONTHS = [
   'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
   'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
 ];
+
+// Byline icons copied verbatim from seen-blog-reference/02_المقالة_من_الداخل.html
+// lines 202-231 -- previously dropped when the byline was implemented.
+const CALENDAR_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12" /><path d="M16 3l0 4" /><path d="M8 3l0 4" /><path d="M4 11l16 0" /><path d="M8 15h2v2h-2l0 -2" /></svg>';
+const CLOCK_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M12 7v5l3 3" /></svg>';
+
+// The reference's `.tbl{overflow-x:auto;...}` wrapper is meant to give
+// every table horizontal scroll on mobile, not just the print-model ones
+// (which wrap explicitly in renderSection below) -- plain markdown tables
+// inside a regular section rendered as bare <table> with no such wrapper.
+function wrapTablesInHtml(html: string): string {
+  return html.replace(/<table>/g, '<div class="tbl"><table>').replace(/<\/table>/g, '</table></div>');
+}
 
 function formatArabicDate(isoDate: string): string {
   const [year, month, day] = isoDate.split('-').map(Number);
@@ -37,8 +53,8 @@ function renderRelatedCard(article: LoadedArticle): string {
   return `<article class="card" data-pillar="${article.frontmatter.cluster}">
   <a href="${article.canonicalUrl}" class="card-link">
     <div class="card-top"><span class="pill-ic">${icon}</span><span class="cat">${label}</span></div>
-    <h3>${article.frontmatter.title}</h3>
-    <p>${article.frontmatter.metaDescription}</p>
+    <h3>${escapeHtml(article.frontmatter.title)}</h3>
+    <p>${escapeHtml(article.frontmatter.metaDescription)}</p>
     <div class="meta"><span>${article.readTimeMinutes} دقايق قراءة</span><span class="dot"></span><span>${formatArabicDate(article.frontmatter.publishDate)}</span></div>
   </a>
 </article>`;
@@ -46,25 +62,39 @@ function renderRelatedCard(article: LoadedArticle): string {
 
 function renderSection(section: ParsedArticle['sections'][number]): string {
   if (section.isModel) {
-    return `<section id="${section.id}" aria-labelledby="${section.id}-h"><h2 id="${section.id}-h">${section.heading}</h2><div class="template" id="tpl"><div class="tbl">${section.bodyHtml}</div></div><button class="btn btn-ghost print" onclick="printTpl()">اطبع النموذج</button></section>`;
+    // The print button lives INSIDE #tpl (per the reference) -- STYLE_BLOCK's
+    // print rule `body.print-tpl .print{display:none}` only has any effect
+    // when `.print` is a descendant of `#tpl` (print mode makes everything
+    // OUTSIDE #tpl invisible already); outside it, that CSS was dead code.
+    return `<section id="${section.id}" aria-labelledby="${section.id}-h"><h2 id="${section.id}-h">${escapeHtml(section.heading)}</h2><div class="template" id="tpl"><div class="tbl">${section.bodyHtml}</div><button class="btn btn-ghost print" data-print-tpl>اطبع النموذج</button></div></section>`;
   }
-  return `<section id="${section.id}" aria-labelledby="${section.id}-h"><h2 id="${section.id}-h">${section.heading}</h2>${section.bodyHtml}</section>`;
+  return `<section id="${section.id}" aria-labelledby="${section.id}-h"><h2 id="${section.id}-h">${escapeHtml(section.heading)}</h2>${wrapTablesInHtml(section.bodyHtml)}</section>`;
+}
+
+// JSON.stringify never escapes `<`, so a literal `</script>` inside any
+// string value (a title, an FAQ answer) would close the script element
+// early and break out of the JSON-LD payload into the surrounding HTML.
+function jsonLdScriptTag(data: object): string {
+  return `<script type="application/ld+json">${JSON.stringify(data).replace(/</g, '\\u003c')}</script>`;
 }
 
 export function renderArticlePage(article: LoadedArticle, parsed: ParsedArticle, allArticles: LoadedArticle[]): string {
   const category = getCategory(article.frontmatter.cluster);
-  const title = article.frontmatter.title;
+  const title = escapeHtml(article.frontmatter.title);
+  const metaDescription = escapeHtml(article.frontmatter.metaDescription);
   const pageTitle = `${title} | مدونة سين`;
 
   const articleJsonLd = buildArticleJsonLd(article);
   const faqJsonLd = buildFaqJsonLd(parsed.faq);
   const jsonLdScripts = [
-    `<script type="application/ld+json">${JSON.stringify(articleJsonLd)}</script>`,
-    faqJsonLd ? `<script type="application/ld+json">${JSON.stringify(faqJsonLd)}</script>` : '',
+    jsonLdScriptTag(articleJsonLd),
+    faqJsonLd ? jsonLdScriptTag(faqJsonLd) : '',
   ].join('\n');
 
-  const tocItems = parsed.sections.map(s => `<li><a href="#${s.id}">${s.heading}</a></li>`).join('');
+  const tocItems = parsed.sections.map(s => `<li><a href="#${s.id}">${escapeHtml(s.heading)}</a></li>`).join('');
   const faqTocItem = parsed.faq.length > 0 ? '<li><a href="#faq">أسئلة شائعة</a></li>' : '';
+
+  const leadingBox = parsed.leadingHtml ? parsed.leadingHtml : '';
 
   const summaryBox = parsed.summaryHtml
     ? `<div class="quick"><span class="q-label">الجواب المختصر</span>${parsed.summaryHtml}</div>`
@@ -83,7 +113,7 @@ export function renderArticlePage(article: LoadedArticle, parsed: ParsedArticle,
     : '';
 
   const faqSection = parsed.faq.length > 0
-    ? `<section id="faq" aria-labelledby="faq-h"><h2 id="faq-h">أسئلة شائعة</h2><div class="faq">${parsed.faq.map(item => `<details><summary>${item.question}</summary>${item.answerHtml}</details>`).join('')}</div></section>`
+    ? `<section id="faq" aria-labelledby="faq-h"><h2 id="faq-h">أسئلة شائعة</h2><div class="faq">${parsed.faq.map(item => `<details><summary>${escapeHtml(item.question)}</summary>${item.answerHtml}</details>`).join('')}</div></section>`
     : '';
 
   const relatedArticles: LoadedArticle[] = [];
@@ -99,7 +129,7 @@ export function renderArticlePage(article: LoadedArticle, parsed: ParsedArticle,
     ? `<section class="wrap related" aria-labelledby="rel-h"><h2 id="rel-h">اقرأ بعد</h2><div class="grid">${relatedArticles.map(renderRelatedCard).join('')}</div></section>`
     : '';
 
-  const editedByHtml = parsed.editedBy ? `<span>تحرير: ${parsed.editedBy}</span><span class="dot"></span>` : '';
+  const editedByHtml = parsed.editedBy ? `<span>تحرير: ${escapeHtml(parsed.editedBy)}</span><span class="dot"></span>` : '';
 
   return `<!doctype html>
 <html lang="ar" dir="rtl">
@@ -107,14 +137,15 @@ export function renderArticlePage(article: LoadedArticle, parsed: ParsedArticle,
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${pageTitle}</title>
-<meta name="description" content="${article.frontmatter.metaDescription}">
+<meta name="description" content="${metaDescription}">
 <link rel="canonical" href="${article.canonicalUrl}">
 <meta property="og:title" content="${pageTitle}">
-<meta property="og:description" content="${article.frontmatter.metaDescription}">
+<meta property="og:description" content="${metaDescription}">
 <meta property="og:image" content="https://seentech.io/blog/og/${article.slug}.png">
 <meta property="og:locale" content="ar_SA">
 ${FONTS_PRECONNECT}
 <style>${STYLE_BLOCK}</style>
+${renderAnalyticsLoaderTags()}
 ${jsonLdScripts}
 </head>
 <body>
@@ -125,7 +156,7 @@ ${renderSiteHeader()}
   <header class="art-h">
     <span class="cat-lg">${category?.icon ?? ''}${category?.label ?? ''}</span>
     <h1>${title}</h1>
-    <div class="byline">${editedByHtml}<span>آخر تحديث ${formatArabicDate(article.frontmatter.publishDate)}</span><span class="dot"></span><span>${article.readTimeMinutes} دقايق قراءة</span></div>
+    <div class="byline">${editedByHtml}<span>${CALENDAR_ICON}آخر تحديث ${formatArabicDate(article.frontmatter.publishDate)}</span><span class="dot"></span><span>${CLOCK_ICON}${article.readTimeMinutes} دقايق قراءة</span></div>
     ${buildSummarizeLinks(article.canonicalUrl)}
   </header>
 </div>
@@ -134,6 +165,7 @@ ${renderSiteHeader()}
     <details open class="toc-box"><summary>في هذا المقال</summary><ol>${tocItems}${faqTocItem}</ol></details>
   </aside>
   <article class="prose">
+    ${leadingBox}
     ${summaryBox}
     ${sectionsHtml}
     ${whereSeenFitsBox}
@@ -146,13 +178,7 @@ ${relatedSection}
 </main>
 ${renderSiteFooter()}
 ${renderStickyMobileCta()}
-${renderTrackingScript()}
-<script>
-(function(){var links=document.querySelectorAll('.toc a');var map={};links.forEach(function(a){map[a.getAttribute('href').slice(1)]=a});
-if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(l){l.classList.remove('cur')});var a=map[e.target.id];if(a)a.classList.add('cur')}})},{rootMargin:'-20% 0px -70% 0px'});
-document.querySelectorAll('.prose section[id]').forEach(function(s){io.observe(s)})}
-if(window.matchMedia('(max-width:1023px)').matches){var d=document.querySelector('.toc-box');if(d)d.removeAttribute('open')}})();
-function printTpl(){document.body.classList.add('print-tpl');window.print();setTimeout(function(){document.body.classList.remove('print-tpl')},500)}
-</script>
+${BLOG_CLIENT_SCRIPT_TAG}
+${renderAnalyticsConfigScriptTag()}
 </body></html>`;
 }
