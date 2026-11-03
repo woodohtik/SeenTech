@@ -1,6 +1,7 @@
 dist/
 dist-customer/
 .worktrees/
+.superpowers/
 node_modules/
 coverage/
 .DS_Store
