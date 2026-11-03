@@ -1,6 +1,13 @@
 document.addEventListener('click', function(e) {
   const link = e.target.closest('a');
   if (link) {
+    // target="_parent" (or _blank/_top) marks a link that wants a REAL
+    // top-level navigation out of this iframe's virtual router -- e.g. the
+    // static /blog pages, which aren't SPA routes at all. Intercepting it
+    // into navigate() anyway sent it through React Router instead, which
+    // has no matching route and fell through to the login redirect.
+    const target = link.getAttribute('target');
+    if (target && target !== '_self') return;
     const href = link.getAttribute('href');
     if (href && href.startsWith('/')) {
       e.preventDefault();
