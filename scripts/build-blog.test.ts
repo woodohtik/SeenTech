@@ -1,12 +1,22 @@
 import { test, expect } from 'vitest';
-import { mkdtempSync, readFileSync, existsSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, existsSync, writeFileSync, copyFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { buildBlog } from './build-blog';
 
 test('end to end: one fixture article produces index, its own page, its category page, and all eight category pages', async () => {
+  const contentDir = mkdtempSync(path.join(tmpdir(), 'blog-content-'));
+  copyFileSync(
+    path.join(__dirname, 'blog/__fixtures__/sample-article.md'),
+    path.join(contentDir, 'sample-article.md'),
+  );
+  writeFileSync(
+    path.join(contentDir, 'far-future.md'),
+    '---\ntitle: "مقالة مستقبلية"\nmeta_description: "لا يجب أن تظهر الآن"\ncluster: orders\npublish_date: "2099-01-01T00:00:00Z"\nrelated: []\n---\n\nنص.',
+  );
+
   const outDir = mkdtempSync(path.join(tmpdir(), 'blog-out-'));
-  await buildBlog(path.join(__dirname, 'blog/__fixtures__'), outDir);
+  await buildBlog(contentDir, outDir);
 
   expect(readFileSync(path.join(outDir, 'blog/index.html'), 'utf8')).toContain('<title>');
   expect(existsSync(path.join(outDir, 'blog/sample-article/index.html'))).toBe(true);
@@ -17,6 +27,8 @@ test('end to end: one fixture article produces index, its own page, its category
   expect(readFileSync(path.join(outDir, 'sitemap.xml'), 'utf8')).toContain('sample-article');
   expect(readFileSync(path.join(outDir, 'blog/blog.js'), 'utf8')).toContain('window.dataLayer');
   expect(existsSync(path.join(outDir, 'blog/blog-config.js'))).toBe(true);
+  expect(existsSync(path.join(outDir, 'blog/far-future/index.html'))).toBe(false);
+  expect(readFileSync(path.join(outDir, 'blog/index.html'), 'utf8')).not.toContain('far-future');
 }, 15000);
 
 test('throws with the offending filename when a content directory has an invalid cluster', async () => {

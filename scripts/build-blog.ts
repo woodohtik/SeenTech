@@ -24,7 +24,7 @@ function writePage(outDir: string, relativePath: string, html: string): void {
 }
 
 export async function buildBlog(contentDir: string, outDir: string): Promise<void> {
-  const articles = loadArticles(contentDir);
+  const articles = loadArticles(contentDir, new Date());
 
   writePage(outDir, 'blog', renderIndexPage(articles));
 
