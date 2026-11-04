@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { createBlogFile, deleteBlogFile, getBlogFile, listBlogFiles, updateBlogFile } from './blogGitHub';
+import { BlogGitHubError, createBlogFile, deleteBlogFile, getBlogFile, listBlogFiles, updateBlogFile } from './blogGitHub';
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -16,37 +16,71 @@ afterEach(() => {
 
 describe('blogGitHub config', () => {
   test('throws naming the first missing required env var', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
     delete process.env.BLOG_GITHUB_TOKEN;
     await expect(listBlogFiles()).rejects.toThrow(/BLOG_GITHUB_TOKEN/);
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
 
 describe('getBlogFile', () => {
   test('getBlogFile decodes base64 content and returns the sha', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: async () => ({
-          path: 'content/blog/how-to.md',
-          sha: 'abc123',
-          content: Buffer.from('---\ntitle: x\n---\n').toString('base64'),
-          encoding: 'base64',
-        }),
-      })
-    );
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        path: 'content/blog/how-to.md',
+        sha: 'abc123',
+        content: Buffer.from('---\ntitle: x\n---\n').toString('base64'),
+        encoding: 'base64',
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
     const file = await getBlogFile('how-to.md');
     expect(file.sha).toBe('abc123');
     expect(file.content).toContain('title: x');
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      'https://api.github.com/repos/seen/blog-content/contents/content/blog/how-to.md?ref=main'
+    );
   });
 
   test('getBlogFile throws BlogGitHubError with status 404 when GitHub returns 404', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 404, json: async () => ({ message: 'Not Found' }) });
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(getBlogFile('missing.md')).rejects.toMatchObject({ status: 404 });
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      'https://api.github.com/repos/seen/blog-content/contents/content/blog/missing.md?ref=main'
+    );
+  });
+
+  test('getBlogFile throws BlogGitHubError (not a raw parse error) when a non-2xx response body is not valid JSON', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue({ ok: false, status: 404, json: async () => ({ message: 'Not Found' }) })
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => {
+          throw new Error('not json');
+        },
+      })
     );
-    await expect(getBlogFile('missing.md')).rejects.toMatchObject({ status: 404 });
+    await expect(getBlogFile('broken.md')).rejects.toBeInstanceOf(BlogGitHubError);
+  });
+});
+
+describe('listBlogFiles', () => {
+  test('listBlogFiles throws BlogGitHubError (not a raw parse error) when a non-2xx response body is not valid JSON', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => {
+          throw new Error('not json');
+        },
+      })
+    );
+    await expect(listBlogFiles()).rejects.toBeInstanceOf(BlogGitHubError);
   });
 });
 
@@ -55,7 +89,8 @@ describe('createBlogFile / updateBlogFile / deleteBlogFile', () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 201, json: async () => ({}) });
     vi.stubGlobal('fetch', fetchMock);
     await createBlogFile('new.md', 'body', 'feat: add new.md');
-    const [, init] = fetchMock.mock.calls[0];
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('https://api.github.com/repos/seen/blog-content/contents/content/blog/new.md');
     const body = JSON.parse(init.body);
     expect(body.sha).toBeUndefined();
     expect(Buffer.from(body.content, 'base64').toString('utf8')).toBe('body');
@@ -63,21 +98,21 @@ describe('createBlogFile / updateBlogFile / deleteBlogFile', () => {
   });
 
   test("createBlogFile throws BlogGitHubError with GitHub's message on a 422 (e.g. file already exists)", async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({ ok: false, status: 422, json: async () => ({ message: "sha wasn't supplied" }) })
-    );
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 422, json: async () => ({ message: "sha wasn't supplied" }) });
+    vi.stubGlobal('fetch', fetchMock);
     await expect(createBlogFile('exists.md', 'body', 'msg')).rejects.toMatchObject({
       status: 422,
       message: expect.stringContaining("sha wasn't supplied"),
     });
+    expect(fetchMock.mock.calls[0][0]).toBe('https://api.github.com/repos/seen/blog-content/contents/content/blog/exists.md');
   });
 
   test('updateBlogFile PUTs with the given sha', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
     vi.stubGlobal('fetch', fetchMock);
     await updateBlogFile('existing.md', 'new body', 'sha1', 'feat: update');
-    const [, init] = fetchMock.mock.calls[0];
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('https://api.github.com/repos/seen/blog-content/contents/content/blog/existing.md');
     expect(JSON.parse(init.body).sha).toBe('sha1');
   });
 
@@ -85,7 +120,8 @@ describe('createBlogFile / updateBlogFile / deleteBlogFile', () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
     vi.stubGlobal('fetch', fetchMock);
     await deleteBlogFile('gone.md', 'sha2', 'feat: delete');
-    const [, init] = fetchMock.mock.calls[0];
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('https://api.github.com/repos/seen/blog-content/contents/content/blog/gone.md');
     expect(init.method).toBe('DELETE');
     expect(JSON.parse(init.body).sha).toBe('sha2');
   });

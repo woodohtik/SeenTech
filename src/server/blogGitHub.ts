@@ -71,10 +71,11 @@ export async function listBlogFiles(): Promise<BlogFileListing[]> {
   const res = await fetch(`${contentsUrl(repo, 'content/blog')}?ref=${branch}`, {
     headers: authHeaders(token),
   });
-  const body = await res.json();
   if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
     throw new BlogGitHubError(body?.message ?? `GitHub request failed (${res.status})`, res.status);
   }
+  const body = await res.json();
   const entries = Array.isArray(body) ? body : [];
   return entries
     .filter((entry: { name?: unknown }) => typeof entry?.name === 'string' && entry.name.endsWith('.md'))
@@ -86,13 +87,14 @@ export async function getBlogFile(filename: string): Promise<BlogFileContent> {
   const res = await fetch(`${contentsUrl(repo, `content/blog/${filename}`)}?ref=${branch}`, {
     headers: authHeaders(token),
   });
-  const body = await res.json();
   if (!res.ok) {
     if (res.status === 404) {
       throw new BlogGitHubError(`${filename} not found`, 404);
     }
+    const body = await res.json().catch(() => ({}));
     throw new BlogGitHubError(body?.message ?? `GitHub request failed (${res.status})`, res.status);
   }
+  const body = await res.json();
   return {
     path: body.path,
     sha: body.sha,
