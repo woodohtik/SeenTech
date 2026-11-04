@@ -69,6 +69,25 @@ describe('getBlogFile', () => {
 });
 
 describe('listBlogFiles', () => {
+  test('listBlogFiles requests the content/blog directory and filters to .md files', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => [
+        { name: 'a.md', sha: 'sha-a', type: 'file' },
+        { name: 'README.md', sha: 'sha-readme', type: 'file' },
+        { name: 'not-markdown.txt', sha: 'sha-txt', type: 'file' },
+      ],
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const files = await listBlogFiles();
+    expect(fetchMock.mock.calls[0][0]).toBe('https://api.github.com/repos/seen/blog-content/contents/content/blog?ref=main');
+    expect(files).toEqual([
+      { name: 'a.md', sha: 'sha-a' },
+      { name: 'README.md', sha: 'sha-readme' },
+    ]);
+  });
+
   test('listBlogFiles throws BlogGitHubError (not a raw parse error) when a non-2xx response body is not valid JSON', async () => {
     vi.stubGlobal(
       'fetch',
