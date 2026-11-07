@@ -3,11 +3,15 @@ import { blogConfig } from '../../../content/blog.config';
 import {
   STYLE_BLOCK, FONTS_PRECONNECT, renderSiteHeader, renderSiteFooter, renderStickyMobileCta, renderSideCta,
   BLOG_CLIENT_SCRIPT_TAG, renderAnalyticsLoaderTags, renderAnalyticsConfigScriptTag, escapeHtml,
+  isProductionBuild, renderRobotsMetaTag,
 } from './shared';
 
 const originalConfig = { ...blogConfig };
+const originalVercelEnv = process.env.VERCEL_ENV;
 afterEach(() => {
   Object.assign(blogConfig, originalConfig);
+  if (originalVercelEnv === undefined) delete process.env.VERCEL_ENV;
+  else process.env.VERCEL_ENV = originalVercelEnv;
 });
 
 test('style block is non-empty css with no style tags', () => {
@@ -79,4 +83,21 @@ test('a configured GA4 id produces an external gtag.js loader tag and the config
   blogConfig.ga4MeasurementId = 'G-TEST123';
   expect(renderAnalyticsLoaderTags()).toContain('https://www.googletagmanager.com/gtag/js?id=G-TEST123');
   expect(renderAnalyticsConfigScriptTag()).toBe('<script src="/blog/blog-config.js" defer></script>');
+});
+
+test('isProductionBuild is true only when VERCEL_ENV is exactly "production"', () => {
+  process.env.VERCEL_ENV = 'production';
+  expect(isProductionBuild()).toBe(true);
+  process.env.VERCEL_ENV = 'preview';
+  expect(isProductionBuild()).toBe(false);
+  delete process.env.VERCEL_ENV;
+  expect(isProductionBuild()).toBe(false);
+});
+
+test('renderRobotsMetaTag emits noindex on a non-production build and nothing on production', () => {
+  process.env.VERCEL_ENV = 'preview';
+  expect(renderRobotsMetaTag()).toContain('name="robots"');
+  expect(renderRobotsMetaTag()).toContain('noindex');
+  process.env.VERCEL_ENV = 'production';
+  expect(renderRobotsMetaTag()).toBe('');
 });

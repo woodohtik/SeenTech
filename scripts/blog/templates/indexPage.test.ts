@@ -4,8 +4,11 @@ import { CATEGORIES } from '../categories';
 import { blogConfig } from '../../../content/blog.config';
 
 const originalConfig = { ...blogConfig };
+const originalVercelEnv = process.env.VERCEL_ENV;
 afterEach(() => {
   Object.assign(blogConfig, originalConfig);
+  if (originalVercelEnv === undefined) delete process.env.VERCEL_ENV;
+  else process.env.VERCEL_ENV = originalVercelEnv;
 });
 
 const article = { slug: 'how-to', canonicalUrl: 'https://seentech.io/blog/how-to', readTimeMinutes: 3,
@@ -82,4 +85,18 @@ test('card title and description are HTML-escaped', () => {
   const html = renderIndexPage([dangerous]);
   expect(html).toContain('عنوان &lt;script&gt;');
   expect(html).toContain('وصف &quot;خاص&quot;');
+});
+
+// Staging/local builds must never invite search engines to crawl them --
+// only the real production build is the canonical copy of this content.
+test('index and category pages carry a noindex meta tag outside of a production build', () => {
+  process.env.VERCEL_ENV = 'preview';
+  expect(renderIndexPage([article])).toContain('<meta name="robots" content="noindex, nofollow">');
+  expect(renderCategoryPage(CATEGORIES[0], [])).toContain('<meta name="robots" content="noindex, nofollow">');
+});
+
+test('index and category pages omit the noindex meta tag on a production build', () => {
+  process.env.VERCEL_ENV = 'production';
+  expect(renderIndexPage([article])).not.toContain('noindex');
+  expect(renderCategoryPage(CATEGORIES[0], [])).not.toContain('noindex');
 });

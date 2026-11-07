@@ -10,6 +10,7 @@ import {
   BLOG_CLIENT_SCRIPT_TAG,
   renderAnalyticsLoaderTags,
   renderAnalyticsConfigScriptTag,
+  renderRobotsMetaTag,
   escapeHtml,
 } from './shared';
 
@@ -81,6 +82,7 @@ function renderHead(title: string, description: string, canonical: string): stri
 <meta property="og:title" content="${escapeHtml(title)}">
 <meta property="og:description" content="${escapeHtml(description)}">
 <meta property="og:locale" content="ar_SA">
+${renderRobotsMetaTag()}
 ${FONTS_PRECONNECT}
 <style>${STYLE_BLOCK}</style>
 ${renderAnalyticsLoaderTags()}

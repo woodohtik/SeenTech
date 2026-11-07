@@ -270,6 +270,19 @@ export function renderAnalyticsConfigScriptTag(): string {
   return anyConfigured ? '<script src="/blog/blog-config.js" defer></script>' : '';
 }
 
+// Vercel sets VERCEL_ENV to 'production' only on the project's actual
+// Production target -- every other deploy (a preview/branch deployment
+// like staging, or a local/CI build with the var unset) must not read as
+// production. Staging isn't the canonical copy of this content, so its
+// build must never invite search engines to index it.
+export function isProductionBuild(): boolean {
+  return process.env.VERCEL_ENV === 'production';
+}
+
+export function renderRobotsMetaTag(): string {
+  return isProductionBuild() ? '' : '<meta name="robots" content="noindex, nofollow">';
+}
+
 // Verbatim from seen-blog-reference/02_المقالة_من_الداخل.html lines 371-393,
 // aria-label and CTA anchor text/href replaced with blogConfig. Only used by
 // the article template -- hidden on mobile by its own `.side-cta` CSS

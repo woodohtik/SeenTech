@@ -12,6 +12,7 @@ import {
   BLOG_CLIENT_SCRIPT_TAG,
   renderAnalyticsLoaderTags,
   renderAnalyticsConfigScriptTag,
+  renderRobotsMetaTag,
   escapeHtml,
 } from './shared';
 
@@ -151,6 +152,7 @@ export function renderArticlePage(article: LoadedArticle, parsed: ParsedArticle,
 <meta property="og:description" content="${metaDescription}">
 <meta property="og:image" content="https://seentech.io/blog/og/${article.slug}.png">
 <meta property="og:locale" content="ar_SA">
+${renderRobotsMetaTag()}
 ${FONTS_PRECONNECT}
 <style>${STYLE_BLOCK}</style>
 ${renderAnalyticsLoaderTags()}

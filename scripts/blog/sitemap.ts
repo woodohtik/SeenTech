@@ -6,7 +6,15 @@ ${entries}
 </urlset>`;
 }
 
-export function buildRobotsTxt(sitemapUrl: string): string {
+// A non-production build (staging, local) must never invite crawling --
+// it isn't the canonical copy of this content and shouldn't compete with
+// (or get indexed ahead of) the real production pages.
+export function buildRobotsTxt(sitemapUrl: string, allowIndexing: boolean): string {
+  if (!allowIndexing) {
+    return `User-agent: *
+Disallow: /
+`;
+  }
   return `User-agent: *
 Allow: /blog/
 Sitemap: ${sitemapUrl}

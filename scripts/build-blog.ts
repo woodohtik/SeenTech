@@ -10,6 +10,7 @@ import { buildSearchIndex } from './blog/search';
 import { renderOgImagePng } from './blog/ogImage';
 import { buildSitemapXml, buildRobotsTxt } from './blog/sitemap';
 import { buildAnalyticsInitScript } from './blog/analytics';
+import { isProductionBuild } from './blog/templates/shared';
 import { CATEGORIES } from './blog/categories';
 
 // This project is "type": "module" -- __dirname doesn't exist under ESM
@@ -69,7 +70,7 @@ export async function buildBlog(contentDir: string, outDir: string): Promise<voi
     ...CATEGORIES.map(c => `https://seentech.io/blog/category/${c.slug}`),
   ];
   writeFileSync(path.join(outDir, 'sitemap.xml'), buildSitemapXml(urls));
-  writeFileSync(path.join(outDir, 'robots.txt'), buildRobotsTxt('https://seentech.io/sitemap.xml'));
+  writeFileSync(path.join(outDir, 'robots.txt'), buildRobotsTxt('https://seentech.io/sitemap.xml', isProductionBuild()));
 }
 
 // Project is "type": "module" -- require.main/module aren't available

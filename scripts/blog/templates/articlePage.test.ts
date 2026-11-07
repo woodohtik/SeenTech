@@ -1,5 +1,11 @@
-import { test, expect } from 'vitest';
+import { test, expect, afterEach } from 'vitest';
 import { renderArticlePage } from './articlePage';
+
+const originalVercelEnv = process.env.VERCEL_ENV;
+afterEach(() => {
+  if (originalVercelEnv === undefined) delete process.env.VERCEL_ENV;
+  else process.env.VERCEL_ENV = originalVercelEnv;
+});
 
 const baseArticle = {
   slug: 'how-to', canonicalUrl: 'https://seentech.io/blog/how-to', readTimeMinutes: 3,
@@ -107,4 +113,16 @@ test('byline date shows the Riyadh-local day, not the UTC day, near a midnight b
   const html = renderArticlePage(nearMidnight, parsed, [nearMidnight]);
   expect(html).toContain('5 نوفمبر 2026');
   expect(html).not.toContain('4 نوفمبر 2026');
+});
+
+test('article pages carry a noindex meta tag outside of a production build', () => {
+  process.env.VERCEL_ENV = 'preview';
+  const html = renderArticlePage(baseArticle, parsed, [baseArticle]);
+  expect(html).toContain('<meta name="robots" content="noindex, nofollow">');
+});
+
+test('article pages omit the noindex meta tag on a production build', () => {
+  process.env.VERCEL_ENV = 'production';
+  const html = renderArticlePage(baseArticle, parsed, [baseArticle]);
+  expect(html).not.toContain('noindex');
 });
