@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import * as blogAdmin from './blogAdmin.ts';
-import { fetchAllArticles, listArticles, getArticle, createArticle, updateArticle, deleteArticle } from './blogAdmin.ts';
+import { fetchAllArticles, listArticles, getArticle, createArticle, updateArticle, deleteArticle, previewArticle } from './blogAdmin.ts';
 import * as blogGitHub from './blogGitHub.ts';
 import * as blogDeployHook from './blogDeployHook.ts';
 import { BlogGitHubError } from './blogGitHub.ts';
@@ -206,5 +206,25 @@ describe('getArticle / updateArticle / deleteArticle', () => {
     await deleteArticle({ params: { slug: 'x' } } as any, res);
     expect(deleteSpy).toHaveBeenCalledWith('x.md', 'current-sha', expect.any(String));
     expect(res.statusCode).toBe(200);
+  });
+});
+
+describe('previewArticle', () => {
+  test('previewArticle validates the same way create/update do', async () => {
+    const res = mockRes();
+    await previewArticle({ body: { title: '', metaDescription: 'و', cluster: 'orders', publishDate: '2026-11-04T10:00:00Z', related: [], body: 'نص' } } as any, res);
+    expect(res.statusCode).toBe(400);
+  });
+
+  test('previewArticle renders the real article page HTML without touching GitHub or the deploy hook', async () => {
+    vi.spyOn(blogAdmin, 'fetchAllArticles').mockResolvedValue([]);
+    const createSpy = vi.spyOn(blogGitHub, 'createBlogFile');
+    const hookSpy = vi.spyOn(blogDeployHook, 'triggerBlogRebuild');
+    const res = mockRes();
+    await previewArticle({ body: { title: 'عنوان المعاينة', metaDescription: 'وصف', cluster: 'orders', publishDate: '2026-11-04T10:00:00Z', related: [], body: '## قسم\nنص.' } } as any, res);
+    expect(res.statusCode).toBe(200);
+    expect(res.body.html).toContain('عنوان المعاينة');
+    expect(createSpy).not.toHaveBeenCalled();
+    expect(hookSpy).not.toHaveBeenCalled();
   });
 });

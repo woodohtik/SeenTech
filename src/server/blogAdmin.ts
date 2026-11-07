@@ -14,6 +14,8 @@
  */
 import matter from 'gray-matter';
 import { parseArticleFrontmatter, validateFrontmatter, type LoadedArticle } from '../../scripts/blog/frontmatter.ts';
+import { parseArticleSections } from '../../scripts/blog/parseArticleSections.ts';
+import { renderArticlePage } from '../../scripts/blog/templates/articlePage.ts';
 import { slugify } from '../utils/slugify.ts';
 import * as blogGitHub from './blogGitHub.ts';
 import * as blogDeployHook from './blogDeployHook.ts';
@@ -235,4 +237,46 @@ export async function deleteArticle(req: any, res: any): Promise<void> {
 
   await blogDeployHook.triggerBlogRebuild();
   res.status(200).json({});
+}
+
+/**
+ * POST /api/admin/blog/preview
+ *
+ * Read-only: renders unsaved form state through the REAL public-site
+ * rendering path (`parseArticleSections` + `renderArticlePage`) so the
+ * preview matches production exactly. Must never call any `blogGitHub`
+ * write function or `triggerBlogRebuild()` -- there is nothing to save
+ * here, only to render.
+ */
+export async function previewArticle(req: any, res: any): Promise<void> {
+  const { title, metaDescription, cluster, publishDate, related, body } = req.body;
+  const fields: ArticleInputFields = { title, metaDescription, cluster, publishDate, related };
+
+  try {
+    validateFrontmatter('preview.md', toFrontmatterData(fields));
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : 'invalid article' });
+    return;
+  }
+
+  let allArticles: LoadedArticle[];
+  try {
+    allArticles = await thisModule.fetchAllArticles();
+  } catch (err) {
+    respondWithGitHubError(res, err);
+    return;
+  }
+
+  const readTimeMinutes = Math.max(MIN_READ_TIME_MINUTES, Math.ceil(countWords(body) / WORDS_PER_MINUTE));
+  const syntheticArticle: LoadedArticle = {
+    slug: 'preview',
+    frontmatter: { title, metaDescription, cluster, publishDate, related },
+    rawBody: body,
+    readTimeMinutes,
+    canonicalUrl: 'https://seentech.io/blog/preview',
+  };
+
+  const parsed = parseArticleSections(body);
+  const html = renderArticlePage(syntheticArticle, parsed, allArticles);
+  res.status(200).json({ html });
 }
