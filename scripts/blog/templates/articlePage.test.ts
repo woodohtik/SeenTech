@@ -2,9 +2,12 @@ import { test, expect, afterEach } from 'vitest';
 import { renderArticlePage } from './articlePage';
 
 const originalVercelEnv = process.env.VERCEL_ENV;
+const originalBlogSiteUrl = process.env.BLOG_SITE_URL;
 afterEach(() => {
   if (originalVercelEnv === undefined) delete process.env.VERCEL_ENV;
   else process.env.VERCEL_ENV = originalVercelEnv;
+  if (originalBlogSiteUrl === undefined) delete process.env.BLOG_SITE_URL;
+  else process.env.BLOG_SITE_URL = originalBlogSiteUrl;
 });
 
 const baseArticle = {
@@ -125,4 +128,16 @@ test('article pages omit the noindex meta tag on a production build', () => {
   process.env.VERCEL_ENV = 'production';
   const html = renderArticlePage(baseArticle, parsed, [baseArticle]);
   expect(html).not.toContain('noindex');
+});
+
+// The breadcrumb is internal navigation -- it must stay on whichever origin
+// served this build, unlike the canonical/og:image URLs which intentionally
+// stay pinned to production (see getSiteUrl's comment in shared.ts).
+test('breadcrumb nav follows BLOG_SITE_URL, not a hardcoded production domain', () => {
+  process.env.VERCEL_ENV = 'preview';
+  process.env.BLOG_SITE_URL = 'https://staging.seentech.io';
+  const html = renderArticlePage(baseArticle, parsed, [baseArticle]);
+  expect(html).toContain('href="https://staging.seentech.io/blog/"');
+  expect(html).toContain('href="https://staging.seentech.io/blog/category/orders"');
+  expect(html).not.toContain('href="https://seentech.io/blog/"');
 });

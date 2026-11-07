@@ -11,6 +11,7 @@ import {
   renderAnalyticsLoaderTags,
   renderAnalyticsConfigScriptTag,
   renderRobotsMetaTag,
+  getSiteUrl,
   escapeHtml,
 } from './shared';
 
@@ -54,12 +55,13 @@ function renderArticleCard(article: LoadedArticle, big = false): string {
 // exist on that page (every category page only ever has its own articles
 // in the DOM).
 function renderChipsNav(activeSlug: string): string {
+  const siteUrl = getSiteUrl();
   const chips = CATEGORIES.map(c => {
     const isActive = c.slug === activeSlug;
-    return `<a class="chip${isActive ? ' on' : ''}" href="https://seentech.io/blog/category/${c.slug}" data-f="${c.slug}"${isActive ? ' aria-current="page"' : ''}>${c.icon}<span>${c.label}</span></a>`;
+    return `<a class="chip${isActive ? ' on' : ''}" href="${siteUrl}/blog/category/${c.slug}" data-f="${c.slug}"${isActive ? ' aria-current="page"' : ''}>${c.icon}<span>${c.label}</span></a>`;
   }).join('');
   const allIsActive = activeSlug === 'all';
-  return `<nav class="chips wrap" aria-label="المحاور"><a class="chip${allIsActive ? ' on' : ''}" href="https://seentech.io/blog/" data-f="all"${allIsActive ? ' aria-current="page"' : ''}>الكل</a>${chips}</nav>`;
+  return `<nav class="chips wrap" aria-label="المحاور"><a class="chip${allIsActive ? ' on' : ''}" href="${siteUrl}/blog/" data-f="all"${allIsActive ? ' aria-current="page"' : ''}>الكل</a>${chips}</nav>`;
 }
 
 function renderCtaPanel(): string {
@@ -137,7 +139,7 @@ export function renderIndexPage(allArticles: LoadedArticle[]): string {
   <span class="eyebrow">مدونة سين</span>
   <h1>نكتب لصاحب محل التفصيل<br>اللي يبي شغله أهدى.</h1>
   <p class="lead">الطلبات والمقاسات والموسم، بأمثلة من محلات حقيقية ونماذج تطبعها وتستخدمها بكرة.</p>
-  <form class="search" role="search" action="https://seentech.io/blog/search"><label for="q" class="sr">ابحث في المدونة</label>
+  <form class="search" role="search" action="${getSiteUrl()}/blog/search"><label for="q" class="sr">ابحث في المدونة</label>
     <input id="q" name="q" type="search" placeholder="ابحث: مقاس، تأخير، رمضان، ورقة الطلب..."><button class="btn btn-ink" type="submit">بحث</button></form>
 </div><div class="wrap"><div class="ruler" aria-hidden="true"></div></div></section>
 ${renderChipsNav('all')}

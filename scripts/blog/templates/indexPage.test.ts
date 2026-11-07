@@ -5,10 +5,13 @@ import { blogConfig } from '../../../content/blog.config';
 
 const originalConfig = { ...blogConfig };
 const originalVercelEnv = process.env.VERCEL_ENV;
+const originalBlogSiteUrl = process.env.BLOG_SITE_URL;
 afterEach(() => {
   Object.assign(blogConfig, originalConfig);
   if (originalVercelEnv === undefined) delete process.env.VERCEL_ENV;
   else process.env.VERCEL_ENV = originalVercelEnv;
+  if (originalBlogSiteUrl === undefined) delete process.env.BLOG_SITE_URL;
+  else process.env.BLOG_SITE_URL = originalBlogSiteUrl;
 });
 
 const article = { slug: 'how-to', canonicalUrl: 'https://seentech.io/blog/how-to', readTimeMinutes: 3,
@@ -99,4 +102,18 @@ test('index and category pages omit the noindex meta tag on a production build',
   process.env.VERCEL_ENV = 'production';
   expect(renderIndexPage([article])).not.toContain('noindex');
   expect(renderCategoryPage(CATEGORIES[0], [])).not.toContain('noindex');
+});
+
+// Category chips and the search form are internal navigation -- they must
+// stay on whichever origin served this build, unlike canonical/JSON-LD/
+// sitemap URLs which intentionally stay pinned to production (see
+// getSiteUrl's comment in shared.ts).
+test('chips nav and search form follow BLOG_SITE_URL, not a hardcoded production domain', () => {
+  process.env.VERCEL_ENV = 'preview';
+  process.env.BLOG_SITE_URL = 'https://staging.seentech.io';
+  const html = renderIndexPage([article]);
+  expect(html).toContain('href="https://staging.seentech.io/"');
+  expect(html).toContain('href="https://staging.seentech.io/blog/category/orders"');
+  expect(html).toContain('action="https://staging.seentech.io/blog/search"');
+  expect(html).not.toContain('href="https://seentech.io/blog/category/orders"');
 });

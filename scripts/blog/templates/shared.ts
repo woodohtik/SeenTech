@@ -210,9 +210,10 @@ footer a{color:#fff}
 // (identical header markup in 02_المقالة_من_الداخل.html lines 190-194,
 // aria-current="page" sits on "المدونة" unconditionally in both).
 export function renderSiteHeader(): string {
+  const siteUrl = getSiteUrl();
   return `<header class="top"><div class="wrap">
-  <a class="logo" href="https://seentech.io/" aria-label="سين"><img src="${HEADER_LOGO_DATA_URI}" alt="سين" width="79" height="34"></a>
-  <nav class="nav" aria-label="الرئيسية"><a href="https://seentech.io/">الرئيسية</a><a href="https://seentech.io/blog/" aria-current="page">المدونة</a></nav>
+  <a class="logo" href="${siteUrl}/" aria-label="سين"><img src="${HEADER_LOGO_DATA_URI}" alt="سين" width="79" height="34"></a>
+  <nav class="nav" aria-label="الرئيسية"><a href="${siteUrl}/">الرئيسية</a><a href="${siteUrl}/blog/" aria-current="page">المدونة</a></nav>
   <a class="btn btn-cta btn-sm" href="${blogConfig.ctaUrl}" data-track="cta_header">${blogConfig.ctaLabel}</a>
 </div></header>`;
 }
@@ -281,6 +282,19 @@ export function isProductionBuild(): boolean {
 
 export function renderRobotsMetaTag(): string {
   return isProductionBuild() ? '' : '<meta name="robots" content="noindex, nofollow">';
+}
+
+// Internal navigation links (header, chips nav, breadcrumbs, search form)
+// must stay on whichever origin served this build -- a staging reader
+// clicking the logo or a category chip should never get bounced to
+// production. SEO-facing URLs (canonical, JSON-LD, sitemap, og:image)
+// intentionally keep the opposite rule and stay pinned to the production
+// domain regardless of build env; renderRobotsMetaTag/isProductionBuild
+// above are what keep those non-production builds out of search results,
+// so a fixed canonical target there doesn't cost anything.
+export function getSiteUrl(): string {
+  if (isProductionBuild()) return 'https://seentech.io';
+  return process.env.BLOG_SITE_URL || 'https://seentech.io';
 }
 
 // Verbatim from seen-blog-reference/02_المقالة_من_الداخل.html lines 371-393,

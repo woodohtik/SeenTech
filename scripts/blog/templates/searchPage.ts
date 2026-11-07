@@ -1,4 +1,4 @@
-import { STYLE_BLOCK, FONTS_PRECONNECT, renderSiteHeader, renderSiteFooter, renderStickyMobileCta, BLOG_CLIENT_SCRIPT_TAG } from './shared';
+import { STYLE_BLOCK, FONTS_PRECONNECT, renderSiteHeader, renderSiteFooter, renderStickyMobileCta, BLOG_CLIENT_SCRIPT_TAG, getSiteUrl } from './shared';
 
 // Static shell; the client-side filter (re-implementing filterSearchIndex's
 // same lowercase-substring rule from scripts/blog/search.ts against the
@@ -23,7 +23,7 @@ ${renderSiteHeader()}
 <section class="b-hero"><div class="wrap">
   <span class="eyebrow">مدونة سين</span>
   <h1>البحث</h1>
-  <form class="search" role="search" action="https://seentech.io/blog/search"><label for="q" class="sr">ابحث في المدونة</label>
+  <form class="search" role="search" action="${getSiteUrl()}/blog/search"><label for="q" class="sr">ابحث في المدونة</label>
     <input id="q" name="q" type="search" placeholder="ابحث: مقاس، تأخير، رمضان، ورقة الطلب..."><button class="btn btn-ink" type="submit">بحث</button></form>
 </div></section>
 <section class="wrap" aria-labelledby="results-h">

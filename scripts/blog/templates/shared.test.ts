@@ -3,15 +3,39 @@ import { blogConfig } from '../../../content/blog.config';
 import {
   STYLE_BLOCK, FONTS_PRECONNECT, renderSiteHeader, renderSiteFooter, renderStickyMobileCta, renderSideCta,
   BLOG_CLIENT_SCRIPT_TAG, renderAnalyticsLoaderTags, renderAnalyticsConfigScriptTag, escapeHtml,
-  isProductionBuild, renderRobotsMetaTag,
+  isProductionBuild, renderRobotsMetaTag, getSiteUrl,
 } from './shared';
 
 const originalConfig = { ...blogConfig };
 const originalVercelEnv = process.env.VERCEL_ENV;
+const originalBlogSiteUrl = process.env.BLOG_SITE_URL;
 afterEach(() => {
   Object.assign(blogConfig, originalConfig);
   if (originalVercelEnv === undefined) delete process.env.VERCEL_ENV;
   else process.env.VERCEL_ENV = originalVercelEnv;
+  if (originalBlogSiteUrl === undefined) delete process.env.BLOG_SITE_URL;
+  else process.env.BLOG_SITE_URL = originalBlogSiteUrl;
+});
+
+// Internal navigation links (header, chips, breadcrumbs, search form) must
+// stay on whichever origin served this build, so a staging reader clicking
+// around never bounces to production -- see getSiteUrl's own comment for
+// why SEO-facing URLs (canonical, JSON-LD, sitemap) do the opposite.
+test('getSiteUrl defaults to the production domain when BLOG_SITE_URL is unset', () => {
+  delete process.env.BLOG_SITE_URL;
+  expect(getSiteUrl()).toBe('https://seentech.io');
+});
+
+test('getSiteUrl follows BLOG_SITE_URL on a non-production build', () => {
+  process.env.VERCEL_ENV = 'preview';
+  process.env.BLOG_SITE_URL = 'https://staging.seentech.io';
+  expect(getSiteUrl()).toBe('https://staging.seentech.io');
+});
+
+test('getSiteUrl ignores BLOG_SITE_URL and stays on the production domain for a production build', () => {
+  process.env.VERCEL_ENV = 'production';
+  process.env.BLOG_SITE_URL = 'https://staging.seentech.io';
+  expect(getSiteUrl()).toBe('https://seentech.io');
 });
 
 test('style block is non-empty css with no style tags', () => {
@@ -36,6 +60,15 @@ test('side cta aria-label and button both say "ابدأ الآن"', () => {
 
 test('site header marks the "المدونة" nav link as current, on every page type', () => {
   expect(renderSiteHeader()).toContain('aria-current="page"');
+});
+
+test('site header logo and nav links follow BLOG_SITE_URL, not a hardcoded production domain', () => {
+  process.env.VERCEL_ENV = 'preview';
+  process.env.BLOG_SITE_URL = 'https://staging.seentech.io';
+  const html = renderSiteHeader();
+  expect(html).toContain('href="https://staging.seentech.io/"');
+  expect(html).toContain('href="https://staging.seentech.io/blog/"');
+  expect(html).not.toContain('href="https://seentech.io/"');
 });
 
 test('footer renders without throwing', () => {

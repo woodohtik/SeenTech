@@ -13,6 +13,7 @@ import {
   renderAnalyticsLoaderTags,
   renderAnalyticsConfigScriptTag,
   renderRobotsMetaTag,
+  getSiteUrl,
   escapeHtml,
 } from './shared';
 
@@ -162,7 +163,7 @@ ${jsonLdScripts}
 ${renderSiteHeader()}
 <main class="art">
 <div class="wrap">
-  <nav class="crumbs" aria-label="مسار الصفحة"><a href="https://seentech.io/blog/">المدونة</a><span>/</span><a href="https://seentech.io/blog/category/${article.frontmatter.cluster}">${category?.label ?? ''}</a></nav>
+  <nav class="crumbs" aria-label="مسار الصفحة"><a href="${getSiteUrl()}/blog/">المدونة</a><span>/</span><a href="${getSiteUrl()}/blog/category/${article.frontmatter.cluster}">${category?.label ?? ''}</a></nav>
   <header class="art-h">
     <span class="cat-lg">${category?.icon ?? ''}${category?.label ?? ''}</span>
     <h1>${title}</h1>
