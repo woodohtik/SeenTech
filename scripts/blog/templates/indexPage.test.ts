@@ -108,6 +108,17 @@ test('index and category pages omit the noindex meta tag on a production build',
 // stay on whichever origin served this build, unlike canonical/JSON-LD/
 // sitemap URLs which intentionally stay pinned to production (see
 // getSiteUrl's comment in shared.ts).
+test('index and category pages carry og:type=website and a Twitter Card without an image', () => {
+  const indexHtml = renderIndexPage([article]);
+  const categoryHtml = renderCategoryPage(CATEGORIES[0], []);
+  for (const html of [indexHtml, categoryHtml]) {
+    expect(html).toContain('<meta property="og:type" content="website">');
+    expect(html).toContain('<meta name="twitter:card" content="summary">');
+    expect(html).not.toContain('twitter:image');
+  }
+  expect(indexHtml).toContain('<meta name="twitter:title" content="مدونة سين | دليل صاحب محل التفصيل">');
+});
+
 test('chips nav and search form follow BLOG_SITE_URL, not a hardcoded production domain', () => {
   process.env.VERCEL_ENV = 'preview';
   process.env.BLOG_SITE_URL = 'https://staging.seentech.io';

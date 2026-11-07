@@ -133,6 +133,16 @@ test('article pages omit the noindex meta tag on a production build', () => {
 // The breadcrumb is internal navigation -- it must stay on whichever origin
 // served this build, unlike the canonical/og:image URLs which intentionally
 // stay pinned to production (see getSiteUrl's comment in shared.ts).
+test('article pages carry og:type=article, article:published_time, and a full Twitter Card', () => {
+  const html = renderArticlePage(baseArticle, parsed, [baseArticle, otherArticle]);
+  expect(html).toContain('<meta property="og:type" content="article">');
+  expect(html).toContain('<meta property="article:published_time" content="2026-11-03">');
+  expect(html).toContain('<meta name="twitter:card" content="summary_large_image">');
+  expect(html).toContain('<meta name="twitter:title" content="كيف تتابع الطلبات؟">');
+  expect(html).toContain('<meta name="twitter:description" content="وصف قصير">');
+  expect(html).toContain('<meta name="twitter:image" content="https://seentech.io/blog/og/how-to.png">');
+});
+
 test('breadcrumb nav follows BLOG_SITE_URL, not a hardcoded production domain', () => {
   process.env.VERCEL_ENV = 'preview';
   process.env.BLOG_SITE_URL = 'https://staging.seentech.io';

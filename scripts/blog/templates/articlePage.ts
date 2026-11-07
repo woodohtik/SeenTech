@@ -149,10 +149,16 @@ export function renderArticlePage(article: LoadedArticle, parsed: ParsedArticle,
 <title>${pageTitle}</title>
 <meta name="description" content="${metaDescription}">
 <link rel="canonical" href="${article.canonicalUrl}">
+<meta property="og:type" content="article">
 <meta property="og:title" content="${pageTitle}">
 <meta property="og:description" content="${metaDescription}">
 <meta property="og:image" content="https://seentech.io/blog/og/${article.slug}.png">
 <meta property="og:locale" content="ar_SA">
+<meta property="article:published_time" content="${article.frontmatter.publishDate}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${title}">
+<meta name="twitter:description" content="${metaDescription}">
+<meta name="twitter:image" content="https://seentech.io/blog/og/${article.slug}.png">
 ${renderRobotsMetaTag()}
 ${FONTS_PRECONNECT}
 <style>${STYLE_BLOCK}</style>
