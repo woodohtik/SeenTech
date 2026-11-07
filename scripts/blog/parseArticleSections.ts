@@ -1,4 +1,14 @@
-import { marked } from 'marked';
+// marked ships ESM-only (no "require" export condition) -- a static
+// `import { marked } from 'marked'` works fine under Vite/tsx/vitest (all
+// ESM-native), but crashes at runtime in the esbuild-bundled CJS server
+// (dist/server.cjs, see package.json's build script) with
+// ERR_REQUIRE_ESM. A cached dynamic import() is the interop Node itself
+// recommends for requiring an ESM-only package from CommonJS.
+let markedPromise: Promise<typeof import('marked')> | null = null;
+function getMarked() {
+  if (!markedPromise) markedPromise = import('marked');
+  return markedPromise;
+}
 
 export interface FaqItem {
   question: string;
@@ -26,7 +36,8 @@ const WHERE_SEEN_FITS_HEADING = 'وين تدخل منصة سين؟';
 const FAQ_HEADING = 'أسئلة شائعة';
 const READ_NEXT_HEADING = 'اقرأ بعد';
 
-function renderMd(src: string): string {
+async function renderMd(src: string): Promise<string> {
+  const { marked } = await getMarked();
   const html = marked.parse(src.trim(), { async: false });
   return typeof html === 'string' ? html : '';
 }
@@ -51,7 +62,7 @@ function stripBoldPrefix(paragraph: string, label: string): string {
   return paragraph.replace(new RegExp(`^\\*\\*${label}:?\\*\\*\\s*`), '').trim();
 }
 
-export function parseArticleSections(markdownBody: string): ParsedArticle {
+export async function parseArticleSections(markdownBody: string): Promise<ParsedArticle> {
   const { editedBy, rest: afterByline } = extractEditedByLine(markdownBody);
 
   // The about-Seen box can sit anywhere in the article (commonly near the
@@ -63,7 +74,7 @@ export function parseArticleSections(markdownBody: string): ParsedArticle {
   // leaves every "## heading" line and surrounding content untouched.
   const aboutExtract = extractLeadingParagraph(afterByline, '> **عن منصة سين:**');
   const aboutSeenHtml = aboutExtract.match
-    ? renderMd(aboutExtract.match.replace(/^>\s*/m, '').replace(/^\*\*عن منصة سين:?\*\*\s*/, ''))
+    ? await renderMd(aboutExtract.match.replace(/^>\s*/m, '').replace(/^\*\*عن منصة سين:?\*\*\s*/, ''))
     : null;
   const body = aboutExtract.rest;
 
@@ -74,12 +85,12 @@ export function parseArticleSections(markdownBody: string): ParsedArticle {
 
   const summaryExtract = extractLeadingParagraph(preamble, '**الجواب المختصر:**');
   preamble = summaryExtract.rest;
-  const summaryHtml = summaryExtract.match ? renderMd(stripBoldPrefix(summaryExtract.match, 'الجواب المختصر')) : null;
+  const summaryHtml = summaryExtract.match ? await renderMd(stripBoldPrefix(summaryExtract.match, 'الجواب المختصر')) : null;
 
   // Whatever preamble text is left (not the summary box, not a heading) was
   // previously computed and then silently dropped -- render and return it
   // instead of discarding real article content.
-  const leadingHtml = preamble.trim() ? renderMd(preamble) : null;
+  const leadingHtml = preamble.trim() ? await renderMd(preamble) : null;
 
   // Split the remainder into blocks per "## heading" occurrence.
   const blocks: { heading: string; content: string }[] = [];
@@ -101,11 +112,11 @@ export function parseArticleSections(markdownBody: string): ParsedArticle {
 
   for (const block of blocks) {
     if (block.heading === WHERE_SEEN_FITS_HEADING) {
-      whereSeenFitsHtml = renderMd(block.content);
+      whereSeenFitsHtml = await renderMd(block.content);
       continue;
     }
     if (block.heading === FAQ_HEADING) {
-      faq = parseFaqBlock(block.content);
+      faq = await parseFaqBlock(block.content);
       continue;
     }
     if (block.heading === READ_NEXT_HEADING) {
@@ -114,7 +125,7 @@ export function parseArticleSections(markdownBody: string): ParsedArticle {
     sections.push({
       id: `s${sections.length + 1}`,
       heading: block.heading,
-      bodyHtml: renderMd(block.content),
+      bodyHtml: await renderMd(block.content),
       isModel: block.heading.startsWith('نموذج '),
     });
   }
@@ -122,7 +133,7 @@ export function parseArticleSections(markdownBody: string): ParsedArticle {
   return { summaryHtml, leadingHtml, sections, whereSeenFitsHtml, aboutSeenHtml, faq, editedBy };
 }
 
-function parseFaqBlock(content: string): FaqItem[] {
+async function parseFaqBlock(content: string): Promise<FaqItem[]> {
   const items: FaqItem[] = [];
   const headingRe = /^### (.+)$/gm;
   const positions: { question: string; start: number }[] = [];
@@ -133,7 +144,7 @@ function parseFaqBlock(content: string): FaqItem[] {
   for (let i = 0; i < positions.length; i++) {
     const end = i + 1 < positions.length ? content.indexOf('\n### ', positions[i].start) : -1;
     const answer = (end === -1 ? content.slice(positions[i].start) : content.slice(positions[i].start, end)).trim();
-    items.push({ question: positions[i].question, answerHtml: renderMd(answer) });
+    items.push({ question: positions[i].question, answerHtml: await renderMd(answer) });
   }
   return items;
 }

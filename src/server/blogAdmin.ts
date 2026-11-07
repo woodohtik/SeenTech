@@ -366,7 +366,7 @@ export async function previewArticle(req: any, res: any): Promise<void> {
     canonicalUrl: 'https://seentech.io/blog/preview',
   };
 
-  const parsed = parseArticleSections(body);
+  const parsed = await parseArticleSections(body);
   const html = renderArticlePage(syntheticArticle, parsed, allArticles);
   res.status(200).json({ html });
 }

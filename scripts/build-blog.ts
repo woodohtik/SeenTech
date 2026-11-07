@@ -38,7 +38,7 @@ export async function buildBlog(contentDir: string, outDir: string): Promise<voi
   writePage(outDir, 'blog', renderIndexPage(articles));
 
   for (const article of articles) {
-    const parsed = parseArticleSections(article.rawBody);
+    const parsed = await parseArticleSections(article.rawBody);
     writePage(outDir, `blog/${article.slug}`, renderArticlePage(article, parsed, articles));
   }
 
