@@ -2860,7 +2860,7 @@ app.get("/api/cron/zatca-cert-expiry-check", asyncHandler(async (req: any, res) 
 // Vercel Cron يستدعي هذا المسار دورياً (vercel.json) ليدفع إعادة بناء الموقع
 // بعد تعديلات المقالات المجمَّعة -- نفس نمط حماية CRON_SECRET أعلاه، بلا جلسة
 // مستخدم (لا "authenticate" العادية).
-app.post("/api/cron/blog-rebuild-sweep", asyncHandler(async (req: any, res) => {
+app.get("/api/cron/blog-rebuild-sweep", asyncHandler(async (req: any, res) => {
   const cronSecret = (process.env.CRON_SECRET || '').trim();
   if (!cronSecret || req.headers.authorization !== `Bearer ${cronSecret}`) {
     return res.status(401).json({ error: 'Unauthorized' });
