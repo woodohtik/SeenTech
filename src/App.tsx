@@ -105,6 +105,7 @@ const SaaSSystemSettings = React.lazy(() => import('./components/SaaSSystemSetti
 const SaaSAssistantSettings = React.lazy(() => import('./components/SaaSAssistantSettings'));
 const SaaSWithdrawals = React.lazy(() => import('./components/SaaSWithdrawals'));
 const SubscriptionRequestsAdminManager = React.lazy(() => import('./components/SubscriptionRequestsAdminManager'));
+const AdminBlogEditor = React.lazy(() => import('./components/AdminBlogEditor'));
 import SaaSTeamManagement from './components/SaaSTeamManagement';
 import TenantAnalyticsDashboard from './components/TenantAnalyticsDashboard';
 import { RolePermissionsSettings } from './components/RolePermissionsSettings';
@@ -671,6 +672,13 @@ function AppContent() {
                         <RouteBoundary>
                           <RoleGuard allowedRoles={['super_admin']}>
                             <SaaSAuditLogs />
+                          </RoleGuard>
+                        </RouteBoundary>
+                      } />
+                      <Route path="/blog" element={
+                        <RouteBoundary>
+                          <RoleGuard allowedRoles={['super_admin']}>
+                            <AdminBlogEditor />
                           </RoleGuard>
                         </RouteBoundary>
                       } />
