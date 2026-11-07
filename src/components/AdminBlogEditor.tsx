@@ -5,7 +5,8 @@
  * `fetch` -- no dedicated data-fetching library, per the plan.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { CheckCircle, XCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { CheckCircle, XCircle, FileText, Pencil, Trash2, Plus, Clock, BadgeCheck } from 'lucide-react';
 import { CATEGORIES } from '../../scripts/blog/categories';
 import { supabase } from '../lib/supabase/client';
 import { Button } from './ui/Button';
@@ -267,81 +268,115 @@ export default function AdminBlogEditor(): React.JSX.Element {
     setForm(f => ({ ...f, related: selected }));
   };
 
-  const toastBanner = toast && (
-    <div role="alert">
-      {toast.type === 'success' ? <CheckCircle size={16} /> : <XCircle size={16} />}
-      {toast.message}
-    </div>
+  const toastBanner = (
+    <AnimatePresence>
+      {toast && (
+        <motion.div
+          role="alert"
+          initial={{ opacity: 0, y: 50, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+          className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 font-bold text-sm min-w-[300px] justify-center text-white ${toast.type === 'success' ? 'bg-success' : 'bg-danger'}`}
+        >
+          {toast.type === 'success' ? <CheckCircle size={20} /> : <XCircle size={20} />}
+          {toast.message}
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 
   if (mode === 'form') {
     return (
-      <div>
+      <div className="space-y-10">
         {toastBanner}
-        <h1>{editingSlug ? 'تعديل مقالة' : 'مقالة جديدة'}</h1>
-
-        <Card>
-          <label htmlFor="admin-blog-title">العنوان</label>
-          <input
-            id="admin-blog-title"
-            className={FIELD_CLASS}
-            value={form.title}
-            onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-          />
-
-          <label htmlFor="admin-blog-meta">الوصف التعريفي</label>
-          <textarea
-            id="admin-blog-meta"
-            className={FIELD_CLASS}
-            rows={3}
-            value={form.metaDescription}
-            onChange={e => setForm(f => ({ ...f, metaDescription: e.target.value }))}
-          />
-
-          <label htmlFor="admin-blog-cluster">التصنيف</label>
-          <select
-            id="admin-blog-cluster"
-            className={FIELD_CLASS}
-            value={form.cluster}
-            onChange={e => setForm(f => ({ ...f, cluster: e.target.value }))}
-          >
-            {CATEGORIES.map(category => (
-              <option key={category.slug} value={category.slug}>{category.label}</option>
-            ))}
-          </select>
-
-          <label htmlFor="admin-blog-publish-date">تاريخ النشر</label>
-          <input
-            id="admin-blog-publish-date"
-            type="datetime-local"
-            className={FIELD_CLASS}
-            value={form.publishDateLocal}
-            onChange={e => setForm(f => ({ ...f, publishDateLocal: e.target.value }))}
-          />
-
-          <label htmlFor="admin-blog-related">مقالات ذات صلة</label>
-          <select
-            id="admin-blog-related"
-            multiple
-            className={FIELD_CLASS}
-            value={form.related}
-            onChange={handleRelatedChange}
-          >
-            {articles.filter(a => a.slug !== editingSlug).map(a => (
-              <option key={a.slug} value={a.slug}>{a.title}</option>
-            ))}
-          </select>
-
-          <label htmlFor="admin-blog-body">المحتوى</label>
-          <textarea
-            id="admin-blog-body"
-            className={FIELD_CLASS}
-            rows={20}
-            value={form.body}
-            onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
-          />
-
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div>
+            <h2 className="text-3xl font-black text-content flex items-center gap-3">
+              <Pencil className="text-brand" size={32} />
+              {editingSlug ? 'تعديل مقالة' : 'مقالة جديدة'}
+            </h2>
+            <p className="text-content-muted font-bold text-sm mt-1">
+              {editingSlug ? 'عدّل الحقول ثم احفظ التعديلات' : 'عبّئ الحقول واحفظ لنشرها أو جدولتها'}
+            </p>
+          </div>
+        </header>
+
+        <Card className="rounded-3xl p-8 space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2">
+              <label htmlFor="admin-blog-title" className="block text-sm font-bold text-content-muted mb-1.5">العنوان</label>
+              <input
+                id="admin-blog-title"
+                className={FIELD_CLASS}
+                value={form.title}
+                onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label htmlFor="admin-blog-meta" className="block text-sm font-bold text-content-muted mb-1.5">الوصف التعريفي</label>
+              <textarea
+                id="admin-blog-meta"
+                className={FIELD_CLASS}
+                rows={3}
+                value={form.metaDescription}
+                onChange={e => setForm(f => ({ ...f, metaDescription: e.target.value }))}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="admin-blog-cluster" className="block text-sm font-bold text-content-muted mb-1.5">التصنيف</label>
+              <select
+                id="admin-blog-cluster"
+                className={FIELD_CLASS}
+                value={form.cluster}
+                onChange={e => setForm(f => ({ ...f, cluster: e.target.value }))}
+              >
+                {CATEGORIES.map(category => (
+                  <option key={category.slug} value={category.slug}>{category.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="admin-blog-publish-date" className="block text-sm font-bold text-content-muted mb-1.5">تاريخ النشر</label>
+              <input
+                id="admin-blog-publish-date"
+                type="datetime-local"
+                className={FIELD_CLASS}
+                value={form.publishDateLocal}
+                onChange={e => setForm(f => ({ ...f, publishDateLocal: e.target.value }))}
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label htmlFor="admin-blog-related" className="block text-sm font-bold text-content-muted mb-1.5">مقالات ذات صلة</label>
+              <select
+                id="admin-blog-related"
+                multiple
+                className={FIELD_CLASS}
+                value={form.related}
+                onChange={handleRelatedChange}
+              >
+                {articles.filter(a => a.slug !== editingSlug).map(a => (
+                  <option key={a.slug} value={a.slug}>{a.title}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="md:col-span-2">
+              <label htmlFor="admin-blog-body" className="block text-sm font-bold text-content-muted mb-1.5">المحتوى (Markdown)</label>
+              <textarea
+                id="admin-blog-body"
+                className={`${FIELD_CLASS} font-mono text-sm`}
+                rows={20}
+                value={form.body}
+                onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 border-t border-border pt-6">
             <Button type="button" variant="secondary" onClick={handlePreview}>معاينة</Button>
             <Button type="button" variant="primary" loading={isSaving} onClick={handleSave} disabled={isSaving}>
               {editingSlug ? 'حفظ التعديلات' : 'حفظ المقالة'}
@@ -350,7 +385,12 @@ export default function AdminBlogEditor(): React.JSX.Element {
           </div>
 
           {previewHtml !== null && (
-            <iframe title="معاينة المقالة" srcDoc={previewHtml} className="w-full h-[70vh]" />
+            <div className="space-y-2">
+              <p className="text-sm font-bold text-content-muted">معاينة</p>
+              <div className="rounded-2xl border border-border overflow-hidden">
+                <iframe title="معاينة المقالة" srcDoc={previewHtml} className="w-full h-[70vh]" />
+              </div>
+            </div>
           )}
         </Card>
       </div>
@@ -358,40 +398,100 @@ export default function AdminBlogEditor(): React.JSX.Element {
   }
 
   return (
-    <div>
+    <div className="space-y-10">
       {toastBanner}
-      <h1>إدارة المقالات</h1>
-      {/* Hidden while any row's delete confirmation is open: otherwise this
-          button's own text ("مقالة جديدة") can collide with the confirmation
-          naming an article whose title is itself just "مقالة", and it keeps
-          the admin from navigating away mid-confirmation either way. */}
-      {confirmingDeleteSlug === null && (
-        <Button type="button" variant="primary" onClick={openCreateForm}>مقالة جديدة</Button>
-      )}
-      <Card>
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div>
+          <h2 className="text-3xl font-black text-content flex items-center gap-3">
+            <FileText className="text-brand" size={32} />
+            إدارة المقالات
+          </h2>
+          <p className="text-content-muted font-bold text-sm mt-1">مدونة سين — إنشاء وتعديل وجدولة المقالات</p>
+        </div>
+        {/* Hidden while any row's delete confirmation is open: otherwise this
+            button's own text ("مقالة جديدة") can collide with the confirmation
+            naming an article whose title is itself just "مقالة", and it keeps
+            the admin from navigating away mid-confirmation either way. */}
+        {confirmingDeleteSlug === null && (
+          <Button type="button" variant="primary" onClick={openCreateForm}>
+            <Plus size={18} />
+            مقالة جديدة
+          </Button>
+        )}
+      </header>
+
+      <div className="bg-surface rounded-3xl border border-border shadow-sm overflow-hidden">
         {isLoadingList ? (
-          <p>...جارٍ التحميل</p>
+          <div className="p-12 text-center text-sm text-content-muted font-bold">...جارٍ التحميل</div>
+        ) : articles.length === 0 ? (
+          <div className="p-12 text-center space-y-3">
+            <FileText className="mx-auto text-content-muted/40" size={40} />
+            <p className="text-sm text-content-muted font-bold">لا توجد مقالات بعد</p>
+            <Button type="button" variant="secondary" size="sm" onClick={openCreateForm}>
+              <Plus size={16} />
+              أنشئ أول مقالة
+            </Button>
+          </div>
         ) : (
-          <table>
-            <tbody>
+          <table className="w-full text-right">
+            <thead className="bg-surface-muted text-content-muted text-[10px] font-black uppercase tracking-widest border-b border-border">
+              <tr>
+                <th className="px-8 py-5">العنوان</th>
+                <th className="px-8 py-5">الحالة</th>
+                <th className="px-8 py-5 text-left">الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
               {articles.map(article => (
-                <tr key={article.slug}>
+                <tr key={article.slug} className="hover:bg-surface-muted/30 transition-all">
                   {confirmingDeleteSlug === article.slug ? (
-                    <td colSpan={4}>
-                      <strong>تأكيد الحذف</strong>
-                      <p>{`هل تريد حذف "${article.title}"؟ قد تشير إليها مقالات أخرى.`}</p>
-                      <Button type="button" variant="danger" onClick={() => handleDelete(article.slug)}>نعم، حذف</Button>
-                      <Button type="button" variant="ghost" onClick={() => setConfirmingDeleteSlug(null)}>إلغاء</Button>
+                    <td colSpan={3} className="px-8 py-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-black text-content text-sm">تأكيد الحذف</p>
+                          <p className="text-xs text-content-muted mt-0.5 font-bold">{`هل تريد حذف "${article.title}"؟ قد تشير إليها مقالات أخرى.`}</p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Button type="button" variant="danger" size="sm" onClick={() => handleDelete(article.slug)}>نعم، حذف</Button>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmingDeleteSlug(null)}>إلغاء</Button>
+                        </div>
+                      </div>
                     </td>
                   ) : (
                     <>
-                      <td>{article.title}</td>
-                      <td>{statusLabel(article)}</td>
-                      <td>
-                        <Button type="button" variant="secondary" size="sm" onClick={() => openEditForm(article.slug)}>تعديل</Button>
+                      <td className="px-8 py-6 font-black text-content">{article.title}</td>
+                      <td className="px-8 py-6">
+                        {article.status === 'published' ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-success/10 text-success border border-success/20">
+                            <BadgeCheck size={12} />
+                            {statusLabel(article)}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-warning/10 text-warning border border-warning/20">
+                            <Clock size={12} />
+                            {statusLabel(article)}
+                          </span>
+                        )}
                       </td>
-                      <td>
-                        <Button type="button" variant="danger" size="sm" onClick={() => setConfirmingDeleteSlug(article.slug)}>حذف</Button>
+                      <td className="px-8 py-6">
+                        <div className="flex items-center justify-start gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openEditForm(article.slug)}
+                            className="p-2 text-content-muted hover:text-brand hover:bg-brand/5 rounded-xl transition-all"
+                            title="تعديل"
+                          >
+                            <Pencil size={18} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmingDeleteSlug(article.slug)}
+                            className="p-2 text-danger hover:bg-danger/5 rounded-xl transition-all"
+                            title="حذف"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
                       </td>
                     </>
                   )}
@@ -400,7 +500,7 @@ export default function AdminBlogEditor(): React.JSX.Element {
             </tbody>
           </table>
         )}
-      </Card>
+      </div>
     </div>
   );
 }
