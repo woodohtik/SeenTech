@@ -19,6 +19,20 @@ describe('triggerBlogRebuild', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  // I2: a missing hook URL must never fail the save routes, but it must be
+  // visible in logs everywhere it's called from (including the save routes,
+  // where it stays non-fatal) -- otherwise the cron sweep can silently no-op
+  // with nothing in the logs to explain why the rebuild never happened.
+  test('logs a warning naming the missing env var when BLOG_DEPLOY_HOOK_URL is unset', async () => {
+    delete process.env.BLOG_DEPLOY_HOOK_URL;
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    await triggerBlogRebuild();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('BLOG_DEPLOY_HOOK_URL'));
+  });
+
   test('POSTs to the configured hook URL', async () => {
     process.env.BLOG_DEPLOY_HOOK_URL = HOOK_URL;
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 });

@@ -7,6 +7,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { CATEGORIES } from '../../scripts/blog/categories';
+import { supabase } from '../lib/supabase/client';
+import { Button } from './ui/Button';
+import { Card } from './ui/Card';
 
 interface ArticleListItem {
   slug: string;
@@ -35,6 +38,11 @@ const EMPTY_FORM: ArticleFormState = {
   related: [],
   body: '',
 };
+
+// Reused everywhere this screen renders a plain text input/select/textarea --
+// this app's Tailwind reset otherwise leaves them borderless/invisible.
+// Copied verbatim from src/components/forms/CustomerForm.tsx's own pattern.
+const FIELD_CLASS = 'mt-1 block w-full rounded-md border-border shadow-sm focus:border-info focus:ring-info sm:text-sm';
 
 /** `status === 'published' ? 'منشورة' : 'مجدولة لـ <formatted publishDate>'`. */
 function statusLabel(article: ArticleListItem): string {
@@ -77,8 +85,19 @@ async function extractErrorMessage(res: Response, fallback: string): Promise<str
   }
 }
 
+/**
+ * Every call to the admin blog API must carry the current session's bearer
+ * token, or `authenticate` (src/server/middleware/authMiddleware.ts) 401s it
+ * in real use -- same pattern as SaaSTeamManagement.tsx's own fetch calls.
+ */
+async function getAuthHeader(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return { Authorization: `Bearer ${session?.access_token || ''}` };
+}
+
 export default function AdminBlogEditor(): React.JSX.Element {
   const [articles, setArticles] = useState<ArticleListItem[]>([]);
+  const [isLoadingList, setIsLoadingList] = useState(true);
   const [mode, setMode] = useState<'list' | 'form'>('list');
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
   const [form, setForm] = useState<ArticleFormState>(EMPTY_FORM);
@@ -95,8 +114,10 @@ export default function AdminBlogEditor(): React.JSX.Element {
   }, []);
 
   const loadArticles = useCallback(async () => {
+    setIsLoadingList(true);
     try {
-      const res = await fetch('/api/admin/blog/articles');
+      const authHeader = await getAuthHeader();
+      const res = await fetch('/api/admin/blog/articles', { headers: authHeader });
       if (!res.ok) {
         showToast(await extractErrorMessage(res, 'تعذر تحميل قائمة المقالات'));
         return;
@@ -105,6 +126,8 @@ export default function AdminBlogEditor(): React.JSX.Element {
       setArticles(data.articles ?? []);
     } catch {
       showToast('تعذر تحميل قائمة المقالات');
+    } finally {
+      setIsLoadingList(false);
     }
   }, [showToast]);
 
@@ -121,7 +144,8 @@ export default function AdminBlogEditor(): React.JSX.Element {
 
   const openEditForm = async (slug: string) => {
     try {
-      const res = await fetch(`/api/admin/blog/articles/${slug}`);
+      const authHeader = await getAuthHeader();
+      const res = await fetch(`/api/admin/blog/articles/${slug}`, { headers: authHeader });
       if (!res.ok) {
         // Never open a blank form on a failed fetch (e.g. 404 if the file
         // was deleted elsewhere in the meantime) -- stay on the list.
@@ -156,9 +180,10 @@ export default function AdminBlogEditor(): React.JSX.Element {
 
   const handlePreview = async () => {
     try {
+      const authHeader = await getAuthHeader();
       const res = await fetch('/api/admin/blog/preview', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify(currentPayload()),
       });
       if (!res.ok) {
@@ -177,9 +202,10 @@ export default function AdminBlogEditor(): React.JSX.Element {
     try {
       const url = editingSlug ? `/api/admin/blog/articles/${editingSlug}` : '/api/admin/blog/articles';
       const method = editingSlug ? 'PUT' : 'POST';
+      const authHeader = await getAuthHeader();
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify(currentPayload()),
       });
       if (!res.ok) {
@@ -187,15 +213,31 @@ export default function AdminBlogEditor(): React.JSX.Element {
         // GitHub failure, ...) must never look like a successful one: stay
         // on the form with the author's input intact, don't refresh the
         // list, don't clear anything.
-        showToast(await extractErrorMessage(res, 'تعذر حفظ المقالة'));
+        if (res.status === 409) {
+          const data = await res.json().catch(() => ({} as any));
+          const existingTitle = typeof data?.existingTitle === 'string' ? data.existingTitle : '';
+          showToast(`الاسم مستخدم من قبل: ${existingTitle}`);
+        } else {
+          showToast(await extractErrorMessage(res, 'تعذر حفظ المقالة'));
+        }
         return;
       }
+
+      // Decide "نُشرت الآن" vs "مجدولة لـ ..." from the submitted publish
+      // date BEFORE resetting the form -- a scheduled (future) date must say
+      // so explicitly rather than implying the article is live right now.
+      const publishIso = publishDateToIso(form.publishDateLocal);
+      const successMessage =
+        new Date(publishIso) > new Date()
+          ? `مجدولة لـ ${new Date(publishIso).toLocaleString('ar')}`
+          : 'نُشرت الآن';
+
       await loadArticles();
       setMode('list');
       setEditingSlug(null);
       setForm(EMPTY_FORM);
       setPreviewHtml(null);
-      showToast(editingSlug ? 'تم حفظ التعديلات' : 'تم حفظ المقالة', 'success');
+      showToast(successMessage, 'success');
     } catch {
       showToast('تعذر حفظ المقالة');
     } finally {
@@ -205,7 +247,8 @@ export default function AdminBlogEditor(): React.JSX.Element {
 
   const handleDelete = async (slug: string) => {
     try {
-      const res = await fetch(`/api/admin/blog/articles/${slug}`, { method: 'DELETE' });
+      const authHeader = await getAuthHeader();
+      const res = await fetch(`/api/admin/blog/articles/${slug}`, { method: 'DELETE', headers: authHeader });
       if (!res.ok) {
         // Keep the confirmation open on failure -- the article is still
         // there, so silently closing the dialog would be misleading.
@@ -237,69 +280,79 @@ export default function AdminBlogEditor(): React.JSX.Element {
         {toastBanner}
         <h1>{editingSlug ? 'تعديل مقالة' : 'مقالة جديدة'}</h1>
 
-        <label htmlFor="admin-blog-title">العنوان</label>
-        <input
-          id="admin-blog-title"
-          value={form.title}
-          onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-        />
+        <Card>
+          <label htmlFor="admin-blog-title">العنوان</label>
+          <input
+            id="admin-blog-title"
+            className={FIELD_CLASS}
+            value={form.title}
+            onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+          />
 
-        <label htmlFor="admin-blog-meta">الوصف التعريفي</label>
-        <textarea
-          id="admin-blog-meta"
-          value={form.metaDescription}
-          onChange={e => setForm(f => ({ ...f, metaDescription: e.target.value }))}
-        />
+          <label htmlFor="admin-blog-meta">الوصف التعريفي</label>
+          <textarea
+            id="admin-blog-meta"
+            className={FIELD_CLASS}
+            rows={3}
+            value={form.metaDescription}
+            onChange={e => setForm(f => ({ ...f, metaDescription: e.target.value }))}
+          />
 
-        <label htmlFor="admin-blog-cluster">التصنيف</label>
-        <select
-          id="admin-blog-cluster"
-          value={form.cluster}
-          onChange={e => setForm(f => ({ ...f, cluster: e.target.value }))}
-        >
-          {CATEGORIES.map(category => (
-            <option key={category.slug} value={category.slug}>{category.label}</option>
-          ))}
-        </select>
+          <label htmlFor="admin-blog-cluster">التصنيف</label>
+          <select
+            id="admin-blog-cluster"
+            className={FIELD_CLASS}
+            value={form.cluster}
+            onChange={e => setForm(f => ({ ...f, cluster: e.target.value }))}
+          >
+            {CATEGORIES.map(category => (
+              <option key={category.slug} value={category.slug}>{category.label}</option>
+            ))}
+          </select>
 
-        <label htmlFor="admin-blog-publish-date">تاريخ النشر</label>
-        <input
-          id="admin-blog-publish-date"
-          type="datetime-local"
-          value={form.publishDateLocal}
-          onChange={e => setForm(f => ({ ...f, publishDateLocal: e.target.value }))}
-        />
+          <label htmlFor="admin-blog-publish-date">تاريخ النشر</label>
+          <input
+            id="admin-blog-publish-date"
+            type="datetime-local"
+            className={FIELD_CLASS}
+            value={form.publishDateLocal}
+            onChange={e => setForm(f => ({ ...f, publishDateLocal: e.target.value }))}
+          />
 
-        <label htmlFor="admin-blog-related">مقالات ذات صلة</label>
-        <select
-          id="admin-blog-related"
-          multiple
-          value={form.related}
-          onChange={handleRelatedChange}
-        >
-          {articles.filter(a => a.slug !== editingSlug).map(a => (
-            <option key={a.slug} value={a.slug}>{a.title}</option>
-          ))}
-        </select>
+          <label htmlFor="admin-blog-related">مقالات ذات صلة</label>
+          <select
+            id="admin-blog-related"
+            multiple
+            className={FIELD_CLASS}
+            value={form.related}
+            onChange={handleRelatedChange}
+          >
+            {articles.filter(a => a.slug !== editingSlug).map(a => (
+              <option key={a.slug} value={a.slug}>{a.title}</option>
+            ))}
+          </select>
 
-        <label htmlFor="admin-blog-body">المحتوى</label>
-        <textarea
-          id="admin-blog-body"
-          value={form.body}
-          onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
-        />
+          <label htmlFor="admin-blog-body">المحتوى</label>
+          <textarea
+            id="admin-blog-body"
+            className={FIELD_CLASS}
+            rows={20}
+            value={form.body}
+            onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
+          />
 
-        <div>
-          <button type="button" onClick={handlePreview}>معاينة</button>
-          <button type="button" onClick={handleSave} disabled={isSaving}>
-            {editingSlug ? 'حفظ التعديلات' : 'حفظ المقالة'}
-          </button>
-          <button type="button" onClick={() => setMode('list')}>إلغاء</button>
-        </div>
+          <div>
+            <Button type="button" variant="secondary" onClick={handlePreview}>معاينة</Button>
+            <Button type="button" variant="primary" loading={isSaving} onClick={handleSave} disabled={isSaving}>
+              {editingSlug ? 'حفظ التعديلات' : 'حفظ المقالة'}
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => setMode('list')}>إلغاء</Button>
+          </div>
 
-        {previewHtml !== null && (
-          <iframe title="معاينة المقالة" srcDoc={previewHtml} />
-        )}
+          {previewHtml !== null && (
+            <iframe title="معاينة المقالة" srcDoc={previewHtml} className="w-full h-[70vh]" />
+          )}
+        </Card>
       </div>
     );
   }
@@ -313,35 +366,41 @@ export default function AdminBlogEditor(): React.JSX.Element {
           naming an article whose title is itself just "مقالة", and it keeps
           the admin from navigating away mid-confirmation either way. */}
       {confirmingDeleteSlug === null && (
-        <button type="button" onClick={openCreateForm}>مقالة جديدة</button>
+        <Button type="button" variant="primary" onClick={openCreateForm}>مقالة جديدة</Button>
       )}
-      <table>
-        <tbody>
-          {articles.map(article => (
-            <tr key={article.slug}>
-              {confirmingDeleteSlug === article.slug ? (
-                <td colSpan={4}>
-                  <strong>تأكيد الحذف</strong>
-                  <p>{`هل تريد حذف "${article.title}"؟ قد تشير إليها مقالات أخرى.`}</p>
-                  <button type="button" onClick={() => handleDelete(article.slug)}>نعم، حذف</button>
-                  <button type="button" onClick={() => setConfirmingDeleteSlug(null)}>إلغاء</button>
-                </td>
-              ) : (
-                <>
-                  <td>{article.title}</td>
-                  <td>{statusLabel(article)}</td>
-                  <td>
-                    <button type="button" onClick={() => openEditForm(article.slug)}>تعديل</button>
-                  </td>
-                  <td>
-                    <button type="button" onClick={() => setConfirmingDeleteSlug(article.slug)}>حذف</button>
-                  </td>
-                </>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <Card>
+        {isLoadingList ? (
+          <p>...جارٍ التحميل</p>
+        ) : (
+          <table>
+            <tbody>
+              {articles.map(article => (
+                <tr key={article.slug}>
+                  {confirmingDeleteSlug === article.slug ? (
+                    <td colSpan={4}>
+                      <strong>تأكيد الحذف</strong>
+                      <p>{`هل تريد حذف "${article.title}"؟ قد تشير إليها مقالات أخرى.`}</p>
+                      <Button type="button" variant="danger" onClick={() => handleDelete(article.slug)}>نعم، حذف</Button>
+                      <Button type="button" variant="ghost" onClick={() => setConfirmingDeleteSlug(null)}>إلغاء</Button>
+                    </td>
+                  ) : (
+                    <>
+                      <td>{article.title}</td>
+                      <td>{statusLabel(article)}</td>
+                      <td>
+                        <Button type="button" variant="secondary" size="sm" onClick={() => openEditForm(article.slug)}>تعديل</Button>
+                      </td>
+                      <td>
+                        <Button type="button" variant="danger" size="sm" onClick={() => setConfirmingDeleteSlug(article.slug)}>حذف</Button>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </Card>
     </div>
   );
 }

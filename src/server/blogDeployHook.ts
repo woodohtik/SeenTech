@@ -11,7 +11,13 @@ const DEPLOY_HOOK_TIMEOUT_MS = 5000;
 export async function triggerBlogRebuild(): Promise<void> {
   try {
     const url = process.env.BLOG_DEPLOY_HOOK_URL;
-    if (!url) return;
+    if (!url) {
+      // Non-fatal everywhere this is called from (save routes must never fail
+      // just because the hook isn't configured), but the cron sweep route's
+      // entire job IS this hook, so ops needs a visible signal either way.
+      console.warn('[blog] BLOG_DEPLOY_HOOK_URL is not set; skipping deploy hook trigger');
+      return;
+    }
 
     const res = await fetch(url, {
       method: 'POST',

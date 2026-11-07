@@ -2865,6 +2865,12 @@ app.get("/api/cron/blog-rebuild-sweep", asyncHandler(async (req: any, res) => {
   if (!cronSecret || req.headers.authorization !== `Bearer ${cronSecret}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
+  // This route's entire job IS the deploy hook -- unlike the save routes
+  // (where a missing hook must stay non-fatal), a missing URL here must be a
+  // clear 500 naming the variable, not a silent 200 that looks like success.
+  if (!process.env.BLOG_DEPLOY_HOOK_URL) {
+    return res.status(500).json({ error: 'Missing required environment variable: BLOG_DEPLOY_HOOK_URL' });
+  }
   await triggerBlogRebuild();
   res.status(200).json({ ok: true });
 }));

@@ -3,11 +3,33 @@ import { render, screen, fireEvent, waitFor, cleanup, within } from '@testing-li
 import { test, expect, vi, afterEach } from 'vitest';
 import AdminBlogEditor from './AdminBlogEditor';
 
+// C1: every admin blog API call must carry the session's bearer token, so
+// every test needs a working (mocked) supabase.auth.getSession() -- a
+// default resolved session is set right after this mock so every existing
+// test keeps working without having to know about auth at all.
+const { mockGetSession } = vi.hoisted(() => ({ mockGetSession: vi.fn() }));
+vi.mock('../lib/supabase/client', () => ({
+  supabase: { auth: { getSession: mockGetSession } },
+}));
+mockGetSession.mockResolvedValue({ data: { session: { access_token: 'default-test-token' } } });
+
 // No `globals: true` in vitest.config.ts, so @testing-library/react's
 // auto-cleanup never registers -- see FractionPicker.test.tsx/VoiceMicButton.test.tsx
 // for the same pattern.
 afterEach(() => {
   cleanup();
+});
+
+// Regression (C1): AdminBlogEditor sent no Authorization header on any API
+// call, so every call 401s in real use (the mocked fetch in every other test
+// here never caught this). Asserts the header on the simplest call (list).
+test('every fetch call includes the Authorization bearer header from the current session', async () => {
+  mockGetSession.mockResolvedValueOnce({ data: { session: { access_token: 'test-access-token' } } });
+  const fetchMock = vi.spyOn(global, 'fetch').mockResolvedValue({ ok: true, json: async () => ({ articles: [] }) } as any);
+  render(<AdminBlogEditor />);
+  await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+  const [, init] = fetchMock.mock.calls[0];
+  expect((init as any).headers.Authorization).toBe('Bearer test-access-token');
 });
 
 test('renders every article from the API with its computed status', async () => {
@@ -67,7 +89,7 @@ test('clicking delete asks for confirmation before calling the delete endpoint',
   expect(screen.getByText(/تأكيد الحذف/)).toBeInTheDocument();
 });
 
-test('a failed save (409 slug collision) keeps the admin on the form, shows the error, and does not refresh the list', async () => {
+test('a failed save (409 slug collision) keeps the admin on the form, shows an Arabic message naming the existing title, and does not refresh the list', async () => {
   const fetchMock = vi.spyOn(global, 'fetch')
     .mockResolvedValueOnce({ ok: true, json: async () => ({ articles: [] }) } as any) // initial list load
     .mockResolvedValueOnce({ ok: false, status: 409, json: async () => ({ error: 'an article with this slug already exists', existingTitle: 'عنوان آخر' }) } as any); // rejected save
@@ -77,11 +99,50 @@ test('a failed save (409 slug collision) keeps the admin on the form, shows the 
   fireEvent.change(screen.getByLabelText(/العنوان/), { target: { value: 'عنوان مكرر' } });
   fireEvent.click(screen.getByRole('button', { name: /^حفظ/ }));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/admin/blog/articles', expect.objectContaining({ method: 'POST' })));
-  expect(await screen.findByText(/an article with this slug already exists/)).toBeInTheDocument();
+  // I7: a dedicated Arabic message naming the existing article's title --
+  // not the raw server error text.
+  expect(await screen.findByText(/الاسم مستخدم من قبل: عنوان آخر/)).toBeInTheDocument();
   // Stayed on the form -- a failed save never silently looks like a success.
   expect(screen.getByLabelText(/العنوان/)).toHaveValue('عنوان مكرر');
   // No third call refreshing the list after the rejected save.
   expect(fetchMock).toHaveBeenCalledTimes(2);
+});
+
+// I7: the save confirmation must distinguish an immediate publish from a
+// scheduled one, per the spec's Arabic copy.
+test('saving with a future publish date shows a "مجدولة لـ" confirmation, not the generic success message', async () => {
+  const fetchMock = vi.spyOn(global, 'fetch')
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ articles: [] }) } as any) // initial list load
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ slug: 'future-article' }) } as any) // save
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ articles: [] }) } as any); // refreshed list
+  render(<AdminBlogEditor />);
+  await screen.findByRole('button', { name: /مقالة جديدة/ });
+  fireEvent.click(screen.getByRole('button', { name: /مقالة جديدة/ }));
+  fireEvent.change(screen.getByLabelText(/العنوان/), { target: { value: 'عنوان مستقبلي' } });
+  const futureLocal = (() => {
+    const d = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  })();
+  fireEvent.change(screen.getByLabelText(/تاريخ النشر/), { target: { value: futureLocal } });
+  fireEvent.click(screen.getByRole('button', { name: /^حفظ/ }));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/admin/blog/articles', expect.objectContaining({ method: 'POST' })));
+  expect(await screen.findByText(/مجدولة لـ/)).toBeInTheDocument();
+});
+
+test('saving with a past/now publish date shows "نُشرت الآن"', async () => {
+  const fetchMock = vi.spyOn(global, 'fetch')
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ articles: [] }) } as any) // initial list load
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ slug: 'past-article' }) } as any) // save
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ articles: [] }) } as any); // refreshed list
+  render(<AdminBlogEditor />);
+  await screen.findByRole('button', { name: /مقالة جديدة/ });
+  fireEvent.click(screen.getByRole('button', { name: /مقالة جديدة/ }));
+  fireEvent.change(screen.getByLabelText(/العنوان/), { target: { value: 'عنوان سابق' } });
+  fireEvent.change(screen.getByLabelText(/تاريخ النشر/), { target: { value: '2020-01-01T00:00' } });
+  fireEvent.click(screen.getByRole('button', { name: /^حفظ/ }));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/admin/blog/articles', expect.objectContaining({ method: 'POST' })));
+  expect(await screen.findByText('نُشرت الآن')).toBeInTheDocument();
 });
 
 test('a failed fetch (404) when opening the edit form does not open a blank form', async () => {
@@ -93,7 +154,7 @@ test('a failed fetch (404) when opening the edit form does not open a blank form
   render(<AdminBlogEditor />);
   await screen.findByText('مقالة');
   fireEvent.click(screen.getByRole('button', { name: /تعديل/ }));
-  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/admin/blog/articles/a'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/admin/blog/articles/a', expect.objectContaining({ headers: expect.any(Object) })));
   expect(await screen.findByText(/not found/)).toBeInTheDocument();
   // Stayed on the list -- no blank form opened on the failed fetch.
   expect(screen.queryByLabelText(/العنوان/)).not.toBeInTheDocument();
@@ -116,7 +177,7 @@ test('clicking edit populates the form with the fetched article (title, meta, ca
   render(<AdminBlogEditor />);
   await screen.findByText('عنوان قديم');
   fireEvent.click(screen.getAllByRole('button', { name: /تعديل/ })[0]);
-  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/admin/blog/articles/a'));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/admin/blog/articles/a', expect.objectContaining({ headers: expect.any(Object) })));
 
   expect(await screen.findByLabelText(/العنوان/)).toHaveValue('عنوان قديم');
   expect(screen.getByLabelText(/الوصف التعريفي/)).toHaveValue('وصف قديم');

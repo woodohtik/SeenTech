@@ -16,6 +16,7 @@ import matter from 'gray-matter';
 import { parseArticleFrontmatter, validateFrontmatter, type LoadedArticle } from '../../scripts/blog/frontmatter.ts';
 import { parseArticleSections } from '../../scripts/blog/parseArticleSections.ts';
 import { renderArticlePage } from '../../scripts/blog/templates/articlePage.ts';
+import { getCategory } from '../../scripts/blog/categories.ts';
 import { slugify } from '../utils/slugify.ts';
 import * as blogGitHub from './blogGitHub.ts';
 import * as blogDeployHook from './blogDeployHook.ts';
@@ -58,6 +59,56 @@ function buildMarkdown(fields: ArticleInputFields, body: string): string {
   return matter.stringify(body, toFrontmatterData(fields));
 }
 
+/**
+ * Rejects a `:slug` route param that could escape `content/blog/` (path
+ * traversal via Express's own `%2F`/`..` decoding) -- e.g.
+ * `..%2F..%2FCLAUDE` decodes to `../../CLAUDE` before this ever sees it,
+ * which would otherwise resolve to a file well outside the blog directory.
+ *
+ * Deliberately NOT `slugify(slug) === slug`: slugify() strips hyphens as
+ * punctuation (they only ever appear in its OUTPUT by replacing whitespace),
+ * so it is not idempotent -- running it on an already-hyphenated real slug
+ * (e.g. "existing-slug") produces "existingslug" and would reject every
+ * normal multi-word article. Instead this allows exactly the characters
+ * slugify() can ever emit (letters, combining marks, digits, hyphens) and
+ * separately blocks the traversal-specific characters.
+ */
+function isValidSlug(slug: unknown): boolean {
+  if (typeof slug !== 'string' || slug.length === 0) return false;
+  if (slug.includes('/') || slug.includes('\\') || slug.includes('..')) return false;
+  return /^[\p{L}\p{M}\p{N}-]+$/u.test(slug);
+}
+
+/**
+ * Extra validation beyond `validateFrontmatter`'s own rules, run BEFORE
+ * `slugify(title)` or any GitHub call. Needed because:
+ *  - `validateFrontmatter` never checks `cluster` against the 8 fixed
+ *    category slugs (only `parseArticleFrontmatter`/`loadArticles` do), so an
+ *    invalid cluster would otherwise get committed to GitHub and break the
+ *    NEXT build's `loadArticles` run for everyone.
+ *  - a non-string `title`/`body` would throw an uncaught TypeError (e.g. from
+ *    `slugify(title)` or `matter.stringify`) before validation ever runs,
+ *    surfacing as a raw 500 instead of a clean 400.
+ *  - a `title` that slugifies to an empty string (only punctuation/emoji)
+ *    would otherwise produce a file literally named `content/blog/.md`.
+ * Shared by createArticle and updateArticle so the rule lives in one place.
+ */
+function validateArticleInput(fields: ArticleInputFields, body: unknown): string | null {
+  if (typeof fields.title !== 'string') {
+    return 'title must be a string';
+  }
+  if (typeof body !== 'string') {
+    return 'body must be a string';
+  }
+  if (!getCategory(fields.cluster)) {
+    return `invalid cluster "${fields.cluster}" — must be one of the eight fixed category slugs`;
+  }
+  if (slugify(fields.title).length === 0) {
+    return 'title must produce a non-empty slug';
+  }
+  return null;
+}
+
 // Maps ANY failure from a GitHub read/write (a BlogGitHubError with GitHub's
 // own message, or a plain Error such as a network/DNS failure from the
 // unguarded `fetch()` calls in blogGitHub.ts) to the 502 the brief's
@@ -77,21 +128,31 @@ function respondWithGitHubError(res: any, err: unknown): void {
  */
 export async function fetchAllArticles(): Promise<LoadedArticle[]> {
   const files = await blogGitHub.listBlogFiles();
-  return Promise.all(
+  // One unparseable file (malformed frontmatter, a non-.md fluke that slipped
+  // past listBlogFiles' filter, ...) must not take down the whole list/
+  // create/preview flow via Promise.all -- skip and log just that one file,
+  // and still return the rest.
+  const results = await Promise.all(
     files.map(async file => {
-      const blogFile = await blogGitHub.getBlogFile(file.name);
-      const { frontmatter, rawBody } = parseArticleFrontmatter(file.name, blogFile.content);
-      const slug = file.name.replace(/\.md$/, '');
-      const readTimeMinutes = Math.max(MIN_READ_TIME_MINUTES, Math.ceil(countWords(rawBody) / WORDS_PER_MINUTE));
-      return {
-        slug,
-        frontmatter,
-        rawBody,
-        readTimeMinutes,
-        canonicalUrl: `https://seentech.io/blog/${slug}`,
-      };
+      try {
+        const blogFile = await blogGitHub.getBlogFile(file.name);
+        const { frontmatter, rawBody } = parseArticleFrontmatter(file.name, blogFile.content);
+        const slug = file.name.replace(/\.md$/, '');
+        const readTimeMinutes = Math.max(MIN_READ_TIME_MINUTES, Math.ceil(countWords(rawBody) / WORDS_PER_MINUTE));
+        return {
+          slug,
+          frontmatter,
+          rawBody,
+          readTimeMinutes,
+          canonicalUrl: `https://seentech.io/blog/${slug}`,
+        };
+      } catch (err) {
+        console.warn(`[blog] skipping ${file.name}: failed to parse`, err);
+        return null;
+      }
     })
   );
+  return results.filter((article): article is LoadedArticle => article !== null);
 }
 
 /** GET /api/admin/blog/articles */
@@ -111,6 +172,10 @@ export async function listArticles(req: any, res: any): Promise<void> {
 
 /** GET /api/admin/blog/articles/:slug */
 export async function getArticle(req: any, res: any): Promise<void> {
+  if (!isValidSlug(req.params.slug)) {
+    res.status(400).json({ error: 'invalid slug' });
+    return;
+  }
   const filename = `${req.params.slug}.md`;
   try {
     const file = await blogGitHub.getBlogFile(filename);
@@ -136,6 +201,13 @@ export async function getArticle(req: any, res: any): Promise<void> {
 export async function createArticle(req: any, res: any): Promise<void> {
   const { title, metaDescription, cluster, publishDate, related, body } = req.body;
   const fields: ArticleInputFields = { title, metaDescription, cluster, publishDate, related };
+
+  const inputError = validateArticleInput(fields, body);
+  if (inputError) {
+    res.status(400).json({ error: inputError });
+    return;
+  }
+
   const slug = slugify(title);
   const filename = `${slug}.md`;
 
@@ -153,7 +225,11 @@ export async function createArticle(req: any, res: any): Promise<void> {
     respondWithGitHubError(res, err);
     return;
   }
-  const collision = existingArticles.find(article => slugify(article.frontmatter.title) === slug);
+  // Compares against the article's FILENAME (slug), not its current title --
+  // an article's filename doesn't change when its title is later edited, so
+  // comparing titles can miss a real collision (surfacing GitHub's own 422 as
+  // a generic 502 instead of this route's clear 409) or stale-match a wrong one.
+  const collision = existingArticles.find(article => article.slug === slug);
   if (collision) {
     res.status(409).json({ error: 'an article with this slug already exists', existingTitle: collision.frontmatter.title });
     return;
@@ -174,9 +250,19 @@ export async function createArticle(req: any, res: any): Promise<void> {
 /** PUT /api/admin/blog/articles/:slug */
 export async function updateArticle(req: any, res: any): Promise<void> {
   const { slug } = req.params;
+  if (!isValidSlug(slug)) {
+    res.status(400).json({ error: 'invalid slug' });
+    return;
+  }
   const filename = `${slug}.md`;
   const { title, metaDescription, cluster, publishDate, related, body } = req.body;
   const fields: ArticleInputFields = { title, metaDescription, cluster, publishDate, related };
+
+  const inputError = validateArticleInput(fields, body);
+  if (inputError) {
+    res.status(400).json({ error: inputError });
+    return;
+  }
 
   try {
     validateFrontmatter(filename, toFrontmatterData(fields));
@@ -213,6 +299,10 @@ export async function updateArticle(req: any, res: any): Promise<void> {
 /** DELETE /api/admin/blog/articles/:slug */
 export async function deleteArticle(req: any, res: any): Promise<void> {
   const { slug } = req.params;
+  if (!isValidSlug(slug)) {
+    res.status(400).json({ error: 'invalid slug' });
+    return;
+  }
   const filename = `${slug}.md`;
 
   let sha: string;

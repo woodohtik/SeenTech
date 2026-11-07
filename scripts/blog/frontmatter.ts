@@ -44,7 +44,7 @@ export function validateFrontmatter(filename: string, data: Record<string, unkno
     !PUBLISH_DATE_PATTERN.test(data.publish_date) ||
     Number.isNaN(Date.parse(data.publish_date))
   ) {
-    throw new Error(`${filename}: "publish_date" must be a YYYY-MM-DD date string, got ${JSON.stringify(data.publish_date)}`);
+    throw new Error(`${filename}: "publish_date" must be a YYYY-MM-DD date string or a full ISO-8601 datetime, got ${JSON.stringify(data.publish_date)}`);
   }
   if (data.related !== undefined && !Array.isArray(data.related)) {
     throw new Error(`${filename}: "related" must be an array of slugs when present`);

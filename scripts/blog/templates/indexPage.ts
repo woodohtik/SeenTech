@@ -18,8 +18,13 @@ const ARABIC_MONTHS = [
   'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
 ];
 
+// Formats in Asia/Riyadh local time, NOT UTC: see articlePage.ts's identical
+// formatArabicDate for the full rationale (no DST in Saudi Arabia, so a fixed
+// +3h offset before reading date parts is always correct).
+const RIYADH_OFFSET_MS = 3 * 60 * 60 * 1000;
+
 function formatArabicDate(isoDateTime: string): string {
-  const d = new Date(isoDateTime);
+  const d = new Date(new Date(isoDateTime).getTime() + RIYADH_OFFSET_MS);
   return `${d.getUTCDate()} ${ARABIC_MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
 

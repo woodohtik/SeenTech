@@ -33,8 +33,16 @@ function wrapTablesInHtml(html: string): string {
   return html.replace(/<table>/g, '<div class="tbl"><table>').replace(/<\/table>/g, '</table></div>');
 }
 
+// Formats in Asia/Riyadh local time, NOT UTC: the author now sends a real
+// offset-aware ISO string, and a date near midnight (e.g. 00:30 Riyadh time)
+// must show the Riyadh-local calendar day the author actually scheduled it
+// for, not the UTC day it falls back to a few hours earlier. Saudi Arabia
+// has no DST, so adding a fixed +3h to the UTC instant before reading date
+// parts is always correct and needs no Intl dependency.
+const RIYADH_OFFSET_MS = 3 * 60 * 60 * 1000;
+
 function formatArabicDate(isoDateTime: string): string {
-  const d = new Date(isoDateTime);
+  const d = new Date(new Date(isoDateTime).getTime() + RIYADH_OFFSET_MS);
   return `${d.getUTCDate()} ${ARABIC_MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
 

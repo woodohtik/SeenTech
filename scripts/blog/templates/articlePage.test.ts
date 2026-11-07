@@ -97,3 +97,14 @@ test('byline date formats correctly even when publishDate carries a time compone
   const html = renderArticlePage(withTime, parsed, [withTime]);
   expect(html).toContain('4 نوفمبر 2026');
 });
+
+// Regression (I8): formatArabicDate must use Riyadh-local time, not UTC --
+// 00:30 Riyadh time on the 5th is 21:30 UTC on the 4th, so a UTC-based
+// formatter would wrongly show "4 نوفمبر" to the author who scheduled it
+// for the 5th.
+test('byline date shows the Riyadh-local day, not the UTC day, near a midnight boundary', () => {
+  const nearMidnight = { ...baseArticle, frontmatter: { ...baseArticle.frontmatter, publishDate: '2026-11-05T00:30:00+03:00' } };
+  const html = renderArticlePage(nearMidnight, parsed, [nearMidnight]);
+  expect(html).toContain('5 نوفمبر 2026');
+  expect(html).not.toContain('4 نوفمبر 2026');
+});

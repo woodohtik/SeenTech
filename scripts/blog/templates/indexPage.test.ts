@@ -68,6 +68,15 @@ test('byline date formats correctly even when publishDate carries a time compone
   expect(html).toContain('4 نوفمبر 2026');
 });
 
+// Regression (I8): formatArabicDate must use Riyadh-local time, not UTC --
+// see articlePage.test.ts's identical case for the full rationale.
+test('byline date shows the Riyadh-local day, not the UTC day, near a midnight boundary', () => {
+  const nearMidnight = { ...article, frontmatter: { ...article.frontmatter, publishDate: '2026-11-05T00:30:00+03:00' } };
+  const html = renderIndexPage([nearMidnight]);
+  expect(html).toContain('5 نوفمبر 2026');
+  expect(html).not.toContain('4 نوفمبر 2026');
+});
+
 test('card title and description are HTML-escaped', () => {
   const dangerous = { ...article, frontmatter: { ...article.frontmatter, title: 'عنوان <script>', metaDescription: 'وصف "خاص"' } };
   const html = renderIndexPage([dangerous]);

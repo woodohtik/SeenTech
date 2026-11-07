@@ -77,14 +77,20 @@ export async function listBlogFiles(): Promise<BlogFileListing[]> {
   }
   const body = await res.json();
   const entries = Array.isArray(body) ? body : [];
+  // Excludes README.md (case-insensitively) the same way loadArticles's own
+  // readdirSync filter does at build time -- content/blog/README.md is a
+  // real file on this repo and is docs, not an article.
   return entries
-    .filter((entry: { name?: unknown }) => typeof entry?.name === 'string' && entry.name.endsWith('.md'))
+    .filter(
+      (entry: { name?: unknown }) =>
+        typeof entry?.name === 'string' && entry.name.endsWith('.md') && entry.name.toLowerCase() !== 'readme.md'
+    )
     .map((entry: { name: string; sha: string }) => ({ name: entry.name, sha: entry.sha }));
 }
 
 export async function getBlogFile(filename: string): Promise<BlogFileContent> {
   const { token, repo, branch } = requireBlogGitHubConfig();
-  const res = await fetch(`${contentsUrl(repo, `content/blog/${filename}`)}?ref=${branch}`, {
+  const res = await fetch(`${contentsUrl(repo, `content/blog/${encodeURIComponent(filename)}`)}?ref=${branch}`, {
     headers: authHeaders(token),
   });
   if (!res.ok) {
@@ -104,7 +110,7 @@ export async function getBlogFile(filename: string): Promise<BlogFileContent> {
 
 async function putBlogFile(filename: string, content: string, message: string, sha: string | undefined): Promise<void> {
   const { token, repo, branch } = requireBlogGitHubConfig();
-  const res = await fetch(contentsUrl(repo, `content/blog/${filename}`), {
+  const res = await fetch(contentsUrl(repo, `content/blog/${encodeURIComponent(filename)}`), {
     method: 'PUT',
     headers: {
       ...authHeaders(token),
@@ -133,7 +139,7 @@ export async function updateBlogFile(filename: string, content: string, sha: str
 
 export async function deleteBlogFile(filename: string, sha: string, message: string): Promise<void> {
   const { token, repo, branch } = requireBlogGitHubConfig();
-  const res = await fetch(contentsUrl(repo, `content/blog/${filename}`), {
+  const res = await fetch(contentsUrl(repo, `content/blog/${encodeURIComponent(filename)}`), {
     method: 'DELETE',
     headers: {
       ...authHeaders(token),
