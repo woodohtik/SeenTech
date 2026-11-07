@@ -56,12 +56,14 @@ function buildMarkdown(fields: ArticleInputFields, body: string): string {
   return matter.stringify(body, toFrontmatterData(fields));
 }
 
+// Maps ANY failure from a GitHub read/write (a BlogGitHubError with GitHub's
+// own message, or a plain Error such as a network/DNS failure from the
+// unguarded `fetch()` calls in blogGitHub.ts) to the 502 the brief's
+// response-shape table promises for "GitHub failure". Never rethrows --
+// every call site uses this so no GitHub-adjacent failure can escape a
+// handler as an unhandled rejection.
 function respondWithGitHubError(res: any, err: unknown): void {
-  if (err instanceof blogGitHub.BlogGitHubError) {
-    res.status(502).json({ error: err.message });
-    return;
-  }
-  throw err;
+  res.status(502).json({ error: err instanceof Error ? err.message : 'unknown error' });
 }
 
 /**
@@ -124,7 +126,7 @@ export async function getArticle(req: any, res: any): Promise<void> {
       res.status(404).json({ error: 'not found' });
       return;
     }
-    res.status(502).json({ error: err instanceof Error ? err.message : 'unknown error' });
+    respondWithGitHubError(res, err);
   }
 }
 
@@ -142,7 +144,13 @@ export async function createArticle(req: any, res: any): Promise<void> {
     return;
   }
 
-  const existingArticles = await thisModule.fetchAllArticles();
+  let existingArticles: LoadedArticle[];
+  try {
+    existingArticles = await thisModule.fetchAllArticles();
+  } catch (err) {
+    respondWithGitHubError(res, err);
+    return;
+  }
   const collision = existingArticles.find(article => slugify(article.frontmatter.title) === slug);
   if (collision) {
     res.status(409).json({ error: 'an article with this slug already exists', existingTitle: collision.frontmatter.title });
@@ -184,7 +192,7 @@ export async function updateArticle(req: any, res: any): Promise<void> {
       res.status(404).json({ error: 'not found' });
       return;
     }
-    res.status(502).json({ error: err instanceof Error ? err.message : 'unknown error' });
+    respondWithGitHubError(res, err);
     return;
   }
 
@@ -214,7 +222,7 @@ export async function deleteArticle(req: any, res: any): Promise<void> {
       res.status(404).json({ error: 'not found' });
       return;
     }
-    res.status(502).json({ error: err instanceof Error ? err.message : 'unknown error' });
+    respondWithGitHubError(res, err);
     return;
   }
 

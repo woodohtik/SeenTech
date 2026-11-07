@@ -121,6 +121,35 @@ describe('createArticle', () => {
     expect(res.statusCode).toBe(502);
     expect(res.body.error).toContain('sha');
   });
+
+  // Regression: the slug-collision check's own GitHub read must not be able
+  // to escape as an unhandled rejection -- any failure there (rate-limit,
+  // 5xx, network) must still resolve to the brief's documented 502 shape.
+  test('createArticle returns 502 (not an unhandled rejection) when the slug-collision check itself fails', async () => {
+    vi.spyOn(blogGitHub, 'listBlogFiles').mockRejectedValue(new BlogGitHubError('GitHub request failed (503)', 503));
+    const res = mockRes();
+    await createArticle(
+      { body: { title: 'عنوان جديد', metaDescription: 'وصف', cluster: 'orders', publishDate: '2026-11-04T10:00:00Z', related: [], body: 'نص' } } as any,
+      res
+    );
+    expect(res.statusCode).toBe(502);
+    expect(res.body.error).toBeTruthy();
+  });
+
+  // Regression: a raw network/DNS failure from blogGitHub.ts's unguarded
+  // fetch() calls throws a plain Error, not a BlogGitHubError. That must
+  // still be mapped to 502, not rethrown/escape as an unhandled rejection.
+  test('createArticle returns 502 when createBlogFile rejects with a plain (non-BlogGitHubError) Error', async () => {
+    vi.spyOn(blogGitHub, 'listBlogFiles').mockResolvedValue([]);
+    vi.spyOn(blogGitHub, 'createBlogFile').mockRejectedValue(new Error('network down'));
+    const res = mockRes();
+    await createArticle(
+      { body: { title: 'عنوان جديد', metaDescription: 'وصف', cluster: 'orders', publishDate: '2026-11-04T10:00:00Z', related: [], body: 'نص' } } as any,
+      res
+    );
+    expect(res.statusCode).toBe(502);
+    expect(res.body.error).toContain('network down');
+  });
 });
 
 describe('getArticle / updateArticle / deleteArticle', () => {
@@ -153,6 +182,20 @@ describe('getArticle / updateArticle / deleteArticle', () => {
     );
     expect(updateSpy).toHaveBeenCalledWith('x.md', expect.any(String), 'current-sha', expect.any(String));
     expect(res.statusCode).toBe(200);
+  });
+
+  // Regression: same plain-Error-must-map-to-502 guarantee as createArticle's,
+  // for the update write path.
+  test('updateArticle returns 502 when updateBlogFile rejects with a plain (non-BlogGitHubError) Error', async () => {
+    vi.spyOn(blogGitHub, 'getBlogFile').mockResolvedValue({ path: 'content/blog/x.md', sha: 'current-sha', content: '' });
+    vi.spyOn(blogGitHub, 'updateBlogFile').mockRejectedValue(new Error('network down'));
+    const res = mockRes();
+    await updateArticle(
+      { params: { slug: 'x' }, body: { title: 'عنوان', metaDescription: 'وصف', cluster: 'orders', publishDate: '2026-11-04T10:00:00Z', related: [], body: 'نص' } } as any,
+      res
+    );
+    expect(res.statusCode).toBe(502);
+    expect(res.body.error).toContain('network down');
   });
 
   test('deleteArticle fetches the current sha first, then deletes with it', async () => {
