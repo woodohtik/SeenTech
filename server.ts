@@ -8,6 +8,8 @@ import { authenticate, authorize } from "./src/server/middleware/authMiddleware.
 import { registerPrintRelay } from "./src/server/printRelay.ts";
 import { initServerLogger, captureServerException, logger } from "./src/server/logger.ts";
 import { isValidMeasurementUnit } from "./src/utils/measurementUnits.ts";
+import { listArticles, getArticle, createArticle, updateArticle, deleteArticle, previewArticle } from "./src/server/blogAdmin.ts";
+import { triggerBlogRebuild } from "./src/server/blogDeployHook.ts";
 
 // { path: [...] }, not bare dotenv.config() -- this repo has no .env file,
 // only .env.local (written by `vercel env pull`); bare dotenv.config() only
@@ -1244,6 +1246,14 @@ app.get("/api/admin/stats", authenticate, authorize(['super_admin']), (req, res)
     stats: { totalTenants: 10, revenue: 50000 }
   });
 });
+
+// Blog admin CRUD -- backed by the GitHub Contents API (src/server/blogAdmin.ts).
+app.get("/api/admin/blog/articles", authenticate, authorize(['super_admin']), asyncHandler(listArticles));
+app.get("/api/admin/blog/articles/:slug", authenticate, authorize(['super_admin']), asyncHandler(getArticle));
+app.post("/api/admin/blog/articles", authenticate, authorize(['super_admin']), asyncHandler(createArticle));
+app.put("/api/admin/blog/articles/:slug", authenticate, authorize(['super_admin']), asyncHandler(updateArticle));
+app.delete("/api/admin/blog/articles/:slug", authenticate, authorize(['super_admin']), asyncHandler(deleteArticle));
+app.post("/api/admin/blog/preview", authenticate, authorize(['super_admin']), asyncHandler(previewArticle));
 
 // Example Protected Route: Accessible by Owners and Admins (and managers for GET)
 app.get("/api/tenant/settings", authenticate, authorize(['owner', 'admin', 'manager']), async (req: any, res) => {
@@ -2845,6 +2855,18 @@ app.get("/api/cron/zatca-cert-expiry-check", asyncHandler(async (req: any, res) 
   }
 
   res.json({ ok: true, checked: (expiringSoon || []).length, alerted });
+}));
+
+// Vercel Cron يستدعي هذا المسار دورياً (vercel.json) ليدفع إعادة بناء الموقع
+// بعد تعديلات المقالات المجمَّعة -- نفس نمط حماية CRON_SECRET أعلاه، بلا جلسة
+// مستخدم (لا "authenticate" العادية).
+app.post("/api/cron/blog-rebuild-sweep", asyncHandler(async (req: any, res) => {
+  const cronSecret = (process.env.CRON_SECRET || '').trim();
+  if (!cronSecret || req.headers.authorization !== `Bearer ${cronSecret}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  await triggerBlogRebuild();
+  res.status(200).json({ ok: true });
 }));
 
 // شبكة أمان أخيرة لما يفلت من كل شيء أعلاه (تسجيل فقط، بلا رد على العميل --

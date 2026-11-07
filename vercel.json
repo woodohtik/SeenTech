@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/zatca-cert-expiry-check",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/blog-rebuild-sweep",
+      "schedule": "*/15 * * * *"
     }
   ],
   "rewrites": [
