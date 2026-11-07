@@ -5,6 +5,7 @@
  * `fetch` -- no dedicated data-fetching library, per the plan.
  */
 import React, { useCallback, useEffect, useState } from 'react';
+import { CheckCircle, XCircle } from 'lucide-react';
 import { CATEGORIES } from '../../scripts/blog/categories';
 
 interface ArticleListItem {
@@ -62,6 +63,20 @@ function isoToLocalInputValue(iso: string | undefined | null): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+/**
+ * Pulls the server's `{ error: string }` body off a failed response (the
+ * shape every `src/server/blogAdmin.ts` handler uses for 400/404/409/502),
+ * falling back to `fallback` when the body isn't JSON or has no `error`.
+ */
+async function extractErrorMessage(res: Response, fallback: string): Promise<string> {
+  try {
+    const data = await res.json();
+    return typeof data?.error === 'string' && data.error ? data.error : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export default function AdminBlogEditor(): React.JSX.Element {
   const [articles, setArticles] = useState<ArticleListItem[]>([]);
   const [mode, setMode] = useState<'list' | 'form'>('list');
@@ -70,12 +85,28 @@ export default function AdminBlogEditor(): React.JSX.Element {
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [confirmingDeleteSlug, setConfirmingDeleteSlug] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  // Same toast shape/lifecycle as the existing admin-screen pattern (see
+  // AdminTailors.tsx's `toast`/`showToast`): a dismissible banner that
+  // auto-clears after 3s, reused here instead of inventing a new mechanism.
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const showToast = useCallback((message: string, type: 'success' | 'error' = 'error') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  }, []);
 
   const loadArticles = useCallback(async () => {
-    const res = await fetch('/api/admin/blog/articles');
-    const data = await res.json();
-    setArticles(data.articles ?? []);
-  }, []);
+    try {
+      const res = await fetch('/api/admin/blog/articles');
+      if (!res.ok) {
+        showToast(await extractErrorMessage(res, 'تعذر تحميل قائمة المقالات'));
+        return;
+      }
+      const data = await res.json();
+      setArticles(data.articles ?? []);
+    } catch {
+      showToast('تعذر تحميل قائمة المقالات');
+    }
+  }, [showToast]);
 
   useEffect(() => {
     loadArticles();
@@ -89,19 +120,29 @@ export default function AdminBlogEditor(): React.JSX.Element {
   };
 
   const openEditForm = async (slug: string) => {
-    const res = await fetch(`/api/admin/blog/articles/${slug}`);
-    const data = await res.json();
-    setEditingSlug(slug);
-    setForm({
-      title: data.title ?? '',
-      metaDescription: data.metaDescription ?? '',
-      cluster: data.cluster ?? (CATEGORIES[0]?.slug ?? ''),
-      publishDateLocal: isoToLocalInputValue(data.publishDate),
-      related: data.related ?? [],
-      body: data.body ?? '',
-    });
-    setPreviewHtml(null);
-    setMode('form');
+    try {
+      const res = await fetch(`/api/admin/blog/articles/${slug}`);
+      if (!res.ok) {
+        // Never open a blank form on a failed fetch (e.g. 404 if the file
+        // was deleted elsewhere in the meantime) -- stay on the list.
+        showToast(await extractErrorMessage(res, 'تعذر تحميل المقالة'));
+        return;
+      }
+      const data = await res.json();
+      setEditingSlug(slug);
+      setForm({
+        title: data.title ?? '',
+        metaDescription: data.metaDescription ?? '',
+        cluster: data.cluster ?? (CATEGORIES[0]?.slug ?? ''),
+        publishDateLocal: isoToLocalInputValue(data.publishDate),
+        related: data.related ?? [],
+        body: data.body ?? '',
+      });
+      setPreviewHtml(null);
+      setMode('form');
+    } catch {
+      showToast('تعذر تحميل المقالة');
+    }
   };
 
   const currentPayload = () => ({
@@ -114,13 +155,21 @@ export default function AdminBlogEditor(): React.JSX.Element {
   });
 
   const handlePreview = async () => {
-    const res = await fetch('/api/admin/blog/preview', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(currentPayload()),
-    });
-    const data = await res.json();
-    setPreviewHtml(data.html ?? '');
+    try {
+      const res = await fetch('/api/admin/blog/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentPayload()),
+      });
+      if (!res.ok) {
+        showToast(await extractErrorMessage(res, 'تعذر إنشاء المعاينة'));
+        return;
+      }
+      const data = await res.json();
+      setPreviewHtml(data.html ?? '');
+    } catch {
+      showToast('تعذر إنشاء المعاينة');
+    }
   };
 
   const handleSave = async () => {
@@ -128,25 +177,46 @@ export default function AdminBlogEditor(): React.JSX.Element {
     try {
       const url = editingSlug ? `/api/admin/blog/articles/${editingSlug}` : '/api/admin/blog/articles';
       const method = editingSlug ? 'PUT' : 'POST';
-      await fetch(url, {
+      const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(currentPayload()),
       });
+      if (!res.ok) {
+        // A failed save (400 invalid frontmatter, 409 slug collision, 502
+        // GitHub failure, ...) must never look like a successful one: stay
+        // on the form with the author's input intact, don't refresh the
+        // list, don't clear anything.
+        showToast(await extractErrorMessage(res, 'تعذر حفظ المقالة'));
+        return;
+      }
       await loadArticles();
       setMode('list');
       setEditingSlug(null);
       setForm(EMPTY_FORM);
       setPreviewHtml(null);
+      showToast(editingSlug ? 'تم حفظ التعديلات' : 'تم حفظ المقالة', 'success');
+    } catch {
+      showToast('تعذر حفظ المقالة');
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDelete = async (slug: string) => {
-    await fetch(`/api/admin/blog/articles/${slug}`, { method: 'DELETE' });
-    setConfirmingDeleteSlug(null);
-    await loadArticles();
+    try {
+      const res = await fetch(`/api/admin/blog/articles/${slug}`, { method: 'DELETE' });
+      if (!res.ok) {
+        // Keep the confirmation open on failure -- the article is still
+        // there, so silently closing the dialog would be misleading.
+        showToast(await extractErrorMessage(res, 'تعذر حذف المقالة'));
+        return;
+      }
+      setConfirmingDeleteSlug(null);
+      await loadArticles();
+    } catch {
+      showToast('تعذر حذف المقالة');
+    }
   };
 
   const handleRelatedChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -154,9 +224,17 @@ export default function AdminBlogEditor(): React.JSX.Element {
     setForm(f => ({ ...f, related: selected }));
   };
 
+  const toastBanner = toast && (
+    <div role="alert">
+      {toast.type === 'success' ? <CheckCircle size={16} /> : <XCircle size={16} />}
+      {toast.message}
+    </div>
+  );
+
   if (mode === 'form') {
     return (
       <div>
+        {toastBanner}
         <h1>{editingSlug ? 'تعديل مقالة' : 'مقالة جديدة'}</h1>
 
         <label htmlFor="admin-blog-title">العنوان</label>
@@ -228,6 +306,7 @@ export default function AdminBlogEditor(): React.JSX.Element {
 
   return (
     <div>
+      {toastBanner}
       <h1>إدارة المقالات</h1>
       {/* Hidden while any row's delete confirmation is open: otherwise this
           button's own text ("مقالة جديدة") can collide with the confirmation
