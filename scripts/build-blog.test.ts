@@ -37,7 +37,7 @@ test('end to end: one fixture article produces index, its own page, its category
   expect(readFileSync(path.join(outDir, 'blog/index.html'), 'utf8')).not.toContain('far-future');
 }, 15000);
 
-test('sitemap gives the index and the article a lastmod from the article\'s publishDate, and omits it for an empty category', async () => {
+test('sitemap gives the index and the article a lastmod from the article\'s publishDate', async () => {
   const contentDir = mkdtempSync(path.join(tmpdir(), 'blog-content-'));
   copyFileSync(
     path.join(__dirname, 'blog/__fixtures__/sample-article.md'),
@@ -50,7 +50,25 @@ test('sitemap gives the index and the article a lastmod from the article\'s publ
   expect(sitemapXml).toContain('<url><loc>https://seentech.io/blog/sample-article</loc><lastmod>2026-11-03</lastmod></url>');
   expect(sitemapXml).toContain('<url><loc>https://seentech.io/blog/</loc><lastmod>2026-11-03</lastmod></url>');
   expect(sitemapXml).toContain('<url><loc>https://seentech.io/blog/category/orders</loc><lastmod>2026-11-03</lastmod></url>');
-  expect(sitemapXml).toContain('<url><loc>https://seentech.io/blog/category/management</loc></url>');
+});
+
+// A category with no articles renders a "coming soon" page (thin content)
+// -- it's still reachable and crawlable, but submitting it in the sitemap
+// invites search engines to index thin/duplicate content ahead of real
+// pages. Excluding it from the sitemap doesn't noindex it; it's just not
+// advertised as a page worth crawling.
+test('an empty category page is still built but excluded from the sitemap', async () => {
+  const contentDir = mkdtempSync(path.join(tmpdir(), 'blog-content-'));
+  copyFileSync(
+    path.join(__dirname, 'blog/__fixtures__/sample-article.md'),
+    path.join(contentDir, 'sample-article.md'),
+  );
+  const outDir = mkdtempSync(path.join(tmpdir(), 'blog-out-'));
+  await buildBlog(contentDir, outDir);
+
+  expect(existsSync(path.join(outDir, 'blog/category/management/index.html'))).toBe(true);
+  const sitemapXml = readFileSync(path.join(outDir, 'sitemap.xml'), 'utf8');
+  expect(sitemapXml).not.toContain('category/management');
 });
 
 test('robots.txt disallows all crawling outside of a production build', async () => {

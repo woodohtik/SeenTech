@@ -75,10 +75,16 @@ export async function buildBlog(contentDir: string, outDir: string): Promise<voi
   const urls: SitemapUrl[] = [
     { url: 'https://seentech.io/blog/', lastmod: latestPublishDate(articles) },
     ...articles.map(a => ({ url: a.canonicalUrl, lastmod: a.frontmatter.publishDate })),
-    ...CATEGORIES.map(c => ({
-      url: `https://seentech.io/blog/category/${c.slug}`,
-      lastmod: latestPublishDate(articles.filter(a => a.frontmatter.cluster === c.slug)),
-    })),
+    // A category with no articles yet renders a "coming soon" page --
+    // still built and reachable, but thin/duplicate content that
+    // shouldn't be advertised to crawlers via the sitemap.
+    ...CATEGORIES
+      .map(c => ({ category: c, articlesInCategory: articles.filter(a => a.frontmatter.cluster === c.slug) }))
+      .filter(({ articlesInCategory }) => articlesInCategory.length > 0)
+      .map(({ category, articlesInCategory }) => ({
+        url: `https://seentech.io/blog/category/${category.slug}`,
+        lastmod: latestPublishDate(articlesInCategory),
+      })),
   ];
   writeFileSync(path.join(outDir, 'sitemap.xml'), buildSitemapXml(urls));
   writeFileSync(path.join(outDir, 'robots.txt'), buildRobotsTxt('https://seentech.io/sitemap.xml', isProductionBuild()));
