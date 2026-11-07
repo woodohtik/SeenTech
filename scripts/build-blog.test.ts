@@ -37,6 +37,22 @@ test('end to end: one fixture article produces index, its own page, its category
   expect(readFileSync(path.join(outDir, 'blog/index.html'), 'utf8')).not.toContain('far-future');
 }, 15000);
 
+test('sitemap gives the index and the article a lastmod from the article\'s publishDate, and omits it for an empty category', async () => {
+  const contentDir = mkdtempSync(path.join(tmpdir(), 'blog-content-'));
+  copyFileSync(
+    path.join(__dirname, 'blog/__fixtures__/sample-article.md'),
+    path.join(contentDir, 'sample-article.md'),
+  );
+  const outDir = mkdtempSync(path.join(tmpdir(), 'blog-out-'));
+  await buildBlog(contentDir, outDir);
+
+  const sitemapXml = readFileSync(path.join(outDir, 'sitemap.xml'), 'utf8');
+  expect(sitemapXml).toContain('<url><loc>https://seentech.io/blog/sample-article</loc><lastmod>2026-11-03</lastmod></url>');
+  expect(sitemapXml).toContain('<url><loc>https://seentech.io/blog/</loc><lastmod>2026-11-03</lastmod></url>');
+  expect(sitemapXml).toContain('<url><loc>https://seentech.io/blog/category/orders</loc><lastmod>2026-11-03</lastmod></url>');
+  expect(sitemapXml).toContain('<url><loc>https://seentech.io/blog/category/management</loc></url>');
+});
+
 test('robots.txt disallows all crawling outside of a production build', async () => {
   process.env.VERCEL_ENV = 'preview';
   const contentDir = mkdtempSync(path.join(tmpdir(), 'blog-content-'));

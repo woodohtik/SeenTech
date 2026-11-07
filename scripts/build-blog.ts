@@ -8,7 +8,7 @@ import { renderIndexPage, renderCategoryPage } from './blog/templates/indexPage'
 import { renderSearchPage } from './blog/templates/searchPage';
 import { buildSearchIndex } from './blog/search';
 import { renderOgImagePng } from './blog/ogImage';
-import { buildSitemapXml, buildRobotsTxt } from './blog/sitemap';
+import { buildSitemapXml, buildRobotsTxt, type SitemapUrl } from './blog/sitemap';
 import { buildAnalyticsInitScript } from './blog/analytics';
 import { isProductionBuild } from './blog/templates/shared';
 import { CATEGORIES } from './blog/categories';
@@ -17,6 +17,14 @@ import { CATEGORIES } from './blog/categories';
 // (same class of bug as the entry-point check below: a CommonJS global
 // that's simply undefined here, not a runtime error from a missing file).
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// The most recent publishDate among a set of articles, used as a page's
+// sitemap <lastmod> -- undefined (omit lastmod) when the set is empty,
+// since an empty category page has no content whose change to date.
+function latestPublishDate(articles: { frontmatter: { publishDate: string } }[]): string | undefined {
+  if (articles.length === 0) return undefined;
+  return articles.reduce((latest, a) => (a.frontmatter.publishDate > latest ? a.frontmatter.publishDate : latest), articles[0].frontmatter.publishDate);
+}
 
 function writePage(outDir: string, relativePath: string, html: string): void {
   const filePath = path.join(outDir, relativePath, 'index.html');
@@ -64,10 +72,13 @@ export async function buildBlog(contentDir: string, outDir: string): Promise<voi
     writeFileSync(path.join(ogDir, `${article.slug}.png`), png);
   }
 
-  const urls = [
-    'https://seentech.io/blog/',
-    ...articles.map(a => a.canonicalUrl),
-    ...CATEGORIES.map(c => `https://seentech.io/blog/category/${c.slug}`),
+  const urls: SitemapUrl[] = [
+    { url: 'https://seentech.io/blog/', lastmod: latestPublishDate(articles) },
+    ...articles.map(a => ({ url: a.canonicalUrl, lastmod: a.frontmatter.publishDate })),
+    ...CATEGORIES.map(c => ({
+      url: `https://seentech.io/blog/category/${c.slug}`,
+      lastmod: latestPublishDate(articles.filter(a => a.frontmatter.cluster === c.slug)),
+    })),
   ];
   writeFileSync(path.join(outDir, 'sitemap.xml'), buildSitemapXml(urls));
   writeFileSync(path.join(outDir, 'robots.txt'), buildRobotsTxt('https://seentech.io/sitemap.xml', isProductionBuild()));
