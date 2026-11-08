@@ -125,8 +125,19 @@ export default function CustomerMeasurementsForm({ token }: { token: string }) {
 
   return (
     <BrandingContext.Provider value={STATIC_BRANDING}>
+    {/* VisualMeasurements goes to 4 columns at the sm: breakpoint (640px) and
+        ThobeMeasurementSelector switches to a 350px-fixed-column side-by-side
+        layout at lg: (1024px) -- both react to the VIEWPORT, not this card's
+        own width. A fixed narrow card (fine on a phone, where the viewport
+        itself is narrow anyway) left both squeezed into far less room than
+        either component expects on an actual desktop screen. */}
+    <style>{`
+      .seen-measurements-card { max-width: 520px; }
+      @media (min-width: 640px) { .seen-measurements-card { max-width: 720px; } }
+      @media (min-width: 1024px) { .seen-measurements-card { max-width: 960px; } }
+    `}</style>
     <div dir={dir} style={styles.page}>
-      <div style={styles.card}>
+      <div className="seen-measurements-card" style={styles.card}>
         <div style={styles.brand}>
           <span style={styles.brandMark}>{t('public_tracking.brand_mark')}</span>
           <span style={styles.brandSub}>{t('public_measurements.title')}</span>
@@ -192,7 +203,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: customerColors.bg, fontFamily: customerFont.body, padding: 16,
   },
   card: {
-    width: '100%', maxWidth: 520, background: customerColors.surface, borderRadius: customerRadius.card,
+    width: '100%', background: customerColors.surface, borderRadius: customerRadius.card,
     boxShadow: customerColors.shadow, padding: 24, textAlign: 'center',
   },
   brand: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 16 },
