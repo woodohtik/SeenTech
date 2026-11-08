@@ -22,6 +22,7 @@ import { XCircle } from 'lucide-react';
 import { useDirection } from '../../lib/direction';
 import { apiUrl } from '../../lib/apiBase';
 import { customerColors, customerFont, customerRadius } from '../../lib/customerAppTheme';
+import { BrandingContext } from '../../contexts/BrandingContext';
 import type { Measurements } from '../../types';
 import type { MeasurementUnit } from '../../utils/measurementUnits';
 import VisualMeasurements from '../VisualMeasurements';
@@ -34,6 +35,15 @@ interface MeasurementsFormResponse {
   measurement_unit: MeasurementUnit;
   measurements: Measurements;
 }
+
+// ThobeMeasurementSelector (reused unchanged, per spec) renders a <Branding>
+// badge internally, which calls useBranding() and throws without a
+// BrandingContext.Provider ancestor. The real BrandingProvider makes a live
+// Supabase call + opens a realtime channel from the browser -- exactly what
+// this public, unauthenticated page must never do. This static value lets
+// the badge render (it only shows a hardcoded "Seen" wordmark regardless of
+// the value, see Branding.tsx) without touching Supabase at all.
+const STATIC_BRANDING = { settings: { websiteUrl: '#', companyName: 'Seen' }, loading: false };
 
 function LoadingSkeleton() {
   return (
@@ -114,6 +124,7 @@ export default function CustomerMeasurementsForm({ token }: { token: string }) {
   };
 
   return (
+    <BrandingContext.Provider value={STATIC_BRANDING}>
     <div dir={dir} style={styles.page}>
       <div style={styles.card}>
         <div style={styles.brand}>
@@ -141,11 +152,17 @@ export default function CustomerMeasurementsForm({ token }: { token: string }) {
             <div style={styles.formWrap}>
               <VisualMeasurements
                 values={measurements}
-                onChange={(field, value) => setMeasurements((m) => ({ ...m, [field]: value }))}
+                onChange={(field, value) => {
+                  setMeasurements((m) => ({ ...m, [field]: value }));
+                  setSaved(false);
+                }}
               />
               <ThobeMeasurementSelector
                 values={measurements}
-                onChange={setMeasurements}
+                onChange={(next) => {
+                  setMeasurements(next);
+                  setSaved(false);
+                }}
                 measurementUnit={measurementUnit}
               />
             </div>
@@ -165,6 +182,7 @@ export default function CustomerMeasurementsForm({ token }: { token: string }) {
         <div style={styles.footer}>{t('public_tracking.powered_by')}</div>
       </div>
     </div>
+    </BrandingContext.Provider>
   );
 }
 

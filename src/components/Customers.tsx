@@ -1808,7 +1808,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                 {editingCustomer?.measurementsToken && (
                   <button
                     type="button"
-                    onClick={() => sendMeasurementsLink(editingCustomer)}
+                    onClick={() => sendMeasurementsLink({ ...editingCustomer, phone: watch('phone'), name: watch('name') })}
                     className="mb-8 px-4 py-2.5 bg-brand/10 text-brand font-bold text-sm rounded-xl hover:bg-brand/20 transition-all flex items-center gap-2 w-fit"
                   >
                     <Ruler size={16} />
