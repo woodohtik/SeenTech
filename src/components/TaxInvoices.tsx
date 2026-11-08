@@ -4,6 +4,7 @@ import { handleError, OperationType } from '../lib/firebase';
 import { Order, Tenant, TaxInvoice } from '../types';
 import { cn } from '../lib/utils';
 import { decodeInvoiceExtendedNotes } from '../utils/b2bHelper';
+import { computePaidRemaining } from '../utils/cartTotals';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import { PriceDisplay } from './PriceDisplay';
 import { FileText, Download, User, Calendar, CreditCard, ShoppingBag, Eye, X, Printer, CheckCircle2, Share2, Paperclip } from 'lucide-react';
@@ -420,6 +421,7 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
     name: item.type === 'custom' ? item.garmentType || t('orders.custom_thobe') : item.name || t('orders.ready_made'),
     quantity: Number(item.quantity || 0),
     unitPrice: Number(item.price || item.unitPrice || 0),
+    taxType: item.taxType,
     vatAmount: Number((item.price || item.unitPrice || 0) * item.quantity - ((item.price || item.unitPrice || 0) * item.quantity) / (1 + vatRate / 100)),
     total: Number((item.price || item.unitPrice || 0) * item.quantity)
   }));
@@ -445,12 +447,18 @@ function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
     phone: (order as any).customer_phone || ''
   };
 
+  // Was absent entirely -- the printed B2B tax invoice for a partially-paid
+  // order showed no outstanding balance (TaxInvoice.tsx had no UI for it
+  // at all; now it does -- see that file's own fix).
+  const { paidAmount, remainingAmount } = computePaidRemaining(Number(totalIncVat), (order as any).paidAmount);
   const totals = {
     subtotal: Number(totalExcVat),
     discount: Number((order as any).discount_amount || 0),
     taxableAmount: Number(totalExcVat),
     vatAmount: Number(vatAmount),
-    grandTotal: Number(totalIncVat)
+    grandTotal: Number(totalIncVat),
+    paidAmount,
+    remainingAmount
   };
 
   // Extract payment method safely if defined

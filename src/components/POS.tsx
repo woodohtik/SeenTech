@@ -1284,6 +1284,12 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
          subTotal: subTotalAmount,
          taxAmount: taxAmount,
          discountAmount: calculatedDiscountAmount,
+         // Was absent entirely -- the printed receipt (invoiceData below)
+         // had no way to know this sale was a partial payment, so it always
+         // showed the full grand total as "paid" with nothing remaining,
+         // even though paidAmount was already tracked in POS state and
+         // already sent to the server (paid_amount in handleCheckout above).
+         paidAmount: Number(paidAmount) >= 0 ? Number(paidAmount) : 0,
          customerName,
          customerPhone: selectedCustomer?.phone,
          customerVat: b2bTRN,
@@ -1291,6 +1297,11 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
            name: item.name || item.garmentType || 'منتج مخصص',
            quantity: item.quantity,
            price: item.price,
+           // Was dropped here -- every printed receipt line item rendered
+           // as if it were VAT-inclusive regardless of how this product is
+           // actually configured (ProductFormFields.tsx lets a product be
+           // exclusive or exempt too).
+           taxType: item.taxType,
            measurements: buildInvoiceMeasurements(item, selectedCustomer, t, measurementUnit)
          })),
          qrCode: qrCodeBase64,
@@ -1671,11 +1682,14 @@ const invoiceData: InvoiceData | null = completedOrder ? {
     id: index,
     name: item.name,
     quantity: item.quantity,
-    unitPrice: item.price
+    unitPrice: item.price,
+    taxType: item.taxType
   })),
   subtotal: completedOrder.subTotal,
   vatAmount: completedOrder.taxAmount,
   discountAmount: completedOrder.discountAmount,
+  // Was absent entirely -- see the completedOrder.paidAmount comment above.
+  paidAmount: completedOrder.paidAmount,
   grandTotal: completedOrder.total,
   qrValue: completedOrder.qrCode,
   invoiceType: completedOrder.invoiceType

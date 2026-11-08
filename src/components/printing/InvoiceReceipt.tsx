@@ -7,6 +7,8 @@ import { CurrencySymbol } from '../CurrencySymbol';
 import SimplifiedTaxInvoice from './SimplifiedTaxInvoice';
 import StandardTaxInvoice from './TaxInvoice';
 import { useToast } from '../../contexts/ToastContext';
+import { computePaidRemaining } from '../../utils/cartTotals';
+import type { ProductTaxType } from '../../types';
 
 export type PrintSize = '58mm' | '80mm' | 'A5' | 'A4';
 
@@ -31,6 +33,7 @@ export interface InvoiceData {
     name: string;
     quantity: number;
     unitPrice: number;
+    taxType?: ProductTaxType;
     measurements?: { label: string; value: string | number }[];
   }>;
   subtotal: number;
@@ -144,14 +147,15 @@ export const ThermalInvoice = ({
     logoUrl: settings?.header?.logoUrl || '',
   };
 
+  const { paidAmount, remainingAmount } = computePaidRemaining(data.grandTotal || 0, data.paidAmount, data.remainingAmount);
   const totals = {
     subtotal: data.subtotal || 0,
     discount: data.discountAmount || 0,
     taxableAmount: (data.subtotal || 0) - (data.discountAmount || 0),
     vatAmount: data.vatAmount || 0,
     grandTotal: data.grandTotal || 0,
-    paidAmount: data.paidAmount !== undefined ? data.paidAmount : data.grandTotal,
-    remainingAmount: data.remainingAmount !== undefined ? data.remainingAmount : 0,
+    paidAmount,
+    remainingAmount,
   };
 
   // InvoiceData only carries absolute amounts, not a rate -- derive it from
@@ -163,6 +167,7 @@ export const ThermalInvoice = ({
     name: item.name,
     quantity: item.quantity,
     unitPrice: item.unitPrice,
+    taxType: item.taxType,
     measurements: item.measurements,
   }));
 
@@ -235,12 +240,19 @@ export const StandardInvoice = ({
     logoUrl: settings?.header?.logoUrl || '',
   };
 
+  // Was dropping data.paidAmount/remainingAmount entirely -- InvoiceData
+  // carries them (ThermalInvoice above already forwards them), but this
+  // totals object never did, so an A4/A5 standard invoice for a
+  // partially-paid order printed as if it were fully settled.
+  const { paidAmount, remainingAmount } = computePaidRemaining(data.grandTotal || 0, data.paidAmount, data.remainingAmount);
   const totals = {
     subtotal: data.subtotal || 0,
     discount: data.discountAmount || 0,
     taxableAmount: (data.subtotal || 0) - (data.discountAmount || 0),
     vatAmount: data.vatAmount || 0,
     grandTotal: data.grandTotal || 0,
+    paidAmount,
+    remainingAmount,
   };
 
   // See ThermalInvoice above -- same derivation, same reason.
@@ -250,6 +262,7 @@ export const StandardInvoice = ({
     name: item.name,
     quantity: item.quantity,
     unitPrice: item.unitPrice,
+    taxType: item.taxType,
     measurements: item.measurements,
   }));
 

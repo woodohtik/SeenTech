@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeCartTotals, CartTotalsItem } from './cartTotals';
+import { computeCartTotals, computePaidRemaining, CartTotalsItem } from './cartTotals';
 
 describe('computeCartTotals', () => {
   it('returns all zeros for an empty cart', () => {
@@ -131,5 +131,37 @@ describe('computeCartTotals', () => {
     const cart: CartTotalsItem[] = [{ price: 100, quantity: 1, taxType: 'exclusive' }];
     const totals = computeCartTotals(cart, { enabled: false, vatRate: 15 }, 'fixed', 0);
     expect(totals.vatRate).toBe(0);
+  });
+});
+
+describe('computePaidRemaining', () => {
+  it('assumes fully paid when neither paidAmount nor remainingAmount is given', () => {
+    expect(computePaidRemaining(100)).toEqual({ paidAmount: 100, remainingAmount: 0 });
+  });
+
+  it('derives remainingAmount from grandTotal - paidAmount when only paidAmount is given', () => {
+    expect(computePaidRemaining(100, 40)).toEqual({ paidAmount: 40, remainingAmount: 60 });
+  });
+
+  it('treats a full payment as zero remaining', () => {
+    expect(computePaidRemaining(100, 100)).toEqual({ paidAmount: 100, remainingAmount: 0 });
+  });
+
+  it('clamps a derived remaining to zero on overpayment, never negative', () => {
+    expect(computePaidRemaining(100, 120)).toEqual({ paidAmount: 120, remainingAmount: 0 });
+  });
+
+  it('uses an explicitly given remainingAmount instead of deriving it', () => {
+    // A caller that read paidAmount/remainingAmount from two independently
+    // stored order fields rather than computing one from the other.
+    expect(computePaidRemaining(100, 40, 55)).toEqual({ paidAmount: 40, remainingAmount: 55 });
+  });
+
+  it('clamps an explicitly given negative remainingAmount to zero', () => {
+    expect(computePaidRemaining(100, 100, -5)).toEqual({ paidAmount: 100, remainingAmount: 0 });
+  });
+
+  it('coerces string-typed amounts the way order fields from the DB arrive', () => {
+    expect(computePaidRemaining(100, '40' as any)).toEqual({ paidAmount: 40, remainingAmount: 60 });
   });
 });
