@@ -10,6 +10,19 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-08-customer-measurements-public-form-design.md`
 
+## Post-plan follow-up fixes (user-reported, after the plan's own completion)
+
+- `App.tsx`: pre-Routes staff-session interception screens (conflict/trial-lock/
+  PIN setup/PIN login) had no path exemption, so any public route shown in a
+  browser that also carried a staff session (same device/browser) was blocked.
+  Fixed with an `isPublicRoute` check gating all four. Commit `d4b5610`.
+- `CustomerMeasurementsForm.tsx`: the card was a fixed 520px regardless of
+  viewport, but `VisualMeasurements`/`ThobeMeasurementSelector` both react to
+  viewport width for their own wider-screen layouts (4 columns at sm:,
+  side-by-side with a fixed 350px column at lg:) -- looked fine on a phone
+  (narrow viewport anyway), cramped on desktop. Fixed with a scoped responsive
+  `<style>` block widening the card at the same two breakpoints. Commit `6b767ce`.
+
 ## Global Constraints
 
 - No new RPC and no `GRANT` to `anon` — all public reads/writes go through `server.ts` using `supabaseAdmin` with an explicit, hand-picked field list (spec §"القرار المعماري").
