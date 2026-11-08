@@ -10,6 +10,7 @@ import { initServerLogger, captureServerException, logger } from "./src/server/l
 import { isValidMeasurementUnit } from "./src/utils/measurementUnits.ts";
 import { listArticles, getArticle, createArticle, updateArticle, deleteArticle, previewArticle } from "./src/server/blogAdmin.ts";
 import { triggerBlogRebuild } from "./src/server/blogDeployHook.ts";
+import { validateMeasurementsPayload } from "./src/server/validateMeasurementsPayload.ts";
 
 // { path: [...] }, not bare dotenv.config() -- this repo has no .env file,
 // only .env.local (written by `vercel env pull`); bare dotenv.config() only
@@ -559,6 +560,87 @@ app.post("/api/public/order-tracking/:token/subscribe", asyncHandler(async (req,
   if (error) {
     logger.error({ err: error }, '[order-tracking/subscribe]');
     return res.status(500).json({ error: 'تعذّر تفعيل إشعارات تتبّع الطلب حالياً، حاول مرة أخرى لاحقاً' });
+  }
+
+  res.json({ ok: true });
+}));
+
+// فورم مقاسات عام للعميل (/measurements/:token في الواجهة) -- بلا مصادقة،
+// نفس نمط /api/public/order-tracking/* أعلاه تماماً: رمز عشوائي غير قابل
+// للتخمين (customers.measurements_token)، supabaseAdmin مع اختيار حقول
+// صريح، ونفس محدِّد المعدّل المشترك. التفاصيل الكاملة في
+// docs/superpowers/specs/2026-11-08-customer-measurements-public-form-design.md.
+app.get("/api/public/measurements/:token", asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+
+  if (!TRACKING_TOKEN_RE.test(token)) {
+    return res.status(404).json({ error: 'Customer not found' });
+  }
+
+  const { allowed, recordFailure } = await checkTrackingRateLimit(supabaseAdmin, clientIp(req));
+  if (!allowed) {
+    return res.status(429).json({ error: 'محاولات كثيرة جداً. انتظر دقيقة ثم أعد المحاولة.' });
+  }
+
+  const { data: customerData } = await supabaseAdmin
+    .from('customers')
+    .select('name, measurements, tenant:tenants(name, logo_url, measurement_unit)')
+    .eq('measurements_token', token)
+    .maybeSingle();
+
+  if (!customerData) {
+    await recordFailure();
+    return res.status(404).json({ error: 'Customer not found' });
+  }
+
+  const tenantData = (customerData as any).tenant;
+
+  res.json({
+    customer_name: customerData.name,
+    shop_name: tenantData?.name || '',
+    shop_logo_url: tenantData?.logo_url || null,
+    measurement_unit: isValidMeasurementUnit(tenantData?.measurement_unit) ? tenantData.measurement_unit : 'inch',
+    measurements: customerData.measurements || {},
+  });
+}));
+
+app.post("/api/public/measurements/:token", asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+
+  if (!TRACKING_TOKEN_RE.test(token)) {
+    return res.status(404).json({ error: 'Customer not found' });
+  }
+
+  const { allowed, recordFailure } = await checkTrackingRateLimit(supabaseAdmin, clientIp(req));
+  if (!allowed) {
+    return res.status(429).json({ error: 'محاولات كثيرة جداً. انتظر دقيقة ثم أعد المحاولة.' });
+  }
+
+  const result = validateMeasurementsPayload((req.body || {}).measurements);
+  if (result.ok === false) {
+    return res.status(400).json({ error: result.error });
+  }
+
+  const { data: customerData } = await supabaseAdmin
+    .from('customers')
+    .select('id')
+    .eq('measurements_token', token)
+    .maybeSingle();
+
+  if (!customerData) {
+    await recordFailure();
+    return res.status(404).json({ error: 'Customer not found' });
+  }
+
+  const { error: updateError } = await supabaseAdmin
+    .from('customers')
+    .update({ measurements: result.value })
+    .eq('measurements_token', token);
+
+  if (updateError) {
+    return internalError(res, 'Error saving public measurements', updateError);
   }
 
   res.json({ ok: true });
