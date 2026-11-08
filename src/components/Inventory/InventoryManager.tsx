@@ -171,12 +171,12 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
   const [selectedItemForAdjustment, setSelectedItemForAdjustment] = useState<{
     item: InventoryItem;
     variant?: ProductVariant;
-    branch: Branch;
+    branch?: Branch;
   } | null>(null);
   const [showConversionModal, setShowConversionModal] = useState(false);
   const [selectedItemForConversion, setSelectedItemForConversion] = useState<{
     item: InventoryItem;
-    branch: Branch;
+    branch?: Branch;
   } | null>(null);
   const [showProductImportModal, setShowProductImportModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -942,6 +942,66 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                               className="z-[9999] w-48 mt-2 origin-top-right bg-white rounded-2xl shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none overflow-hidden"
                             >
                               <div className="p-2">
+                                {hasPermission("inventory.create") && (
+                                  <Menu.Item>
+                                    {({ active }) => (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedItemForAdjustment({ item });
+                                          setShowAdjustmentModal(true);
+                                        }}
+                                        className={cn(
+                                          active ? "bg-success/10 text-success" : "text-success",
+                                          "flex w-full items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold",
+                                        )}
+                                      >
+                                        <Plus size={16} />
+                                        {t("inventory.stock_in")}
+                                      </button>
+                                    )}
+                                  </Menu.Item>
+                                )}
+                                {item.category === "fabric" && hasPermission("inventory.create") && (
+                                  <Menu.Item>
+                                    {({ active }) => (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedItemForConversion({ item });
+                                          setShowConversionModal(true);
+                                        }}
+                                        className={cn(
+                                          active ? "bg-warning/10 text-warning" : "text-warning",
+                                          "flex w-full items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold",
+                                        )}
+                                      >
+                                        <Scale size={16} />
+                                        {t("inventory.manual_convert_action", "فك وتحويل يدوي")}
+                                      </button>
+                                    )}
+                                  </Menu.Item>
+                                )}
+                                {hasPermission("inventory.reconcile") && (
+                                  <Menu.Item>
+                                    {({ active }) => (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedItemForAdjustment({ item });
+                                          setShowAdjustmentModal(true);
+                                        }}
+                                        className={cn(
+                                          active ? "bg-brand/10 text-brand" : "text-brand",
+                                          "flex w-full items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold",
+                                        )}
+                                      >
+                                        <ClipboardList size={16} />
+                                        {t("inventory.adjust")}
+                                      </button>
+                                    )}
+                                  </Menu.Item>
+                                )}
                                 {hasPermission("inventory.delete") && (
                                   <Menu.Item>
                                     {({ active }) => (
@@ -1046,33 +1106,6 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                       <span className="text-sm font-black text-content">
                                         {stock}
                                       </span>
-                                      {item.category === "fabric" && (
-                                        <button
-                                          onClick={() => {
-                                            setSelectedItemForConversion({
-                                              item,
-                                              branch,
-                                            });
-                                            setShowConversionModal(true);
-                                          }}
-                                          className="min-w-[40px] min-h-[40px] flex items-center justify-center bg-brand/5 text-brand rounded-lg"
-                                          title={t("inventory.manual_convert_action", "فك وتحويل يدوي")}
-                                        >
-                                          <Scale size={14} />
-                                        </button>
-                                      )}
-                                      <button
-                                        onClick={() => {
-                                          setSelectedItemForAdjustment({
-                                            item,
-                                            branch,
-                                          });
-                                          setShowAdjustmentModal(true);
-                                        }}
-                                        className="min-w-[40px] min-h-[40px] flex items-center justify-center bg-brand/5 text-brand rounded-lg"
-                                      >
-                                        <Edit2 size={14} />
-                                      </button>
                                     </div>
                                   </div>
                                 );
@@ -1295,6 +1328,66 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                   className="z-[9999] w-48 mt-1 origin-top-right bg-white rounded-2xl shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none overflow-hidden"
                                 >
                                   <div className="p-2">
+                                    {hasPermission("inventory.create") && (
+                                      <Menu.Item>
+                                        {({ active }) => (
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedItemForAdjustment({ item });
+                                              setShowAdjustmentModal(true);
+                                            }}
+                                            className={cn(
+                                              active ? "bg-success/10 text-success" : "text-success",
+                                              "flex w-full items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold",
+                                            )}
+                                          >
+                                            <Plus size={16} />
+                                            {t("inventory.stock_in")}
+                                          </button>
+                                        )}
+                                      </Menu.Item>
+                                    )}
+                                    {item.category === "fabric" && hasPermission("inventory.create") && (
+                                      <Menu.Item>
+                                        {({ active }) => (
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedItemForConversion({ item });
+                                              setShowConversionModal(true);
+                                            }}
+                                            className={cn(
+                                              active ? "bg-warning/10 text-warning" : "text-warning",
+                                              "flex w-full items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold",
+                                            )}
+                                          >
+                                            <Scale size={16} />
+                                            {t("inventory.manual_convert_action", "فك وتحويل يدوي")}
+                                          </button>
+                                        )}
+                                      </Menu.Item>
+                                    )}
+                                    {hasPermission("inventory.reconcile") && (
+                                      <Menu.Item>
+                                        {({ active }) => (
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedItemForAdjustment({ item });
+                                              setShowAdjustmentModal(true);
+                                            }}
+                                            className={cn(
+                                              active ? "bg-brand/10 text-brand" : "text-brand",
+                                              "flex w-full items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold",
+                                            )}
+                                          >
+                                            <ClipboardList size={16} />
+                                            {t("inventory.adjust")}
+                                          </button>
+                                        )}
+                                      </Menu.Item>
+                                    )}
                                     {hasPermission("inventory.delete") && (
                                       <Menu.Item>
                                         {({ active }) => (
@@ -1469,62 +1562,6 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                                       `inventory.unit_${item.unit}`,
                                                     )}
                                                   </p>
-
-                                                  <div className="flex items-center justify-end gap-2 mt-2">
-                                                    {hasPermission(
-                                                      "inventory.create",
-                                                    ) && (
-                                                      <button
-                                                        onClick={(e) => {
-                                                          e.stopPropagation();
-                                                          setSelectedItemForAdjustment(
-                                                            { item, branch },
-                                                          );
-                                                          setShowAdjustmentModal(
-                                                            true,
-                                                          );
-                                                        }}
-                                                        className="text-[9px] font-black text-success hover:underline uppercase tracking-tighter"
-                                                      >
-                                                        {t(
-                                                          "inventory.stock_in",
-                                                        )}
-                                                      </button>
-                                                    )}
-                                                    {item.category === "fabric" && hasPermission("inventory.create") && (
-                                                      <button
-                                                        onClick={(e) => {
-                                                          e.stopPropagation();
-                                                          setSelectedItemForConversion({
-                                                            item,
-                                                            branch,
-                                                          });
-                                                          setShowConversionModal(true);
-                                                        }}
-                                                        className="text-[9px] font-black text-warning hover:underline uppercase tracking-tighter"
-                                                      >
-                                                        {t("inventory.manual_convert_action", "فك يدوي")}
-                                                      </button>
-                                                    )}
-                                                    {hasPermission(
-                                                      "inventory.reconcile",
-                                                    ) && (
-                                                      <button
-                                                        onClick={(e) => {
-                                                          e.stopPropagation();
-                                                          setSelectedItemForAdjustment(
-                                                            { item, branch },
-                                                          );
-                                                          setShowAdjustmentModal(
-                                                            true,
-                                                          );
-                                                        }}
-                                                        className="text-[9px] font-black text-brand hover:underline uppercase tracking-tighter"
-                                                      >
-                                                        {t("inventory.adjust")}
-                                                      </button>
-                                                    )}
-                                                  </div>
                                                 </div>
                                               </div>
                                             );
@@ -1623,6 +1660,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
               setSelectedItemForAdjustment(null);
             }}
             tenantId={tenantId}
+            branches={branches}
             {...selectedItemForAdjustment}
           />
         )}
@@ -1633,6 +1671,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
               setSelectedItemForConversion(null);
             }}
             tenantId={tenantId}
+            branches={branches}
             {...selectedItemForConversion}
           />
         )}
@@ -2450,11 +2489,18 @@ const StockTransferModal = ({
   );
 };
 
-const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
+const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, branches }: any) => {
   const router = useRouter();
   const { t } = useTranslation();
   const { currentStaff } = useStaff();
   const { error: toastError, success: toastSuccess, handleError } = useToast();
+  // Opened from the per-item actions menu, the branch isn't known yet --
+  // the user picks it here instead of it being implied by which branch
+  // row they clicked (see inventory.select_branch below).
+  const [selectedBranchId, setSelectedBranchId] = useState<string>(initialBranch?.id || "");
+  const branch = initialBranch || (branches || []).find((b: Branch) => b.id === selectedBranchId);
+  const needsBranchChoice = !initialBranch;
+  const branchReady = !!branch;
   const [newQuantity, setNewQuantity] = useState(0);
   const [addQuantity, setAddQuantity] = useState(0);
   const [mode, setMode] = useState<"set" | "add">("add");
@@ -2486,7 +2532,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
   const variantReady = !needsVariantChoice || !!selectedVariantId;
 
   useEffect(() => {
-    if (!variantReady) return;
+    if (!variantReady || !branch) return;
     // Fetch current quantity to pre-fill
     const fetchCurrent = async () => {
       let query = supabase.from("branch_inventory").select("quantity").eq("branch_id", branch.id).eq("item_id", item.id);
@@ -2495,10 +2541,11 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
       if (data) setNewQuantity(data.quantity);
     };
     fetchCurrent();
-  }, [branch.id, item.id, selectedVariantId, variantReady]);
+  }, [branch?.id, item.id, selectedVariantId, variantReady]);
 
   const handleAdjust = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!branch) return;
     setLoading(true);
     try {
       // Was: read branch_inventory.quantity -> compute finalQuantity in JS
@@ -2579,7 +2626,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
                 {t("inventory.adjust_stock")}
               </h2>
               <p className="text-[10px] text-content-muted font-bold uppercase tracking-widest">
-                {branch.name} • {item.name}
+                {branch ? `${branch.name} • ${item.name}` : item.name}
                 {selectedVariantId && ` — ${variants.find((v) => v.id === selectedVariantId)?.name || ""}`}
               </p>
             </div>
@@ -2593,8 +2640,22 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
         </div>
 
         <form onSubmit={handleAdjust} className="p-4 sm:p-6 space-y-6">
-          {needsVariantChoice && (
+          {needsBranchChoice && (
             <div className="space-y-2">
+              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
+                {t("inventory.select_branch", "اختر الفرع")}
+              </label>
+              <SmartSelect
+                value={selectedBranchId}
+                onChange={(val) => setSelectedBranchId(val)}
+                options={(branches || []).map((b: Branch) => ({ value: b.id, label: b.name }))}
+                placeholder={t("common.select", "اختر")}
+              />
+            </div>
+          )}
+
+          {needsVariantChoice && (
+            <div className={cn("space-y-2", !branchReady && "opacity-40 pointer-events-none")}>
               <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
                 {t("inventory.variants.select_to_adjust", "اختر السمة المطلوب تعديل مخزونها")}
               </label>
@@ -2607,7 +2668,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
             </div>
           )}
 
-          <div className={cn("space-y-6", needsVariantChoice && !selectedVariantId && "opacity-40 pointer-events-none")}>
+          <div className={cn("space-y-6", (!branchReady || (needsVariantChoice && !selectedVariantId)) && "opacity-40 pointer-events-none")}>
           <div className="flex p-1 bg-surface-muted rounded-2xl">
             <button
               type="button"
@@ -2683,7 +2744,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
 
           <button
             type="submit"
-            disabled={loading || !variantReady}
+            disabled={loading || !variantReady || !branchReady}
             className="w-full bg-brand text-white py-4 rounded-2xl font-black text-lg shadow-xl shadow-brand/10 hover:bg-brand/90 transition-all disabled:opacity-50"
           >
             {loading ? t("common.saving") : t("common.save")}
@@ -2695,11 +2756,18 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch }: any) => {
   );
 };
 
-const ManualConversionModal = ({ onClose, tenantId, item, branch }: any) => {
+const ManualConversionModal = ({ onClose, tenantId, item, branch: initialBranch, branches }: any) => {
   const router = useRouter();
   const { t } = useTranslation();
   const { currentStaff } = useStaff();
   const { error: toastError, success: toastSuccess, handleError } = useToast();
+  // Opened from the per-item actions menu, the branch isn't known yet --
+  // the user picks it here instead of it being implied by which branch
+  // row they clicked (see inventory.select_branch below).
+  const [selectedBranchId, setSelectedBranchId] = useState<string>(initialBranch?.id || "");
+  const branch = initialBranch || (branches || []).find((b: Branch) => b.id === selectedBranchId);
+  const needsBranchChoice = !initialBranch;
+  const branchReady = !!branch;
   const [qty, setQty] = useState<number | "">("");
   const [conversionAction, setConversionAction] = useState<"unroll" | "bundle">("unroll");
   const [notes, setNotes] = useState("");
@@ -2711,6 +2779,7 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch }: any) => {
   const smallUnit = item.baseUnit || "meter";
 
   useEffect(() => {
+    if (!branch) return;
     const fetchCurrent = async () => {
       const { data } = await supabase
         .from("branch_inventory")
@@ -2724,13 +2793,14 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch }: any) => {
       }
     };
     fetchCurrent();
-  }, [branch.id, item.id]);
+  }, [branch?.id, item.id]);
 
   const resultingQty = qty ? (conversionAction === "unroll" ? Number(qty) * rate : Number(qty) / rate) : 0;
 
   const handleConvert = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;                      // double-click guard: the old code had none
+    if (!branch) return;
     if (!qty || Number(qty) <= 0) {
       toastError(t("errors.invalid_quantity"));
       return;
@@ -2809,12 +2879,27 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch }: any) => {
               {t("inventory.manual_convert_action", "فك وتحويل يدوي للوحدات")}
             </h3>
             <p className="text-xs font-bold text-content-muted mt-1">
-              {item.name} ({branch.name})
+              {branch ? `${item.name} (${branch.name})` : item.name}
             </p>
           </div>
         </div>
 
         <form onSubmit={handleConvert} className="space-y-6">
+          {needsBranchChoice && (
+            <div className="space-y-2">
+              <label className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
+                {t("inventory.select_branch", "اختر الفرع")}
+              </label>
+              <SmartSelect
+                value={selectedBranchId}
+                onChange={(val) => setSelectedBranchId(val)}
+                options={(branches || []).map((b: Branch) => ({ value: b.id, label: b.name }))}
+                placeholder={t("common.select", "اختر")}
+              />
+            </div>
+          )}
+
+          <div className={cn("space-y-6", !branchReady && "opacity-40 pointer-events-none")}>
           {/* Conversion Action Toggle */}
           <div className="grid grid-cols-2 gap-2 bg-surface-muted p-1 rounded-2xl">
             <button
@@ -2915,11 +3000,12 @@ const ManualConversionModal = ({ onClose, tenantId, item, branch }: any) => {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !branchReady}
             className="w-full bg-brand text-white py-4 rounded-2xl font-black text-lg shadow-xl shadow-brand/10 hover:bg-brand/90 transition-all disabled:opacity-50"
           >
             {loading ? t("common.processing", "جاري التحويل...") : t("inventory.execute_conversion", "تنفيذ التحويل")}
           </button>
+          </div>
         </form>
       </motion.div>
     </div>

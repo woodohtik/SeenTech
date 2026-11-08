@@ -738,7 +738,9 @@
     "visual_pleated": "Pleated",
     "visual_round": "Round",
     "visual_square": "Square",
-    "waist": "Waist"
+    "waist": "Waist",
+    "measurement_link_message": "Hello {{customerName}}, please fill in your measurements here: {{url}}\n- {{storeName}}",
+    "send_measurements_link": "Send Measurements Link"
   },
   "dashboard": {
     "above_avg": "Above Average",
@@ -2953,6 +2955,16 @@
     "delivery_today": "Delivery today",
     "delivery_tomorrow": "Delivery tomorrow",
     "delivery_in_days_other": "{{count}} days until delivery"
+  },
+  "public_measurements": {
+    "title": "Your Measurements",
+    "not_found": "We couldn't find this link. Please check it.",
+    "load_failed": "Couldn't load the page right now.",
+    "rate_limited": "Too many attempts. Wait a minute and try again.",
+    "save_button": "Save Measurements",
+    "saving": "Saving…",
+    "save_success": "Your measurements were saved successfully.",
+    "save_failed": "Couldn't save the measurements, please try again."
   },
   "my_orders": {
     "title": "My Orders",

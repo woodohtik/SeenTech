@@ -14,6 +14,7 @@ import {
 // -- كل مستخدم مسجّل دخول (حتى الكاشير) كان يُحمِّل LandingPage.html المضمّن
 // (~74KB) ضمن حزمته الرئيسية بلا أي استفادة منه إطلاقاً.
 const OrderTracking = React.lazy(() => import('./components/public/OrderTracking'));
+const CustomerMeasurementsForm = React.lazy(() => import('./components/public/CustomerMeasurementsForm'));
 const LandingPage = React.lazy(() => import('./components/LandingPage'));
 
 // صفحة تتبّع الطلب العامة للعميل النهائي (بلا مصادقة) — /track/:token
@@ -25,6 +26,22 @@ const TrackRoute = () => {
     </React.Suspense>
   );
 };
+
+// فورم مقاسات العميل العام (بلا مصادقة) — /measurements/:token
+const MeasurementsRoute = () => {
+  const { token } = useParams();
+  return (
+    <React.Suspense fallback={<PageSkeleton />}>
+      <CustomerMeasurementsForm token={token || ''} />
+    </React.Suspense>
+  );
+};
+
+// كل المسارات العامة (بلا مصادقة) المُسجَّلة في <Routes> أدناه -- يستخدمها
+// AppContent لإعفاء هذه المسارات من شاشات اعتراض جلسة الموظف (تعارض جهاز،
+// قفل انتهاء الاشتراك، إعداد/دخول PIN) التي تُفحص قبل الوصول لـ<Routes>
+// إطلاقاً بلا أي شرط على المسار نفسه.
+const PUBLIC_ROUTE_PREFIXES = ['/track/', '/p/inv/', '/measurements/'];
 
 // توجيه تلقائي لصفحة الهبوط للزوار غير المسجلين
 const LandingRedirect = () => {
@@ -445,7 +462,19 @@ function AppContent() {
   const showPinLogin = user && isApproved && !isSaaSStaff && !currentStaff && hasStaffWithPin && !needsPinSetup;
   const showForcePinSetup = false; // Retired in favor of automatic setup
 
-  if (conflictUser) {
+  // Public, unauthenticated pages (/track/:token, /p/inv/:id, /measurements/:token)
+  // must render for EVERY visitor regardless of any staff session state in this
+  // browser -- these interception screens below (conflict/trial-lock/PIN setup/PIN
+  // login) all gate on `user` being truthy, with no path check at all, so a
+  // customer opening a public link from a device/browser that also has an active
+  // staff session (same shop computer, same tester's browser, etc.) was shown a
+  // staff login screen instead of the public page. A genuine customer's own
+  // phone never has `user` set, so none of these fire for them regardless --
+  // this exemption only matters for the shared-browser case, but it matters
+  // every time it happens.
+  const isPublicRoute = PUBLIC_ROUTE_PREFIXES.some((prefix) => window.location.pathname.startsWith(prefix));
+
+  if (conflictUser && !isPublicRoute) {
     return (
       <div className={`min-h-screen flex items-center justify-center bg-slate-900/65 backdrop-blur-md ${isRtl ? 'text-right' : 'text-left'} p-6 font-sans select-none`} dir={dir}>
         <motion.div 
@@ -490,7 +519,7 @@ function AppContent() {
   }
 
   // Trial or Subscription expiration lock interception
-  if ((isTrialExpired || isSubscriptionExpired) && user && !isSaaSStaff) {
+  if ((isTrialExpired || isSubscriptionExpired) && user && !isSaaSStaff && !isPublicRoute) {
     return (
       <div className={`min-h-screen flex items-center justify-center bg-gray-950 ${isRtl ? 'text-right' : 'text-left'} p-6 font-sans select-none`} dir={dir}>
         <motion.div 
@@ -554,7 +583,7 @@ function AppContent() {
   }
 
   // Intercept for PIN setups
-  if (needsPinSetup) {
+  if (needsPinSetup && !isPublicRoute) {
     return (
       <ForcePinSetup
         tenantId={tenantId!}
@@ -563,7 +592,7 @@ function AppContent() {
     );
   }
 
-  if (showPinLogin) {
+  if (showPinLogin && !isPublicRoute) {
     return (
       <PinLogin
         tenantId={tenantId!}
@@ -588,6 +617,7 @@ function AppContent() {
             } 
           />
           <Route path="/track/:token" element={<TrackRoute />} />
+          <Route path="/measurements/:token" element={<MeasurementsRoute />} />
           {/* /blog and /blog/:slug are now real static files (scripts/build-blog.ts),
               served directly by Vercel -- see vercel.json's rewrite exclusion.
               No React route needed or reachable for them. */}

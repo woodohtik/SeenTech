@@ -738,7 +738,9 @@
     "visual_pleated": "كسرات",
     "visual_round": "دائري",
     "visual_square": "مربع",
-    "waist": "الخصر"
+    "waist": "الخصر",
+    "measurement_link_message": "مرحباً {{customerName}}، يرجى تعبئة مقاساتك من الرابط التالي: {{url}}\n- {{storeName}}",
+    "send_measurements_link": "إرسال رابط المقاسات"
   },
   "dashboard": {
     "above_avg": "فوق المتوسط",
@@ -2956,6 +2958,16 @@
     "delivery_in_days_few": "متبقّي {{count}} أيام للتسليم",
     "delivery_in_days_many": "متبقّي {{count}} يومًا للتسليم",
     "delivery_in_days_other": "متبقّي {{count}} يوم للتسليم"
+  },
+  "public_measurements": {
+    "title": "مقاساتك",
+    "not_found": "لم نعثر على هذا الرابط. تأكّد من الرابط.",
+    "load_failed": "تعذّر تحميل الصفحة حالياً.",
+    "rate_limited": "محاولات كثيرة جداً. انتظر دقيقة ثم أعد المحاولة.",
+    "save_button": "حفظ المقاسات",
+    "saving": "جارٍ الحفظ…",
+    "save_success": "تم حفظ مقاساتك بنجاح.",
+    "save_failed": "تعذّر حفظ المقاسات، حاول مرة أخرى."
   },
   "my_orders": {
     "title": "طلباتي",

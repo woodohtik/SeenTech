@@ -4,6 +4,7 @@ import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/fire
 import { Order } from '../types';
 import { cn } from '../lib/utils';
 import { decodeOrderB2BNotes } from '../utils/b2bHelper';
+import { computePaidRemaining } from '../utils/cartTotals';
 import { decodeOrderRow } from '../utils/orderHistoryHelper';
 import { PriceDisplay } from './PriceDisplay';
 import { FileText, Eye, X, Download, Package, Scissors, User, Calendar, CreditCard, ShoppingBag, Clock, Printer, Share2, AlertTriangle, Paperclip } from 'lucide-react';
@@ -456,6 +457,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
                 name: item.type === 'custom' ? item.garmentType || t('orders.custom_thobe', 'تفصيل ثوب') : item.name || t('orders.ready_made', 'صنف جاهز'),
                 quantity: Number(item.quantity || 0),
                 unitPrice: Number(item.price || item.unitPrice || 0),
+                taxType: item.taxType,
                 vatAmount: Number((item.price || item.unitPrice || 0) * item.quantity - ((item.price || item.unitPrice || 0) * item.quantity) / (1 + vatRateFraction)),
                 total: Number((item.price || item.unitPrice || 0) * item.quantity)
               }));
@@ -463,14 +465,19 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
               const subtotalExcVat = selectedOrder.totalAmount / (1 + vatRateFraction);
               const vatAmt = selectedOrder.totalAmount - subtotalExcVat;
 
+              // Was `selectedOrder.totalAmount - selectedOrder.paidAmount`
+              // with no floor -- an overpayment or stored-value drift could
+              // print a negative "remaining" on a real invoice.
+              const { paidAmount, remainingAmount } = computePaidRemaining(selectedOrder.totalAmount, selectedOrder.paidAmount);
+
               const totals = {
                 subtotal: subtotalExcVat,
                 discount: selectedOrder.discountAmount || 0,
                 taxableAmount: subtotalExcVat,
                 vatAmount: vatAmt,
                 grandTotal: selectedOrder.totalAmount,
-                paidAmount: selectedOrder.paidAmount,
-                remainingAmount: selectedOrder.totalAmount - selectedOrder.paidAmount
+                paidAmount,
+                remainingAmount
               };
 
               const qrCodeBase64 = selectedOrder.qrCode || generateZatcaQR(

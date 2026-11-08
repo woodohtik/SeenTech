@@ -4,14 +4,18 @@ import { QRCodeSVG } from 'qrcode.react';
 import Barcode from 'react-barcode';
 import { generateZatcaQR } from '../../services/zatcaService';
 import { calculateItemTax } from '../../utils/b2bHelper';
+import { computePaidRemaining } from '../../utils/cartTotals';
 import { FileText, Printer, Mail, Phone, MapPin, Layers, Globe } from 'lucide-react';
 import { CurrencySymbol } from '../CurrencySymbol';
+import type { ProductTaxType } from '../../types';
 
 export interface InvoiceItem {
   id?: string;
   name: string;
   quantity: number;
-  unitPrice: number; // VAT-inclusive unit price
+  unitPrice: number; // Price as configured on the product -- its tax treatment is taxType, not assumed.
+  /** Defaults to 'inclusive' when absent, matching this component's historical assumption. */
+  taxType?: ProductTaxType;
   vatAmount?: number;
   total?: number;
   measurements?: { label: string; value: string | number }[];
@@ -55,6 +59,8 @@ export interface TaxInvoiceProps {
     taxableAmount: number;
     vatAmount: number; // 15% VAT
     grandTotal: number;
+    paidAmount?: number;
+    remainingAmount?: number;
   };
   qrCodeBase64?: string;
   orderId?: string;
@@ -110,11 +116,16 @@ export default function TaxInvoice({
     let subtotal = 0;
 
     // مراجعة-الفريق-التقني-الكامل-2026-10-19.md (بنية): calculateItemTax
-    // المشتركة بدل إعادة كتابة صيغة "شامل الضريبة" يدوياً -- unitPrice هنا
-    // شامل الضريبة دائماً (انظر تعليق InvoiceItem أعلاه)، فالنوع 'inclusive' ثابت.
+    // المشتركة بدل إعادة كتابة صيغة "شامل الضريبة" يدوياً.
+    //
+    // Was hardcoded 'inclusive' for every item regardless of how that
+    // product is actually configured (exclusive/exempt items exist too --
+    // see ProductFormFields.tsx) -- an exclusive-tax item printed here had
+    // a fake VAT portion carved out of a price that never included it,
+    // understating both the taxable amount and the real total.
     items.forEach((item) => {
       const { basePrice: itemTotalExc, taxAmount: itemVat, finalPrice: itemTotalInc } =
-        calculateItemTax(item.unitPrice, 'inclusive', vatRate, item.quantity);
+        calculateItemTax(item.unitPrice, item.taxType || 'inclusive', vatRate, item.quantity);
 
       grandTotal += itemTotalInc;
       vatAmount += itemVat;
@@ -130,6 +141,11 @@ export default function TaxInvoice({
       grandTotal,
     };
   })();
+
+  // Was entirely absent from this component -- a partially-paid B2B order
+  // printed through TaxInvoice (unlike SimplifiedTaxInvoice, which already
+  // had this) showed no sign a balance was still owed.
+  const { paidAmount, remainingAmount } = computePaidRemaining(computedTotals.grandTotal, totals?.paidAmount, totals?.remainingAmount);
 
   const invoiceDate = new Date(issueDate || new Date().toISOString());
   const finalQr = qrCodeBase64 || generateZatcaQR(
@@ -330,9 +346,10 @@ export default function TaxInvoice({
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
               {items.map((item, index) => {
+                const itemTaxType = item.taxType || 'inclusive';
                 const { basePrice: itemTotalExc, taxAmount: itemVat, finalPrice: itemTotalInc } =
-                  calculateItemTax(item.unitPrice, 'inclusive', vatRate, item.quantity);
-                const itemUnitExc = calculateItemTax(item.unitPrice, 'inclusive', vatRate, 1).basePrice;
+                  calculateItemTax(item.unitPrice, itemTaxType, vatRate, item.quantity);
+                const itemUnitExc = calculateItemTax(item.unitPrice, itemTaxType, vatRate, 1).basePrice;
 
                 return (
                   <React.Fragment key={index}>
@@ -440,6 +457,28 @@ export default function TaxInvoice({
               </div>
               <span className="font-mono text-xl font-black text-white flex items-center gap-1">
                 {computedTotals.grandTotal.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" />
+              </span>
+            </div>
+
+            {/* Paid / Remaining -- a partially-paid order must show the
+                outstanding balance on the printed invoice, not just the
+                grand total. */}
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center text-xs font-bold text-slate-500 bg-slate-50/20">
+              <div className="text-right leading-tight">
+                <span className="font-black text-slate-700">المبلغ المدفوع</span>
+                <span className="block text-[9px] text-slate-400 uppercase font-sans">Paid Amount</span>
+              </div>
+              <span className="font-mono font-extrabold text-slate-800 text-sm flex items-center gap-1">
+                {paidAmount.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" />
+              </span>
+            </div>
+            <div className="p-4 flex justify-between items-center text-xs font-bold">
+              <div className="text-right leading-tight">
+                <span className={`font-black ${remainingAmount > 0 ? 'text-red-700' : 'text-slate-700'}`}>المبلغ المتبقي</span>
+                <span className="block text-[9px] text-slate-400 uppercase font-sans">Remaining Amount</span>
+              </div>
+              <span className={`font-mono font-extrabold text-sm flex items-center gap-1 ${remainingAmount > 0 ? 'text-red-600' : 'text-slate-800'}`}>
+                {remainingAmount.toFixed(2)} <CurrencySymbol className="h-[1.1em] w-auto inline-block" />
               </span>
             </div>
           </div>

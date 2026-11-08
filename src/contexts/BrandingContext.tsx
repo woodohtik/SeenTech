@@ -13,7 +13,7 @@ interface BrandingContextType {
   loading: boolean;
 }
 
-const BrandingContext = createContext<BrandingContextType | undefined>(undefined);
+export const BrandingContext = createContext<BrandingContextType | undefined>(undefined);
 
 export function BrandingProvider({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();

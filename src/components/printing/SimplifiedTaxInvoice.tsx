@@ -4,14 +4,18 @@ import Barcode from 'react-barcode';
 import { useTranslation } from 'react-i18next';
 import { generateZatcaQR } from '../../services/zatcaService';
 import { calculateItemTax } from '../../utils/b2bHelper';
+import { computePaidRemaining } from '../../utils/cartTotals';
 import { ShoppingBag, Printer } from 'lucide-react';
 import { CurrencySymbol } from '../CurrencySymbol';
+import type { ProductTaxType } from '../../types';
 
 export interface SimplifiedInvoiceItem {
   id?: string;
   name: string;
   quantity: number;
-  unitPrice: number; // VAT-inclusive unit price
+  unitPrice: number; // Price as configured on the product -- its tax treatment is taxType, not assumed.
+  /** Defaults to 'inclusive' when absent, matching this component's historical assumption. */
+  taxType?: ProductTaxType;
   vatAmount?: number;
   total?: number;
   measurements?: { label: string; value: string | number }[];
@@ -105,9 +109,15 @@ export default function SimplifiedTaxInvoice({
 
     // مراجعة-الفريق-التقني-الكامل-2026-10-19.md (بنية): calculateItemTax
     // المشتركة بدل إعادة كتابة صيغة "شامل الضريبة" يدوياً، نفس إصلاح TaxInvoice.tsx.
+    //
+    // Was hardcoded 'inclusive' for every item regardless of how that
+    // product is actually configured (exclusive/exempt items exist too --
+    // see ProductFormFields.tsx) -- an exclusive-tax item printed here had
+    // a fake VAT portion carved out of a price that never included it,
+    // understating both the taxable amount and the real total.
     items.forEach((item) => {
       const { basePrice: itemTotalExc, taxAmount: itemVat, finalPrice: itemTotalInc } =
-        calculateItemTax(item.unitPrice, 'inclusive', vatRate, item.quantity);
+        calculateItemTax(item.unitPrice, item.taxType || 'inclusive', vatRate, item.quantity);
 
       grandTotal += itemTotalInc;
       vatAmount += itemVat;
@@ -146,9 +156,7 @@ export default function SimplifiedTaxInvoice({
 
   // Paid and remaining calculations
   // @ts-ignore
-  const paidAmount = totals?.paidAmount !== undefined ? Number(totals.paidAmount) : computedTotals.grandTotal;
-  // @ts-ignore
-  const remainingAmount = totals?.remainingAmount !== undefined ? Number(totals.remainingAmount) : Math.max(0, computedTotals.grandTotal - paidAmount);
+  const { paidAmount, remainingAmount } = computePaidRemaining(computedTotals.grandTotal, totals?.paidAmount, totals?.remainingAmount);
 
   // NOTE on `print:mx-auto` below (it used to be `print:m-0`):
   // zeroing the margin in an RTL document makes this narrower block hug the
@@ -297,7 +305,16 @@ export default function SimplifiedTaxInvoice({
           </div>
 
           {items.map((item, idx) => {
-            const itemTotalInc = item.unitPrice * item.quantity;
+            // Was `item.unitPrice * item.quantity` unconditionally -- wrong
+            // for an exclusive-tax item, whose real total (after adding
+            // VAT) is higher than that raw product. calculateItemTax
+            // already knows how to turn this item's own taxType into a
+            // correct base/tax/final split; use its finalPrice as the
+            // displayed line total instead of re-deriving it naively.
+            const itemTaxType = item.taxType || 'inclusive';
+            const { basePrice: itemExc, taxAmount: itemVat, finalPrice: itemTotalInc } =
+              calculateItemTax(item.unitPrice, itemTaxType, vatRate, item.quantity);
+            const showBreakdown = vatRate > 0 && itemTaxType !== 'exempt';
             return (
               <div key={idx} className="py-0.5 border-b border-solid border-slate-100 last:border-0">
                 <div className="flex justify-between items-start text-[9px] text-slate-900 gap-1">
@@ -312,6 +329,17 @@ export default function SimplifiedTaxInvoice({
                     {itemTotalInc.toFixed(2)}<CurrencySymbol className="h-[1em] w-auto shrink-0" />
                   </span>
                 </div>
+
+                {/* Per-item tax breakdown: how much of this line's total is
+                    the taxable amount vs. the VAT itself. Skipped for a
+                    tax-exempt item (nothing to break down) or when tax is
+                    off entirely. */}
+                {showBreakdown && (
+                  <div className="flex justify-between items-center gap-1 text-[7.5px] text-slate-500 font-bold">
+                    <span className="whitespace-nowrap">قبل الضريبة: {itemExc.toFixed(2)}</span>
+                    <span className="whitespace-nowrap">الضريبة: {itemVat.toFixed(2)}</span>
+                  </div>
+                )}
 
                 {/* Measurement Details (optional) */}
                 {showMeasurements && item.measurements && item.measurements.length > 0 && (
