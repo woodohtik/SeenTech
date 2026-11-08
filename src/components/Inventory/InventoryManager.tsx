@@ -96,6 +96,7 @@ import {
   ProductImportField,
   mapProductImportHeaders,
   parseProductImportRows,
+  writeProductImportRows,
 } from "../../utils/productImport";
 import { useTenantCategoryPicker, ADD_NEW_CATEGORY_VALUE } from "../../hooks/useTenantCategoryPicker";
 import { LEGACY_INVENTORY_CATEGORY_SEED } from "../../services/categoryService";
@@ -3045,60 +3046,20 @@ const ProductImportModal = ({
   const handleConfirmImport = async () => {
     if (validRows.length === 0) return;
     setLoading(true);
-    let succeeded = 0;
-    const failedRows: ProductImportRowView[] = [];
 
-    for (const row of validRows) {
-      const resolved = row.resolved!;
-      try {
-        const nowIso = new Date().toISOString();
-        const { data: item, error: itemError } = await supabase
-          .from('inventory_items')
-          .insert({
-            name: resolved.name,
-            category: mapCategoryKeyToLegacyCategory(resolved.categoryKey),
-            category_key: resolved.categoryKey,
-            unit: resolved.unit,
-            conversion_rate: resolved.conversionRate,
-            min_threshold: resolved.minThreshold,
-            price_per_unit: resolved.price,
-            description: encodeInventoryDescription(resolved.costPrice, resolved.taxType, ''),
-            sku: resolved.sku,
-            barcode: resolved.barcode,
-            quantity: 0,
-            images: [],
-            show_in_pos: true,
-            tenant_id: tenantId,
-            updated_at: nowIso,
-          })
-          .select()
-          .single();
-        if (itemError) throw itemError;
-
-        const branchInventoryInserts = branches.map((branch: Branch) => ({
-          branch_id: branch.id,
-          item_id: item.id,
-          quantity: 0,
-          tenant_id: tenantId,
-          updated_at: nowIso,
-        }));
-        if (branchInventoryInserts.length > 0) {
-          const { error: branchError } = await supabase.from('branch_inventory').insert(branchInventoryInserts);
-          if (branchError) throw branchError;
-        }
-
-        succeeded += 1;
-      } catch (err: any) {
-        failedRows.push({
-          rowNumber: row.rowNumber, name: row.name, skuText: row.skuText,
-          status: 'invalid', reason: err?.message || t('inventory.bulk_import_row_invalid'),
-        });
-      }
-    }
+    const { succeeded, failures, branchInventoryError } = await writeProductImportRows(
+      supabase, validRows, branches, tenantId, t('inventory.bulk_import_row_invalid')
+    );
 
     setInsertedCount(succeeded);
-    if (failedRows.length > 0) {
+    if (failures.length > 0) {
+      const failedRows: ProductImportRowView[] = failures.map((f) => ({
+        rowNumber: f.rowNumber, name: f.name, skuText: f.skuText, status: 'invalid', reason: f.reason,
+      }));
       setRows((prev) => [...prev.filter((r) => r.status !== 'valid'), ...failedRows as any]);
+    }
+    if (branchInventoryError) {
+      toastError(t('inventory.bulk_import_branch_inventory_failed', 'تعذّر تهيئة مخزون الفروع لبعض المنتجات المستوردة، راجعها يدوياً من شاشة المخزون'));
     }
     if (succeeded > 0) onImported();
     toastSuccess(t('inventory.bulk_import_success', { count: succeeded }));

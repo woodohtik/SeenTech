@@ -1,3 +1,6 @@
+import { mapCategoryKeyToLegacyCategory } from '../services/verticalService';
+import { encodeInventoryDescription } from './b2bHelper';
+
 export const PRODUCT_IMPORT_COLUMN_FIELDS = [
   'name', 'price', 'category', 'sku', 'barcode', 'unit', 'conversionRate', 'costPrice', 'taxType', 'minThreshold',
 ] as const;
@@ -59,6 +62,104 @@ export interface ProductImportRow {
     taxType: 'inclusive' | 'exclusive' | 'exempt';
     minThreshold: number;
   };
+}
+
+export interface ProductImportFailure {
+  rowNumber: number;
+  name: string;
+  skuText: string;
+  reason: string;
+}
+
+export interface ProductImportWriteResult {
+  succeeded: number;
+  failures: ProductImportFailure[];
+  branchInventoryError: string | null;
+}
+
+/**
+ * Writes already-validated rows (parseProductImportRows's 'valid' output)
+ * to inventory_items and branch_inventory.
+ *
+ * Previously (InventoryManager.tsx's handleConfirmImport, before this was
+ * pulled out) this was N item inserts + N branch_inventory inserts, one of
+ * each per row -- up to 2N round trips for an N-row import. inventory_items
+ * inserts stay one per row, so a single row's DB-level failure (a
+ * constraint the pre-import validation above didn't catch) only fails that
+ * row, not the whole import -- a single multi-row insert is atomic and
+ * would sink every already-approved row on one bad one. branch_inventory
+ * rows don't need that per-row isolation, so they're batched into one
+ * insert for every successfully-created item across every branch: N + 1
+ * round trips total instead of 2N. That batched insert never throws (it
+ * can't be attributed back to one row), so a failure is reported
+ * separately via branchInventoryError rather than moving otherwise-
+ * successful items into failures.
+ */
+export async function writeProductImportRows(
+  supabase: { from: (table: string) => any },
+  validRows: ProductImportRow[],
+  branches: { id: string }[],
+  tenantId: string,
+  invalidReason: string
+): Promise<ProductImportWriteResult> {
+  const nowIso = new Date().toISOString();
+  const failures: ProductImportFailure[] = [];
+  const pendingBranchInventory: Record<string, unknown>[] = [];
+  let succeeded = 0;
+
+  for (const row of validRows) {
+    const resolved = row.resolved!;
+    try {
+      const { data: item, error: itemError } = await supabase
+        .from('inventory_items')
+        .insert({
+          name: resolved.name,
+          category: mapCategoryKeyToLegacyCategory(resolved.categoryKey),
+          category_key: resolved.categoryKey,
+          unit: resolved.unit,
+          conversion_rate: resolved.conversionRate,
+          min_threshold: resolved.minThreshold,
+          price_per_unit: resolved.price,
+          description: encodeInventoryDescription(resolved.costPrice, resolved.taxType, ''),
+          sku: resolved.sku,
+          barcode: resolved.barcode,
+          quantity: 0,
+          images: [],
+          show_in_pos: true,
+          tenant_id: tenantId,
+          updated_at: nowIso,
+        })
+        .select()
+        .single();
+      if (itemError) throw itemError;
+
+      for (const branch of branches) {
+        pendingBranchInventory.push({
+          branch_id: branch.id,
+          item_id: item.id,
+          quantity: 0,
+          tenant_id: tenantId,
+          updated_at: nowIso,
+        });
+      }
+      succeeded += 1;
+    } catch (err: any) {
+      failures.push({
+        rowNumber: row.rowNumber,
+        name: row.name,
+        skuText: row.skuText,
+        reason: err?.message || invalidReason,
+      });
+    }
+  }
+
+  let branchInventoryError: string | null = null;
+  if (pendingBranchInventory.length > 0) {
+    const { error } = await supabase.from('branch_inventory').insert(pendingBranchInventory);
+    if (error) branchInventoryError = error.message || null;
+  }
+
+  return { succeeded, failures, branchInventoryError };
 }
 
 export function mapProductImportHeaders(
