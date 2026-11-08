@@ -22,6 +22,11 @@
   side-by-side with a fixed 350px column at lg:) -- looked fine on a phone
   (narrow viewport anyway), cramped on desktop. Fixed with a scoped responsive
   `<style>` block widening the card at the same two breakpoints. Commit `6b767ce`.
+- `ThobeMeasurementSelector.tsx`: measurement values displayed without a
+  fixed decimal count (e.g. 20.5 instead of 20.50). Fixed to show 2 decimals
+  on the body-diagram labels always, and on the numeric input whenever it
+  isn't the one currently focused (so typing isn't fought by reformatting
+  mid-keystroke). Shared with the staff edit modal, so both get it. Commit `a991d66`.
 
 ## Global Constraints
 
