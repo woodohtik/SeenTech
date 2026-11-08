@@ -37,6 +37,12 @@ const MeasurementsRoute = () => {
   );
 };
 
+// كل المسارات العامة (بلا مصادقة) المُسجَّلة في <Routes> أدناه -- يستخدمها
+// AppContent لإعفاء هذه المسارات من شاشات اعتراض جلسة الموظف (تعارض جهاز،
+// قفل انتهاء الاشتراك، إعداد/دخول PIN) التي تُفحص قبل الوصول لـ<Routes>
+// إطلاقاً بلا أي شرط على المسار نفسه.
+const PUBLIC_ROUTE_PREFIXES = ['/track/', '/p/inv/', '/measurements/'];
+
 // توجيه تلقائي لصفحة الهبوط للزوار غير المسجلين
 const LandingRedirect = () => {
   return (
@@ -456,7 +462,19 @@ function AppContent() {
   const showPinLogin = user && isApproved && !isSaaSStaff && !currentStaff && hasStaffWithPin && !needsPinSetup;
   const showForcePinSetup = false; // Retired in favor of automatic setup
 
-  if (conflictUser) {
+  // Public, unauthenticated pages (/track/:token, /p/inv/:id, /measurements/:token)
+  // must render for EVERY visitor regardless of any staff session state in this
+  // browser -- these interception screens below (conflict/trial-lock/PIN setup/PIN
+  // login) all gate on `user` being truthy, with no path check at all, so a
+  // customer opening a public link from a device/browser that also has an active
+  // staff session (same shop computer, same tester's browser, etc.) was shown a
+  // staff login screen instead of the public page. A genuine customer's own
+  // phone never has `user` set, so none of these fire for them regardless --
+  // this exemption only matters for the shared-browser case, but it matters
+  // every time it happens.
+  const isPublicRoute = PUBLIC_ROUTE_PREFIXES.some((prefix) => window.location.pathname.startsWith(prefix));
+
+  if (conflictUser && !isPublicRoute) {
     return (
       <div className={`min-h-screen flex items-center justify-center bg-slate-900/65 backdrop-blur-md ${isRtl ? 'text-right' : 'text-left'} p-6 font-sans select-none`} dir={dir}>
         <motion.div 
@@ -501,7 +519,7 @@ function AppContent() {
   }
 
   // Trial or Subscription expiration lock interception
-  if ((isTrialExpired || isSubscriptionExpired) && user && !isSaaSStaff) {
+  if ((isTrialExpired || isSubscriptionExpired) && user && !isSaaSStaff && !isPublicRoute) {
     return (
       <div className={`min-h-screen flex items-center justify-center bg-gray-950 ${isRtl ? 'text-right' : 'text-left'} p-6 font-sans select-none`} dir={dir}>
         <motion.div 
@@ -565,7 +583,7 @@ function AppContent() {
   }
 
   // Intercept for PIN setups
-  if (needsPinSetup) {
+  if (needsPinSetup && !isPublicRoute) {
     return (
       <ForcePinSetup
         tenantId={tenantId!}
@@ -574,7 +592,7 @@ function AppContent() {
     );
   }
 
-  if (showPinLogin) {
+  if (showPinLogin && !isPublicRoute) {
     return (
       <PinLogin
         tenantId={tenantId!}
