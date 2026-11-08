@@ -738,7 +738,9 @@
     "visual_pleated": "كسرات",
     "visual_round": "دائري",
     "visual_square": "مربع",
-    "waist": "الخصر"
+    "waist": "الخصر",
+    "measurement_link_message": "مرحباً {{customerName}}، يرجى تعبئة مقاساتك من الرابط التالي: {{url}}\n- {{storeName}}",
+    "send_measurements_link": "إرسال رابط المقاسات"
   },
   "dashboard": {
     "above_avg": "فوق المتوسط",

@@ -738,7 +738,9 @@
     "visual_pleated": "Pleated",
     "visual_round": "Round",
     "visual_square": "Square",
-    "waist": "Waist"
+    "waist": "Waist",
+    "measurement_link_message": "Hello {{customerName}}, please fill in your measurements here: {{url}}\n- {{storeName}}",
+    "send_measurements_link": "Send Measurements Link"
   },
   "dashboard": {
     "above_avg": "Above Average",

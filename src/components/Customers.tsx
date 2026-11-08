@@ -76,6 +76,8 @@ import ThobeMeasurementSelector from './ThobeMeasurementSelector';
 import VisualMeasurements from './VisualMeasurements';
 import { useStaff } from '../contexts/StaffContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useBranding } from '../contexts/BrandingContext';
+import { sendWhatsAppMessage } from '../utils/whatsapp';
 import { usePermissions } from '../hooks/usePermissions';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../contexts/ConfirmContext';
@@ -475,6 +477,23 @@ export default function Customers({ tenantId }: CustomersProps) {
     
     reset(formData);
     setIsModalOpen(true);
+  };
+
+  const { settings: branding } = useBranding();
+
+  // Sends the public /measurements/:token link (server-issued, unguessable --
+  // see docs/superpowers/specs/2026-11-08-customer-measurements-public-form-design.md)
+  // over WhatsApp, reusing the exact same direct-send pattern as Orders.tsx's
+  // sendTrackingLink.
+  const sendMeasurementsLink = (customer: Customer) => {
+    if (!customer.measurementsToken || !customer.phone) return;
+    const url = `${window.location.origin}/measurements/${customer.measurementsToken}`;
+    const message = t('customers.measurement_link_message', {
+      customerName: customer.name,
+      url,
+      storeName: branding.companyName || t('pos.store_default'),
+    });
+    sendWhatsAppMessage(customer.phone, message);
   };
 
   const openDetails = (customer: Customer) => {
@@ -1223,6 +1242,20 @@ export default function Customers({ tenantId }: CustomersProps) {
                                   </div>
                                 </button>
 
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveMenuId(null);
+                                    sendMeasurementsLink(customer);
+                                  }}
+                                  className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                                >
+                                  <span className="truncate">{t('customers.send_measurements_link')}</span>
+                                  <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
+                                    <Ruler size={12} />
+                                  </div>
+                                </button>
+
                                 {canEdit && (
                                   <>
                                     <div className="h-px bg-border/60 my-1" />
@@ -1529,6 +1562,21 @@ export default function Customers({ tenantId }: CustomersProps) {
                                 </div>
                               </button>
 
+                              {/* Send Measurements Link */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveMenuId(null);
+                                  sendMeasurementsLink(customer);
+                                }}
+                                className="w-full flex items-center justify-between px-2.5 py-2 text-right rounded-xl text-xs font-bold text-content-muted hover:text-brand hover:bg-brand/5 transition-all cursor-pointer group"
+                              >
+                                <span className="truncate">{t('customers.send_measurements_link')}</span>
+                                <div className="w-6 h-6 rounded-lg bg-brand/5 flex items-center justify-center shrink-0 group-hover:bg-brand/15 text-brand transition-all">
+                                  <Ruler size={12} />
+                                </div>
+                              </button>
+
                               {canEdit && (
                                 <>
                                   <div className="h-px bg-border/60 my-1" />
@@ -1756,6 +1804,17 @@ export default function Customers({ tenantId }: CustomersProps) {
                     />
                   </div>
                 </div>
+
+                {editingCustomer?.measurementsToken && (
+                  <button
+                    type="button"
+                    onClick={() => sendMeasurementsLink(editingCustomer)}
+                    className="mb-8 px-4 py-2.5 bg-brand/10 text-brand font-bold text-sm rounded-xl hover:bg-brand/20 transition-all flex items-center gap-2 w-fit"
+                  >
+                    <Ruler size={16} />
+                    {t('customers.send_measurements_link')}
+                  </button>
+                )}
 
                 <h4 className="text-lg font-bold text-content mb-4 pt-4 border-t border-border flex items-center gap-2">
                   <ShoppingBag size={20} className="text-brand" />
