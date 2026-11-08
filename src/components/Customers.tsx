@@ -245,7 +245,8 @@ export default function Customers({ tenantId }: CustomersProps) {
         companyName: c.company_name,
         trn: c.vat_number,
         createdAt: c.created_at,
-        tenantId: c.tenant_id
+        tenantId: c.tenant_id,
+        measurementsToken: c.measurements_token
       }) as unknown as Customer);
     },
     enabled: !!tenantId,

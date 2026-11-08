@@ -115,9 +115,10 @@ export interface Customer {
   isB2B?: boolean;
   address?: string;
   city?: string;
+  measurementsToken?: string;
 }
 
-export type UserRole = 
+export type UserRole =
   | 'super_admin' 
   | 'support_tech' 
   | 'billing_admin'
