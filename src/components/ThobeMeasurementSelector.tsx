@@ -381,7 +381,7 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
                     fontWeight="900"
                     className="pointer-events-none"
                   >
-                    {cmToDisplayUnit(val as number, measurementUnit)}
+                    {cmToDisplayUnit(val as number, measurementUnit).toFixed(2)}
                   </text>
                 </motion.g>
               );
@@ -473,7 +473,13 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
                     type="number"
                     min="0"
                     step="0.1"
-                    value={(values as any)[part] ? cmToDisplayUnit((values as any)[part], measurementUnit) : ''}
+                    value={
+                      (values as any)[part]
+                        ? (activePart === part
+                            ? cmToDisplayUnit((values as any)[part], measurementUnit)
+                            : cmToDisplayUnit((values as any)[part], measurementUnit).toFixed(2))
+                        : ''
+                    }
                     onChange={(e) => handleInputChange(part, e.target.value)}
                     onFocus={() => setActivePart(part)}
                     onBlur={() => setActivePart(null)}
