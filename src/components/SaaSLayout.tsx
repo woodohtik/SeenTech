@@ -27,8 +27,8 @@ import {
   EyeOff,
   Loader2,
   CreditCard,
-  Newspaper,
-  Crown
+  Crown,
+  Newspaper
 } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { cn } from '../lib/utils';

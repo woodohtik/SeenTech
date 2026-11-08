@@ -621,13 +621,19 @@ export const bulkUpdateRolePermissions = async (
   performedByEmail: string,
   tenantId: string
 ) => {
+  if (roleIds.length === 0) return;
+
+  // Previously one `.eq('id', roleId).single()` round trip per role --
+  // batch that initial lookup into one `.in()` query and index the
+  // results by id. The writes below (insert/update/audit-log) stay one
+  // per role: whether a role forks a new tenant-scoped copy or updates in
+  // place is decided per-row, and each audit_log message names that role.
+  const { data: roles } = await supabase.from('roles').select('*').in('id', roleIds);
+  const roleById = new Map((roles ?? []).map((role: any) => [role.id, role]));
+
   for (const roleId of roleIds) {
-    const { data: roleData } = await supabase
-      .from('roles')
-      .select('*')
-      .eq('id', roleId)
-      .single();
-    
+    const roleData = roleById.get(roleId);
+
     if (!roleData) continue;
 
     // FORKING LOGIC

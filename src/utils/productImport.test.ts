@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mapProductImportHeaders, parseProductImportRows } from './productImport';
+import { mapProductImportHeaders, parseProductImportRows, writeProductImportRows, type ProductImportRow } from './productImport';
 
 const reasons = {
   invalid: 'بيانات غير صالحة',
@@ -143,5 +143,108 @@ describe('parseProductImportRows', () => {
     const rows = parseProductImportRows(raw, colIndex, categoryOptions, new Set(), new Set(), reasons);
     const skus = rows.map((r) => r.resolved!.sku);
     expect(new Set(skus).size).toBe(skus.length);
+  });
+});
+
+function makeValidRow(overrides: Partial<ProductImportRow> = {}): ProductImportRow {
+  return {
+    rowNumber: 2, name: 'قميص', priceText: '50', categoryText: 'أقمشة', skuText: '', barcodeText: '',
+    unitText: '', conversionRateText: '', costPriceText: '', taxTypeText: '', minThresholdText: '',
+    status: 'valid',
+    resolved: {
+      name: 'قميص', price: 50, categoryKey: 'fabric', sku: '12345678', barcode: '1234567890',
+      unit: 'piece', conversionRate: 1, costPrice: 0, taxType: 'exclusive', minThreshold: 0,
+    },
+    ...overrides,
+  };
+}
+
+function makeSupabase(opts: {
+  insertedItemIds?: string[];
+  itemInsertErrorOnCall?: number;
+  branchInventoryError?: { message: string } | null;
+} = {}) {
+  let itemCallIndex = 0;
+  const branchInventoryInserts: any[] = [];
+  const supabase = {
+    from: (table: string) => {
+      if (table === 'inventory_items') {
+        return {
+          insert: () => ({
+            select: () => ({
+              single: () => {
+                itemCallIndex += 1;
+                if (opts.itemInsertErrorOnCall === itemCallIndex) {
+                  return Promise.resolve({ data: null, error: { message: 'duplicate key value violates unique constraint' } });
+                }
+                const id = opts.insertedItemIds?.[itemCallIndex - 1] ?? `item-${itemCallIndex}`;
+                return Promise.resolve({ data: { id }, error: null });
+              },
+            }),
+          }),
+        };
+      }
+      if (table === 'branch_inventory') {
+        return {
+          insert: (rows: any[]) => {
+            branchInventoryInserts.push(rows);
+            return Promise.resolve({ error: opts.branchInventoryError ?? null });
+          },
+        };
+      }
+      throw new Error(`unexpected table: ${table}`);
+    },
+  };
+  return { supabase, branchInventoryInserts, getItemCallCount: () => itemCallIndex };
+}
+
+describe('writeProductImportRows', () => {
+  it('inserts one inventory_items row per valid row, then a single batched branch_inventory insert for every branch of every created item', async () => {
+    const { supabase, branchInventoryInserts, getItemCallCount } = makeSupabase({ insertedItemIds: ['item-1', 'item-2'] });
+    const rows = [makeValidRow({ rowNumber: 2 }), makeValidRow({ rowNumber: 3, name: 'بنطال' })];
+    const branches = [{ id: 'branch-1' }, { id: 'branch-2' }];
+
+    const result = await writeProductImportRows(supabase, rows, branches, 'tenant-1', 'بيانات غير صالحة');
+
+    expect(result).toEqual({ succeeded: 2, failures: [], branchInventoryError: null });
+    expect(getItemCallCount()).toBe(2);
+    expect(branchInventoryInserts).toHaveLength(1); // one batched call, not one per row
+    expect(branchInventoryInserts[0]).toHaveLength(4); // 2 items x 2 branches
+  });
+
+  it("a single row's insert failure only fails that row, not the rest of the import", async () => {
+    const { supabase, branchInventoryInserts, getItemCallCount } = makeSupabase({ itemInsertErrorOnCall: 1 });
+    const rows = [makeValidRow({ rowNumber: 2 }), makeValidRow({ rowNumber: 3, name: 'بنطال' })];
+    const branches = [{ id: 'branch-1' }];
+
+    const result = await writeProductImportRows(supabase, rows, branches, 'tenant-1', 'بيانات غير صالحة');
+
+    expect(result.succeeded).toBe(1);
+    expect(result.failures).toEqual([
+      { rowNumber: 2, name: 'قميص', skuText: '', reason: 'duplicate key value violates unique constraint' },
+    ]);
+    expect(getItemCallCount()).toBe(2); // the second row was still attempted
+    expect(branchInventoryInserts[0]).toHaveLength(1); // only the surviving item's branch row
+  });
+
+  it('reports a batched branch_inventory failure separately, without marking the already-created item as failed', async () => {
+    const { supabase } = makeSupabase({ branchInventoryError: { message: 'insert failed' } });
+    const rows = [makeValidRow()];
+    const branches = [{ id: 'branch-1' }];
+
+    const result = await writeProductImportRows(supabase, rows, branches, 'tenant-1', 'بيانات غير صالحة');
+
+    expect(result.succeeded).toBe(1);
+    expect(result.failures).toEqual([]);
+    expect(result.branchInventoryError).toBe('insert failed');
+  });
+
+  it('never calls branch_inventory when there are no branches', async () => {
+    const { supabase, branchInventoryInserts } = makeSupabase();
+    const result = await writeProductImportRows(supabase, [makeValidRow()], [], 'tenant-1', 'بيانات غير صالحة');
+
+    expect(result.succeeded).toBe(1);
+    expect(branchInventoryInserts).toHaveLength(0);
+    expect(result.branchInventoryError).toBeNull();
   });
 });

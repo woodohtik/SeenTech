@@ -63,8 +63,6 @@ const Referral = React.lazy(() => import('./components/Referral'));
 const Onboarding = React.lazy(() => import('./components/Onboarding'));
 const ResetPassword = React.lazy(() => import('./components/ResetPassword'));
 const PublicInvoice = React.lazy(() => import('./pages/PublicInvoice'));
-const BlogList = React.lazy(() => import('./pages/BlogList'));
-const BlogPost = React.lazy(() => import('./pages/BlogPost'));
 
 import PinLogin from './components/PinLogin';
 import ForcePinSetup from './components/ForcePinSetup';
@@ -101,13 +99,13 @@ import AccessDenied from './components/AccessDenied';
 const SuperAdminDashboard = React.lazy(() => import('./components/SuperAdminDashboard'));
 const AdminTailors = React.lazy(() => import('./components/AdminTailors'));
 const AdminTenantLicenses = React.lazy(() => import('./components/AdminTenantLicenses'));
-const AdminBlog = React.lazy(() => import('./components/AdminBlog'));
 const SaaSReports = React.lazy(() => import('./components/SaaSReports'));
 const SaaSAuditLogs = React.lazy(() => import('./components/SaaSAuditLogs'));
 const SaaSSystemSettings = React.lazy(() => import('./components/SaaSSystemSettings'));
 const SaaSAssistantSettings = React.lazy(() => import('./components/SaaSAssistantSettings'));
 const SaaSWithdrawals = React.lazy(() => import('./components/SaaSWithdrawals'));
 const SubscriptionRequestsAdminManager = React.lazy(() => import('./components/SubscriptionRequestsAdminManager'));
+const AdminBlogEditor = React.lazy(() => import('./components/AdminBlogEditor'));
 import SaaSTeamManagement from './components/SaaSTeamManagement';
 import TenantAnalyticsDashboard from './components/TenantAnalyticsDashboard';
 import { RolePermissionsSettings } from './components/RolePermissionsSettings';
@@ -590,23 +588,9 @@ function AppContent() {
             } 
           />
           <Route path="/track/:token" element={<TrackRoute />} />
-          {/* Public blog (no auth) */}
-          <Route
-            path="/blog"
-            element={
-              <React.Suspense fallback={<PageSkeleton />}>
-                <BlogList />
-              </React.Suspense>
-            }
-          />
-          <Route
-            path="/blog/:slug"
-            element={
-              <React.Suspense fallback={<PageSkeleton />}>
-                <BlogPost />
-              </React.Suspense>
-            }
-          />
+          {/* /blog and /blog/:slug are now real static files (scripts/build-blog.ts),
+              served directly by Vercel -- see vercel.json's rewrite exclusion.
+              No React route needed or reachable for them. */}
           <Route
             path="/reset-password"
             element={
@@ -691,6 +675,13 @@ function AppContent() {
                           </RoleGuard>
                         </RouteBoundary>
                       } />
+                      <Route path="/blog" element={
+                        <RouteBoundary>
+                          <RoleGuard allowedRoles={['super_admin']}>
+                            <AdminBlogEditor />
+                          </RoleGuard>
+                        </RouteBoundary>
+                      } />
                       <Route path="/system" element={
                         <RouteBoundary>
                           <RoleGuard allowedRoles={['super_admin']}>
@@ -709,13 +700,6 @@ function AppContent() {
                         <RouteBoundary>
                           <RoleGuard allowedRoles={['super_admin']}>
                             <SaaSTeamManagement />
-                          </RoleGuard>
-                        </RouteBoundary>
-                      } />
-                      <Route path="/blog" element={
-                        <RouteBoundary>
-                          <RoleGuard allowedRoles={['super_admin']}>
-                            <AdminBlog />
                           </RoleGuard>
                         </RouteBoundary>
                       } />

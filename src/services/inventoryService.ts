@@ -60,29 +60,43 @@ export async function checkStockAvailability(
     targetBranchId = branches.id;
   }
 
+  // Previously one round trip per item to resolve inventory_items.id by
+  // name, plus one more per item to read its branch_inventory quantity --
+  // an order with N lines meant 2N sequential queries. Batch both lookups
+  // into two queries total and do the per-item comparison in JS.
+  const fabricNames = [...new Set(items.map(item => item.fabric))];
+  const { data: inventoryItems } = fabricNames.length
+    ? await supabase
+        .from('inventory_items')
+        .select('id, name')
+        .eq('tenant_id', tenantId)
+        .in('name', fabricNames)
+    : { data: [] as { id: string; name: string }[] };
+
+  const itemIdByName = new Map((inventoryItems ?? []).map(row => [row.name, row.id]));
+  const itemIds = [...new Set(itemIdByName.values())];
+
+  const { data: branchInventory } = itemIds.length
+    ? await supabase
+        .from('branch_inventory')
+        .select('item_id, quantity')
+        .eq('branch_id', targetBranchId)
+        .in('item_id', itemIds)
+    : { data: [] as { item_id: string; quantity: number }[] };
+
+  const quantityByItemId = new Map((branchInventory ?? []).map(row => [row.item_id, row.quantity]));
+
   for (const item of items) {
-    const { data: inventoryItem, error: invError } = await supabase
-      .from('inventory_items')
-      .select('id')
-      .eq('tenant_id', tenantId)
-      .eq('name', item.fabric)
-      .maybeSingle();
-    
-    if (invError || !inventoryItem) {
+    const inventoryItemId = itemIdByName.get(item.fabric);
+    if (!inventoryItemId) {
       missingItems.push(item.fabric);
       continue;
     }
 
-    const { data: branchInv, error: branchInvError } = await supabase
-      .from('branch_inventory')
-      .select('quantity')
-      .eq('branch_id', targetBranchId)
-      .eq('item_id', inventoryItem.id)
-      .maybeSingle();
-
     const deductionAmount = item.consumedMeters || convertToMeters(item.quantity, item.selectedUnit || 'meter');
+    const availableQuantity = quantityByItemId.get(inventoryItemId);
 
-    if (branchInvError || !branchInv || branchInv.quantity < deductionAmount) {
+    if (availableQuantity === undefined || availableQuantity < deductionAmount) {
       missingItems.push(item.fabric);
     }
   }
@@ -116,15 +130,24 @@ export async function deductStock(
 
   if (!targetBranchId) throw new Error(i18n.t('inventory.branch_not_set_for_deduction'));
 
+  // Previously one round trip per order line to resolve inventory_items.id
+  // by fabric name -- batch that lookup into a single query. The
+  // apply_stock_movement RPC below stays one call per item: each is a
+  // discrete, idempotent ledger-write business event keyed on order+item,
+  // not a read that can be batched away.
+  const fabricNames = [...new Set(order.items.map(item => item.fabric))];
+  const { data: inventoryItems } = fabricNames.length
+    ? await supabase
+        .from('inventory_items')
+        .select('id, name')
+        .eq('tenant_id', tenantId)
+        .in('name', fabricNames)
+    : { data: [] as { id: string; name: string }[] };
+  const itemIdByName = new Map((inventoryItems ?? []).map(row => [row.name, row.id]));
+
   for (const item of order.items) {
-    const { data: inventoryItem, error: invError } = await supabase
-      .from('inventory_items')
-      .select('id')
-      .eq('tenant_id', tenantId)
-      .eq('name', item.fabric)
-      .maybeSingle();
-    
-    if (invError || !inventoryItem) continue;
+    const inventoryItemId = itemIdByName.get(item.fabric);
+    if (!inventoryItemId) continue;
 
     const deductionAmount = item.consumedMeters || convertToMeters(item.quantity, item.selectedUnit || 'meter');
     if (!deductionAmount) continue;
@@ -142,9 +165,9 @@ export async function deductStock(
        order + item key so a retried checkout cannot double-deduct.
        -------------------------------------------------------------------- */
     const { error: moveError } = await supabase.rpc('apply_stock_movement', {
-      p_operation_id: `order:${order.id}:item:${inventoryItem.id}`,
+      p_operation_id: `order:${order.id}:item:${inventoryItemId}`,
       p_branch_id: targetBranchId,
-      p_item_id: inventoryItem.id,
+      p_item_id: inventoryItemId,
       p_delta: -Math.abs(deductionAmount),
       p_type: 'deduction',
       p_reference_id: order.id,

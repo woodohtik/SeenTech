@@ -1,0 +1,29 @@
+name: Blog rebuild sweep
+
+# Vercel's own Cron Jobs feature can't run this: the project is on the
+# Hobby plan, which rejects any cron more frequent than once a day at
+# DEPLOY TIME -- it previously blocked staging's entire deployment
+# outright (readyState: ERROR, "Hobby accounts are limited to daily cron
+# jobs"). GitHub Actions' schedule trigger has no such restriction and
+# calls the exact same already-tested server route
+# (/api/cron/blog-rebuild-sweep, CRON_SECRET-gated) from outside Vercel
+# entirely, so nothing server-side changes.
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger the staging blog rebuild sweep
+        run: |
+          status=$(curl -sS -o /dev/null -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://staging.seentech.io/api/cron/blog-rebuild-sweep)
+          echo "Response status: $status"
+          if [ "$status" != "200" ]; then
+            echo "::error::blog-rebuild-sweep returned HTTP $status"
+            exit 1
+          fi
