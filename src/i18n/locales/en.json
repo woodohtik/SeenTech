@@ -2954,6 +2954,16 @@
     "delivery_tomorrow": "Delivery tomorrow",
     "delivery_in_days_other": "{{count}} days until delivery"
   },
+  "public_measurements": {
+    "title": "Your Measurements",
+    "not_found": "We couldn't find this link. Please check it.",
+    "load_failed": "Couldn't load the page right now.",
+    "rate_limited": "Too many attempts. Wait a minute and try again.",
+    "save_button": "Save Measurements",
+    "saving": "Saving…",
+    "save_success": "Your measurements were saved successfully.",
+    "save_failed": "Couldn't save the measurements, please try again."
+  },
   "my_orders": {
     "title": "My Orders",
     "loading": "Loading…",

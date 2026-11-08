@@ -14,6 +14,7 @@ import {
 // -- كل مستخدم مسجّل دخول (حتى الكاشير) كان يُحمِّل LandingPage.html المضمّن
 // (~74KB) ضمن حزمته الرئيسية بلا أي استفادة منه إطلاقاً.
 const OrderTracking = React.lazy(() => import('./components/public/OrderTracking'));
+const CustomerMeasurementsForm = React.lazy(() => import('./components/public/CustomerMeasurementsForm'));
 const LandingPage = React.lazy(() => import('./components/LandingPage'));
 
 // صفحة تتبّع الطلب العامة للعميل النهائي (بلا مصادقة) — /track/:token
@@ -22,6 +23,16 @@ const TrackRoute = () => {
   return (
     <React.Suspense fallback={<PageSkeleton />}>
       <OrderTracking token={token || ''} />
+    </React.Suspense>
+  );
+};
+
+// فورم مقاسات العميل العام (بلا مصادقة) — /measurements/:token
+const MeasurementsRoute = () => {
+  const { token } = useParams();
+  return (
+    <React.Suspense fallback={<PageSkeleton />}>
+      <CustomerMeasurementsForm token={token || ''} />
     </React.Suspense>
   );
 };
@@ -588,6 +599,7 @@ function AppContent() {
             } 
           />
           <Route path="/track/:token" element={<TrackRoute />} />
+          <Route path="/measurements/:token" element={<MeasurementsRoute />} />
           {/* /blog and /blog/:slug are now real static files (scripts/build-blog.ts),
               served directly by Vercel -- see vercel.json's rewrite exclusion.
               No React route needed or reachable for them. */}
