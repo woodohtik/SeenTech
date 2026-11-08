@@ -1046,33 +1046,92 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                       <span className="text-sm font-black text-content">
                                         {stock}
                                       </span>
-                                      {item.category === "fabric" && (
-                                        <button
-                                          onClick={() => {
-                                            setSelectedItemForConversion({
-                                              item,
-                                              branch,
-                                            });
-                                            setShowConversionModal(true);
-                                          }}
-                                          className="min-w-[40px] min-h-[40px] flex items-center justify-center bg-brand/5 text-brand rounded-lg"
-                                          title={t("inventory.manual_convert_action", "فك وتحويل يدوي")}
+                                      <Menu as="div" className="relative inline-block text-left">
+                                        <Menu.Button
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="min-w-[40px] min-h-[40px] flex items-center justify-center bg-brand/5 text-brand rounded-lg outline-none"
+                                          title={t("common.actions", "الإجراءات")}
                                         >
-                                          <Scale size={14} />
-                                        </button>
-                                      )}
-                                      <button
-                                        onClick={() => {
-                                          setSelectedItemForAdjustment({
-                                            item,
-                                            branch,
-                                          });
-                                          setShowAdjustmentModal(true);
-                                        }}
-                                        className="min-w-[40px] min-h-[40px] flex items-center justify-center bg-brand/5 text-brand rounded-lg"
-                                      >
-                                        <Edit2 size={14} />
-                                      </button>
+                                          <MoreVertical size={16} />
+                                        </Menu.Button>
+                                        <Transition
+                                          as={Fragment}
+                                          enter="transition ease-out duration-100"
+                                          enterFrom="transform opacity-0 scale-95"
+                                          enterTo="transform opacity-100 scale-100"
+                                          leave="transition ease-in duration-75"
+                                          leaveFrom="transform opacity-100 scale-100"
+                                          leaveTo="transform opacity-0 scale-95"
+                                        >
+                                          <Menu.Items
+                                            anchor="bottom end"
+                                            className="z-[9999] w-44 mt-1 origin-top-right bg-white rounded-2xl shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none overflow-hidden"
+                                          >
+                                            <div className="p-1.5">
+                                              {hasPermission("inventory.create") && (
+                                                <Menu.Item>
+                                                  {({ active }) => (
+                                                    <button
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedItemForAdjustment({ item, branch });
+                                                        setShowAdjustmentModal(true);
+                                                      }}
+                                                      className={cn(
+                                                        active ? "bg-success/10 text-success" : "text-success",
+                                                        "flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold",
+                                                      )}
+                                                    >
+                                                      <Plus size={14} />
+                                                      {t("inventory.stock_in")}
+                                                    </button>
+                                                  )}
+                                                </Menu.Item>
+                                              )}
+                                              {item.category === "fabric" && hasPermission("inventory.create") && (
+                                                <Menu.Item>
+                                                  {({ active }) => (
+                                                    <button
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedItemForConversion({ item, branch });
+                                                        setShowConversionModal(true);
+                                                      }}
+                                                      className={cn(
+                                                        active ? "bg-warning/10 text-warning" : "text-warning",
+                                                        "flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold",
+                                                      )}
+                                                    >
+                                                      <Scale size={14} />
+                                                      {t("inventory.manual_convert_action", "فك وتحويل يدوي")}
+                                                    </button>
+                                                  )}
+                                                </Menu.Item>
+                                              )}
+                                              {hasPermission("inventory.reconcile") && (
+                                                <Menu.Item>
+                                                  {({ active }) => (
+                                                    <button
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedItemForAdjustment({ item, branch });
+                                                        setShowAdjustmentModal(true);
+                                                      }}
+                                                      className={cn(
+                                                        active ? "bg-brand/10 text-brand" : "text-brand",
+                                                        "flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold",
+                                                      )}
+                                                    >
+                                                      <ClipboardList size={14} />
+                                                      {t("inventory.adjust")}
+                                                    </button>
+                                                  )}
+                                                </Menu.Item>
+                                              )}
+                                            </div>
+                                          </Menu.Items>
+                                        </Transition>
+                                      </Menu>
                                     </div>
                                   </div>
                                 );
@@ -1470,60 +1529,93 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                                     )}
                                                   </p>
 
-                                                  <div className="flex items-center justify-end gap-2 mt-2">
-                                                    {hasPermission(
-                                                      "inventory.create",
-                                                    ) && (
-                                                      <button
-                                                        onClick={(e) => {
-                                                          e.stopPropagation();
-                                                          setSelectedItemForAdjustment(
-                                                            { item, branch },
-                                                          );
-                                                          setShowAdjustmentModal(
-                                                            true,
-                                                          );
-                                                        }}
-                                                        className="text-[9px] font-black text-success hover:underline uppercase tracking-tighter"
+                                                  <div className="flex items-center justify-end mt-2">
+                                                    <Menu as="div" className="relative inline-block text-left">
+                                                      <Menu.Button
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="p-1.5 hover:bg-surface-muted rounded-lg transition-all text-content-muted outline-none"
+                                                        title={t("common.actions", "الإجراءات")}
                                                       >
-                                                        {t(
-                                                          "inventory.stock_in",
-                                                        )}
-                                                      </button>
-                                                    )}
-                                                    {item.category === "fabric" && hasPermission("inventory.create") && (
-                                                      <button
-                                                        onClick={(e) => {
-                                                          e.stopPropagation();
-                                                          setSelectedItemForConversion({
-                                                            item,
-                                                            branch,
-                                                          });
-                                                          setShowConversionModal(true);
-                                                        }}
-                                                        className="text-[9px] font-black text-warning hover:underline uppercase tracking-tighter"
+                                                        <MoreVertical size={16} />
+                                                      </Menu.Button>
+                                                      <Transition
+                                                        as={Fragment}
+                                                        enter="transition ease-out duration-100"
+                                                        enterFrom="transform opacity-0 scale-95"
+                                                        enterTo="transform opacity-100 scale-100"
+                                                        leave="transition ease-in duration-75"
+                                                        leaveFrom="transform opacity-100 scale-100"
+                                                        leaveTo="transform opacity-0 scale-95"
                                                       >
-                                                        {t("inventory.manual_convert_action", "فك يدوي")}
-                                                      </button>
-                                                    )}
-                                                    {hasPermission(
-                                                      "inventory.reconcile",
-                                                    ) && (
-                                                      <button
-                                                        onClick={(e) => {
-                                                          e.stopPropagation();
-                                                          setSelectedItemForAdjustment(
-                                                            { item, branch },
-                                                          );
-                                                          setShowAdjustmentModal(
-                                                            true,
-                                                          );
-                                                        }}
-                                                        className="text-[9px] font-black text-brand hover:underline uppercase tracking-tighter"
-                                                      >
-                                                        {t("inventory.adjust")}
-                                                      </button>
-                                                    )}
+                                                        <Menu.Items
+                                                          anchor="bottom end"
+                                                          className="z-[9999] w-44 mt-1 origin-top-right bg-white rounded-2xl shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none overflow-hidden"
+                                                        >
+                                                          <div className="p-1.5">
+                                                            {hasPermission("inventory.create") && (
+                                                              <Menu.Item>
+                                                                {({ active }) => (
+                                                                  <button
+                                                                    onClick={(e) => {
+                                                                      e.stopPropagation();
+                                                                      setSelectedItemForAdjustment({ item, branch });
+                                                                      setShowAdjustmentModal(true);
+                                                                    }}
+                                                                    className={cn(
+                                                                      active ? "bg-success/10 text-success" : "text-success",
+                                                                      "flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold",
+                                                                    )}
+                                                                  >
+                                                                    <Plus size={14} />
+                                                                    {t("inventory.stock_in")}
+                                                                  </button>
+                                                                )}
+                                                              </Menu.Item>
+                                                            )}
+                                                            {item.category === "fabric" && hasPermission("inventory.create") && (
+                                                              <Menu.Item>
+                                                                {({ active }) => (
+                                                                  <button
+                                                                    onClick={(e) => {
+                                                                      e.stopPropagation();
+                                                                      setSelectedItemForConversion({ item, branch });
+                                                                      setShowConversionModal(true);
+                                                                    }}
+                                                                    className={cn(
+                                                                      active ? "bg-warning/10 text-warning" : "text-warning",
+                                                                      "flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold",
+                                                                    )}
+                                                                  >
+                                                                    <Scale size={14} />
+                                                                    {t("inventory.manual_convert_action", "فك وتحويل يدوي")}
+                                                                  </button>
+                                                                )}
+                                                              </Menu.Item>
+                                                            )}
+                                                            {hasPermission("inventory.reconcile") && (
+                                                              <Menu.Item>
+                                                                {({ active }) => (
+                                                                  <button
+                                                                    onClick={(e) => {
+                                                                      e.stopPropagation();
+                                                                      setSelectedItemForAdjustment({ item, branch });
+                                                                      setShowAdjustmentModal(true);
+                                                                    }}
+                                                                    className={cn(
+                                                                      active ? "bg-brand/10 text-brand" : "text-brand",
+                                                                      "flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold",
+                                                                    )}
+                                                                  >
+                                                                    <ClipboardList size={14} />
+                                                                    {t("inventory.adjust")}
+                                                                  </button>
+                                                                )}
+                                                              </Menu.Item>
+                                                            )}
+                                                          </div>
+                                                        </Menu.Items>
+                                                      </Transition>
+                                                    </Menu>
                                                   </div>
                                                 </div>
                                               </div>
