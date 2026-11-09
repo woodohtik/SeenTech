@@ -126,10 +126,11 @@ export type UserRole =
   | 'tenant_admin'
   | 'owner' 
   | 'admin'
-  | 'manager' 
-  | 'cashier' 
+  | 'manager'
+  | 'cashier'
   | 'tailor'
   | 'accountant'
+  | 'referral_partner'
   | 'branch_manager'
   | 'warehouse_manager';
 
