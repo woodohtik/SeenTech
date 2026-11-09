@@ -16,6 +16,8 @@ import {
 const OrderTracking = React.lazy(() => import('./components/public/OrderTracking'));
 const CustomerMeasurementsForm = React.lazy(() => import('./components/public/CustomerMeasurementsForm'));
 const LandingPage = React.lazy(() => import('./components/LandingPage'));
+const PartnerLogin = React.lazy(() => import('./components/public/PartnerLogin'));
+const PartnerReferrals = React.lazy(() => import('./components/public/PartnerReferrals'));
 
 // صفحة تتبّع الطلب العامة للعميل النهائي (بلا مصادقة) — /track/:token
 const TrackRoute = () => {
@@ -41,7 +43,7 @@ const MeasurementsRoute = () => {
 // AppContent لإعفاء هذه المسارات من شاشات اعتراض جلسة الموظف (تعارض جهاز،
 // قفل انتهاء الاشتراك، إعداد/دخول PIN) التي تُفحص قبل الوصول لـ<Routes>
 // إطلاقاً بلا أي شرط على المسار نفسه.
-const PUBLIC_ROUTE_PREFIXES = ['/track/', '/p/inv/', '/measurements/'];
+const PUBLIC_ROUTE_PREFIXES = ['/track/', '/p/inv/', '/measurements/', '/partner/'];
 
 // توجيه تلقائي لصفحة الهبوط للزوار غير المسجلين
 const LandingRedirect = () => {
@@ -382,6 +384,7 @@ function AppContent() {
                       userRole === 'support_tech' || 
                       userRole === 'billing_admin' || 
                       userRole === 'sales';
+  const isReferralPartner = userRole === 'referral_partner';
   const effectiveTenantId = (isSaaSStaff && impersonationTenantId) ? impersonationTenantId : tenantId;
 
   // Trial & Subscription Expiry Checks
@@ -738,7 +741,28 @@ function AppContent() {
                   </React.Suspense>
                 </SaaSLayout>
               ) : <Navigate to="/login" />
-            } 
+            }
+          />
+          {/* Referral Partner Portal — standalone accounts, unrelated to any tenant */}
+          <Route
+            path="/partner/*"
+            element={
+              isReferralPartner ? (
+                <React.Suspense fallback={<PageSkeleton />}>
+                  <Routes>
+                    <Route path="/referrals" element={<PartnerReferrals />} />
+                    <Route path="*" element={<Navigate to="/partner/referrals" />} />
+                  </Routes>
+                </React.Suspense>
+              ) : (
+                <React.Suspense fallback={<PageSkeleton />}>
+                  <Routes>
+                    <Route path="/login" element={<PartnerLogin />} />
+                    <Route path="*" element={<Navigate to="/partner/login" />} />
+                  </Routes>
+                </React.Suspense>
+              )
+            }
           />
           <Route path="/invoice-test" element={<React.Suspense fallback={<div>Loading...</div>}>{React.createElement(React.lazy(() => import('./components/printing/InvoiceReceipt')))}</React.Suspense>} />
 
@@ -800,6 +824,7 @@ function AppContent() {
                           <React.Suspense fallback={<PageSkeleton />}>
                             <Routes>
                               <Route path="/" element={
+                                isReferralPartner ? <Navigate to="/partner/referrals" /> :
                                 userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> :
                                 (effectiveRole === 'cashier' ? <Navigate to="/sales" /> :
                                  effectiveRole === 'tailor' ? <Navigate to="/orders" /> :
@@ -917,6 +942,7 @@ function AppContent() {
                       <React.Suspense fallback={<PageSkeleton />}>
                         <Routes>
                           <Route path="/" element={
+                            isReferralPartner ? <Navigate to="/partner/referrals" /> :
                             userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> :
                             (effectiveRole === 'cashier' ? <Navigate to="/sales" /> :
                              effectiveRole === 'tailor' ? <Navigate to="/orders" /> :

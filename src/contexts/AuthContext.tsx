@@ -445,6 +445,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 return;
             }
 
+            // Referral partner (standalone account, unrelated to any tenant) --
+            // checked after staff/saas_users (which both return early above)
+            // and before the tailor_requests fallback, so someone who already
+            // has a tenant/staff/saas identity always resolves as that, never
+            // flips into the partner UI.
+            const { data: partnerRow } = await supabase.from('referral_partners').select('id, status').eq('uid', uid).maybeSingle();
+            if (partnerRow) {
+                setAppState({
+                    isApproved: partnerRow.status === 'active',
+                    userRole: 'referral_partner' as UserRole,
+                    tenantId: 'referral_partner',
+                    onboardingStep: 4,
+                    hasStaffWithPin: false,
+                    currentUserStaff: null,
+                    hasNoProfile: false,
+                    resolveError: null,
+                });
+                localStorage.setItem('user_role', 'referral_partner');
+                localStorage.setItem('setup_complete', 'true');
+                setLoading(false);
+                return;
+            }
+
             // 4. Onboarding request
             let request = requestRes.data;
             if (!request && email) {
