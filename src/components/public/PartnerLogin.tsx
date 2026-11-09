@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase/client';
 import { IconInput } from '../ui/IconInput';
 import { Button } from '../ui/Button';
-import { ensurePartnerReferralCode } from '../../services/partnerReferralService';
+import { ensurePartnerReferralCode, registerReferralPartner } from '../../services/partnerReferralService';
 
 type ViewMode = 'login' | 'register';
 
@@ -49,6 +49,11 @@ export default function PartnerLogin() {
       return;
     }
     setLoading(true);
+    // يمنع resolveIdentity العامة (AuthContext) من تحليل الهوية قبل اكتمال
+    // إنشاء صف referral_partners -- نفس آلية Login.tsx's handleRegister تماماً
+    // (سباق فعلي: onAuthStateChange يتفعّل فور signUp، قبل أن ينتهي الإدراج).
+    localStorage.setItem('is_registering', 'true');
+    localStorage.setItem('is_registering_at', String(Date.now()));
     try {
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
@@ -58,36 +63,26 @@ export default function PartnerLogin() {
       if (signUpError) throw signUpError;
       if (!signUpData.user) throw new Error(t('partner_login.errors.unknown'));
 
-      const { error: insertError } = await supabase.from('referral_partners').insert({
-        uid: signUpData.user.id,
-        name,
-        email,
-        phone: phone || null,
-        status: 'active',
-      });
-      if (insertError) {
-        if (insertError.code === '23505') {
+      let partnerId: string;
+      try {
+        partnerId = await registerReferralPartner(name, email, phone || null);
+      } catch (regErr: any) {
+        if (regErr?.code === '23505') {
           throw new Error(
-            insertError.message?.includes('phone')
+            regErr.message?.includes('phone')
               ? t('partner_login.errors.phone_exists')
               : t('partner_login.errors.email_exists')
           );
         }
-        throw insertError;
+        throw regErr;
       }
+      await ensurePartnerReferralCode(partnerId).catch(() => {});
 
-      const { data: partnerRow } = await supabase
-        .from('referral_partners')
-        .select('id')
-        .eq('uid', signUpData.user.id)
-        .maybeSingle();
-      if (partnerRow) {
-        await ensurePartnerReferralCode(partnerRow.id).catch(() => {});
-      }
-
+      localStorage.removeItem('is_registering');
       (window as any).refreshAuthData?.();
       navigate('/partner/referrals');
     } catch (err: any) {
+      localStorage.removeItem('is_registering');
       setError(err?.message || t('partner_login.errors.unknown'));
     } finally {
       setLoading(false);

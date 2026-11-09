@@ -30,6 +30,17 @@ export async function getPartnerReferralProgramSettings(): Promise<PartnerReferr
   };
 }
 
+/**
+ * يُنشئ صف referral_partners جديداً للمستخدم الحالي عبر RPC (لا إدراج مباشر من
+ * العميل -- RLS على الجدول عمداً لا تسمح بذلك، ومنع العميل من فرض status/referral_code
+ * خاصة به بنفسه، انظر register_referral_partner في المايجريشن).
+ */
+export async function registerReferralPartner(name: string, email: string, phone: string | null): Promise<string> {
+  const { data, error } = await supabase.rpc('register_referral_partner', { p_name: name, p_email: email, p_phone: phone });
+  if (error) throw error;
+  return data as string;
+}
+
 /** يضمن وجود كود إحالة للشريك ويُرجعه. */
 export async function ensurePartnerReferralCode(partnerId: string): Promise<string> {
   const { data, error } = await supabase.rpc('ensure_partner_referral_code', { p_partner: partnerId });

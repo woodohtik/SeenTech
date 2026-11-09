@@ -802,11 +802,13 @@ function AppContent() {
           />
 
           {/* Root Route — Landing page for visitors, Dashboard for logged-in tenants */}
-          <Route 
-            path="/" 
+          <Route
+            path="/"
             element={
               (user && isApproved) ? (
-                needsOnboarding ? (
+                isReferralPartner ? (
+                  <Navigate to="/partner/referrals" />
+                ) : needsOnboarding ? (
                   <Navigate to="/onboarding" />
                 ) : (
                   userRole === 'super_admin' && !impersonationTenantId ? (
@@ -824,7 +826,6 @@ function AppContent() {
                           <React.Suspense fallback={<PageSkeleton />}>
                             <Routes>
                               <Route path="/" element={
-                                isReferralPartner ? <Navigate to="/partner/referrals" /> :
                                 userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> :
                                 (effectiveRole === 'cashier' ? <Navigate to="/sales" /> :
                                  effectiveRole === 'tailor' ? <Navigate to="/orders" /> :
@@ -925,10 +926,12 @@ function AppContent() {
 
           {/* Main Application Routes */}
           <Route 
-            path="/*" 
+            path="/*"
             element={
               (user && isApproved) ? (
-                needsOnboarding ? (
+                isReferralPartner ? (
+                  <Navigate to="/partner/referrals" />
+                ) : needsOnboarding ? (
                   <Navigate to="/onboarding" />
                 ) : (
                   <>
@@ -942,7 +945,6 @@ function AppContent() {
                       <React.Suspense fallback={<PageSkeleton />}>
                         <Routes>
                           <Route path="/" element={
-                            isReferralPartner ? <Navigate to="/partner/referrals" /> :
                             userRole === 'super_admin' && !impersonationTenantId ? <Navigate to="/admin/dashboard" /> :
                             (effectiveRole === 'cashier' ? <Navigate to="/sales" /> :
                              effectiveRole === 'tailor' ? <Navigate to="/orders" /> :
