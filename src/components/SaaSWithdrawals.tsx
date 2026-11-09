@@ -27,21 +27,28 @@ export default function SaaSWithdrawals() {
 
   async function load() {
     setLoading(true);
-    try {
-      const [tenantRows, partnerRows] = await Promise.all([
-        listPendingWithdrawals(),
-        listPendingPartnerWithdrawals(),
-      ]);
-      const merged: WithdrawalRow[] = [
-        ...tenantRows.map(w => ({ ...w, source: 'tenant' as const })),
-        ...partnerRows.map(w => ({ ...w, source: 'partner' as const })),
-      ].sort((a, b) => new Date(a.requested_at).getTime() - new Date(b.requested_at).getTime());
-      setRows(merged);
-    } catch (e: any) {
-      showToast(e?.message || t('saas.failed'), 'error');
-    } finally {
-      setLoading(false);
+    // allSettled عمداً، لا Promise.all -- فشل RPC الشركاء (مثلاً المايجريشن لم
+    // تُطبَّق بعد على بيئة ما، أو الدور الحالي billing_admin لا super_admin)
+    // يجب ألا يُخفي قائمة سحوبات التجار، التي تعمل بشكل مستقل تماماً عنها.
+    const [tenantRes, partnerRes] = await Promise.allSettled([
+      listPendingWithdrawals(),
+      listPendingPartnerWithdrawals(),
+    ]);
+    const tenantRows = tenantRes.status === 'fulfilled' ? tenantRes.value : [];
+    const partnerRows = partnerRes.status === 'fulfilled' ? partnerRes.value : [];
+    if (tenantRes.status === 'rejected' && partnerRes.status === 'rejected') {
+      showToast(t('saas.failed'), 'error');
+    } else if (partnerRes.status === 'rejected') {
+      console.warn('[saas-withdrawals] failed to load partner withdrawals:', partnerRes.reason);
+    } else if (tenantRes.status === 'rejected') {
+      console.warn('[saas-withdrawals] failed to load tenant withdrawals:', tenantRes.reason);
     }
+    const merged: WithdrawalRow[] = [
+      ...tenantRows.map(w => ({ ...w, source: 'tenant' as const })),
+      ...partnerRows.map(w => ({ ...w, source: 'partner' as const })),
+    ].sort((a, b) => new Date(a.requested_at).getTime() - new Date(b.requested_at).getTime());
+    setRows(merged);
+    setLoading(false);
   }
   const [toast, setToast] = useState<{message: string, type: 'success'|'error'} | null>(null);
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
