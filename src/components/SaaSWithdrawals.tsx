@@ -7,25 +7,36 @@
 
 import { useEffect, useState } from 'react';
 import { listPendingWithdrawals, processWithdrawal, type Withdrawal } from '../services/referralService';
+import { listPendingPartnerWithdrawals, processPartnerWithdrawal } from '../services/partnerReferralService';
 import { useTranslation } from 'react-i18next';
 
 import { isRtlLang } from '../lib/direction';
 import { useConfirm } from '../contexts/ConfirmContext';
 import { cn } from '../lib/utils';
 
+type WithdrawalRow = Withdrawal & { source: 'tenant' | 'partner' };
+
 export default function SaaSWithdrawals() {
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
   const { confirm, promptText } = useConfirm();
 
-  const [rows, setRows] = useState<Withdrawal[]>([]);
+  const [rows, setRows] = useState<WithdrawalRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState('');
 
   async function load() {
     setLoading(true);
     try {
-      setRows(await listPendingWithdrawals());
+      const [tenantRows, partnerRows] = await Promise.all([
+        listPendingWithdrawals(),
+        listPendingPartnerWithdrawals(),
+      ]);
+      const merged: WithdrawalRow[] = [
+        ...tenantRows.map(w => ({ ...w, source: 'tenant' as const })),
+        ...partnerRows.map(w => ({ ...w, source: 'partner' as const })),
+      ].sort((a, b) => new Date(a.requested_at).getTime() - new Date(b.requested_at).getTime());
+      setRows(merged);
     } catch (e: any) {
       showToast(e?.message || t('saas.failed'), 'error');
     } finally {
@@ -41,6 +52,8 @@ export default function SaaSWithdrawals() {
   useEffect(() => { load(); }, []);
 
   async function act(id: string, approve: boolean) {
+    const row = rows.find(r => r.id === id);
+    if (!row) return;
     if (approve) {
       const ok = await confirm({ description: t('saas.approve_withdrawal_confirm', 'سيتم اعتماد هذا السحب كـ"تم التحويل" -- تأكَّد أنك حوَّلت المبلغ فعلياً قبل المتابعة، فهذا الإجراء لا رجعة فيه.'), danger: true });
       if (!ok) return;
@@ -50,7 +63,11 @@ export default function SaaSWithdrawals() {
       : ((await promptText({ description: t('saas.rejection_reason_prompt') })) || t('saas.rejection_reason_default'));
     setBusyId(id);
     try {
-      await processWithdrawal(id, approve, note);
+      if (row.source === 'partner') {
+        await processPartnerWithdrawal(id, approve, note);
+      } else {
+        await processWithdrawal(id, approve, note);
+      }
       await load();
     } catch (e: any) {
       showToast(e?.message || t('saas.failed'), 'error');
@@ -77,6 +94,7 @@ export default function SaaSWithdrawals() {
               <tr>
                 {[
                   t('saas.date'),
+                  t('saas.withdrawal_source', 'المصدر'),
                   t('saas.amount'),
                   t('saas.beneficiary'),
                   t('saas.iban'),
@@ -90,6 +108,11 @@ export default function SaaSWithdrawals() {
               {rows.map(w => (
                 <tr key={w.id}>
                   <td className={cn('py-3 px-3.5 border-b border-border text-[14.5px]', cellAlign)}>{new Date(w.requested_at).toLocaleDateString('en-GB')}</td>
+                  <td className={cn('py-3 px-3.5 border-b border-border text-[13px]', cellAlign)}>
+                    <span className={cn('rounded-full px-2.5 py-1 font-bold text-[11.5px]', w.source === 'partner' ? 'bg-brand/10 text-brand' : 'bg-surface-muted text-content-muted')}>
+                      {w.source === 'partner' ? t('saas.withdrawal_source_partner', 'شريك إحالة') : t('saas.withdrawal_source_tenant', 'تاجر')}
+                    </span>
+                  </td>
                   <td className={cn('py-3 px-3.5 border-b border-border text-[14.5px] font-extrabold text-[#0E2A42]', cellAlign)}>{w.amount.toLocaleString('en-US')} {t('common.currency_saudi_riyal', '﷼')}</td>
                   <td className={cn('py-3 px-3.5 border-b border-border text-[14.5px]', cellAlign)}>{w.beneficiary || '—'}</td>
                   <td className={cn('py-3 px-3.5 border-b border-border text-[13px] [direction:ltr]', cellAlign)}>{w.iban || '—'}</td>
