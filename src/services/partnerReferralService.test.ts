@@ -9,7 +9,7 @@ vi.mock('../lib/supabase/client', () => ({
   },
 }));
 
-import { requestPartnerWithdrawal, recordReferralOnPartnerSignup } from './partnerReferralService';
+import { requestPartnerWithdrawal, recordReferralOnPartnerSignup, registerReferralPartner } from './partnerReferralService';
 
 beforeEach(() => {
   fromMock.mockReset();
@@ -39,4 +39,18 @@ test('recordReferralOnPartnerSignup calls record_partner_referral with the code 
 test('recordReferralOnPartnerSignup is a no-op when refCode is empty', async () => {
   await recordReferralOnPartnerSignup('', 'tenant-9');
   expect(rpcMock).not.toHaveBeenCalled();
+});
+
+test('registerReferralPartner forwards name/email/phone to register_referral_partner RPC and returns the new partner id', async () => {
+  rpcMock.mockResolvedValue({ data: 'partner-9', error: null });
+  const id = await registerReferralPartner('فلان الفلاني', 'f@example.com', '0500000000');
+  expect(rpcMock).toHaveBeenCalledWith('register_referral_partner', {
+    p_name: 'فلان الفلاني', p_email: 'f@example.com', p_phone: '0500000000',
+  });
+  expect(id).toBe('partner-9');
+});
+
+test('registerReferralPartner throws when the RPC returns an error (e.g. duplicate email)', async () => {
+  rpcMock.mockResolvedValue({ data: null, error: { code: '23505', message: 'duplicate key value violates unique constraint "referral_partners_email_key"' } });
+  await expect(registerReferralPartner('فلان', 'dup@example.com', null)).rejects.toMatchObject({ code: '23505' });
 });
