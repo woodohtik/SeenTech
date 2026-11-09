@@ -21,11 +21,11 @@ import { isRtlLang } from '../lib/direction';
 
 interface AuditLog {
   id: string;
-  action: string;
-  performedBy: string;
-  performedByEmail: string;
+  action: string | null;
+  performedBy: string | null;
+  performedByEmail: string | null;
   targetTenantId?: string;
-  details: string;
+  details: string | null;
   type: 'login' | 'deletion' | 'update' | 'security_alert';
   timestamp: string;
 }
@@ -121,10 +121,11 @@ export default function SaaSAuditLogs() {
   }, []);
 
   const filteredLogs = logs.filter(log => {
-    const matchesSearch = 
-      log.performedByEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.details.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.action.toLowerCase().includes(searchQuery.toLowerCase());
+    const query = searchQuery.toLowerCase();
+    const matchesSearch =
+      (log.performedByEmail || '').toLowerCase().includes(query) ||
+      (log.details || '').toLowerCase().includes(query) ||
+      (log.action || '').toLowerCase().includes(query);
     
     const matchesType = filterType === 'all' || log.type === filterType;
     
