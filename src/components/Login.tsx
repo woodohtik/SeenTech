@@ -30,6 +30,7 @@ import { IconInput } from './ui/IconInput';
 import { Button } from './ui/Button';
 import { getAuthErrorMessage } from '../utils/authErrorUtils';
 import { recordReferralOnSignup } from '../services/referralService';
+import { recordReferralOnPartnerSignup } from '../services/partnerReferralService';
 
 type ViewMode = 'login' | 'register' | 'forgot-password' | 'reset-sent';
 
@@ -486,6 +487,7 @@ export default function Login() {
         const refCode = searchParams.get('ref');
         if (refCode) {
           recordReferralOnSignup(refCode, tenantId).catch(() => {});
+          recordReferralOnPartnerSignup(refCode, tenantId).catch(() => {});
         }
 
         // Step 2: Create initial Branch
