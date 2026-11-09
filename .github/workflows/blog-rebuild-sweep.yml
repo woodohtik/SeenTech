@@ -16,14 +16,17 @@ on:
 jobs:
   sweep:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        host: [staging.seentech.io, seentech.io]
     steps:
-      - name: Trigger the staging blog rebuild sweep
+      - name: Trigger the blog rebuild sweep on ${{ matrix.host }}
         run: |
           status=$(curl -sS -o /dev/null -w "%{http_code}" -X POST \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            https://staging.seentech.io/api/cron/blog-rebuild-sweep)
+            https://${{ matrix.host }}/api/cron/blog-rebuild-sweep)
           echo "Response status: $status"
           if [ "$status" != "200" ]; then
-            echo "::error::blog-rebuild-sweep returned HTTP $status"
+            echo "::error::blog-rebuild-sweep on ${{ matrix.host }} returned HTTP $status"
             exit 1
           fi
