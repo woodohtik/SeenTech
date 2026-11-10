@@ -1667,6 +1667,7 @@
     },
     "submit_failed": "Could not send the request.",
     "subtitle": "Invite new merchants to subscribe to Seen — earn {{reward}} SAR for every merchant who subscribes through your link.",
+    "summary_title": "Referrals summary",
     "title": "Partner Referral Program",
     "total_earned": "Total earned: {{amount}} SAR · {{refs}} referrals",
     "wallet_balance": "Your wallet balance",
