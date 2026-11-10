@@ -110,10 +110,25 @@ export default function PartnerReferrals() {
     enabled: true, rewardPerReferral: REWARD_PER_PARTNER_REFERRAL, minWithdrawal: MIN_PARTNER_WITHDRAWAL,
   });
 
+  // استدعاء ensurePartnerReferralCode مباشرة بعد التسجيل قد يصل قبل أن يرى
+  // اتصال Postgres المُجمَّع (pooled) صف referral_partners الذي أدرجه
+  // register_referral_partner للتو عبر اتصال آخر -- نفس سباق التأخّر الموثَّق
+  // فعلياً في AuthContext.tsx (قراءة صف tenant/staff فور إنشائه). إعادة
+  // المحاولة بضع مرات بتأخير متصاعد بدل الفشل الصامت من أول محاولة.
+  async function ensureCodeWithRetry(pid: string): Promise<string> {
+    let lastErr: unknown;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      if (attempt > 0) await new Promise(r => setTimeout(r, 400 * attempt));
+      try { return await ensurePartnerReferralCode(pid); }
+      catch (e) { lastErr = e; }
+    }
+    throw lastErr;
+  }
+
   async function load(pid: string) {
     setLoading(true);
     try {
-      const code = await ensurePartnerReferralCode(pid);
+      const code = await ensureCodeWithRetry(pid);
       setLink(partnerReferralLink(code));
       const [w, r, wd, settings] = await Promise.all([
         getPartnerWallet(pid), listPartnerReferrals(pid), listMyPartnerWithdrawals(pid), getPartnerReferralProgramSettings(),
@@ -129,14 +144,23 @@ export default function PartnerReferrals() {
   useEffect(() => {
     const uid = session?.user?.id;
     if (!uid) return;
-    supabase.from('referral_partners').select('id').eq('uid', uid).maybeSingle().then(({ data }) => {
-      if (data?.id) {
-        setPartnerId(data.id);
-        load(data.id);
+    let cancelled = false;
+    (async () => {
+      let found: { id: string } | null = null;
+      for (let attempt = 0; attempt < 4 && !found; attempt++) {
+        if (attempt > 0) await new Promise(r => setTimeout(r, 400 * attempt));
+        const { data } = await supabase.from('referral_partners').select('id').eq('uid', uid).maybeSingle();
+        found = data ?? null;
+      }
+      if (cancelled) return;
+      if (found?.id) {
+        setPartnerId(found.id);
+        load(found.id);
       } else {
         setLoading(false);
       }
-    });
+    })();
+    return () => { cancelled = true; };
     // eslint-disable-next-line
   }, [session?.user?.id]);
 
