@@ -5176,5 +5176,10 @@
     "whatsapp_pdf_attached": "Please find the attached report in PDF format.",
     "whatsapp_save_instruction": "The report was saved to your device successfully. Enter the recipient's WhatsApp number below (rep, manager or owner), then send it.",
     "withdrawals_expenses": "Withdrawals & Expenses"
+  },
+  "pwa": {
+    "update_available": "A new update is available",
+    "update_available_reason": "Tap to apply it now — it won't apply automatically so no sale in progress is lost.",
+    "update_now": "Update now"
   }
 }
