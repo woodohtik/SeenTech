@@ -61,8 +61,19 @@ export default function PartnerLogin() {
     setLoading(true);
     setError(null);
     try {
-      const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
+      const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
       if (signInErr) throw signInErr;
+      // حساب تاجر/موظف موجود يفشل بصمت هنا (resolveIdentity يُحسمه كتاجر
+      // دوماً، لا كشريك -- Review Focus المقصود)، فيعود /partner/* بلا أي
+      // رسالة توضّح السبب. اعرض رسالة واضحة بدل تنقّل لصفحة تعود لنفسها.
+      const uid = signInData.user?.id;
+      const { data: partnerRow } = uid
+        ? await supabase.from('referral_partners').select('id').eq('uid', uid).maybeSingle()
+        : { data: null };
+      if (!partnerRow) {
+        setError(t('partner_login.errors.not_a_partner_account'));
+        return;
+      }
       (window as any).refreshAuthData?.();
       navigate('/partner/referrals');
     } catch (err: any) {
@@ -151,14 +162,14 @@ export default function PartnerLogin() {
 
           {view === 'login' ? (
             <form onSubmit={handleLogin}>
-              <label className="pl-field">
+              <div className="pl-field">
                 <label>{t('partner_login.email')}</label>
                 <div className="pl-input-wrap">
                   <span className="lic"><Mail size={17} /></span>
                   <input required type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="example@mail.com" />
                 </div>
-              </label>
-              <label className="pl-field">
+              </div>
+              <div className="pl-field">
                 <label>{t('partner_login.password')}</label>
                 <div className="pl-input-wrap">
                   <span className="lic"><Lock size={17} /></span>
@@ -167,7 +178,7 @@ export default function PartnerLogin() {
                     {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                   </button>
                 </div>
-              </label>
+              </div>
               <button type="submit" className="pl-submit" disabled={loading}>{loading ? t('partner_referral.loading') : t('partner_login.login_button')}</button>
               <p className="pl-switch">
                 {t('partner_login.no_account')}{' '}
@@ -176,28 +187,28 @@ export default function PartnerLogin() {
             </form>
           ) : (
             <form onSubmit={handleRegister}>
-              <label className="pl-field">
+              <div className="pl-field">
                 <label>{t('partner_login.name')}</label>
                 <div className="pl-input-wrap">
                   <span className="lic"><User size={17} /></span>
                   <input required type="text" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('partner_login.name')} />
                 </div>
-              </label>
-              <label className="pl-field">
+              </div>
+              <div className="pl-field">
                 <label>{t('partner_login.email')}</label>
                 <div className="pl-input-wrap">
                   <span className="lic"><Mail size={17} /></span>
                   <input required type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="example@mail.com" />
                 </div>
-              </label>
-              <label className="pl-field">
+              </div>
+              <div className="pl-field">
                 <label>{t('partner_login.phone')}</label>
                 <div className="pl-input-wrap">
                   <span className="lic"><Phone size={17} /></span>
                   <input type="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="05xxxxxxxx" />
                 </div>
-              </label>
-              <label className="pl-field">
+              </div>
+              <div className="pl-field">
                 <label>{t('partner_login.password')}</label>
                 <div className="pl-input-wrap">
                   <span className="lic"><Lock size={17} /></span>
@@ -206,7 +217,7 @@ export default function PartnerLogin() {
                     {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                   </button>
                 </div>
-              </label>
+              </div>
               <button type="submit" className="pl-submit" disabled={loading}>{loading ? t('partner_referral.sending') : t('partner_login.register_button')}</button>
               <p className="pl-switch">
                 {t('partner_login.have_account')}{' '}
