@@ -1,10 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import htmlContent from './LandingPage.html?raw';
+import { isUpdateAvailable, onUpdateAvailable, applyPendingUpdate } from '../lib/pwaUpdate';
 
 export default function LandingPage() {
   const navigate = useNavigate();
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // App.tsx only ever mounts this component for an unauthenticated visitor
+  // (the "/" route's else-branch) -- there's no cashier session or in-progress
+  // sale here to protect, so unlike the rest of the app it's safe to apply a
+  // pending update immediately instead of waiting for a banner click.
+  useEffect(() => {
+    if (isUpdateAvailable()) {
+      applyPendingUpdate();
+      return;
+    }
+    return onUpdateAvailable(() => applyPendingUpdate());
+  }, []);
   // 100vh is only the fallback before the iframe's first real RESIZE report
   // (landing-bridge.js) arrives -- keeping a fixed height afterward is what
   // caused the nested-scroll mobile/tablet sizing bug (see landing-bridge.js
