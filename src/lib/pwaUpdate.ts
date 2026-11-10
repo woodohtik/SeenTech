@@ -29,6 +29,7 @@ let applyUpdate: ((reload?: boolean) => Promise<void>) | null = null;
 let initialized = false;
 
 const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // hourly -- frequent enough for a long shift, not so frequent it matters for cost/battery
+const UPDATE_CHECK_DEBOUNCE_MS = 60 * 1000; // avoid back-to-back checks from rapid focus/online churn
 
 export function initPwaUpdates(): void {
   if (initialized) return;
@@ -38,9 +39,26 @@ export function initPwaUpdates(): void {
     immediate: true,
     onRegisteredSW(_swUrl, registration) {
       if (!registration) return;
-      setInterval(() => {
+
+      // All of these only ever call registration.update() -- which just asks
+      // the browser to re-fetch the service worker script and fires
+      // onNeedRefresh() below if it changed. None of them apply the update
+      // themselves; that stays a user-only action via applyPendingUpdate().
+      let lastCheckAt = 0;
+      const checkForUpdate = () => {
+        const now = Date.now();
+        if (now - lastCheckAt < UPDATE_CHECK_DEBOUNCE_MS) return;
+        lastCheckAt = now;
         registration.update().catch(() => {});
-      }, UPDATE_CHECK_INTERVAL_MS);
+      };
+
+      setInterval(checkForUpdate, UPDATE_CHECK_INTERVAL_MS);
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') checkForUpdate();
+      });
+      window.addEventListener('focus', checkForUpdate);
+      window.addEventListener('online', checkForUpdate);
     },
     onNeedRefresh() {
       updateAvailable = true;
