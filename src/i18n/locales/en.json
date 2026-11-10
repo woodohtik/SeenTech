@@ -1634,6 +1634,7 @@
       "email_exists": "Email already registered",
       "phone_exists": "Phone number already registered",
       "invalid_credentials": "Email or password is incorrect",
+      "not_a_partner_account": "This account is not a referral partner account -- register a new partner account here.",
       "weak_password": "Password is too weak",
       "unknown": "An unknown error occurred"
     }
