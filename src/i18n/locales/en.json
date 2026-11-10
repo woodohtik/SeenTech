@@ -1617,6 +1617,8 @@
   "partner_login": {
     "title": "Referral Partner Portal",
     "subtitle_login": "Sign in to track your referrals and rewards",
+    "lead_login": "Track your link and rewards here.",
+    "lead_register": "Your email and phone, and start sharing your link right away.",
     "subtitle_register": "Create your account and start referring new merchants to Seen",
     "name": "Full name",
     "email": "Email",
