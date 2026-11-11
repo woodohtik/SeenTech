@@ -16,14 +16,14 @@ test('out-of-range flag interpolates the value/min/max converted to the active u
   const flags = ruleBasedMeasurementChecks({ chest: 200 }, [], 'inch');
   const call = spy.mock.calls.find(([key]) => key === 'measurements.flag_out_of_range');
   expect(call?.[1]).toMatchObject({
-    value: 78.7,  // 200 / 2.54, rounded to 0.1
-    min: 33.5,    // 85 / 2.54
-    max: 55.1,    // 140 / 2.54
+    value: 78.74,  // 200 / 2.54, rounded to 0.01
+    min: 33.46,    // 85 / 2.54
+    max: 55.12,    // 140 / 2.54
     unit: 'measurements.unit_inch',
   });
   // The rendered message must show the converted value and the resolved unit word.
   const message = flags.find((f) => f.field === 'chest')?.message;
-  expect(message).toContain('78.7 in is outside the usual range (33.5–55.1)');
+  expect(message).toContain('78.74 in is outside the usual range (33.46–55.12)');
 });
 
 test('defaults to cm (unconverted) when no unit is passed', () => {
