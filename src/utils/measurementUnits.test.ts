@@ -14,16 +14,16 @@ test('cm stays unchanged in cm mode', () => {
   expect(cmToDisplayUnit(40, 'cm')).toBe(40);
 });
 
-test('converts cm to inch, rounded to the nearest 0.1', () => {
-  expect(cmToDisplayUnit(40, 'inch')).toBe(15.7); // 40 / 2.54 = 15.748...
+test('converts cm to inch, rounded to the nearest 0.01', () => {
+  expect(cmToDisplayUnit(40, 'inch')).toBe(15.75); // 40 / 2.54 = 15.748...
 });
 
 test('value stays unchanged in cm mode', () => {
   expect(displayUnitToCm(40, 'cm')).toBe(40);
 });
 
-test('converts inch to cm, rounded to the nearest 0.1', () => {
-  expect(displayUnitToCm(15.7, 'inch')).toBe(39.9); // 15.7 * 2.54 = 39.878
+test('converts inch to cm, rounded to the nearest 0.01', () => {
+  expect(displayUnitToCm(15.7, 'inch')).toBe(39.88); // 15.7 * 2.54 = 39.878
 });
 
 test('a value round-trips through inch and back to cm within 0.1', () => {
@@ -31,6 +31,13 @@ test('a value round-trips through inch and back to cm within 0.1', () => {
   const asInch = cmToDisplayUnit(original, 'inch');
   const backToCm = displayUnitToCm(asInch, 'inch');
   expect(Math.abs(backToCm - original)).toBeLessThanOrEqual(0.1);
+});
+
+test('quarter-inch fractions (ربع/نصف/ثلاثة أرباع) survive a cm round-trip exactly', () => {
+  for (const fraction of [0.25, 0.5, 0.75]) {
+    const cm = displayUnitToCm(fraction, 'inch');
+    expect(cmToDisplayUnit(cm, 'inch')).toBe(fraction);
+  }
 });
 
 test('unitLabelKey returns the i18n key for each unit', () => {
