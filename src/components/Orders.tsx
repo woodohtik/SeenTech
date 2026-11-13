@@ -47,7 +47,8 @@ import {
   FileSpreadsheet,
   Edit2,
   Check,
-  Paperclip
+  Paperclip,
+  FileText
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase/client';
@@ -55,7 +56,9 @@ import { handleFirestoreError, OperationType, getFriendlyErrorMessage } from '..
 import { refreshOrdersCache, getCachedOrders } from '../lib/offline/cacheSync';
 import { isNetworkFailure, enqueueOrderCreate } from '../lib/offline/outbox';
 import { checkConnectivityNow } from '../lib/offline/connectivity';
-import { Order, Customer, OrderStatus, OrderHistory, InventoryItem, PaymentMethod, OrderItem, Staff, Tenant, Measurements } from '../types';
+import { Order, Customer, OrderStatus, OrderHistory, InventoryItem, PaymentMethod, OrderItem, Staff, Tenant, Measurements, TaxInvoice } from '../types';
+import TaxInvoiceModal from './printing/TaxInvoiceModal';
+import { fetchTaxInvoiceForOrder, syncTaxInvoicePaidAmount } from '../services/taxInvoiceService';
 import { cn, generateOrderNumber } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
 import { logEmployeeAction } from '../services/employeeAuditService';
@@ -1665,6 +1668,21 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     const [payAmount, setPayAmount] = useState(order.remainingAmount || 0);
     const [payMethod, setPayMethod] = useState<PaymentMethod>('cash');
     const [isProcessing, setIsProcessing] = useState(false);
+    // Same component/data the tax-invoice registry and POS's debt
+    // settlement use -- the real original invoice, not a reconstruction.
+    const [viewingInvoice, setViewingInvoice] = useState<{ invoice: TaxInvoice; tenant: Tenant } | null>(null);
+    const [isLoadingInvoice, setIsLoadingInvoice] = useState(false);
+
+    const handleViewInvoice = async () => {
+      setIsLoadingInvoice(true);
+      try {
+        const result = await fetchTaxInvoiceForOrder(tenantId, order.id);
+        if (result) setViewingInvoice(result);
+        else toastError(t('common.error'), t('pos.invoice_not_found'));
+      } finally {
+        setIsLoadingInvoice(false);
+      }
+    };
 
     const statusOrder: string[] = [
       'measurements_taken',
@@ -1702,6 +1720,12 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           })
           .eq('id', order.id);
 
+        // Keeps the order's original tax invoice (a separate row/column,
+        // no DB trigger between them) showing the real current paid/
+        // remaining amount instead of staying stuck at whatever it was
+        // when the invoice was first issued.
+        await syncTaxInvoicePaidAmount(order.id, newPaidAmount);
+
         // Realtime local update
         setOrders(prev => prev.map(o => o.id === order.id ? { ...o, paidAmount: newPaidAmount, remainingAmount: newRemainingAmount, history: updatedHistory } : o));
         setUnpaidOrders(prev => {
@@ -1726,8 +1750,16 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     };
 
     return (
+      <>
+      {viewingInvoice && (
+        <TaxInvoiceModal
+          order={viewingInvoice.invoice}
+          tenant={viewingInvoice.tenant}
+          onClose={() => setViewingInvoice(null)}
+        />
+      )}
       <div className="fixed inset-0 z-[60] flex items-end lg:items-center justify-center lg:justify-end overflow-hidden">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -2029,6 +2061,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               <MessageSquare size={18} />
               <span>{t('orders.whatsapp')}</span>
             </button>
+            <button
+              onClick={handleViewInvoice}
+              disabled={isLoadingInvoice}
+              className="col-span-2 flex items-center justify-center gap-2 bg-brand/10 text-brand py-4 rounded-2xl font-bold border border-brand/20 hover:bg-brand/15 transition-all text-sm disabled:opacity-50"
+            >
+              <FileText size={18} />
+              <span>{isLoadingInvoice ? t('common.loading') : t('tax_invoices.view_invoice')}</span>
+            </button>
             {order.trackingToken && (
               <button
                 onClick={() => sendTrackingLink(order)}
@@ -2041,6 +2081,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           </div>
         </motion.div>
       </div>
+      </>
     );
   };
 

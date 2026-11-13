@@ -40,7 +40,9 @@ import { refreshCustomersCache, refreshInventoryCache, refreshBranchStockCache, 
 import { enqueuePosSale, isNetworkFailure, decidePosSaleFailureAction } from '../lib/offline/outbox';
 import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
 import { Combobox, Transition, Dialog } from '@headlessui/react';
-import { Customer, InventoryItem, OrderItem, Order, PaymentMethod, OrderStatus, ProductVariant } from '../types';
+import { Customer, InventoryItem, OrderItem, Order, PaymentMethod, OrderStatus, ProductVariant, TaxInvoice, Tenant } from '../types';
+import TaxInvoiceModal from './printing/TaxInvoiceModal';
+import { fetchTaxInvoiceForOrder, syncTaxInvoicePaidAmount } from '../services/taxInvoiceService';
 import { cn, generateOrderNumber } from '../lib/utils';
 import { SmartSelect } from './ui/SmartSelect';
 import { IconInput } from './ui/IconInput';
@@ -125,13 +127,6 @@ interface DebtOrderSummary {
   remainingAmount: number;
 }
 
-interface DebtReceiptData {
-  customerName: string;
-  cashierName: string;
-  issuedAt: string;
-  lines: { orderNumber: number; amountPaid: number; remainingAfter: number }[];
-  totalPaid: number;
-}
 
 export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?: string }) {
   const router = useRouter();
@@ -163,7 +158,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const [debtPayAmounts, setDebtPayAmounts] = useState<Record<string, number>>({});
   const [settlingOrderId, setSettlingOrderId] = useState<string | null>(null);
   const [isSettlingAllDebt, setIsSettlingAllDebt] = useState(false);
-  const [debtReceipt, setDebtReceipt] = useState<DebtReceiptData | null>(null);
+  const [viewingInvoice, setViewingInvoice] = useState<{ invoice: TaxInvoice; tenant: Tenant } | null>(null);
+  const [settledOrdersSummary, setSettledOrdersSummary] = useState<{ orderNumber: number; orderId: string }[] | null>(null);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [branchStock, setBranchStock] = useState<Record<string, number>>({});
   // seen-ux-fixes-batch-task.md item 10 -- stock of each variant row (keyed
@@ -607,6 +603,18 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     return () => { cancelled = true; };
   }, [isDebtModalOpen, selectedCustomer, refreshCounter]);
 
+  // Shows the order's own real original tax invoice (same component/data
+  // the tax-invoice registry and Orders use) -- not a fabricated receipt.
+  const handleViewOrderInvoice = async (orderId: string) => {
+    const result = await fetchTaxInvoiceForOrder(tenantId, orderId);
+    if (result) {
+      setViewingInvoice(result);
+      setSettledOrdersSummary(null);
+    } else {
+      toastError(t('common.error'), t('pos.invoice_not_found'));
+    }
+  };
+
   const handleSettleDebtOrder = async (order: DebtOrderSummary) => {
     const amount = Math.min(Math.max(0, debtPayAmounts[order.id] ?? order.remainingAmount), order.remainingAmount);
     if (amount <= 0) return;
@@ -618,19 +626,14 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         .update({ paid_amount: newPaidAmount })
         .eq('id', order.id);
       if (error) throw error;
+      await syncTaxInvoicePaidAmount(order.id, newPaidAmount);
       const newRemaining = Math.max(0, order.totalAmount - newPaidAmount);
       setDebtOrders(prev => newRemaining <= 0
         ? prev.filter(o => o.id !== order.id)
         : prev.map(o => o.id === order.id ? { ...o, paidAmount: newPaidAmount, remainingAmount: newRemaining } : o));
       setCustomerUnpaidBalance(prev => Math.max(0, prev - amount));
       toastSuccess(t('pos.debt_order_settled', { order_number: order.orderNumber }));
-      setDebtReceipt({
-        customerName: selectedCustomer?.name || '',
-        cashierName: currentStaff?.name || '',
-        issuedAt: new Date().toISOString(),
-        lines: [{ orderNumber: order.orderNumber, amountPaid: amount, remainingAfter: newRemaining }],
-        totalPaid: amount,
-      });
+      await handleViewOrderInvoice(order.id);
     } catch (err) {
       toastError(t('common.error'), getFriendlyErrorMessage(err));
     } finally {
@@ -644,26 +647,31 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     if (!ok) return;
     setIsSettlingAllDebt(true);
     try {
+      const ordersToSettle = debtOrders;
       const results = await Promise.allSettled(
-        debtOrders.map(order => supabase.from('orders').update({ paid_amount: order.totalAmount }).eq('id', order.id))
+        ordersToSettle.map(async (order) => {
+          const { error } = await supabase.from('orders').update({ paid_amount: order.totalAmount }).eq('id', order.id);
+          if (error) throw error;
+          await syncTaxInvoicePaidAmount(order.id, order.totalAmount);
+        })
       );
       const failed = results.filter(r => r.status === 'rejected').length;
+      const settled = ordersToSettle.filter((_, i) => results[i].status === 'fulfilled');
       setDebtOrders(prev => prev.filter((_, i) => results[i].status === 'rejected'));
       setCustomerUnpaidBalance(
-        debtOrders.reduce((sum, o, i) => results[i].status === 'rejected' ? sum + o.remainingAmount : sum, 0)
+        ordersToSettle.reduce((sum, o, i) => results[i].status === 'rejected' ? sum + o.remainingAmount : sum, 0)
       );
       if (failed > 0) {
         toastError(t('common.error'), t('pos.debt_settle_partial_failure', { count: failed }));
-      } else {
+      }
+      if (settled.length > 0) {
         toastSuccess(t('pos.debt_settled_all'));
-        setDebtReceipt({
-          customerName: selectedCustomer?.name || '',
-          cashierName: currentStaff?.name || '',
-          issuedAt: new Date().toISOString(),
-          lines: debtOrders.map(o => ({ orderNumber: o.orderNumber, amountPaid: o.remainingAmount, remainingAfter: 0 })),
-          totalPaid: debtOrders.reduce((sum, o) => sum + o.remainingAmount, 0),
-        });
         setIsDebtModalOpen(false);
+        if (settled.length === 1) {
+          await handleViewOrderInvoice(settled[0].id);
+        } else {
+          setSettledOrdersSummary(settled.map(o => ({ orderNumber: o.orderNumber, orderId: o.id })));
+        }
       }
     } finally {
       setIsSettlingAllDebt(false);
@@ -2661,13 +2669,25 @@ const invoiceData: InvoiceData | null = completedOrder ? {
         )}
       </AnimatePresence>
 
-      {/* Debt Payment Receipt -- a plain payment receipt, deliberately NOT a
-          tax invoice: settling debt isn't a new taxable sale (the order was
-          already invoiced when it was created), so this has no QR code, no
-          invoice number from the ZATCA sequence, and is never submitted to
-          ZATCA. */}
+      {/* Debt settlement shows the order's own REAL original tax invoice
+          (same data/component as the tax-invoice registry and Orders),
+          now reflecting the updated paid/remaining amount -- not a
+          fabricated "payment receipt", since settling debt isn't a new
+          taxable sale. */}
+      {viewingInvoice && (
+        <TaxInvoiceModal
+          order={viewingInvoice.invoice}
+          tenant={viewingInvoice.tenant}
+          onClose={() => setViewingInvoice(null)}
+        />
+      )}
+
+      {/* "سدد الإجمالي" can settle several distinct orders at once, each
+          with its own separate original invoice -- no single document
+          covers more than one, so this just lets the cashier pick which
+          paid order's real invoice to view/print next. */}
       <AnimatePresence>
-        {debtReceipt && (
+        {settledOrdersSummary && (
           <div className="fixed inset-0 z-[210] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md overflow-y-auto font-sans">
             <motion.div
               initial={shouldReduceMotion ? false : { scale: 0.95, opacity: 0, y: 20 }}
@@ -2682,71 +2702,28 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   <div className="p-3 bg-success/10 text-success rounded-2xl shrink-0 shadow-sm">
                     <CheckCircle2 size={24} />
                   </div>
-                  <h2 className="text-lg font-black text-content">{t('pos.debt_receipt_title')}</h2>
+                  <h2 className="text-lg font-black text-content">{t('pos.debt_settled_all')}</h2>
                 </div>
                 <button
-                  onClick={() => setDebtReceipt(null)}
+                  onClick={() => setSettledOrdersSummary(null)}
                   aria-label={t('common.close')}
                   className="p-2 hover:bg-surface-muted rounded-full transition-colors text-content-muted"
                 >
                   <X size={20} />
                 </button>
               </div>
-
-              <div id="pos-debt-receipt-print-area" className="p-6 space-y-3 text-sm">
-                <div className="flex justify-between"><span className="text-content-muted">{t('pos.customer_name')}</span><span className="font-bold">{debtReceipt.customerName}</span></div>
-                <div className="flex justify-between"><span className="text-content-muted">{t('pos.employee_label')}</span><span className="font-bold">{debtReceipt.cashierName}</span></div>
-                <div className="flex justify-between"><span className="text-content-muted">{t('common.date')}</span><span className="font-bold">{new Date(debtReceipt.issuedAt).toLocaleString()}</span></div>
-                <div className="border-t border-border pt-3 space-y-2">
-                  {debtReceipt.lines.map((line, i) => (
-                    <div key={i} className="flex justify-between items-center">
-                      <span className="text-content-muted">{t('staff.order_number', { number: line.orderNumber })}</span>
-                      <span className="font-black text-success"><PriceDisplay amount={line.amountPaid} /></span>
-                    </div>
-                  ))}
-                </div>
-                <div className="border-t border-border pt-3 flex justify-between items-center">
-                  <span className="font-black text-content">{t('pos.total_paid')}</span>
-                  <span className="font-black text-lg text-success"><PriceDisplay amount={debtReceipt.totalPaid} /></span>
-                </div>
-                {debtReceipt.lines.some(l => l.remainingAfter > 0) && (
-                  <div className="flex justify-between items-center text-danger">
-                    <span className="font-bold text-xs">{t('pos.remaining_amount')}</span>
-                    <span className="font-black">
-                      <PriceDisplay amount={debtReceipt.lines.reduce((sum, l) => sum + l.remainingAfter, 0)} />
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div className="p-6 pt-0 flex gap-3">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      const { printElementDetailed, getConfiguredPaperSize } = await import('../utils/printManager');
-                      const res = await printElementDetailed('pos-debt-receipt-print-area', {
-                        paperSize: getConfiguredPaperSize('80mm'),
-                        title: t('pos.debt_receipt_title'),
-                      });
-                      if (!res.ok) toastError(t('printing.print_failed'), res.message);
-                    } catch (e) {
-                      console.error('[POS] خطأ طباعة إيصال الدفعة:', e);
-                      window.print();
-                    }
-                  }}
-                  className="flex-1 py-3 bg-brand text-white rounded-xl font-black text-sm hover:bg-brand/90 transition-colors cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <Printer size={18} />
-                  {t('pos.receipt_print')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDebtReceipt(null)}
-                  className="px-5 py-3 bg-surface-muted text-content-muted rounded-xl font-bold text-sm hover:bg-border/60 transition-colors cursor-pointer"
-                >
-                  {t('common.close')}
-                </button>
+              <div className="p-6 space-y-2">
+                {settledOrdersSummary.map(o => (
+                  <button
+                    key={o.orderId}
+                    type="button"
+                    onClick={() => handleViewOrderInvoice(o.orderId)}
+                    className="w-full flex items-center justify-between p-3 bg-surface-muted/50 border border-border rounded-xl font-bold text-sm hover:border-brand/50 transition-colors cursor-pointer"
+                  >
+                    <span>{t('staff.order_number', { number: o.orderNumber })}</span>
+                    <span className="text-brand text-xs">{t('tax_invoices.view_invoice')}</span>
+                  </button>
+                ))}
               </div>
             </motion.div>
           </div>
