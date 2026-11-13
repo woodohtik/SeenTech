@@ -125,6 +125,14 @@ interface DebtOrderSummary {
   remainingAmount: number;
 }
 
+interface DebtReceiptData {
+  customerName: string;
+  cashierName: string;
+  issuedAt: string;
+  lines: { orderNumber: number; amountPaid: number; remainingAfter: number }[];
+  totalPaid: number;
+}
+
 export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?: string }) {
   const router = useRouter();
   const refreshCounter = useRefreshCounter();
@@ -155,6 +163,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const [debtPayAmounts, setDebtPayAmounts] = useState<Record<string, number>>({});
   const [settlingOrderId, setSettlingOrderId] = useState<string | null>(null);
   const [isSettlingAllDebt, setIsSettlingAllDebt] = useState(false);
+  const [debtReceipt, setDebtReceipt] = useState<DebtReceiptData | null>(null);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [branchStock, setBranchStock] = useState<Record<string, number>>({});
   // seen-ux-fixes-batch-task.md item 10 -- stock of each variant row (keyed
@@ -615,6 +624,13 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         : prev.map(o => o.id === order.id ? { ...o, paidAmount: newPaidAmount, remainingAmount: newRemaining } : o));
       setCustomerUnpaidBalance(prev => Math.max(0, prev - amount));
       toastSuccess(t('pos.debt_order_settled', { order_number: order.orderNumber }));
+      setDebtReceipt({
+        customerName: selectedCustomer?.name || '',
+        cashierName: currentStaff?.name || '',
+        issuedAt: new Date().toISOString(),
+        lines: [{ orderNumber: order.orderNumber, amountPaid: amount, remainingAfter: newRemaining }],
+        totalPaid: amount,
+      });
     } catch (err) {
       toastError(t('common.error'), getFriendlyErrorMessage(err));
     } finally {
@@ -640,6 +656,13 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         toastError(t('common.error'), t('pos.debt_settle_partial_failure', { count: failed }));
       } else {
         toastSuccess(t('pos.debt_settled_all'));
+        setDebtReceipt({
+          customerName: selectedCustomer?.name || '',
+          cashierName: currentStaff?.name || '',
+          issuedAt: new Date().toISOString(),
+          lines: debtOrders.map(o => ({ orderNumber: o.orderNumber, amountPaid: o.remainingAmount, remainingAfter: 0 })),
+          totalPaid: debtOrders.reduce((sum, o) => sum + o.remainingAmount, 0),
+        });
         setIsDebtModalOpen(false);
       }
     } finally {
@@ -2632,6 +2655,98 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     </div>
                   </>
                 )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Debt Payment Receipt -- a plain payment receipt, deliberately NOT a
+          tax invoice: settling debt isn't a new taxable sale (the order was
+          already invoiced when it was created), so this has no QR code, no
+          invoice number from the ZATCA sequence, and is never submitted to
+          ZATCA. */}
+      <AnimatePresence>
+        {debtReceipt && (
+          <div className="fixed inset-0 z-[210] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md overflow-y-auto font-sans">
+            <motion.div
+              initial={shouldReduceMotion ? false : { scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={shouldReduceMotion ? undefined : { scale: 0.95, opacity: 0, y: 20 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 200 }}
+              className="relative w-full max-w-sm rounded-3xl bg-surface shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-right"
+              dir={isRtl ? 'rtl' : 'ltr'}
+            >
+              <div className="flex items-center justify-between p-6 border-b border-border bg-success/5 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-success/10 text-success rounded-2xl shrink-0 shadow-sm">
+                    <CheckCircle2 size={24} />
+                  </div>
+                  <h2 className="text-lg font-black text-content">{t('pos.debt_receipt_title')}</h2>
+                </div>
+                <button
+                  onClick={() => setDebtReceipt(null)}
+                  aria-label={t('common.close')}
+                  className="p-2 hover:bg-surface-muted rounded-full transition-colors text-content-muted"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div id="pos-debt-receipt-print-area" className="p-6 space-y-3 text-sm">
+                <div className="flex justify-between"><span className="text-content-muted">{t('pos.customer_name')}</span><span className="font-bold">{debtReceipt.customerName}</span></div>
+                <div className="flex justify-between"><span className="text-content-muted">{t('pos.employee_label')}</span><span className="font-bold">{debtReceipt.cashierName}</span></div>
+                <div className="flex justify-between"><span className="text-content-muted">{t('common.date')}</span><span className="font-bold">{new Date(debtReceipt.issuedAt).toLocaleString()}</span></div>
+                <div className="border-t border-border pt-3 space-y-2">
+                  {debtReceipt.lines.map((line, i) => (
+                    <div key={i} className="flex justify-between items-center">
+                      <span className="text-content-muted">{t('staff.order_number', { number: line.orderNumber })}</span>
+                      <span className="font-black text-success"><PriceDisplay amount={line.amountPaid} /></span>
+                    </div>
+                  ))}
+                </div>
+                <div className="border-t border-border pt-3 flex justify-between items-center">
+                  <span className="font-black text-content">{t('pos.total_paid')}</span>
+                  <span className="font-black text-lg text-success"><PriceDisplay amount={debtReceipt.totalPaid} /></span>
+                </div>
+                {debtReceipt.lines.some(l => l.remainingAfter > 0) && (
+                  <div className="flex justify-between items-center text-danger">
+                    <span className="font-bold text-xs">{t('pos.remaining_amount')}</span>
+                    <span className="font-black">
+                      <PriceDisplay amount={debtReceipt.lines.reduce((sum, l) => sum + l.remainingAfter, 0)} />
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-6 pt-0 flex gap-3">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const { printElementDetailed, getConfiguredPaperSize } = await import('../utils/printManager');
+                      const res = await printElementDetailed('pos-debt-receipt-print-area', {
+                        paperSize: getConfiguredPaperSize('80mm'),
+                        title: t('pos.debt_receipt_title'),
+                      });
+                      if (!res.ok) toastError(t('printing.print_failed'), res.message);
+                    } catch (e) {
+                      console.error('[POS] خطأ طباعة إيصال الدفعة:', e);
+                      window.print();
+                    }
+                  }}
+                  className="flex-1 py-3 bg-brand text-white rounded-xl font-black text-sm hover:bg-brand/90 transition-colors cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Printer size={18} />
+                  {t('pos.receipt_print')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDebtReceipt(null)}
+                  className="px-5 py-3 bg-surface-muted text-content-muted rounded-xl font-bold text-sm hover:bg-border/60 transition-colors cursor-pointer"
+                >
+                  {t('common.close')}
+                </button>
               </div>
             </motion.div>
           </div>
