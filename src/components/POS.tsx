@@ -1879,8 +1879,12 @@ const invoiceData: InvoiceData | null = completedOrder ? {
             "البطاقات" الوحيدة المسموحة في §4 بدل قيمة وسيطة غير موجودة
             في اللوحة. */}
         <div className="flex-1 bg-surface border border-border rounded-xl p-4 sm:p-5 overflow-auto">
-          {filteredInventory.length > 0 ? (
-            viewMode === 'grid' ? (
+          {/* "تفصيل جديد" opens a custom tailoring order unrelated to
+              inventory stock, so it must stay reachable even when
+              filteredInventory is empty (no products yet, or a search with
+              no matches) -- it used to live only inside the non-empty
+              branch below and vanished along with the product grid. */}
+          {viewMode === 'grid' ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 w-full">
                 <button
                   onClick={() => setIsCustomOrderModalOpen(true)}
@@ -2010,9 +2014,9 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   </button>
                 ))}
               </div>
-            )
-          ) : (
-            <div className="h-full flex flex-col items-center justify-center text-content-muted space-y-2 py-12">
+            )}
+          {filteredInventory.length === 0 && (
+            <div className="flex flex-col items-center justify-center text-content-muted space-y-2 py-12">
               <Package size={44} className="opacity-20" />
               <p className="text-sm font-bold">{t('pos.no_products_found')}</p>
             </div>
