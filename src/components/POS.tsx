@@ -116,6 +116,15 @@ function buildInvoiceMeasurements(
   return list.length > 0 ? list : undefined;
 }
 
+interface DebtOrderSummary {
+  id: string;
+  orderNumber: number;
+  orderDate: string;
+  totalAmount: number;
+  paidAmount: number;
+  remainingAmount: number;
+}
+
 export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?: string }) {
   const router = useRouter();
   const refreshCounter = useRefreshCounter();
@@ -138,6 +147,14 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [customerUnpaidBalance, setCustomerUnpaidBalance] = useState<number>(0);
+  // seen-pos-debt-settlement: standalone debt breakdown/settlement, separate
+  // from the new-sale checkout modal -- reachable even with an empty cart.
+  const [isDebtModalOpen, setIsDebtModalOpen] = useState(false);
+  const [debtOrders, setDebtOrders] = useState<DebtOrderSummary[]>([]);
+  const [debtOrdersLoading, setDebtOrdersLoading] = useState(false);
+  const [debtPayAmounts, setDebtPayAmounts] = useState<Record<string, number>>({});
+  const [settlingOrderId, setSettlingOrderId] = useState<string | null>(null);
+  const [isSettlingAllDebt, setIsSettlingAllDebt] = useState(false);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [branchStock, setBranchStock] = useState<Record<string, number>>({});
   // seen-ux-fixes-batch-task.md item 10 -- stock of each variant row (keyed
@@ -543,6 +560,92 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
 
     fetchCustomerUnpaidBalance();
   }, [selectedCustomer, isPaymentModalOpen, refreshCounter]);
+
+  // Order-level breakdown for the debt-settlement modal -- only fetched
+  // when the modal is actually open, separate from the lump-sum total
+  // above which is needed just to show/hide the "تسديد المديونية" button.
+  useEffect(() => {
+    if (!isDebtModalOpen || !selectedCustomer) return;
+    let cancelled = false;
+    (async () => {
+      setDebtOrdersLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('id, order_number, order_date, total_amount, paid_amount, remaining_amount')
+          .eq('customer_id', selectedCustomer.id)
+          .neq('status', 'cancelled')
+          .gt('remaining_amount', 0)
+          .order('order_date', { ascending: true });
+        if (error) throw error;
+        if (cancelled) return;
+        const orders: DebtOrderSummary[] = (data || []).map((o: any) => ({
+          id: o.id,
+          orderNumber: o.order_number,
+          orderDate: o.order_date,
+          totalAmount: Number(o.total_amount) || 0,
+          paidAmount: Number(o.paid_amount) || 0,
+          remainingAmount: Number(o.remaining_amount) || 0,
+        }));
+        setDebtOrders(orders);
+        setDebtPayAmounts(Object.fromEntries(orders.map(o => [o.id, o.remainingAmount])));
+      } catch (err) {
+        if (!cancelled) toastError(t('common.error'), getFriendlyErrorMessage(err));
+      } finally {
+        if (!cancelled) setDebtOrdersLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isDebtModalOpen, selectedCustomer, refreshCounter]);
+
+  const handleSettleDebtOrder = async (order: DebtOrderSummary) => {
+    const amount = Math.min(Math.max(0, debtPayAmounts[order.id] ?? order.remainingAmount), order.remainingAmount);
+    if (amount <= 0) return;
+    setSettlingOrderId(order.id);
+    try {
+      const newPaidAmount = order.paidAmount + amount;
+      const { error } = await supabase
+        .from('orders')
+        .update({ paid_amount: newPaidAmount })
+        .eq('id', order.id);
+      if (error) throw error;
+      const newRemaining = Math.max(0, order.totalAmount - newPaidAmount);
+      setDebtOrders(prev => newRemaining <= 0
+        ? prev.filter(o => o.id !== order.id)
+        : prev.map(o => o.id === order.id ? { ...o, paidAmount: newPaidAmount, remainingAmount: newRemaining } : o));
+      setCustomerUnpaidBalance(prev => Math.max(0, prev - amount));
+      toastSuccess(t('pos.debt_order_settled', { order_number: order.orderNumber }));
+    } catch (err) {
+      toastError(t('common.error'), getFriendlyErrorMessage(err));
+    } finally {
+      setSettlingOrderId(null);
+    }
+  };
+
+  const handleSettleAllDebt = async () => {
+    if (debtOrders.length === 0) return;
+    const ok = await confirm({ description: t('pos.confirm_settle_all_debt', { amount: customerUnpaidBalance }) });
+    if (!ok) return;
+    setIsSettlingAllDebt(true);
+    try {
+      const results = await Promise.allSettled(
+        debtOrders.map(order => supabase.from('orders').update({ paid_amount: order.totalAmount }).eq('id', order.id))
+      );
+      const failed = results.filter(r => r.status === 'rejected').length;
+      setDebtOrders(prev => prev.filter((_, i) => results[i].status === 'rejected'));
+      setCustomerUnpaidBalance(
+        debtOrders.reduce((sum, o, i) => results[i].status === 'rejected' ? sum + o.remainingAmount : sum, 0)
+      );
+      if (failed > 0) {
+        toastError(t('common.error'), t('pos.debt_settle_partial_failure', { count: failed }));
+      } else {
+        toastSuccess(t('pos.debt_settled_all'));
+        setIsDebtModalOpen(false);
+      }
+    } finally {
+      setIsSettlingAllDebt(false);
+    }
+  };
 
   // Sync state values to refs to avoid stale closure issues in global shortcut event listeners
   const cartRef = React.useRef(cart);
@@ -1489,11 +1592,20 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                 <span className="font-mono font-bold text-content">{selectedCustomer.phone}</span>
               </div>
               {customerUnpaidBalance > 0 ? (
-                <div className="mt-2 p-2 bg-danger/10 border border-danger/20 text-danger rounded-lg flex justify-between items-center font-bold">
-                  <span>{t('pos.previous_due_balance')}</span>
-                  <span className="font-mono font-black text-sm text-danger">
-                    <PriceDisplay amount={customerUnpaidBalance} />
-                  </span>
+                <div className="mt-2 p-2 bg-danger/10 border border-danger/20 text-danger rounded-lg flex flex-col gap-2">
+                  <div className="flex justify-between items-center font-bold">
+                    <span>{t('pos.previous_due_balance')}</span>
+                    <span className="font-mono font-black text-sm text-danger">
+                      <PriceDisplay amount={customerUnpaidBalance} />
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsDebtModalOpen(true)}
+                    className="w-full py-1.5 bg-danger text-white rounded-md text-[11px] font-black hover:bg-danger/90 transition-colors cursor-pointer"
+                  >
+                    {t('pos.settle_debt')}
+                  </button>
                 </div>
               ) : (
                 <div className="mt-2 p-1.5 px-2 bg-success/10 border border-success/20 text-success rounded-lg text-center font-bold text-[11px]">
@@ -2428,6 +2540,103 @@ const invoiceData: InvoiceData | null = completedOrder ? {
         </div>
       )}
     </AnimatePresence>
+
+      {/* Debt Settlement Modal -- reachable as soon as a customer with an
+          outstanding balance is selected, independent of the cart/checkout
+          flow above. */}
+      <AnimatePresence>
+        {isDebtModalOpen && selectedCustomer && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md overflow-y-auto font-sans">
+            <motion.div
+              initial={shouldReduceMotion ? false : { scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={shouldReduceMotion ? undefined : { scale: 0.95, opacity: 0, y: 20 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 200 }}
+              className="relative w-full max-w-lg rounded-3xl bg-surface shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-right max-h-[85vh]"
+              dir={isRtl ? 'rtl' : 'ltr'}
+            >
+              {/* Header */}
+              <div className="sticky top-0 z-10 flex items-center justify-between p-6 border-b border-border bg-surface shrink-0 bg-danger/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-danger/10 text-danger rounded-2xl shrink-0 shadow-sm">
+                    <AlertTriangle size={24} />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-content">{t('pos.settle_debt')}</h2>
+                    <p className="text-xs font-bold text-content-muted mt-0.5">{selectedCustomer.name}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsDebtModalOpen(false)}
+                  aria-label={t('common.close')}
+                  className="p-2 hover:bg-surface-muted rounded-full transition-colors text-content-muted"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 space-y-4 overflow-y-auto">
+                {debtOrdersLoading ? (
+                  <p className="text-center text-sm font-bold text-content-muted py-8">{t('common.loading')}</p>
+                ) : debtOrders.length === 0 ? (
+                  <p className="text-center text-sm font-bold text-content-muted py-8">{t('pos.no_previous_due')}</p>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between bg-danger/10 border border-danger/20 p-4 rounded-2xl">
+                      <span className="text-sm font-black text-danger">{t('pos.total_due')}</span>
+                      <span className="font-mono font-black text-xl text-danger">
+                        <PriceDisplay amount={customerUnpaidBalance} />
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSettleAllDebt}
+                      disabled={isSettlingAllDebt}
+                      className="w-full py-3 bg-brand text-white rounded-xl font-black text-sm hover:bg-brand/90 transition-colors disabled:opacity-50 cursor-pointer"
+                    >
+                      {isSettlingAllDebt ? t('common.processing') : t('pos.settle_all_debt')}
+                    </button>
+
+                    <div className="space-y-3">
+                      {debtOrders.map(order => (
+                        <div key={order.id} className="p-4 bg-surface-muted/50 border border-border rounded-2xl space-y-2.5">
+                          <div className="flex justify-between items-center text-xs font-bold text-content-muted">
+                            <span>{t('staff.order_number', { number: order.orderNumber })}</span>
+                            <span>{new Date(order.orderDate).toLocaleDateString()}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-content-muted">{t('orders.remaining_amount')}</span>
+                            <span className="font-black text-danger"><PriceDisplay amount={order.remainingAmount} /></span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min={0}
+                              max={order.remainingAmount}
+                              value={debtPayAmounts[order.id] ?? order.remainingAmount}
+                              onChange={(e) => setDebtPayAmounts(prev => ({ ...prev, [order.id]: Number(e.target.value) || 0 }))}
+                              className="w-28 bg-surface border border-border rounded-lg px-2.5 py-2 text-center font-bold tabular-nums focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleSettleDebtOrder(order)}
+                              disabled={settlingOrderId === order.id}
+                              className="flex-1 py-2 bg-danger/10 text-danger rounded-lg font-bold text-sm hover:bg-danger hover:text-white transition-colors disabled:opacity-50 cursor-pointer"
+                            >
+                              {settlingOrderId === order.id ? t('common.processing') : t('pos.settle_order')}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Cash Drawer Details Modal */}
       <AnimatePresence>
