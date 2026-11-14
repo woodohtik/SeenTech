@@ -8,9 +8,16 @@ name: Blog rebuild sweep
 # calls the exact same already-tested server route
 # (/api/cron/blog-rebuild-sweep, CRON_SECRET-gated) from outside Vercel
 # entirely, so nothing server-side changes.
+# seen-cto-sprint0-critical-fixes-task.md item 10 (BLOG-01/02): the
+# `schedule` trigger is disabled until the server-side fix (POST support +
+# due-article check in server.ts's /api/cron/blog-rebuild-sweep) has been
+# verified on staging and promoted to production -- re-enable it only after
+# that, so this doesn't start firing full production rebuilds every 15
+# minutes before the fix is live there too. `workflow_dispatch` stays so the
+# route can still be triggered manually for testing.
 on:
-  schedule:
-    - cron: '*/15 * * * *'
+  # schedule:
+  #   - cron: '*/15 * * * *'
   workflow_dispatch: {}
 
 jobs:
