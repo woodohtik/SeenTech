@@ -52,6 +52,19 @@ export function initPwaUpdates(): void {
         registration.update().catch(() => {});
       };
 
+      // seen-cto-sprint0-critical-fixes-task.md follow-up (cache/update
+      // report 2026-11-14): none of the triggers below fire on a plain page
+      // load of an already-visible, already-focused tab -- visibilitychange
+      // needs a transition, focus needs the window to have been blurred
+      // first, online needs an actual reconnect, and the hourly interval's
+      // first tick is an hour away. So right after a deploy, reloading the
+      // page found no update at all until the browser's own internal
+      // (throttled, unreliable) registration-time check happened to catch
+      // it -- which looked like "needs a hard refresh" but had nothing to
+      // do with HTTP/CDN caching. One explicit check right here, as soon as
+      // registration succeeds, closes that gap for every normal reload.
+      checkForUpdate();
+
       setInterval(checkForUpdate, UPDATE_CHECK_INTERVAL_MS);
 
       document.addEventListener('visibilitychange', () => {
