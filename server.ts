@@ -1236,11 +1236,28 @@ app.post("/api/staff/verify-pin", authenticate, async (req: any, res) => {
 
     const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
 
-    // check-unique (used while an admin sets someone else's PIN, not a
-    // login attempt) is exempt from this limiter -- it's not a path an
-    // attacker could use to brute-force their way into another account.
-    const attemptKey = mode === 'check-unique' ? null : `${tenantId}:${req.user?.uid}`;
-    if (attemptKey) {
+    // seen-cto-sprint0-critical-fixes-task.md item 7 (SRV-04): check-unique
+    // used to be exempt from this limiter entirely and callable by any
+    // authenticated staff member -- any cashier could enumerate all 10,000
+    // PINs with no throttle, learn which ones exist in the tenant, then
+    // call this same endpoint in normal mode once per known PIN (never a
+    // wrong guess, so the 5-attempt lock never triggers) to find out which
+    // one belongs to the owner/admin. It's only ever used while an
+    // owner/admin/manager is setting someone else's PIN (Staff.tsx) -- not
+    // a path a regular login needs -- so it's now owner/admin/manager-only,
+    // and rate-limited under its OWN key (never shared with the real login
+    // counter below, so checking uniqueness repeatedly while picking a PIN
+    // can't lock out that admin's own login attempts, or vice versa).
+    if (mode === 'check-unique') {
+      let authorized = false;
+      await authorize(['owner', 'admin', 'manager'])(req, res, () => { authorized = true; });
+      if (!authorized) return; // authorize() already sent the 403 response
+    }
+
+    const attemptKey = mode === 'check-unique'
+      ? `${tenantId}:${req.user?.uid}:check-unique`
+      : `${tenantId}:${req.user?.uid}`;
+    {
       const { data: rec } = await supabaseAdmin.from('pin_verify_attempts').select('lock_until').eq('attempt_key', attemptKey).maybeSingle();
       if (rec?.lock_until && new Date(rec.lock_until).getTime() > Date.now()) {
         return res.status(429).json({
@@ -1251,7 +1268,7 @@ app.post("/api/staff/verify-pin", authenticate, async (req: any, res) => {
     }
 
     const [{ data: staffData }, { data: rolesData }] = await Promise.all([
-      supabaseAdmin.from('staff').select('*').eq('tenant_id', tenantId).eq('status', 'active'),
+      supabaseAdmin.from('staff').select('id, tenant_id, uid, name, email, phone, role, role_id, branch_id, status, pin_hash, must_change_pin').eq('tenant_id', tenantId).eq('status', 'active'),
       supabaseAdmin.from('roles').select('id, role_key').or(`tenant_id.is.null,tenant_id.eq.${tenantId}`),
     ]);
 
