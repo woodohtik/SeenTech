@@ -3300,7 +3300,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       <IconInput
                         type="tel"
                         value={newCustomerPhone}
-                        onChange={(e) => setNewCustomerPhone(formatSaudiPhone(e.target.value))}
+                        onChange={(e) => setNewCustomerPhone(e.target.value)}
                         onBlur={(e) => setNewCustomerPhone(formatSaudiPhone(e.target.value))}
                         placeholder="05XXXXXXXX"
                         dir="ltr"

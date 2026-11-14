@@ -1008,17 +1008,13 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-content-muted">{t('onboarding.fields.phone')}</label>
-                <input 
-                  {...regCust('phone')} 
-                  onChange={(e) => {
-                    const formatted = formatSaudiPhone(e.target.value);
-                    setCustValue('phone', formatted);
-                  }}
+                <input
+                  {...regCust('phone')}
                   onBlur={(e) => {
                     const formatted = formatSaudiPhone(e.target.value);
                     setCustValue('phone', formatted);
                   }}
-                  className="w-full bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand" 
+                  className="w-full bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
                 />
                 {custErrors.phone && <p className="text-[10px] text-danger font-bold">{custErrors.phone.message}</p>}
               </div>

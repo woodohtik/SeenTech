@@ -1792,10 +1792,6 @@ export default function Customers({ tenantId }: CustomersProps) {
                     <IconInput
                       id="customer-phone"
                       {...register('phone')}
-                      onChange={(e) => {
-                        const formatted = formatSaudiPhone(e.target.value);
-                        setValue('phone', formatted);
-                      }}
                       onBlur={(e) => {
                         const formatted = formatSaudiPhone(e.target.value);
                         setValue('phone', formatted);

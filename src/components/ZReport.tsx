@@ -472,7 +472,7 @@ export default function ZReport({ data, onClose }: ZReportProps) {
                 type="text"
                 placeholder={t('z_report.recipient_phone_placeholder', 'أدخل رقم الجوال هنا')}
                 value={recipientPhone}
-                onChange={(e) => setRecipientPhone(formatSaudiPhone(e.target.value))}
+                onChange={(e) => setRecipientPhone(e.target.value)}
                 onBlur={(e) => setRecipientPhone(formatSaudiPhone(e.target.value))}
                 className="w-full px-4 py-3 border border-border rounded-2xl text-sm font-bold text-content focus:outline-none focus:border-success bg-surface-muted focus:bg-surface transition-all"
               />

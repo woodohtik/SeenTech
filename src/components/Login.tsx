@@ -908,7 +908,7 @@ export default function Login() {
                   type="tel"
                   autoComplete="tel"
                   value={regPhone}
-                  onChange={(e) => setRegPhone(formatSaudiPhone(e.target.value))}
+                  onChange={(e) => setRegPhone(e.target.value)}
                   onBlur={() => setRegPhone(formatSaudiPhone(regPhone))}
                   placeholder="05xxxxxxxx"
                   startIcon={Phone}

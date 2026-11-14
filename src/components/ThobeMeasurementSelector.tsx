@@ -472,7 +472,15 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
                     ref={(el) => { inputRefs.current[part] = el; }}
                     type="number"
                     min="0"
-                    step="0.1"
+                    // FractionPicker right below only ever produces .00/.25/.50/.75
+                    // (quarter-cm/inch, the precision tailors actually measure in).
+                    // step="0.1" rejected those as an HTML5 step mismatch on native
+                    // form submit -- e.g. 20.75 isn't a multiple of 0.1 from min=0,
+                    // so the browser blocked saving and suggested the nearest
+                    // multiple of 0.1 instead (20.70 or 20.80), which looked like an
+                    // arbitrary, wrong "round to this" error. step="0.25" matches
+                    // what the picker (and the rest of the app) actually supports.
+                    step="0.25"
                     value={
                       (values as any)[part]
                         ? (activePart === part
