@@ -1672,13 +1672,17 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     // settlement use -- the real original invoice, not a reconstruction.
     const [viewingInvoice, setViewingInvoice] = useState<{ invoice: TaxInvoice; tenant: Tenant } | null>(null);
     const [isLoadingInvoice, setIsLoadingInvoice] = useState(false);
+    // Orders created directly here (never sold through POS's own
+    // checkout) have no tax_invoices row at all -- shown instead of a
+    // dead-end "not found" error.
+    const [showOrderSummaryFallback, setShowOrderSummaryFallback] = useState(false);
 
     const handleViewInvoice = async () => {
       setIsLoadingInvoice(true);
       try {
         const result = await fetchTaxInvoiceForOrder(tenantId, order.id);
         if (result) setViewingInvoice(result);
-        else toastError(t('common.error'), t('pos.invoice_not_found'));
+        else setShowOrderSummaryFallback(true);
       } finally {
         setIsLoadingInvoice(false);
       }
@@ -1758,6 +1762,81 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           onClose={() => setViewingInvoice(null)}
         />
       )}
+      {/* Fallback for an order with no tax_invoices row at all -- created
+          directly here, never sold through POS's checkout, so there's no
+          real invoice to fetch. Deliberately NOT styled like a tax
+          invoice (no QR, no invoice number) to avoid implying one exists. */}
+      <AnimatePresence>
+        {showOrderSummaryFallback && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md overflow-y-auto font-sans">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="relative w-full max-w-sm rounded-3xl bg-surface shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-right"
+              dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}
+            >
+              <div className="flex items-center justify-between p-6 border-b border-border bg-brand/5 shrink-0">
+                <h2 className="text-lg font-black text-content">{t('orders.order_details')}</h2>
+                <button
+                  onClick={() => setShowOrderSummaryFallback(false)}
+                  aria-label={t('common.close')}
+                  className="p-2 hover:bg-surface-muted rounded-full transition-colors text-content-muted"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <div id={`order-summary-fallback-${order.id}`} className="p-6 space-y-3 text-sm">
+                <p className="text-xs font-bold text-content-muted bg-surface-muted/60 p-2.5 rounded-lg">
+                  {t('pos.no_invoice_fallback_notice')}
+                </p>
+                <div className="flex justify-between"><span className="text-content-muted">{t('pos.customer_name')}</span><span className="font-bold">{order.customerName}</span></div>
+                <div className="border-t border-border pt-3 flex justify-between items-center">
+                  <span className="text-content-muted">{t('orders.grand_total')}</span>
+                  <span className="font-black"><PriceDisplay amount={order.totalAmount} /></span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-content-muted">{t('pos.paid_amount')}</span>
+                  <span className="font-black text-success"><PriceDisplay amount={order.paidAmount} /></span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-content-muted">{t('orders.remaining_amount')}</span>
+                  <span className="font-black text-danger"><PriceDisplay amount={order.remainingAmount} /></span>
+                </div>
+              </div>
+              <div className="p-6 pt-0 flex gap-3">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const { printElementDetailed, getConfiguredPaperSize } = await import('../utils/printManager');
+                      const res = await printElementDetailed(`order-summary-fallback-${order.id}`, {
+                        paperSize: getConfiguredPaperSize('80mm'),
+                        title: t('orders.order_details'),
+                      });
+                      if (!res.ok) toastError(t('printing.print_failed'), res.message);
+                    } catch (e) {
+                      console.error('[Orders] خطأ الطباعة:', e);
+                      window.print();
+                    }
+                  }}
+                  className="flex-1 py-3 bg-brand text-white rounded-xl font-black text-sm hover:bg-brand/90 transition-colors cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Printer size={18} />
+                  {t('tax_invoices.print')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowOrderSummaryFallback(false)}
+                  className="px-5 py-3 bg-surface-muted text-content-muted rounded-xl font-bold text-sm hover:bg-border/60 transition-colors cursor-pointer"
+                >
+                  {t('common.close')}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
       <div className="fixed inset-0 z-[60] flex items-end lg:items-center justify-center lg:justify-end overflow-hidden">
         <motion.div
           initial={{ opacity: 0 }}
