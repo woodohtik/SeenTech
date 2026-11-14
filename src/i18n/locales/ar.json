@@ -1685,7 +1685,6 @@
     "your_referrals": "إحالاتك ({{n}})"
   },
   "measurements": {
-    "auto_saved_note": "* يتم حفظ هذه المقاسات تلقائياً ككائن JSON مرتبط ببيانات العميل والطلب لضمان دقة التفصيل.",
     "bottomWidth": "الوسع",
     "chest": "الصدر",
     "chestStyle": "الصدر",

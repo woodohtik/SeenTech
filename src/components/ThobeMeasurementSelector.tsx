@@ -510,14 +510,6 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
               </div>
             ))}
           </div>
-
-          <div className="pt-4">
-            <div className="p-4 bg-brand/10 rounded-2xl border border-brand/20">
-              <p className="text-xs font-bold text-brand leading-relaxed">
-                {t('measurements.auto_saved_note')}
-              </p>
-            </div>
-          </div>
         </div>
       )}
     </div>

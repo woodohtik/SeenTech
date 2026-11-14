@@ -1685,7 +1685,6 @@
     "your_referrals": "Your referrals ({{n}})"
   },
   "measurements": {
-    "auto_saved_note": "* These measurements are saved automatically as a JSON object linked to the customer and order data to guarantee tailoring accuracy.",
     "bottomWidth": "Bottom Width",
     "chest": "Chest",
     "chestStyle": "Chest",
