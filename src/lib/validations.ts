@@ -14,11 +14,17 @@ const phoneField = z.string().transform((val) => formatSaudiPhone(val)).pipe(
 export const customerSchema = z.object({
   name: z.string().min(2, t('validation.min_length', { count: 2 })).max(100, t('validation.max_length', { count: 100 })),
   phone: phoneField,
-  email: z.string().email(t('validation.invalid_email')).optional().or(z.literal('')),
-  companyName: z.string().optional(),
+  // .nullable() on all four of these: Supabase returns SQL NULL as JS
+  // `null`, not `undefined`, and `.optional()` alone only ever accepted
+  // `undefined` -- a NULL email/companyName/trn/notes (the normal case for
+  // most customers) made editing ANY field on that customer fail this
+  // schema with an invisible "invalid_type" error, surfaced only via the
+  // generic, misleading "enter name and phone correctly" message.
+  email: z.string().email(t('validation.invalid_email')).optional().or(z.literal('')).nullable(),
+  companyName: z.string().optional().nullable(),
   trn: z.string().refine((val) => !val || /^\d{15}$/.test(val), {
     message: t('validation.tax_number_format')
-  }).optional().or(z.literal('')),
+  }).optional().or(z.literal('')).nullable(),
   isB2B: z.boolean().optional().default(false),
   address: z.string().optional(),
   city: z.string().optional(),
@@ -55,7 +61,7 @@ export const customerSchema = z.object({
     sleeveStyle: z.string().optional(),
     pocketType: z.string().optional(),
   }).optional(),
-  notes: z.string().max(1000, t('validation.max_length', { count: 1000 })).optional(),
+  notes: z.string().max(1000, t('validation.max_length', { count: 1000 })).optional().nullable(),
   isTest: z.boolean().optional().default(false),
 });
 
