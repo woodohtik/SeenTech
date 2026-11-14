@@ -4755,6 +4755,7 @@
     "disable_employee_pin": "إلغاء رمز الموظف",
     "edit_employee_title": "تعديل بيانات موظف",
     "email_already_used_in_shop": "هذا البريد الإلكتروني مستخدم مسبقاً لموظف آخر في هذا المحل",
+    "email_belongs_to_another_account": "البريد مستخدم في حساب آخر",
     "email_in_auth_missing_uid": "البريد مستخدم في نظام المصادقة ولكن تعذر الحصول على هويته. قد يكون الحساب غير مكتمل التسجيل.",
     "email_required_label": "البريد الإلكتروني (إجباري)",
     "enable_quick_pin": "تعيين رمز دخول سريع للموظف",

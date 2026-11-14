@@ -4752,6 +4752,7 @@
     "disable_employee_pin": "Disable Employee PIN",
     "edit_employee_title": "Edit Employee Details",
     "email_already_used_in_shop": "This email is already used by another employee in this shop.",
+    "email_belongs_to_another_account": "This email belongs to another account",
     "email_in_auth_missing_uid": "The email exists in the auth system but its ID could not be retrieved. The account may be incompletely registered.",
     "email_required_label": "Email (Required)",
     "enable_quick_pin": "Set a quick login PIN for this employee",
