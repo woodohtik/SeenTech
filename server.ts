@@ -1091,10 +1091,46 @@ app.post("/api/staff/create-account", authenticate, authorize(['super_admin', 'o
     const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
     const { createOrUpdateStaffAccount } = await import("./src/server/staffAccountService.ts");
 
-    const result = await createOrUpdateStaffAccount(supabaseAdmin, { email: String(email), password, name });
+    // seen-cto-sprint0-critical-fixes-task.md item 1 (SRV-01): 5 attempts/
+    // minute per caller -- same Postgres-backed fixed-window pattern as
+    // print-pairing/PIN verify, keyed per uid since this route already
+    // requires authenticate.
+    const { count: attemptCount, error: rateLimitError } = await supabaseAdmin
+      .rpc('increment_staff_account_create_attempt', { p_caller_uid: req.user.uid })
+      .then((r: any) => ({ count: r.data, error: r.error }));
+    if (rateLimitError) {
+      logger.warn({ err: rateLimitError }, '[staff/create-account] rate-limit check failed -- failing open');
+    } else if (attemptCount > 5) {
+      return res.status(429).json({ error: 'too_many_attempts' });
+    }
+
+    const result = await createOrUpdateStaffAccount(supabaseAdmin, {
+      email: String(email),
+      password,
+      name,
+      requesterTenantId: req.user.tenantId,
+      requesterRole: req.user.role,
+    });
     if (result.ok === false) {
       return res.status(result.status).json({ error: result.error });
     }
+
+    // SECURITY audit trail: who reset whose password, from where. Only
+    // fires on the reset-existing-account path -- a brand-new account
+    // (alreadyExisted: false) isn't a privileged cross-account action.
+    if (result.alreadyExisted) {
+      await supabaseAdmin.from('saas_security_logs').insert({
+        user_id: req.user.uid,
+        user_email: req.user.email,
+        action: 'staff_account_password_reset',
+        details: `caller_tenant=${req.user.tenantId}, caller_role=${req.user.role}, target_uid=${result.uid}, target_email=${String(email).toLowerCase()}`,
+        ip_address: req.ip,
+        user_agent: req.get?.('user-agent'),
+      }).then(({ error: logErr }: any) => {
+        if (logErr) logger.warn({ err: logErr }, '[saas_security_logs] staff_account_password_reset insert failed');
+      });
+    }
+
     res.json({ uid: result.uid, alreadyExisted: result.alreadyExisted });
   } catch (err: any) {
     internalError(res, "Error creating staff account:", err);
