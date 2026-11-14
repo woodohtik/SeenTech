@@ -86,6 +86,21 @@ export const supabase: SupabaseClient<any> =
                                                     if (!('subtotal_amount' in parsedBody) && decodedExisting.subtotal_amount !== undefined) {
                                                         parsedBody.subtotal_amount = decodedExisting.subtotal_amount;
                                                     }
+                                                    // seen-cto-sprint0-critical-fixes-task.md item 9 (ORD-08):
+                                                    // notes was the one virtual column NOT merged here.
+                                                    // encodeOrderRow (orderHistoryHelper.ts) rebuilds notes
+                                                    // from parsedBody.notes whenever items/history/
+                                                    // subtotal_amount are present -- any PATCH that doesn't
+                                                    // itself touch notes (every status/payment update) left
+                                                    // it undefined, so encodeOrderRow treated that as "notes
+                                                    // is now empty" and permanently wiped the previously
+                                                    // encoded blob, destroying the customer's real note and,
+                                                    // for a POS custom B2B order, the __B2B_METADATA__ it
+                                                    // carries. decodedExisting.notes is already unwrapped to
+                                                    // the real original text, same as items/history above.
+                                                    if (!('notes' in parsedBody) && decodedExisting.notes !== undefined) {
+                                                        parsedBody.notes = decodedExisting.notes;
+                                                    }
                                                 }
                                             }
                                         }
