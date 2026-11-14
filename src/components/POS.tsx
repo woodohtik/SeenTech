@@ -127,6 +127,18 @@ interface DebtOrderSummary {
   remainingAmount: number;
 }
 
+// Shown instead of the real tax invoice when an order has none at all --
+// orders created directly in "الطلبات" (not sold through POS's checkout)
+// never get a tax_invoices row in the first place, so there's nothing
+// real to fetch/show. A dead-end error there would be worse than a
+// plain, clearly-not-a-tax-invoice payment confirmation.
+interface FallbackPaymentReceipt {
+  orderNumber: number;
+  amountPaid: number;
+  customerName: string;
+  issuedAt: string;
+}
+
 
 export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?: string }) {
   const router = useRouter();
@@ -159,7 +171,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const [settlingOrderId, setSettlingOrderId] = useState<string | null>(null);
   const [isSettlingAllDebt, setIsSettlingAllDebt] = useState(false);
   const [viewingInvoice, setViewingInvoice] = useState<{ invoice: TaxInvoice; tenant: Tenant } | null>(null);
-  const [settledOrdersSummary, setSettledOrdersSummary] = useState<{ orderNumber: number; orderId: string }[] | null>(null);
+  const [settledOrdersSummary, setSettledOrdersSummary] = useState<{ orderNumber: number; orderId: string; amountPaid: number }[] | null>(null);
+  const [fallbackReceipt, setFallbackReceipt] = useState<FallbackPaymentReceipt | null>(null);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [branchStock, setBranchStock] = useState<Record<string, number>>({});
   // seen-ux-fixes-batch-task.md item 10 -- stock of each variant row (keyed
@@ -604,11 +617,23 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   }, [isDebtModalOpen, selectedCustomer, refreshCounter]);
 
   // Shows the order's own real original tax invoice (same component/data
-  // the tax-invoice registry and Orders use) -- not a fabricated receipt.
-  const handleViewOrderInvoice = async (orderId: string) => {
+  // the tax-invoice registry and Orders use). Orders created directly in
+  // "الطلبات" (not sold through POS's own checkout) never got a
+  // tax_invoices row at all -- for those, `fallback` (when given) renders
+  // a plain, clearly-not-a-tax-invoice payment confirmation instead of a
+  // dead-end "not found" error.
+  const handleViewOrderInvoice = async (orderId: string, fallback?: { orderNumber: number; amountPaid: number }) => {
     const result = await fetchTaxInvoiceForOrder(tenantId, orderId);
     if (result) {
       setViewingInvoice(result);
+      setSettledOrdersSummary(null);
+    } else if (fallback) {
+      setFallbackReceipt({
+        orderNumber: fallback.orderNumber,
+        amountPaid: fallback.amountPaid,
+        customerName: selectedCustomer?.name || '',
+        issuedAt: new Date().toISOString(),
+      });
       setSettledOrdersSummary(null);
     } else {
       toastError(t('common.error'), t('pos.invoice_not_found'));
@@ -633,7 +658,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         : prev.map(o => o.id === order.id ? { ...o, paidAmount: newPaidAmount, remainingAmount: newRemaining } : o));
       setCustomerUnpaidBalance(prev => Math.max(0, prev - amount));
       toastSuccess(t('pos.debt_order_settled', { order_number: order.orderNumber }));
-      await handleViewOrderInvoice(order.id);
+      await handleViewOrderInvoice(order.id, { orderNumber: order.orderNumber, amountPaid: amount });
     } catch (err) {
       toastError(t('common.error'), getFriendlyErrorMessage(err));
     } finally {
@@ -668,9 +693,9 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         toastSuccess(t('pos.debt_settled_all'));
         setIsDebtModalOpen(false);
         if (settled.length === 1) {
-          await handleViewOrderInvoice(settled[0].id);
+          await handleViewOrderInvoice(settled[0].id, { orderNumber: settled[0].orderNumber, amountPaid: settled[0].remainingAmount });
         } else {
-          setSettledOrdersSummary(settled.map(o => ({ orderNumber: o.orderNumber, orderId: o.id })));
+          setSettledOrdersSummary(settled.map(o => ({ orderNumber: o.orderNumber, orderId: o.id, amountPaid: o.remainingAmount })));
         }
       }
     } finally {
@@ -2682,6 +2707,84 @@ const invoiceData: InvoiceData | null = completedOrder ? {
         />
       )}
 
+      {/* Fallback for an order with no tax_invoices row at all -- created
+          directly in "الطلبات", never sold through POS's checkout, so
+          there is no real invoice to fetch. Deliberately NOT styled like
+          a tax invoice (no QR, no invoice number) to avoid implying one
+          exists. */}
+      <AnimatePresence>
+        {fallbackReceipt && (
+          <div className="fixed inset-0 z-[210] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md overflow-y-auto font-sans">
+            <motion.div
+              initial={shouldReduceMotion ? false : { scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={shouldReduceMotion ? undefined : { scale: 0.95, opacity: 0, y: 20 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 200 }}
+              className="relative w-full max-w-sm rounded-3xl bg-surface shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-right"
+              dir={isRtl ? 'rtl' : 'ltr'}
+            >
+              <div className="flex items-center justify-between p-6 border-b border-border bg-success/5 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-success/10 text-success rounded-2xl shrink-0 shadow-sm">
+                    <CheckCircle2 size={24} />
+                  </div>
+                  <h2 className="text-lg font-black text-content">{t('pos.payment_confirmation_title')}</h2>
+                </div>
+                <button
+                  onClick={() => setFallbackReceipt(null)}
+                  aria-label={t('common.close')}
+                  className="p-2 hover:bg-surface-muted rounded-full transition-colors text-content-muted"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div id="pos-fallback-receipt-print-area" className="p-6 space-y-3 text-sm">
+                <p className="text-xs font-bold text-content-muted bg-surface-muted/60 p-2.5 rounded-lg">
+                  {t('pos.no_invoice_fallback_notice')}
+                </p>
+                <div className="flex justify-between"><span className="text-content-muted">{t('pos.customer_name')}</span><span className="font-bold">{fallbackReceipt.customerName}</span></div>
+                <div className="flex justify-between"><span className="text-content-muted">{t('common.date')}</span><span className="font-bold">{new Date(fallbackReceipt.issuedAt).toLocaleString()}</span></div>
+                <div className="border-t border-border pt-3 flex justify-between items-center">
+                  <span className="text-content-muted">{t('staff.order_number', { number: fallbackReceipt.orderNumber })}</span>
+                  <span className="font-black text-success"><PriceDisplay amount={fallbackReceipt.amountPaid} /></span>
+                </div>
+              </div>
+
+              <div className="p-6 pt-0 flex gap-3">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const { printElementDetailed, getConfiguredPaperSize } = await import('../utils/printManager');
+                      const res = await printElementDetailed('pos-fallback-receipt-print-area', {
+                        paperSize: getConfiguredPaperSize('80mm'),
+                        title: t('pos.payment_confirmation_title'),
+                      });
+                      if (!res.ok) toastError(t('printing.print_failed'), res.message);
+                    } catch (e) {
+                      console.error('[POS] خطأ طباعة تأكيد الدفع:', e);
+                      window.print();
+                    }
+                  }}
+                  className="flex-1 py-3 bg-brand text-white rounded-xl font-black text-sm hover:bg-brand/90 transition-colors cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Printer size={18} />
+                  {t('pos.receipt_print')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFallbackReceipt(null)}
+                  className="px-5 py-3 bg-surface-muted text-content-muted rounded-xl font-bold text-sm hover:bg-border/60 transition-colors cursor-pointer"
+                >
+                  {t('common.close')}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* "سدد الإجمالي" can settle several distinct orders at once, each
           with its own separate original invoice -- no single document
           covers more than one, so this just lets the cashier pick which
@@ -2717,7 +2820,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   <button
                     key={o.orderId}
                     type="button"
-                    onClick={() => handleViewOrderInvoice(o.orderId)}
+                    onClick={() => handleViewOrderInvoice(o.orderId, { orderNumber: o.orderNumber, amountPaid: o.amountPaid })}
                     className="w-full flex items-center justify-between p-3 bg-surface-muted/50 border border-border rounded-xl font-bold text-sm hover:border-brand/50 transition-colors cursor-pointer"
                   >
                     <span>{t('staff.order_number', { number: o.orderNumber })}</span>
