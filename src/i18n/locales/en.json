@@ -298,6 +298,7 @@
     "delete": "Delete",
     "delete_success": "Item deleted successfully",
     "delete_test_data": "Delete Test Data Only",
+    "delete_test_data_disabled": "This feature is temporarily disabled while it is redesigned to be safer",
     "delete_test_data_failed": "Failed to delete test data.",
     "delete_test_warning": "Only records marked as 'Test Data' will be deleted for",
     "delivered": "Delivered",

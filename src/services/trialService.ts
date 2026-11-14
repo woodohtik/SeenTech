@@ -88,135 +88,25 @@ export async function hasUsedTrial(phone?: string, email?: string): Promise<bool
 }
 
 /**
- * يحذف جميع البيانات التجريبية المرتبطة بالـ tenant بأمان مع معالجة العلاقات والقيود الخارجيّة (Foreign Keys).
+ * DISABLED (seen-cto-sprint0-critical-fixes-task.md item 6, BO-14):
+ * this used to run ~12 sequential, non-atomic client-side deletes across
+ * orders/customers/inventory/suppliers/staff/notifications/tax_invoices,
+ * including two hard-coded fallbacks that deleted ANY row matching
+ * phone IN ('0599999999','0588888888') or sku IN ('COT-WHT','BTN-SDF')
+ * regardless of is_test -- a real customer or product that happens to
+ * use one of those exact values was deleted outright. It also deleted
+ * tax_invoices (issued ZATCA e-invoices) for any order flagged is_test,
+ * and orders.is_test was (until item 5 of the same task) settable by
+ * any staff member, making "flag then wipe" a real fiscal-record-
+ * destruction path. Every delete's error was only console.warn'd, never
+ * aborting, so a partial failure still reported {success:true}.
+ *
+ * Stopped outright rather than rewritten: a correct replacement (a
+ * transactional, owner-only SECURITY DEFINER RPC touching only rows
+ * actually created by the data-seed, never tax_invoices) needs its own
+ * dedicated task, not a same-day patch under this emergency sprint.
  */
-export async function deleteTestDataForTenant(tenantId: string): Promise<{ success: boolean; deletedCount: number; error?: string }> {
-  if (!tenantId) {
-    return { success: false, deletedCount: 0, error: 'Tenant ID is required' };
-  }
-
-  let totalDeleted = 0;
-
-  try {
-    // 1. Fetch test order IDs
-    const { data: testOrders } = await supabase
-      .from('orders')
-      .select('id')
-      .eq('tenant_id', tenantId)
-      .eq('is_test', true);
-
-    const testOrderIds = (testOrders || []).map(o => o.id);
-
-    // Clean up dependent order child tables first to avoid FK violations
-    if (testOrderIds.length > 0) {
-      await supabase.from('order_items').delete().in('order_id', testOrderIds);
-      await supabase.from('order_history').delete().in('order_id', testOrderIds);
-      await supabase.from('tax_invoices').delete().in('order_id', testOrderIds);
-      await supabase.from('sales_returns').delete().in('order_id', testOrderIds);
-    }
-
-    // Delete test orders FIRST before deleting customers or inventory
-    const { count: ordersCount, error: ordersErr } = await supabase
-      .from('orders')
-      .delete({ count: 'exact' })
-      .eq('tenant_id', tenantId)
-      .eq('is_test', true);
-
-    if (ordersErr) console.warn('[deleteTestData] orders delete error:', ordersErr);
-    if (ordersCount) totalDeleted += ordersCount;
-
-    // 2. Delete test customers
-    const { count: custCount, error: custErr } = await supabase
-      .from('customers')
-      .delete({ count: 'exact' })
-      .eq('tenant_id', tenantId)
-      .eq('is_test', true);
-
-    if (custErr) console.warn('[deleteTestData] customers delete error:', custErr);
-    if (custCount) totalDeleted += custCount;
-
-    // Cleanup trial seed customers by phone as fallback
-    await supabase
-      .from('customers')
-      .delete()
-      .eq('tenant_id', tenantId)
-      .in('phone', ['0599999999', '0588888888']);
-
-    // 3. Delete test inventory items and related branch stock
-    const { data: testItems } = await supabase
-      .from('inventory_items')
-      .select('id')
-      .eq('tenant_id', tenantId)
-      .eq('is_test', true);
-
-    const testItemIds = (testItems || []).map(i => i.id);
-    if (testItemIds.length > 0) {
-      await supabase.from('branch_inventory').delete().in('item_id', testItemIds);
-      await supabase.from('stock_ledger').delete().in('item_id', testItemIds);
-    }
-
-    const { count: itemsCount, error: itemsErr } = await supabase
-      .from('inventory_items')
-      .delete({ count: 'exact' })
-      .eq('tenant_id', tenantId)
-      .eq('is_test', true);
-
-    if (itemsErr) console.warn('[deleteTestData] inventory delete error:', itemsErr);
-    if (itemsCount) totalDeleted += itemsCount;
-
-    // Cleanup trial seed items by SKU as fallback
-    await supabase
-      .from('inventory_items')
-      .delete()
-      .eq('tenant_id', tenantId)
-      .in('sku', ['COT-WHT', 'BTN-SDF']);
-
-    // 4. Delete test suppliers and related purchase orders
-    const { data: testSuppliers } = await supabase
-      .from('suppliers')
-      .select('id')
-      .eq('tenant_id', tenantId)
-      .eq('is_test', true);
-
-    const testSupplierIds = (testSuppliers || []).map(s => s.id);
-    if (testSupplierIds.length > 0) {
-      await supabase.from('supplier_transactions').delete().in('supplier_id', testSupplierIds);
-      await supabase.from('purchase_orders').delete().in('supplier_id', testSupplierIds);
-    }
-
-    const { count: suppCount, error: suppErr } = await supabase
-      .from('suppliers')
-      .delete({ count: 'exact' })
-      .eq('tenant_id', tenantId)
-      .eq('is_test', true);
-
-    if (suppErr) console.warn('[deleteTestData] suppliers delete error:', suppErr);
-    if (suppCount) totalDeleted += suppCount;
-
-    // 5. Delete test staff
-    const { count: staffCount, error: staffErr } = await supabase
-      .from('staff')
-      .delete({ count: 'exact' })
-      .eq('tenant_id', tenantId)
-      .eq('is_test', true);
-
-    if (staffErr) console.warn('[deleteTestData] staff delete error:', staffErr);
-    if (staffCount) totalDeleted += staffCount;
-
-    // 6. Delete test notifications
-    const { count: notifCount, error: notifErr } = await supabase
-      .from('notifications')
-      .delete({ count: 'exact' })
-      .eq('tenant_id', tenantId)
-      .eq('is_test', true);
-
-    if (notifErr) console.warn('[deleteTestData] notifications delete error:', notifErr);
-    if (notifCount) totalDeleted += notifCount;
-
-    return { success: true, deletedCount: totalDeleted };
-  } catch (err: any) {
-    console.error('Error in deleteTestDataForTenant:', err);
-    return { success: false, deletedCount: totalDeleted, error: err?.message || i18n.t('common.delete_test_data_failed') };
-  }
+export async function deleteTestDataForTenant(_tenantId: string): Promise<{ success: boolean; deletedCount: number; error?: string }> {
+  return { success: false, deletedCount: 0, error: i18n.t('common.delete_test_data_disabled', 'هذه الميزة معطَّلة مؤقتاً حالياً لإعادة تصميمها بشكل أكثر أماناً.') };
 }
 
