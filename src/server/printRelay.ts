@@ -104,7 +104,9 @@ interface StationRow {
   id: string;
   agent_token: string;
   client_token: string;
-  pair_code: string;
+  pair_code: string | null;
+  pair_code_expires_at: string | null;
+  tenant_id: string | null;
   hostname: string;
   platform: string;
   agent_version: string;
@@ -426,6 +428,10 @@ export function registerPrintRelay(app: Express): void {
 
       let insertError: any = null;
       let pairCode = '';
+      // seen-cto-sprint0-critical-fixes-task.md item 8 (PRT-01): the code
+      // used to never expire. 10 minutes from issuance here; checked in
+      // /pair below.
+      const pairCodeExpiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
       for (let attempt = 0; attempt < 5; attempt++) {
         pairCode = randomPairCode();
         const { error } = await supabaseAdmin.from('print_stations').insert({
@@ -433,6 +439,7 @@ export function registerPrintRelay(app: Express): void {
           agent_token: agentToken,
           client_token: clientToken,
           pair_code: pairCode,
+          pair_code_expires_at: pairCodeExpiresAt,
           hostname,
           platform,
           agent_version: agentVersion,
@@ -611,7 +618,7 @@ export function registerPrintRelay(app: Express): void {
   // anonymous internet callers entirely. A global, IP-independent counter
   // closes the remaining distributed-guessing gap for any attacker who
   // does hold a staff session somewhere.
-  app.post('/api/print/pair', authenticate, async (req: Request, res: Response) => {
+  app.post('/api/print/pair', authenticate, async (req: AuthRequest, res: Response) => {
     try {
       const ip = clientIp(req);
       const { data: rec } = await supabaseAdmin.from('print_pair_attempts').select('*').eq('ip', ip).maybeSingle();
@@ -642,7 +649,14 @@ export function registerPrintRelay(app: Express): void {
         .eq('pair_code', code)
         .maybeSingle();
 
-      if (!station) {
+      // seen-cto-sprint0-critical-fixes-task.md item 8 (PRT-01): a
+      // matched-but-expired code is treated the same as no match at all
+      // -- same error, same failed-attempt counting, so an attacker can't
+      // tell "wrong code" apart from "right code, too late" and use that
+      // to narrow a guessing search.
+      const expired = !!station?.pair_code_expires_at && new Date(station.pair_code_expires_at).getTime() <= nowMs();
+
+      if (!station || expired) {
         // increment_print_pair_attempt (RPC ذرّية) بدل upsert قراءة-ثم-كتابة
         // -- نفس إصلاح increment_tracking_attempt، يمنع محاولتين متزامنتين
         // من الكتابة على نفس count القديم بدل التراكم الصحيح.
@@ -656,11 +670,21 @@ export function registerPrintRelay(app: Express): void {
 
       await supabaseAdmin.from('print_pair_attempts').delete().eq('ip', ip);
 
+      // Binds the station to the pairing user's own tenant (first
+      // successful pair only -- there's no existing data to backfill
+      // from) and single-uses the code so it can't pair a second,
+      // unrelated device later.
+      const tenantId = req.user?.tenantId || null;
+      await supabaseAdmin
+        .from('print_stations')
+        .update({ tenant_id: tenantId, pair_code: null, pair_code_expires_at: null })
+        .eq('id', station.id);
+
       res.json({
         ok: true,
         stationId: station.id,
         clientToken: station.client_token,
-        station: await publicStation(station as StationRow),
+        station: await publicStation({ ...station, tenant_id: tenantId } as StationRow),
       });
     } catch (e: any) {
       logger.error({ err: e }, '[print-relay] /pair');
@@ -680,7 +704,7 @@ export function registerPrintRelay(app: Express): void {
    * فعلياً في قاعدة البيانات، فتفقد كل الأجهزة المقترنة سابقاً صلاحيتها فوراً
    * ويحتاج أي جهاز (بما فيه هذا الجهاز) اقتراناً جديداً بالرمز الجديد.
    */
-  app.post('/api/print/station/:stationId/unpair', async (req: Request, res: Response) => {
+  app.post('/api/print/station/:stationId/unpair', authenticate, async (req: AuthRequest, res: Response) => {
     try {
       const station = await fetchStationById(String(req.params.stationId || ''));
       const token = String((req.body || {}).clientToken || req.headers['x-seen-client-token'] || '');
@@ -688,13 +712,21 @@ export function registerPrintRelay(app: Express): void {
       if (!station || !safeEqual(token, station.client_token)) {
         return res.status(404).json({ ok: false, error: 'محطة غير معروفة أو رمز غير صحيح.' });
       }
+      // seen-cto-sprint0-critical-fixes-task.md item 8 (PRT-01): a
+      // station paired before this migration has tenant_id = NULL --
+      // never matches any real tenant, so it (correctly) also requires
+      // re-pairing rather than silently trusting the clientToken alone.
+      if (station.tenant_id !== req.user?.tenantId) {
+        return res.status(403).json({ ok: false, error: 'هذه المحطة غير مرتبطة بمتجرك.' });
+      }
 
       let newPairCode = '';
+      const newPairCodeExpiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
       for (let attempt = 0; attempt < 5; attempt++) {
         newPairCode = randomPairCode();
         const { error } = await supabaseAdmin
           .from('print_stations')
-          .update({ client_token: newToken(), pair_code: newPairCode })
+          .update({ client_token: newToken(), pair_code: newPairCode, pair_code_expires_at: newPairCodeExpiresAt, tenant_id: null })
           .eq('id', station.id);
         if (!error) break;
         if (attempt === 4) throw error;
@@ -711,7 +743,7 @@ export function registerPrintRelay(app: Express): void {
    * GET /api/print/station/:stationId?clientToken=...
    * حالة المحطة وقائمة طابعاتها — للعرض في إعدادات الطابعة.
    */
-  app.get('/api/print/station/:stationId', async (req: Request, res: Response) => {
+  app.get('/api/print/station/:stationId', authenticate, async (req: AuthRequest, res: Response) => {
     try {
       const station = await fetchStationById(String(req.params.stationId || ''));
       const token = String(req.query.clientToken || req.headers['x-seen-client-token'] || '');
@@ -721,6 +753,10 @@ export function registerPrintRelay(app: Express): void {
           ok: false,
           error: 'المحطة غير معروفة للسيرفر. أعد الاقتران بالرمز الظاهر في نافذة الوسيط.',
         });
+      }
+      // seen-cto-sprint0-critical-fixes-task.md item 8 (PRT-01).
+      if (station.tenant_id !== req.user?.tenantId) {
+        return res.status(403).json({ ok: false, error: 'هذه المحطة غير مرتبطة بمتجرك.' });
       }
 
       res.json({ ok: true, station: await publicStation(station) });
@@ -743,7 +779,7 @@ export function registerPrintRelay(app: Express): void {
    * يُرجع فوراً بعد إضافة المهمة للطابور. المتصفح يتابع الحالة عبر
    * GET /api/print/job/:jobId — فلا تتعلق واجهة الكاشير في الانتظار.
    */
-  app.post('/api/print/job', async (req: Request, res: Response) => {
+  app.post('/api/print/job', authenticate, async (req: AuthRequest, res: Response) => {
     try {
       const body = req.body || {};
       const station = await fetchStationById(String(body.stationId || ''));
@@ -753,6 +789,12 @@ export function registerPrintRelay(app: Express): void {
           ok: false,
           error: 'المحطة غير معروفة أو انتهت صلاحية الاقتران. أعد الاقتران من إعدادات الطابعة.',
         });
+      }
+      // seen-cto-sprint0-critical-fixes-task.md item 8 (PRT-01): the
+      // exploit this closes -- a stolen/guessed clientToken from another
+      // tenant's station can no longer queue print jobs there.
+      if (station.tenant_id !== req.user?.tenantId) {
+        return res.status(403).json({ ok: false, error: 'هذه المحطة غير مرتبطة بمتجرك.' });
       }
 
       if (!isOnline(station)) {
@@ -829,7 +871,7 @@ export function registerPrintRelay(app: Express): void {
    * GET /api/print/job/:jobId?clientToken=...
    * متابعة حالة المهمة من المتصفح.
    */
-  app.get('/api/print/job/:jobId', async (req: Request, res: Response) => {
+  app.get('/api/print/job/:jobId', authenticate, async (req: AuthRequest, res: Response) => {
     try {
       const { data: job } = await supabaseAdmin
         .from('print_jobs')
@@ -844,6 +886,10 @@ export function registerPrintRelay(app: Express): void {
       const station = await fetchStationById((job as JobRow).station_id);
       const token = String(req.query.clientToken || req.headers['x-seen-client-token'] || '');
       if (!station || !safeEqual(token, station.client_token)) {
+        return res.status(403).json({ ok: false, error: 'غير مصرّح بقراءة حالة هذه المهمة.' });
+      }
+      // seen-cto-sprint0-critical-fixes-task.md item 8 (PRT-01).
+      if (station.tenant_id !== req.user?.tenantId) {
         return res.status(403).json({ ok: false, error: 'غير مصرّح بقراءة حالة هذه المهمة.' });
       }
 
