@@ -118,28 +118,21 @@ export default function AddEmployeeModal({
       const createResult = await createRes.json();
 
       if (!createRes.ok) {
-        if (createRes.status === 409 || createResult.error === 'email_already_in_use_no_match') {
-          if (existingStaff && existingStaff.length > 0) {
-            const staffWithUid = existingStaff.find(s => s.uid);
-            if (staffWithUid) {
-              uid = staffWithUid.uid;
-            }
-          }
-
-          if (!uid) {
-            // Fallback to query users table directly if not found in staff
-            const { data: userRow } = await supabase.from('users').select('id').eq('email', data.email.toLowerCase()).maybeSingle();
-            if (userRow) uid = userRow.id;
-          }
-
-          if (!uid) {
-             setErrorMsg(t('staff.email_in_auth_missing_uid'));
-             setIsSubmitting(false);
-             return;
-          }
-        } else {
-          throw new Error(createResult.error || 'Failed to create staff account');
-        }
+        // SECURITY (seen-cto-sprint0-critical-fixes-task.md item 1 follow-up):
+        // this used to resolve a uid from ANY tenant's staff/users rows on
+        // any 409 and link it as staff here anyway, with no password reset
+        // -- so adding a stranger's (or another tenant's owner's, or a
+        // super_admin's) email created a second `staff` row for the same
+        // uid across tenants. authMiddleware.ts's staff lookup is a
+        // .maybeSingle(), which errors when more than one row matches,
+        // breaking that real account's ability to log in anywhere until
+        // manually cleaned up -- a griefing/denial-of-service path with no
+        // password ever needed. The server now only ever returns 409 when
+        // this account must not be touched at all, so there is no longer a
+        // safe case to self-resolve a uid and proceed.
+        setErrorMsg(t('staff.email_belongs_to_another_account'));
+        setIsSubmitting(false);
+        return;
       } else {
         uid = createResult.uid;
       }
