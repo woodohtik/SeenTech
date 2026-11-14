@@ -1702,9 +1702,24 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       if (payAmount <= 0) return;
       setIsProcessing(true);
       try {
-        const newPaidAmount = (order.paidAmount || 0) + payAmount;
+        // ORD-07: read the order fresh from the DB instead of trusting the
+        // possibly-stale `order` prop/closure, so a second payment made
+        // right after a first one (e.g. two staff members, or a retry)
+        // is computed against the real current paid_amount, not a snapshot
+        // taken when the drawer opened.
+        const { data: freshOrderRow, error: fetchError } = await supabase
+          .from('orders')
+          .select('paid_amount, total_amount, items, history, status')
+          .eq('id', order.id)
+          .single();
+        if (fetchError || !freshOrderRow) {
+          throw fetchError || new Error('Order not found');
+        }
+        const decodedFresh = decodeOrderRow(freshOrderRow as any);
+
+        const newPaidAmount = (decodedFresh.paidAmount ?? order.paidAmount ?? 0) + payAmount;
         const newRemainingAmount = Math.max(0, (order.totalAmount || 0) - newPaidAmount);
-        
+
         const historyEntry: OrderHistory = {
           status: order.status,
           updatedAt: new Date().toISOString(),
@@ -1713,16 +1728,20 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           notes: t('orders.payment_note', { amount: payAmount, method: t(`common.payment_methods.${payMethod}`, payMethod) })
         };
 
-        const updatedHistory = [...(order.history || []), historyEntry];
+        const updatedHistory = [...(decodedFresh.history || order.history || []), historyEntry];
 
-        await supabase
+        const { error: updateError } = await supabase
           .from('orders')
           .update({
             paid_amount: newPaidAmount,
             history: updatedHistory,
-            items: order.items || []
+            items: decodedFresh.items || order.items || []
           })
           .eq('id', order.id);
+
+        if (updateError) {
+          throw updateError;
+        }
 
         // Keeps the order's original tax invoice (a separate row/column,
         // no DB trigger between them) showing the real current paid/
@@ -1730,7 +1749,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         // when the invoice was first issued.
         await syncTaxInvoicePaidAmount(order.id, newPaidAmount);
 
-        // Realtime local update
+        // Realtime local update -- only reached once the write above is confirmed
         setOrders(prev => prev.map(o => o.id === order.id ? { ...o, paidAmount: newPaidAmount, remainingAmount: newRemainingAmount, history: updatedHistory } : o));
         setUnpaidOrders(prev => {
           if (newRemainingAmount <= 0) return prev.filter(o => o.id !== order.id);
@@ -1747,6 +1766,9 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
         setIsPaying(false);
       } catch (error) {
+        // ORD-07: on failure, do NOT close the payment UI or touch local
+        // state as if the payment succeeded -- show the error and let the
+        // merchant retry.
         handleFirestoreError(error as any, OperationType.UPDATE, 'orders');
       } finally {
         setIsProcessing(false);
@@ -2208,7 +2230,21 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
       setIsProcessing(true);
       try {
-        const newPaidAmount = (order.paidAmount || 0) + amount;
+        // ORD-07: read the order fresh from the DB before computing the new
+        // paid amount, instead of trusting the `order` prop's snapshot --
+        // prevents a second payment from being computed against a stale
+        // paid_amount if another update landed after this modal opened.
+        const { data: freshOrderRow, error: fetchError } = await supabase
+          .from('orders')
+          .select('paid_amount, total_amount, items, history, status')
+          .eq('id', order.id)
+          .single();
+        if (fetchError || !freshOrderRow) {
+          throw fetchError || new Error('Order not found');
+        }
+        const decodedFresh = decodeOrderRow(freshOrderRow as any);
+
+        const newPaidAmount = (decodedFresh.paidAmount ?? order.paidAmount ?? 0) + amount;
         const newRemainingAmount = Math.max(0, (order.totalAmount || 0) - newPaidAmount);
 
         const historyEntry: OrderHistory = {
@@ -2223,9 +2259,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         // فشل الشبكة بينهما كان يترك الطلب بحالة متناقضة: دفعة مكتملة بلا
         // تقدّم في الحالة.
         const willComplete = newRemainingAmount === 0 && pendingStatusUpdate;
+        const baseHistory = decodedFresh.history || order.history || [];
         const updatedHistory = willComplete
           ? [
-              ...(order.history || []),
+              ...baseHistory,
               historyEntry,
               {
                 status: pendingStatusUpdate.status,
@@ -2235,23 +2272,27 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 notes: t('orders.remaining_paid_delivered_note')
               } as OrderHistory,
             ]
-          : [...(order.history || []), historyEntry];
+          : [...baseHistory, historyEntry];
 
         const updatePayload: Record<string, any> = {
           paid_amount: newPaidAmount,
           payment_method: method,
           history: updatedHistory,
-          items: order.items || []
+          items: decodedFresh.items || order.items || []
         };
         if (willComplete) {
           updatePayload.status = legacyOrderStatusFor(pendingStatusUpdate.status, workflowStages);
           updatePayload.status_key = pendingStatusUpdate.status;
         }
 
-        await supabase
+        const { error: updateError } = await supabase
           .from('orders')
           .update(updatePayload)
           .eq('id', order.id);
+
+        if (updateError) {
+          throw updateError;
+        }
 
         if (willComplete) {
           // Track Order Delivered
