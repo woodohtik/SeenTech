@@ -472,15 +472,19 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
                     ref={(el) => { inputRefs.current[part] = el; }}
                     type="number"
                     min="0"
-                    // FractionPicker right below only ever produces .00/.25/.50/.75
-                    // (quarter-cm/inch, the precision tailors actually measure in).
-                    // step="0.1" rejected those as an HTML5 step mismatch on native
-                    // form submit -- e.g. 20.75 isn't a multiple of 0.1 from min=0,
-                    // so the browser blocked saving and suggested the nearest
-                    // multiple of 0.1 instead (20.70 or 20.80), which looked like an
-                    // arbitrary, wrong "round to this" error. step="0.25" matches
-                    // what the picker (and the rest of the app) actually supports.
-                    step="0.25"
+                    // No fixed step here on purpose. step="0.1" originally rejected
+                    // the FractionPicker's own quarter values (20.75 isn't a
+                    // multiple of 0.1) as an HTML5 step mismatch and silently
+                    // blocked the whole form's native submit; step="0.25" to match
+                    // the picker turned out to be just as fragile, because the
+                    // DISPLAYED value isn't only ever a clean quarter -- it's
+                    // cmToDisplayUnit() converting whatever was actually stored in
+                    // cm, and that inch<->cm round trip routinely lands on an
+                    // "ugly" decimal (e.g. 59.06) that matches neither step. Real
+                    // range validation already happens server-side and in the zod
+                    // schema (min/max); step="any" just stops the browser from
+                    // blocking a save over its own unrelated divisibility opinion.
+                    step="any"
                     value={
                       (values as any)[part]
                         ? (activePart === part
