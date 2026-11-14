@@ -10,9 +10,17 @@ import { decodeInvoiceExtendedNotes } from '../utils/b2bHelper';
  * debt settlement) would leave the tax-invoice registry and any re-shown
  * invoice still displaying the old, stale paid/remaining amounts. A
  * missing tax_invoices row (order never had one) is a silent no-op.
+ *
+ * Goes through the sync_tax_invoice_paid_amount RPC (SECURITY DEFINER),
+ * not a plain client UPDATE: tax_invoices has no direct client write
+ * policy at all (seen-cto-sprint0-critical-fixes-task.md item 5 --
+ * issued tax invoices are immutable except through this kind of
+ * narrowly-scoped RPC or service-role/ZATCA server code). A plain
+ * .update() here was live-tested and already silently blocked by
+ * prevent_tax_invoice_tamper for any real (non-test) order anyway.
  */
 export async function syncTaxInvoicePaidAmount(orderId: string, paidAmount: number): Promise<void> {
-  await supabase.from('tax_invoices').update({ paid_amount: paidAmount }).eq('order_id', orderId);
+  await supabase.rpc('sync_tax_invoice_paid_amount', { p_order_id: orderId, p_paid_amount: paidAmount });
 }
 
 /**
