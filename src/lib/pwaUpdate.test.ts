@@ -27,8 +27,23 @@ async function setup() {
   mod.initPwaUpdates();
   const options = registerSWMock.mock.calls[0][0];
   options.onRegisteredSW('/sw.js', registration);
+  // Registration itself fires an immediate check (tested on its own below)
+  // and starts the 60s debounce window from that moment. Clear the call and
+  // advance past that window so every other test below measures only its
+  // own trigger's marginal effect, not the baseline call or its debounce.
+  registration.update.mockClear();
+  vi.advanceTimersByTime(61_000);
   return { mod, registration, options };
 }
+
+test('checks for an update immediately once registration succeeds', async () => {
+  const mod = await import('./pwaUpdate');
+  const registration = makeRegistration();
+  mod.initPwaUpdates();
+  const options = registerSWMock.mock.calls[0][0];
+  options.onRegisteredSW('/sw.js', registration);
+  expect(registration.update).toHaveBeenCalledTimes(1);
+});
 
 test('checks for an update when the tab becomes visible again', async () => {
   const { registration } = await setup();
