@@ -298,6 +298,7 @@
     "delete": "حذف",
     "delete_success": "Item deleted successfully",
     "delete_test_data": "حذف بيانات الاختبار فقط",
+    "delete_test_data_disabled": "هذه الميزة معطَّلة مؤقتاً حالياً لإعادة تصميمها بشكل أكثر أماناً",
     "delete_test_data_failed": "فشل حذف البيانات التجريبية",
     "delete_test_warning": "سيتم حذف السجلات التي تم تعليمها كـ 'بيانات تجريبية' فقط للمشترك",
     "delivered": "تم التسليم",
