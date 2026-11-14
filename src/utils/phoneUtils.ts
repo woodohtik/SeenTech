@@ -10,9 +10,17 @@
 export function formatSaudiPhone(phone: string | null | undefined): string {
   if (!phone) return '';
 
-  // Convert Eastern Arabic numerals to standard English numbers
+  // Convert Eastern Arabic numerals to standard English numbers, and strip
+  // internal spaces/dashes a human typed or a legacy import left in (e.g.
+  // "050 123 4567", "050-123-4567", "+966 50 123 4567") -- the branches
+  // below only ever check/slice a handful of literal prefixes, and the
+  // final regex in validations.ts allows at most one separator right after
+  // an optional country code, so any of those internal separators survived
+  // into the saved value and made even an unrelated edit to the same
+  // customer fail validation on every later save.
   let str = String(phone)
     .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString())
+    .replace(/[\s-]/g, '')
     .trim();
 
   if (!str) return '';
