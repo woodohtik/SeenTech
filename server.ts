@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 import dotenv from 'dotenv';
 import helmet from "helmet";
 import { globalRateLimiter } from "./src/server/rateLimiter.ts";
@@ -8,7 +9,7 @@ import { authenticate, authorize } from "./src/server/middleware/authMiddleware.
 import { registerPrintRelay } from "./src/server/printRelay.ts";
 import { initServerLogger, captureServerException, logger } from "./src/server/logger.ts";
 import { isValidMeasurementUnit } from "./src/utils/measurementUnits.ts";
-import { listArticles, getArticle, createArticle, updateArticle, deleteArticle, previewArticle } from "./src/server/blogAdmin.ts";
+import { listArticles, getArticle, createArticle, updateArticle, deleteArticle, previewArticle, fetchAllArticles } from "./src/server/blogAdmin.ts";
 import { triggerBlogRebuild } from "./src/server/blogDeployHook.ts";
 import { validateMeasurementsPayload } from "./src/server/validateMeasurementsPayload.ts";
 
@@ -2995,9 +2996,29 @@ app.get("/api/cron/zatca-cert-expiry-check", asyncHandler(async (req: any, res) 
 // Vercel Cron يستدعي هذا المسار دورياً (vercel.json) ليدفع إعادة بناء الموقع
 // بعد تعديلات المقالات المجمَّعة -- نفس نمط حماية CRON_SECRET أعلاه، بلا جلسة
 // مستخدم (لا "authenticate" العادية).
-app.get("/api/cron/blog-rebuild-sweep", asyncHandler(async (req: any, res) => {
+//
+// seen-cto-sprint0-critical-fixes-task.md item 10 (BLOG-01, BLOG-02):
+// - الورك فلو الخارجي (.github/workflows/blog-rebuild-sweep.yml) يستدعي
+//   هذا المسار بـ POST؛ كان مسجَّلاً GET فقط فيرجع 404 دائماً (ينشر
+//   إخفاق ومنذ البداية لم يُشغِّل إعادة بناء واحدة) -- app.all يقبل الآن
+//   كل الطرق (GET لأي استدعاء Cron مستقبلي، POST للورك فلو الحالي).
+// - لا يُشغَّل إعادة بناء -- أي نشر كامل للتطبيق -- بلا شرط في كل استدعاء
+//   (كل 15 دقيقة على مضيفين): نقرأ وقت آخر "sweep" ناجح من
+//   saas_settings['blog_last_rebuild_sweep_at'] ولا نستدعي
+//   triggerBlogRebuild() إلا إذا وُجدت مقالة واحدة على الأقل أصبح
+//   publishDate لها مستحقاً (بين ذلك الوقت والآن) -- يطابق توصية المراجعة
+//   نفسها: "fire hook only if due".
+// - السر يُقارن بزمن ثابت (crypto.timingSafeEqual) بدل `!==` العادية (SRV-10).
+app.all("/api/cron/blog-rebuild-sweep", asyncHandler(async (req: any, res) => {
   const cronSecret = (process.env.CRON_SECRET || '').trim();
-  if (!cronSecret || req.headers.authorization !== `Bearer ${cronSecret}`) {
+  const providedAuth = typeof req.headers.authorization === 'string' ? req.headers.authorization : '';
+  const expectedAuth = `Bearer ${cronSecret}`;
+  const providedBuf = Buffer.from(providedAuth);
+  const expectedBuf = Buffer.from(expectedAuth);
+  const authMatches = cronSecret.length > 0
+    && providedBuf.length === expectedBuf.length
+    && crypto.timingSafeEqual(providedBuf, expectedBuf);
+  if (!authMatches) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   // This route's entire job IS the deploy hook -- unlike the save routes
@@ -3006,8 +3027,33 @@ app.get("/api/cron/blog-rebuild-sweep", asyncHandler(async (req: any, res) => {
   if (!process.env.BLOG_DEPLOY_HOOK_URL) {
     return res.status(500).json({ error: 'Missing required environment variable: BLOG_DEPLOY_HOOK_URL' });
   }
+
+  const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+  const { data: lastSweepSetting } = await supabaseAdmin
+    .from('saas_settings')
+    .select('value')
+    .eq('key', 'blog_last_rebuild_sweep_at')
+    .maybeSingle();
+  const lastSweepAt = typeof lastSweepSetting?.value === 'string' ? new Date(lastSweepSetting.value) : new Date(0);
+  const now = new Date();
+
+  const articles = await fetchAllArticles();
+  const dueArticle = articles.find(article => {
+    const publishDate = new Date(article.frontmatter.publishDate);
+    return publishDate.getTime() > lastSweepAt.getTime() && publishDate.getTime() <= now.getTime();
+  });
+
+  if (!dueArticle) {
+    res.status(200).json({ ok: true, rebuilt: false });
+    return;
+  }
+
   await triggerBlogRebuild();
-  res.status(200).json({ ok: true });
+  await supabaseAdmin
+    .from('saas_settings')
+    .upsert({ key: 'blog_last_rebuild_sweep_at', value: now.toISOString(), updated_at: now.toISOString() });
+
+  res.status(200).json({ ok: true, rebuilt: true });
 }));
 
 // شبكة أمان أخيرة لما يفلت من كل شيء أعلاه (تسجيل فقط، بلا رد على العميل --
