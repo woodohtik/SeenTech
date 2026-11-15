@@ -57,7 +57,7 @@ import { refreshOrdersCache, getCachedOrders } from '../lib/offline/cacheSync';
 import { isNetworkFailure, enqueueOrderCreate } from '../lib/offline/outbox';
 import { checkConnectivityNow } from '../lib/offline/connectivity';
 import { Order, Customer, OrderStatus, OrderHistory, InventoryItem, PaymentMethod, OrderItem, Staff, Tenant, Measurements, TaxInvoice } from '../types';
-import TaxInvoiceModal from './printing/TaxInvoiceModal';
+import { TaxInvoiceDocument } from './printing/TaxInvoiceModal';
 import { fetchTaxInvoiceForOrder, syncTaxInvoicePaidAmount } from '../services/taxInvoiceService';
 import { cn, generateOrderNumber } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
@@ -1755,13 +1755,41 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
     return (
       <>
-      {viewingInvoice && (
-        <TaxInvoiceModal
-          order={viewingInvoice.invoice}
-          tenant={viewingInvoice.tenant}
-          onClose={() => setViewingInvoice(null)}
-        />
-      )}
+      {/* Bug report (2026-11-16): shown here as a separate centered popup,
+          while POS's debt-settlement flow shows the exact same invoice
+          inline in a left-side drawer -- same invoice content
+          (TaxInvoiceDocument), now the same presentation too, instead of
+          two different looks for the same document depending on which
+          screen opened it. */}
+      <AnimatePresence>
+        {viewingInvoice && (
+          <div className="fixed inset-0 z-[160] flex items-end lg:items-center justify-center overflow-hidden">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setViewingInvoice(null)}
+            />
+            <motion.div
+              initial={{ y: '100%', x: '100%' }}
+              animate={{ y: 0, x: 0 }}
+              exit={{ y: '100%', x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="bg-surface w-full lg:w-[450px] md:h-auto lg:h-full h-[90vh] shadow-2xl relative z-10 flex flex-col lg:rounded-none rounded-t-3xl border-t lg:border-t-0 lg:border-r border-border overflow-hidden lg:mr-auto md:max-w-md md:rounded-3xl md:mb-10 lg:max-w-none lg:mb-0 lg:ml-0"
+              dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}
+            >
+              <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+                <TaxInvoiceDocument
+                  order={viewingInvoice.invoice}
+                  tenant={viewingInvoice.tenant}
+                  onClose={() => setViewingInvoice(null)}
+                />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
       {/* Fallback for an order with no tax_invoices row at all -- created
           directly here, never sold through POS's checkout, so there's no
           real invoice to fetch. Deliberately NOT styled like a tax
