@@ -47,6 +47,21 @@ export const customerSchema = z.object({
     pocketType: z.string().optional(),
     chestStyle: z.string().optional(),
     shoulderStyle: z.string().optional(),
+    // seen-cto-code-review-2026-11-13.md CM-01: these four were missing
+    // from this schema entirely. zod strips unknown keys by default, so
+    // VisualMeasurements.tsx's own writes to cuttingType/collarPadding/
+    // closureType/closureVisibility survived only in the form's local
+    // state -- the moment a staff member saved ANY edit to the customer
+    // (e.g. just fixing a phone number), customerSchema's parsed output
+    // silently dropped these four keys and the full-object UPDATE erased
+    // them from the database, even if the customer had set them through
+    // the public measurements form beforehand. Matches the shape
+    // validateMeasurementsPayload.ts already validates for that public
+    // form's own write path.
+    cuttingType: z.string().max(40).optional(),
+    collarPadding: z.enum(['hard', 'soft']).optional(),
+    closureType: z.enum(['zipper', 'buttons']).optional(),
+    closureVisibility: z.enum(['hidden', 'visible']).optional(),
     thobeMeasurements: z.object({
       collar: z.coerce.number().min(0).optional(),
       chest: z.coerce.number().min(0).optional(),
