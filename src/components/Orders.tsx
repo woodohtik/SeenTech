@@ -595,7 +595,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
   const applyOrders = useCallback((allOrders: Order[]) => {
     const trackingOrders = allOrders.filter(order =>
-      !order.items || order.items.length === 0 || order.items.some((item: any) => !item.type || item.type === 'custom')
+      !(order as any).isPosSale &&
+      (!order.items || order.items.length === 0 || order.items.some((item: any) => !item.type || item.type === 'custom'))
     );
     setOrders(trackingOrders);
 
@@ -626,7 +627,26 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         .order('order_date', { ascending: false });
       if (error) throw error;
 
-      const allOrders = (data || []).map(mapOrderData);
+      // Bug report (2026-11-17): "في قسم الطلبات المكتمله تظهر سجلات ليست
+      // طلبات تفصيل" -- a POS ready-made sale ends up in this tailoring
+      // order-tracking list alongside real تفصيل orders. Root cause: a POS
+      // checkout's own order.items (the field applyOrders filters on below)
+      // always decodes empty here -- create_pos_sale writes its items into
+      // order_items, a table this page's own order-tracking form never
+      // touches at all, never into orders.notes's V2 metadata the way a
+      // تفصيل order created directly in "الطلبات" does -- so the filter's
+      // "no items on this order" branch let every POS sale through too.
+      // order_items existing at all for an order IS the POS-sale signal
+      // (only create_pos_sale ever inserts there), so fetch that set once
+      // here and let applyOrders use it instead of guessing from items.
+      const { data: itemRows, error: itemsError } = await supabase
+        .from('order_items')
+        .select('order_id')
+        .eq('tenant_id', tenantId);
+      if (itemsError) throw itemsError;
+      const posOrderIds = new Set((itemRows || []).map((r) => r.order_id));
+
+      const allOrders = (data || []).map((o) => ({ ...mapOrderData(o), isPosSale: posOrderIds.has(o.id) } as Order));
       refreshOrdersCache(tenantId, allOrders).catch(() => {});
       return allOrders;
     },
