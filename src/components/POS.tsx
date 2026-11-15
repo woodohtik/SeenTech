@@ -41,7 +41,7 @@ import { enqueuePosSale, isNetworkFailure, decidePosSaleFailureAction } from '..
 import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
 import { Combobox, Transition, Dialog } from '@headlessui/react';
 import { Customer, InventoryItem, OrderItem, Order, PaymentMethod, OrderStatus, ProductVariant, TaxInvoice, Tenant } from '../types';
-import TaxInvoiceModal from './printing/TaxInvoiceModal';
+import { TaxInvoiceDocument } from './printing/TaxInvoiceModal';
 import { fetchTaxInvoiceForOrder, syncTaxInvoicePaidAmount } from '../services/taxInvoiceService';
 import { cn, generateOrderNumber } from '../lib/utils';
 import { SmartSelect } from './ui/SmartSelect';
@@ -2292,14 +2292,18 @@ const invoiceData: InvoiceData | null = completedOrder ? {
 
       {/* Payment Side Drawer Refactored to Bottom Sheet for mobile */}
       <AnimatePresence>
-        {isPaymentModalOpen && (
+        {(isPaymentModalOpen || !!viewingInvoice) && (
           <div className="fixed inset-0 z-[60] flex items-end lg:items-center justify-center overflow-hidden">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-              onClick={() => !completedOrder && setIsPaymentModalOpen(false)}
+              onClick={() => {
+                if (completedOrder) return;
+                if (viewingInvoice) { setViewingInvoice(null); return; }
+                setIsPaymentModalOpen(false);
+              }}
             />
             <motion.div
               initial={shouldReduceMotion ? false : { y: window.innerWidth < 1024 ? '100%' : 0, x: window.innerWidth >= 1024 ? '100%' : 0 }}
@@ -2310,7 +2314,18 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               dir={isRtl ? 'rtl' : 'ltr'}
             >
               <div className="flex-1 overflow-y-auto p-4 lg:p-6 pb-24 lg:pb-6">
-              {completedOrder ? (
+              {viewingInvoice ? (
+                // Bug report (2026-11-16): settling a customer's debt used
+                // to pop up a separate centered TaxInvoiceModal -- now
+                // shown inline in this same side drawer, the same way a
+                // new sale's own invoice is shown right above, instead of
+                // as a popup.
+                <TaxInvoiceDocument
+                  order={viewingInvoice.invoice}
+                  tenant={viewingInvoice.tenant}
+                  onClose={() => setViewingInvoice(null)}
+                />
+              ) : completedOrder ? (
                 <div className="flex flex-col items-center text-center space-y-6 mt-12">
                   <motion.div 
                     initial={{ scale: 0.8, opacity: 0 }}
@@ -2738,19 +2753,6 @@ const invoiceData: InvoiceData | null = completedOrder ? {
           </div>
         )}
       </AnimatePresence>
-
-      {/* Debt settlement shows the order's own REAL original tax invoice
-          (same data/component as the tax-invoice registry and Orders),
-          now reflecting the updated paid/remaining amount -- not a
-          fabricated "payment receipt", since settling debt isn't a new
-          taxable sale. */}
-      {viewingInvoice && (
-        <TaxInvoiceModal
-          order={viewingInvoice.invoice}
-          tenant={viewingInvoice.tenant}
-          onClose={() => setViewingInvoice(null)}
-        />
-      )}
 
       {/* Fallback for an order with no tax_invoices row at all -- created
           directly in "الطلبات", never sold through POS's checkout, so

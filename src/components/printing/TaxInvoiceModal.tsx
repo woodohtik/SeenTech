@@ -25,7 +25,16 @@ interface TaxInvoiceModalProps {
   onClose: () => void;
 }
 
-export default function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceModalProps) {
+// Bug report (2026-11-16): POS's debt-settlement flow needs this exact
+// invoice (same mapping, same print/share logic) shown inline inside the
+// existing side drawer it already uses for "فاتورة صدرت" after a new
+// sale, not as a separate centered popup. Split out everything below the
+// popup's own backdrop/positioning wrapper into this component so both
+// call sites -- the popup default export here, and POS.tsx's inline
+// drawer -- render identically from the same code, instead of POS.tsx
+// reimplementing the seller/buyer/totals mapping and print/share/PDF
+// logic a second time.
+export function TaxInvoiceDocument({ order, tenant, onClose }: TaxInvoiceModalProps) {
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
   const { error: toastError } = useToast();
@@ -225,12 +234,8 @@ export default function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceMo
     'Cash';
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className={cn(
-        "bg-white rounded-3xl shadow-2xl relative z-10 overflow-y-auto max-h-[90vh] flex flex-col font-sans border border-border w-full transition-all duration-200",
-        isB2B ? "max-w-3xl" : "max-w-[92mm] sm:max-w-[100mm]"
-      )} dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="bg-white rounded-3xl shadow-2xl relative overflow-y-auto max-h-full flex flex-col font-sans border border-border w-full"
+      dir={isRtl ? 'rtl' : 'ltr'}>
 
         {/* Modal Controls */}
         <div className="p-4 border-b border-border flex flex-wrap gap-3 justify-between items-center bg-surface-muted/50 print:hidden shrink-0">
@@ -308,44 +313,63 @@ export default function TaxInvoiceModal({ order, tenant, onClose }: TaxInvoiceMo
           )}
         </div>
 
+        {/*
+          قواعد احتياطية فقط (إن فشل محرك الطباعة الموحّد).
+          أُزيل `height: 100%` لأنه كان يُجبر الفاتورة على ملء ارتفاع الورقة
+          فيخرج فراغ كبير أسفلها، وأُضيف هامش @page صريح بدل هوامش المتصفح.
+        */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          @media print {
+            @page {
+              size: A4;
+              margin: 8mm;
+            }
+            body * {
+              visibility: hidden;
+            }
+            #print-area, #print-area * {
+              visibility: visible;
+            }
+            #print-area {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+              max-width: 100%;
+              height: auto !important;
+              min-height: 0 !important;
+              max-height: none !important;
+              overflow: visible !important;
+              padding: 0 !important;
+              margin: 0 !important;
+              background-color: white !important;
+            }
+            .print\\:hidden {
+              display: none !important;
+            }
+          }
+        `}} />
       </div>
+  );
+}
 
-      {/*
-        قواعد احتياطية فقط (إن فشل محرك الطباعة الموحّد).
-        أُزيل `height: 100%` لأنه كان يُجبر الفاتورة على ملء ارتفاع الورقة
-        فيخرج فراغ كبير أسفلها، وأُضيف هامش @page صريح بدل هوامش المتصفح.
-      */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        @media print {
-          @page {
-            size: A4;
-            margin: 8mm;
-          }
-          body * {
-            visibility: hidden;
-          }
-          #print-area, #print-area * {
-            visibility: visible;
-          }
-          #print-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            max-width: 100%;
-            height: auto !important;
-            min-height: 0 !important;
-            max-height: none !important;
-            overflow: visible !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            background-color: white !important;
-          }
-          .print\\:hidden {
-            display: none !important;
-          }
-        }
-      `}} />
+/**
+ * Default export: the same invoice document, as a centered popup with its
+ * own backdrop -- unchanged behavior for every existing call site (Orders,
+ * the tax-invoice registry). POS.tsx's debt-settlement flow uses
+ * TaxInvoiceDocument directly instead, inline inside its own side drawer.
+ */
+export default function TaxInvoiceModal(props: TaxInvoiceModalProps) {
+  const isB2B = props.order.isB2B || false;
+  return (
+    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={props.onClose} />
+      <div className={cn(
+        "relative z-10 max-h-[90vh] w-full transition-all duration-200",
+        isB2B ? "max-w-3xl" : "max-w-[92mm] sm:max-w-[100mm]"
+      )}>
+        <TaxInvoiceDocument {...props} />
+      </div>
     </div>
   );
 }
