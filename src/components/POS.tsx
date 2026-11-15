@@ -1269,14 +1269,23 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       const sellerName = taxSettings?.legalName;
       const trn = taxSettings?.trn;
 
-      qrCodeBase64 = (isTaxEnabled || isB2B) ? generateZatcaQR(sellerName, trn, timestamp, totalAmount.toFixed(2), taxAmount.toFixed(2)) : "";
-
+      // seen-cto-sprint1-financial-engine-task.md (POS-01): the QR used to
+      // be built here from totalAmount/taxAmount computed in THIS browser,
+      // before create_pos_sale ever ran -- exactly the "browser is the
+      // source of truth" pattern this fix closes. The real QR (built from
+      // the server's own authoritative total/tax, with the real seller
+      // name/TRN read from the tenant row, not whatever this tab had
+      // loaded) now comes back from create_pos_sale itself once the sale
+      // succeeds (see saleResult.qr_code below). This client-side
+      // generateZatcaQR() call only remains as a last-resort placeholder
+      // for the OFFLINE-QUEUED path, where no server round-trip has
+      // happened yet to get a real one from.
       const isUuid = (val: string | undefined | null) =>
         val ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val) : false;
 
       const customerId = (selectedCustomer?.id && isUuid(selectedCustomer.id)) ? selectedCustomer.id : null;
       const customerName = selectedCustomer?.name || 'عميل نقدي';
-      const invoiceNumber = `INV-${orderNumber}`;
+      let invoiceNumber = `INV-${orderNumber}`;
 
       /* --------------------------------------------------------------------
          Was: 6 separate writes with no shared transaction (orders ->
@@ -1296,21 +1305,25 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       const salePayload = {
         p_operation_id: operationId,
         p_order: {
-          branch_id: (currentStaff?.branchId && isUuid(currentStaff.branchId)) ? currentStaff.branchId : null,
+          // branch_id/total_amount/tax_amount/discount_amount/tax_rate/
+          // qr_code/order_number are no longer sent -- create_pos_sale now
+          // derives branch_id from the open shift itself and computes every
+          // money figure and both numbers server-side from the tenant's own
+          // catalog/tax settings/role-based discount cap (POS-01). Sending
+          // stale client-computed versions of them would just be ignored by
+          // the RPC, so they're left out entirely rather than kept as dead
+          // weight that looks authoritative but isn't.
           shift_id: (shiftId && isUuid(shiftId)) ? shiftId : null,
           customer_id: customerId,
           customer_name: customerName,
-          order_number: orderNumber,
           status: orderStatus,
           payment_method: paymentMethod,
-          total_amount: Number(totalAmount) >= 0 ? Number(totalAmount) : 0,
+          // paid_amount is still the cashier's own input -- it's what they
+          // actually received -- but the RPC now validates it against the
+          // REAL total it computes, not the client's estimate.
           paid_amount: Number(paidAmount) >= 0 ? Number(paidAmount) : 0,
-          tax_rate: 0.15,
-          tax_amount: Number(taxAmount) >= 0 ? Number(taxAmount) : 0,
-          discount_amount: Number(calculatedDiscountAmount) >= 0 ? Number(calculatedDiscountAmount) : 0,
           order_date: timestamp,
           delivery_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          qr_code: qrCodeBase64,
           notes: encodeOrderB2BNotes(isB2B ? b2bCompanyName : '', isB2B ? b2bTRN : ''),
         },
         p_items: cart.map(item => ({
@@ -1340,8 +1353,14 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
           measurements: (item as any).measurements || {}
         })),
         p_invoice: {
-          invoice_number: invoiceNumber,
-          subtotal: Number(subTotalAmount) >= 0 ? Number(subTotalAmount) : 0,
+          // invoice_number/subtotal are no longer read by the RPC either --
+          // the server allocates its own sequential invoice number and
+          // derives subtotal from its own totals (POS-01, POS-19).
+          // discount_type/discount_value are the cashier's actual
+          // intent -- the RPC caps the applied amount by the caller's own
+          // role server-side and returns what was really applied.
+          discount_type: discountType,
+          discount_value: Number(discountValue) >= 0 ? Number(discountValue) : 0,
           vat_number: b2bTRN || null,
           notes: encodeInvoiceExtendedNotes({
             invoiceType: invoiceType,
@@ -1385,6 +1404,14 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         }
         await enqueuePosSale(operationId, salePayload);
         queuedOffline = true;
+        // No server round-trip has happened yet to get a real QR/total
+        // from (see the finalTotal/finalTaxAmount fallback below) -- this
+        // is a best-effort estimate from this tab's own cart math purely
+        // so the printed receipt isn't blank while offline; the real
+        // numbers (and tax reporting) only exist once the queue replays.
+        qrCodeBase64 = (isTaxEnabled || isB2B)
+          ? generateZatcaQR(sellerName, trn, timestamp, totalAmount.toFixed(2), taxAmount.toFixed(2))
+          : '';
       }
 
       const newOrder = { id: operationId };
@@ -1395,6 +1422,24 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       // no-auth customer tracking page, not the nonexistent /order/:id
       // this used to build).
       const trackingToken: string | undefined = !queuedOffline ? saleResult?.tracking_token : undefined;
+
+      // seen-cto-sprint1-financial-engine-task.md (POS-01): once the sale
+      // actually reached the server, print/show the numbers IT computed
+      // (catalog prices, role-capped discount, real VAT) -- never the
+      // client's own pre-submit estimate, which may differ (e.g. a
+      // discount the cashier typed got capped by their role). The
+      // client-computed totals remain the fallback only for a sale that
+      // got queued offline, where no server round-trip has happened yet
+      // to get real numbers from -- that receipt is necessarily a
+      // best-effort estimate until the queue replays.
+      const finalTotal = !queuedOffline && saleResult ? Number(saleResult.total_amount) : totalAmount;
+      const finalSubtotal = !queuedOffline && saleResult ? Number(saleResult.subtotal) : subTotalAmount;
+      const finalTaxAmount = !queuedOffline && saleResult ? Number(saleResult.tax_amount) : taxAmount;
+      const finalDiscountAmount = !queuedOffline && saleResult ? Number(saleResult.discount_amount) : calculatedDiscountAmount;
+      if (!queuedOffline && saleResult) {
+        invoiceNumber = saleResult.invoice_number || invoiceNumber;
+        qrCodeBase64 = saleResult.qr_code || '';
+      }
       // مراجعة-الفريق-التقني-الكامل-2026-10-19.md (امتثال، حرجة): كان رفض
       // زاتكا لفاتورة B2B يُكتشَف بعد فوات الأوان -- toast عابر بعد أن
       // الكاشير رأى شاشة "تم بنجاح" وربما سلّم الفاتورة للعميل فعلاً. زاتكا
@@ -1439,10 +1484,10 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
          invoiceNumber,
          invoiceType,
          paymentMethod: paymentMethod,
-         total: totalAmount,
-         subTotal: subTotalAmount,
-         taxAmount: taxAmount,
-         discountAmount: calculatedDiscountAmount,
+         total: finalTotal,
+         subTotal: finalSubtotal,
+         taxAmount: finalTaxAmount,
+         discountAmount: finalDiscountAmount,
          // Was absent entirely -- the printed receipt (invoiceData below)
          // had no way to know this sale was a partial payment, so it always
          // showed the full grand total as "paid" with nothing remaining,
