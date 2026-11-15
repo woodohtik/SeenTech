@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { X, CheckCircle, Printer, DollarSign, FileText, Calendar, Building, HelpCircle, ChevronDown } from 'lucide-react';
-import { addSupplierTransaction } from '../services/supplierAccountsService';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import { useStaff } from '../contexts/StaffContext';
 import { supabase } from '../lib/supabase/client';
@@ -55,61 +54,45 @@ export default function PaymentVoucherModal({
 
     setIsSubmitting(true);
     try {
-      const voucherNo = `PV-${Math.floor(100000 + Math.random() * 900000)}`;
-      const reasonLabel = `سداد مستحقات مالية بموجب سند صرف رقم ${voucherNo}`;
-
-      // Write debit transaction through ledger service
-      const tx = await addSupplierTransaction(
-        tenantId,
-        {
-          supplier_id: supplier.id,
-          type: 'payment',
-          credit: 0,
-          debit: payAmt,
-          reference_number: voucherNo,
-          date: new Date(voucherDate).toISOString(),
-          notes: notes || reasonLabel,
-          tenant_id: tenantId,
-        },
-        supplier.balance
-      );
-
-      // Save into shift entries if paid cash to make cash register balances correct.
-      // Was a dead comment with no actual write -- every cash payment to a
-      // supplier looked like an unexplained cash shortfall in every
-      // subsequent shift closing, since the drawer's real cash-out was
-      // never logged. Only writes when the current staff actually has an
-      // open shift (matches the "if we are inside a shift" framing --
-      // this modal can also be opened outside a POS shift context).
+      // seen-cto-code-review-2026-11-13.md CASH-18: this used to be three
+      // separate, non-atomic writes with no idempotency key at all
+      // (ledger debit, then a best-effort shift_entries insert whose own
+      // failure was only ever logged to the console, never surfaced) and
+      // a random, non-sequential voucher number. issue_supplier_payment
+      // does the balance debit, the ledger row, and the cash-drawer leg
+      // in one transaction, allocates a real sequential voucher number
+      // server-side, and rejects anyone without owner/admin/manager/
+      // accountant -- none of which was enforced anywhere before.
+      let shiftId: string | null = null;
       if (paymentMethod === 'cash' && currentStaff) {
-        try {
-          const { data: openShift } = await supabase
-            .from('shifts')
-            .select('id')
-            .eq('tenant_id', tenantId)
-            .eq('staff_id', currentStaff.id)
-            .eq('status', 'open')
-            .maybeSingle();
-
-          if (openShift) {
-            await supabase.from('shift_entries').insert({
-              id: crypto.randomUUID(),
-              tenant_id: tenantId,
-              shift_id: openShift.id,
-              entry_type: 'payout',
-              amount: payAmt,
-              reason: reasonLabel,
-              occurred_at: new Date().toISOString(),
-              created_by: currentStaff.id,
-              created_at: new Date().toISOString(),
-            });
-          }
-        } catch (shiftEntryErr) {
-          // Non-fatal: the voucher/ledger transaction above already
-          // succeeded -- don't fail the whole payment over the shift log.
-          console.error('[PaymentVoucherModal] Failed to write shift entry:', shiftEntryErr);
-        }
+        const { data: openShift } = await supabase
+          .from('shifts')
+          .select('id')
+          .eq('tenant_id', tenantId)
+          .eq('staff_id', currentStaff.id)
+          .eq('status', 'open')
+          .maybeSingle();
+        shiftId = openShift?.id || null;
       }
+
+      const operationId = globalThis.crypto.randomUUID();
+      const { data: result, error } = await supabase.rpc('issue_supplier_payment', {
+        p_operation_id: operationId,
+        p_supplier_id: supplier.id,
+        p_amount: payAmt,
+        p_method: paymentMethod,
+        p_shift_id: shiftId,
+        p_voucher_date: voucherDate,
+        p_notes: notes || null
+      });
+
+      if (error) {
+        toastError(error.message);
+        return;
+      }
+
+      const voucherNo: string = result.voucher_number;
+      const newBalance: number = Number(result.new_balance);
 
       // Log employee action audit trail
       if (currentStaff) {
@@ -130,12 +113,13 @@ export default function PaymentVoucherModal({
         date: voucherDate,
         notes: notes || t('procurement.pv_default_notes'),
         currentStaffName: currentStaff?.name || t('procurement.pv_system_actor'),
-        supplierBalanceAfter: supplier.balance - payAmt,
+        supplierBalanceAfter: newBalance,
       });
 
       onSuccess();
     } catch (err) {
       console.error('Failed to issue payment voucher:', err);
+      toastError(t('procurement.pv_submit_failed', 'تعذّر إصدار سند الصرف'));
     } finally {
       setIsSubmitting(false);
     }
