@@ -4,7 +4,6 @@ import { X, Calculator, AlertTriangle, CheckCircle2, FileText, Printer } from 'l
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
 import { Shift, Order, ShiftTotals } from '../types';
-import { logEmployeeAction } from '../services/employeeAuditService';
 import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
 import ZReport from './ZReport';
@@ -175,6 +174,10 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
     fetchShiftData().finally(() => setLoading(false));
   }, [shift.id, tenantId]);
 
+  // المعروض أثناء الكتابة فقط -- عرض استرشادي قبل الإرسال؛ close_shift هو
+  // من يحسب كل الأرقام الحقيقية من SQL عند الإغلاق الفعلي (seen-cto-code-
+  // review-2026-11-13.md CASH-07/CASH-12: لا حساب أو كتابة من المتصفح بعد
+  // الآن للأرقام المالية).
   const expectedCash = shift.openingBalance + totals.cash + totals.totalDeposits - totals.cashReturns - totals.expenses;
   const discrepancy = actualCash ? Number(actualCash) - expectedCash : 0;
   const hasDiscrepancy = actualCash !== '' && discrepancy !== 0;
@@ -186,11 +189,10 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
       toastError(t('shift_closing.reason_required'));
       return;
     }
-    // seen-launch-readiness-report.md #6: RLS lets any staff member in the
-    // tenant update any shift row -- this client-side check is the actual
-    // guard against one cashier closing/reopening a colleague's shift,
-    // since nothing else in this component checked who was closing whose
-    // shift at all.
+    // close_shift itself re-checks this server-side (the real guard, since
+    // RLS alone used to let any staff member in the tenant update any
+    // shift row) -- this client check only avoids a round-trip for the
+    // common case.
     if (!canCloseThisShift) {
       toastError(t('shift_closing.not_authorized', 'لا تملك صلاحية إغلاق وردية موظف آخر'));
       return;
@@ -198,69 +200,36 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
 
     setIsSubmitting(true);
     try {
-      // إعادة جلب طازجة قبل الكتابة مباشرة -- totals المعروضة على الشاشة
-      // قُرِئت عند فتح النافذة فقط، وقد تفوتها بيعة تمت أثناء بقاء النافذة
-      // مفتوحة (راجع تعليق fetchShiftData أعلاه).
-      const freshTotals = await fetchShiftData();
-      const freshExpectedCash = shift.openingBalance + freshTotals.cash + freshTotals.totalDeposits - freshTotals.cashReturns - freshTotals.expenses;
-      const freshDiscrepancy = Number(actualCash) - freshExpectedCash;
-      const freshHasDiscrepancy = freshDiscrepancy !== 0;
-      if (freshHasDiscrepancy && !reason) {
-        toastError(t('shift_closing.reason_required'));
-        setIsSubmitting(false);
-        return;
+      const operationId = globalThis.crypto.randomUUID();
+      const { data: result, error } = await supabase.rpc('close_shift', {
+        p_operation_id: operationId,
+        p_shift_id: shift.id,
+        p_actual_cash: Number(actualCash),
+        p_reason: hasDiscrepancy ? reason : null
+      });
+
+      if (error) {
+        if (/مغلقة بالفعل/.test(error.message)) {
+          toastError(t('shift_closing.already_closed', 'هذه الوردية مُغلَقة مسبقاً -- أُعيد تحميل بياناتها.'));
+          onClosed();
+          return;
+        }
+        throw error;
       }
 
       const endTime = new Date().toISOString();
-      const closedData: any = {
-        status: 'closed' as const,
-        end_time: endTime,
-        actual_cash: Number(actualCash),
-        expected_cash: freshExpectedCash,
-        discrepancy: freshDiscrepancy,
-        discrepancy_reason: freshHasDiscrepancy ? reason : '',
-        totals: freshTotals,
-        updated_at: new Date().toISOString()
-      };
 
-      // .eq('status', 'open') is the optimistic lock: if this shift was
-      // already closed (by this same request racing a duplicate submit, or
-      // by someone else entirely) between this modal opening and this
-      // write, the update matches zero rows instead of silently
-      // overwriting a previous close with different cash figures.
-      const { data: updatedRows, error } = await supabase
-        .from('shifts')
-        .update(closedData)
-        .eq('id', shift.id)
-        .eq('status', 'open')
-        .select('id');
-
-      if (error) throw error;
-      if (!updatedRows || updatedRows.length === 0) {
-        toastError(t('shift_closing.already_closed', 'هذه الوردية مُغلَقة مسبقاً -- أُعيد تحميل بياناتها.'));
-        onClosed();
-        return;
-      }
-
-      // Audit Log
-      await logEmployeeAction(
-        shift.tenantId,
-        shift.staffId,
-        shift.staffName,
-        'close_shift',
-        `إغلاق وردية بصافي نقدي فعلي ${actualCash} متوقع ${freshExpectedCash}، العجز/الزيادة: ${freshDiscrepancy}`
-      );
-
-      // Keep data for the report view
+      // Keep data for the report view -- figures come from the RPC's own
+      // server-computed result, not from anything the browser calculated.
       setClosedShiftData({
         ...shift,
         status: 'closed',
         endTime,
         actualCash: Number(actualCash),
-        expectedCash: freshExpectedCash,
-        discrepancy: freshDiscrepancy,
-        discrepancyReason: freshHasDiscrepancy ? reason : '',
-        totals: freshTotals
+        expectedCash: Number(result.expected_cash),
+        discrepancy: Number(result.discrepancy),
+        discrepancyReason: Number(result.discrepancy) !== 0 ? reason : '',
+        totals: result.totals as ShiftTotals
       });
     } catch (error) {
       handleError(error as any, OperationType.UPDATE, 'shifts');
