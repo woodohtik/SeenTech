@@ -1698,46 +1698,28 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       if (payAmount <= 0) return;
       setIsProcessing(true);
       try {
-        // ORD-07: read the order fresh from the DB instead of trusting the
-        // possibly-stale `order` prop/closure, so a second payment made
-        // right after a first one (e.g. two staff members, or a retry)
-        // is computed against the real current paid_amount, not a snapshot
-        // taken when the drawer opened.
-        const { data: freshOrderRow, error: fetchError } = await supabase
-          .from('orders')
-          .select('paid_amount, total_amount, items, history, status')
-          .eq('id', order.id)
-          .single();
-        if (fetchError || !freshOrderRow) {
-          throw fetchError || new Error('Order not found');
-        }
-        const decodedFresh = decodeOrderRow(freshOrderRow as any);
+        // seen-cto-code-review-2026-11-13.md C9: this used to update
+        // `orders.history`/`orders.items` directly -- neither is a real
+        // column; a client-only fetch interceptor silently packed them
+        // into `notes` as a JSON blob instead, so this "history" was
+        // never a real, queryable audit trail. record_order_payment
+        // locks the order row and caps the amount at the live remaining
+        // balance server-side, instead of this component computing
+        // newPaidAmount from a separately-fetched snapshot with no lock
+        // between the read and the write.
+        const operationId = globalThis.crypto.randomUUID();
+        const { data: result, error } = await supabase.rpc('record_order_payment', {
+          p_operation_id: operationId,
+          p_order_id: order.id,
+          p_amount: payAmount,
+          p_method: payMethod,
+          p_notes: t('orders.payment_note', { amount: payAmount, method: t(`common.payment_methods.${payMethod}`, payMethod) })
+        });
 
-        const newPaidAmount = (decodedFresh.paidAmount ?? order.paidAmount ?? 0) + payAmount;
-        const newRemainingAmount = Math.max(0, (order.totalAmount || 0) - newPaidAmount);
+        if (error) throw error;
 
-        const historyEntry: OrderHistory = {
-          status: order.status,
-          updatedAt: new Date().toISOString(),
-          updatedBy: currentStaff?.name || t('common.roles.owner'),
-          updatedByUid: currentStaff?.id || currentAuthUser?.id,
-          notes: t('orders.payment_note', { amount: payAmount, method: t(`common.payment_methods.${payMethod}`, payMethod) })
-        };
-
-        const updatedHistory = [...(decodedFresh.history || order.history || []), historyEntry];
-
-        const { error: updateError } = await supabase
-          .from('orders')
-          .update({
-            paid_amount: newPaidAmount,
-            history: updatedHistory,
-            items: decodedFresh.items || order.items || []
-          })
-          .eq('id', order.id);
-
-        if (updateError) {
-          throw updateError;
-        }
+        const newPaidAmount = Number(result.paid_amount);
+        const newRemainingAmount = Number(result.remaining_amount);
 
         // Keeps the order's original tax invoice (a separate row/column,
         // no DB trigger between them) showing the real current paid/
@@ -1746,10 +1728,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         await syncTaxInvoicePaidAmount(order.id, newPaidAmount);
 
         // Realtime local update -- only reached once the write above is confirmed
-        setOrders(prev => prev.map(o => o.id === order.id ? { ...o, paidAmount: newPaidAmount, remainingAmount: newRemainingAmount, history: updatedHistory } : o));
+        setOrders(prev => prev.map(o => o.id === order.id ? { ...o, paidAmount: newPaidAmount, remainingAmount: newRemainingAmount } : o));
         setUnpaidOrders(prev => {
           if (newRemainingAmount <= 0) return prev.filter(o => o.id !== order.id);
-          return prev.map(o => o.id === order.id ? { ...o, paidAmount: newPaidAmount, remainingAmount: newRemainingAmount, history: updatedHistory } : o);
+          return prev.map(o => o.id === order.id ? { ...o, paidAmount: newPaidAmount, remainingAmount: newRemainingAmount } : o);
         });
 
         // Track Payment Completed
@@ -2226,71 +2208,30 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
       setIsProcessing(true);
       try {
-        // ORD-07: read the order fresh from the DB before computing the new
-        // paid amount, instead of trusting the `order` prop's snapshot --
-        // prevents a second payment from being computed against a stale
-        // paid_amount if another update landed after this modal opened.
-        const { data: freshOrderRow, error: fetchError } = await supabase
-          .from('orders')
-          .select('paid_amount, total_amount, items, history, status')
-          .eq('id', order.id)
-          .single();
-        if (fetchError || !freshOrderRow) {
-          throw fetchError || new Error('Order not found');
-        }
-        const decodedFresh = decodeOrderRow(freshOrderRow as any);
+        // seen-cto-code-review-2026-11-13.md C9: this used to update
+        // `orders.history`/`orders.items` directly -- neither is a real
+        // column; a client-only fetch interceptor (supabase/client.ts)
+        // silently packed them into `notes` as a JSON blob instead, so
+        // this "history" never existed as a real, queryable audit trail.
+        // record_order_payment locks the order row, caps the amount at
+        // the live remaining balance, writes a real payments +
+        // order_history row, and -- when this payment brings the
+        // balance to zero and a status transition is pending -- applies
+        // that transition in the same atomic call.
+        const operationId = globalThis.crypto.randomUUID();
+        const { data: result, error } = await supabase.rpc('record_order_payment', {
+          p_operation_id: operationId,
+          p_order_id: order.id,
+          p_amount: amount,
+          p_method: method,
+          p_notes: t('orders.payment_completed_note', { amount, method: t(`common.payment_methods.${method}`, method), remaining: Math.max(0, (order.remainingAmount || 0) - amount) }),
+          p_complete_status: pendingStatusUpdate ? legacyOrderStatusFor(pendingStatusUpdate.status, workflowStages) : null,
+          p_complete_status_key: pendingStatusUpdate ? pendingStatusUpdate.status : null
+        });
 
-        const newPaidAmount = (decodedFresh.paidAmount ?? order.paidAmount ?? 0) + amount;
-        const newRemainingAmount = Math.max(0, (order.totalAmount || 0) - newPaidAmount);
+        if (error) throw error;
 
-        const historyEntry: OrderHistory = {
-          status: order.status,
-          updatedAt: new Date().toISOString(),
-          updatedBy: currentStaff?.name || t('common.roles.owner'),
-          updatedByUid: currentStaff?.id || currentAuthUser?.id,
-          notes: t('orders.payment_completed_note', { amount, method: t(`common.payment_methods.${method}`, method), remaining: newRemainingAmount })
-        };
-
-        // تحديث واحد ذرّي بدل تحديثَين منفصلَين (paid_amount ثم status) --
-        // فشل الشبكة بينهما كان يترك الطلب بحالة متناقضة: دفعة مكتملة بلا
-        // تقدّم في الحالة.
-        const willComplete = newRemainingAmount === 0 && pendingStatusUpdate;
-        const baseHistory = decodedFresh.history || order.history || [];
-        const updatedHistory = willComplete
-          ? [
-              ...baseHistory,
-              historyEntry,
-              {
-                status: pendingStatusUpdate.status,
-                updatedAt: new Date().toISOString(),
-                updatedBy: currentStaff?.name || t('common.owner'),
-                updatedByUid: currentStaff?.id || currentAuthUser?.id,
-                notes: t('orders.remaining_paid_delivered_note')
-              } as OrderHistory,
-            ]
-          : [...baseHistory, historyEntry];
-
-        const updatePayload: Record<string, any> = {
-          paid_amount: newPaidAmount,
-          payment_method: method,
-          history: updatedHistory,
-          items: decodedFresh.items || order.items || []
-        };
-        if (willComplete) {
-          updatePayload.status = legacyOrderStatusFor(pendingStatusUpdate.status, workflowStages);
-          updatePayload.status_key = pendingStatusUpdate.status;
-        }
-
-        const { error: updateError } = await supabase
-          .from('orders')
-          .update(updatePayload)
-          .eq('id', order.id);
-
-        if (updateError) {
-          throw updateError;
-        }
-
-        if (willComplete) {
+        if (result.completed) {
           // Track Order Delivered
           analytics.track(AnalyticsEvent.ORDER_DELIVERED, {
             order_id: order.id,

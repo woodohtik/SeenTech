@@ -476,7 +476,7 @@ export default function Sales({ tenantId }: { tenantId: string }) {
 
         {/* Returns Tab Content */}
         {activeTopTab === 'returns' && activeSubTab === 'returns_main' && (
-          <SalesReturns tenantId={tenantId} />
+          <SalesReturns tenantId={tenantId} shiftId={activeShift?.id} />
         )}
         {activeTopTab === 'returns' && activeSubTab === 'returns_record' && (
           <SalesRecord tenantId={tenantId} filterStatus="cancelled" />
