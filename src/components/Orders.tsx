@@ -47,7 +47,6 @@ import {
   FileSpreadsheet,
   Edit2,
   Check,
-  Paperclip,
   FileText
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -76,13 +75,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { orderSchema, customerSchema } from '../lib/validations';
-import { QRCodeSVG } from 'qrcode.react';
 import * as XLSX from 'xlsx';
-import Branding from './Branding';
 import { buildWhatsAppMessage, getWhatsAppTemplate, sendWhatsAppMessage } from '../utils/whatsapp';
 import { notifyOrderStatusChange, notifyNewOrderForStaff } from '../utils/orderNotify';
 import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
-import { shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
 import ScannerModal from './ScannerModal';
 import { SmartSelect } from './ui/SmartSelect';
 import { DatePicker } from './ui/DatePicker';
@@ -339,6 +335,29 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const [isSavingMeasurements, setIsSavingMeasurements] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
+  // Bug report (2026-11-16): InvoiceModal used to reconstruct a fake
+  // invoice straight from the order's own fields (order.items,
+  // order.totalAmount...) instead of the real tax_invoices-backed
+  // document POS and the tax-invoice registry show -- same data/
+  // component fetchTaxInvoiceForOrder + TaxInvoiceDocument already
+  // provide elsewhere. loadRealInvoiceForOrder is the one fetch shared
+  // by InvoiceModal's own mount effect and handlePrintOrder's quick-print
+  // path below, so both show/print the same real invoice.
+  const [invoiceViewData, setInvoiceViewData] = useState<{ invoice: TaxInvoice; tenant: Tenant } | null>(null);
+  const [invoiceViewError, setInvoiceViewError] = useState(false);
+  const loadRealInvoiceForOrder = async (order: Order) => {
+    try {
+      const result = await fetchTaxInvoiceForOrder(tenantId, order.id);
+      setInvoiceViewData(result);
+      setInvoiceViewError(!result);
+      return result;
+    } catch (err) {
+      handleFirestoreError(err as any, OperationType.GET, 'tax_invoices');
+      setInvoiceViewData(null);
+      setInvoiceViewError(true);
+      return null;
+    }
+  };
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -1607,46 +1626,25 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     setWhatsappModalOpen(true);
   };
 
-  // seen-whatsapp-instant-send-task.md: this used to await
-  // shareOrDownloadInvoicePDF (a full html-to-image render, half a second
-  // to 2+ on a real cashier device) BEFORE opening WhatsApp at all -- by
-  // the time it resolved, the click's "user activation" window had often
-  // already expired, so Chrome/Edge silently blocked the window.open as an
-  // unwanted popup with no visible error. Now identical to sendToWhatsApp:
-  // opens WhatsApp immediately, synchronously, in the same click handler.
-  // Attaching the invoice as an actual PDF file is a separate, explicit,
-  // optional action now (handleAttachInvoicePdf below) -- WhatsApp text
-  // links can never carry a file regardless, so this was always a second
-  // step in practice, just one that used to block the first.
-  const handleInvoiceModalWhatsApp = (order: Order) => {
-    sendToWhatsApp(order);
-  };
-
-  // The optional "attach as PDF too" step split out of
-  // handleInvoiceModalWhatsApp above -- tries the OS share sheet (text +
-  // file together) and falls back to downloading the PDF so it's ready to
-  // attach manually. Never blocks or precedes opening WhatsApp itself.
-  const handleAttachInvoicePdf = async (order: Order) => {
-    const customer = customers.find(c => c.id === order.customerId);
-    const phone = customer?.phone || order.customerPhone || '';
-    const filename = `Invoice-${order.orderNumber || order.id.slice(-6).toUpperCase()}.pdf`;
-    const text = buildOrderWhatsAppMessage(order, phone);
-    await shareOrDownloadInvoicePDF('order-invoice-print-area', filename, text);
-  };
-
   /**
    * طباعة فاتورة الطلب من أي مكان (زر الطباعة السريعة في القائمة، بطاقة
    * الطلب، أو مربع حوار الفاتورة). تفتح InvoiceModal إن لم تكن مفتوحة
-   * حتى يُركَّب #order-invoice-print-area في الـ DOM، ثم تطبع فوراً بلا
-   * أي ضغطة إضافية من المستخدم.
+   * وتنتظر تحميل الفاتورة الحقيقية حتى يُركَّب #order-invoice-print-area
+   * فعلياً في الـDOM بمحتوى صحيح، ثم تطبع فوراً بلا أي ضغطة إضافية من
+   * المستخدم.
    */
   const handlePrintOrder = async (order: Order) => {
     setSelectedOrder(order);
     setIsInvoiceOpen(true);
+    const result = await loadRealInvoiceForOrder(order);
+    if (!result) {
+      toastError(t('orders.invoice_not_found', 'تعذر العثور على الفاتورة الأصلية لهذا الطلب'));
+      return;
+    }
     try {
       const { printElementDetailed, getConfiguredPaperSize } = await import('../utils/printManager');
       const res = await printElementDetailed('order-invoice-print-area', {
-        paperSize: getConfiguredPaperSize('80mm'),
+        paperSize: result.invoice.isB2B ? 'A4' : getConfiguredPaperSize('80mm'),
         title: t('printing.invoice_document_title', { number: order.orderNumber || order.id.slice(-6).toUpperCase() }),
       });
       if (!res.ok) {
@@ -2353,139 +2351,58 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     );
   };
 
-  const InvoiceModal = ({ order }: { order: Order }) => (
-    <div className="fixed inset-0 z-[60] flex items-end lg:items-center justify-center lg:p-4 overflow-hidden">
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-black/60 backdrop-blur-md"
-        onClick={() => setIsInvoiceOpen(false)}
-      />
-      <motion.div
-        role="dialog"
-        aria-modal="true"
-        aria-label={t('orders.invoice')}
-        initial={{ y: '100%', opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: '100%', opacity: 0 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="bg-surface w-full max-w-[92mm] sm:max-w-[100mm] rounded-t-3xl lg:rounded-3xl shadow-2xl relative z-10 overflow-hidden"
-      >
-        <div className={cn("p-8 space-y-6", isRtlLang(i18n.language) ? "text-right" : "text-left")} dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}>
-          <div className="flex justify-between items-start">
-            <div className="bg-brand text-white p-4 rounded-3xl">
-              <ShoppingBag size={32} />
-            </div>
-            <button onClick={() => setIsInvoiceOpen(false)} aria-label={t('common.close')} className="p-2 hover:bg-surface-muted rounded-full transition-colors">
-              <X size={24} className="text-content-muted" />
-            </button>
-          </div>
+  const InvoiceModal = ({ order }: { order: Order }) => {
+    React.useEffect(() => {
+      setInvoiceViewData(null);
+      setInvoiceViewError(false);
+      void loadRealInvoiceForOrder(order);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [order.id]);
 
-          <div id="order-invoice-print-area" className="space-y-6 bg-surface">
-          <div className="text-center space-y-1">
-            <h2 className="text-2xl font-black text-content">{t('orders.invoice')}</h2>
-            <p className="text-content-muted font-medium">{t('common.order')}: #{order.orderNumber || order.id.slice(-6).toUpperCase()}</p>
-          </div>
-
-          <div className="bg-surface-muted p-6 rounded-2xl space-y-4">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-surface rounded-xl shadow-sm">
-                  <User size={18} className="text-brand" />
-                </div>
-                <div>
-                  <p className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('common.customer')}</p>
-                  <p className="font-bold text-content">{order.customerName}</p>
-                </div>
+    return (
+      <div className="fixed inset-0 z-[60] flex items-end lg:items-center justify-center overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          onClick={() => setIsInvoiceOpen(false)}
+        />
+        <motion.div
+          initial={{ y: window.innerWidth < 1024 ? '100%' : 0, x: window.innerWidth >= 1024 ? '100%' : 0 }}
+          animate={{ y: 0, x: 0 }}
+          exit={{ y: window.innerWidth < 1024 ? '100%' : 0, x: window.innerWidth >= 1024 ? '100%' : 0 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+          className="bg-surface w-full lg:w-[450px] md:h-auto lg:h-full h-[90vh] shadow-2xl relative z-10 flex flex-col lg:rounded-none rounded-t-3xl border-t lg:border-t-0 lg:border-r border-border overflow-hidden lg:mr-auto md:max-w-md md:rounded-3xl md:mb-10 lg:max-w-none lg:mb-0 lg:ml-0"
+          dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}
+        >
+          <div id="order-invoice-print-area" className="flex-1 overflow-y-auto p-4 lg:p-6">
+            {invoiceViewData ? (
+              <TaxInvoiceDocument
+                order={invoiceViewData.invoice}
+                tenant={invoiceViewData.tenant}
+                onClose={() => setIsInvoiceOpen(false)}
+              />
+            ) : invoiceViewError ? (
+              <div className="flex flex-col items-center justify-center text-center h-full gap-4 py-12">
+                <p className="text-content-muted font-bold">{t('orders.invoice_not_found', 'تعذر العثور على الفاتورة الأصلية لهذا الطلب')}</p>
+                <button
+                  onClick={() => setIsInvoiceOpen(false)}
+                  className="px-6 py-3 bg-surface-muted text-content font-bold rounded-xl hover:bg-border transition-colors"
+                >
+                  {t('common.close')}
+                </button>
               </div>
-              <div className="text-left">
-                <p className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('common.date')}</p>
-                <DateTimeDisplay date={order.orderDate} showTime={true} size="xs" />
+            ) : (
+              <div className="flex items-center justify-center h-full py-12">
+                <div className="w-10 h-10 border-4 border-brand/20 border-t-brand rounded-full animate-spin" />
               </div>
-            </div>
-
-            <div className="border-t border-dashed border-border pt-4 space-y-3">
-              {order.items?.map((item: any, idx: number) => (
-                <div key={item.garmentType + item.fabric + idx} className="flex justify-between text-sm">
-                  <span className="text-content-muted">{item.garmentType} ({item.fabric === 'custom' ? t('orders.external_fabric') : item.fabric})</span>
-                  <span className="font-bold text-content"><PriceDisplay amount={item.price * item.quantity} /></span>
-                </div>
-              ))}
-            </div>
-
-            <div className="border-t border-border pt-4 space-y-2">
-              {order.taxAmount && Number(order.taxAmount) > 0 ? (
-                <>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-content-muted">{t('orders.subtotal')}</span>
-                    <span className="font-bold text-content"><PriceDisplay amount={Number(order.totalAmount) - Number(order.taxAmount)} /></span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-content-muted">{t('orders.vat_label')} ({order.taxRate}%)</span>
-                    <span className="font-bold text-content"><PriceDisplay amount={Number(order.taxAmount)} /></span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-content-muted font-black">{t('orders.grand_total')}</span>
-                    <span className="text-xl font-black text-brand"><PriceDisplay amount={order.totalAmount} /></span>
-                  </div>
-                </>
-              ) : (
-                <div className="flex justify-between items-center">
-                  <span className="text-content-muted font-medium">{t('common.total')}</span>
-                  <span className="text-xl font-black text-brand"><PriceDisplay amount={order.totalAmount} /></span>
-                </div>
-              )}
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-content-muted">{t('orders.amount_paid')} ({t(`common.payment_methods.${order.paymentMethod}`, order.paymentMethod)})</span>
-                <span className="font-bold text-success"><PriceDisplay amount={order.paidAmount} /></span>
-              </div>
-              <div className="flex justify-between items-center text-sm pt-2 border-t border-border">
-                <span className="text-content-muted">{t('orders.remaining_label')}</span>
-                <span className="font-black text-danger"><PriceDisplay amount={order.remainingAmount} /></span>
-              </div>
-            </div>
+            )}
           </div>
-
-          <div className="flex flex-col items-center gap-4">
-            <div className="p-4 bg-surface border-2 border-border rounded-3xl shadow-inner">
-              <QRCodeSVG value={order.qrCode || order.id} size={120} />
-            </div>
-            <p className="text-[10px] text-content-muted font-bold text-center px-8 uppercase tracking-widest">
-              {t('orders.scan_qr_desc')}
-            </p>
-
-            <Branding className="opacity-40 py-0" />
-          </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => void handlePrintOrder(order)}
-              className="flex items-center justify-center gap-2 bg-brand text-white py-4 rounded-2xl font-bold hover:bg-brand/90 transition-all shadow-lg shadow-brand/10"
-            >
-              <Printer size={20} />
-              <span>{t('orders.print')}</span>
-            </button>
-            <button
-              onClick={() => handleInvoiceModalWhatsApp(order)}
-              className="flex items-center justify-center gap-2 bg-success text-white py-4 rounded-2xl font-bold hover:bg-success/90 transition-all shadow-lg shadow-success/10"
-            >
-              <MessageSquare size={20} />
-              <span>{t('orders.whatsapp')}</span>
-            </button>
-          </div>
-          <button
-            onClick={() => void handleAttachInvoicePdf(order)}
-            className="w-full flex items-center justify-center gap-2 text-content-muted hover:text-content text-sm font-bold py-2 transition-colors"
-          >
-            <Paperclip size={14} />
-            <span>{t('orders.attach_invoice_pdf', 'إرفاق الفاتورة كملف PDF أيضاً')}</span>
-          </button>
-        </div>
-      </motion.div>
-    </div>
-  );
+        </motion.div>
+      </div>
+    );
+  };
 
   if (isLoading) {
     return <PageSkeleton />;
