@@ -118,6 +118,72 @@ describe('authenticate', () => {
     expect(res.status).not.toHaveBeenCalled();
   });
 
+  // seen-cto-code-review-2026-11-13.md SA-C4/AUTH-06: a deactivated
+  // saas_users row used to still pass straight through -- every
+  // /api/admin/* route runs through the service-role client (bypasses
+  // RLS), so app_is_super_admin()'s own is_active check never applied.
+  it('rejects a deactivated saas_users row (is_active=false) with 403, even with a valid token', async () => {
+    jwtVerifyMock.mockResolvedValue({ payload: { sub: 'uid-deactivated', email: 'exadmin@seen.test' } });
+    maybeSingleMock.mockResolvedValueOnce({ data: { role: 'super_admin', is_active: false }, error: null });
+
+    const req = makeReq('Bearer valid-supabase-token');
+    const res = makeRes();
+    const next = vi.fn();
+
+    await authenticate(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Forbidden: Account deactivated' });
+    expect(next).not.toHaveBeenCalled();
+    expect(insertMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'inactive_saas_user_access_attempt', uid: 'uid-deactivated' }));
+  });
+
+  // seen-cto-code-review-2026-11-13.md AUTH-05: 2FA was a UI gate only --
+  // nothing server-side ever checked the session's AAL, so a password-only
+  // (aal1) session fully impersonated an account that had enrolled TOTP.
+  it('rejects an aal1 session for a saas_users row with mfa_enabled=true', async () => {
+    jwtVerifyMock.mockResolvedValue({ payload: { sub: 'uid-mfa', email: 'mfa-admin@seen.test', aal: 'aal1' } });
+    maybeSingleMock.mockResolvedValueOnce({ data: { role: 'super_admin', is_active: true, mfa_enabled: true }, error: null });
+
+    const req = makeReq('Bearer valid-supabase-token');
+    const res = makeRes();
+    const next = vi.fn();
+
+    await authenticate(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Forbidden: MFA verification required', code: 'mfa_required' });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('allows an aal2 session for a saas_users row with mfa_enabled=true', async () => {
+    jwtVerifyMock.mockResolvedValue({ payload: { sub: 'uid-mfa-2', email: 'mfa-admin2@seen.test', aal: 'aal2' } });
+    maybeSingleMock.mockResolvedValueOnce({ data: { role: 'super_admin', is_active: true, mfa_enabled: true }, error: null });
+
+    const req = makeReq('Bearer valid-supabase-token');
+    const res = makeRes();
+    const next = vi.fn();
+
+    await authenticate(req, res, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    expect(res.status).not.toHaveBeenCalled();
+  });
+
+  it('does not require aal2 for a saas_users row that has never enrolled MFA (mfa_enabled=false)', async () => {
+    jwtVerifyMock.mockResolvedValue({ payload: { sub: 'uid-no-mfa', email: 'no-mfa-admin@seen.test', aal: 'aal1' } });
+    maybeSingleMock.mockResolvedValueOnce({ data: { role: 'super_admin', is_active: true, mfa_enabled: false }, error: null });
+
+    const req = makeReq('Bearer valid-supabase-token');
+    const res = makeRes();
+    const next = vi.fn();
+
+    await authenticate(req, res, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    expect(res.status).not.toHaveBeenCalled();
+  });
+
   it('grants tenant staff role/tenantId/staffId from the staff table when not a saas_user', async () => {
     jwtVerifyMock.mockResolvedValue({ payload: { sub: 'uid-2', email: 'cashier@shop.test' } });
     maybeSingleMock

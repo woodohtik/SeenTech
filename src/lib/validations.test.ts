@@ -33,6 +33,46 @@ describe('customerSchema measurements', () => {
     const result = customerSchema.parse({ ...baseCustomer });
     expect(result.measurements).toBeUndefined();
   });
+
+  // seen-cto-code-review-2026-11-13.md CM-01: VisualMeasurements.tsx
+  // writes these four keys, but zod silently stripped them (unknown
+  // keys) on every staff save -- so a cutting-type/collar-padding/
+  // closure choice the tailor made in the staff modal never reached the
+  // database, and any public-form submission that HAD set them was
+  // erased by the next staff edit's full-object UPDATE.
+  it('preserves cuttingType, collarPadding, closureType and closureVisibility through parsing', () => {
+    const result = customerSchema.parse({
+      ...baseCustomer,
+      measurements: {
+        cuttingType: 'kuwaiti',
+        collarPadding: 'soft',
+        closureType: 'zipper',
+        closureVisibility: 'hidden',
+      },
+    });
+
+    expect(result.measurements?.cuttingType).toBe('kuwaiti');
+    expect(result.measurements?.collarPadding).toBe('soft');
+    expect(result.measurements?.closureType).toBe('zipper');
+    expect(result.measurements?.closureVisibility).toBe('hidden');
+  });
+
+  it('rejects an invalid collarPadding/closureType/closureVisibility value', () => {
+    expect(customerSchema.safeParse({
+      ...baseCustomer,
+      measurements: { collarPadding: 'medium' },
+    }).success).toBe(false);
+
+    expect(customerSchema.safeParse({
+      ...baseCustomer,
+      measurements: { closureType: 'velcro' },
+    }).success).toBe(false);
+
+    expect(customerSchema.safeParse({
+      ...baseCustomer,
+      measurements: { closureVisibility: 'partial' },
+    }).success).toBe(false);
+  });
 });
 
 describe('customerSchema nullable optional fields', () => {

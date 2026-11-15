@@ -1606,6 +1606,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
           items={items}
           branches={branches}
           branchStock={branchStock}
+          itemsWithVariants={Object.keys(tenantVariantsByItem)}
           onRefresh={() => router.refresh()}
         />
       )}

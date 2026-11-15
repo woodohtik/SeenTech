@@ -35,7 +35,6 @@ import { SmartSelect } from "../ui/SmartSelect";
 import { IconInput } from "../ui/IconInput";
 import { Branch, InventoryItem, BranchInventory } from "../../types";
 import { motion, AnimatePresence } from "motion/react";
-import { computeAdjustmentLine } from "../../services/inventoryService";
 
 // Dynamic types representing the database schemas for proper TypeScript validation
 export interface InventoryAdjustmentHeader {
@@ -73,6 +72,7 @@ interface InventoryAdjustmentProps {
   items: InventoryItem[];
   branches: Branch[];
   branchStock: Record<string, BranchInventory[]>;
+  itemsWithVariants?: string[];
   onRefresh: () => void;
 }
 
@@ -81,6 +81,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
   items,
   branches,
   branchStock,
+  itemsWithVariants = [],
   onRefresh,
 }) => {
   const { t } = useTranslation();
@@ -266,7 +267,14 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
   const filteredItems = useMemo(() => {
     if (!selectedBranchId) return [];
 
+    // seen-cto-code-review-2026-11-13.md C8: this screen counts by whole
+    // item, not by variant -- a product with variants (color/size) would
+    // have no way here to say which variant was actually counted, and
+    // approve_stock_take requires a specific variant_id per line. Items
+    // with variants are excluded (same pattern as StockTransferWorkflow)
+    // until this module gets its own variant picker.
     return items.filter((item) => {
+      if (itemsWithVariants.includes(item.id)) return false;
       const matchesSearch =
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (item.nameEn && item.nameEn.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -281,7 +289,7 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
 
       return true;
     });
-  }, [items, selectedBranchId, searchTerm, selectedCategory]);
+  }, [items, selectedBranchId, searchTerm, selectedCategory, itemsWithVariants]);
 
   // Compute stats dynamically in real-time
   const sessionStats = useMemo(() => {
@@ -431,94 +439,48 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
 
     setSubmitting(true);
     try {
-      // 1. Create adjustment header payload
-      const finalStatus = isApprovedState && hasApprovePermission ? "Approved" : "Draft";
-      
-      const headerPayload = {
-        branch_id: selectedBranchId,
-        reference_number: computedReferenceNumber,
-        status: finalStatus,
-        adjustment_type: adjustmentType,
-        created_by: currentStaff?.id || "unknown",
-        created_by_name: currentStaff?.name || "Anonymous",
-        approved_by: finalStatus === "Approved" ? currentStaff?.id : null,
-        approved_by_name: finalStatus === "Approved" ? currentStaff?.name : null,
-        notes: globalNotes || `Reconciliation for ${branches.find((b) => b.id === selectedBranchId)?.name}`,
-      };
+      // seen-cto-code-review-2026-11-13.md C8: the former POST /api/
+      // inventory-adjustments route ran entirely through a service-role
+      // client with no server-side role check at all (hasApprovePermission
+      // below was only ever enforced in this component), updated
+      // branch_inventory with no variant_id filter (so one variant's count
+      // could overwrite every sibling variant's row), and wrote the
+      // absolute quantity this screen had cached rather than a live delta.
+      // approve_stock_take is now the real enforcement point: it rejects
+      // "Approved" from anyone who isn't owner/admin/manager, resolves the
+      // actual book quantity live inside its own transaction, and applies
+      // each line as a delta through apply_stock_movement (the same
+      // variant-aware function POS checkout uses) instead of an absolute
+      // overwrite.
+      const requestedStatus = isApprovedState && hasApprovePermission ? "Approved" : "Draft";
 
-      const detailsPayloads: any[] = [];
-      const branchInventoryUpdates: any[] = [];
-      const ledgerPayloads: any[] = [];
-
-      // 2. Loop & populate detail lines and optional stock changes
-      for (const itemId of itemsToAdjust) {
+      const lines = itemsToAdjust.map((itemId) => {
         const itemObj = items.find((i) => i.id === itemId);
-        if (!itemObj) continue;
-
         const bookQty = getBookStock(itemId);
         const actualQty = actualCounts[itemId] ?? 0;
-        const costPrice = unitCosts[itemId] ?? getUnitCost(itemObj);
-        const { varianceQty, totalVarianceCost } = computeAdjustmentLine(bookQty, actualQty, costPrice);
-        const rowReason = itemReasons[itemId] || "";
+        const costPrice = unitCosts[itemId] ?? (itemObj ? getUnitCost(itemObj) : 0);
+        const rowReason = itemReasons[itemId] || null;
 
-        detailsPayloads.push({
-          product_id: itemId,
-          product_name: itemObj.name,
-          system_qty: bookQty,
+        return {
+          item_id: itemId,
           physical_qty: actualQty,
-          variance_qty: varianceQty,
           unit_cost: costPrice,
-          total_variance_cost: totalVarianceCost,
-          reason: rowReason || null,
-        });
-
-        if (finalStatus === "Approved") {
-          const stocks = branchStock[itemId] || [];
-          const existingInventory = stocks.find((bi) => bi.branchId === selectedBranchId);
-
-          branchInventoryUpdates.push({
-            item_id: itemId,
-            branch_id: selectedBranchId,
-            quantity: actualQty,
-            has_existing: !!existingInventory,
-          });
-
-          ledgerPayloads.push({
-            item_id: itemId,
-            branch_id: selectedBranchId,
-            type: "adjustment",
-            previous_quantity: bookQty,
-            new_quantity: actualQty,
-            change: varianceQty,
-            staff_id: currentStaff?.id || "unknown",
-            staff_name: currentStaff?.name || "System",
-          });
-        }
-      }
-
-      // Send to server API proxy to execute safely bypassing RLS
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      if (!token) throw new Error("No user authorization token found");
-
-      const response = await fetch("/api/inventory-adjustments", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          header: headerPayload,
-          details: detailsPayloads,
-          branchInventoryUpdates,
-          ledgerPayloads,
-        }),
+          reason: rowReason,
+        };
       });
 
-      if (!response.ok) {
-        const errJson = await response.json();
-        throw new Error(errJson.error || "Failed to commit adjustment");
-      }
+      const operationId = globalThis.crypto.randomUUID();
+      const { data: result, error } = await supabase.rpc("approve_stock_take", {
+        p_operation_id: operationId,
+        p_branch_id: selectedBranchId,
+        p_adjustment_type: adjustmentType,
+        p_notes: globalNotes || `Reconciliation for ${branches.find((b) => b.id === selectedBranchId)?.name}`,
+        p_lines: lines,
+        p_status: requestedStatus,
+      });
+
+      if (error) throw error;
+      const finalStatus = result.status as "Draft" | "Approved";
 
       toastSuccess(
         finalStatus === "Approved"
@@ -842,6 +804,15 @@ export const InventoryAdjustment: React.FC<InventoryAdjustmentProps> = ({
                   )}
                 </div>
               </div>
+
+              {itemsWithVariants.length > 0 && (
+                <p className="text-[10px] text-content-muted px-1">
+                  {t(
+                    "inventory.variants.stock_take_not_supported",
+                    "المنتجات ذات السمات غير مدعومة بعد في هذه الشاشة -- عدّل مخزون كل سمة يدوياً من شاشة المخزون."
+                  )}
+                </p>
+              )}
 
               {/* SMART TABLE FOR PHYSICAL COUNT */}
               <div className="bg-surface rounded-2xl border border-border/80 shadow-xs overflow-hidden">

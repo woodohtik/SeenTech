@@ -123,7 +123,11 @@ async function fetchDbUser(uid: string, email?: string): Promise<DbUser | null> 
     // resolved ONLY from an actual saas_users row — never from an email
     // string match, which would let anyone who registers with that literal
     // address self-grant platform-wide admin.
-    if (saasRow) {
+    // seen-cto-code-review-2026-11-13.md AUTH-06: a deactivated saas_users
+    // row (is_active=false) used to still resolve to its role here, so the
+    // admin UI kept rendering client-side for a disabled account (data
+    // calls only failed on RLS-guarded tables, not the UI gate itself).
+    if (saasRow && saasRow.is_active !== false) {
         actualRole = saasRow.role;
     } else if (staffRow && (staffRow as any).role_id) {
         const { data: roleRow } = await supabase
@@ -290,7 +294,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const [staffRes, requestRes, saasOverrideRes] = await Promise.all([
                 supabase.from('staff').select('id, uid, name, email, phone, role, role_id, branch_id, status, must_change_pin, is_test, tenant_id, created_at, updated_at, commission_type, commission_value, has_seen_onboarding, commission_balance, has_pin, tenant:tenants(*)').eq('uid', uid).maybeSingle(),
                 supabase.from('tailor_requests').select('*').eq('uid', uid).maybeSingle(),
-                supabase.from('saas_users').select('role').eq('uid', uid).maybeSingle()
+                supabase.from('saas_users').select('role, is_active').eq('uid', uid).maybeSingle()
             ]);
 
             let staffData: any = staffRes.data;
@@ -309,7 +313,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 // value (super_admin, support_tech, billing_admin) would be
                 // trusted directly for every super_admin guard app-wide,
                 // without ever being backed by a real saas_users row.
-                const role = (saasOverrideRes.data?.role ?? staffData.role) as UserRole;
+                // seen-cto-code-review-2026-11-13.md AUTH-06: ignore a
+                // deactivated saas_users row here too, same reasoning as
+                // resolveDbUser above.
+                const saasActive = saasOverrideRes.data && saasOverrideRes.data.is_active !== false;
+                const role = (saasActive ? saasOverrideRes.data.role : staffData.role) as UserRole;
 
                 // The `tenant:tenants(*)` embed above can come back null on a
                 // cold PostgREST read right after login (RLS on the embedded
@@ -427,8 +435,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
 
             // 3. SaaS staff
-            const { data: saasUser } = await supabase.from('saas_users').select('role').eq('uid', uid).maybeSingle();
-            if (saasUser) {
+            // seen-cto-code-review-2026-11-13.md AUTH-06: a deactivated row
+            // here used to still resolve as a fully approved saas_users
+            // session; now treated the same as no row at all, falling
+            // through to the no-profile path below.
+            const { data: saasUser } = await supabase.from('saas_users').select('role, is_active').eq('uid', uid).maybeSingle();
+            if (saasUser && saasUser.is_active !== false) {
                 setAppState({
                     isApproved: true,
                     userRole: saasUser.role as UserRole,

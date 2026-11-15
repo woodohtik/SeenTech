@@ -3,9 +3,8 @@ import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/firebase';
 import { Shift } from '../types';
 import { useStaff } from '../contexts/StaffContext';
-import { logEmployeeAction } from '../services/employeeAuditService';
 import { Clock, DollarSign, User, Coins } from 'lucide-react';
-import { cn, getCurrencySymbol, formatCurrency } from '../lib/utils';
+import { cn, getCurrencySymbol } from '../lib/utils';
 import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 
@@ -68,32 +67,28 @@ export default function ShiftManager({ tenantId, onShiftOpen }: ShiftManagerProp
     setIsSubmitting(true);
     const balanceValue = Number(openingBalance) || 0;
     try {
-      const shiftData = {
-        tenant_id: tenantId,
-        staff_id: currentStaff.id,
-        staff_name: currentStaff.name,
-        opening_balance: balanceValue,
-        start_time: new Date().toISOString(),
-        status: 'open' as const,
-        created_at: new Date().toISOString()
-      };
-      
-      const { data: newShift, error } = await supabase
-        .from('shifts')
-        .insert(shiftData)
-        .select()
-        .single();
-      
+      // seen-cto-code-review-2026-11-13.md CASH-10: opening is now a single
+      // atomic RPC (unique partial index + idempotency key) instead of a
+      // plain insert, so a double-tap or a stale "no open shift" read can
+      // never create two open shifts for the same staff member.
+      const operationId = globalThis.crypto.randomUUID();
+      const { data: openResult, error } = await supabase.rpc('open_shift', {
+        p_operation_id: operationId,
+        p_opening_balance: balanceValue,
+        p_branch_id: currentStaff.branchId || null
+      });
       if (error) throw error;
 
-      // Audit Log
-      await logEmployeeAction(
-        tenantId,
-        currentStaff.id,
-        currentStaff.name,
-        'open_shift',
-        t('shift_manager.audit_open_shift', { amount: formatCurrency(balanceValue), currency: getCurrencySymbol() })
-      );
+      const { data: newShift, error: fetchError } = await supabase
+        .from('shifts')
+        .select('*')
+        .eq('id', openResult.shift_id)
+        .single();
+      if (fetchError) throw fetchError;
+
+      // open_shift already writes the audit log entry server-side (with
+      // the real caller resolved from the DB, not trusted from the
+      // client) -- no client-side logEmployeeAction call needed here.
 
       onShiftOpen({
         ...newShift,

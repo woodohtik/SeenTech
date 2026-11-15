@@ -64,12 +64,12 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
   const idToken = authHeader.split('Bearer ')[1];
 
   try {
-    let decodedToken: { uid: string; email?: string } | null = null;
+    let decodedToken: { uid: string; email?: string; aal?: string } | null = null;
 
     if (supabaseJwks) {
       try {
         const { payload } = await jwtVerify(idToken, supabaseJwks, { audience: 'authenticated' });
-        decodedToken = { uid: payload.sub as string, email: payload.email as string | undefined };
+        decodedToken = { uid: payload.sub as string, email: payload.email as string | undefined, aal: payload.aal as string | undefined };
       } catch {
         // Not a valid Supabase-issued token (or one signed before the
         // project's asymmetric-key migration); fall through.
@@ -85,8 +85,8 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
         const payload = jwt.verify(idToken, supabaseJwtSecret, {
           algorithms: ['HS256'],
           audience: 'authenticated',
-        }) as { sub: string; email?: string };
-        decodedToken = { uid: payload.sub, email: payload.email };
+        }) as { sub: string; email?: string; aal?: string };
+        decodedToken = { uid: payload.sub, email: payload.email, aal: payload.aal };
       } catch {
         // Not a valid legacy token either; fall through to the Firebase path.
       }
@@ -118,13 +118,52 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     // 1. Check saas_users (Super Admins)
     const { data: saasUser, error: saasError } = await supabaseAdmin
       .from('saas_users')
-      .select('role')
+      .select('role, is_active, mfa_enabled')
       .eq('uid', decodedToken.uid)
       .maybeSingle();
     if (saasError) {
       logger.error({ err: saasError }, '[authMiddleware] saas_users lookup failed');
     }
     if (saasUser) {
+      // seen-cto-code-review-2026-11-13.md SA-C4/AUTH-06: app_is_super_admin()
+      // already requires is_active=true at the RLS layer, but every
+      // /api/admin/* route runs through supabaseAdmin (service role,
+      // bypasses RLS), so a deactivated admin's still-valid JWT kept full
+      // access to every one of those routes -- this is the one place that
+      // actually enforces it for them, mirroring the staff-deactivation
+      // check below.
+      if (saasUser.is_active === false) {
+        await logSecurityEvent({
+          type: 'inactive_saas_user_access_attempt',
+          uid: decodedToken.uid,
+          email: decodedToken.email,
+          path: req.path,
+          method: req.method,
+        });
+        return res.status(403).json({ error: 'Forbidden: Account deactivated' });
+      }
+
+      // seen-cto-code-review-2026-11-13.md AUTH-05: 2FA was a UI gate only
+      // -- a super admin who enrolled TOTP could still be fully impersonated
+      // by anyone holding just the password, since nothing server-side ever
+      // checked the session's AAL. Enforcement is conditional on mfa_enabled
+      // (set once the account actually completes TOTP enrollment, see
+      // TwoFactorSetup.tsx/syncMfaFlag): an account that has never enrolled
+      // is completely unaffected, so this cannot lock anyone out who hasn't
+      // set up 2FA yet. One already did on this account (founder decision,
+      // 2026-11-15) -- a stricter "MFA mandatory for every saas_users row"
+      // cutover is a separate, later step, not done here.
+      if (saasUser.mfa_enabled === true && decodedToken.aal !== 'aal2') {
+        await logSecurityEvent({
+          type: 'saas_user_aal2_required',
+          uid: decodedToken.uid,
+          email: decodedToken.email,
+          path: req.path,
+          method: req.method,
+        });
+        return res.status(403).json({ error: 'Forbidden: MFA verification required', code: 'mfa_required' });
+      }
+
       req.user.role = saasUser.role;
       req.user.tenantId = 'saas_management';
       // seen-structured-logging-task.md: every log line downstream of this
