@@ -23,16 +23,13 @@ import { IconInput } from './ui/IconInput';
 import { useTranslation } from 'react-i18next';
 import DateTimeDisplay from './DateTimeDisplay';
 import { motion, AnimatePresence } from 'motion/react';
-import { useStaff } from '../contexts/StaffContext';
 import { decodeOrderRow } from '../utils/orderHistoryHelper';
-import { generateOrderNumber } from '../lib/utils';
 
 import { isRtlLang } from '../lib/direction';
 
 export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, shiftId?: string }) {
   const { t, i18n } = useTranslation();
   const { success: toastSuccess, error: toastError, handleError: globalHandleError } = useToast();
-  const { currentStaff } = useStaff();
   const isRtl = isRtlLang(i18n.language);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,6 +40,50 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
   const [refundMethod, setRefundMethod] = useState<'cash' | 'network' | 'bank_transfer'>('cash');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  // seen-cto-sprint1-financial-engine-task.md (POS-02/C6): orders.notes only
+  // ever carries the legacy __ORDER_METADATA_V2__ embed -- create_pos_sale
+  // has written real line items to order_items for a long time now, and
+  // this screen never read that table at all, so `order.items` was always
+  // [] for any sale made since then. Returns silently refunded 0, restocked
+  // nothing, and (because readyMadeItems was []) the order still got
+  // cancelled outright, including any custom items still in progress.
+  // Loaded fresh per selected order instead of trusting decodeOrderRow's
+  // notes-only items.
+  const [orderItems, setOrderItems] = useState<any[]>([]);
+  const [loadingItems, setLoadingItems] = useState(false);
+
+  useEffect(() => {
+    if (!order?.id) {
+      setOrderItems([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingItems(true);
+    (async () => {
+      const { data, error } = await supabase
+        .from('order_items')
+        .select('*')
+        .eq('order_id', order.id);
+      if (cancelled) return;
+      if (error) {
+        globalHandleError(error, 'orders');
+        setOrderItems([]);
+      } else {
+        setOrderItems((data || []).map((row: any) => ({
+          id: row.id,
+          type: row.type,
+          itemId: row.item_id,
+          variantId: row.variant_id,
+          name: row.name,
+          garmentType: row.garment_type,
+          quantity: Number(row.quantity),
+          price: Number(row.price),
+        })));
+      }
+      setLoadingItems(false);
+    })();
+    return () => { cancelled = true; };
+  }, [order?.id]);
 
   useEffect(() => {
     if (!showConfirmModal) return;
@@ -133,80 +174,44 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
 
   const handleReturn = async () => {
     if (!order) return;
+    if (!shiftId) {
+      // process_sales_return now requires the caller's own open shift
+      // (seen-cto-sprint1-financial-engine-task.md) -- a cash refund must
+      // affect a real, currently-open drawer.
+      toastError(t('sales_returns.no_open_shift', 'لا توجد وردية مفتوحة -- افتح وردية قبل معالجة مرتجع.'));
+      return;
+    }
 
     setIsSubmitting(true);
     try {
-      const refundMethodLabel = refundMethod === 'cash' ? 'نقداً' : refundMethod === 'network' ? 'شبكة' : 'تحويل بنكي';
-
-      // Find or resolve tax_invoice for this order to get invoice_id
-      const { data: invoiceData } = await supabase
-        .from('tax_invoices')
-        .select('id, invoice_number')
-        .eq('order_id', order.id)
-        .maybeSingle();
-
-      if (!invoiceData?.id) {
-        // sales_returns.invoice_id is NOT NULL + FK to tax_invoices(id) --
-        // falling back to order.id here would just fail with a raw
-        // foreign-key violation once the RPC below runs. Fail early with a
-        // clear message instead.
-        toastError(t('sales_returns.no_tax_invoice_for_order'));
-        return;
-      }
-      const invoiceId = invoiceData.id;
-
-      // seen-pos-sale-testing-task.md: was 4 separate client-side writes
-      // (INSERT sales_returns, a loop of apply_stock_movement + INSERT
-      // sales_return_items, UPDATE orders, then an audit log insert) with no
-      // shared transaction -- a failure partway through left a 'completed'
-      // return with some stock restocked and the order never cancelled.
-      // process_sales_return (same atomic/idempotent pattern as
-      // create_pos_sale and create_purchase_order) does all of it in one
-      // RPC call. operationId doubles as the new sales_returns row's id.
+      // seen-pos-sale-testing-task.md / seen-cto-sprint1-financial-engine
+      // -task.md: process_sales_return now only takes order_item_id +
+      // quantity per line -- it reads the real sold price, tax/discount
+      // share, variant_id and remaining returnable quantity itself from
+      // order_items/orders, instead of trusting whatever the client sends.
+      // This screen still only offers "return everything ready-made in
+      // this order" as a single action (no partial-quantity picker UI yet
+      // -- that's a separate, smaller follow-up), but the server-side
+      // quantity/refund correctness no longer depends on the client at all.
       const operationId = globalThis.crypto.randomUUID();
-      const returnNumber = `RET-${generateOrderNumber()}`;
-      const orderHasCustomItems = (order.items || []).some((item: any) => item.type === 'custom');
-      const branchId = order.branchId || currentStaff?.branchId;
 
-      const { error: returnError } = await supabase.rpc('process_sales_return', {
+      const { data: returnResult, error: returnError } = await supabase.rpc('process_sales_return', {
         p_operation_id: operationId,
-        p_return: {
-          order_id: order.id,
-          invoice_id: invoiceId,
-          return_number: returnNumber,
-          reason: returnReason || null,
-          total_amount: refundTotalAmount,
-          refunded_amount: refundTotalAmount,
-          refund_method: refundMethod,
-          order_has_custom_items: orderHasCustomItems,
-          history_note: `تم إرجاع الفاتورة. طريقة الاسترجاع: ${refundMethodLabel}. سبب الإرجاع: ${returnReason || 'لا يوجد'}`,
-          audit_note: `تم عمل مرتجع للفاتورة #${order.orderNumber || order.id.slice(-6).toUpperCase()} بمبلغ ${refundTotalAmount} ريال بطريقة ${refundMethodLabel}`,
-        },
+        p_order_id: order.id,
+        p_shift_id: shiftId,
         p_items: readyMadeItems
-          .filter((item: any) => item.itemId && branchId)
+          .filter((item: any) => item.id)
           .map((item: any) => ({
-            item_id: item.itemId,
-            order_item_id: item.id || null,
-            name: item.name || 'منتج جاهز',
+            order_item_id: item.id,
             quantity: Number(item.quantity || 0),
-            price: Number(item.price || 0),
-            branch_id: branchId,
           })),
+        p_reason: returnReason || null,
+        p_refund_method: refundMethod,
       });
 
-      if (returnError) {
-        // 23505 = unique_violation على sales_returns_order_id_unique_full_return
-        // -- نافذة/تبويب آخر أنجز استرجاع هذه الفاتورة بالفعل (سباق تزامن، لا
-        // يعني هذا خللاً حقيقياً يستحق رسالة الخطأ العامة).
-        if ((returnError as any).code === '23505') {
-          toastError(t('sales_returns.already_returned'));
-          setOrder(null);
-          setSearchResults([]);
-          setSearchQuery('');
-          return;
-        }
-        throw returnError;
-      }
+      if (returnError) throw returnError;
+
+      void returnResult; // { return_id, return_number, refunded_amount, tax_amount }
 
       toastSuccess(t('sales_returns.return_success_msg'));
       setOrder(null);
@@ -221,15 +226,19 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
     }
   };
 
-  // Process items eligibility
-  const items = order?.items || [];
+  // Process items eligibility -- from the real order_items rows (see the
+  // orderItems effect above), not the near-always-empty order.items.
+  const items = orderItems;
   const readyMadeItems = items.filter((item: any) => item.type === 'ready_made');
   const customItems = items.filter((item: any) => item.type === 'custom');
   const hasReadyMade = readyMadeItems.length > 0;
   const hasCustom = customItems.length > 0;
   const isFullyCustom = items.length > 0 && readyMadeItems.length === 0;
 
-  // Total refunded amount for eligible items only
+  // Total refunded amount for eligible items only -- an ESTIMATE shown to
+  // the cashier before confirming (face value, no discount/tax share
+  // applied yet); process_sales_return computes and returns the real,
+  // discount/tax-aware refund amount once the return actually runs.
   const refundTotalAmount = readyMadeItems.reduce((sum: number, item: any) => sum + (Number(item.quantity || 0) * Number(item.price || 0)), 0);
 
   return (
@@ -478,7 +487,7 @@ export default function SalesReturns({ tenantId, shiftId }: { tenantId: string, 
             {/* Refund Buttons */}
             <button 
               onClick={() => setShowConfirmModal(true)}
-              disabled={isSubmitting || order.status === 'cancelled' || isFullyCustom}
+              disabled={isSubmitting || loadingItems || order.status === 'cancelled' || isFullyCustom}
               className="w-full bg-danger text-white py-4 rounded-xl font-bold text-lg hover:bg-danger/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
             >
               <RotateCcw size={20} />

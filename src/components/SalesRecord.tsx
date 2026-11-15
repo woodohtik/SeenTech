@@ -171,6 +171,38 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
 
       if (fetchError) throw fetchError;
 
+      // seen-cto-sprint1-financial-engine-task.md (POS-02/C6): orders.notes
+      // only ever carries the legacy __ORDER_METADATA_V2__ embed --
+      // create_pos_sale has written real line items to order_items for a
+      // long time now, and this screen never read that table at all, so
+      // every reprint/PDF/WhatsApp invoice from here showed the full total
+      // with zero line items. Loaded in one extra batched query instead of
+      // decodeOrderRow's always-empty `items`.
+      const orderIds = (ordersData || []).map(o => o.id);
+      const itemsByOrderId: Record<string, any[]> = {};
+      if (orderIds.length > 0) {
+        const { data: itemsData, error: itemsError } = await supabase
+          .from('order_items')
+          .select('*')
+          .in('order_id', orderIds);
+        if (itemsError) {
+          console.error('[SalesRecord] Error fetching order_items:', itemsError);
+        } else {
+          for (const row of itemsData || []) {
+            (itemsByOrderId[row.order_id] ??= []).push({
+              id: row.id,
+              type: row.type,
+              itemId: row.item_id,
+              variantId: row.variant_id,
+              name: row.name,
+              garmentType: row.garment_type,
+              quantity: Number(row.quantity),
+              price: Number(row.price),
+            });
+          }
+        }
+      }
+
       const staffMap: Record<string, string> = {};
       if (staffData) {
         staffData.forEach(s => {
@@ -235,7 +267,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
           b2bTRN: b2bMeta.b2bTRN,
           notes: b2bMeta.originalNotes || decoded.notes,
           qrCode: decoded.qr_code || decoded.qrCode,
-          items: decoded.items || [],
+          items: itemsByOrderId[d.id] || [],
           history: decoded.history || [],
           createdAt: decoded.created_at || decoded.createdAt,
           updatedAt: decoded.updated_at || decoded.updatedAt

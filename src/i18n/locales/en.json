@@ -3782,6 +3782,7 @@
   },
   "sales_returns": {
     "already_returned": "Invoice already returned",
+    "no_open_shift": "No open shift -- open a shift before processing a return.",
     "back_to_results": "Back to Search Results",
     "cannot_return_msg": "Every item on this invoice is custom-tailored (made to order). System policy does not allow returning custom-tailored items.",
     "cannot_return_title": "Return Not Allowed",
