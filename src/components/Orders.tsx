@@ -341,8 +341,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   // document POS and the tax-invoice registry show -- same data/
   // component fetchTaxInvoiceForOrder + TaxInvoiceDocument already
   // provide elsewhere. loadRealInvoiceForOrder is the one fetch shared
-  // by InvoiceModal's own mount effect and handlePrintOrder's quick-print
-  // path below, so both show/print the same real invoice.
+  // by openInvoiceView below and handlePrintOrder's quick-print path, so
+  // both show/print the same real invoice.
   const [invoiceViewData, setInvoiceViewData] = useState<{ invoice: TaxInvoice; tenant: Tenant } | null>(null);
   const [invoiceViewError, setInvoiceViewError] = useState(false);
   const loadRealInvoiceForOrder = async (order: Order) => {
@@ -357,6 +357,26 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       setInvoiceViewError(true);
       return null;
     }
+  };
+  // Bug report (2026-11-16, second report): InvoiceModal used to fetch
+  // inside its own mount `useEffect`. InvoiceModal/OrderDetailsDrawer/etc.
+  // are defined as plain `const Foo = () => ...` INSIDE this component's
+  // render body (a pre-existing pattern throughout this file) -- every
+  // render of Orders recreates them as new function references, so React
+  // treats each one as a different component type at that JSX position
+  // and remounts it. That's harmless for a component with no mount
+  // effect of its own, but InvoiceModal's effect called setInvoiceViewData
+  // -- a re-render of Orders itself -- which created a fresh InvoiceModal
+  // reference, remounted it, re-ran the effect, and looped forever (the
+  // reported "shows and hides repeatedly"). The fetch now runs once, from
+  // the click itself, not from a mount effect -- a remount after that has
+  // nothing left to trigger.
+  const openInvoiceView = (order: Order) => {
+    setSelectedOrder(order);
+    setIsInvoiceOpen(true);
+    setInvoiceViewData(null);
+    setInvoiceViewError(false);
+    void loadRealInvoiceForOrder(order);
   };
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -783,8 +803,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                       searchLower.includes(invoiceNumberStr);
              });
              if (localFiltered.length === 1) {
-                 setSelectedOrder(localFiltered[0]);
-                 setIsInvoiceOpen(true);
+                 openInvoiceView(localFiltered[0]);
              }
           }
         }
@@ -801,19 +820,17 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           );
           if (matchedOrder) {
              setSearch(scanned);
-             setSelectedOrder(matchedOrder);
-             setIsInvoiceOpen(true);
+             openInvoiceView(matchedOrder);
           } else {
              // Try searching just by includes to be safe
-             const partialMatch = orders.find(o => 
+             const partialMatch = orders.find(o =>
                  (o as any).invoiceNumber?.toString().toLowerCase().includes(scanned) ||
                  o.orderNumber?.toString().toLowerCase().includes(scanned) ||
                  o.id.toLowerCase().includes(scanned)
              );
              if (partialMatch) {
                  setSearch(scanned);
-                 setSelectedOrder(partialMatch);
-                 setIsInvoiceOpen(true);
+                 openInvoiceView(partialMatch);
              }
           }
         }
@@ -1487,8 +1504,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     
     if (matchedOrder) {
         setSearch(scanned);
-        setSelectedOrder(matchedOrder);
-        setIsInvoiceOpen(true);
+        openInvoiceView(matchedOrder);
         toastSuccess(t('orders.order_found_by_barcode'));
     } else {
         const partialMatch = orders.find(o => 
@@ -1498,8 +1514,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         );
         if (partialMatch) {
             setSearch(scanned);
-            setSelectedOrder(partialMatch);
-            setIsInvoiceOpen(true);
+            openInvoiceView(partialMatch);
             toastSuccess(t('orders.order_found_by_barcode'));
         } else {
             toastError(t('orders.order_not_found_by_barcode'));
@@ -2352,13 +2367,6 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   };
 
   const InvoiceModal = ({ order }: { order: Order }) => {
-    React.useEffect(() => {
-      setInvoiceViewData(null);
-      setInvoiceViewError(false);
-      void loadRealInvoiceForOrder(order);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [order.id]);
-
     return (
       <div className="fixed inset-0 z-[60] flex items-end lg:items-center justify-center overflow-hidden">
         <motion.div
@@ -2763,8 +2771,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedOrder(order);
-                          setIsInvoiceOpen(true);
+                          openInvoiceView(order);
                         }}
                         className="px-2.5 py-1.5 bg-brand/10 text-brand hover:bg-brand hover:text-white rounded-xl transition-all flex items-center gap-1.5 font-bold text-xs"
                       >
@@ -2886,10 +2893,9 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-2 bg-surface-muted/50 p-1 rounded-2xl border border-border">
-                      <button 
+                      <button
                         onClick={() => {
-                          setSelectedOrder(order);
-                          setIsInvoiceOpen(true);
+                          openInvoiceView(order);
                         }}
                         className="px-3 py-2 text-brand hover:bg-brand hover:text-white rounded-xl transition-all flex items-center gap-2 font-black text-xs"
                         title={t('orders.view_invoice')}
