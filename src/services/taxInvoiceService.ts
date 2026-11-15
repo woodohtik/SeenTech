@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase/client';
 import { Tenant, TaxInvoice } from '../types';
 import { decodeInvoiceExtendedNotes } from '../utils/b2bHelper';
+import { decodeOrderRow } from '../utils/orderHistoryHelper';
 
 /**
  * Keeps the order's original tax invoice (tax_invoices.paid_amount) in
@@ -66,7 +67,7 @@ export async function fetchTaxInvoiceForOrder(
   const [{ data: tenantData }, { data: invoiceRow }, { data: orderRow }] = await Promise.all([
     supabase.from('tenants').select('*').eq('id', tenantId).maybeSingle(),
     supabase.from('tax_invoices').select('*').eq('tenant_id', tenantId).eq('order_id', orderId).maybeSingle(),
-    supabase.from('orders').select('branch_id, tracking_token').eq('id', orderId).maybeSingle(),
+    supabase.from('orders').select('branch_id, tracking_token, notes').eq('id', orderId).maybeSingle(),
   ]);
 
   if (!invoiceRow) return null;
@@ -116,6 +117,22 @@ export async function fetchTaxInvoiceForOrder(
     ? Number(invoiceRow.paid_amount)
     : Number(invoiceRow.total_amount);
 
+  // Bug report (2026-11-17): "عند استعراض فاتوره طلب تفصيل ما يظهر الطلب في
+  // الفاتوره" -- a تفصيل (custom tailoring) order created directly in
+  // "الطلبات" never has a POS-style items array to read: it was never put
+  // through create_pos_sale (no order_items row, no tax_invoices.notes
+  // items), its items live only on the order's OWN row, encoded into
+  // orders.notes by encodeOrderRow (Orders.tsx's own create/edit flow) --
+  // the exact thing decodeOrderRow already exists to read back out. Falls
+  // back to that when the invoice itself carries no items, normalizing to
+  // the {type, garmentType, quantity, price} shape TaxInvoiceDocument reads
+  // (these orders have no `type` field of their own -- they are always the
+  // tailoring form's own items, so 'custom' is correct here, not a guess).
+  const invoiceItems = extNotes.items || invoiceRow.items;
+  const orderOwnItems = Array.isArray(invoiceItems) && invoiceItems.length > 0
+    ? invoiceItems
+    : (decodeOrderRow(orderRow)?.items || []).map((item: any) => ({ type: item.type || 'custom', ...item }));
+
   const invoice = {
     id: invoiceRow.id,
     invoiceNumber: invoiceRow.invoice_number,
@@ -123,7 +140,7 @@ export async function fetchTaxInvoiceForOrder(
     tenantId: invoiceRow.tenant_id,
     customerId: invoiceRow.customer_id,
     customerName: invoiceRow.customer_name,
-    items: extNotes.items || invoiceRow.items || [],
+    items: orderOwnItems,
     subTotal: invoiceRow.subtotal,
     taxRate: invoiceRow.tax_rate,
     taxAmount: invoiceRow.tax_amount,
