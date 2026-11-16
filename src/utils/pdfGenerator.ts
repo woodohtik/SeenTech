@@ -30,16 +30,37 @@ export const generateInvoicePDF = async (elementId: string, filename: string): P
     unit: 'mm',
     format: 'a4'
   });
-  
+
   const pdfWidth = pdf.internal.pageSize.getWidth();
-  
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const margin = 10;
+  const usableWidth = pdfWidth - margin * 2;
+
   // Usually jsPDF needs an image payload
   const imgProps = pdf.getImageProperties(dataUrl);
-  const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-  
-  const margin = 10;
-  pdf.addImage(dataUrl, 'PNG', margin, margin, pdfWidth - (margin*2), pdfHeight - (margin*2));
-  
+  const imgHeight = (imgProps.height * usableWidth) / imgProps.width;
+
+  // Bug report (sprint 2 reports engine, 2026-11-17): a single addImage
+  // call clipped any report taller than one A4 page -- content past the
+  // page boundary was simply cut off, not pushed to a next page. Same
+  // addPage() loop ZReport.tsx's generatePDF already uses successfully
+  // (margin shifted in, stepping by the full page height exactly like
+  // that proven version): each page draws the SAME full image shifted up
+  // by one page height, so the page's own bounds act as a window
+  // scrolling down the image.
+  let heightLeft = imgHeight;
+  let position = margin;
+
+  pdf.addImage(dataUrl, 'PNG', margin, position, usableWidth, imgHeight);
+  heightLeft -= pageHeight;
+
+  while (heightLeft >= 0) {
+    position = heightLeft - imgHeight;
+    pdf.addPage();
+    pdf.addImage(dataUrl, 'PNG', margin, position, usableWidth, imgHeight);
+    heightLeft -= pageHeight;
+  }
+
   return pdf.output('blob');
 };
 
