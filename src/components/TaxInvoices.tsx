@@ -10,14 +10,19 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useTranslation } from 'react-i18next';
 import TaxInvoiceModal from './printing/TaxInvoiceModal';
 import DateTimeDisplay from './DateTimeDisplay';
+import { Pagination } from './ui/Pagination';
 
 import { isRtlLang } from '../lib/direction';
+
+const PAGE_SIZE = 20;
 
 export default function TaxInvoices({ tenantId }: { tenantId: string }) {
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
 
   const [invoices, setInvoices] = useState<TaxInvoice[]>([]);
+  const [invoicesTotal, setInvoicesTotal] = useState(0);
+  const [page, setPage] = useState(0);
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedInvoice, setSelectedInvoice] = useState<TaxInvoice | null>(null);
@@ -61,9 +66,8 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
           } as Tenant);
         }
 
-        const [{ data: branchesData }, { data: ordersData }, { data: staffData }] = await Promise.all([
+        const [{ data: branchesData }, { data: staffData }] = await Promise.all([
           supabase.from('branches').select('*').eq('tenant_id', tenantId),
-          supabase.from('orders').select('id, branch_id, tracking_token').eq('tenant_id', tenantId),
           supabase.from('staff').select('id, name')
         ]);
 
@@ -81,11 +85,33 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
           });
         }
 
-        const orderBranchMap = new Map<string, string>();
+        const from = page * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
+        const { data, count, error } = await supabase
+          .from('tax_invoices')
+          .select('*', { count: 'exact' })
+          .eq('tenant_id', tenantId)
+          .order('issued_at', { ascending: false })
+          .range(from, to);
+
+        if (error) throw error;
+        setInvoicesTotal(count || 0);
+
+        // Bug report (sprint 2 pagination project, 2026-11-17): this used
+        // to fetch EVERY order for the tenant just to look up branch
+        // name/tracking token -- restricted to this page's invoices'
+        // order_ids instead, now that the invoice list itself is a
+        // bounded page.
         // seen-whatsapp-instant-send-task.md follow-up: the WhatsApp
         // invoice link needs the order's real tracking_token (/track/:token)
         // -- fetched upfront here, not lazily on click, so opening WhatsApp
         // stays synchronous/instant.
+        const pageOrderIds = Array.from(new Set((data || []).map(d => d.order_id).filter(Boolean)));
+        const { data: ordersData } = pageOrderIds.length > 0
+          ? await supabase.from('orders').select('id, branch_id, tracking_token').in('id', pageOrderIds)
+          : { data: [] as any[] };
+
+        const orderBranchMap = new Map<string, string>();
         const orderTrackingTokenMap = new Map<string, string>();
         if (ordersData) {
           ordersData.forEach(o => {
@@ -96,13 +122,6 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
             if (o.id && o.tracking_token) orderTrackingTokenMap.set(o.id, o.tracking_token);
           });
         }
-
-        const { data, error } = await supabase
-          .from('tax_invoices')
-          .select('*')
-          .eq('tenant_id', tenantId);
-
-        if (error) throw error;
 
         const invoicesData = data.map(d => {
           const extNotes = decodeInvoiceExtendedNotes(d.notes);
@@ -136,7 +155,6 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
           } as TaxInvoice;
         });
 
-        invoicesData.sort((a, b) => new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime());
         setInvoices(invoicesData);
       } catch (error) {
         handleError(error as any, OperationType.LIST, 'tax_invoices');
@@ -145,7 +163,7 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
       }
     };
     fetchData();
-  }, [tenantId]);
+  }, [tenantId, page]);
 
   if (loading) {
     return (
@@ -244,6 +262,9 @@ export default function TaxInvoices({ tenantId }: { tenantId: string }) {
           {invoices.length === 0 && (
             <div className="p-8 text-center text-content-muted font-bold">{t('tax_invoices.no_invoices')}</div>
           )}
+        </div>
+        <div className="px-4 sm:px-6">
+          <Pagination page={page} pageSize={PAGE_SIZE} total={invoicesTotal} onPageChange={setPage} />
         </div>
       </div>
 

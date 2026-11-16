@@ -19,8 +19,15 @@ export interface FinancialSummary {
  * timestamp comparison (not string prefix matching, which silently
  * drops rows whenever the stored value has a time component).
  */
-function riyadhMidnightIso(dateStr: string): string {
+export function riyadhMidnightIso(dateStr: string): string {
   return new Date(`${dateStr}T00:00:00+03:00`).toISOString();
+}
+
+/** Exclusive upper bound for a [dateFrom, dateTo] Riyadh calendar-date range -- midnight Riyadh the day AFTER dateStr, as a UTC ISO instant. */
+export function riyadhDayAfterIso(dateStr: string): string {
+  const dayAfter = new Date(riyadhMidnightIso(dateStr));
+  dayAfter.setUTCDate(dayAfter.getUTCDate() + 1);
+  return dayAfter.toISOString();
 }
 
 /**
@@ -133,9 +140,7 @@ export async function getFinancialSummary(
   const operatingExpenses = Number(rpcResult.operating_expenses) || 0;
 
   const startIso = riyadhMidnightIso(dateFrom);
-  const dayAfter = new Date(riyadhMidnightIso(dateTo));
-  dayAfter.setUTCDate(dayAfter.getUTCDate() + 1);
-  const endIso = dayAfter.toISOString();
+  const endIso = riyadhDayAfterIso(dateTo);
 
   const cogs = await computeCogs(tenantId, startIso, endIso, opts);
   const netSalesExclVat = revenue - tax;

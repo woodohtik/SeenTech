@@ -58,6 +58,7 @@ import { isRtlLang, localeOf } from '../lib/direction';
 import { validatePlanForm, PlanFormInput, PlanFormField } from '../utils/planValidation';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { Coupon, fetchCoupons, createCoupon, setCouponActive, deleteCoupon } from '../services/couponService';
+import { Pagination } from './ui/Pagination';
 
 type TabType = 'overview' | 'financials' | 'performance' | 'security' | 'plans' | 'coupons';
 
@@ -811,27 +812,7 @@ export default function SuperAdminDashboard() {
                 )}
               </div>
 
-              {activityLogsTotal > ACTIVITY_PAGE_SIZE && (
-                <div className="flex items-center justify-between pt-4 mt-4 border-t border-border/60">
-                  <button
-                    disabled={activityPage === 0}
-                    onClick={() => setActivityPage(p => Math.max(0, p - 1))}
-                    className="px-3 py-1.5 rounded-xl text-xs font-black bg-surface-muted hover:bg-border disabled:opacity-40 disabled:cursor-not-allowed text-content-muted transition-all cursor-pointer"
-                  >
-                    {t('saas.pagination_prev', 'السابق')}
-                  </button>
-                  <span className="text-[10px] font-black text-content-muted uppercase tracking-wider">
-                    {t('saas.pagination_page_of', { page: activityPage + 1, total: Math.max(1, Math.ceil(activityLogsTotal / ACTIVITY_PAGE_SIZE)) })}
-                  </span>
-                  <button
-                    disabled={(activityPage + 1) * ACTIVITY_PAGE_SIZE >= activityLogsTotal}
-                    onClick={() => setActivityPage(p => p + 1)}
-                    className="px-3 py-1.5 rounded-xl text-xs font-black bg-surface-muted hover:bg-border disabled:opacity-40 disabled:cursor-not-allowed text-content-muted transition-all cursor-pointer"
-                  >
-                    {t('saas.pagination_next', 'التالي')}
-                  </button>
-                </div>
-              )}
+              <Pagination page={activityPage} pageSize={ACTIVITY_PAGE_SIZE} total={activityLogsTotal} onPageChange={setActivityPage} />
             </div>
           </motion.div>
         )}
@@ -920,27 +901,7 @@ export default function SuperAdminDashboard() {
                 )}
               </div>
 
-              {auditLogsTotal > AUDIT_PAGE_SIZE && (
-                <div className="flex items-center justify-between pt-4 mt-4 border-t border-border/60">
-                  <button
-                    disabled={auditPage === 0}
-                    onClick={() => setAuditPage(p => Math.max(0, p - 1))}
-                    className="px-3 py-1.5 rounded-xl text-xs font-black bg-surface-muted hover:bg-border disabled:opacity-40 disabled:cursor-not-allowed text-content-muted transition-all cursor-pointer"
-                  >
-                    {t('saas.pagination_prev', 'السابق')}
-                  </button>
-                  <span className="text-[10px] font-black text-content-muted uppercase tracking-wider">
-                    {t('saas.pagination_page_of', { page: auditPage + 1, total: Math.max(1, Math.ceil(auditLogsTotal / AUDIT_PAGE_SIZE)) })}
-                  </span>
-                  <button
-                    disabled={(auditPage + 1) * AUDIT_PAGE_SIZE >= auditLogsTotal}
-                    onClick={() => setAuditPage(p => p + 1)}
-                    className="px-3 py-1.5 rounded-xl text-xs font-black bg-surface-muted hover:bg-border disabled:opacity-40 disabled:cursor-not-allowed text-content-muted transition-all cursor-pointer"
-                  >
-                    {t('saas.pagination_next', 'التالي')}
-                  </button>
-                </div>
-              )}
+              <Pagination page={auditPage} pageSize={AUDIT_PAGE_SIZE} total={auditLogsTotal} onPageChange={setAuditPage} />
             </div>
           </motion.div>
         )}

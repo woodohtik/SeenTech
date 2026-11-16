@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
 import { Order } from '../types';
@@ -19,8 +19,12 @@ import { useToast } from '../contexts/ToastContext';
 import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
 import { formatSaudiPhone } from '../utils/phoneUtils';
 import { DatePicker } from './ui/DatePicker';
+import { Pagination } from './ui/Pagination';
+import { riyadhMidnightIso, riyadhDayAfterIso } from '../services/financialSummaryService';
 
 import { isRtlLang } from '../lib/direction';
+
+const PAGE_SIZE = 20;
 
 export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenantId: string, shiftId?: string, filterStatus?: string }) {
   const { t, i18n } = useTranslation();
@@ -28,6 +32,8 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
   const { error: toastError } = useToast();
 
   const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersTotal, setOrdersTotal] = useState(0);
+  const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -47,13 +53,14 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
-  const filteredOrders = useMemo(() => {
-    return orders.filter(order => {
-      const orderDay = order.orderDate?.split('T')[0] || '';
-      return (!dateRange.start || orderDay >= dateRange.start) &&
-             (!dateRange.end || orderDay <= dateRange.end);
-    });
-  }, [orders, dateRange]);
+  // Bug report (sprint 2 pagination project, 2026-11-17): date filtering
+  // used to run in the browser as a plain string-prefix comparison on
+  // orderDate -- the same Riyadh-vs-UTC boundary bug fixed in Reports.tsx
+  // earlier this sprint. Now filtered server-side in fetchOrders itself
+  // (riyadhMidnightIso/riyadhDayAfterIso, reused from
+  // financialSummaryService.ts), which pagination requires anyway: a
+  // client-side filter over only the current page's rows would silently
+  // drop matches that exist on other pages.
 
   const handleDownloadPDF = async () => {
     if (!selectedOrder) return;
@@ -152,24 +159,48 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
     setLoading(true);
     setError(null);
     try {
-      const [{ data: staffData }, { data: ordersData, error: fetchError }, { data: tenantData }, { data: invoicesData }, { data: customersData }] = await Promise.all([
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
+      const [{ data: staffData }, { data: ordersData, count: ordersCount, error: fetchError }, { data: tenantData }] = await Promise.all([
         supabase.from('staff').select('id, name'),
         (() => {
-          let query = supabase.from('orders').select('*').eq('tenant_id', tenantId);
+          let query = supabase.from('orders').select('*', { count: 'exact' }).eq('tenant_id', tenantId);
           if (shiftId) query = query.eq('shift_id', shiftId);
           if (filterStatus) query = query.eq('status', filterStatus);
-          return query.order('created_at', { ascending: false });
+          // Bug report (sprint 2 pagination project, 2026-11-17): date
+          // filtering used to happen client-side as a string-prefix
+          // compare on orderDate (same Riyadh/UTC boundary bug fixed in
+          // Reports.tsx this sprint) -- moved server-side here, which
+          // pagination requires anyway.
+          if (dateRange.start) query = query.gte('order_date', riyadhMidnightIso(dateRange.start));
+          if (dateRange.end) query = query.lt('order_date', riyadhDayAfterIso(dateRange.end));
+          return query.order('created_at', { ascending: false }).range(from, to);
         })(),
         supabase.from('tenants').select('name, vat_number, address, phone').eq('id', tenantId).maybeSingle(),
-        // Real ZATCA-sequential invoice numbers, keyed by order_id -- distinct
-        // from orderNumber (a friendly reference, not the legal invoice number).
-        supabase.from('tax_invoices').select('order_id, invoice_number').eq('tenant_id', tenantId),
-        // orders.customer_phone is never actually written at checkout -- the
-        // real phone lives on the customer record, looked up by customer_id.
-        supabase.from('customers').select('id, phone').eq('tenant_id', tenantId)
       ]);
 
       if (fetchError) throw fetchError;
+      setOrdersTotal(ordersCount || 0);
+
+      const pageOrderIds = (ordersData || []).map(o => o.id);
+      const pageCustomerIds = Array.from(new Set((ordersData || []).map((o: any) => o.customer_id).filter(Boolean)));
+
+      const [{ data: invoicesData }, { data: customersData }] = await Promise.all([
+        // Real ZATCA-sequential invoice numbers, keyed by order_id --
+        // distinct from orderNumber (a friendly reference, not the legal
+        // invoice number). Restricted to this page's orders now instead
+        // of the whole tenant's invoice history.
+        pageOrderIds.length > 0
+          ? supabase.from('tax_invoices').select('order_id, invoice_number').eq('tenant_id', tenantId).in('order_id', pageOrderIds)
+          : Promise.resolve({ data: [] as any[] }),
+        // orders.customer_phone is never actually written at checkout --
+        // the real phone lives on the customer record. Restricted to this
+        // page's customers instead of the whole tenant's customer list.
+        pageCustomerIds.length > 0
+          ? supabase.from('customers').select('id, phone').eq('tenant_id', tenantId).in('id', pageCustomerIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
 
       // seen-cto-sprint1-financial-engine-task.md (POS-02/C6): orders.notes
       // only ever carries the legacy __ORDER_METADATA_V2__ embed --
@@ -178,13 +209,12 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
       // every reprint/PDF/WhatsApp invoice from here showed the full total
       // with zero line items. Loaded in one extra batched query instead of
       // decodeOrderRow's always-empty `items`.
-      const orderIds = (ordersData || []).map(o => o.id);
       const itemsByOrderId: Record<string, any[]> = {};
-      if (orderIds.length > 0) {
+      if (pageOrderIds.length > 0) {
         const { data: itemsData, error: itemsError } = await supabase
           .from('order_items')
           .select('*')
-          .in('order_id', orderIds);
+          .in('order_id', pageOrderIds);
         if (itemsError) {
           console.error('[SalesRecord] Error fetching order_items:', itemsError);
         } else {
@@ -283,9 +313,11 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
     }
   };
 
+  useEffect(() => { setPage(0); }, [tenantId, shiftId, filterStatus, dateRange.start, dateRange.end]);
   useEffect(() => {
     fetchOrders();
-  }, [tenantId, shiftId, filterStatus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantId, shiftId, filterStatus, dateRange.start, dateRange.end, page]);
 
   const getStatusBadge = (status?: string) => {
     if (status === 'delivered') return { label: t('pos.delivered'), className: 'bg-success/10 text-success' };
@@ -355,7 +387,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filteredOrders.map(order => (
+              {orders.map(order => (
                 <tr key={order.id} className="hover:bg-surface-muted/50 transition-colors">
                   <td className="p-4 font-medium text-content">#{order.orderNumber || order.id.slice(-6).toUpperCase()}</td>
                   <td className="p-4 text-content-muted">{order.customerName}</td>
@@ -395,7 +427,7 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
 
         {/* Mobile View Cards */}
         <div className="md:hidden divide-y divide-border">
-          {filteredOrders.map(order => (
+          {orders.map(order => (
             <div key={order.id} className="p-4 active:bg-surface-muted/50" onClick={() => setSelectedOrder(order)}>
               <div className="flex justify-between items-start mb-2">
                 <div>
@@ -425,12 +457,15 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
               </div>
             </div>
           ))}
-          {filteredOrders.length === 0 && (
+          {orders.length === 0 && (
             <div className="p-12 text-center text-content-muted">
               <FileText className="mx-auto mb-4 opacity-20" size={48} />
               <p>{t('pos.no_orders')}</p>
             </div>
           )}
+        </div>
+        <div className="px-4 sm:px-6">
+          <Pagination page={page} pageSize={PAGE_SIZE} total={ordersTotal} onPageChange={setPage} />
         </div>
       </div>
 
