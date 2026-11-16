@@ -46,6 +46,7 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { SmartSelect } from './ui/SmartSelect';
 import { IconInput } from './ui/IconInput';
+import { Pagination } from './ui/Pagination';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { supplierSchema } from '../lib/validations';
 import { logEmployeeAction } from '../services/employeeAuditService';
@@ -119,6 +120,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
         // immediacy the old direct fetchSuppliers() call after a mutation
         // used to give for free.
         queryClient.invalidateQueries({ queryKey: ['suppliers', tenantId] });
+        queryClient.invalidateQueries({ queryKey: ['suppliers_page', tenantId] });
       }
     }
   );
@@ -136,6 +138,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
       onSuccess: () => {
         setSupplierReloadTrigger(prev => prev + 1);
         queryClient.invalidateQueries({ queryKey: ['suppliers', tenantId] });
+        queryClient.invalidateQueries({ queryKey: ['suppliers_page', tenantId] });
       }
     }
   );
@@ -198,8 +201,15 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
     staleTime: 30_000,
     initialData: () => tenantId ? getLastKnown<Supplier[]>(tenantId, 'suppliers')?.data : undefined,
   });
+  // Bug report (sprint 2 pagination project, 2026-11-17): kept as the full,
+  // unbounded list -- `suppliers` is passed as-is to PurchaseOrders' own
+  // supplier picker and to the Excel import's duplicate-detection check,
+  // both of which genuinely need every supplier, not just one registry
+  // page. Only the registry TABLE below gets its own paginated/searched
+  // query (suppliersPageQuery); this one is untouched.
   const suppliers = suppliersQuery.data ?? [];
-  const loading = suppliersQuery.isLoading;
+
+  const [page, setPage] = useState(0);
 
   // Pilot #2 for seen-comprehensive-review-fixes-task.md's react-query gap
   // finding (PurchaseOrders.tsx) -- purchaseOrders itself is fetched here
@@ -306,6 +316,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
       .channel('suppliers-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'suppliers', filter: `tenant_id=eq.${tenantId}` }, () => {
         queryClient.invalidateQueries({ queryKey: ['suppliers', tenantId] });
+        queryClient.invalidateQueries({ queryKey: ['suppliers_page', tenantId] });
       })
       .subscribe();
 
@@ -443,16 +454,46 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
     }
   };
 
-  // مراجعة-الفريق-التقني-الكامل-2026-10-19.md (أداء): debounce + useMemo --
-  // كانت هذه المصفوفة تُعاد حسابها عند كل render بلا أي منهما (الاستثناء
-  // الوحيد مقابل Orders/POS/Inventory/Customers المماثلة والمُغلَّفة بالفعل).
   const debouncedSearchTerm = useDebouncedValue(searchTerm, 250);
-  const filteredSuppliers = useMemo(() => suppliers.filter(s => {
-    const matchesSearch = s.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-      (s.contactPerson || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || s.category === categoryFilter;
-    return matchesSearch && matchesCategory;
-  }), [suppliers, debouncedSearchTerm, categoryFilter]);
+
+  // Sprint 2 pagination project (seen-cto-sprint2-pagination-task.md,
+  // second batch): the registry table used to filter the full unbounded
+  // `suppliers` list in the browser. Search and the category filter move
+  // server-side (same .or(ilike) pattern SuperAdminDashboard.tsx already
+  // proved) so pagination doesn't silently hide a match that exists on
+  // another page.
+  const SUPPLIERS_PAGE_SIZE = 20;
+  useEffect(() => { setPage(0); }, [debouncedSearchTerm, categoryFilter]);
+  const suppliersPageQuery = useQuery({
+    queryKey: ['suppliers_page', tenantId, page, debouncedSearchTerm, categoryFilter],
+    queryFn: async () => {
+      const from = page * SUPPLIERS_PAGE_SIZE;
+      const to = from + SUPPLIERS_PAGE_SIZE - 1;
+      let query = supabase.from('suppliers').select('*', { count: 'exact' }).eq('tenant_id', tenantId);
+      if (debouncedSearchTerm.trim()) {
+        const term = `%${debouncedSearchTerm.trim()}%`;
+        query = query.or(`name.ilike.${term},contact_person.ilike.${term}`);
+      }
+      if (categoryFilter !== 'all') query = query.eq('category', categoryFilter);
+      const { data, count, error } = await query.order('created_at', { ascending: false }).range(from, to);
+      if (error) throw error;
+      return {
+        rows: (data || []).map(d => ({
+          ...d,
+          contactPerson: d.contact_person,
+          taxNumber: d.tax_number,
+          createdAt: d.created_at,
+          updatedAt: d.updated_at,
+          tenantId: d.tenant_id
+        }) as Supplier),
+        total: count || 0,
+      };
+    },
+    enabled: !!tenantId,
+    staleTime: 30_000,
+  });
+  const filteredSuppliers = suppliersPageQuery.data?.rows ?? [];
+  const suppliersPageTotal = suppliersPageQuery.data?.total ?? 0;
 
   return (
     <div className="p-4 md:p-6 space-y-6 font-sans">
@@ -599,10 +640,11 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                   }}
                   onDelete={handleDelete}
                 />
+                <Pagination page={page} pageSize={SUPPLIERS_PAGE_SIZE} total={suppliersPageTotal} onPageChange={setPage} />
               </div>
 
               {/* Extra Modal/Popup fallback if user wants supplier contact details */}
-              {filteredSuppliers.length === 0 && !loading && (
+              {filteredSuppliers.length === 0 && !suppliersPageQuery.isLoading && (
                 <div className="p-12 text-center text-content-muted bg-surface rounded-2xl border border-dashed border-border">
                   <Users className="mx-auto mb-4 opacity-20" size={48} />
                   <p>{t('procurement.no_suppliers_registered', 'لا يوجد موردين مسجلين حالياً لقيد الحساب')}</p>
@@ -1086,6 +1128,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
           onImported={() => {
             setSupplierReloadTrigger((prev) => prev + 1);
             queryClient.invalidateQueries({ queryKey: ['suppliers', tenantId] });
+        queryClient.invalidateQueries({ queryKey: ['suppliers_page', tenantId] });
           }}
         />
       )}
