@@ -7,9 +7,8 @@ import {
   Receipt, 
   Award, 
   AlertCircle, 
-  BarChart2, 
-  ArrowUpRight, 
-  Scissors, 
+  BarChart2,
+  Scissors,
   AlertTriangle 
 } from 'lucide-react';
 import { 
@@ -86,12 +85,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ tenantId }) => {
       // parallel instead of four sequential round-trips.
       const [
         { data: orders },
-        { data: expensesData },
         { data: inventory },
         { data: staffList }
       ] = await Promise.all([
         supabase.from('orders').select('*').eq('tenant_id', tenantId),
-        supabase.from('expenses').select('amount').eq('tenant_id', tenantId),
         supabase.from('inventory_items').select('*').eq('tenant_id', tenantId),
         supabase.from('staff').select('id, name, role').eq('tenant_id', tenantId).eq('role', 'tailor')
       ]);
@@ -106,8 +103,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ tenantId }) => {
         .filter(o => o.status !== 'cancelled')
         .reduce((sum, o) => sum + (Number(o.tax_amount) || Number(o.vat) || 0), 0);
 
-      // 2. Expenses
-      const totalExp = (expensesData || []).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+      // Bug report (sprint 2 reports engine, 2026-11-17): this read a table
+      // named `expenses` that does not exist in any migration -- the query
+      // always silently resolved to nothing, so "operating expenses" here
+      // was always 0 no matter what the shop actually spent, and net
+      // profit never subtracted real costs either. Shows honestly as 0
+      // (not a fabricated number) until the real server-side net-profit
+      // function (sprint 2 item 1, real operating-expense + COGS source)
+      // replaces this whole calculation.
+      const totalExp = 0;
       const estProfit = Math.max(0, completedSales - totalExp - vat);
 
       // 3. Fabric Inventory Alerts
@@ -258,9 +262,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ tenantId }) => {
           <div className="text-2xl font-black text-content tracking-tight">
             <PriceDisplay amount={financials.totalSales} />
           </div>
-          <div className="mt-3 flex items-center gap-1.5 text-xs text-success font-bold">
-            <ArrowUpRight size={14} />
-            <span>{t('dashboard.admin.vs_last_month')}</span>
+          <div className="mt-3 text-xs text-content-muted font-medium">
+            {t('dashboard.admin.total_sales_lifetime')}
           </div>
         </div>
 
@@ -328,7 +331,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ tenantId }) => {
               </p>
             </div>
             <span className="text-xs font-bold text-brand bg-brand/10 px-3 py-1 rounded-full">
-              {t('dashboard.admin.year_2026')}
+              {new Date().getFullYear()}
             </span>
           </div>
 

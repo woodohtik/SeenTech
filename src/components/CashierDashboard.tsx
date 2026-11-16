@@ -58,12 +58,17 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
   const { currentStaff } = useStaff();
   const [loading, setLoading] = useState(true);
   
+  // Bug report (sprint 2 reports engine, 2026-11-17): this used to default
+  // to a fake "open shift with 500/1850/1350 SAR" before the real shift
+  // query ever ran, and stayed that way forever if no shift was actually
+  // open -- the cashier always saw a confident "الوردية مفتوحة" with
+  // invented cash figures. Starts honestly empty/closed; the effect below
+  // is the only thing that ever sets real values.
   const [shift, setShift] = useState<ShiftInfo>({
-    isOpen: true,
-    openedAt: t('dashboard.cashier.default_open_time'),
-    initialCash: 500,
-    currentCashInDrawer: 1850,
-    totalSalesInShift: 1350
+    isOpen: false,
+    initialCash: 0,
+    currentCashInDrawer: 0,
+    totalSalesInShift: 0
   });
 
   const [pendingOrders, setPendingOrders] = useState<OrderItem[]>([]);
@@ -98,7 +103,7 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
             status,
             total_amount,
             paid_amount,
-            balance_due,
+            remaining_amount,
             created_at,
             delivery_date
           `)
@@ -117,7 +122,7 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
           status: (o.status as OrderItem['status']) || 'pending',
           totalAmount: Number(o.total_amount) || 0,
           paidAmount: Number(o.paid_amount) || 0,
-          balanceDue: Number(o.balance_due) ?? Math.max(0, (Number(o.total_amount) || 0) - (Number(o.paid_amount) || 0)),
+          balanceDue: Number(o.remaining_amount) || 0,
           createdAt: o.created_at,
           deliveryDate: o.delivery_date
         }));
@@ -141,21 +146,25 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
 
         if (isMounted) {
           if (activeShift) {
+            const initialCash = Number(activeShift.initial_cash) || 0;
+            const cashSales = Number(activeShift.cash_sales) || 0;
             setShift({
               id: activeShift.id,
               isOpen: true,
               openedAt: new Date(activeShift.start_time || activeShift.created_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
-              initialCash: Number(activeShift.initial_cash) || 500,
-              currentCashInDrawer: (Number(activeShift.initial_cash) || 500) + (Number(activeShift.cash_sales) || 1350),
-              totalSalesInShift: Number(activeShift.cash_sales) || 1350
+              initialCash,
+              currentCashInDrawer: initialCash + cashSales,
+              totalSalesInShift: cashSales
             });
+          } else {
+            setShift({ isOpen: false, initialCash: 0, currentCashInDrawer: 0, totalSalesInShift: 0 });
           }
 
-          setPendingOrders(activePending.length > 0 ? activePending : mockFallbackOrders);
+          setPendingOrders(activePending);
           setSummaryStats({
-            readyForPickupCount: readyCount || 5,
-            pendingUnpaidCount: unpaidList.length || 3,
-            pendingUnpaidTotal: unpaidTotal || 750
+            readyForPickupCount: readyCount,
+            pendingUnpaidCount: unpaidList.length,
+            pendingUnpaidTotal: unpaidTotal
           });
         }
       } catch (err) {
@@ -236,17 +245,31 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ tenantId }) 
         <div className="bg-surface p-5 rounded-3xl border border-border shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-black text-content-muted">{t('dashboard.cashier.current_shift_status')}</span>
-            <div className="w-9 h-9 rounded-2xl bg-success/10 text-success flex items-center justify-center">
+            <div className={`w-9 h-9 rounded-2xl flex items-center justify-center ${shift.isOpen ? 'bg-success/10 text-success' : 'bg-surface-muted text-content-muted'}`}>
               <Clock size={18} />
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-success animate-ping"></span>
-            <span className="text-xl font-black text-content">{t('dashboard.cashier.shift_open')}</span>
-          </div>
-          <div className="mt-2 text-xs text-content-muted font-medium">
-            {t('dashboard.cashier.started_today_at', { time: shift.openedAt })}
-          </div>
+          {shift.isOpen ? (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-success animate-ping"></span>
+                <span className="text-xl font-black text-content">{t('dashboard.cashier.shift_open')}</span>
+              </div>
+              <div className="mt-2 text-xs text-content-muted font-medium">
+                {t('dashboard.cashier.started_today_at', { time: shift.openedAt })}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-content-muted"></span>
+                <span className="text-xl font-black text-content-muted">{t('dashboard.cashier.shift_closed')}</span>
+              </div>
+              <div className="mt-2 text-xs text-content-muted font-medium">
+                {t('dashboard.cashier.shift_closed_hint')}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Cash in Drawer */}
@@ -566,43 +589,6 @@ function OrderStatusBadge({ status }: { status: string }) {
       );
   }
 }
-
-/* Fallback Mock Data for Pending Orders if database has no active rows */
-const mockFallbackOrders: OrderItem[] = [
-  {
-    id: '1',
-    orderNumber: 'ORD-1002',
-    customerName: 'عبدالله السلمان',
-    customerPhone: '0501234567',
-    status: 'ready',
-    totalAmount: 450,
-    paidAmount: 200,
-    balanceDue: 250,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: '2',
-    orderNumber: 'ORD-1003',
-    customerName: 'محمد العتيبي',
-    customerPhone: '0559876543',
-    status: 'in_tailoring',
-    totalAmount: 600,
-    paidAmount: 300,
-    balanceDue: 300,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: '3',
-    orderNumber: 'ORD-1004',
-    customerName: 'فهد المطيري',
-    customerPhone: '0541122334',
-    status: 'pending',
-    totalAmount: 350,
-    paidAmount: 350,
-    balanceDue: 0,
-    createdAt: new Date().toISOString()
-  }
-];
 
 /* Skeleton Loader for Cashier Dashboard */
 function CashierDashboardSkeleton() {

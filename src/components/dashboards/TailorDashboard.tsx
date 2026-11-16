@@ -88,10 +88,13 @@ export const TailorDashboard: React.FC<TailorDashboardProps> = ({ tenantId }) =>
           new Date(o.created_at || new Date()) >= today
         );
 
-        // Estimate monthly commission earned
+        // Estimate monthly commission earned. Bug report (sprint 2 reports
+        // engine, 2026-11-17): used to add a fabricated 35 SAR for every
+        // order with no recorded commission, inflating the total with
+        // invented money. An order genuinely earning nothing contributes 0.
         const totalComm = myOrders
           .filter(o => o.status === 'ready' || o.status === 'delivered')
-          .reduce((sum, o) => sum + (Number(o.commission) || 35), 0);
+          .reduce((sum, o) => sum + (Number(o.commission) || 0), 0);
 
         // Urgent orders (due within 48 hours)
         const dueSoon = activeAssigned.filter(o => {
@@ -102,14 +105,11 @@ export const TailorDashboard: React.FC<TailorDashboardProps> = ({ tenantId }) =>
 
         if (isMounted) {
           setMetrics({
-            assignedItemsCount: activeAssigned.length || 8,
-            completedTodayCount: completedToday.length || 4,
-            monthlyCommissionEarned: totalComm || 1450,
-            urgentOrdersCount: dueSoon.length || 2,
-            urgentOrdersList: dueSoon.length > 0 ? dueSoon : [
-              { id: '1', order_number: 'ORD-1082', status: 'cutting', delivery_date: t('tailors.sample_today_evening') },
-              { id: '2', order_number: 'ORD-1089', status: 'sewing', delivery_date: t('tailors.sample_tomorrow_morning') }
-            ]
+            assignedItemsCount: activeAssigned.length,
+            completedTodayCount: completedToday.length,
+            monthlyCommissionEarned: totalComm,
+            urgentOrdersCount: dueSoon.length,
+            urgentOrdersList: dueSoon
           });
         }
       } catch (err) {
@@ -228,6 +228,11 @@ export const TailorDashboard: React.FC<TailorDashboardProps> = ({ tenantId }) =>
           </button>
         </div>
 
+        {metrics.urgentOrdersList.length === 0 && (
+          <div className="text-center text-content-muted font-bold py-6">
+            {t('tailors.no_urgent_orders')}
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {metrics.urgentOrdersList.map(order => (
             <div key={order.id} className="p-4 bg-danger/5 border border-danger/20 rounded-2xl flex items-center justify-between">

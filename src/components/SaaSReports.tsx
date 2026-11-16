@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BarChart3, TrendingUp, Users, DollarSign, RefreshCw } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, RefreshCw } from 'lucide-react';
 import { PriceDisplay } from './PriceDisplay';
 import { supabase } from '../lib/supabase/client';
 import { 
@@ -25,12 +25,15 @@ export default function SaaSReports() {
     mrr: number;
     arpu: number;
     totalRevenue: number;
+    /** % change vs the previous month, from the real monthly revenue series -- null when there isn't a prior month to compare against. */
+    revenueTrendPct: number | null;
     chartData: any[];
     loading: boolean;
   }>({
     mrr: 0,
     arpu: 0,
     totalRevenue: 0,
+    revenueTrendPct: null,
     chartData: [],
     loading: true
   });
@@ -74,10 +77,22 @@ export default function SaaSReports() {
         revenue: Number(m.revenue) || 0
       })).slice(-6);
 
+      // Bug report (sprint 2 reports engine, 2026-11-17): this card used to
+      // show a hardcoded "+12.5%" no matter what the real numbers were --
+      // the monthly series already has real month-over-month data, so
+      // compute the actual change instead. Null (not 0%) when there's no
+      // prior month or it was zero, so the UI can honestly omit the trend
+      // rather than claim a 0% or infinite change that never happened.
+      const lastTwoMonths = monthly.slice(-2);
+      const revenueTrendPct = lastTwoMonths.length === 2 && Number(lastTwoMonths[0].revenue) > 0
+        ? ((Number(lastTwoMonths[1].revenue) - Number(lastTwoMonths[0].revenue)) / Number(lastTwoMonths[0].revenue)) * 100
+        : null;
+
       setData({
         mrr,
         arpu,
         totalRevenue,
+        revenueTrendPct,
         chartData,
         loading: false
       });
@@ -100,11 +115,19 @@ export default function SaaSReports() {
     );
   }
 
-  const stats = [
-    { label: t('saas.total_revenue_platform_sales'), value: <PriceDisplay amount={data.totalRevenue} />, trend: '+12.5%', icon: DollarSign, color: 'text-success', bg: 'bg-success/10' },
-    { label: t('saas.average_revenue_per_user'), value: <PriceDisplay amount={data.arpu} />, trend: '+5.2%', icon: Users, color: 'text-info', bg: 'bg-info/10' },
-    { label: t('saas.recurring_revenue_mrr'), value: <PriceDisplay amount={data.mrr} />, trend: '+2.1%', icon: TrendingUp, color: 'text-brand', bg: 'bg-brand/10' },
-    { label: t('saas.renewal_rate_typical'), value: '94.2%', trend: '-0.5%', icon: BarChart3, color: 'text-danger', bg: 'bg-danger/10' },
+  // Bug report (sprint 2 reports engine, 2026-11-17): a 4th card here used
+  // to show a hardcoded "94.2%" renewal rate -- there is no churn/renewal
+  // tracking anywhere in the schema to back a real number, and the
+  // founder's call (2026-11-17) was to show only real data rather than
+  // build that tracking now, so the card is gone rather than faked.
+  // mrr/arpu are current-snapshot calculations (today's active tenants ×
+  // today's plan prices) with no historical series to diff against, so
+  // they get no trend at all -- only totalRevenue has a real monthly
+  // series behind it.
+  const stats: { label: string; value: React.ReactNode; trend: number | null; icon: typeof DollarSign; color: string; bg: string }[] = [
+    { label: t('saas.total_revenue_platform_sales'), value: <PriceDisplay amount={data.totalRevenue} />, trend: data.revenueTrendPct, icon: DollarSign, color: 'text-success', bg: 'bg-success/10' },
+    { label: t('saas.average_revenue_per_user'), value: <PriceDisplay amount={data.arpu} />, trend: null, icon: Users, color: 'text-info', bg: 'bg-info/10' },
+    { label: t('saas.recurring_revenue_mrr'), value: <PriceDisplay amount={data.mrr} />, trend: null, icon: TrendingUp, color: 'text-brand', bg: 'bg-brand/10' },
   ];
 
   return (
@@ -115,9 +138,6 @@ export default function SaaSReports() {
           <p className="text-content-muted font-bold mt-1">{t('saas.financial_reports_subtitle')}</p>
         </div>
         <div className="flex gap-2">
-          <button className="px-6 py-2 bg-surface border border-border rounded-xl font-bold text-sm shadow-sm hover:bg-surface-muted transition-colors cursor-pointer">
-            {t('saas.export_pdf')}
-          </button>
           <button
             onClick={fetchData}
             className="px-6 py-2 bg-brand text-white rounded-xl font-bold text-sm shadow-lg shadow-brand/20 flex items-center gap-2 hover:bg-brand/90 transition-all cursor-pointer"
@@ -128,16 +148,18 @@ export default function SaaSReports() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {stats.map((stat) => (
           <div key={stat.label} className="bg-surface p-6 rounded-2xl border border-border shadow-sm transition-all">
             <div className="flex items-center justify-between mb-4">
               <div className={`${stat.bg} ${stat.color} p-3 rounded-2xl`}>
                 <stat.icon size={24} />
               </div>
-              <span className={`text-xs font-bold ${stat.trend.startsWith('+') ? 'text-success' : 'text-danger'}`}>
-                {stat.trend}
-              </span>
+              {stat.trend !== null && (
+                <span className={`text-xs font-bold ${stat.trend >= 0 ? 'text-success' : 'text-danger'}`}>
+                  {stat.trend >= 0 ? '+' : ''}{stat.trend.toFixed(1)}%
+                </span>
+              )}
             </div>
             <p className="text-content-muted text-[10px] font-black uppercase tracking-widest">{stat.label}</p>
             <h3 className="text-2xl font-black text-content mt-1">{stat.value}</h3>
