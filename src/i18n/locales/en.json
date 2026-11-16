@@ -854,6 +854,7 @@
     "deleting_test_data": "Deleting test data...",
     "drill_down_title": "Detailed Data Analysis",
     "export_excel": "Export Excel",
+    "export_pdf": "Export PDF",
     "grid": {
       "finance": "Financial Reports",
       "finance_desc_active": "Revenue: {{amount}} SR",

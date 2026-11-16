@@ -992,7 +992,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
             )}
           >
             <Download size={16} className="sm:w-5 sm:h-5" />
-            <span>{t('saas.export_pdf')}</span>
+            <span>{t('dashboard.export_pdf')}</span>
           </button>
         </div>
       </Header>

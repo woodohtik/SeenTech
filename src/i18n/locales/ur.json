@@ -852,6 +852,7 @@
     "deleting_test_data": "ٹیسٹ ڈیٹا حذف ہو رہا ہے...",
     "drill_down_title": "تفصیلی ڈیٹا تجزیہ",
     "export_excel": "ایکسل ایکسپورٹ",
+    "export_pdf": "پی ڈی ایف ایکسپورٹ",
     "grid": {
       "finance": "مالی رپورٹس",
       "finance_desc_active": "آمدنی: {{amount}} ﷼",

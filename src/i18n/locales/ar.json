@@ -854,6 +854,7 @@
     "deleting_test_data": "جاري حذف البيانات التجريبية...",
     "drill_down_title": "تحليل البيانات التفصيلي",
     "export_excel": "تصدير Excel",
+    "export_pdf": "تصدير PDF",
     "grid": {
       "finance": "التقارير المالية",
       "finance_desc_active": "الدخل: {{amount}} ﷼",
