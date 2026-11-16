@@ -774,8 +774,7 @@
       "top_tailor": "أفضل أداء خياط",
       "total_sales": "إجمالي المبيعات",
       "vat_15": "ضريبة القيمة المضافة (15%)",
-      "vat_due_to_authority": "مستحقة للهيئة (ZATCA)",
-      "total_sales_lifetime": "إجمالي تراكمي منذ البداية"
+      "vat_due_to_authority": "مستحقة للهيئة (ZATCA)"
     },
     "all_orders": "جميع الطلبات",
     "avg_basket": "متوسط الطلب",
@@ -814,8 +813,6 @@
       "secure_permissions_title": "صلاحيات كاشير آمنة ومنعكسة في النظام",
       "secure_zone": "منطقة آمنة (محجوبة مالياً)",
       "shift_open": "وردية مفتوحة",
-      "shift_closed": "لا توجد وردية مفتوحة",
-      "shift_closed_hint": "افتح وردية من شاشة الورديات لبدء التحصيل",
       "started_today_at": "بدأت اليوم الساعة {{time}}",
       "subtitle": "متابعة حالة الوردية، تسليم الطلبات المعلقة والجاهزة، وتحصيل المبالغ المتبقية.",
       "unpaid_invoices_count": "فواتير غير مكتملة الدفع: {{count}}",
@@ -4969,7 +4966,6 @@
     "tailoring_order": "طلب تفصيل",
     "thobes_pieces_count": "{{count}} ثياب / قطع",
     "urgent": "مستعجل",
-    "no_urgent_orders": "لا توجد طلبات عاجلة الآن",
     "urgent_list_title": "قائمة الطلبات المستعجلة الموصى بإنجازها",
     "very_urgent_orders": "طلبات مستعجلة للغاية",
     "view_all_orders": "عرض كل الطلبات",

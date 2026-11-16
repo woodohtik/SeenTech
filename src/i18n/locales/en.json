@@ -774,8 +774,7 @@
       "top_tailor": "Top Performing Tailor",
       "total_sales": "Total Sales",
       "vat_15": "VAT (15%)",
-      "vat_due_to_authority": "Due to the authority (ZATCA)",
-      "total_sales_lifetime": "Lifetime total since launch"
+      "vat_due_to_authority": "Due to the authority (ZATCA)"
     },
     "all_orders": "All Orders",
     "avg_basket": "Avg. Order Value",
@@ -814,8 +813,6 @@
       "secure_permissions_title": "Secure Cashier Permissions, Enforced Across the System",
       "secure_zone": "Secure Zone (Financials Hidden)",
       "shift_open": "Shift Open",
-      "shift_closed": "No Open Shift",
-      "shift_closed_hint": "Open a shift from the Shifts screen to start collecting",
       "started_today_at": "Started today at {{time}}",
       "subtitle": "Track shift status, hand over pending and ready orders, and collect remaining balances.",
       "unpaid_invoices_count": "Partially paid invoices: {{count}}",
@@ -4966,7 +4963,6 @@
     "tailoring_order": "Tailoring Order",
     "thobes_pieces_count": "{{count}} Thobes / Pieces",
     "urgent": "Urgent",
-    "no_urgent_orders": "No urgent orders right now",
     "urgent_list_title": "Urgent Orders to Complete First",
     "very_urgent_orders": "Extremely Urgent Orders",
     "view_all_orders": "View All Orders",

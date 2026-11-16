@@ -5,18 +5,18 @@
 -- browser, with date-range filtering done as plain string comparison on
 -- whatever ISO timestamp string Postgres returned -- no Riyadh conversion
 -- anywhere (an order at 23:30 Riyadh time on day N can already be day N+1
--- in UTC, so "today" boundaries silently drift). AdminDashboard.tsx
--- computes a THIRD, different net-profit formula on its own unbounded
--- fetch. This function is the one server-side source for revenue/tax/
--- operating-expenses, with Riyadh-correct date boundaries -- COGS stays
--- client-side (Reports.tsx's existing weighted-average purchase-cost
--- estimate, now reading real order items after the previous commit's fix,
--- is the only real cost data this system has; duplicating that estimate
--- in SQL would be a second, divergent implementation of the same guess).
+-- in UTC, so "today" boundaries silently drift). Reports.tsx itself had
+-- TWO different net-profit formulas on the same screen. This function is
+-- the one server-side source for revenue/tax/operating-expenses, with
+-- Riyadh-correct date boundaries -- COGS stays client-side (Reports.tsx's
+-- existing weighted-average purchase-cost estimate, now reading real
+-- order items after the previous commit's fix, is the only real cost
+-- data this system has; duplicating that estimate in SQL would be a
+-- second, divergent implementation of the same guess).
 -- src/services/financialSummaryService.ts is the ONE place that combines
 -- this RPC's numbers with the client-side COGS estimate into a final net
--- profit -- Reports.tsx and AdminDashboard.tsx both call it instead of
--- each computing their own.
+-- profit figure -- any screen showing net profit should call it instead
+-- of computing its own.
 CREATE OR REPLACE FUNCTION public.get_tenant_financial_summary(
   p_tenant_id UUID,
   p_date_from DATE,

@@ -9,7 +9,7 @@ export interface FinancialSummary {
   operatingExpenses: number;
   /** revenue - tax */
   netSalesExclVat: number;
-  /** netSalesExclVat - cogs - operatingExpenses. The one net-profit figure every screen should show -- see the sprint 2 reports-engine task file for the three divergent formulas this replaces (Reports.tsx had two of its own, AdminDashboard.tsx a third). */
+  /** netSalesExclVat - cogs - operatingExpenses. The one net-profit figure every screen should show -- see the sprint 2 reports-engine task file for the divergent formulas this replaces (Reports.tsx had two of its own on the same screen). */
   netProfit: number;
 }
 

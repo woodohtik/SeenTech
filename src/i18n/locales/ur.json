@@ -772,8 +772,7 @@
       "top_tailor": "بہترین کارکردگی والا درزی",
       "total_sales": "کل فروخت",
       "vat_15": "ویٹ (15%)",
-      "vat_due_to_authority": "ادارے کو واجب الادا (ZATCA)",
-      "total_sales_lifetime": "آغاز سے مجموعی کل"
+      "vat_due_to_authority": "ادارے کو واجب الادا (ZATCA)"
     },
     "all_orders": "تمام آرڈرز",
     "avg_basket": "اوسط آرڈر ویلیو",
@@ -812,8 +811,6 @@
       "secure_permissions_title": "محفوظ کیشیئر اجازتیں، پورے سسٹم میں لاگو",
       "secure_zone": "محفوظ زون (مالیاتی ڈیٹا مخفی)",
       "shift_open": "شفٹ کھلی ہے",
-      "shift_closed": "کوئی شفٹ کھلی نہیں",
-      "shift_closed_hint": "وصولی شروع کرنے کے لیے شفٹس سکرین سے شفٹ کھولیں",
       "started_today_at": "آج {{time}} پر شروع ہوئی",
       "subtitle": "شفٹ کی حالت دیکھیں، زیر التوا اور تیار آرڈرز ڈیلیور کریں، اور باقی رقم وصول کریں۔",
       "unpaid_invoices_count": "نامکمل ادائیگی والی انوائسز: {{count}}",
@@ -4954,7 +4951,6 @@
     "tailoring_order": "سلائی آرڈر",
     "thobes_pieces_count": "{{count}} ثوب / پیسز",
     "urgent": "فوری",
-    "no_urgent_orders": "فی الحال کوئی فوری آرڈر نہیں",
     "urgent_list_title": "پہلے مکمل کرنے کے لیے تجویز کردہ فوری آرڈرز",
     "very_urgent_orders": "انتہائی فوری آرڈرز",
     "view_all_orders": "تمام آرڈرز دیکھیں",
