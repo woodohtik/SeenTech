@@ -81,6 +81,7 @@ import { notifyOrderStatusChange, notifyNewOrderForStaff } from '../utils/orderN
 import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
 import ScannerModal from './ScannerModal';
 import { SmartSelect } from './ui/SmartSelect';
+import { Pagination } from './ui/Pagination';
 import { DatePicker } from './ui/DatePicker';
 import { IconInput } from './ui/IconInput';
 import { VoiceMicButton } from './ui/VoiceMicButton';
@@ -1583,6 +1584,26 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     return orders.filter(o => matchesNonSearch(o) && fuzzyIncludes(o.customerName || '', debouncedSearch));
   }, [orders, debouncedSearch, statusFilter, startDate, endDate, activeTab]);
 
+  // Sprint 2 pagination project (seen-cto-sprint2-pagination-task.md,
+  // second batch): renders filteredOrders a page at a time instead of
+  // every matching order at once -- render cost only, not a server
+  // round-trip. Deliberately NOT a real fetch-side pagination: barcode
+  // scanning (handleScan) matches against the full `orders` state
+  // directly, five separate optimistic-update call sites patch that same
+  // full array, and unpaidOrders/unpaidOrdersByCustomer (customer dues)
+  // are derived from the full, unfiltered order list -- none of those
+  // read filteredOrders/pagedOrders, so none of them are affected by
+  // paging the display. Export (exportData above) still reads
+  // filteredOrders directly too, so "export" continues to mean every
+  // matching order, not just the visible page.
+  const ORDERS_PAGE_SIZE = 20;
+  const [ordersPage, setOrdersPage] = useState(0);
+  useEffect(() => { setOrdersPage(0); }, [debouncedSearch, statusFilter, startDate, endDate, activeTab]);
+  const pagedOrders = useMemo(
+    () => filteredOrders.slice(ordersPage * ORDERS_PAGE_SIZE, (ordersPage + 1) * ORDERS_PAGE_SIZE),
+    [filteredOrders, ordersPage]
+  );
+
   // Groups unpaidOrders by customerId once (O(n)) instead of re-filtering
   // the whole unpaidOrders array for every row rendered below (was O(n*m)
   // per render -- one full unpaidOrders scan per visible order).
@@ -2596,7 +2617,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             </p>
           </div>
         ) : (
-          filteredOrders.map((order, index) => {
+          pagedOrders.map((order, index) => {
             const customerUnpaid = order.customerId ? (unpaidOrdersByCustomer.get(order.customerId) || []) : [];
             const totalUnpaid = customerUnpaid.reduce((sum, o) => sum + (o.remainingAmount || 0), 0);
             const statusDisplay = getOrderStatusDisplay(order.status, workflowStages);
@@ -3031,6 +3052,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           })
         )}
       </div>
+      <Pagination page={ordersPage} pageSize={ORDERS_PAGE_SIZE} total={filteredOrders.length} onPageChange={setOrdersPage} />
 
       {/* Modals */}
       <ScannerModal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} onScan={handleScan} />
