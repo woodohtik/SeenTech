@@ -24,8 +24,19 @@ jobs:
   sweep:
     runs-on: ubuntu-latest
     strategy:
+      # fail-fast: false -- a matrix defaults to cancelling every other job
+      # the moment one fails, so without this a bad run on one host reads
+      # as both hosts failing (exactly what happened: seentech.io's 308 was
+      # the real failure, but it was cancelling staging.seentech.io's job
+      # every single sweep, making a healthy staging host look broken too).
+      fail-fast: false
       matrix:
-        host: [staging.seentech.io, seentech.io]
+        # seentech.io (apex) 308-redirects to www.seentech.io -- curl here
+        # has no -L, so every apex call returned 308, not 200, and failed
+        # the job on every run since this workflow was enabled. Call the
+        # canonical www host directly instead of depending on redirect
+        # follow-through.
+        host: [staging.seentech.io, www.seentech.io]
     steps:
       - name: Trigger the blog rebuild sweep on ${{ matrix.host }}
         run: |
