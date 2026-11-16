@@ -86,6 +86,7 @@ import { logEmployeeAction } from '../services/employeeAuditService';
 import { PermissionKey } from '../types';
 import { SmartSelect } from './ui/SmartSelect';
 import { ResponsiveTable } from './ui/ResponsiveTable';
+import { Pagination } from './ui/Pagination';
 import { cn } from '../lib/utils';
 
 import { isRtlLang, localeOf } from '../lib/direction';
@@ -753,6 +754,24 @@ export default function Customers({ tenantId }: CustomersProps) {
     return sortCustomers(fuzzy);
   }, [customers, debouncedSearch, filter, balanceFilter, customerBalances, sortBy]);
 
+  // Sprint 2 pagination project (seen-cto-sprint2-pagination-task.md,
+  // second batch): renders a page of filteredCustomers at a time instead
+  // of every row matching the filter at once. Deliberately NOT a server
+  // round-trip -- filteredCustomers (balance/fuzzy-search/sort, all
+  // client-side) is unchanged, so "select all" and "export" (both read
+  // filteredCustomers directly) still act on every matching customer, not
+  // just the visible page. A real get_tenant_customers_page RPC exists
+  // (same migration, verified) for a future pass that also moves the
+  // underlying orders fetch server-side; this pass only reduces what's
+  // rendered at once.
+  const CUSTOMERS_PAGE_SIZE = 20;
+  const [customersPage, setCustomersPage] = useState(0);
+  useEffect(() => { setCustomersPage(0); }, [debouncedSearch, filter, balanceFilter, sortBy]);
+  const pagedCustomers = useMemo(
+    () => filteredCustomers.slice(customersPage * CUSTOMERS_PAGE_SIZE, (customersPage + 1) * CUSTOMERS_PAGE_SIZE),
+    [filteredCustomers, customersPage]
+  );
+
 
 
   if (isLoading) {
@@ -1093,8 +1112,8 @@ export default function Customers({ tenantId }: CustomersProps) {
           </div>
         )}
 
-        {filteredCustomers.length > 0 ? (
-          filteredCustomers.map((customer, index) => {
+        {pagedCustomers.length > 0 ? (
+          pagedCustomers.map((customer, index) => {
             const isSelected = selectedCustomerIds.includes(customer.id);
             const balance = customerBalances[customer.id] || 0;
             return (
@@ -1654,6 +1673,7 @@ export default function Customers({ tenantId }: CustomersProps) {
             </button>
           </div>
         )}
+        <Pagination page={customersPage} pageSize={CUSTOMERS_PAGE_SIZE} total={filteredCustomers.length} onPageChange={setCustomersPage} />
       </div>
 
       {/* Floating Sticky Bulk Actions Bar */}
