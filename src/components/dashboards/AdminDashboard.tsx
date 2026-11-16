@@ -25,6 +25,7 @@ import { supabase } from '../../lib/supabase/client';
 import { useDirection } from '../../lib/direction';
 import { PriceDisplay } from '../PriceDisplay';
 import { saveLastKnown, getLastKnown } from '../../lib/offline/lastKnownCache';
+import { getFinancialSummary, todayInRiyadh } from '../../services/financialSummaryService';
 
 interface AdminDashboardProps {
   tenantId: string;
@@ -86,33 +87,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ tenantId }) => {
       const [
         { data: orders },
         { data: inventory },
-        { data: staffList }
+        { data: staffList },
+        financialSummary
       ] = await Promise.all([
         supabase.from('orders').select('*').eq('tenant_id', tenantId),
         supabase.from('inventory_items').select('*').eq('tenant_id', tenantId),
-        supabase.from('staff').select('id, name, role').eq('tenant_id', tenantId).eq('role', 'tailor')
+        supabase.from('staff').select('id, name, role').eq('tenant_id', tenantId).eq('role', 'tailor'),
+        // Bug report (sprint 2 reports engine, 2026-11-17): this used to
+        // sum total_amount/tax_amount locally and read a table named
+        // `expenses` that exists in no migration (always silently empty),
+        // giving this screen a THIRD net-profit formula that didn't match
+        // either of Reports.tsx's own two. financialSummaryService is now
+        // the one place that computes it (real COGS + real operating
+        // expenses + Riyadh-correct date handling) -- lifetime range here
+        // to match this card's own "all-time" framing (same scope as
+        // topTailor/monthlyChartData below, which are lifetime too).
+        getFinancialSummary(tenantId, '2020-01-01', todayInRiyadh())
       ]);
 
-      // 1. Financials & Monthly Charts
+      // 1. Monthly Charts (financials now come from financialSummaryService)
       const list = orders || [];
-      const completedSales = list
-        .filter(o => o.status !== 'cancelled')
-        .reduce((sum, o) => sum + (Number(o.total_amount) || Number(o.total) || 0), 0);
-
-      const vat = list
-        .filter(o => o.status !== 'cancelled')
-        .reduce((sum, o) => sum + (Number(o.tax_amount) || Number(o.vat) || 0), 0);
-
-      // Bug report (sprint 2 reports engine, 2026-11-17): this read a table
-      // named `expenses` that does not exist in any migration -- the query
-      // always silently resolved to nothing, so "operating expenses" here
-      // was always 0 no matter what the shop actually spent, and net
-      // profit never subtracted real costs either. Shows honestly as 0
-      // (not a fabricated number) until the real server-side net-profit
-      // function (sprint 2 item 1, real operating-expense + COGS source)
-      // replaces this whole calculation.
-      const totalExp = 0;
-      const estProfit = Math.max(0, completedSales - totalExp - vat);
 
       // 3. Fabric Inventory Alerts
       const alerts: FabricAlert[] = (inventory || [])
@@ -192,7 +186,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ tenantId }) => {
       }
 
       const result: AdminDashboardData = {
-        financials: { totalSales: completedSales, netProfit: estProfit, expenses: totalExp, vatDue: vat },
+        financials: {
+          totalSales: financialSummary.revenue,
+          netProfit: financialSummary.netProfit,
+          expenses: financialSummary.operatingExpenses,
+          vatDue: financialSummary.tax
+        },
         topTailor,
         fabricAlerts: alerts,
         monthlyChartData: chart

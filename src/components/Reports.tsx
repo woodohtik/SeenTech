@@ -371,60 +371,14 @@ export default function Reports({ tenantId }: { tenantId: string }) {
     [filteredOrders]
   );
 
-  // Financial Calculations
-  const financialStats = useMemo(() => {
-    const totalRevenue = nonCancelledOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0);
-    const totalSales = nonCancelledOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
-    const totalTax = nonCancelledOrders.reduce((sum, o) => sum + (o.taxAmount || 0), 0);
-    const netProfit = totalRevenue - totalTax; // Simplified profit calculation
-    const totalReturnsValue = filteredOrders
-      .filter(o => o.status === 'cancelled')
-      .reduce((sum, o) => sum + (o.totalAmount || 0), 0);
-
-    // Sales by Payment Method
-    const paymentMethods = nonCancelledOrders.reduce((acc: any, o) => {
-      const method = o.paymentMethod === 'cash' ? t('billing.modal_method_cash') :
-                    o.paymentMethod === 'network' ? t('common.payment_methods.network') :
-                    o.paymentMethod === 'cash_on_delivery' ? t('orders.payment_on_delivery_short') : t('common.other');
-      acc[method] = (acc[method] || 0) + (o.paidAmount || 0);
-      return acc;
-    }, {});
-
-    const paymentChartData = Object.entries(paymentMethods).map(([name, value]) => ({ name, value }));
-
-    // Revenue Trend
-    const trendData = nonCancelledOrders.reduce((acc: any, o) => {
-      const date = o.orderDate.split('T')[0];
-      if (!acc[date]) acc[date] = { date, revenue: 0, sales: 0 };
-      acc[date].revenue += (o.paidAmount || 0);
-      acc[date].sales += (o.totalAmount || 0);
-      return acc;
-    }, {});
-
-    const trendChartData = Object.values(trendData).sort((a: any, b: any) => a.date.localeCompare(b.date));
-
-    return { totalRevenue, totalSales, totalTax, netProfit, totalReturnsValue, paymentChartData, trendChartData };
-  }, [nonCancelledOrders, filteredOrders, t]);
-
-  // Purchase orders within the selected date range (the staff/payment-status
-  // filters only make sense for sales orders, so purchases only respect the
-  // date range and search term).
-  const filteredPurchaseOrders = useMemo(() => {
-    return purchaseOrders.filter(po => {
-      const dateMatch = (!dateRange.start || po.orderDate >= dateRange.start) &&
-                        (!dateRange.end || po.orderDate <= dateRange.end);
-      const searchMatch = !searchTerm ||
-                         po.supplierName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (po.poNumber || (po as any).po_number || '').toLowerCase().includes(searchTerm.toLowerCase());
-      return dateMatch && searchMatch;
-    });
-  }, [purchaseOrders, dateRange, searchTerm]);
-
   // Weighted-average cost per inventory item, built from every received
   // purchase (all-time, not date-filtered -- a stable baseline cost rather
   // than one that swings with whatever happened to be purchased in the
   // selected range). This is the only real cost data the system has, so
   // COGS below is a weighted-average estimate, not a FIFO/lot-tracked one.
+  // Moved above financialStats (it used to sit after it) so financialStats
+  // itself can use the real net-profit formula instead of a second,
+  // divergent "revenue minus tax only" one -- see costsStats below.
   const avgCostByItemId = useMemo(() => {
     const totals = new Map<string, { cost: number; qty: number }>();
     purchaseOrders.forEach(po => {
@@ -453,6 +407,81 @@ export default function Reports({ tenantId }: { tenantId: string }) {
     });
   }, [shiftPayouts, dateRange]);
 
+  // Bug report (sprint 2 reports engine, 2026-11-17): this screen used to
+  // carry TWO separate net-profit formulas rendered side by side --
+  // financialStats.netProfit ("revenue minus tax only", cash-basis on
+  // paidAmount) and profitLossStats.netProfit (real COGS + operating
+  // expenses, accrual-basis on totalAmount) -- which could show two
+  // different "net profit" numbers on the same screen. The accrual-basis
+  // one is the financially correct figure (matches revenue recognized at
+  // sale, cost matched against it; cash collected is a timing artifact,
+  // not profit), so it's now computed once here and both stats objects
+  // below read from it -- same real item data (fixed in the previous
+  // commit to actually exist) feeds whichever report tab is open.
+  const costsStats = useMemo(() => {
+    let cogs = 0;
+    nonCancelledOrders.forEach(o => {
+      (o.items || []).forEach((item: any) => {
+        if (item.type === 'ready_made' && item.itemId) {
+          cogs += (avgCostByItemId.get(item.itemId) || 0) * Number(item.quantity || 0);
+        } else if (item.type === 'custom' && item.fabricId) {
+          cogs += (avgCostByItemId.get(item.fabricId) || 0) * Number(item.consumedMeters || item.quantity || 0);
+        }
+      });
+    });
+    const operatingExpenses = filteredShiftPayouts.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+    return { cogs, operatingExpenses };
+  }, [nonCancelledOrders, avgCostByItemId, filteredShiftPayouts]);
+
+  // Financial Calculations
+  const financialStats = useMemo(() => {
+    const totalRevenue = nonCancelledOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0);
+    const totalSales = nonCancelledOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+    const totalTax = nonCancelledOrders.reduce((sum, o) => sum + (o.taxAmount || 0), 0);
+    const netProfit = (totalSales - totalTax) - costsStats.cogs - costsStats.operatingExpenses;
+    const totalReturnsValue = filteredOrders
+      .filter(o => o.status === 'cancelled')
+      .reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+
+    // Sales by Payment Method
+    const paymentMethods = nonCancelledOrders.reduce((acc: any, o) => {
+      const method = o.paymentMethod === 'cash' ? t('billing.modal_method_cash') :
+                    o.paymentMethod === 'network' ? t('common.payment_methods.network') :
+                    o.paymentMethod === 'cash_on_delivery' ? t('orders.payment_on_delivery_short') : t('common.other');
+      acc[method] = (acc[method] || 0) + (o.paidAmount || 0);
+      return acc;
+    }, {});
+
+    const paymentChartData = Object.entries(paymentMethods).map(([name, value]) => ({ name, value }));
+
+    // Revenue Trend
+    const trendData = nonCancelledOrders.reduce((acc: any, o) => {
+      const date = o.orderDate.split('T')[0];
+      if (!acc[date]) acc[date] = { date, revenue: 0, sales: 0 };
+      acc[date].revenue += (o.paidAmount || 0);
+      acc[date].sales += (o.totalAmount || 0);
+      return acc;
+    }, {});
+
+    const trendChartData = Object.values(trendData).sort((a: any, b: any) => a.date.localeCompare(b.date));
+
+    return { totalRevenue, totalSales, totalTax, netProfit, totalReturnsValue, paymentChartData, trendChartData };
+  }, [nonCancelledOrders, filteredOrders, costsStats, t]);
+
+  // Purchase orders within the selected date range (the staff/payment-status
+  // filters only make sense for sales orders, so purchases only respect the
+  // date range and search term).
+  const filteredPurchaseOrders = useMemo(() => {
+    return purchaseOrders.filter(po => {
+      const dateMatch = (!dateRange.start || po.orderDate >= dateRange.start) &&
+                        (!dateRange.end || po.orderDate <= dateRange.end);
+      const searchMatch = !searchTerm ||
+                         po.supplierName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (po.poNumber || (po as any).po_number || '').toLowerCase().includes(searchTerm.toLowerCase());
+      return dateMatch && searchMatch;
+    });
+  }, [purchaseOrders, dateRange, searchTerm]);
+
   // Sales returns / credit notes issued within the selected date range --
   // used to net their VAT portion out of output VAT below (item 1.9:
   // outputVat previously ignored refunds entirely, overstating VAT owed).
@@ -469,23 +498,15 @@ export default function Reports({ tenantId }: { tenantId: string }) {
   // itemId/quantity, custom garments by fabricId/consumedMeters -- then
   // subtracts logged cash-drawer expenses too.
   const profitLossStats = useMemo(() => {
-    let cogs = 0;
-    nonCancelledOrders.forEach(o => {
-      (o.items || []).forEach((item: any) => {
-        if (item.type === 'ready_made' && item.itemId) {
-          cogs += (avgCostByItemId.get(item.itemId) || 0) * Number(item.quantity || 0);
-        } else if (item.type === 'custom' && item.fabricId) {
-          cogs += (avgCostByItemId.get(item.fabricId) || 0) * Number(item.consumedMeters || item.quantity || 0);
-        }
-      });
-    });
-
+    const { cogs, operatingExpenses } = costsStats;
     const netSalesExclVat = financialStats.totalSales - financialStats.totalTax;
     const grossProfit = netSalesExclVat - cogs;
     const grossMargin = netSalesExclVat > 0 ? (grossProfit / netSalesExclVat) * 100 : 0;
 
-    const operatingExpenses = filteredShiftPayouts.reduce((sum, e) => sum + Number(e.amount || 0), 0);
-    const netProfit = grossProfit - operatingExpenses;
+    // Same figure as financialStats.netProfit -- kept as its own field
+    // here (rather than imported) so this tab's chartData can list it
+    // alongside netSalesExclVat/cogs/operatingExpenses as one breakdown.
+    const netProfit = financialStats.netProfit;
     const netMargin = netSalesExclVat > 0 ? (netProfit / netSalesExclVat) * 100 : 0;
 
     const chartData = [
@@ -496,7 +517,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
     ];
 
     return { netSalesExclVat, cogs, grossProfit, grossMargin, operatingExpenses, netProfit, netMargin, chartData };
-  }, [nonCancelledOrders, avgCostByItemId, financialStats, filteredShiftPayouts, t]);
+  }, [costsStats, financialStats, t]);
 
   // Suppliers & Purchases
   const supplierStats = useMemo(() => {
