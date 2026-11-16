@@ -71,6 +71,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../../lib/utils";
 import { ResponsiveTable } from "../ui/ResponsiveTable";
 import { IconInput } from "../ui/IconInput";
+import { Pagination } from "../ui/Pagination";
 import { VoiceMicButton } from "../ui/VoiceMicButton";
 import { isSpeechRecognitionSupported } from "../../hooks/useSpeechRecognition";
 import Branding from "../Branding";
@@ -492,6 +493,22 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
     // directly rather than the function reference, which is recreated every render.
   }, [items, branchStock, isLowStockOnly, searchTerm, selectedCategory, isLegacyVertical]);
 
+  // Sprint 2 pagination project (seen-cto-sprint2-pagination-task.md,
+  // second batch): renders filteredItems a page at a time. Deliberately
+  // render-only, same as the Customers.tsx/Orders.tsx passes -- moving
+  // the fuzzy-search fallback (fuzzyIncludes) server-side would need
+  // pg_trgm + a new RPC (a separate, larger project); this doesn't touch
+  // that search logic at all, so the typo-tolerant fallback keeps working
+  // exactly as before. "Select all" below still reads filteredItems
+  // directly, so it still means every matching item, not just the page.
+  const INVENTORY_PAGE_SIZE = 20;
+  const [inventoryPage, setInventoryPage] = useState(0);
+  useEffect(() => { setInventoryPage(0); }, [searchTerm, selectedCategory, isLowStockOnly]);
+  const pagedItems = useMemo(
+    () => filteredItems.slice(inventoryPage * INVENTORY_PAGE_SIZE, (inventoryPage + 1) * INVENTORY_PAGE_SIZE),
+    [filteredItems, inventoryPage]
+  );
+
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
@@ -797,7 +814,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
 
             {/* Mobile View: Cards */}
             <div className="lg:hidden divide-y divide-border">
-              {filteredItems.map((item) => {
+              {pagedItems.map((item) => {
                 const totalStock = getTotalStock(item.id);
                 const isLow = totalStock <= item.minThreshold;
                 const isExpanded = expandedItem === item.id;
@@ -1163,7 +1180,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {filteredItems.map((item) => {
+                  {pagedItems.map((item) => {
                     const totalStock = getTotalStock(item.id);
                     const isLow = totalStock <= item.minThreshold;
                     const isExpanded = expandedItem === item.id;
@@ -1581,6 +1598,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                 </tbody>
               </table>
             </div>
+            <Pagination page={inventoryPage} pageSize={INVENTORY_PAGE_SIZE} total={filteredItems.length} onPageChange={setInventoryPage} />
           </div>
         </>
       )}
