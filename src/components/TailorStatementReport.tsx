@@ -27,11 +27,12 @@ interface TailorStatementReportProps {
 
 interface TailorCommissionData {
   id: string;
-  order_id: string;
-  name: string;
-  garment_type: string;
+  order_number: number;
+  customer_name: string;
   calculated_commission: number;
-  created_at: string;
+  updated_at: string;
+  assigned_tailor_id: string;
+  status: string;
 }
 
 export default function TailorStatementReport({ tenantId }: TailorStatementReportProps) {
@@ -74,12 +75,18 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
   const fetchCommissions = async () => {
     try {
       setLoading(true);
-      
+
+      // Bug report (sprint 2 reports engine, 2026-11-17): this used to
+      // read order_items.calculated_commission, which has never once
+      // been populated for a real تفصيل order -- those orders never get
+      // an order_items row at all (their items live in orders.notes).
+      // Commission tracking moved to the order itself (one tailor, one
+      // commission per order); orders.calculated_commission is the real
+      // source now.
       let query = supabase
-        .from('order_items')
-        .select('id, order_id, name, garment_type, calculated_commission, created_at, assigned_tailor_id, status')
+        .from('orders')
+        .select('id, order_number, customer_name, calculated_commission, updated_at, assigned_tailor_id, status')
         .eq('tenant_id', tenantId)
-        .in('status', ['ready', 'delivered', 'partial_delivered', 'ironing_packaging']) 
         .not('calculated_commission', 'is', null);
 
       if (selectedTailor !== 'all') {
@@ -87,10 +94,10 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
       }
 
       const { data, error } = await query;
-      
+
       if (error) throw error;
       setCommissions(data || []);
-      
+
     } catch (err: any) {
       handleError(err, t('tailors.statement.fetch_error'));
     } finally {
@@ -103,7 +110,7 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
   const monthlyChartData = useMemo(() => {
     const map = new Map<string, { label: string, total: number, dateVal: number }>();
     commissions.forEach(c => {
-      const date = new Date(c.created_at);
+      const date = new Date(c.updated_at);
       const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       const label = date.toLocaleString(localeOf(i18n.language), { month: 'short', year: 'numeric' });
       if (!map.has(yearMonth)) {
@@ -120,7 +127,7 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
     if (selectedTailor !== 'all') return [];
     const map = new Map<string, number>();
     commissions.forEach(c => {
-       const tailorName = tailors.find(t => t.id === (c as any).assigned_tailor_id)?.name || t('sales.unknown');
+       const tailorName = tailors.find(t => t.id === c.assigned_tailor_id)?.name || t('sales.unknown');
        map.set(tailorName, (map.get(tailorName) || 0) + (c.calculated_commission || 0));
     });
     return Array.from(map.entries())
@@ -172,7 +179,7 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
             <Scissors size={24} />
           </div>
           <div>
-            <p className="text-sm font-medium text-success/80 mb-1">{t('dashboard.admin.completed_pieces')}</p>
+            <p className="text-sm font-medium text-success/80 mb-1">{t('tailors.statement.completed_orders_count')}</p>
             <div className="text-2xl font-black text-success">
               {commissions.length}
             </div>
@@ -244,7 +251,7 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
               <thead className="bg-surface-muted/50">
                 <tr>
                   <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('dashboard.cashier.col_order_number')}</th>
-                  <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('tailors.statement.col_piece')}</th>
+                  <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('tailors.statement.col_customer')}</th>
                   <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('tailors.statement.col_tailor')}</th>
                   <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('tailors.statement.col_completion_date')}</th>
                   <th className="px-6 py-4 text-xs font-black text-content-muted uppercase tracking-widest">{t('tailors.statement.col_earned_commission')}</th>
@@ -252,20 +259,20 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
               </thead>
               <tbody className="divide-y divide-border">
                 {commissions.map((item) => {
-                  const tailor = tailors.find(t => t.id === (item as any).assigned_tailor_id);
+                  const tailor = tailors.find(t => t.id === item.assigned_tailor_id);
                   return (
                     <tr key={item.id} className="hover:bg-surface-muted/50 transition-colors">
                       <td className="px-6 py-4 font-bold text-content">
-                        #{item.order_id.slice(0, 8)}
+                        #{item.order_number}
                       </td>
                       <td className="px-6 py-4 text-content font-medium">
-                        {item.name || item.garment_type || t('inventory.unit_piece')}
+                        {item.customer_name}
                       </td>
                       <td className="px-6 py-4 text-content font-medium">
                         {tailor?.name || t('sales.unknown')}
                       </td>
                       <td className="px-6 py-4 text-content-muted" dir="ltr">
-                        {new Date(item.created_at).toLocaleString(localeOf(i18n.language))}
+                        {new Date(item.updated_at).toLocaleString(localeOf(i18n.language))}
                       </td>
                       <td className="px-6 py-4">
                         <span className="inline-flex items-center px-3 py-1 bg-success/10 text-success font-bold rounded-lg text-sm">

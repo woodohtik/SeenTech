@@ -1880,6 +1880,8 @@
     "error_store_code_not_found": "خرابی: دکان کا کوڈ نہیں ملا",
     "error_store_not_found": "خرابی: دکان نہیں ملی",
     "expected_delivery_date": "متوقع ڈیلیوری کی تاریخ",
+    "assigned_tailor": "ذمہ دار درزی",
+    "assigned_tailor_none": "تفویض نہیں",
     "export_excel": "ایکسل ایکسپورٹ",
     "external_fabric": "بیرونی کپڑا",
     "extra_notes": "اضافی نوٹس",
@@ -4936,7 +4938,7 @@
       "all_tailors": "تمام درزی",
       "col_completion_date": "تکمیل کی تاریخ",
       "col_earned_commission": "حاصل شدہ کمیشن",
-      "col_piece": "پیس",
+      "col_customer": "گاہک",
       "col_tailor": "درزی",
       "commissions": "کمیشن",
       "distribution_by_tailor": "درزی کے لحاظ سے کمیشن کی تقسیم",
@@ -4945,7 +4947,8 @@
       "no_records": "کوئی کمیشن ریکارڈ دستیاب نہیں۔",
       "subtitle": "مکمل شدہ پیسز پر درزیوں کے کمیشن کی تفصیل۔",
       "title": "درزی اکاؤنٹ اسٹیٹمنٹ",
-      "total_commissions": "کل کمیشن"
+      "total_commissions": "کل کمیشن",
+      "completed_orders_count": "مکمل آرڈرز"
     },
     "subtitle": "آپ کو سونپے گئے پیسز کی تکمیل، آپ کے کام کے مراحل، اور آپ کے واجب الادا کمیشن کی نگرانی کریں۔",
     "tailoring_order": "سلائی آرڈر",

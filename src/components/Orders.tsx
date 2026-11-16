@@ -420,6 +420,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const defaultOrderValues = useMemo(() => ({
     customerId: '',
     deliveryDate: '',
+    assignedTailorId: '',
     items: [{
       // نص "ثوب" افتراضي منطقي فقط لمستأجري mens_tailoring؛ لأي نشاط آخر يبقى فارغاً
       // ليدخل المستخدم وصف صنفه الفعلي بدل رؤية مصطلح خياطة لا يخصه.
@@ -1228,6 +1229,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       notes: data.notes || '',
       created_by: (currentStaff?.id && isUuid(currentStaff.id)) ? currentStaff.id : null,
       is_test: !!data.isTest,
+      assigned_tailor_id: isUuid(data.assignedTailorId) ? data.assignedTailorId : null,
       // Pass virtual items & history so encodeOrderRow interceptor can serialise them into notes field safely
       items: data.items,
       history: [initialHistory]
@@ -3428,6 +3430,27 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         onChange={(val) => setValue('deliveryDate', val, { shouldValidate: true, shouldDirty: true })}
                       />
                       {errors.deliveryDate && <p className="text-xs text-danger font-bold mt-1">{String(errors.deliveryDate.message)}</p>}
+                    </div>
+
+                    {/* Bug report (sprint 2 reports engine, 2026-11-17):
+                        nothing in this form ever wrote assigned_tailor_id
+                        -- the order_items-level commission trigger
+                        (20240704_tailor_commissions.sql) and its
+                        order-level replacement here
+                        (20261119000000_order_level_tailor_commission.sql)
+                        both need a tailor actually assigned to compute
+                        anything. One tailor per order (not per item),
+                        same as the commission trigger's own scope. */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-black text-content-muted uppercase tracking-widest">{t('orders.assigned_tailor')}</label>
+                      <SmartSelect
+                        value={watch('assignedTailorId' as any) || ''}
+                        onChange={(v) => setValue('assignedTailorId' as any, v, { shouldDirty: true })}
+                        options={[
+                          { value: '', label: t('orders.assigned_tailor_none') },
+                          ...staff.filter(s => s.role === 'tailor').map(s => ({ value: s.id, label: s.name }))
+                        ]}
+                      />
                     </div>
 
                     <div className="space-y-2">

@@ -1882,6 +1882,8 @@
     "error_store_code_not_found": "Error: Store code not found",
     "error_store_not_found": "Error: Store not found",
     "expected_delivery_date": "Expected Delivery Date",
+    "assigned_tailor": "Assigned Tailor",
+    "assigned_tailor_none": "Not assigned",
     "export_excel": "Export Excel",
     "external_fabric": "External Fabric",
     "extra_notes": "Additional Notes",
@@ -4948,7 +4950,7 @@
       "all_tailors": "All Tailors",
       "col_completion_date": "Completion Date",
       "col_earned_commission": "Earned Commission",
-      "col_piece": "Piece",
+      "col_customer": "Customer",
       "col_tailor": "Tailor",
       "commissions": "Commissions",
       "distribution_by_tailor": "Commission Distribution by Tailor",
@@ -4957,7 +4959,8 @@
       "no_records": "No commission records available.",
       "subtitle": "A breakdown of tailor commissions for completed pieces.",
       "title": "Tailor Statement",
-      "total_commissions": "Total Commissions"
+      "total_commissions": "Total Commissions",
+      "completed_orders_count": "Completed Orders"
     },
     "subtitle": "Track the pieces assigned to you, your production stages, and the commission you've earned.",
     "tailoring_order": "Tailoring Order",

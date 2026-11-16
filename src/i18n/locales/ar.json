@@ -1882,6 +1882,8 @@
     "error_store_code_not_found": "خطأ: لم يتم العثور على كود المتجر",
     "error_store_not_found": "خطأ: لم يتم العثور على المتجر",
     "expected_delivery_date": "تاريخ التسليم المتوقع",
+    "assigned_tailor": "الخياط المسؤول",
+    "assigned_tailor_none": "بلا تعيين",
     "export_excel": "تصدير Excel",
     "external_fabric": "قماش خارجي",
     "extra_notes": "ملاحظات إضافية",
@@ -4951,7 +4953,7 @@
       "all_tailors": "جميع الخياطين",
       "col_completion_date": "تاريخ الإنجاز",
       "col_earned_commission": "العمولة المكتسبة",
-      "col_piece": "القطعة",
+      "col_customer": "العميل",
       "col_tailor": "الخياط",
       "commissions": "العمولات",
       "distribution_by_tailor": "توزيع العمولات حسب الخياط",
@@ -4960,7 +4962,8 @@
       "no_records": "لا توجد سجلات عمولات متاحة.",
       "subtitle": "تفصيل عمولات الخياطين عن القطع المنجزة",
       "title": "كشف حساب الخياطين",
-      "total_commissions": "إجمالي العمولات"
+      "total_commissions": "إجمالي العمولات",
+      "completed_orders_count": "الطلبات المنجزة"
     },
     "subtitle": "متابعة إنجاز القطع المسندة إليك، مراحلك التشغيلية، وعمولاتك المستحقة.",
     "tailoring_order": "طلب تفصيل",
