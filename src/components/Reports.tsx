@@ -5,6 +5,7 @@ import { handleError, OperationType } from '../lib/firebase';
 import { saveLastKnown, getLastKnown } from '../lib/offline/lastKnownCache';
 import { isNetworkFailure } from '../lib/offline/outbox';
 import { Order, Customer, InventoryItem, Staff, Shift, Role, PurchaseOrder, Supplier } from '../types';
+import { decodeOrderRow } from '../utils/orderHistoryHelper';
 
 interface ReportsData {
   orders: Order[];
@@ -129,7 +130,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
   const reportsQuery = useQuery({
     queryKey: ['reports_data', tenantId],
     queryFn: async (): Promise<ReportsData> => {
-      const [ordersRes, customersRes, inventoryRes, staffRes, rolesRes, purchaseOrdersRes, suppliersRes, shiftEntriesRes, salesReturnsRes] = await Promise.all([
+      const [ordersRes, customersRes, inventoryRes, staffRes, rolesRes, purchaseOrdersRes, suppliersRes, shiftEntriesRes, salesReturnsRes, orderItemsRes] = await Promise.all([
         supabase.from('orders').select('*').eq('tenant_id', tenantId).order('order_date', { ascending: false }),
         supabase.from('customers').select('*').eq('tenant_id', tenantId),
         supabase.from('inventory_items').select('*').eq('tenant_id', tenantId),
@@ -140,7 +141,16 @@ export default function Reports({ tenantId }: { tenantId: string }) {
         supabase.from('purchase_orders').select('*, purchase_order_items(*)').eq('tenant_id', tenantId),
         supabase.from('suppliers').select('*').eq('tenant_id', tenantId),
         supabase.from('shift_entries').select('amount, occurred_at, reason').eq('tenant_id', tenantId).eq('entry_type', 'payout'),
-        supabase.from('sales_returns').select('refunded_amount, returned_at').eq('tenant_id', tenantId)
+        supabase.from('sales_returns').select('refunded_amount, returned_at').eq('tenant_id', tenantId),
+        // Bug report (sprint 2 reports engine, 2026-11-17): orders has no
+        // `items` column at all -- a POS sale's items live only in
+        // order_items (this query), a تفصيل order created directly in
+        // "الطلبات" only in orders.notes (decoded below). Every order's
+        // `.items` here used to come straight off the raw row, which is
+        // always undefined either way -- COGS (profitLossStats) and the
+        // Z-report's items-sold/product breakdown were silently always
+        // zero/empty for every tenant, not just an edge case.
+        supabase.from('order_items').select('order_id, type, item_id, fabric_id, quantity, consumed_meters, name, garment_type, price').eq('tenant_id', tenantId)
       ]);
 
       if (ordersRes.error) throw ordersRes.error;
@@ -187,29 +197,58 @@ export default function Reports({ tenantId }: { tenantId: string }) {
         createdAt: s.created_at
       })) as unknown as Supplier[];
 
+      // order_items only ever has rows for a POS-checkout sale (type:
+      // 'ready_made'/'custom' already set correctly by create_pos_sale).
+      // A تفصيل order created directly in "الطلبات" never gets an
+      // order_items row -- its items are decoded from its own notes
+      // column instead (same dual-source merge taxInvoiceService.ts's
+      // fetchTaxInvoiceForOrder already uses for the same reason), and
+      // normalized to 'custom' since that form never produces anything
+      // else.
+      const itemsByOrderId = new Map<string, any[]>();
+      (orderItemsRes.data || []).forEach((oi: any) => {
+        const list = itemsByOrderId.get(oi.order_id) || [];
+        list.push({
+          type: oi.type,
+          itemId: oi.item_id,
+          fabricId: oi.fabric_id,
+          quantity: oi.quantity,
+          consumedMeters: oi.consumed_meters,
+          name: oi.name,
+          garmentType: oi.garment_type,
+          price: oi.price
+        });
+        itemsByOrderId.set(oi.order_id, list);
+      });
+
       // Map snake_case to camelCase for the UI
-      const mappedOrders = (ordersRes.data || []).map(o => ({
-        ...o,
-        customerId: o.customer_id,
-        customerName: o.customer_name,
-        tenantId: o.tenant_id,
-        branchId: o.branch_id,
-        shiftId: o.shift_id,
-        totalAmount: o.total_amount,
-        paidAmount: o.paid_amount,
-        remainingAmount: o.remaining_amount,
-        taxAmount: o.tax_amount,
-        taxRate: o.tax_rate,
-        orderDate: o.order_date,
-        deliveryDate: o.delivery_date,
-        createdBy: o.created_by,
-        subTotalAmount: o.subtotal_amount,
-        discountAmount: o.discount_amount,
-        orderNumber: o.order_number,
-        paymentMethod: o.payment_method,
-        customerPhone: o.customer_phone,
-        isTest: o.is_test
-      } as Order));
+      const mappedOrders = (ordersRes.data || []).map(o => {
+        const realItems = itemsByOrderId.get(o.id) ||
+          (decodeOrderRow(o).items || []).map((item: any) => ({ type: item.type || 'custom', ...item }));
+        return {
+          ...o,
+          customerId: o.customer_id,
+          customerName: o.customer_name,
+          tenantId: o.tenant_id,
+          branchId: o.branch_id,
+          shiftId: o.shift_id,
+          totalAmount: o.total_amount,
+          paidAmount: o.paid_amount,
+          remainingAmount: o.remaining_amount,
+          taxAmount: o.tax_amount,
+          taxRate: o.tax_rate,
+          orderDate: o.order_date,
+          deliveryDate: o.delivery_date,
+          createdBy: o.created_by,
+          subTotalAmount: o.subtotal_amount,
+          discountAmount: o.discount_amount,
+          orderNumber: o.order_number,
+          paymentMethod: o.payment_method,
+          customerPhone: o.customer_phone,
+          isTest: o.is_test,
+          items: realItems
+        } as Order;
+      });
 
       const mappedCustomers = (customersRes.data || []).map(c => ({
         ...c,
