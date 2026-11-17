@@ -81,6 +81,26 @@ jobs:
           path: playwright-report/
           retention-days: 14
 
+  # seen-cto-sprint4-design-quality-task.md item 4 (CTO review section
+  # 6/9): zero pgTAP coverage existed for any RLS policy or financial
+  # RPC -- the role-gating fixed in 20261121000000/20261122000000 (sprint
+  # 4 items 1/2, already in production) had no automated test proving it
+  # stays correct as later migrations touch the same tables. `supabase
+  # test db` spins up a full local Postgres from every migration in
+  # supabase/migrations/ (ubuntu-latest ships Docker already, no local
+  # setup needed) and runs every supabase/tests/*.sql file against it.
+  pgtap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Run pgTAP tests
+        run: supabase test db
+
   # مراجعة-الفريق-التقني-الكامل-2026-10-19.md (ديف أوبس): لا توجد خطوة CI
   # تبني capacitor-customer/android (تطبيق العملاء، Google Play) قبل أي
   # دمج -- كسر توافق Capacitor/Gradle كان لا يُكتشَف إلا عند محاولة بناء
