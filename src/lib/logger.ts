@@ -19,6 +19,36 @@ export const initLogger = () => {
   });
 };
 
+/**
+ * seen-cto-sprint4-design-quality-task.md item 1 (CTO review section
+ * 6/9): Sentry was wired up but carried no tenant/user context at all --
+ * every captured error arrived anonymous, so diagnosing a production
+ * incident meant guessing which merchant it came from from raw logs.
+ * Call this once identity resolves (AuthContext.tsx, after
+ * resolveIdentity), and again with null on logout, so every event from
+ * here on is scoped the same way without every call site passing its
+ * own context by hand.
+ */
+export const setLoggerUserContext = (user: {
+  uid: string;
+  tenantId: string | null;
+  role: string | null;
+  branchId?: string | null;
+} | null) => {
+  if (!import.meta.env.VITE_SENTRY_DSN || !import.meta.env.PROD) return;
+  if (!user) {
+    Sentry.setUser(null);
+    Sentry.setTag('tenant_id', null);
+    Sentry.setTag('role', null);
+    Sentry.setTag('branch_id', null);
+    return;
+  }
+  Sentry.setUser({ id: user.uid });
+  Sentry.setTag('tenant_id', user.tenantId);
+  Sentry.setTag('role', user.role);
+  if (user.branchId) Sentry.setTag('branch_id', user.branchId);
+};
+
 export const logError = (error: any, context?: any) => {
   if (!error) return;
 

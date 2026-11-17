@@ -57,11 +57,24 @@ export function initServerLogger(): void {
   });
 }
 
+// seen-cto-sprint4-design-quality-task.md item 1: the two call sites that
+// already passed tenantId (server.ts:2297, 2521) only reached Sentry as an
+// unindexed extra -- not filterable by tenant in the Sentry UI, same gap
+// the client logger had. The server has no persistent per-request session
+// to hook a single setUser() into like AuthContext.tsx does for the
+// browser, so this promotes whichever of these identifying fields a call
+// site happens to pass into real tags, without requiring every one of the
+// 7 call sites to change.
+const TAG_KEYS = ['tenantId', 'orderId', 'invoiceId'] as const;
+
 export function captureServerException(error: unknown, context?: Record<string, unknown>): void {
   if (!process.env.SENTRY_DSN) return;
   Sentry.withScope((scope) => {
     if (context) {
       for (const [key, value] of Object.entries(context)) {
+        if ((TAG_KEYS as readonly string[]).includes(key) && value != null) {
+          scope.setTag(key, String(value));
+        }
         scope.setExtra(key, value);
       }
     }

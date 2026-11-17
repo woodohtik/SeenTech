@@ -11,6 +11,7 @@ import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 
 import { supabase } from '../lib/supabase/client';
 import { setCurrentAuthSessionInfo } from '../lib/firebase';
+import { setLoggerUserContext } from '../lib/logger';
 import { getDeviceSessionId } from '../utils/session';
 import { getIsOnline } from '../lib/offline/connectivity';
 import { cacheIdentitySnapshot, getCachedIdentitySnapshot } from '../lib/offline/identityCache';
@@ -181,6 +182,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             localStorage.removeItem('impersonatedTenantId');
         }
     }, [impersonationTenantId]);
+
+    // seen-cto-sprint4-design-quality-task.md item 1: scope every Sentry
+    // event from here on to the resolved identity, once, instead of each
+    // call site passing tenant/user context by hand (which nothing did).
+    // Reacts to resolveIdentity's own state, not a separate effect inside
+    // it, so this stays correct across every one of its many setAppState
+    // branches (including impersonation, which overrides the effective
+    // tenant) without touching that function's own logic.
+    useEffect(() => {
+        const uid = session?.user?.id;
+        if (!uid || !appState.userRole) {
+            setLoggerUserContext(null);
+            return;
+        }
+        setLoggerUserContext({
+            uid,
+            tenantId: impersonationTenantId || appState.tenantId,
+            role: appState.userRole,
+            branchId: appState.currentUserStaff?.branchId ?? null,
+        });
+    }, [session?.user?.id, appState.userRole, appState.tenantId, appState.currentUserStaff, impersonationTenantId]);
 
     // Resolves the full app-facing identity (device-session conflict, role,
     // tenant, onboarding step) from a Supabase session. This is the single
