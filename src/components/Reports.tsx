@@ -35,6 +35,7 @@ import {
   AreaChart,
   Area
 } from 'recharts';
+import type { TooltipValueType } from 'recharts';
 import {
   Download,
   TrendingUp,
@@ -1256,7 +1257,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                       </Pie>
                       <Tooltip 
                         contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
-                        formatter={(value: number) => <PriceDisplay amount={value} />}
+                        formatter={(value?: TooltipValueType) => <PriceDisplay amount={Number(value) || 0} />}
                       />
                       <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 700 }} />
                     </PieChart>
@@ -1326,7 +1327,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                       <Tooltip
                         cursor={{ fill: 'var(--color-surface-muted)' }}
                         contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
-                        formatter={(value: number) => <PriceDisplay amount={value} />}
+                        formatter={(value?: TooltipValueType) => <PriceDisplay amount={Number(value) || 0} />}
                       />
                       <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                         {profitLossStats.chartData.map((_, index) => (
@@ -1785,7 +1786,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'var(--content-muted)' }} />
                       <Tooltip
                         contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 800, backgroundColor: 'var(--color-surface)', color: 'var(--color-content)', fontSize: '12px' }}
-                        formatter={(value: number) => <PriceDisplay amount={value} />}
+                        formatter={(value?: TooltipValueType) => <PriceDisplay amount={Number(value) || 0} />}
                       />
                       <Area type="monotone" dataKey="total" stroke="var(--brand)" strokeWidth={3} fillOpacity={1} fill="url(#colorPurchases)" />
                     </AreaChart>

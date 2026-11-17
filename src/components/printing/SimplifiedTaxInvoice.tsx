@@ -155,7 +155,6 @@ export default function SimplifiedTaxInvoice({
   const totalPieces = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
 
   // Paid and remaining calculations
-  // @ts-ignore
   const { paidAmount, remainingAmount } = computePaidRemaining(computedTotals.grandTotal, totals?.paidAmount, totals?.remainingAmount);
 
   // NOTE on `print:mx-auto` below (it used to be `print:m-0`):

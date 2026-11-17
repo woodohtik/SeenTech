@@ -229,7 +229,6 @@ export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabPro
       const toolResultsAcc: ToolResult[] = [];
       let lineBuffer = '';
       pendingTourTopicRef.current = null;
-      // eslint-disable-next-line no-constant-condition
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;

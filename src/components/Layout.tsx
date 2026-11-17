@@ -158,12 +158,12 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
 
   const effectiveRole = currentStaff?.role || role;
 
-  const { hasPermission, loading: permissionsLoading } = usePermissions(currentStaff);
+  const { hasPermission, loading: permissionsLoading } = usePermissions(currentStaff ?? null);
 
   // Dynamic RBAC Menu Configuration
   const navItems = getFilteredNavItems(effectiveRole, isActingAsSaaS, isImpersonatingSaaS).map(item => ({
     ...item,
-    label: t(item.labelKey, item.defaultLabel)
+    label: t(item.labelKey, item.defaultLabel ?? item.labelKey)
   })).filter(item => {
     // Secondary check for fine-grained permissions if explicitly required
     if (isImpersonatingSaaS || isOwner || effectiveRole === 'super_admin') return true;
@@ -653,7 +653,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
           <SeenAIFab
             tenantId={tenantId}
             userName={currentStaff?.name || dbUser?.display_name || dbUser?.email || ''}
-            userRole={effectiveRole}
+            userRole={effectiveRole ?? undefined}
           />
         </ErrorBoundary>
       </div>

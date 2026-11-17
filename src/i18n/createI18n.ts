@@ -179,7 +179,6 @@ export function createI18n(
   // strings are caught before they reach users instead of silently showing Arabic.
   if (import.meta.env?.DEV) {
     i18n.on('missingKey', (lngs, namespace, key) => {
-      // eslint-disable-next-line no-console
       console.warn(`[i18n] missing key "${key}" for ${JSON.stringify(lngs)} (${namespace})`);
     });
   }

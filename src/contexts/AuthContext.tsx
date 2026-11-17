@@ -339,7 +339,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 // deactivated saas_users row here too, same reasoning as
                 // resolveDbUser above.
                 const saasActive = saasOverrideRes.data && saasOverrideRes.data.is_active !== false;
-                const role = (saasActive ? saasOverrideRes.data.role : staffData.role) as UserRole;
+                const role = (saasActive && saasOverrideRes.data ? saasOverrideRes.data.role : staffData.role) as UserRole;
 
                 // The `tenant:tenants(*)` embed above can come back null on a
                 // cold PostgREST read right after login (RLS on the embedded

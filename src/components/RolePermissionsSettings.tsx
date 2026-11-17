@@ -326,7 +326,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
 
   const handleCreateCustomRole = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newRoleName.trim()) return;
+    if (!newRoleName.trim() || !tenantId) return;
 
     setSaving(true);
     try {

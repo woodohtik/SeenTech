@@ -3774,14 +3774,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         </button>
                       </div>
                       <div className="grid grid-cols-3 gap-2">
-                        {watch('images')?.map((img, idx) => (
+                        {watch('images')?.map((img: string, idx: number) => (
                           <div key={img + idx} className="relative group aspect-square">
                             <img src={img} className="w-full h-full object-cover rounded-xl border border-border" referrerPolicy="no-referrer" />
                             <button 
                               type="button"
                               onClick={() => {
                                 const currentImages = watch('images') || [];
-                                setValue('images', currentImages.filter((_, i) => i !== idx));
+                                setValue('images', currentImages.filter((_: string, i: number) => i !== idx));
                               }}
                               className="absolute -top-1 -right-1 bg-danger text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                             >

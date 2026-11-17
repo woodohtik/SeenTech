@@ -6,7 +6,7 @@ let supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
 if (supabaseUrl?.endsWith('/')) {
     supabaseUrl = supabaseUrl.slice(0, -1);
 }
-let supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
 
 const isPlaceholder = !supabaseUrl || (supabaseUrl && supabaseUrl.includes('placeholder')) || !supabaseUrl.startsWith('http');
 
@@ -52,7 +52,7 @@ export const supabase: SupabaseClient<any> =
                     if (isOrdersRequest && options?.body && (options.method === 'POST' || options.method === 'PATCH' || options.method === 'PUT')) {
                         try {
                             const rawBody = typeof options.body === 'string' ? options.body : new TextDecoder().decode(options.body as any);
-                            let parsedBody = JSON.parse(rawBody);
+                            const parsedBody = JSON.parse(rawBody);
 
                             // If PATCH or PUT, dynamically retrieve existing order to merge virtual columns and prevent data loss
                             if (options.method === 'PATCH' || options.method === 'PUT') {
@@ -196,5 +196,6 @@ export const supabase: SupabaseClient<any> =
     );
 
 if (import.meta.env.DEV) {
-    globalThis.__supabase__ = supabase;
+    // Dev-only console escape hatch (`window.__supabase__`), not a typed global.
+    (globalThis as typeof globalThis & { __supabase__?: typeof supabase }).__supabase__ = supabase;
 }

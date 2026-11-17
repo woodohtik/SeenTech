@@ -18,7 +18,7 @@ export function formatSaudiPhone(phone: string | null | undefined): string {
   // an optional country code, so any of those internal separators survived
   // into the saved value and made even an unrelated edit to the same
   // customer fail validation on every later save.
-  let str = String(phone)
+  const str = String(phone)
     .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString())
     .replace(/[\s-]/g, '')
     .trim();

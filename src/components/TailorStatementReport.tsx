@@ -18,6 +18,7 @@ import {
   AreaChart,
   Area
 } from 'recharts';
+import type { TooltipValueType } from 'recharts';
 import { localeOf } from '../lib/direction';
 import i18n from '../i18n/config';
 
@@ -205,7 +206,7 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--content-muted)' }} />
                   <Tooltip 
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    formatter={(value: number) => [`${value.toFixed(2)} ﷼`, t('tailors.statement.commissions')]}
+                    formatter={(value?: TooltipValueType) => [`${(Number(value) || 0).toFixed(2)} ﷼`, t('tailors.statement.commissions')]}
                   />
                   <Area type="monotone" dataKey="total" stroke="var(--brand)" strokeWidth={3} fillOpacity={1} fill="url(#colorCommission)" />
                 </AreaChart>
@@ -225,7 +226,7 @@ export default function TailorStatementReport({ tenantId }: TailorStatementRepor
                     <Tooltip 
                       cursor={{ fill: 'var(--surface-muted)' }}
                       contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                      formatter={(value: number) => [`${value.toFixed(2)} ﷼`, t('tailors.statement.commissions')]}
+                      formatter={(value?: TooltipValueType) => [`${(Number(value) || 0).toFixed(2)} ﷼`, t('tailors.statement.commissions')]}
                     />
                     <Bar dataKey="total" fill="var(--success)" radius={[0, 4, 4, 0]} barSize={24} />
                   </BarChart>

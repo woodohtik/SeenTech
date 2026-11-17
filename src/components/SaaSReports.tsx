@@ -11,6 +11,7 @@ import {
   BarChart,
   Bar
 } from 'recharts';
+import type { TooltipValueType } from 'recharts';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '../contexts/ToastContext';
 
@@ -180,7 +181,7 @@ export default function SaaSReports() {
               <Tooltip
                 cursor={{ fill: 'var(--surface-muted)' }}
                 contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                formatter={(value: number) => [ <PriceDisplay amount={value} />, '' ]}
+                formatter={(value?: TooltipValueType) => [ <PriceDisplay amount={Number(value) || 0} />, '' ]}
               />
               <Bar dataKey="revenue" fill="var(--brand)" radius={[8, 8, 0, 0]} />
             </BarChart>

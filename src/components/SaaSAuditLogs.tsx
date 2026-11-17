@@ -238,7 +238,7 @@ export default function SaaSAuditLogs() {
                     </div>
                   </td>
                   <td className="px-8 py-6">
-                    <p className="text-sm text-content-muted font-medium max-w-md truncate" title={log.details}>
+                    <p className="text-sm text-content-muted font-medium max-w-md truncate" title={log.details ?? undefined}>
                       {log.details}
                     </p>
                   </td>

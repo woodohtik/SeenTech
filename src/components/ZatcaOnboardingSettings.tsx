@@ -107,7 +107,6 @@ export default function ZatcaOnboardingSettings({ tenantId }: ZatcaOnboardingSet
 
   useEffect(() => {
     if (tenantId && tenantId !== 'saas_management') void loadStatus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId]);
 
   const profileComplete = Boolean(

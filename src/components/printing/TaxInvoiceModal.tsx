@@ -63,7 +63,6 @@ export function TaxInvoiceDocument({ order, tenant, onClose }: TaxInvoiceModalPr
   const totalExcVat = order.subTotal || (totalIncVat - vatAmount);
   // order.taxRate || 15 كان يستبدل 0% (فاتورة معفاة) بـ15% خطأً لأن 0 قيمة
   // falsy في JS.
-  // @ts-ignore
   const rawTaxRate = (order.taxRate !== null && order.taxRate !== undefined && Number.isFinite(Number(order.taxRate)))
     ? Number(order.taxRate)
     : 15;
@@ -98,9 +97,9 @@ export function TaxInvoiceDocument({ order, tenant, onClose }: TaxInvoiceModalPr
   const handlePrint = async () => {
     logEmployeeAction(
       order.tenantId,
-      // @ts-ignore
+      // @ts-expect-error currentStaffId is set on window ad hoc elsewhere, not declared on its type
       window.currentStaffId || 'system',
-      // @ts-ignore
+      // @ts-expect-error currentStaffName is set on window ad hoc elsewhere, not declared on its type
       window.currentStaffName || 'System',
       'print_invoice',
       `طباعة فاتورة ضريبية رقم ${order.invoiceNumber || order.id}`
@@ -220,7 +219,7 @@ export function TaxInvoiceDocument({ order, tenant, onClose }: TaxInvoiceModalPr
   };
 
   // Extract payment method safely if defined
-  // @ts-ignore
+  // @ts-expect-error order.paymentMethod isn't declared on this order type, only the snake_case DB column is
   const orderPayMethod = String(order.paymentMethod || (order as any).payment_method || 'cash').toLowerCase();
   const paymentMethodAr = (orderPayMethod === 'network' || orderPayMethod === 'card' || orderPayMethod === 'mada') ? t('pos.card') :
     (orderPayMethod === 'bank_transfer' || orderPayMethod === 'transfer') ? t('pos.bank_transfer') :

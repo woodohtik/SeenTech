@@ -75,7 +75,7 @@ interface ZatcaInvoiceInputCommon {
   certificateBase64?: string;
 }
 
-export interface ZatcaSimplifiedInvoiceInput extends ZatcaInvoiceInputCommon {}
+export type ZatcaSimplifiedInvoiceInput = ZatcaInvoiceInputCommon;
 
 export interface ZatcaStandardInvoiceInput extends ZatcaInvoiceInputCommon {
   /** Required for a standard (B2B) invoice -- absent on a simplified one. */

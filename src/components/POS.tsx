@@ -510,7 +510,23 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       }
 
       if (!tenantResult.error && tenantResult.data) {
-        const tenantData = tenantResult.data;
+        // tsconfig `strict` (seen-cto-sprint4-design-quality-task.md item 2):
+        // the Supabase client here is created with createClient<any>
+        // (services/supabase/client.ts), so settleQuery<T>'s generic
+        // inference against it collapses to `never` rather than a usable
+        // row type. Narrow typing of just the fields this block actually
+        // reads, rather than fixing the client's typing project-wide.
+        const tenantData = tenantResult.data as {
+          vat_number: string | null;
+          name: string | null;
+          tax_settings: {
+            enabled?: boolean;
+            trn?: string;
+            legalName?: string;
+            vatRate?: number;
+            tailoringTaxType?: string;
+          } | null;
+        };
         const hasVat = Boolean(tenantData.vat_number && tenantData.vat_number.trim().length > 0);
         const rawTax = tenantData.tax_settings;
         const resolvedTax = rawTax ? {
@@ -1250,8 +1266,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       let qrCodeBase64 = "";
       
       let invoiceType = 'simplified_b2c';
-      let b2bCompanyName = isB2B ? b2bData.companyName : '';
-      let b2bTRN = isB2B ? b2bData.trn : '';
+      const b2bCompanyName = isB2B ? b2bData.companyName : '';
+      const b2bTRN = isB2B ? b2bData.trn : '';
       
       if (isB2B) {
          if (!b2bCompanyName || !b2bTRN) {
@@ -3203,12 +3219,12 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   </div>
                   <div>
                     <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">{t('orders.fabric')}</label>
-                    <SmartSelect 
-                      value={customItemForm.fabricId}
+                    <SmartSelect
+                      value={customItemForm.fabricId || ''}
                       onChange={(val) => {
                         const fabric = inventory.find(i => i.id === val);
                         setCustomItemForm({
-                          ...customItemForm, 
+                          ...customItemForm,
                           fabricId: val,
                           fabric: fabric?.name || ''
                         });

@@ -106,7 +106,7 @@ export default function ZReport({ data, onClose }: ZReportProps) {
   };
 
   const proceedToWhatsApp = () => {
-    let phone = formatSaudiPhone(recipientPhone).replace('+', '');
+    const phone = formatSaudiPhone(recipientPhone).replace('+', '');
 
     if (phone) {
       localStorage.setItem('last_zreport_whatsapp_phone', recipientPhone);
@@ -383,11 +383,11 @@ export default function ZReport({ data, onClose }: ZReportProps) {
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <div className="p-3 sm:p-4 border border-border rounded-xl sm:rounded-2xl bg-surface-muted/30">
               <p className="text-[9px] sm:text-[10px] font-black text-content-muted mb-1 uppercase">{t('shift_history.expected', 'النقد المتوقع')}</p>
-              <p className="text-sm sm:text-xl font-black text-content"><PriceDisplay amount={data.expectedCash} /></p>
+              <p className="text-sm sm:text-xl font-black text-content"><PriceDisplay amount={data.expectedCash ?? 0} /></p>
             </div>
             <div className="p-3 sm:p-4 border border-border rounded-xl sm:rounded-2xl bg-surface-muted/30">
               <p className="text-[9px] sm:text-[10px] font-black text-content-muted mb-1 uppercase">{t('shift_history.actual', 'النقد الفعلي')}</p>
-              <p className="text-sm sm:text-xl font-black text-content"><PriceDisplay amount={data.actualCash} /></p>
+              <p className="text-sm sm:text-xl font-black text-content"><PriceDisplay amount={data.actualCash ?? 0} /></p>
             </div>
           </div>
           <div className={cn(
@@ -397,7 +397,7 @@ export default function ZReport({ data, onClose }: ZReportProps) {
             <div className="flex justify-between sm:block">
               <p className="text-[10px] font-bold uppercase opacity-80 mb-1">{t('z_report.net_discrepancy', 'صافي العجز / الزيادة')}</p>
               <h4 className="text-lg sm:text-2xl font-black">
-                {data.discrepancy === 0 ? t('shift_closing.match_status', 'المبلغ مطابق') : <PriceDisplay amount={data.discrepancy} />}
+                {data.discrepancy === 0 ? t('shift_closing.match_status', 'المبلغ مطابق') : <PriceDisplay amount={data.discrepancy ?? 0} />}
               </h4>
             </div>
             <div className="flex justify-between sm:block sm:text-right border-t border-white/20 sm:border-0 pt-3 sm:pt-0">

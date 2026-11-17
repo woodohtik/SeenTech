@@ -714,6 +714,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                           render={({ field }) => (
                             <SmartSelect
                               {...field}
+                              value={field.value || ''}
                               className="w-full bg-white border border-border focus-within:border-brand rounded-xl py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none transition-all shadow-sm"
                               options={[
                                 { value: 'registered', label: t('onboarding.tax_status_options.registered') },
@@ -861,6 +862,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                           render={({ field }) => (
                             <SmartSelect
                               {...field}
+                              value={field.value || ''}
                               className="w-full bg-white border border-border focus-within:border-brand rounded-xl py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none transition-all shadow-sm"
                               options={[
                                 { value: 'ar', label: 'العربية' },

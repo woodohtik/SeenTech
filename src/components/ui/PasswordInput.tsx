@@ -2,7 +2,7 @@ import React, { forwardRef, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { IconInput, IconInputProps } from './IconInput';
 
-export interface PasswordInputProps extends Omit<IconInputProps, 'type' | 'endIcon'> {}
+export type PasswordInputProps = Omit<IconInputProps, 'type' | 'endIcon'>;
 
 /** seen-fields-unification-task.md #3: IconInput + زر إظهار/إخفاء -- يحل محل النسخ المحلية المكرَّرة (AddEmployeeModal.tsx وغيره). */
 export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>((props, ref) => {

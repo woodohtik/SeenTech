@@ -215,7 +215,8 @@ export type PermissionsMap = Record<PermissionKey, boolean>;
 
 export interface Role {
   id: string;
-  tenantId: string;
+  /** null for system/default roles (not scoped to any tenant) -- see permissionService.ts's `.is('tenant_id', null)` system-role lookup. */
+  tenantId: string | null;
   roleKey: string;
   name: string;
   description: string;

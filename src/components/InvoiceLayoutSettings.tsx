@@ -27,6 +27,41 @@ interface InvoiceLayoutSettingsProps {
   tenantId: string;
 }
 
+// tsconfig `strict` (seen-cto-sprint4-design-quality-task.md item 2):
+// the settings useState initializer below spreads JSON.parse's `any`
+// result into its returned object, which widened the whole state's
+// inferred type to `any` -- every setSettings(prev => ...)/setSettings(s
+// => ...) callback below then had an implicit-any `prev`/`s` parameter.
+// Matches this component's actual field set/enums, not the narrower
+// InvoiceLayoutSettingsType shared with InvoiceReceipt.tsx (missing
+// printSize, and a different layoutTemplate union there).
+interface InvoiceSettings {
+  printSize: 'thermal80' | 'thermal58' | 'a4' | 'a5';
+  layoutTemplate: 'classic' | 'detailed' | 'tax';
+  fastThermalMode: boolean;
+  header: {
+    logoUrl: string;
+    facilityName: string;
+    contactNumbers: string;
+    address: string;
+    taxId: string;
+    alignment: 'right' | 'left' | 'center';
+    logoBorder: boolean;
+  };
+  columns: {
+    showUnitPrice: boolean;
+    showDiscount: boolean;
+    showMeasurements: boolean;
+    showBarcode: boolean;
+    showCustomerName: boolean;
+  };
+  footer: {
+    returnPolicy: string;
+    thankYouMessage: string;
+    showZatcaQr: boolean;
+  };
+}
+
 export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSettingsProps) {
   const { t, i18n } = useTranslation();
   const { error: toastError } = useToast();
@@ -36,8 +71,8 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<'controls' | 'preview'>('controls');
 
-  const [settings, setSettings] = useState(() => {
-    const defaultSettings = {
+  const [settings, setSettings] = useState<InvoiceSettings>(() => {
+    const defaultSettings: InvoiceSettings = {
       printSize: 'thermal80',
       layoutTemplate: 'classic',
       fastThermalMode: localStorage.getItem('pos_fast_thermal_mode') === 'true',
@@ -331,10 +366,10 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
               <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">{t('settings_page.invoice.paper_size')}</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { id: 'thermal80', label: t('settings_page.invoice.thermal80') },
-                  { id: 'thermal58', label: t('settings_page.invoice.thermal58') },
-                  { id: 'a4', label: 'A4' },
-                  { id: 'a5', label: 'A5' },
+                  { id: 'thermal80' as const, label: t('settings_page.invoice.thermal80') },
+                  { id: 'thermal58' as const, label: t('settings_page.invoice.thermal58') },
+                  { id: 'a4' as const, label: 'A4' },
+                  { id: 'a5' as const, label: 'A5' },
                 ].map(size => (
                   <button
                     key={size.id}
@@ -356,9 +391,9 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
               <label className="text-[10px] font-black text-content-muted uppercase tracking-[0.2em] px-1">{t('settings_page.invoice.layout_template')}</label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
-                  { id: 'classic', label: t('settings_page.invoice.classic') },
-                  { id: 'detailed', label: t('settings_page.invoice.detailed') },
-                  { id: 'tax', label: t('settings_page.invoice.tax') },
+                  { id: 'classic' as const, label: t('settings_page.invoice.classic') },
+                  { id: 'detailed' as const, label: t('settings_page.invoice.detailed') },
+                  { id: 'tax' as const, label: t('settings_page.invoice.tax') },
                 ].map(template => (
                   <button
                     key={template.id}

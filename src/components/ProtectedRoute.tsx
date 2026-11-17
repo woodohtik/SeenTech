@@ -32,7 +32,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   redirectTo
 }) => {
   const location = useLocation();
-  const { hasPermission, loading } = usePermissions(staff);
+  const { hasPermission, loading } = usePermissions(staff ?? null);
 
   // While permissions are loading, return the page skeleton to prevent premature Access Denied flashes
   if (loading) {

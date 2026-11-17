@@ -84,7 +84,7 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
         let taxes = 0;
         let totalSales = 0;
         let grossSales = 0;
-        let discounts = 0;
+        const discounts = 0;
         let orderCount = 0;
         let itemsSoldCount = 0;
         const productMap = new Map<string, { name: string; quantity: number; total: number }>();

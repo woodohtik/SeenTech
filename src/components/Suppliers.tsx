@@ -860,7 +860,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                 {(() => {
                   const items = inventory.filter(p => p.supplierId === selectedSupplierDetails.id || (p as any).supplier_id === selectedSupplierDetails.id);
                   const linkedProductsTotal = items.reduce((sum, p) => {
-                    const meta = decodeInventoryDescription(p.description);
+                    const meta = decodeInventoryDescription(p.description ?? null);
                     return sum + (Number(meta.costPrice || 0) * Number(p.quantity || 0));
                   }, 0);
                   const baseBalance = Number(selectedSupplierDetails.balance || 0);
@@ -955,7 +955,7 @@ export default function Suppliers({ tenantId }: { tenantId: string }) {
                         </thead>
                         <tbody className="divide-y divide-border text-sm">
                           {linkedItems.map((item) => {
-                            const meta = decodeInventoryDescription(item.description);
+                            const meta = decodeInventoryDescription(item.description ?? null);
                             const stockValue = Number(meta.costPrice || 0) * Number(item.quantity || 0);
 
                             return (

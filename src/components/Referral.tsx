@@ -51,7 +51,7 @@ export default function Referral({ tenantId }: { tenantId: string }) {
     }
     finally { setLoading(false); }
   }
-  useEffect(() => { if (tenantId) load(); /* eslint-disable-next-line */ }, [tenantId]);
+  useEffect(() => { if (tenantId) load(); }, [tenantId]);
 
   function copy() {
     navigator.clipboard?.writeText(link).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1600); }).catch(() => {});
