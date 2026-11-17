@@ -42,23 +42,16 @@ BEGIN
   RETURN v_id;
 END; $$;
 
--- process_withdrawal: super-admin only (this is SaaS-side approval, never a tenant action).
-CREATE OR REPLACE FUNCTION process_withdrawal(p_request uuid, p_approve boolean, p_note text)
-RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
-DECLARE r withdrawal_requests%ROWTYPE;
-BEGIN
-  IF NOT app_is_super_admin() THEN
-    RAISE EXCEPTION 'Forbidden: only a super admin may process withdrawals';
-  END IF;
-  SELECT * INTO r FROM withdrawal_requests WHERE id = p_request FOR UPDATE;
-  IF r.status <> 'pending' THEN RAISE EXCEPTION 'الطلب مُعالَج مسبقاً'; END IF;
-  IF p_approve THEN
-    UPDATE withdrawal_requests SET status='paid', admin_note=p_note, processed_at=now() WHERE id=p_request;
-  ELSE
-    UPDATE withdrawal_requests SET status='rejected', admin_note=p_note, processed_at=now() WHERE id=p_request;
-    UPDATE referral_wallets SET balance = balance + r.amount, updated_at=now() WHERE tenant_id = r.tenant_id;
-  END IF;
-END; $$;
+-- process_withdrawal: moved to 20261123000000_process_withdrawal_after_table.sql
+-- (seen-cto-sprint4-design-quality-task.md item 4) -- its `r
+-- withdrawal_requests%ROWTYPE` declaration is resolved eagerly at CREATE
+-- FUNCTION time (unlike the plain SQL in request_withdrawal's body below,
+-- which Postgres only parses at execution time), but withdrawal_requests
+-- itself isn't created until 20260910050000_backfill_referral_program.sql
+-- -- almost a month after this migration's own timestamp. This broke any
+-- fresh from-scratch migration replay (confirmed by `supabase test db` in
+-- CI) even though it had always succeeded against staging/production,
+-- where the table already existed by the time this file was first pushed.
 
 -- confirm_referral: internal only (fired by the tenants trigger after a real
 -- subscription activation) — never callable directly by a client, since
