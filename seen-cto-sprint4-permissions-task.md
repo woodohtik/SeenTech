@@ -8,13 +8,15 @@
 
 ## البنود الثلاثة المتبقية (من تقرير التدقيق)
 
-### 1. `increment_supplier_balance` + `supplier_transactions` — حرجة ❌ لم يُنفَّذ بعد
+### 1. `increment_supplier_balance` + `supplier_transactions` — ✅ منفَّذ ومُختبَر حياً، بانتظار موافقة صريحة للإنتاج
 
 - **الحالة الحالية**: `increment_supplier_balance` (`supabase/migrations/20261019040000_increment_supplier_balance_idempotency.sql:30-49`) تتحقق فقط من `app_current_tenant_id()` — بلا أي `app_current_role()`. أي كاشير بجلسة صالحة لنفس المستأجر يستدعي `supabase.rpc('increment_supplier_balance', {p_supplier_id, p_delta: -999999})` من console المتصفح مباشرة ويُصفّي/يُضخِّم رصيد مورّد بلا أي بوابة.
 - `supplier_transactions_tenant_isolation` (`20261019020000_missing_tables_schema_drift.sql:46-51`) سياسة `FOR ALL` واحدة تفحص المستأجر فقط — أي موظف يملك INSERT/UPDATE/DELETE مباشر على دفتر حسابات الموردين.
 - `addSupplierTransaction` في `src/services/supplierAccountsService.ts:63-110` بلا أي فحص دور client-side حتى.
 - **الخطة**: migration جديدة — (أ) أضف فحص `app_current_role() IN ('owner','admin','manager','accountant')` في `increment_supplier_balance` (نفس مجموعة الأدوار المستخدَمة في `issue_supplier_payment` الموجودة فعلاً — للاتساق). (ب) قسّم `supplier_transactions_tenant_isolation` لسياستين: SELECT لكل الموظفين (تطابق مستأجر فقط، كما هي)، وINSERT/UPDATE/DELETE لنفس مجموعة الأدوار أعلاه فقط. (ج) `supplierAccountsService.ts`: لا تغيير منطقي مطلوب (الخادم سيرفض الآن) لكن أضف معالجة خطأ واضحة للمستخدم بدل رسالة Postgres الخام.
-- **تقدير**: نصف يوم.
+- **تقدير**: نصف يوم (تحقَّق — هذا بالضبط ما استغرقه).
+- **تحقَّق حياً عبر معاملة قابلة للتراجع على staging**: دور cashier وهمي (مُنشَأ ومحذوف داخل نفس المعاملة) رُفض بالرسالة الصحيحة "لا تملك صلاحية تعديل رصيد المورد" عند استدعاء الـRPC مباشرة، ورُفض أيضاً بسياسة RLS الجديدة عند INSERT مباشر على `supplier_transactions`، مع بقاء SELECT يعمل له بلا تأثر. دور owner حقيقي نجح بالاستدعاء بشكل طبيعي. تحقَّقتُ لاحقاً أن مسارَي الاستدعاء الشرعيَّين الوحيدين (`Suppliers.tsx` استيراد مورّدين، `PurchaseReturns.tsx`) كلاهما خلف نفس بوابة الصلاحية `suppliers.manage` (نفس مجموعة الأدوار بالضبط) — لا كسر متوقَّع. تأكَّد حياً في المتصفح (owner) أن شاشة الموردين وكشف حساب المورّد ما زالا يعملان بلا أي تراجع.
+- دُفعت المايجريشن لقاعدة staging (`supabase db push`). `npx tsc --noEmit` نظيف، `npx vitest run` ناجح بالكامل (526/526). الكود مُلتزَم (commit `fd92c9a`) على `main` — **لم يُدفَع بعد لقاعدة بيانات الإنتاج**.
 
 ### 2. UPDATE على 6 جداول مالية (orders/order_items/payments/shifts/shift_entries/sales_returns) — عالية ❌ لم يُنفَّذ بعد
 

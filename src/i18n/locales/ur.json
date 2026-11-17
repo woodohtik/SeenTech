@@ -911,18 +911,6 @@
       "yearly": "سالانہ"
     },
     "title": "ڈیش بورڈ",
-    "today": {
-      "collected_today": "آج کی وصولی",
-      "due_for_delivery": "ڈیلیوری کے لیے واجب ({{count}})",
-      "in_progress_count": "جاری ({{count}})",
-      "low_stock_warning": "{{count}} مواد ختم ہونے کو ہیں — جائزہ لیں",
-      "move_to_next_stage": "اگلے مرحلے میں منتقل کریں",
-      "next_stage_short": "اگلا ▸",
-      "no_active_orders": "کوئی آرڈر جاری نہیں",
-      "no_due_deliveries": "کوئی ڈیلیوری واجب نہیں 👍",
-      "stock_alert": "اسٹاک الرٹ",
-      "title": "آج"
-    },
     "total_customers": "کل گاہک",
     "total_in_period": "مدت کا کل",
     "total_revenue": "کل آمدنی",

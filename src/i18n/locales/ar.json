@@ -913,18 +913,6 @@
       "yearly": "سنوي"
     },
     "title": "لوحة التحكم",
-    "today": {
-      "collected_today": "تحصيل اليوم",
-      "due_for_delivery": "مستحق التسليم ({{count}})",
-      "in_progress_count": "قيد التنفيذ ({{count}})",
-      "low_stock_warning": "{{count}} مادة قاربت على النفاد — راجعها",
-      "move_to_next_stage": "نقل للمرحلة التالية",
-      "next_stage_short": "التالي ▸",
-      "no_active_orders": "لا طلبات جارية",
-      "no_due_deliveries": "ما في تسليمات مستحقة 👍",
-      "stock_alert": "تنبيه مخزون",
-      "title": "اليوم"
-    },
     "total_customers": "إجمالي العملاء",
     "total_in_period": "إجمالي الفترة",
     "total_revenue": "إجمالي الإيرادات",

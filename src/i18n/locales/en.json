@@ -913,18 +913,6 @@
       "yearly": "Yearly"
     },
     "title": "Dashboard",
-    "today": {
-      "collected_today": "Collected Today",
-      "due_for_delivery": "Due for Delivery ({{count}})",
-      "in_progress_count": "In Progress ({{count}})",
-      "low_stock_warning": "{{count}} materials running low — review them",
-      "move_to_next_stage": "Move to Next Stage",
-      "next_stage_short": "Next ▸",
-      "no_active_orders": "No active orders",
-      "no_due_deliveries": "No deliveries due 👍",
-      "stock_alert": "Stock Alert",
-      "title": "Today"
-    },
     "total_customers": "Total Customers",
     "total_in_period": "Period Total",
     "total_revenue": "Total Revenue",

@@ -139,6 +139,8 @@ interface FallbackPaymentReceipt {
   issuedAt: string;
 }
 
+const isUuidLike = (val: string | undefined | null) =>
+  val ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val) : false;
 
 export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?: string }) {
   const router = useRouter();
@@ -645,14 +647,24 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     if (amount <= 0) return;
     setSettlingOrderId(order.id);
     try {
-      const newPaidAmount = order.paidAmount + amount;
-      const { error } = await supabase
-        .from('orders')
-        .update({ paid_amount: newPaidAmount })
-        .eq('id', order.id);
+      // seen-cto-sprint4-permissions-task.md item 2: this used to write
+      // orders.paid_amount directly, bypassing record_order_payment
+      // entirely -- no payments row, no order_history entry, and (unlike
+      // Orders.tsx's own debt-settling path) no shift_id, so this cash
+      // never entered till reconciliation even though a shift is
+      // available here. Same RPC Orders.tsx already uses for the
+      // equivalent action.
+      const { data: result, error } = await supabase.rpc('record_order_payment', {
+        p_operation_id: globalThis.crypto.randomUUID(),
+        p_order_id: order.id,
+        p_amount: amount,
+        p_method: 'cash',
+        p_shift_id: (shiftId && isUuidLike(shiftId)) ? shiftId : null,
+      });
       if (error) throw error;
+      const newPaidAmount = Number(result.paid_amount);
+      const newRemaining = Number(result.remaining_amount);
       await syncTaxInvoicePaidAmount(order.id, newPaidAmount);
-      const newRemaining = Math.max(0, order.totalAmount - newPaidAmount);
       setDebtOrders(prev => newRemaining <= 0
         ? prev.filter(o => o.id !== order.id)
         : prev.map(o => o.id === order.id ? { ...o, paidAmount: newPaidAmount, remainingAmount: newRemaining } : o));
@@ -673,11 +685,21 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     setIsSettlingAllDebt(true);
     try {
       const ordersToSettle = debtOrders;
+      const resolvedShiftId = (shiftId && isUuidLike(shiftId)) ? shiftId : null;
       const results = await Promise.allSettled(
         ordersToSettle.map(async (order) => {
-          const { error } = await supabase.from('orders').update({ paid_amount: order.totalAmount }).eq('id', order.id);
+          // Same fix as handleSettleDebtOrder above -- route through
+          // record_order_payment instead of writing orders.paid_amount
+          // directly, so this is a real, shift-attributed payment.
+          const { data: result, error } = await supabase.rpc('record_order_payment', {
+            p_operation_id: globalThis.crypto.randomUUID(),
+            p_order_id: order.id,
+            p_amount: order.remainingAmount,
+            p_method: 'cash',
+            p_shift_id: resolvedShiftId,
+          });
           if (error) throw error;
-          await syncTaxInvoicePaidAmount(order.id, order.totalAmount);
+          await syncTaxInvoicePaidAmount(order.id, Number(result.paid_amount));
         })
       );
       const failed = results.filter(r => r.status === 'rejected').length;
