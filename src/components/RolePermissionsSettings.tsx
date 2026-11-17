@@ -37,6 +37,14 @@ import { useTranslation } from 'react-i18next';
 import { useDirection } from '../lib/direction';
 import { useAuth } from '../contexts/AuthContext';
 
+// seen-cto-sprint4-permissions-task.md item 3: what this screen edits
+// (roles.permissions, via updateRolePermissions/createCustomRole) only
+// controls what the rest of the app's UI shows a staff member -- see
+// permissionService.ts's getEffectivePermissions for the full
+// explanation. No server RPC or RLS policy reads this table, so
+// disabling an action here does not actually prevent a staff member
+// from performing it via a direct API call. Founder decision
+// (2026-11-17): documented as-is rather than enforced server-side.
 interface RolePermissionsSettingsProps {
   tenantId?: string | null;
   isSuperAdmin?: boolean;

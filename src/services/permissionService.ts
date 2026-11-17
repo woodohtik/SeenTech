@@ -258,6 +258,24 @@ export const checkSaasRole = async (uid: string, allowedRoles: string[]): Promis
   }
 };
 
+// seen-cto-sprint4-permissions-task.md item 3 (CTO review section 6/3):
+// founder decision (2026-11-17), documented here rather than enforced --
+// this function (and `roles` table it reads) is a real, per-tenant,
+// DB-persisted customization, not a cosmetic client-only toggle. BUT no
+// RPC or RLS policy anywhere in this codebase reads `roles.permissions` --
+// every security-relevant check on the server (app_current_role() in
+// create_pos_sale, close_shift, issue_supplier_payment, the RLS policies
+// on orders/payments/supplier_transactions/etc.) gates on the fixed
+// `staff.role` enum only. The actual, enforced security boundary today
+// is that enum, not whatever a merchant configures on the "صلاحيات
+// الأدوار" screen (RolePermissionsSettings.tsx). A merchant who disables
+// e.g. "cashier can issue refunds" here only hides that action from this
+// cashier's UI -- a cashier who calls the same Supabase RPC directly
+// still succeeds, because the RPC never consults this table.
+// Enforcing this for real is a much larger project (every sensitive RPC
+// and RLS policy would need to read role_id/permissions instead of the
+// enum) -- deferred; this function stays UI-only by design until that
+// decision changes.
 export const getEffectivePermissions = async (staff: Staff): Promise<PermissionsMap> => {
   if (staff.role === 'owner' || staff.role === 'super_admin') {
     return DEFAULT_ROLES.owner.permissions;
