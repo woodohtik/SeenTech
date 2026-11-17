@@ -98,6 +98,16 @@ jobs:
         with:
           version: latest
 
+      # `supabase test db` only connects to an already-running local
+      # stack -- it doesn't start one itself (confirmed by this exact job
+      # failing with ECONNREFUSED on 127.0.0.1:54322 the first time this
+      # was wired up without this step). `db start` (Postgres only, not
+      # the full `start` stack with gotrue/storage/etc, none of which
+      # pgTAP needs) applies every migration in supabase/migrations/ to
+      # a fresh local Postgres before the tests run against it.
+      - name: Start local Postgres
+        run: supabase db start
+
       - name: Run pgTAP tests
         run: supabase test db
 
