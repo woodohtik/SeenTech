@@ -68,5 +68,9 @@ BEGIN
   RETURN NEW;
 END; $$;
 
-REVOKE EXECUTE ON FUNCTION confirm_referral(uuid) FROM PUBLIC, anon, authenticated;
+-- REVOKE on confirm_referral(uuid) moved to
+-- 20261123000000_process_withdrawal_after_table.sql: same class of bug as
+-- process_withdrawal above -- REVOKE needs the function to already exist,
+-- but confirm_referral itself isn't created until
+-- 20260910050000_backfill_referral_program.sql.
 REVOKE EXECUTE ON FUNCTION record_referral(text, uuid) FROM anon;

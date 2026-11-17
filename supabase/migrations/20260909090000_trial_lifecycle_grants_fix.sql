@@ -18,12 +18,11 @@
 --  limiters) يُطبَّق هنا الآن بنفس الطريقة الصحيحة.
 -- =============================================================================
 
-REVOKE EXECUTE ON FUNCTION public.activate_tenant_subscription(uuid) FROM anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.start_tenant_trial(uuid, int) FROM anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.trial_lock_sweep() FROM anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.trial_purge_sweep() FROM anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.slg_sweep() FROM anon, authenticated;
-
--- start_tenant_trial يُستدعى فعلياً من العميل عند التسجيل
--- (trialService.ts startTrial()) لمنح تجربة الـ14 يوماً -- يبقى يعمل.
-GRANT EXECUTE ON FUNCTION public.start_tenant_trial(uuid, int) TO authenticated;
+-- نُقلت كل جمل REVOKE/GRANT هذه إلى
+-- 20261123000000_process_withdrawal_after_table.sql
+-- (seen-cto-sprint4-design-quality-task.md item 4): الدوال الخمس المستهدفة
+-- لا تُنشَأ إلا في 20260910040000_backfill_plg_trial_lifecycle.sql -- إعادة
+-- بناء القاعدة من الصفر بالترتيب (supabase test db) فشلت هنا بخطأ "function
+-- ... does not exist"، رغم نجاحها دائماً على staging/production (الدوال
+-- كانت موجودة بالفعل هناك وقت أول دفع لهذا الملف، خارج ترتيب الطوابع
+-- الزمنية).

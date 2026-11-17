@@ -21,12 +21,13 @@
 -- meant to run as scheduled/service-role jobs, not be callable by tenant
 -- users at all.
 
-REVOKE ALL ON FUNCTION activate_tenant_subscription(uuid) FROM PUBLIC;
-REVOKE ALL ON FUNCTION start_tenant_trial(uuid, int) FROM PUBLIC;
-REVOKE ALL ON FUNCTION trial_lock_sweep() FROM PUBLIC;
-REVOKE ALL ON FUNCTION trial_purge_sweep() FROM PUBLIC;
-REVOKE ALL ON FUNCTION slg_sweep() FROM PUBLIC;
-
--- start_tenant_trial IS called from the client at signup (trialService.ts
--- startTrial()) to grant the initial 14-day trial -- keep that path working.
-GRANT EXECUTE ON FUNCTION start_tenant_trial(uuid, int) TO authenticated;
+-- Superseded by 20260909090000_trial_lifecycle_grants_fix.sql (REVOKE ALL
+-- FROM PUBLIC turned out not to actually revoke anon/authenticated's
+-- default grants -- see that file's own comment) and both migrations'
+-- statements moved to 20261123000000_process_withdrawal_after_table.sql
+-- (seen-cto-sprint4-design-quality-task.md item 4): all five target
+-- functions aren't created until 20260910040000_backfill_plg_trial_lifecycle.sql,
+-- a from-scratch migration replay failed here with "function ... does not
+-- exist" even though it always succeeded against staging/production
+-- (the functions already existed there by the time this file was first
+-- pushed, out of file-timestamp order).
