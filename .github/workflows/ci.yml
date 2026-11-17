@@ -94,9 +94,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # version: latest makes this action call GitHub's release API to
+      # resolve it -- hit that API's rate limit on an earlier run of this
+      # exact job ("Failed to resolve latest Supabase CLI release: rate
+      # limit exceeded"), unrelated to pgTAP itself. Pinned to a specific
+      # version (confirmed working locally via `npx supabase --version`)
+      # to skip that lookup entirely -- not tied to any package.json
+      # devDependency, this project doesn't pin the CLI there.
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.114.0
 
       # `supabase test db` only connects to an already-running local
       # stack -- it doesn't start one itself (confirmed by this exact job
