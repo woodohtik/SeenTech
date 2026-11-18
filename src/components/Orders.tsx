@@ -9,7 +9,8 @@ import { cmToDisplayUnit, displayUnitToCm, unitLabelKey } from '../utils/measure
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
-import { decodeOrderRow } from '../utils/orderHistoryHelper';
+import { decodeOrderRow, encodeOrderRow } from '../utils/orderHistoryHelper';
+import { getOpenShiftId } from '../utils/shiftHelper';
 import { useRouter, useRefreshCounter } from '../hooks/useRouter';
 import { 
   Plus, 
@@ -22,6 +23,7 @@ import {
   ChevronDown,
   Trash2,
   Printer,
+  Receipt,
   QrCode,
   Barcode,
   Eye,
@@ -57,7 +59,7 @@ import { isNetworkFailure, enqueueOrderCreate } from '../lib/offline/outbox';
 import { checkConnectivityNow } from '../lib/offline/connectivity';
 import { Order, Customer, OrderStatus, OrderHistory, InventoryItem, PaymentMethod, OrderItem, Staff, Tenant, Measurements, TaxInvoice } from '../types';
 import { TaxInvoiceDocument } from './printing/TaxInvoiceModal';
-import { fetchTaxInvoiceForOrder, syncTaxInvoicePaidAmount } from '../services/taxInvoiceService';
+import { fetchTaxInvoiceForOrder, issueTaxInvoiceForOrder, syncTaxInvoicePaidAmount } from '../services/taxInvoiceService';
 import { cn, generateOrderNumber } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
 import { logEmployeeAction } from '../services/employeeAuditService';
@@ -1292,6 +1294,30 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       if (!queuedOffline) {
         void notifyNewOrderForStaff(newOrder.id);
 
+        // seen-status-fix-regressions-task.md item 5: an upfront deposit
+        // entered at order creation was written straight into
+        // orders.paid_amount with no `payments` row at all -- this order's
+        // shift_id is always NULL (Orders.tsx has no POS checkout
+        // context), so close_shift's orders-table sum never saw it either.
+        // The deposit was completely invisible to till reconciliation.
+        if (Number(orderData.paid_amount) > 0) {
+          try {
+            const shiftId = await getOpenShiftId(tenantId, currentStaff?.id);
+            await supabase.from('payments').insert({
+              tenant_id: tenantId,
+              order_id: newOrder.id,
+              invoice_id: null,
+              shift_id: shiftId,
+              amount: orderData.paid_amount,
+              method: orderData.payment_method,
+              received_by: (currentStaff?.id && isUuid(currentStaff.id)) ? currentStaff.id : null,
+              notes: t('orders.deposit_note', 'عربون عند إنشاء الطلب')
+            });
+          } catch (depositErr) {
+            console.warn('Failed to record order-creation deposit as a payments row:', depositErr);
+          }
+        }
+
         // Insert order notification
         try {
           await supabase.from('notifications').insert({
@@ -1404,17 +1430,25 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
       const updatedHistory = [...(order.history || []), historyEntry];
 
-      const { error } = await supabase
-        .from('orders')
-        .update({
-          // status_key: القيمة الفعلية الحرة لأي نشاط. status: enum قديم ثابت —
-          // يبقى دوماً صالحاً عبر legacyOrderStatusFor (انظر تعليق verticalService.ts).
-          status: legacyOrderStatusFor(status, workflowStages),
-          status_key: status,
-          history: updatedHistory,
-          items: order.items || []
-        })
-        .eq('id', id);
+      // update_order_status (20261124000000): 20261122000000 narrowed direct
+      // orders UPDATE to owner/admin/manager, which silently no-op'd this
+      // status change for cashier/tailor. The RPC bypasses RLS with its own
+      // role check (owner/admin/manager/cashier/tailor, matching the
+      // /orders route). history/items aren't real columns (see
+      // orderHistoryHelper.ts) -- encodeOrderRow packs them into notes the
+      // same way the fetch interceptor does for a direct table write, so
+      // decodeOrderRow on read still finds them.
+      const encodedNotes = encodeOrderRow({ notes: order.notes, history: updatedHistory, items: order.items || [] }).notes;
+      const { error } = await supabase.rpc('update_order_status', {
+        p_order_id: id,
+        // status_key: القيمة الفعلية الحرة لأي نشاط. status: enum قديم ثابت —
+        // يبقى دوماً صالحاً عبر legacyOrderStatusFor (انظر تعليق verticalService.ts).
+        p_status: legacyOrderStatusFor(status, workflowStages),
+        p_status_key: status,
+        p_notes: encodedNotes,
+        p_op_id: globalThis.crypto.randomUUID(),
+        p_history_note: historyEntry.notes
+      });
 
       if (error) throw error;
 
@@ -1448,15 +1482,18 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
       const updatedHistory = [...(order.history || []), historyEntry];
 
-      const { error } = await supabase
-        .from('orders')
-        .update({
-          status: legacyOrderStatusFor(status, workflowStages),
-          status_key: status,
-          history: updatedHistory,
-          items: order.items || []
-        })
-        .eq('id', id);
+      // update_order_status (20261124000000): same fix as updateStatus()
+      // above -- this direct-UPDATE path was also silently blocked for
+      // cashier/tailor by 20261122000000's role guard.
+      const encodedNotes = encodeOrderRow({ notes: order.notes, history: updatedHistory, items: order.items || [] }).notes;
+      const { error } = await supabase.rpc('update_order_status', {
+        p_order_id: id,
+        p_status: legacyOrderStatusFor(status, workflowStages),
+        p_status_key: status,
+        p_notes: encodedNotes,
+        p_op_id: globalThis.crypto.randomUUID(),
+        p_history_note: historyEntry.notes
+      });
 
       if (error) throw error;
 
@@ -1740,6 +1777,33 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       }
     };
 
+    // seen-status-fix-regressions-task.md item 7: explicit "إصدار فاتورة
+    // ضريبية" action, shown only to owner/admin/manager/accountant on an
+    // order that's fully paid or delivered -- same eligibility the RPC
+    // itself enforces server-side. Replaces the old behavior of
+    // auto-issuing on every plain view.
+    const canIssueInvoice =
+      !!currentStaff?.role && ['owner', 'admin', 'manager', 'accountant'].includes(currentStaff.role) &&
+      (order.status === 'delivered' || (order.remainingAmount || 0) <= 0);
+    const [isIssuingInvoice, setIsIssuingInvoice] = useState(false);
+    const handleIssueInvoice = async () => {
+      setIsIssuingInvoice(true);
+      try {
+        const result = await issueTaxInvoiceForOrder(order.id);
+        if (!result.ok) {
+          toastError(t('tax_invoices.issue_failed', 'تعذّر إصدار الفاتورة'), result.error);
+          return;
+        }
+        const invoice = await fetchTaxInvoiceForOrder(tenantId, order.id);
+        if (invoice) {
+          setShowOrderSummaryFallback(false);
+          setViewingInvoice(invoice);
+        }
+      } finally {
+        setIsIssuingInvoice(false);
+      }
+    };
+
     const statusOrder: string[] = [
       'measurements_taken',
       'cutting',
@@ -1764,11 +1828,16 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         // newPaidAmount from a separately-fetched snapshot with no lock
         // between the read and the write.
         const operationId = globalThis.crypto.randomUUID();
+        // seen-status-fix-regressions-task.md item 5: attribute this cash to
+        // the staff member's own open shift (if any) so close_shift's
+        // payments-table sum actually sees it, same as POS.tsx.
+        const shiftId = await getOpenShiftId(tenantId, currentStaff?.id);
         const { data: result, error } = await supabase.rpc('record_order_payment', {
           p_operation_id: operationId,
           p_order_id: order.id,
           p_amount: payAmount,
           p_method: payMethod,
+          p_shift_id: shiftId,
           p_notes: t('orders.payment_note', { amount: payAmount, method: t(`common.payment_methods.${payMethod}`, payMethod) })
         });
 
@@ -1888,34 +1957,47 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   <span className="font-black text-danger"><PriceDisplay amount={order.remainingAmount} /></span>
                 </div>
               </div>
-              <div className="p-6 pt-0 flex gap-3">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      const { printElementDetailed, getConfiguredPaperSize } = await import('../utils/printManager');
-                      const res = await printElementDetailed(`order-summary-fallback-${order.id}`, {
-                        paperSize: getConfiguredPaperSize('80mm'),
-                        title: t('orders.order_details'),
-                      });
-                      if (!res.ok) toastError(t('printing.print_failed'), res.message);
-                    } catch (e) {
-                      console.error('[Orders] خطأ الطباعة:', e);
-                      window.print();
-                    }
-                  }}
-                  className="flex-1 py-3 bg-brand text-white rounded-xl font-black text-sm hover:bg-brand/90 transition-colors cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <Printer size={18} />
-                  {t('tax_invoices.print')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowOrderSummaryFallback(false)}
-                  className="px-5 py-3 bg-surface-muted text-content-muted rounded-xl font-bold text-sm hover:bg-border/60 transition-colors cursor-pointer"
-                >
-                  {t('common.close')}
-                </button>
+              <div className="p-6 pt-0 flex flex-col gap-3">
+                {canIssueInvoice && (
+                  <button
+                    type="button"
+                    disabled={isIssuingInvoice}
+                    onClick={handleIssueInvoice}
+                    className="w-full py-3 bg-success text-white rounded-xl font-black text-sm hover:bg-success/90 transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
+                  >
+                    <Receipt size={18} />
+                    {isIssuingInvoice ? t('common.loading') : t('tax_invoices.issue_invoice', 'إصدار فاتورة ضريبية')}
+                  </button>
+                )}
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const { printElementDetailed, getConfiguredPaperSize } = await import('../utils/printManager');
+                        const res = await printElementDetailed(`order-summary-fallback-${order.id}`, {
+                          paperSize: getConfiguredPaperSize('80mm'),
+                          title: t('orders.order_details'),
+                        });
+                        if (!res.ok) toastError(t('printing.print_failed'), res.message);
+                      } catch (e) {
+                        console.error('[Orders] خطأ الطباعة:', e);
+                        window.print();
+                      }
+                    }}
+                    className="flex-1 py-3 bg-brand text-white rounded-xl font-black text-sm hover:bg-brand/90 transition-colors cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Printer size={18} />
+                    {t('tax_invoices.print')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowOrderSummaryFallback(false)}
+                    className="px-5 py-3 bg-surface-muted text-content-muted rounded-xl font-bold text-sm hover:bg-border/60 transition-colors cursor-pointer"
+                  >
+                    {t('common.close')}
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>
@@ -2303,11 +2385,15 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         // balance to zero and a status transition is pending -- applies
         // that transition in the same atomic call.
         const operationId = globalThis.crypto.randomUUID();
+        // seen-status-fix-regressions-task.md item 5: same attribution fix
+        // as handleQuickPayment above.
+        const shiftId = await getOpenShiftId(tenantId, currentStaff?.id);
         const { data: result, error } = await supabase.rpc('record_order_payment', {
           p_operation_id: operationId,
           p_order_id: order.id,
           p_amount: amount,
           p_method: method,
+          p_shift_id: shiftId,
           p_notes: t('orders.payment_completed_note', { amount, method: t(`common.payment_methods.${method}`, method), remaining: Math.max(0, (order.remainingAmount || 0) - amount) }),
           p_complete_status: pendingStatusUpdate ? legacyOrderStatusFor(pendingStatusUpdate.status, workflowStages) : null,
           p_complete_status_key: pendingStatusUpdate ? pendingStatusUpdate.status : null

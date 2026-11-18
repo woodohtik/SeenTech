@@ -30,6 +30,7 @@ import {
   List,
   Keyboard,
   Printer,
+  Receipt,
   Download,
   Share2,
   AlertTriangle,
@@ -42,7 +43,7 @@ import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/fire
 import { Combobox, Transition, Dialog } from '@headlessui/react';
 import { Customer, InventoryItem, OrderItem, Order, PaymentMethod, OrderStatus, ProductVariant, TaxInvoice, Tenant } from '../types';
 import { TaxInvoiceDocument } from './printing/TaxInvoiceModal';
-import { fetchTaxInvoiceForOrder, syncTaxInvoicePaidAmount } from '../services/taxInvoiceService';
+import { fetchTaxInvoiceForOrder, issueTaxInvoiceForOrder, syncTaxInvoicePaidAmount } from '../services/taxInvoiceService';
 import { cn, generateOrderNumber } from '../lib/utils';
 import { SmartSelect } from './ui/SmartSelect';
 import { IconInput } from './ui/IconInput';
@@ -133,6 +134,7 @@ interface DebtOrderSummary {
 // real to fetch/show. A dead-end error there would be worse than a
 // plain, clearly-not-a-tax-invoice payment confirmation.
 interface FallbackPaymentReceipt {
+  orderId: string;
   orderNumber: number;
   amountPaid: number;
   customerName: string;
@@ -175,6 +177,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   const [viewingInvoice, setViewingInvoice] = useState<{ invoice: TaxInvoice; tenant: Tenant } | null>(null);
   const [settledOrdersSummary, setSettledOrdersSummary] = useState<{ orderNumber: number; orderId: string; amountPaid: number }[] | null>(null);
   const [fallbackReceipt, setFallbackReceipt] = useState<FallbackPaymentReceipt | null>(null);
+  const [isIssuingInvoice, setIsIssuingInvoice] = useState(false);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [branchStock, setBranchStock] = useState<Record<string, number>>({});
   // seen-ux-fixes-batch-task.md item 10 -- stock of each variant row (keyed
@@ -647,6 +650,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       setSettledOrdersSummary(null);
     } else if (fallback) {
       setFallbackReceipt({
+        orderId,
         orderNumber: fallback.orderNumber,
         amountPaid: fallback.amountPaid,
         customerName: selectedCustomer?.name || '',
@@ -655,6 +659,30 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       setSettledOrdersSummary(null);
     } else {
       toastError(t('common.error'), t('pos.invoice_not_found'));
+    }
+  };
+
+  // seen-status-fix-regressions-task.md item 7: same explicit, role-gated
+  // "إصدار فاتورة ضريبية" action as Orders.tsx -- the order behind a
+  // fallback receipt here was just paid off in full (debt settlement), so
+  // it is always eligible; still owner/admin/manager/accountant only.
+  const canIssueInvoice = !!currentStaff?.role && ['owner', 'admin', 'manager', 'accountant'].includes(currentStaff.role);
+  const handleIssueInvoiceFromFallback = async () => {
+    if (!fallbackReceipt) return;
+    setIsIssuingInvoice(true);
+    try {
+      const result = await issueTaxInvoiceForOrder(fallbackReceipt.orderId);
+      if (!result.ok) {
+        toastError(t('tax_invoices.issue_failed'), result.error);
+        return;
+      }
+      const invoice = await fetchTaxInvoiceForOrder(tenantId, fallbackReceipt.orderId);
+      if (invoice) {
+        setFallbackReceipt(null);
+        setViewingInvoice(invoice);
+      }
+    } finally {
+      setIsIssuingInvoice(false);
     }
   };
 
@@ -2836,34 +2864,47 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                 </div>
               </div>
 
-              <div className="p-6 pt-0 flex gap-3">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      const { printElementDetailed, getConfiguredPaperSize } = await import('../utils/printManager');
-                      const res = await printElementDetailed('pos-fallback-receipt-print-area', {
-                        paperSize: getConfiguredPaperSize('80mm'),
-                        title: t('pos.payment_confirmation_title'),
-                      });
-                      if (!res.ok) toastError(t('printing.print_failed'), res.message);
-                    } catch (e) {
-                      console.error('[POS] خطأ طباعة تأكيد الدفع:', e);
-                      window.print();
-                    }
-                  }}
-                  className="flex-1 py-3 bg-brand text-white rounded-xl font-black text-sm hover:bg-brand/90 transition-colors cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <Printer size={18} />
-                  {t('pos.receipt_print')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFallbackReceipt(null)}
-                  className="px-5 py-3 bg-surface-muted text-content-muted rounded-xl font-bold text-sm hover:bg-border/60 transition-colors cursor-pointer"
-                >
-                  {t('common.close')}
-                </button>
+              <div className="p-6 pt-0 flex flex-col gap-3">
+                {canIssueInvoice && (
+                  <button
+                    type="button"
+                    disabled={isIssuingInvoice}
+                    onClick={handleIssueInvoiceFromFallback}
+                    className="w-full py-3 bg-success text-white rounded-xl font-black text-sm hover:bg-success/90 transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
+                  >
+                    <Receipt size={18} />
+                    {isIssuingInvoice ? t('common.loading') : t('tax_invoices.issue_invoice')}
+                  </button>
+                )}
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const { printElementDetailed, getConfiguredPaperSize } = await import('../utils/printManager');
+                        const res = await printElementDetailed('pos-fallback-receipt-print-area', {
+                          paperSize: getConfiguredPaperSize('80mm'),
+                          title: t('pos.payment_confirmation_title'),
+                        });
+                        if (!res.ok) toastError(t('printing.print_failed'), res.message);
+                      } catch (e) {
+                        console.error('[POS] خطأ طباعة تأكيد الدفع:', e);
+                        window.print();
+                      }
+                    }}
+                    className="flex-1 py-3 bg-brand text-white rounded-xl font-black text-sm hover:bg-brand/90 transition-colors cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Printer size={18} />
+                    {t('pos.receipt_print')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFallbackReceipt(null)}
+                    className="px-5 py-3 bg-surface-muted text-content-muted rounded-xl font-bold text-sm hover:bg-border/60 transition-colors cursor-pointer"
+                  >
+                    {t('common.close')}
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>

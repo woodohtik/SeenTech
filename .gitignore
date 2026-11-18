@@ -32,3 +32,6 @@ print-agent/dist/
 
 .vercel
 .env*
+
+# production DB backups (sensitive customer/financial data -- never commit)
+/backups/

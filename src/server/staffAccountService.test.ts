@@ -3,9 +3,7 @@ import { createOrUpdateStaffAccount, resetStaffPassword } from './staffAccountSe
 
 function buildSupabaseAdmin(overrides: {
   createUser: (args: any) => Promise<{ data: any; error: any }>;
-  usersLookup?: (email: string) => Promise<{ data: any }>;
-  staffLookup?: (tenantId: string, email: string) => Promise<{ data: any }>;
-  saasUsersLookup?: (uid: string) => Promise<{ data: any }>;
+  usersUpsert?: (row: any, opts?: any) => Promise<{ data: any; error: any }>;
   updateUserById?: (uid: string, attrs: any) => Promise<{ data: any; error: any }>;
 }) {
   return {
@@ -18,31 +16,7 @@ function buildSupabaseAdmin(overrides: {
     from: (table: string) => {
       if (table === 'users') {
         return {
-          select: () => ({
-            eq: (_col: string, email: string) => ({
-              maybeSingle: () => (overrides.usersLookup ? overrides.usersLookup(email) : Promise.resolve({ data: null })),
-            }),
-          }),
-        };
-      }
-      if (table === 'staff') {
-        return {
-          select: () => ({
-            eq: (_col1: string, tenantId: string) => ({
-              eq: (_col2: string, email: string) => ({
-                maybeSingle: () => (overrides.staffLookup ? overrides.staffLookup(tenantId, email) : Promise.resolve({ data: null })),
-              }),
-            }),
-          }),
-        };
-      }
-      if (table === 'saas_users') {
-        return {
-          select: () => ({
-            eq: (_col: string, uid: string) => ({
-              maybeSingle: () => (overrides.saasUsersLookup ? overrides.saasUsersLookup(uid) : Promise.resolve({ data: null })),
-            }),
-          }),
+          upsert: (row: any, opts: any) => (overrides.usersUpsert ? overrides.usersUpsert(row, opts) : Promise.resolve({ data: row, error: null })),
         };
       }
       throw new Error(`buildSupabaseAdmin mock: unexpected table "${table}"`);
@@ -52,10 +26,10 @@ function buildSupabaseAdmin(overrides: {
 
 const REQUESTER = { requesterTenantId: 'tenant-caller', requesterRole: 'owner' };
 
-test('creates a fresh account when the email is unused', async () => {
+test('creates a fresh account when the email is unused, and records created_by_tenant_id', async () => {
   const createUser = vi.fn().mockResolvedValue({ data: { user: { id: 'new-uid' } }, error: null });
-  const updateUserById = vi.fn();
-  const supabaseAdmin = buildSupabaseAdmin({ createUser, updateUserById });
+  const usersUpsert = vi.fn().mockResolvedValue({ data: {}, error: null });
+  const supabaseAdmin = buildSupabaseAdmin({ createUser, usersUpsert });
 
   const result = await createOrUpdateStaffAccount(supabaseAdmin, { email: 'New@Example.com', password: 'secret123', ...REQUESTER });
 
@@ -63,111 +37,42 @@ test('creates a fresh account when the email is unused', async () => {
   expect(createUser).toHaveBeenCalledWith(
     expect.objectContaining({ email: 'new@example.com', password: 'secret123', email_confirm: true })
   );
-  expect(updateUserById).not.toHaveBeenCalled();
+  expect(usersUpsert).toHaveBeenCalledWith(
+    { id: 'new-uid', email: 'new@example.com', created_by_tenant_id: 'tenant-caller' },
+    { onConflict: 'id' }
+  );
 });
 
-test('resets the password when a non-owner/admin staff row for this email exists in the caller\'s own tenant and the caller is owner/admin', async () => {
+// SECURITY (status-review-2026-11-17/C-sprint2-4.md item 4, second pass):
+// a prior version of this function allowed resetting an already-registered
+// account's password when a staff row for that email existed in the
+// caller's own tenant with a non-owner/admin role -- which an attacker
+// could satisfy themselves, since nothing stopped them from inserting that
+// very staff row first (staff INSERT had no role check until this same
+// fix's migration). The reset path is removed entirely: every
+// already-registered email is now a flat 409, regardless of any staff row,
+// role, or caller privilege.
+test('SECURITY: an already-registered email always returns 409, never resets the password', async () => {
   const createUser = vi.fn().mockResolvedValue({ data: null, error: { message: 'A user with this email address has already been registered' } });
-  const updateUserById = vi.fn().mockResolvedValue({ data: {}, error: null });
-  const supabaseAdmin = buildSupabaseAdmin({
-    createUser,
-    updateUserById,
-    usersLookup: () => Promise.resolve({ data: { id: 'existing-uid' } }),
-    staffLookup: () => Promise.resolve({ data: { role: 'cashier' } }),
-    saasUsersLookup: () => Promise.resolve({ data: null }),
-  });
+  const updateUserById = vi.fn();
+  const usersUpsert = vi.fn();
+  const supabaseAdmin = buildSupabaseAdmin({ createUser, updateUserById, usersUpsert });
 
   const result = await createOrUpdateStaffAccount(supabaseAdmin, { email: 'existing@example.com', password: 'newpass123', ...REQUESTER });
 
-  expect(updateUserById).toHaveBeenCalledWith('existing-uid', { password: 'newpass123' });
-  expect(result).toEqual({ ok: true, uid: 'existing-uid', alreadyExisted: true });
+  expect(result).toEqual({ ok: false, status: 409, error: 'email_already_in_use' });
+  expect(updateUserById).not.toHaveBeenCalled();
+  expect(usersUpsert).not.toHaveBeenCalled();
 });
 
-test('SECURITY: refuses to reset the password of another tenant\'s owner (no staff row for this email in the caller\'s own tenant)', async () => {
-  const createUser = vi.fn().mockResolvedValue({ data: null, error: { message: 'already been registered' } });
+test('SECURITY: 409 holds even when the caller is owner/admin and could otherwise insert a matching staff row themselves', async () => {
+  const createUser = vi.fn().mockResolvedValue({ data: null, error: { message: 'already registered' } });
   const updateUserById = vi.fn();
-  const supabaseAdmin = buildSupabaseAdmin({
-    createUser,
-    updateUserById,
-    usersLookup: () => Promise.resolve({ data: { id: 'other-tenant-owner-uid' } }),
-    staffLookup: () => Promise.resolve({ data: null }), // no staff row for this email in the caller's tenant
-    saasUsersLookup: () => Promise.resolve({ data: null }),
-  });
+  const supabaseAdmin = buildSupabaseAdmin({ createUser, updateUserById });
 
   const result = await createOrUpdateStaffAccount(supabaseAdmin, { email: 'owner@othershop.example', password: 'attackerpass', ...REQUESTER });
 
-  expect(result).toEqual({ ok: false, status: 409, error: 'email_belongs_to_another_account' });
-  expect(updateUserById).not.toHaveBeenCalled();
-});
-
-test('SECURITY: refuses to reset the password of a super_admin / saas_users account, even with a matching staff row', async () => {
-  const createUser = vi.fn().mockResolvedValue({ data: null, error: { message: 'already been registered' } });
-  const updateUserById = vi.fn();
-  const supabaseAdmin = buildSupabaseAdmin({
-    createUser,
-    updateUserById,
-    usersLookup: () => Promise.resolve({ data: { id: 'super-admin-uid' } }),
-    staffLookup: () => Promise.resolve({ data: { role: 'cashier' } }),
-    saasUsersLookup: () => Promise.resolve({ data: { uid: 'super-admin-uid' } }),
-  });
-
-  const result = await createOrUpdateStaffAccount(supabaseAdmin, { email: 'superadmin@seentech.io', password: 'attackerpass', ...REQUESTER });
-
-  expect(result).toEqual({ ok: false, status: 409, error: 'email_belongs_to_another_account' });
-  expect(updateUserById).not.toHaveBeenCalled();
-});
-
-test('SECURITY: refuses to reset another owner/admin\'s password even within the same tenant', async () => {
-  const createUser = vi.fn().mockResolvedValue({ data: null, error: { message: 'already been registered' } });
-  const updateUserById = vi.fn();
-  const supabaseAdmin = buildSupabaseAdmin({
-    createUser,
-    updateUserById,
-    usersLookup: () => Promise.resolve({ data: { id: 'co-owner-uid' } }),
-    staffLookup: () => Promise.resolve({ data: { role: 'owner' } }),
-    saasUsersLookup: () => Promise.resolve({ data: null }),
-  });
-
-  const result = await createOrUpdateStaffAccount(supabaseAdmin, { email: 'coowner@sameshop.example', password: 'attackerpass', ...REQUESTER });
-
-  expect(result).toEqual({ ok: false, status: 409, error: 'email_belongs_to_another_account' });
-  expect(updateUserById).not.toHaveBeenCalled();
-});
-
-test('SECURITY: a manager caller cannot reset an existing account\'s password, even for a same-tenant cashier', async () => {
-  const createUser = vi.fn().mockResolvedValue({ data: null, error: { message: 'already been registered' } });
-  const updateUserById = vi.fn();
-  const supabaseAdmin = buildSupabaseAdmin({
-    createUser,
-    updateUserById,
-    usersLookup: () => Promise.resolve({ data: { id: 'existing-uid' } }),
-    staffLookup: () => Promise.resolve({ data: { role: 'cashier' } }),
-    saasUsersLookup: () => Promise.resolve({ data: null }),
-  });
-
-  const result = await createOrUpdateStaffAccount(supabaseAdmin, {
-    email: 'existing@example.com',
-    password: 'newpass123',
-    requesterTenantId: 'tenant-caller',
-    requesterRole: 'manager',
-  });
-
-  expect(result).toEqual({ ok: false, status: 409, error: 'email_belongs_to_another_account' });
-  expect(updateUserById).not.toHaveBeenCalled();
-});
-
-test('fails with 409 when the email is registered in Auth but has no matching users row', async () => {
-  const createUser = vi.fn().mockResolvedValue({ data: null, error: { message: 'already been registered' } });
-  const updateUserById = vi.fn();
-  const supabaseAdmin = buildSupabaseAdmin({
-    createUser,
-    updateUserById,
-    usersLookup: () => Promise.resolve({ data: null }),
-  });
-
-  const result = await createOrUpdateStaffAccount(supabaseAdmin, { email: 'orphan@example.com', password: 'newpass123', ...REQUESTER });
-
-  expect(result).toEqual({ ok: false, status: 409, error: 'email_already_in_use_no_match' });
+  expect(result).toEqual({ ok: false, status: 409, error: 'email_already_in_use' });
   expect(updateUserById).not.toHaveBeenCalled();
 });
 
@@ -180,20 +85,14 @@ test('passes through a non-"already registered" createUser error as a 400', asyn
   expect(result).toEqual({ ok: false, status: 400, error: 'Password should be at least 6 characters' });
 });
 
-test('surfaces a failed password reset on the already-existed path as a 400', async () => {
-  const createUser = vi.fn().mockResolvedValue({ data: null, error: { message: 'already been registered' } });
-  const updateUserById = vi.fn().mockResolvedValue({ data: null, error: { message: 'update failed' } });
-  const supabaseAdmin = buildSupabaseAdmin({
-    createUser,
-    updateUserById,
-    usersLookup: () => Promise.resolve({ data: { id: 'existing-uid' } }),
-    staffLookup: () => Promise.resolve({ data: { role: 'cashier' } }),
-    saasUsersLookup: () => Promise.resolve({ data: null }),
-  });
+test('surfaces a failed users upsert as a 400', async () => {
+  const createUser = vi.fn().mockResolvedValue({ data: { user: { id: 'new-uid' } }, error: null });
+  const usersUpsert = vi.fn().mockResolvedValue({ data: null, error: { message: 'upsert failed' } });
+  const supabaseAdmin = buildSupabaseAdmin({ createUser, usersUpsert });
 
-  const result = await createOrUpdateStaffAccount(supabaseAdmin, { email: 'existing@example.com', password: 'newpass123', ...REQUESTER });
+  const result = await createOrUpdateStaffAccount(supabaseAdmin, { email: 'new2@example.com', password: 'secret123', ...REQUESTER });
 
-  expect(result).toEqual({ ok: false, status: 400, error: 'update failed' });
+  expect(result).toEqual({ ok: false, status: 400, error: 'upsert failed' });
 });
 
 test('resetStaffPassword updates the account password and returns ok', async () => {

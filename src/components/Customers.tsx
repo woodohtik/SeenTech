@@ -75,7 +75,6 @@ import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
 import ThobeMeasurementSelector from './ThobeMeasurementSelector';
 import VisualMeasurements from './VisualMeasurements';
 import { useStaff } from '../contexts/StaffContext';
-import { useAuth } from '../contexts/AuthContext';
 import { useBranding } from '../contexts/BrandingContext';
 import { sendWhatsAppMessage } from '../utils/whatsapp';
 import { usePermissions } from '../hooks/usePermissions';
@@ -90,6 +89,7 @@ import { Pagination } from './ui/Pagination';
 import { cn } from '../lib/utils';
 
 import { isRtlLang, localeOf } from '../lib/direction';
+import { getOpenShiftId } from '../utils/shiftHelper';
 
 interface CustomersProps {
   tenantId: string;
@@ -2282,7 +2282,6 @@ const CustomerStatementModal = ({
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
   const { currentStaff } = useStaff();
-  const { user: currentAuthUser } = useAuth();
   const { error: toastError, success: toastSuccess } = useToast();
 
   const [payingOrderId, setPayingOrderId] = useState<string | null>(null);
@@ -2303,30 +2302,27 @@ const CustomerStatementModal = ({
     if (payAmount <= 0) return;
     setIsPaying(true);
     try {
-      const newPaidAmount = (order.paidAmount || 0) + payAmount;
-      const newRemainingAmount = Math.max(0, (order.totalAmount || 0) - newPaidAmount);
-
-      const historyEntry = {
-        status: order.status,
-        updatedAt: new Date().toISOString(),
-        updatedBy: currentStaff?.name || t('common.roles.owner'),
-        updatedByUid: currentStaff?.id || currentAuthUser?.id,
-        notes: t('orders.payment_note', { 
-          amount: payAmount, 
-          method: t(`common.payment_methods.${payMethod}`) 
-        })
-      };
-
-      const updatedHistory = [...(order.history || []), historyEntry];
-
-      const { error } = await supabase
-        .from('orders')
-        .update({
-          paid_amount: newPaidAmount,
-          history: updatedHistory,
-          items: order.items || []
-        })
-        .eq('id', order.id);
+      // record_order_payment (20261115040000): this used to write
+      // orders.paid_amount directly from a separately-fetched snapshot, the
+      // same bug already found and fixed in POS.tsx's handleSettleDebtOrder/
+      // handleSettleAllDebt (status-review-2026-11-17/C-sprint2-4.md finding
+      // A2) -- no payments row, no order_history row, no shift attribution,
+      // and (after 20261122000000's role guard) a silent no-op for any
+      // non-owner/admin/manager staff. record_order_payment locks the order
+      // row and caps the amount at the live remaining balance server-side
+      // instead.
+      const operationId = globalThis.crypto.randomUUID();
+      // seen-status-fix-regressions-task.md item 5: attribute this cash to
+      // the staff member's own open shift (if any), same as Orders.tsx/POS.tsx.
+      const shiftId = await getOpenShiftId(tenantId, currentStaff?.id);
+      const { error } = await supabase.rpc('record_order_payment', {
+        p_operation_id: operationId,
+        p_order_id: order.id,
+        p_amount: payAmount,
+        p_method: payMethod,
+        p_shift_id: shiftId,
+        p_notes: t('orders.payment_note', { amount: payAmount, method: t(`common.payment_methods.${payMethod}`) })
+      });
 
       if (error) throw error;
 

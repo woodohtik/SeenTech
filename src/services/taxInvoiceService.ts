@@ -35,35 +35,24 @@ export async function syncTaxInvoicePaidAmount(orderId: string, paidAmount: numb
  * ever created a tax_invoices row -- an order created directly in
  * "الطلبات" never got one, so settling its debt later, or just viewing
  * its invoice, fell through to a plain payment-confirmation fallback
- * ("لا توجد فاتورة ضريبية أصلية") in both POS.tsx and Orders.tsx. This now
- * calls issue_tax_invoice_for_order first -- an atomic, idempotent RPC
- * that creates the missing invoice from the order's own already-stored
- * total/tax/discount/paid amounts, continuing the same sequential
- * numbering and ZATCA hash chain a POS checkout invoice uses -- before
- * fetching, so both screens get a real invoice to show/print instead of
- * the fallback. A cancelled order is the one case this intentionally
- * still returns null for (issue_tax_invoice_for_order rejects it).
+ * ("لا توجد فاتورة ضريبية أصلية") in both POS.tsx and Orders.tsx.
  *
- * Returns null if the order has no tax invoice and none could be issued
- * (a cancelled order, or an order that doesn't exist/belong to this
- * tenant).
+ * status-review-2026-11-17/seen-status-fix-regressions-task.md item 7:
+ * this used to call issue_tax_invoice_for_order on every call -- a read
+ * action ("عرض الفاتورة") silently issued a real, ZATCA-hash-chained tax
+ * invoice as a side effect, for any order, by any staff member. Pure read
+ * now: it only looks up an invoice that already exists. A missing
+ * invoice falls through to each screen's own existing no-invoice
+ * fallback, unchanged. See issueTaxInvoiceForOrder below for the
+ * explicit, role-gated action that actually creates one.
+ *
+ * Returns null if the order has no tax invoice yet, or doesn't exist/
+ * belong to this tenant.
  */
 export async function fetchTaxInvoiceForOrder(
   tenantId: string,
   orderId: string
 ): Promise<{ invoice: TaxInvoice; tenant: Tenant } | null> {
-  const { error: issueError } = await supabase.rpc('issue_tax_invoice_for_order', {
-    p_operation_id: globalThis.crypto.randomUUID(),
-    p_order_id: orderId,
-  });
-  if (issueError) {
-    // A cancelled order (or one that doesn't belong to this tenant) is the
-    // one expected rejection here -- fall through to the existing
-    // tax_invoices lookup below, which will correctly find nothing and
-    // return null, same as before this fix.
-    console.warn('[taxInvoiceService] issue_tax_invoice_for_order:', issueError.message);
-  }
-
   const [{ data: tenantData }, { data: invoiceRow }, { data: orderRow }] = await Promise.all([
     supabase.from('tenants').select('*').eq('id', tenantId).maybeSingle(),
     supabase.from('tax_invoices').select('*').eq('tenant_id', tenantId).eq('order_id', orderId).maybeSingle(),
@@ -159,4 +148,22 @@ export async function fetchTaxInvoiceForOrder(
   } as TaxInvoice;
 
   return { invoice, tenant };
+}
+
+/**
+ * Explicitly issues a tax invoice for an order that doesn't have one yet
+ * -- the action fetchTaxInvoiceForOrder used to trigger as a side effect
+ * of a plain view (seen-status-fix-regressions-task.md item 7). Call this
+ * only from an explicit, role-gated "إصدار فاتورة ضريبية" action; the RPC
+ * itself also enforces the same role (owner/admin/manager/accountant) and
+ * requires the order to be fully paid or delivered, so this is UX, not
+ * the real security boundary.
+ */
+export async function issueTaxInvoiceForOrder(orderId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { error } = await supabase.rpc('issue_tax_invoice_for_order', {
+    p_operation_id: globalThis.crypto.randomUUID(),
+    p_order_id: orderId,
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
 }

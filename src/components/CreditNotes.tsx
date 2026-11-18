@@ -4,7 +4,6 @@ import { auth, handleFirestoreError, OperationType, getFriendlyErrorMessage } fr
 import { Tenant, TaxInvoice, CreditNote } from '../types';
 import { decodeInvoiceExtendedNotes } from '../utils/b2bHelper';
 import { logEmployeeAction } from '../services/employeeAuditService';
-import { generateOrderNumber } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
 import { IconInput } from './ui/IconInput';
 import { FileText, ArrowDownLeft, Search, Eye, X, CheckCircle2, ShieldAlert } from 'lucide-react';
@@ -167,28 +166,22 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
     setIsSubmitting(true);
     try {
       const refundTax = refundAmount - (refundAmount / (1 + (selectedInvoice.taxRate / 100)));
-      
-      const cnNumber = generateOrderNumber(); // reuse order number logic
-      const { data: noteData, error: noteError } = await supabase
-        .from('sales_returns')
-        .insert({
-          id: crypto.randomUUID(),
-          tenant_id: tenantId,
-          invoice_id: selectedInvoice.id,
-          order_id: selectedInvoice.orderId || null,
-          return_number: `CN-${cnNumber}`,
-          status: 'completed' as const,
-          reason,
-          total_amount: refundAmount,
-          refunded_amount: refundAmount,
-          refund_method: 'cash' as const,
-          processed_by: currentStaff?.id || null,
-          returned_at: new Date().toISOString(),
-          created_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-      
+
+      // seen-status-fix-regressions-task.md item 8: issue_credit_note
+      // (SECURITY DEFINER) replaces a direct sales_returns insert that any
+      // staff member could perform with no role check and no idempotency
+      // -- same role gate (owner/admin/manager) and operation_id dedup
+      // every other money-writing RPC in this codebase already has.
+      // trg_check_sales_return_total still enforces the per-invoice cap
+      // server-side regardless of caller.
+      const { data: result, error: noteError } = await supabase.rpc('issue_credit_note', {
+        p_operation_id: globalThis.crypto.randomUUID(),
+        p_invoice_id: selectedInvoice.id,
+        p_amount: refundAmount,
+        p_reason: reason,
+        p_refund_method: 'cash',
+      });
+
       if (noteError) {
         if ((noteError as any).code === '23514') {
           toastError(t('credit_notes.exceeds_invoice_total', 'مجموع الإشعارات الدائنة لهذه الفاتورة سيتجاوز إجماليها الأصلي'));
@@ -197,40 +190,42 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
         }
         throw noteError;
       }
+      const returnId = result.return_id as string;
+      const cnNumber = result.return_number as string;
 
       await logEmployeeAction(
         tenantId,
         currentStaff?.id || 'system',
         currentStaff?.name || 'System',
         'create_credit_note',
-        `إصدار إشعار دائن رقم CN-${cnNumber} للفاتورة ${selectedInvoice.invoiceNumber}`
+        `إصدار إشعار دائن رقم ${cnNumber} للفاتورة ${selectedInvoice.invoiceNumber}`
       );
 
       toastSuccess(t('credit_notes.success_issued', 'تم إصدار الإشعار الدائن بنجاح'));
 
-      // Update local state
-      if (noteData) {
-        setCreditNotes(prev => [{
-          id: noteData.id,
-          creditNoteNumber: noteData.return_number,
-          originalInvoiceId: noteData.invoice_id,
-          invoiceNumber: selectedInvoice.invoiceNumber,
-          tenantId: noteData.tenant_id,
-          reason: noteData.reason || '',
-          refundedAmount: Number(noteData.refunded_amount),
-          refundedTax: refundTax,
-          issuedAt: noteData.returned_at || noteData.created_at,
-          createdBy: currentStaff?.name || 'System',
-          zatcaStatus: 'not_applicable',
-        } as CreditNote, ...prev]);
+      // Update local state -- issue_credit_note only returns the minimal
+      // {return_id, return_number, refunded_amount}, not a full row, so
+      // the rest is built from what's already known locally.
+      setCreditNotes(prev => [{
+        id: returnId,
+        creditNoteNumber: cnNumber,
+        originalInvoiceId: selectedInvoice.id,
+        invoiceNumber: selectedInvoice.invoiceNumber,
+        tenantId,
+        reason,
+        refundedAmount: refundAmount,
+        refundedTax: refundTax,
+        issuedAt: new Date().toISOString(),
+        createdBy: currentStaff?.name || 'System',
+        zatcaStatus: 'not_applicable',
+      } as CreditNote, ...prev]);
 
-        // Fire-and-forget, بنفس نمط submitZatcaInvoice بعد بيع POS -- لا يوقف
-        // نجاح إصدار الإشعار محلياً، فقط يحدِّث الشارة لاحقاً بالنتيجة
-        // الحقيقية (no-op 'not_applicable' لأي مستأجر بلا Production CSID بعد).
-        void submitZatcaCreditNote(noteData.id).then((result) => {
-          setCreditNotes(prev => prev.map(cn => cn.id === noteData.id ? { ...cn, zatcaStatus: result.status as CreditNote['zatcaStatus'] } : cn));
-        });
-      }
+      // Fire-and-forget, بنفس نمط submitZatcaInvoice بعد بيع POS -- لا يوقف
+      // نجاح إصدار الإشعار محلياً، فقط يحدِّث الشارة لاحقاً بالنتيجة
+      // الحقيقية (no-op 'not_applicable' لأي مستأجر بلا Production CSID بعد).
+      void submitZatcaCreditNote(returnId).then((zatcaResult) => {
+        setCreditNotes(prev => prev.map(cn => cn.id === returnId ? { ...cn, zatcaStatus: zatcaResult.status as CreditNote['zatcaStatus'] } : cn));
+      });
 
       setSelectedInvoice(null);
       setReason('');

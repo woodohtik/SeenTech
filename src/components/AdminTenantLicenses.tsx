@@ -92,6 +92,23 @@ export default function AdminTenantLicenses() {
         const oneYearFromNow = new Date();
         oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
         updatePayload.subscription_end_date = oneYearFromNow.toISOString();
+
+        // Real customer bug (reported 2026-11-18, multiple tenants incl.
+        // "النعمان للخياطة"): this manual renewal is almost always used on
+        // a tenant trial_lock_sweep already flipped to subscription_status
+        // = 'locked' (that is exactly why the founder is granting a paid
+        // plan here). Setting only plan_id/subscription_end_date left that
+        // 'locked' value in place -- App.tsx's own lock screen reads it
+        // directly (isLockedOrPurging), and app_current_tenant_id() (DB-
+        // side RLS gate) checks the identical column -- so a customer who
+        // had just paid still hit "trial expired" on login, and every
+        // query would have returned empty even if they got past the
+        // screen. Mirrors activate_tenant_subscription's own fuller reset
+        // (20260910040000), which this screen never actually called.
+        updatePayload.subscription_status = 'active';
+        updatePayload.locked_at = null;
+        updatePayload.purge_at = null;
+        updatePayload.is_trial = false;
       }
       const { error } = await supabase.from('tenants').update(updatePayload).eq('id', tenantId);
       if (error) throw error;

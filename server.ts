@@ -991,6 +991,12 @@ app.post("/api/staff/create-account", authenticate, authorize(['super_admin', 'o
       return res.status(429).json({ error: 'too_many_attempts' });
     }
 
+    // status-review-2026-11-17/C-sprint2-4.md item 4: the reset-existing-
+    // account path was removed from createOrUpdateStaffAccount entirely
+    // (it was a provable account-takeover vector -- see that function's
+    // header comment), so an already-registered email now always comes
+    // back as a 409 here and `alreadyExisted` is always false. No reset
+    // audit log to write anymore.
     const result = await createOrUpdateStaffAccount(supabaseAdmin, {
       email: String(email),
       password,
@@ -1000,22 +1006,6 @@ app.post("/api/staff/create-account", authenticate, authorize(['super_admin', 'o
     });
     if (result.ok === false) {
       return res.status(result.status).json({ error: result.error });
-    }
-
-    // SECURITY audit trail: who reset whose password, from where. Only
-    // fires on the reset-existing-account path -- a brand-new account
-    // (alreadyExisted: false) isn't a privileged cross-account action.
-    if (result.alreadyExisted) {
-      await supabaseAdmin.from('saas_security_logs').insert({
-        user_id: req.user.uid,
-        user_email: req.user.email,
-        action: 'staff_account_password_reset',
-        details: `caller_tenant=${req.user.tenantId}, caller_role=${req.user.role}, target_uid=${result.uid}, target_email=${String(email).toLowerCase()}`,
-        ip_address: req.ip,
-        user_agent: req.get?.('user-agent'),
-      }).then(({ error: logErr }: any) => {
-        if (logErr) logger.warn({ err: logErr }, '[saas_security_logs] staff_account_password_reset insert failed');
-      });
     }
 
     res.json({ uid: result.uid, alreadyExisted: result.alreadyExisted });
@@ -1139,6 +1129,19 @@ app.post("/api/staff/verify-pin", authenticate, async (req: any, res) => {
       let authorized = false;
       await authorize(['owner', 'admin', 'manager'])(req, res, () => { authorized = true; });
       if (!authorized) return; // authorize() already sent the 403 response
+
+      // seen-status-fix-regressions-task.md item 8: this mode returns
+      // before the failure-recording block below ever runs, so nothing
+      // was actually throttling it -- a dedicated 20/minute-per-caller
+      // counter, recorded on every call (not just a "wrong guess").
+      const { count: uniqueCheckCount, error: uniqueRateLimitError } = await supabaseAdmin
+        .rpc('increment_check_unique_attempt', { p_caller_uid: req.user.uid })
+        .then((r: any) => ({ count: r.data, error: r.error }));
+      if (uniqueRateLimitError) {
+        logger.warn({ err: uniqueRateLimitError }, '[pin/check-unique] rate-limit check failed -- failing open');
+      } else if (uniqueCheckCount > 20) {
+        return res.status(429).json({ error: 'too_many_attempts' });
+      }
     }
 
     const attemptKey = mode === 'check-unique'
@@ -2836,8 +2839,19 @@ app.post("/api/zatca/request-production-csid", authenticate, authorize(['owner',
 const ZATCA_CERT_EXPIRY_ALERT_WINDOW_DAYS = 30;
 
 app.get("/api/cron/zatca-cert-expiry-check", asyncHandler(async (req: any, res) => {
+  // seen-status-fix-regressions-task.md item 8: constant-time secret
+  // comparison, same pattern as /api/cron/blog-rebuild-sweep (SRV-10) --
+  // a plain `!==` leaks timing information proportional to how many
+  // leading characters match.
   const cronSecret = (process.env.CRON_SECRET || '').trim();
-  if (!cronSecret || req.headers.authorization !== `Bearer ${cronSecret}`) {
+  const providedAuth = typeof req.headers.authorization === 'string' ? req.headers.authorization : '';
+  const expectedAuth = `Bearer ${cronSecret}`;
+  const providedBuf = Buffer.from(providedAuth);
+  const expectedBuf = Buffer.from(expectedAuth);
+  const authMatches = cronSecret.length > 0
+    && providedBuf.length === expectedBuf.length
+    && crypto.timingSafeEqual(providedBuf, expectedBuf);
+  if (!authMatches) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 

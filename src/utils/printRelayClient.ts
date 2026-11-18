@@ -99,6 +99,21 @@ export const isRelayPaired = (): boolean => !!getRelayBinding();
 
 const jsonHeaders = { 'Content-Type': 'application/json' };
 
+/**
+ * seen-status-fix-regressions-task.md item 3: كل مسارات `/api/print/*` على
+ * الخادم خلف `authenticate` middleware (src/server/printRelay.ts) منذ
+ * تدقيق 2026-10-25، لكن `pairStation` وحدها كانت ترسل رأس Authorization --
+ * بقية الطلبات (unpair، حالة المحطة، إرسال مهمة، حالة مهمة) كانت ستُرفض
+ * بـ401 فور نشر هذا الخادم. دالة واحدة تجلب الجلسة الحالية وتبني الرؤوس،
+ * بنفس أسلوب pairStation.
+ */
+async function authedJsonHeaders(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token
+    ? { ...jsonHeaders, Authorization: `Bearer ${session.access_token}` }
+    : jsonHeaders;
+}
+
 /** قراءة رد JSON بأمان مع رسالة عربية واضحة عند الفشل. */
 async function readJson(res: Response): Promise<any> {
   try {
@@ -148,15 +163,11 @@ export async function pairWithStation(pairCode: string): Promise<RelayStation> {
   // security audit 2026-10-25, fingerprint
   // print-relay.pair.rate-limit-per-ip-distributed-bypass: /api/print/pair
   // now requires an authenticated session (previously fully anonymous).
-  const { data: { session } } = await supabase.auth.getSession();
-
   let res: Response;
   try {
     res = await fetch('/api/print/pair', {
       method: 'POST',
-      headers: session?.access_token
-        ? { ...jsonHeaders, Authorization: `Bearer ${session.access_token}` }
-        : jsonHeaders,
+      headers: await authedJsonHeaders(),
       body: JSON.stringify({ pairCode: code }),
     });
   } catch (e) {
@@ -190,7 +201,7 @@ export async function unpairStation(): Promise<void> {
     try {
       await fetch(`/api/print/station/${encodeURIComponent(binding.stationId)}/unpair`, {
         method: 'POST',
-        headers: jsonHeaders,
+        headers: await authedJsonHeaders(),
         body: JSON.stringify({ clientToken: binding.clientToken }),
       });
     } catch {
@@ -214,7 +225,7 @@ export async function getStationStatus(): Promise<RelayStation | null> {
 
   let res: Response;
   try {
-    res = await fetch(url, { method: 'GET' });
+    res = await fetch(url, { method: 'GET', headers: await authedJsonHeaders() });
   } catch (e) {
     throw networkError(e);
   }
@@ -276,7 +287,7 @@ export async function submitJob(
   try {
     res = await fetch('/api/print/job', {
       method: 'POST',
-      headers: jsonHeaders,
+      headers: await authedJsonHeaders(),
       body: JSON.stringify({
         stationId: binding.stationId,
         clientToken: binding.clientToken,
@@ -318,7 +329,7 @@ export async function getJobState(jobId: string): Promise<RelayJobState> {
     binding.clientToken
   )}`;
 
-  const res = await fetch(url, { method: 'GET' });
+  const res = await fetch(url, { method: 'GET', headers: await authedJsonHeaders() });
   const data = await readJson(res);
 
   if (!res.ok || !data?.ok) {
