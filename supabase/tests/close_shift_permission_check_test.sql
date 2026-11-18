@@ -6,7 +6,7 @@
 -- Run with: npx supabase db query --linked --file <this file>
 -- (supabase test db --linked needs Docker, which is down on this machine.)
 BEGIN;
-SELECT plan(3);
+SELECT plan(4);
 
 -- Fixtures: one tenant; two tailors (role_id IS NULL, so shifts.manage=false
 -- comes from the default table) each with one open shift -- a second tailor
@@ -26,6 +26,17 @@ VALUES
    'ffffffff-ffff-ffff-ffff-ffffffffffff', 'Test Tailor 2', 'tailor2@close-shift-perm.test.invalid', 'tailor', NULL, 'active'),
   ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
    'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'Test Manager', 'manager@close-shift-perm.test.invalid', 'manager', NULL, 'active');
+
+-- Custom role (not owner/admin/manager by name) that grants shifts.manage via
+-- its own roles.permissions JSONB; the staff member below is assigned to it.
+INSERT INTO public.roles (id, tenant_id, role_key, name, permissions)
+VALUES ('12121212-1212-1212-1212-121212121212', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        'shift_closer', 'Shift Closer', '{"shifts.manage": true}'::jsonb);
+
+INSERT INTO public.staff (id, tenant_id, uid, name, email, role, role_id, status)
+VALUES ('12345678-1234-1234-1234-123456789012', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        '13579135-1357-1357-1357-135791357913', 'Test Shift Closer', 'closer@close-shift-perm.test.invalid', 'cashier',
+        '12121212-1212-1212-1212-121212121212', 'active');
 
 INSERT INTO public.shifts (id, tenant_id, branch_id, staff_id, staff_name, opening_balance, status)
 VALUES
@@ -76,6 +87,21 @@ SELECT lives_ok(
        NULL
      ) $$,
   'manager closes tailor shift -- lives_ok, shifts.manage=true allows cross-staff close'
+);
+
+-- Scenario 4: a cashier (not owner/admin/manager) whose custom role grants
+-- shifts.manage:true closes the manager's still-open shift -- lives_ok. The
+-- old role-name check would deny this; app_has_permission resolves it via the
+-- custom role's own permissions JSONB.
+SET LOCAL request.jwt.claims = '{"sub":"13579135-1357-1357-1357-135791357913"}';
+SELECT lives_ok(
+  $$ SELECT public.close_shift(
+       'a1000000-0000-0000-0000-000000000004'::uuid,
+       'f2222222-2222-2222-2222-222222222222'::uuid,
+       0,
+       NULL
+     ) $$,
+  'custom-role cashier with shifts.manage=true closes another staff shift -- lives_ok'
 );
 
 SELECT * FROM finish();
