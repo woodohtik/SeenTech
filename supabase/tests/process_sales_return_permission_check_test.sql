@@ -7,16 +7,16 @@
 -- practice this was run via:
 --   npx supabase db query --linked --file supabase/tests/process_sales_return_permission_check_test.sql
 BEGIN;
-SELECT plan(3);
+SELECT plan(4);
 
 -- Fixtures: one tenant, a custom role ("cashier_refund_override") whose
 -- JSONB explicitly sets action.refund:true (base cashier enum default is
--- false), three staff (plain manager, plain cashier, cashier-with-override),
--- one open shift per staff, and -- per order, since process_sales_return
--- needs a real orders/order_items/tax_invoices row to return against --
--- three separate orders each with one custom order_item (price 100, qty 1)
--- and a matching tax_invoice (total_amount 100) so check_sales_return_total
--- never blocks the refund.
+-- false), four staff (plain manager, plain cashier, cashier-with-override,
+-- plain branch_manager), one open shift per staff, and -- per order, since
+-- process_sales_return needs a real orders/order_items/tax_invoices row to
+-- return against -- four separate orders each with one custom order_item
+-- (price 100, qty 1) and a matching tax_invoice (total_amount 100) so
+-- check_sales_return_total never blocks the refund.
 SET session_replication_role = replica;
 
 INSERT INTO public.tenants (id, name, owner_email, phone)
@@ -37,7 +37,14 @@ VALUES
   -- cashier whose custom role JSONB overrides action.refund to true
   ('77777777-7777-7777-7777-777777777777', '11111111-1111-1111-1111-111111111111',
    '88888888-8888-8888-8888-888888888888', 'Override Cashier', 'override@sales-return-perm.test.invalid', 'cashier',
-   '22222222-2222-2222-2222-222222222222', 'active');
+   '22222222-2222-2222-2222-222222222222', 'active'),
+  -- plain branch_manager: action.refund=true via app_default_permission's
+  -- branch_manager row -- one of the two roles that actually GAIN
+  -- server-side refund access under this fix (the old hardcoded
+  -- owner/admin/manager enum check never allowed branch_manager).
+  ('b1111111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111',
+   'b2222222-2222-2222-2222-222222222222', 'Returns Branch Manager', 'branch-manager@sales-return-perm.test.invalid',
+   'branch_manager', NULL, 'active');
 
 INSERT INTO public.shifts (id, tenant_id, branch_id, staff_id, staff_name, opening_balance, status)
 VALUES
@@ -46,7 +53,9 @@ VALUES
   ('99999999-9999-9999-9999-999999999992', '11111111-1111-1111-1111-111111111111', NULL,
    '55555555-5555-5555-5555-555555555555', 'Returns Cashier', 0, 'open'),
   ('99999999-9999-9999-9999-999999999993', '11111111-1111-1111-1111-111111111111', NULL,
-   '77777777-7777-7777-7777-777777777777', 'Override Cashier', 0, 'open');
+   '77777777-7777-7777-7777-777777777777', 'Override Cashier', 0, 'open'),
+  ('99999999-9999-9999-9999-999999999994', '11111111-1111-1111-1111-111111111111', NULL,
+   'b1111111-1111-1111-1111-111111111111', 'Returns Branch Manager', 0, 'open');
 
 -- Order 1 (for the manager scenario)
 INSERT INTO public.orders (id, tenant_id, customer_name, order_number, delivery_date, total_amount, paid_amount, tax_rate, discount_amount)
@@ -80,6 +89,17 @@ VALUES ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3', '11111111-1111-1111-1111-1111111
 INSERT INTO public.tax_invoices (id, tenant_id, order_id, invoice_number, subtotal, total_amount, paid_amount)
 VALUES ('cccccccc-cccc-cccc-cccc-ccccccccccc3', '11111111-1111-1111-1111-111111111111',
         'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3', 'INV-RET-TEST-3', 100, 100, 100);
+
+-- Order 4 (for the branch_manager scenario)
+INSERT INTO public.orders (id, tenant_id, customer_name, order_number, delivery_date, total_amount, paid_amount, tax_rate, discount_amount)
+VALUES ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa4', '11111111-1111-1111-1111-111111111111',
+        'Return Test Customer 4', 4, now() + interval '7 days', 100, 100, 0, 0);
+INSERT INTO public.order_items (id, tenant_id, order_id, type, name, quantity, price)
+VALUES ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4', '11111111-1111-1111-1111-111111111111',
+        'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa4', 'custom', 'Custom Item 4', 1, 100);
+INSERT INTO public.tax_invoices (id, tenant_id, order_id, invoice_number, subtotal, total_amount, paid_amount)
+VALUES ('cccccccc-cccc-cccc-cccc-ccccccccccc4', '11111111-1111-1111-1111-111111111111',
+        'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa4', 'INV-RET-TEST-4', 100, 100, 100);
 
 SET session_replication_role = DEFAULT;
 
@@ -132,6 +152,24 @@ SELECT lives_ok(
        'test return', 'cash'
      ) $$,
   'cashier with custom role action.refund:true override -- lives_ok, gate is generic'
+);
+
+-- Scenario 4: plain branch_manager (action.refund=true via the default
+-- table) -- lives_ok. branch_manager is one of the two roles (along with
+-- accountant) that actually GAIN server-side refund access under this
+-- fix: the old hardcoded owner/admin/manager enum check never allowed it.
+SET LOCAL request.jwt.claims = '{"sub":"b2222222-2222-2222-2222-222222222222"}';
+SELECT lives_ok(
+  $$ SELECT public.process_sales_return(
+       'd4444444-0000-0000-0000-000000000004'::uuid,
+       'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa4'::uuid,
+       '99999999-9999-9999-9999-999999999994'::uuid,
+       jsonb_build_array(
+         jsonb_build_object('order_item_id', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4', 'quantity', 1)
+       ),
+       'test return', 'cash'
+     ) $$,
+  'branch_manager: action.refund=true via default table -- lives_ok (newly-gained access under this fix)'
 );
 
 SELECT * FROM finish();
