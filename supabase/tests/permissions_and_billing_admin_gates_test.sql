@@ -32,7 +32,7 @@
 -- Run with: npx supabase db query --linked --file <this file>
 -- (supabase test db --linked needs Docker, which is down on this machine.)
 BEGIN;
-SELECT plan(4);
+SELECT plan(5);
 
 -- db query --linked only surfaces the LAST statement's result set, so
 -- collect each assertion's TAP line here and print them all together with
@@ -151,7 +151,26 @@ INSERT INTO test_output (line) SELECT throws_matching(
   'admin (settings.billing=false) updating tenants.subscription_end_date -- blocked with the self-billing-escalation message'
 );
 
--- Scenario 4: owner performs the same UPDATE -- lives_ok, because
+-- Scenario 4 (review fix-round addition): the SAME admin
+-- (settings.billing=false), still the matching owner_uid from scenario
+-- 3, updates tenants.name and tenants.phone -- ordinary commercial-
+-- profile columns on 20261114000003's allow-list -- in the same
+-- statement as scenario 3's billing column. Must be lives_ok: proves the
+-- `v_allowed_new IS DISTINCT FROM NEW` short-circuit in
+-- tenants_no_self_billing_escalation still lets a normal self-edit
+-- through for a caller who lacks settings.billing, without the
+-- RAISE EXCEPTION ever triggering (it never even reaches the
+-- app_has_permission('settings.billing') check, since v_allowed_new
+-- equals NEW for an allow-list-only change). This closes the gap the
+-- review flagged: previously only an uncommitted, non-persisted ad-hoc
+-- check covered this -- not a real regression test.
+INSERT INTO test_output (line) SELECT lives_ok(
+  $$ UPDATE public.tenants SET name = 'Perm And Billing Gates Test Tenant (renamed)', phone = '0500000009' WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' $$,
+  'admin (settings.billing=false) updating tenants.name/phone (allow-listed, non-billing) -- lives_ok, not blocked'
+);
+
+-- Scenario 5: owner performs the same billing-column UPDATE as scenario
+-- 3 -- lives_ok, because
 -- app_has_permission('settings.billing') short-circuits to true for the
 -- 'owner' role before ever consulting the default-permission table.
 -- owner_uid is switched to the owner staff's uid first, same reason as
