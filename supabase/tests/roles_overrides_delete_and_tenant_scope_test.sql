@@ -34,12 +34,16 @@
 --      EXISTS (SELECT 1 FROM public.staff s WHERE s.id = staff_id AND
 --      s.tenant_id = app_current_tenant_id()) condition alongside the
 --      existing tenant_id/staff.permissions check, inside the same
---      non-super-admin branch.
+--      non-super-admin branch. Covered on both the INSERT path (scenarios
+--      5-6) and the UPDATE path (scenarios 7-8, added in a review
+--      fix-round -- the original version of this file only exercised
+--      INSERT for I4, leaving a typo in the UPDATE policy's USING/WITH
+--      CHECK, or a WITH-CHECK-only fix that forgot USING, uncaught).
 --
 -- Run with: npx supabase db query --linked --file <this file>
 -- (supabase test db --linked needs Docker, which is down on this machine.)
 BEGIN;
-SELECT plan(6);
+SELECT plan(8);
 
 -- db query --linked only surfaces the LAST statement's result set, so
 -- collect each assertion's TAP line here and print them all together with
@@ -146,6 +150,39 @@ INSERT INTO test_output (line) SELECT lives_ok(
   $$ INSERT INTO public.user_permission_overrides (staff_id, tenant_id, overrides)
      VALUES ('c3333333-3333-3333-3333-333333333333', 'a1111111-1111-1111-1111-111111111111', '{}'::jsonb) $$,
   'admin (tenant A) inserting an override row for tenant A''s own staff_id -- lives_ok'
+);
+
+-- Scenario 7 (I4, cross-tenant staff_id block -- UPDATE path, review
+-- fix-round addition): the same tenant-A admin attempts to UPDATE the
+-- override row planted in scenario 6 (staff_id = tenant A's manager) to
+-- re-point its staff_id at tenant B's staff member. The row's OLD state
+-- (staff_id = tenant A's manager) passes USING -- tenant_id/
+-- staff.permissions/EXISTS all hold for the row as it stands -- but the
+-- NEW state (staff_id = tenant B's staff) fails WITH CHECK's EXISTS,
+-- since that staff_id's real tenant is B, not A. Must FAIL with the same
+-- RLS-violation exception as the INSERT case in scenario 5 -- proves the
+-- cross-tenant guard is enforced on UPDATE's WITH CHECK, not only on
+-- INSERT.
+INSERT INTO test_output (line) SELECT throws_like(
+  $$ UPDATE public.user_permission_overrides
+       SET staff_id = 'a7777777-7777-7777-7777-777777777777'
+     WHERE staff_id = 'c3333333-3333-3333-3333-333333333333' $$,
+  '%row-level security%',
+  'admin (tenant A) re-pointing an override row''s staff_id at tenant B''s staff -- rejected by RLS'
+);
+
+-- Scenario 8 (I4, positive case -- UPDATE path, review fix-round
+-- addition): the same tenant-A admin updates the SAME override row's
+-- overrides JSONB, leaving staff_id untouched (still tenant A's manager)
+-- -- lives_ok, proves the new EXISTS check on UPDATE's USING/WITH CHECK
+-- does not block a legitimate same-tenant, staff_id-preserving update.
+-- Also confirms scenario 7's rejected UPDATE left the row's staff_id
+-- unchanged (still 'c3333333...', matched by the WHERE clause here).
+INSERT INTO test_output (line) SELECT lives_ok(
+  $$ UPDATE public.user_permission_overrides
+       SET overrides = '{"payments.collect": true}'::jsonb
+     WHERE staff_id = 'c3333333-3333-3333-3333-333333333333' $$,
+  'admin (tenant A) updating an override row''s overrides, staff_id unchanged -- lives_ok'
 );
 
 INSERT INTO test_output (line) SELECT * FROM finish();

@@ -169,15 +169,30 @@ INSERT INTO test_output (line) SELECT lives_ok(
   'admin (settings.billing=false) updating tenants.name/phone (allow-listed, non-billing) -- lives_ok, not blocked'
 );
 
--- Scenario 5: owner performs the same billing-column UPDATE as scenario
--- 3 -- lives_ok, because
+-- Scenario 5 (corrected post-Fix-A -- see
+-- fix_billing_escalation_scope_test.sql): this scenario originally
+-- asserted lives_ok here, on the theory that
 -- app_has_permission('settings.billing') short-circuits to true for the
--- 'owner' role before ever consulting the default-permission table.
+-- 'owner' role before ever consulting the default-permission table, so
+-- Task 8's settings.billing exemption on tenants_no_self_billing_escalation
+-- would let the owner's own billing-column self-edit through. The
+-- whole-branch review (and Fix-A, 20261213000000_fix_billing_escalation_scope.sql)
+-- found that was exactly the regression: the ONLY caller who can ever
+-- reach this trigger is the tenant owner (tenants_owner_update's RLS only
+-- lets owner_uid = app_current_uid() through), and owner always has
+-- settings.billing=true -- so Task 8's exemption fully defeated the
+-- trigger's purpose for its one real caller. Fix-A reverted the trigger to
+-- its unconditional block (no settings.billing exemption at all) and gave
+-- settings.billing its intended target (create_subscription_request)
+-- instead. This scenario is corrected to match that now-current, intended
+-- behavior (throws_matching, not lives_ok) instead of being deleted, so
+-- this file stays internally consistent with the trigger's actual
+-- behavior rather than silently testing a reverted code path.
 -- owner_uid is switched to the owner staff's uid first, same reason as
 -- scenario 3 -- with owner_uid now matching, tenants_owner_update's RLS
--- lets the row through regardless of the trigger outcome, so lives_ok
--- here is a real assertion about the trigger (not a 0-row no-op
--- masquerading as success, which was the risk before owner_uid was set).
+-- lets the row through regardless of the trigger outcome, so this is a
+-- real assertion about the trigger (not a 0-row no-op masquerading as a
+-- result, which was the risk before owner_uid was set).
 RESET ROLE;
 SET session_replication_role = replica;
 UPDATE public.tenants SET owner_uid = '11111111-2222-3333-4444-555555555555' WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
@@ -185,9 +200,10 @@ SET session_replication_role = DEFAULT;
 
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claims = '{"sub":"11111111-2222-3333-4444-555555555555"}';
-INSERT INTO test_output (line) SELECT lives_ok(
+INSERT INTO test_output (line) SELECT throws_matching(
   $$ UPDATE public.tenants SET subscription_end_date = '2099-01-01' WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' $$,
-  'owner (settings.billing via short-circuit) updating tenants.subscription_end_date -- lives_ok'
+  'يمكن للمالك تعديل بيانات الملف التجاري فقط',
+  'owner (settings.billing via short-circuit) updating tenants.subscription_end_date -- blocked by Fix-A''s unconditional revert, not lives_ok'
 );
 
 INSERT INTO test_output (line) SELECT * FROM finish();
