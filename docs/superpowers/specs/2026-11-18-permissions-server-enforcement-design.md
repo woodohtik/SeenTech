@@ -120,8 +120,7 @@ END $$;
 | سياسة DELETE: `orders` | `orders.delete` | يستبدل قائمة الأدوار الحالية في سياسة RLS. |
 | سياسة DELETE: `customers` | `customers.delete` | **جديدة** — لا قيد دور على حذف عميل اليوم إطلاقاً. |
 | سياسة DELETE: `inventory_items` | `inventory.delete` | **جديدة**، نفس المنطق. |
-| سياسة SELECT: `payments` | `payments.view_prices` | **جديدة** — تبقى `tenant_id` شرطاً أساسياً، تُضاف صلاحية هذا المفتاح فوقه. لا تغيير على INSERT (يبقى عبر RPCs فقط). |
-| سياسة SELECT: `suppliers`, `supplier_transactions` | `suppliers.manage` | **جديدة**، نفس المنطق. |
+| سياسة SELECT: `suppliers`, `supplier_transactions` | `suppliers.manage` | **جديدة** — تبقى `tenant_id` شرطاً أساسياً، تُضاف صلاحية هذا المفتاح فوقه. لا تغيير على INSERT (يبقى عبر RPCs فقط). |
 | `roles` UPDATE، `user_permission_overrides` UPDATE/INSERT | `staff.permissions` | يستبدل الفحص الحالي (owner فقط من جهة العميل، بلا RLS فعلية فعلياً اليوم). |
 | `tenants` UPDATE لحقول الفوترة (`plan_id`, `subscription_*`) | `settings.billing` | يستبدل فحص `tenants_no_self_billing_escalation` الحالي (owner/admin). |
 
@@ -155,8 +154,10 @@ END $$;
 - الـ٣٢ مفتاح صلاحية المتبقية (تبويبات/شاشات) — تبقى UI-only.
 - أي backfill لـ`staff.role_id` الفارغ — الجدول الافتراضي الثابت يغطي هذه الحالة
   بلا حاجة لتعديل بيانات.
-- `reports`/`customers` SELECT — تبقى `tenant_id` فقط كما هي (قرار صريح: عدم
-  توسيع نطاق القراءة المقيَّدة بما يتجاوز `payments`/`suppliers`).
+- `reports`/`customers`/`payments` SELECT — تبقى `tenant_id` فقط كما هي (قرار
+  صريح: القراءة المقيَّدة بصلاحية تقتصر على `suppliers`/`supplier_transactions`
+  فقط — `payments.view_prices` ليس من الـ١١ مفتاحاً المعتمَدة أصلاً، ولوحظ هذا
+  التناقض أثناء كتابة الخطة وصُحِّح هنا).
 
 ---
 
