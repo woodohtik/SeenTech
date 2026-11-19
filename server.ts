@@ -9,6 +9,7 @@ import { authenticate, authorize } from "./src/server/middleware/authMiddleware.
 import { registerPrintRelay } from "./src/server/printRelay.ts";
 import { initServerLogger, captureServerException, logger } from "./src/server/logger.ts";
 import { isValidMeasurementUnit } from "./src/utils/measurementUnits.ts";
+import { normalizeFabricEstimateSettings } from "./src/utils/fabricEstimate.ts";
 import { listArticles, getArticle, createArticle, updateArticle, deleteArticle, previewArticle, fetchAllArticles } from "./src/server/blogAdmin.ts";
 import { triggerBlogRebuild } from "./src/server/blogDeployHook.ts";
 import { validateMeasurementsPayload } from "./src/server/validateMeasurementsPayload.ts";
@@ -1342,6 +1343,7 @@ app.get("/api/tenant/settings", authenticate, authorize(['owner', 'admin', 'mana
       postalCode: tenant.postal_code || '',
       logoUrl: tenant.logo_url || '',
       measurementUnit: isValidMeasurementUnit(tenant.measurement_unit) ? tenant.measurement_unit : 'inch',
+      fabricEstimate: normalizeFabricEstimateSettings(tenant.fabric_estimate_settings),
       taxSettings,
       notificationSettings
     });
@@ -1414,6 +1416,19 @@ app.post("/api/tenant/settings", authenticate, authorize(['owner', 'admin']), as
 
     if (data.measurementUnit !== undefined) {
       updatePayload.measurement_unit = data.measurementUnit;
+    }
+
+    if (data.fabricEstimate !== undefined) {
+      const fe = data.fabricEstimate || {};
+      const inRange = (v: unknown, min: number, max: number) => {
+        const n = Number(v);
+        return Number.isFinite(n) && n >= min && n <= max;
+      };
+      if (!inRange(fe.wasteCm, 0, 200) || !inRange(fe.defaultWidthCm, 50, 400) || !inRange(fe.narrowWidthCm, 50, 400)) {
+        return res.status(400).json({ error: 'أرقام حساب القماش غير صالحة' });
+      }
+      const { roundToCm: _roundToCm, ...stored } = normalizeFabricEstimateSettings(fe);
+      updatePayload.fabric_estimate_settings = stored;
     }
 
     const { error } = await supabaseAdmin

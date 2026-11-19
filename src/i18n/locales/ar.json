@@ -1367,7 +1367,9 @@
     "roll_total_line": "{{count}} {{rollUnit}} × {{content}} {{contentUnit}} = {{total}} {{contentUnit}} ({{meters}} متر)",
     "added_in_meters": "يُضاف للرصيد: {{meters}} متر",
     "cost_price_per_meter": "سعر الشراء (التكلفة) للمتر",
-    "selling_price_per_meter": "سعر البيع للمتر"
+    "selling_price_per_meter": "سعر البيع للمتر",
+    "fabric_width_cm": "عرض القماش (سم)",
+    "fabric_width_hint": "اختياري. يُستعمل لحساب قماش الثوب، وإن تُرك فارغاً يُؤخذ العرض الافتراضي من الإعدادات."
   },
   "invoice_print": {
     "address": "العنوان",
@@ -1692,7 +1694,9 @@
     "voice_wizard_retry": "حاول مرة أخرى",
     "voice_wizard_title": "تعبئة المقاسات بالصوت",
     "waist": "الخصر",
-    "zipper": "سحاب"
+    "zipper": "سحاب",
+    "fabric_estimate_line": "يأخذ الثوب ≈ {{meters}} متر ({{yards}} ياردة)",
+    "fabric_estimate_missing": "أدخل الطول والكم لحساب القماش"
   },
   "onboarding": {
     "categories": {
@@ -4620,6 +4624,13 @@
       "variable_added_toast": "تمت إضافة المتغير",
       "variable_inserted_toast": "تم إدراج المتغير",
       "vars_selector_label": "انقر على أي متغير بالأسفل لإضافته لموقع المؤشر في النص:"
+    },
+    "fabric_estimate": {
+      "title": "حساب قماش الثوب",
+      "desc": "أرقام تقديرية يُحسب بها كم يأخذ الثوب من القماش: طولان + كم (أو كمّان للقماش الضيق) + الهالك. عدّلها حسب طريقة القص في محلك.",
+      "waste_cm": "الهالك لكل ثوب (سم)",
+      "default_width_cm": "عرض القماش الافتراضي (سم)",
+      "narrow_width_cm": "القماش الأضيق من (سم) يُحسب له كمّان"
     }
   },
   "shift_closing": {

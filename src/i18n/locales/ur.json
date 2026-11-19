@@ -1365,7 +1365,9 @@
     "roll_total_line": "{{count}} {{rollUnit}} × {{content}} {{contentUnit}} = {{total}} {{contentUnit}} ({{meters}} میٹر)",
     "added_in_meters": "اسٹاک میں اضافہ: {{meters}} میٹر",
     "cost_price_per_meter": "لاگت قیمت (خریداری) فی میٹر",
-    "selling_price_per_meter": "فروخت قیمت فی میٹر"
+    "selling_price_per_meter": "فروخت قیمت فی میٹر",
+    "fabric_width_cm": "کپڑے کی چوڑائی (سم)",
+    "fabric_width_hint": "اختیاری۔ فی ثوب کپڑے کے اندازے کے لیے؛ خالی ہو تو ترتیبات کی پہلے سے طے چوڑائی استعمال ہوگی۔"
   },
   "invoice_print": {
     "address": "پتہ",
@@ -1690,7 +1692,9 @@
     "voice_wizard_retry": "دوبارہ کوشش کریں",
     "voice_wizard_title": "آواز سے پیمائش درج کریں",
     "waist": "کمر",
-    "zipper": "زپ"
+    "zipper": "زپ",
+    "fabric_estimate_line": "اس ثوب میں ≈ {{meters}} میٹر ({{yards}} گز) کپڑا لگے گا",
+    "fabric_estimate_missing": "کپڑے کے حساب کے لیے لمبائی اور آستین درج کریں"
   },
   "onboarding": {
     "categories": {
@@ -4605,6 +4609,13 @@
       "variable_added_toast": "متغیر شامل کر دیا گیا",
       "variable_inserted_toast": "متغیر درج کر دیا گیا",
       "vars_selector_label": "پیغام میں کرسر کی پوزیشن پر داخل کرنے کے لیے نیچے کسی بھی متغیر پر کلک کریں:"
+    },
+    "fabric_estimate": {
+      "title": "فی ثوب کپڑے کا حساب",
+      "desc": "اندازے کے اعداد: دو لمبائیاں + ایک آستین (تنگ کپڑے پر دو) + ضیاع۔ اپنی دکان کی کٹائی کے مطابق تبدیل کریں۔",
+      "waste_cm": "فی ثوب ضیاع (سم)",
+      "default_width_cm": "کپڑے کی پہلے سے طے چوڑائی (سم)",
+      "narrow_width_cm": "اس سے تنگ کپڑے (سم) پر دو آستینیں شمار ہوں گی"
     }
   },
   "shift_closing": {

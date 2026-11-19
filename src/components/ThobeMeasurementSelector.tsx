@@ -11,12 +11,18 @@ import { MeasurementUnit, cmToDisplayUnit, displayUnitToCm, unitLabelKey } from 
 import { FractionPicker } from './ui/FractionPicker';
 import { useDirection } from '../lib/direction';
 import { MEASUREMENT_WIZARD_ORDER } from '../utils/measurementWizardSteps';
+import { estimateFabricMeters, metersToYards, type FabricEstimateSettings } from '../utils/fabricEstimate';
 
 interface ThobeMeasurementSelectorProps {
   values: Measurements;
   onChange: (values: Measurements) => void;
   readOnly?: boolean;
   measurementUnit: MeasurementUnit;
+  /**
+   * Staff screens only: shows how much fabric the thobe takes under the
+   * figure, recomputed on every change. Leave it out on the customer form.
+   */
+  fabricEstimate?: { settings: FabricEstimateSettings; fabricWidthCm?: number | null };
 }
 
 type ThobePart = 'neck' | 'chest' | 'shoulder' | 'sleeve' | 'length' | 'handWidth' | 'midSleeveWidth' | 'cuffLength';
@@ -55,12 +61,18 @@ const PART_HINTS: Record<ThobePart, string> = {
   cuffLength: 'measurements.part_hint.cuffLength'
 };
 
-export default function ThobeMeasurementSelector({ values, onChange, readOnly = false, measurementUnit }: ThobeMeasurementSelectorProps) {
+export default function ThobeMeasurementSelector({ values, onChange, readOnly = false, measurementUnit, fabricEstimate }: ThobeMeasurementSelectorProps) {
   const { t } = useTranslation();
   const { isRtl } = useDirection();
   // Grid column 1 is the visual right in RTL and the visual left in LTR.
   const sideColumn = (side: 'right' | 'left') =>
     (side === 'right') === isRtl ? 'md:col-start-1' : 'md:col-start-3';
+  const estimatedMeters = fabricEstimate && !readOnly
+    ? estimateFabricMeters(
+        { lengthCm: values.length, sleeveCm: values.sleeve, fabricWidthCm: fabricEstimate.fabricWidthCm },
+        fabricEstimate.settings
+      )
+    : null;
   const [activePart, setActivePart] = useState<ThobePart | null>(null);
   const [isInstructionMode, setIsInstructionMode] = useState(false);
   const [activeHint, setActiveHint] = useState<ThobePart | null>(null);
@@ -443,6 +455,13 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
           </AnimatePresence>
         </svg>
 
+        {fabricEstimate && !readOnly && (
+          <p role="status" className="mt-2 text-center text-sm font-black text-brand select-text" dir="auto">
+            {estimatedMeters === null
+              ? <span className="text-xs font-bold text-content-muted">{t('measurements.fabric_estimate_missing')}</span>
+              : t('measurements.fabric_estimate_line', { meters: estimatedMeters.toFixed(2), yards: metersToYards(estimatedMeters).toFixed(2) })}
+          </p>
+        )}
         <div className={readOnly ? "mt-8" : "mt-2"}>
           <Branding className="shrink-0 opacity-70 transition-opacity hover:opacity-100" />
         </div>

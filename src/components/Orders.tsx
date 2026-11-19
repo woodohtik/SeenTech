@@ -6,6 +6,7 @@ import { fuzzyIncludes } from '../utils/fuzzySearch';
 import { calculateItemTax } from '../utils/b2bHelper';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
+import { useFabricEstimateSettings } from '../hooks/useFabricEstimateSettings';
 import { cmToDisplayUnit, unitLabelKey } from '../utils/measurementUnits';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
@@ -317,6 +318,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const { error: toastError, success: toastSuccess, warning: toastWarning, handleError } = useToast();
   const { confirm } = useConfirm();
   const measurementUnit = useMeasurementUnit(tenantId);
+  const fabricEstimateSettings = useFabricEstimateSettings(tenantId);
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -1132,6 +1134,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                     });
                   }}
                   measurementUnit={measurementUnit}
+                  fabricEstimate={{ settings: fabricEstimateSettings }}
                 />
               </div>
             </div>
@@ -3464,6 +3467,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                 values={tempMeasurements}
                                 onChange={setTempMeasurements}
                                 measurementUnit={measurementUnit}
+                                fabricEstimate={{ settings: fabricEstimateSettings }}
                               />
                               <p className="text-xs font-bold text-content-muted pt-2 border-t border-brand/10">{t('orders.edit_style_details')}</p>
                               <VisualMeasurements

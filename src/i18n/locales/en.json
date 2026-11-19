@@ -1367,7 +1367,9 @@
     "roll_total_line": "{{count}} {{rollUnit}} × {{content}} {{contentUnit}} = {{total}} {{contentUnit}} ({{meters}} m)",
     "added_in_meters": "Adds to stock: {{meters}} m",
     "cost_price_per_meter": "Purchase price (cost) per meter",
-    "selling_price_per_meter": "Selling price per meter"
+    "selling_price_per_meter": "Selling price per meter",
+    "fabric_width_cm": "Cloth width (cm)",
+    "fabric_width_hint": "Optional. Used to estimate fabric per thobe; when empty, the default width from Settings is used."
   },
   "invoice_print": {
     "address": "Address",
@@ -1692,7 +1694,9 @@
     "voice_wizard_retry": "Try again",
     "voice_wizard_title": "Fill measurements by voice",
     "waist": "Waist",
-    "zipper": "Zipper"
+    "zipper": "Zipper",
+    "fabric_estimate_line": "This thobe takes ≈ {{meters}} m ({{yards}} yd)",
+    "fabric_estimate_missing": "Enter the length and sleeve to estimate the fabric"
   },
   "onboarding": {
     "categories": {
@@ -4617,6 +4621,13 @@
       "variable_added_toast": "Variable added",
       "variable_inserted_toast": "Variable inserted",
       "vars_selector_label": "Click any variable below to insert it at the cursor position:"
+    },
+    "fabric_estimate": {
+      "title": "Fabric per thobe",
+      "desc": "Estimate inputs for how much fabric a thobe takes: two lengths + one sleeve (two for narrow cloth) + waste. Adjust them to how your shop cuts.",
+      "waste_cm": "Waste per thobe (cm)",
+      "default_width_cm": "Default cloth width (cm)",
+      "narrow_width_cm": "Cloth narrower than (cm) needs two sleeve lengths"
     }
   },
   "shift_closing": {

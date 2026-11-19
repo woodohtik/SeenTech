@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
+import { useFabricEstimateSettings } from '../hooks/useFabricEstimateSettings';
 import { cmToDisplayUnit, unitLabelKey, type MeasurementUnit } from '../utils/measurementUnits';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -106,6 +107,7 @@ export default function Customers({ tenantId }: CustomersProps) {
   const { error: toastError, success: toastSuccess, warning: toastWarning, handleError } = useToast();
   const { confirm } = useConfirm();
   const measurementUnit = useMeasurementUnit(tenantId);
+  const fabricEstimateSettings = useFabricEstimateSettings(tenantId);
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   // مراجعة-الفريق-التقني-الكامل-2026-10-19.md (أداء): نفس إصلاح Orders.tsx/
@@ -1892,6 +1894,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                       });
                     }}
                     measurementUnit={measurementUnit}
+                    fabricEstimate={{ settings: fabricEstimateSettings }}
                   />
                 </div>
 

@@ -38,6 +38,7 @@ import { deleteTestDataForTenant } from '../services/trialService';
 import { isRtlLang, localeOf } from '../lib/direction';
 import { useToast } from '../contexts/ToastContext';
 import { isValidMeasurementUnit, type MeasurementUnit } from '../utils/measurementUnits';
+import { DEFAULT_FABRIC_ESTIMATE_SETTINGS, normalizeFabricEstimateSettings } from '../utils/fabricEstimate';
 
 interface SettingsProps {
   tenantId: string;
@@ -54,6 +55,7 @@ interface SettingsData {
   postalCode: string;
   logoUrl: string;
   measurementUnit: MeasurementUnit;
+  fabricEstimate?: { wasteCm: number; defaultWidthCm: number; narrowWidthCm: number };
   taxSettings: unknown;
   notificationSettings: unknown;
   ownerEmail?: string;
@@ -150,6 +152,11 @@ export default function Settings({ tenantId }: SettingsProps) {
       postalCode: '',
       currencySymbol: 'SR',
       measurementUnit: 'inch' as const,
+      fabricEstimate: {
+        wasteCm: DEFAULT_FABRIC_ESTIMATE_SETTINGS.wasteCm,
+        defaultWidthCm: DEFAULT_FABRIC_ESTIMATE_SETTINGS.defaultWidthCm,
+        narrowWidthCm: DEFAULT_FABRIC_ESTIMATE_SETTINGS.narrowWidthCm,
+      },
       inventoryStrategy: 'decentralized' as const,
       logoUrl: '',
       taxSettings: {
@@ -213,6 +220,7 @@ export default function Settings({ tenantId }: SettingsProps) {
           postalCode: loadedData.postalCode || '',
           logoUrl: loadedData.logoUrl || '',
           measurementUnit: isValidMeasurementUnit(loadedData.measurementUnit) ? loadedData.measurementUnit : 'inch',
+          fabricEstimate: normalizeFabricEstimateSettings(loadedData.fabricEstimate),
           taxSettings: loadedData.taxSettings,
           notificationSettings: loadedData.notificationSettings,
         };
@@ -271,6 +279,7 @@ export default function Settings({ tenantId }: SettingsProps) {
         postalCode: data.postal_code || '',
         logoUrl: data.logo_url || '',
         measurementUnit: isValidMeasurementUnit(data.measurement_unit) ? data.measurement_unit : 'inch',
+        fabricEstimate: normalizeFabricEstimateSettings(data.fabric_estimate_settings),
         taxSettings: loadedTaxSettings,
         notificationSettings: loadedNotificationSettings,
         ownerEmail: data.owner_email || undefined,
@@ -304,6 +313,8 @@ export default function Settings({ tenantId }: SettingsProps) {
       // which the native <select> silently reads as its first option
       // ('cm') and the next save would then persist.
       measurementUnit: isValidMeasurementUnit(d.measurementUnit) ? d.measurementUnit : 'inch',
+      // Same reasoning: an older cached snapshot has no fabricEstimate at all.
+      fabricEstimate: normalizeFabricEstimateSettings(d.fabricEstimate),
       taxSettings: d.taxSettings as any,
       notificationSettings: d.notificationSettings as any
     });
@@ -377,6 +388,7 @@ export default function Settings({ tenantId }: SettingsProps) {
             postalCode: data.postalCode,
             logoUrl: data.logoUrl,
             measurementUnit: data.measurementUnit,
+            fabricEstimate: data.fabricEstimate,
             taxSettings: data.taxSettings,
             notificationSettings: data.notificationSettings
           })
@@ -446,6 +458,7 @@ export default function Settings({ tenantId }: SettingsProps) {
         postalCode: data.postalCode || '',
         logoUrl: data.logoUrl || '',
         measurementUnit: isValidMeasurementUnit(data.measurementUnit) ? data.measurementUnit : 'inch',
+        fabricEstimate: normalizeFabricEstimateSettings(data.fabricEstimate),
         taxSettings: data.taxSettings,
         notificationSettings: data.notificationSettings,
       };
@@ -756,6 +769,40 @@ export default function Settings({ tenantId }: SettingsProps) {
                         <option value="cm">{t('measurements.unit_cm', 'سم')}</option>
                         <option value="inch">{t('measurements.unit_inch', 'إنش')}</option>
                       </select>
+                    </div>
+                  </div>
+
+                  <div className="pt-5 border-t border-border space-y-3">
+                    <div className="px-1">
+                      <h4 className="text-sm font-black text-content">{t('settings_page.fabric_estimate.title')}</h4>
+                      <p className="text-xs text-content-muted font-bold mt-1">{t('settings_page.fabric_estimate.desc')}</p>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {([
+                        ['wasteCm', 'settings_page.fabric_estimate.waste_cm'],
+                        ['defaultWidthCm', 'settings_page.fabric_estimate.default_width_cm'],
+                        ['narrowWidthCm', 'settings_page.fabric_estimate.narrow_width_cm'],
+                      ] as const).map(([field, labelKey]) => (
+                        <div key={field} className="space-y-1.5">
+                          <label htmlFor={`fabric-estimate-${field}`} className="block px-1 text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">
+                            {t(labelKey)}
+                          </label>
+                          <input
+                            id={`fabric-estimate-${field}`}
+                            type="number"
+                            step="any"
+                            min="0"
+                            inputMode="decimal"
+                            dir="ltr"
+                            aria-invalid={!!(errors as any).fabricEstimate?.[field]}
+                            {...register(`fabricEstimate.${field}` as const)}
+                            className={cn(
+                              "w-full h-11 px-3 rounded-xl border border-border bg-surface text-sm font-bold text-content focus:outline-none focus:ring-2 focus:ring-brand/30",
+                              (errors as any).fabricEstimate?.[field] && "border-danger ring-2 ring-danger/30"
+                            )}
+                          />
+                        </div>
+                      ))}
                     </div>
                   </div>
 

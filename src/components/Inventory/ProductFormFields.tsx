@@ -34,6 +34,8 @@ export interface ProductFormFieldsData {
   /** Roll content as the shop typed it, in `contentUnit` (fabric bought by the roll only). */
   rollContent: number;
   contentUnit: ContentUnit;
+  /** Cloth width in cm (fabric only); 0 means the shop default applies. */
+  fabricWidthCm: number;
   minThreshold: number;
   pricePerUnit: number;
   costPrice: number;
@@ -368,6 +370,31 @@ export default function ProductFormFields({
           </div>
         </div>
       </div>
+
+      {isFabric && (
+        <div className="bg-surface-muted/50 p-6 rounded-2xl border border-border">
+          <div className="space-y-2 text-right md:max-w-xs">
+            <label htmlFor={`${idPrefix}-fabric-width`} className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+              {t("inventory.fabric_width_cm")}
+            </label>
+            <input
+              id={`${idPrefix}-fabric-width`}
+              type="number"
+              step="any"
+              min="0"
+              inputMode="decimal"
+              value={formData.fabricWidthCm || ""}
+              onChange={(e) => setFormData({ ...formData, fabricWidthCm: e.target.value === "" ? 0 : Number(e.target.value) })}
+              placeholder="150"
+              aria-describedby={`${idPrefix}-fabric-width-hint`}
+              className="w-full px-5 py-3 bg-surface border border-border rounded-xl font-semibold text-content text-right outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
+            />
+            <p id={`${idPrefix}-fabric-width-hint`} className="text-xs text-content-muted font-bold mx-1">
+              {t("inventory.fabric_width_hint")}
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="bg-surface-muted/50 p-6 rounded-2xl border border-border">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">

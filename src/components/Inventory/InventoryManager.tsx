@@ -100,7 +100,7 @@ import {
 } from "../../utils/productImport";
 import { useTenantCategoryPicker, ADD_NEW_CATEGORY_VALUE } from "../../hooks/useTenantCategoryPicker";
 import { LEGACY_INVENTORY_CATEGORY_SEED } from "../../services/categoryService";
-import ProductFormFields, { needsRollContent, resolveUnitColumns, unitFieldsFromItem } from "./ProductFormFields";
+import ProductFormFields, { isFabricCategory, needsRollContent, resolveUnitColumns, unitFieldsFromItem } from "./ProductFormFields";
 import ProductVariantsSection from "./ProductVariantsSection";
 import { listVariantsForTenant, listVariants, createVariant } from "../../services/variantService";
 import VariantAttributeBuilder, { type GeneratedRow } from "./VariantAttributeBuilder";
@@ -1816,6 +1816,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
     conversionRate: 1,
     rollContent: 0,
     contentUnit: "yard" as ContentUnit,
+    fabricWidthCm: 0,
     minThreshold: 10,
     pricePerUnit: 0,
     costPrice: 0,
@@ -1973,6 +1974,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
         category_key: formData.category,
         unit: formData.unit,
         ...resolveUnitColumns(formData),
+        fabric_width_cm: isFabricCategory(formData.category) && formData.fabricWidthCm > 0 ? formData.fabricWidthCm : null,
         min_threshold: formData.minThreshold,
         price_per_unit: formData.pricePerUnit,
         description: encodeInventoryDescription(formData.costPrice, formData.taxType, formData.description),
@@ -3794,6 +3796,7 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
     category: item.category_key || item.category || "fabric",
     unit: item.unit || "meter",
     ...unitFieldsFromItem(item),
+    fabricWidthCm: Number(item.fabric_width_cm) || 0,
     minThreshold: item.min_threshold || 10,
     pricePerUnit: item.price_per_unit || 0,
     costPrice: item.costPrice || 0,
@@ -3868,6 +3871,7 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
         category_key: formData.category,
         unit: formData.unit,
         ...resolveUnitColumns(formData),
+        fabric_width_cm: isFabricCategory(formData.category) && formData.fabricWidthCm > 0 ? formData.fabricWidthCm : null,
         min_threshold: formData.minThreshold,
         price_per_unit: formData.pricePerUnit,
         description: encodeInventoryDescription(formData.costPrice, formData.taxType, formData.description),

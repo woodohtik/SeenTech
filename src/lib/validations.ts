@@ -211,6 +211,11 @@ export const settingsSchema = z.object({
   logoUrl: z.string().optional(),
   currencySymbol: z.string().optional(),
   measurementUnit: z.enum(['cm', 'inch']).optional(),
+  fabricEstimate: z.object({
+    wasteCm: z.coerce.number().min(0).max(200),
+    defaultWidthCm: z.coerce.number().min(50).max(400),
+    narrowWidthCm: z.coerce.number().min(50).max(400),
+  }).optional(),
   taxSettings: z.object({
     enabled: z.boolean(),
     trn: z.string().optional().or(z.literal('')),
