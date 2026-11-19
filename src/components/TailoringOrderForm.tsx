@@ -387,7 +387,7 @@ function TailoringOrderFormBody({
   const [tempMeasurements, setTempMeasurements] = useState<Measurements>({});
   const [isSavingMeasurements, setIsSavingMeasurements] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
-  const [savedOrder, setSavedOrder] = useState<{ order: Record<string, any>; queuedOffline: boolean } | null>(null);
+  const [savedOrder, setSavedOrder] = useState<{ order: Record<string, any>; queuedOffline: boolean; depositSkipped: boolean } | null>(null);
   // One id for this form session: a second click or a retry after a dropped
   // response saves the same order instead of a new one.
   const orderIdRef = useRef<string>(globalThis.crypto.randomUUID());
@@ -608,6 +608,7 @@ function TailoringOrderFormBody({
         items,
         totals: computeTailoringTotals(items, canDiscount ? data.discountAmount : 0, tax),
         paidAmount: Number(data.paidAmount || 0),
+        discountAmount: canDiscount ? Number(data.discountAmount || 0) : 0,
         paymentMethod: data.paymentMethod || 'cash',
         deliveryDate: data.deliveryDate,
         assignedTailorId: data.assignedTailorId,
@@ -632,7 +633,11 @@ function TailoringOrderFormBody({
       } else {
         toastSuccess(t('orders.order_added_success'));
       }
-      if (showReceipt) setSavedOrder({ order: result.order, queuedOffline });
+      if (result.depositSkipped) {
+        // The order is saved; only the deposit was left out.
+        toastWarning(t('orders.deposit_needs_shift_title'), t('orders.deposit_needs_shift_desc'));
+      }
+      if (showReceipt) setSavedOrder({ order: result.order, queuedOffline, depositSkipped: result.depositSkipped });
       else onClose();
     } catch (error: any) {
       console.error('Order submission error:', error);
@@ -716,7 +721,9 @@ function TailoringOrderFormBody({
             <div id="tailoring-order-receipt" className="max-w-md mx-auto bg-surface border border-border rounded-2xl p-5 space-y-4 text-content" dir={isRtl ? 'rtl' : 'ltr'}>
               <div className="text-center space-y-1">
                 <h4 className="text-lg font-black">{t('orders.receipt_title')}</h4>
-                <p className="text-sm font-bold text-content-muted" dir="ltr">{savedOrder.order.order_number}</p>
+                {savedOrder.order.order_number && (
+                  <p className="text-sm font-bold text-content-muted" dir="ltr">{savedOrder.order.order_number}</p>
+                )}
                 {savedOrder.queuedOffline && (
                   <p className="text-xs font-bold text-warning">{t('orders.order_queued_offline_title', 'سُجِّل الطلب محلياً')}</p>
                 )}
@@ -745,6 +752,11 @@ function TailoringOrderFormBody({
                 <div className="flex justify-between gap-3"><dt className="text-content-muted font-bold">{t('orders.remaining_label')}</dt><dd className="font-black"><PriceDisplay amount={Number(savedOrder.order.total_amount) - Number(savedOrder.order.paid_amount)} /></dd></div>
               </dl>
             </div>
+            {savedOrder.depositSkipped && (
+              <p role="alert" className="max-w-md mx-auto mt-3 text-sm font-bold text-warning bg-warning/10 border border-warning/20 rounded-xl p-3">
+                {t('orders.deposit_needs_shift_desc')}
+              </p>
+            )}
             <div className="max-w-md mx-auto mt-4 flex flex-wrap gap-3">
               <button type="button" onClick={printReceipt} className="flex-1 min-w-[140px] bg-brand text-white py-3 rounded-xl font-bold hover:bg-brand/90 transition-colors flex items-center justify-center gap-2">
                 <Printer size={18} /> {t('orders.receipt_print')}

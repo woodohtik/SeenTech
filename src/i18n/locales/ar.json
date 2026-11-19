@@ -1963,7 +1963,9 @@
     "fabric_external_note": "قماش الزبون: التقدير للمعلومة فقط ولا يُخصم من المخزون",
     "receipt_title": "إيصال طلب تفصيل",
     "receipt_saved": "حُفظ الطلب",
-    "receipt_print": "طباعة الإيصال"
+    "receipt_print": "طباعة الإيصال",
+    "deposit_needs_shift_title": "حُفظ الطلب بدون العربون",
+    "deposit_needs_shift_desc": "لا توجد وردية مفتوحة باسمك، فلم يُسجَّل العربون. افتح وردية ثم سجّل الدفعة من شاشة الطلب."
   },
   "permissions": {
     "access_denied_desc": "غير محدد",

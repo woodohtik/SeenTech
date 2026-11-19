@@ -5,6 +5,7 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
 import { cmToDisplayUnit, unitLabelKey } from '../utils/measurementUnits';
 import { measurementRows } from '../constants/measurementFields';
+import { orderItemRowToLine } from '../utils/tailoringOrder';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
@@ -340,6 +341,17 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   // opens it (optionally with a customer preselected) and lists what it saves.
   const [newOrderCustomerId, setNewOrderCustomerId] = useState<string | undefined>(undefined);
 
+  // The measurements an order shows: the snapshot stored on its lines when it
+  // has one (orders made through create_tailoring_order), so a later edit to
+  // the customer does not rewrite an existing order; the customer's current
+  // measurements for older orders, which never stored a copy.
+  const orderMeasurements = (order: Order) => {
+    const snapshot = (order.items || []).map((item: any) => item?.measurements).find(
+      (m: any) => m && typeof m === 'object' && Object.keys(m).length > 0
+    );
+    return snapshot || customers.find(c => c.id === order.customerId)?.measurements;
+  };
+
   const handleOpenModal = useCallback((customCustId?: string) => {
     setNewOrderCustomerId(customCustId || undefined);
     setIsModalOpen(true);
@@ -449,9 +461,61 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         .select('order_id')
         .eq('tenant_id', tenantId);
       if (itemsError) throw itemsError;
-      const posOrderIds = new Set((itemRows || []).map((r) => r.order_id));
+      const ordersWithItemRows = new Set((itemRows || []).map((r) => r.order_id));
 
-      const allOrders = (data || []).map((o) => ({ ...mapOrderData(o), isPosSale: posOrderIds.has(o.id) } as Order));
+      // Tailoring lines live in order_items too since create_tailoring_order
+      // (and always did for a tailoring line sold through the old POS cart),
+      // so "has order_items rows" alone no longer means a ready-made sale.
+      // Custom-type rows are the tailoring lines: read them in full and show
+      // their orders here.
+      const { data: customRows, error: customError } = await supabase
+        .from('order_items')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('type', 'custom');
+      if (customError) throw customError;
+      const linesByOrder = new Map<string, any[]>();
+      (customRows || []).forEach((row: any) => {
+        const list = linesByOrder.get(row.order_id) || [];
+        list.push(orderItemRowToLine(row));
+        linesByOrder.set(row.order_id, list);
+      });
+
+      // A tailoring-kind order keeps its history in order_history, not in notes.
+      const { data: historyRows, error: historyError } = await supabase
+        .from('order_history')
+        .select('order_id, status, notes, updated_at, updated_by_name, updated_by_staff, orders!inner(kind)')
+        .eq('tenant_id', tenantId)
+        .eq('orders.kind', 'tailoring')
+        .order('updated_at', { ascending: true });
+      if (historyError) console.warn('[Orders] order history unavailable:', historyError);
+      const historyByOrder = new Map<string, OrderHistory[]>();
+      (historyRows || []).forEach((row: any) => {
+        const list = historyByOrder.get(row.order_id) || [];
+        list.push({
+          status: row.status,
+          updatedAt: row.updated_at,
+          updatedBy: row.updated_by_name || '',
+          updatedByUid: row.updated_by_staff || undefined,
+          notes: row.notes || '',
+        } as OrderHistory);
+        historyByOrder.set(row.order_id, list);
+      });
+
+      const allOrders = (data || []).map((o) => {
+        const mapped = mapOrderData(o);
+        const lines = linesByOrder.get(o.id);
+        const isTailoringKind = o.kind === 'tailoring';
+        // Orders made before create_tailoring_order still carry their lines
+        // in notes; those win when present.
+        const items = lines && (isTailoringKind || mapped.items.length === 0) ? lines : mapped.items;
+        return {
+          ...mapped,
+          items,
+          history: isTailoringKind ? (historyByOrder.get(o.id) || mapped.history) : mapped.history,
+          isPosSale: ordersWithItemRows.has(o.id) && !lines && !isTailoringKind,
+        } as Order;
+      });
       refreshOrdersCache(tenantId, allOrders).catch(() => {});
       return allOrders;
     },
@@ -1547,7 +1611,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             </section>
 
             {/* Customer Measurements */}
-            {customers.find(c => c.id === order.customerId)?.measurements && (
+            {orderMeasurements(order) && (
               <section className="space-y-4">
                 <h3 className="text-xs font-black text-content-muted uppercase tracking-widest flex items-center gap-2">
                   <Ruler size={14} />
@@ -1555,7 +1619,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 </h3>
                 <div className="bg-brand/5 p-6 rounded-3xl border border-brand/10">
                   <div className="grid grid-cols-3 gap-4">
-                    {measurementRows(customers.find(c => c.id === order.customerId)?.measurements).map((row) => ({ label: t(row.labelKey), value: row.value })).map((m, i) => {
+                    {measurementRows(orderMeasurements(order)).map((row) => ({ label: t(row.labelKey), value: row.value })).map((m, i) => {
                       const displayValue = typeof m.value === 'number' ? cmToDisplayUnit(m.value, measurementUnit) : m.value;
                       return (
                         <div key={i} className="text-center">

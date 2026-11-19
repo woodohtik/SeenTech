@@ -4,6 +4,8 @@ import {
   computeTailoringTotals,
   fabricFromContentUnit,
   fabricInContentUnit,
+  lineToServerItem,
+  orderItemRowToLine,
   resolveTailoringTax,
   type TailoringTax,
 } from './tailoringOrder';
@@ -95,5 +97,41 @@ describe('fabric in the cloth\'s own unit', () => {
     expect(fabricInContentUnit(11.4, 'meter')).toBe(11.4);
     expect(fabricInContentUnit(11.4, null)).toBe(11.4);
     expect(fabricFromContentUnit(11.4, undefined)).toBe(11.4);
+  });
+});
+
+describe('a line to and from order_items', () => {
+  const line = {
+    garmentType: 'ثوب', fabric: 'قطن', fabricId: 'f-1', quantity: 3, price: 200, consumedMeters: 11.4,
+    fabricManual: true, fabricPerPieceMeters: 3.8, collarType: 'classic', closureType: 'buttons',
+    additions: 'جيب إضافي', attributes: { color: 'white' },
+  };
+
+  it('sends pieces, the fabric figure and the style columns', () => {
+    expect(lineToServerItem(line)).toMatchObject({
+      garment_type: 'ثوب', fabric: 'قطن', fabric_id: 'f-1', quantity: 3, price: 200, consumed_meters: 11.4,
+      collar_type: 'classic', closure_type: 'buttons', additions: 'جيب إضافي', cuff_type: '',
+      attributes: { color: 'white', quantityUnit: 'piece', fabricManual: true, fabricPerPieceMeters: 3.8 },
+    });
+  });
+
+  it('never sends a fractional or empty piece count', () => {
+    expect(lineToServerItem({ ...line, quantity: 2.9 }).quantity).toBe(2);
+    expect(lineToServerItem({ ...line, quantity: '' }).quantity).toBe(1);
+  });
+
+  it('reads a stored row back as the line the screens expect, with its measurement snapshot', () => {
+    const back = orderItemRowToLine({
+      id: 'row-1', type: 'custom', name: 'ثوب', garment_type: 'ثوب', fabric: 'قطن', fabric_id: 'f-1',
+      quantity: '3', price: '200', consumed_meters: '11.4', collar_type: 'classic', cuff_type: null,
+      attributes: { quantityUnit: 'piece', fabricManual: true, fabricPerPieceMeters: 3.8 },
+      measurements: { length: 145 }, status: 'measurements_taken', status_key: 'measurements_taken',
+    });
+    expect(back).toMatchObject({
+      id: 'row-1', type: 'custom', garmentType: 'ثوب', fabric: 'قطن', fabricId: 'f-1', quantity: 3, price: 200,
+      consumedMeters: 11.4, quantityUnit: 'piece', fabricManual: true, collarType: 'classic',
+      measurements: { length: 145 },
+    });
+    expect(back).not.toHaveProperty('cuffType');
   });
 });

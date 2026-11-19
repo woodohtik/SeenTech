@@ -133,6 +133,33 @@ export async function enqueueOrderCreate(orderId: string, orderData: Record<stri
   await refreshCachedPendingCount();
 }
 
+/**
+ * Queues a tailoring order for create_tailoring_order. The operation id is the
+ * order id and the server's idempotency key, so a replay after a dropped
+ * response returns the order already created instead of making another.
+ */
+export async function enqueueTailoringOrder(operationId: string, payload: {
+  p_operation_id: string;
+  p_order: unknown;
+  p_items: unknown;
+}): Promise<void> {
+  const isFirstEver = (await offlineDb.outbox.count()) === 0;
+
+  await offlineDb.outbox.put({
+    id: operationId,
+    type: 'tailoring_order',
+    payload,
+    createdAt: Date.now(),
+    status: 'pending',
+    retries: 0,
+  });
+
+  if (isFirstEver) {
+    void requestPersistentStorage().catch(() => {});
+  }
+  await refreshCachedPendingCount();
+}
+
 async function syncEntry(entry: OutboxEntry): Promise<'synced' | 'failed'> {
   await offlineDb.outbox.update(entry.id, { status: 'syncing' });
   try {
@@ -140,7 +167,13 @@ async function syncEntry(entry: OutboxEntry): Promise<'synced' | 'failed'> {
       const payload = entry.payload as { p_operation_id: string; p_order: unknown; p_items: unknown; p_invoice: unknown };
       const { error } = await supabase.rpc('create_pos_sale', payload);
       if (error) throw error;
+    } else if (entry.type === 'tailoring_order') {
+      const payload = entry.payload as { p_operation_id: string; p_order: unknown; p_items: unknown };
+      const { error } = await supabase.rpc('create_tailoring_order', payload);
+      if (error) throw error;
     } else if (entry.type === 'order_create') {
+      // Legacy: queued by the direct-insert path before create_tailoring_order.
+      // Nothing enqueues this type any more; it stays so old entries still drain.
       const payload = entry.payload as { orderData: Record<string, unknown> };
       const { error } = await supabase.from('orders').insert(payload.orderData);
       // 23505 = unique_violation on the client-generated id -- an earlier

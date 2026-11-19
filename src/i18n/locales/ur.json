@@ -1961,7 +1961,9 @@
     "fabric_external_note": "گاہک کا اپنا کپڑا: اندازہ صرف معلومات کے لیے ہے، اسٹاک سے نہیں کٹے گا",
     "receipt_title": "سلائی آرڈر کی رسید",
     "receipt_saved": "آرڈر محفوظ ہو گیا",
-    "receipt_print": "رسید پرنٹ کریں"
+    "receipt_print": "رسید پرنٹ کریں",
+    "deposit_needs_shift_title": "آرڈر پیشگی رقم کے بغیر محفوظ ہوا",
+    "deposit_needs_shift_desc": "آپ کی کوئی شفٹ کھلی نہیں، اس لیے پیشگی رقم درج نہیں ہوئی۔ شفٹ کھولیں، پھر آرڈر اسکرین سے ادائیگی درج کریں۔"
   },
   "permissions": {
     "access_denied_desc": "غیر متعین",

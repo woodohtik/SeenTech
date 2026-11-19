@@ -1963,7 +1963,9 @@
     "fabric_external_note": "Customer's own cloth: the estimate is for information and is not taken from stock",
     "receipt_title": "Tailoring order receipt",
     "receipt_saved": "Order saved",
-    "receipt_print": "Print receipt"
+    "receipt_print": "Print receipt",
+    "deposit_needs_shift_title": "Order saved without the deposit",
+    "deposit_needs_shift_desc": "You have no open shift, so the deposit was not recorded. Open a shift, then record the payment from the order screen."
   },
   "permissions": {
     "access_denied_desc": "Not specified",

@@ -111,3 +111,69 @@ export function fabricInContentUnit(meters: number, contentUnit: ContentUnit | n
 export function fabricFromContentUnit(value: number, contentUnit: ContentUnit | null | undefined): number {
   return contentUnit === 'yard' ? round2(contentToMeters(value, 'yard')) : round2(value);
 }
+
+// ---- the server shape of a line (order_items) ----
+
+/** Style fields a line carries, as [form key, order_items column]. */
+const LINE_STYLE_COLUMNS = [
+  ['collarType', 'collar_type'],
+  ['cuffType', 'cuff_type'],
+  ['pocketType', 'pocket_type'],
+  ['chestStyle', 'chest_style'],
+  ['shoulderStyle', 'shoulder_style'],
+  ['cuttingType', 'cutting_type'],
+  ['collarPadding', 'collar_padding'],
+  ['closureType', 'closure_type'],
+  ['closureVisibility', 'closure_visibility'],
+  ['additions', 'additions'],
+  ['embroidery', 'embroidery'],
+] as const;
+
+/** A form line as create_tailoring_order expects it in p_items. */
+export function lineToServerItem(line: Record<string, any>): Record<string, unknown> {
+  const item: Record<string, unknown> = {
+    garment_type: line.garmentType,
+    fabric: line.fabric || '',
+    fabric_id: line.fabricId || '',
+    quantity: Math.max(1, Math.floor(Number(line.quantity) || 1)),
+    price: Number(line.price) || 0,
+    consumed_meters: Number(line.consumedMeters) || 0,
+    // What has no column of its own rides in attributes, beside the
+    // activity's own dynamic fields.
+    attributes: {
+      ...(line.attributes && typeof line.attributes === 'object' ? line.attributes : {}),
+      quantityUnit: 'piece',
+      fabricManual: Boolean(line.fabricManual),
+      fabricPerPieceMeters: Number(line.fabricPerPieceMeters) || 0,
+    },
+  };
+  for (const [key, column] of LINE_STYLE_COLUMNS) item[column] = line[key] ?? '';
+  return item;
+}
+
+/** An order_items row as the line shape the order screens have always read. */
+export function orderItemRowToLine(row: Record<string, any>): Record<string, any> {
+  const attributes = row.attributes && typeof row.attributes === 'object' ? row.attributes : {};
+  const line: Record<string, any> = {
+    id: row.id,
+    type: row.type || 'custom',
+    garmentType: row.garment_type || row.name || '',
+    name: row.name || row.garment_type || '',
+    fabric: row.fabric || '',
+    fabricId: row.fabric_id || '',
+    quantity: Number(row.quantity) || 0,
+    price: Number(row.price) || 0,
+    consumedMeters: Number(row.consumed_meters) || 0,
+    quantityUnit: attributes.quantityUnit,
+    fabricManual: Boolean(attributes.fabricManual),
+    fabricPerPieceMeters: Number(attributes.fabricPerPieceMeters) || 0,
+    attributes,
+    // The customer's measurements as they were when the order was made.
+    measurements: row.measurements && typeof row.measurements === 'object' ? row.measurements : {},
+    status: row.status_key || row.status,
+  };
+  for (const [key, column] of LINE_STYLE_COLUMNS) {
+    if (row[column] !== null && row[column] !== undefined) line[key] = row[column];
+  }
+  return line;
+}
