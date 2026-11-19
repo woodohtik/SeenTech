@@ -8,6 +8,10 @@ import { VoiceMicButton } from "../ui/VoiceMicButton";
 import { isSpeechRecognitionSupported } from "../../hooks/useSpeechRecognition";
 import ProductImageUploader from "./ProductImageUploader";
 import { ADD_NEW_CATEGORY_VALUE, useTenantCategoryPicker } from "../../hooks/useTenantCategoryPicker";
+import { ContentUnit } from "../../utils/fabricUomConverter";
+import { isFabricCategory, needsRollContent } from "../../utils/itemUnits";
+
+export { isFabricCategory, needsRollContent, resolveUnitColumns, unitFieldsFromItem } from "../../utils/itemUnits";
 
 /**
  * seen-fields-unification-task.md #4 -- حقول نموذج المنتج المشتركة بين
@@ -27,6 +31,9 @@ export interface ProductFormFieldsData {
   category: string;
   unit: string;
   conversionRate: number;
+  /** Roll content as the shop typed it, in `contentUnit` (fabric bought by the roll only). */
+  rollContent: number;
+  contentUnit: ContentUnit;
   minThreshold: number;
   pricePerUnit: number;
   costPrice: number;
@@ -62,6 +69,8 @@ interface ProductFormFieldsProps {
    * حيث لا يزال يمثّل تعديلاً يدوياً شرعياً لرصيد موجود فعلاً.
    */
   showOpeningBalance?: boolean;
+  /** Add form only: picking a category resets the unit to that category default (roll / piece). */
+  applyCategoryUnitDefaults?: boolean;
 }
 
 export default function ProductFormFields({
@@ -75,8 +84,22 @@ export default function ProductFormFields({
   suppliersList,
   handleError,
   showOpeningBalance = true,
+  applyCategoryUnitDefaults = false,
 }: ProductFormFieldsProps) {
   const { t } = useTranslation();
+  const isFabric = isFabricCategory(formData.category);
+  const showRollContent = needsRollContent(formData);
+  const withCategory = (category: string): ProductFormFieldsData => {
+    const next = { ...formData, category };
+    if (!applyCategoryUnitDefaults || isFabricCategory(category) === isFabric) return next;
+    return isFabricCategory(category)
+      ? { ...next, unit: "roll" }
+      : { ...next, unit: "piece", conversionRate: 1 };
+  };
+  const baseUnitChoices = isFabric ? ["roll", "meter", "yard"] : ["piece", "box"];
+  // A stored unit outside the current choices (bolt, spool, a fabric unit on a
+  // non-fabric item...) stays selectable so editing never silently rewrites it.
+  const unitChoices = baseUnitChoices.includes(formData.unit) ? baseUnitChoices : [...baseUnitChoices, formData.unit];
   // Unsupported browsers render VoiceMicButton as null -- without this
   // gate, the empty mic wrapper would still show as a blank bordered icon
   // box next to the name field where none existed before voice input.
@@ -132,7 +155,7 @@ export default function ProductFormFields({
                   categoryPicker.setAddingNew(true);
                   return;
                 }
-                setFormData({ ...formData, category: val as any });
+                setFormData(withCategory(val as string));
               }}
               options={[
                 ...categoryPicker.options,
@@ -148,7 +171,7 @@ export default function ProductFormFields({
                   onChange={(e) => categoryPicker.setNewLabel(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
-                      categoryPicker.confirmAdd((key) => setFormData({ ...formData, category: key as any })).catch(handleError);
+                      categoryPicker.confirmAdd((key) => setFormData(withCategory(key))).catch(handleError);
                     }
                     if (e.key === "Escape") categoryPicker.cancelAdd();
                   }}
@@ -157,7 +180,7 @@ export default function ProductFormFields({
                 />
                 <button
                   type="button"
-                  onClick={() => categoryPicker.confirmAdd((key) => setFormData({ ...formData, category: key as any })).catch(handleError)}
+                  onClick={() => categoryPicker.confirmAdd((key) => setFormData(withCategory(key))).catch(handleError)}
                   disabled={!categoryPicker.newLabel.trim() || categoryPicker.saving}
                   className="min-h-[32px] px-3 rounded-lg bg-brand text-white font-bold text-xs disabled:opacity-50"
                 >
@@ -276,45 +299,61 @@ export default function ProductFormFields({
 
       <div className="bg-surface-muted/50 p-6 rounded-2xl border border-border">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
-          <div className="space-y-2 col-span-1 md:col-span-4 text-right">
+          <div className={cn("space-y-2 col-span-1 text-right", showRollContent ? "md:col-span-4" : "md:col-span-6")}>
             <label className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
               {t("inventory.unit")}
             </label>
             <SmartSelect
               value={formData.unit}
               onChange={(val) => setFormData({ ...formData, unit: val as any })}
-              options={[
-                { value: "meter", label: t("inventory.unit_meter") },
-                { value: "yard", label: t("inventory.unit_yard") },
-                { value: "roll", label: t("inventory.unit_roll") },
-                { value: "bolt", label: t("inventory.unit_bolt") },
-                { value: "piece", label: t("inventory.unit_piece") },
-                { value: "box", label: t("inventory.unit_box") },
-              ]}
+              options={unitChoices.map((u) => ({ value: u, label: t(`inventory.unit_${u}`, u) }))}
               className="text-right"
             />
           </div>
-          <div className="space-y-2 col-span-1 md:col-span-4 text-right">
-            <label htmlFor={`${idPrefix}-conversion-rate`} className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-              {t("inventory.conversion_rate")}<span className="text-danger">*</span>
-            </label>
-            <input
-              id={`${idPrefix}-conversion-rate`}
-              type="number"
-              step="0.01"
-              aria-invalid={fieldErrors.conversionRate}
-              value={formData.conversionRate}
-              onChange={(e) => {
-                setFormData({ ...formData, conversionRate: Number(e.target.value) });
-                if (fieldErrors.conversionRate) setFieldErrors({ ...fieldErrors, conversionRate: false });
-              }}
-              className={cn(
-                "w-full px-5 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content text-right",
-                fieldErrors.conversionRate && "ring-2 ring-danger border-danger"
-              )}
-            />
-          </div>
-          <div className="space-y-2 col-span-1 md:col-span-4 text-right">
+          {showRollContent && (
+            <div className="space-y-2 col-span-1 md:col-span-4 text-right">
+              <label htmlFor={`${idPrefix}-roll-content`} className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
+                {t("inventory.roll_content")}<span className="text-danger">*</span>
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id={`${idPrefix}-roll-content`}
+                  type="number"
+                  step="any"
+                  min="0"
+                  inputMode="decimal"
+                  aria-invalid={fieldErrors.rollContent}
+                  value={formData.rollContent || ""}
+                  onChange={(e) => {
+                    setFormData({ ...formData, rollContent: e.target.value === "" ? 0 : Number(e.target.value) });
+                    if (fieldErrors.rollContent) setFieldErrors({ ...fieldErrors, rollContent: false });
+                  }}
+                  placeholder="25"
+                  className={cn(
+                    "min-w-0 flex-1 px-4 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-content text-right",
+                    fieldErrors.rollContent && "ring-2 ring-danger border-danger"
+                  )}
+                />
+                <div className="flex shrink-0 p-1 bg-surface border border-border rounded-xl">
+                  {(["yard", "meter"] as ContentUnit[]).map((u) => (
+                    <button
+                      key={u}
+                      type="button"
+                      aria-pressed={formData.contentUnit === u}
+                      onClick={() => setFormData({ ...formData, contentUnit: u })}
+                      className={cn(
+                        "px-3 rounded-lg text-xs font-black transition-all",
+                        formData.contentUnit === u ? "bg-brand text-white" : "text-content-muted hover:bg-surface-muted"
+                      )}
+                    >
+                      {t(`inventory.unit_${u}`)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          <div className={cn("space-y-2 col-span-1 text-right", showRollContent ? "md:col-span-4" : "md:col-span-6")}>
             <label htmlFor={`${idPrefix}-min-threshold`} className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
               {t("inventory.min_threshold")}
             </label>
@@ -334,7 +373,7 @@ export default function ProductFormFields({
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-right">
           <div className="space-y-2 col-span-1 md:col-span-3 text-right">
             <label htmlFor={`${idPrefix}-cost-price`} className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-              {t("inventory.cost_price_label")}<span className="text-danger">*</span>
+              {t(isFabric ? "inventory.cost_price_per_meter" : "inventory.cost_price_label")}<span className="text-danger">*</span>
             </label>
             <input
               id={`${idPrefix}-cost-price`}
@@ -356,7 +395,7 @@ export default function ProductFormFields({
 
           <div className="space-y-2 col-span-1 md:col-span-3 text-right">
             <label htmlFor={`${idPrefix}-selling-price`} className="text-xs font-black text-content-muted uppercase tracking-widest mx-1 block">
-              {t("inventory.selling_price_label")}<span className="text-danger">*</span>
+              {t(isFabric ? "inventory.selling_price_per_meter" : "inventory.selling_price_label")}<span className="text-danger">*</span>
             </label>
             <input
               id={`${idPrefix}-selling-price`}

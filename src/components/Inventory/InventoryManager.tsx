@@ -88,8 +88,7 @@ import { useRouter, useRefreshCounter } from "../../hooks/useRouter";
 
 import StockTransferWorkflow from "./StockTransferWorkflow";
 import { InventoryAdjustment } from "./InventoryAdjustment";
-import FabricUomConversion from "./FabricUomConversion";
-import { formatSmartStockDisplay, getUnitLabel } from "../../utils/fabricUomConverter";
+import { ContentUnit, contentToMeters, formatSmartStockDisplay, getUnitLabel, safeRound } from "../../utils/fabricUomConverter";
 import { useVerticalConfig } from "../../hooks/useVerticalConfig";
 import { mapCategoryKeyToLegacyCategory } from "../../services/verticalService";
 import {
@@ -101,7 +100,7 @@ import {
 } from "../../utils/productImport";
 import { useTenantCategoryPicker, ADD_NEW_CATEGORY_VALUE } from "../../hooks/useTenantCategoryPicker";
 import { LEGACY_INVENTORY_CATEGORY_SEED } from "../../services/categoryService";
-import ProductFormFields from "./ProductFormFields";
+import ProductFormFields, { needsRollContent, resolveUnitColumns, unitFieldsFromItem } from "./ProductFormFields";
 import ProductVariantsSection from "./ProductVariantsSection";
 import { listVariantsForTenant, listVariants, createVariant } from "../../services/variantService";
 import VariantAttributeBuilder, { type GeneratedRow } from "./VariantAttributeBuilder";
@@ -182,7 +181,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
   const [showProductImportModal, setShowProductImportModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "inventory" | "reports" | "transfers" | "stock_take" | "fabric_uom"
+    "inventory" | "reports" | "transfers" | "stock_take"
   >("inventory");
   const [lowStockItems, setLowStockItems] = useState<any[]>([]);
   const [isLowStockOnly, setIsLowStockOnly] = useState(false);
@@ -200,6 +199,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
       productDescription: meta.originalDescription || d.description || "",
       baseUnit: d.base_unit,
       conversionRate: d.conversion_rate,
+      contentUnit: d.content_unit,
       mainImage:
         Array.isArray(d.images) && d.images.length > 0
           ? d.images[0]?.url || d.images[0]
@@ -603,17 +603,6 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
         >
           <span>{t("inventory.stock_take", "جرد المخزون")}</span>
         </button>
-        <button
-          onClick={() => setActiveTab("fabric_uom")}
-          className={cn(
-            "px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold transition-all whitespace-nowrap text-xs sm:text-sm flex-1 sm:flex-none text-center flex items-center justify-center gap-1.5",
-            activeTab === "fabric_uom"
-              ? "bg-brand text-white shadow-lg shadow-brand/10"
-              : "text-content-muted hover:bg-surface-muted",
-          )}
-        >
-          <span>{t("inventory.fabric_uom", "معايرة الأقمشة")}</span>
-        </button>
       </div>
 
       {activeTab === "inventory" && (
@@ -899,7 +888,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                           </p>
                           {item.category === "fabric" && item.conversionRate > 1 && (
                             <span className="text-[9px] text-brand font-black block mt-0.5">
-                              {formatSmartStockDisplay(totalStock, item.unit, item.baseUnit || "meter", item.conversionRate)}
+                              {formatSmartStockDisplay(totalStock, item.unit, item.baseUnit || "meter", item.conversionRate, undefined, item.contentUnit)}
                             </span>
                           )}
                         </div>
@@ -1263,7 +1252,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                               </div>
                               {item.category === "fabric" && item.conversionRate > 1 && (
                                 <span className="text-[10px] text-brand font-black block mt-0.5">
-                                  {formatSmartStockDisplay(totalStock, item.unit, item.baseUnit || "meter", item.conversionRate)}
+                                  {formatSmartStockDisplay(totalStock, item.unit, item.baseUnit || "meter", item.conversionRate, undefined, item.contentUnit)}
                                 </span>
                               )}
                             </div>
@@ -1629,10 +1618,6 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
         />
       )}
 
-      {activeTab === "fabric_uom" && (
-        <FabricUomConversion tenantId={tenantId} />
-      )}
-
       {/* Modals Placeholder */}
       <AnimatePresence>
         {showAddModal && (
@@ -1827,8 +1812,10 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
   const [formData, setFormData] = useState({
     name: "",
     category: "fabric",
-    unit: "meter",
+    unit: "roll",
     conversionRate: 1,
+    rollContent: 0,
+    contentUnit: "yard" as ContentUnit,
     minThreshold: 10,
     pricePerUnit: 0,
     costPrice: 0,
@@ -1928,9 +1915,9 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
       errors.costPrice = true;
       missing.push(t("inventory.cost_price_label"));
     }
-    if (!formData.conversionRate || formData.conversionRate <= 0) {
-      errors.conversionRate = true;
-      missing.push(t("inventory.conversion_rate"));
+    if (needsRollContent(formData) && !(Number(formData.rollContent) > 0)) {
+      errors.rollContent = true;
+      missing.push(t("inventory.roll_content"));
     }
     setFieldErrors(errors);
     if (missing.length > 0) {
@@ -1985,7 +1972,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
         category: mapCategoryKeyToLegacyCategory(formData.category),
         category_key: formData.category,
         unit: formData.unit,
-        conversion_rate: formData.conversionRate,
+        ...resolveUnitColumns(formData),
         min_threshold: formData.minThreshold,
         price_per_unit: formData.pricePerUnit,
         description: encodeInventoryDescription(formData.costPrice, formData.taxType, formData.description),
@@ -2163,6 +2150,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
             suppliersList={suppliersList}
             handleError={handleError}
             showOpeningBalance={false}
+            applyCategoryUnitDefaults
           />
 
           {productMode === "advanced" && (
@@ -2525,6 +2513,18 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, 
   const [mode, setMode] = useState<"set" | "add">("add");
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
+  // Fabric bought by the roll is added in rolls by default (count x content),
+  // with a switch to type yards or meters directly. Stock is always meters.
+  const isRollFabric = needsRollContent({ category: item.category_key || item.category, unit: item.unit });
+  const isMeterStock = isRollFabric || (item.baseUnit || "meter") === "meter" && ["meter", "yard", "roll", "bolt"].includes(item.unit);
+  const itemRoll = unitFieldsFromItem(item);
+  const [addUnit, setAddUnit] = useState<"roll" | ContentUnit>(isRollFabric ? "roll" : "meter");
+  const [rollContent, setRollContent] = useState<number>(itemRoll.rollContent);
+  const [rollContentUnit, setRollContentUnit] = useState<ContentUnit>(itemRoll.contentUnit);
+  const addQuantityMeters =
+    addUnit === "roll"
+      ? safeRound(addQuantity * contentToMeters(rollContent, rollContentUnit), 4)
+      : contentToMeters(addQuantity, addUnit);
   // seen-ux-fixes-batch-task.md item 10 -- a plain .maybeSingle() query by
   // (branch_id, item_id) alone would throw once an item has more than one
   // branch_inventory row (one per variant); a variant must be picked first.
@@ -2577,7 +2577,7 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, 
       // ledgered from the real before/after values inside the database.
       let delta: number;
       if (mode === "add") {
-        delta = addQuantity;
+        delta = isMeterStock ? addQuantityMeters : addQuantity;
       } else {
         // "set to an absolute value" still needs a current read to turn it
         // into a delta -- apply_stock_movement only accepts relative
@@ -2719,21 +2719,91 @@ const StockAdjustmentModal = ({ onClose, tenantId, item, branch: initialBranch, 
             <div className="space-y-2">
               <label htmlFor="stock-adjust-quantity-add" className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
                 {t("inventory.quantity_to_add")}
+                {isMeterStock && ` (${t(`inventory.unit_${addUnit}`)})`}
               </label>
+              {isMeterStock && (
+                <div className="flex p-1 bg-surface-muted rounded-xl">
+                  {((isRollFabric ? ["roll", "yard", "meter"] : ["meter", "yard"]) as Array<"roll" | ContentUnit>).map((u) => (
+                    <button
+                      key={u}
+                      type="button"
+                      aria-pressed={addUnit === u}
+                      onClick={() => setAddUnit(u)}
+                      className={cn(
+                        "flex-1 py-1.5 rounded-lg text-xs font-black transition-all",
+                        addUnit === u ? "bg-surface text-success shadow-sm" : "text-content-muted",
+                      )}
+                    >
+                      {t(`inventory.unit_${u}`)}
+                    </button>
+                  ))}
+                </div>
+              )}
               <input
                 id="stock-adjust-quantity-add"
                 type="number"
+                step="any"
                 required
                 autoFocus
                 value={addQuantity}
                 onChange={(e) => setAddQuantity(Number(e.target.value))}
                 className="w-full px-4 py-3 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-success/20 focus:border-success font-black text-xl text-content"
               />
+              {isMeterStock && addUnit === "roll" && (
+                <div className="space-y-2 pt-1">
+                  <label htmlFor="stock-adjust-roll-content" className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
+                    {t("inventory.roll_content_this_shipment")}
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      id="stock-adjust-roll-content"
+                      type="number"
+                      step="any"
+                      min="0"
+                      required
+                      value={rollContent || ""}
+                      onChange={(e) => setRollContent(e.target.value === "" ? 0 : Number(e.target.value))}
+                      className="min-w-0 flex-1 px-4 py-2.5 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-success/20 focus:border-success font-bold text-content"
+                    />
+                    <div className="flex shrink-0 p-1 bg-surface border border-border rounded-xl">
+                      {(["yard", "meter"] as ContentUnit[]).map((u) => (
+                        <button
+                          key={u}
+                          type="button"
+                          aria-pressed={rollContentUnit === u}
+                          onClick={() => setRollContentUnit(u)}
+                          className={cn(
+                            "px-3 rounded-lg text-xs font-black transition-all",
+                            rollContentUnit === u ? "bg-brand text-white" : "text-content-muted hover:bg-surface-muted",
+                          )}
+                        >
+                          {t(`inventory.unit_${u}`)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {isMeterStock && addQuantity !== 0 && (
+                <p className="text-xs font-bold text-content-muted" dir="auto">
+                  {addUnit === "roll" && rollContent > 0
+                    ? t("inventory.roll_total_line", {
+                        count: addQuantity,
+                        rollUnit: t(`inventory.unit_${item.unit}`),
+                        content: rollContent,
+                        contentUnit: t(`inventory.unit_${rollContentUnit}`),
+                        total: safeRound(addQuantity * rollContent, 2),
+                        meters: safeRound(addQuantityMeters, 2).toFixed(2),
+                      })
+                    : t("inventory.added_in_meters", { meters: safeRound(addQuantityMeters, 2).toFixed(2) })}
+                </p>
+              )}
             </div>
           ) : (
             <div className="space-y-2">
               <label htmlFor="stock-adjust-quantity-new" className="text-xs font-black text-content-muted uppercase tracking-widest ml-1">
                 {t("inventory.new_total_stock")}
+                {` (${t(`inventory.unit_${isMeterStock ? "meter" : item.baseUnit || item.unit}`)})`}
               </label>
               <input
                 id="stock-adjust-quantity-new"
@@ -3723,7 +3793,7 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
     // category_key (الفعلي) أولاً إن وُجد، وإلا القيمة القديمة (صفوف قبل هذا العمود).
     category: item.category_key || item.category || "fabric",
     unit: item.unit || "meter",
-    conversionRate: item.conversion_rate || 1,
+    ...unitFieldsFromItem(item),
     minThreshold: item.min_threshold || 10,
     pricePerUnit: item.price_per_unit || 0,
     costPrice: item.costPrice || 0,
@@ -3776,9 +3846,9 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
       errors.costPrice = true;
       missing.push(t("inventory.cost_price_label"));
     }
-    if (!formData.conversionRate || formData.conversionRate <= 0) {
-      errors.conversionRate = true;
-      missing.push(t("inventory.conversion_rate"));
+    if (needsRollContent(formData) && !(Number(formData.rollContent) > 0)) {
+      errors.rollContent = true;
+      missing.push(t("inventory.roll_content"));
     }
     setFieldErrors(errors);
     if (missing.length > 0) {
@@ -3797,7 +3867,7 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
         category: mapCategoryKeyToLegacyCategory(formData.category),
         category_key: formData.category,
         unit: formData.unit,
-        conversion_rate: formData.conversionRate,
+        ...resolveUnitColumns(formData),
         min_threshold: formData.minThreshold,
         price_per_unit: formData.pricePerUnit,
         description: encodeInventoryDescription(formData.costPrice, formData.taxType, formData.description),

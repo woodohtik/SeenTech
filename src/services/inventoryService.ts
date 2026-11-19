@@ -1,10 +1,11 @@
 import i18n from 'i18next';
 import { supabase } from '../lib/supabase/client';
+import { METERS_PER_YARD } from '../utils/fabricUomConverter';
 import { Order, Tenant, BranchInventory, InventoryItem, Staff } from '../types';
 
 export const UNIT_CONVERSIONS: Record<string, number> = {
   'meter': 1,
-  'yard': 0.9144,
+  'yard': METERS_PER_YARD,
   'roll': 22.86, // Average roll is 25 yards
   'bolt': 36.576, // Average bolt is 40 yards
   'piece': 1,

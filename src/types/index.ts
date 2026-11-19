@@ -363,7 +363,9 @@ export interface InventoryItem {
   category_key?: string;
   unit: 'meter' | 'yard' | 'roll' | 'bolt' | 'piece' | 'spool' | 'box';
   baseUnit: 'meter' | 'piece'; // The normalized unit
-  conversionRate: number; // How many baseUnits per unit (e.g., 1 yard = 0.9144 meters)
+  conversionRate: number; // How many baseUnits (meters for fabric) per unit
+  /** Unit the shop typed the roll content in; display only, stock stays in meters. */
+  contentUnit?: 'meter' | 'yard' | null;
   minThreshold: number;
   pricePerUnit: number; // For 'exclusive' this is base price. For 'inclusive' it includes tax.
   taxType: ProductTaxType;

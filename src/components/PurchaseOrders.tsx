@@ -18,6 +18,8 @@ import { useTenantCategoryPicker, ADD_NEW_CATEGORY_VALUE } from '../hooks/useTen
 import { LEGACY_INVENTORY_CATEGORY_SEED } from '../services/categoryService';
 import { mapCategoryKeyToLegacyCategory } from '../services/verticalService';
 import { encodeInventoryDescription } from '../utils/b2bHelper';
+import { ContentUnit, contentToMeters, safeRound } from '../utils/fabricUomConverter';
+import { isFabricCategory, needsRollContent, resolveUnitColumns, unitFieldsFromItem } from './Inventory/ProductFormFields';
 
 /**
  * seen-fields-categories-referral-task.md #3 -- قيمة خاصة لعنصر "+ إضافة
@@ -99,7 +101,9 @@ export default function PurchaseOrders({
   const [isAddingNewItem, setIsAddingNewItem] = useState(false);
   const [newItemName, setNewItemName] = useState('');
   const [newItemCategoryKey, setNewItemCategoryKey] = useState('');
-  const [newItemUnit, setNewItemUnit] = useState('meter');
+  const [newItemUnit, setNewItemUnit] = useState('piece');
+  const [newItemRollContent, setNewItemRollContent] = useState(0);
+  const [newItemContentUnit, setNewItemContentUnit] = useState<ContentUnit>('yard');
   const [newItemCostPrice, setNewItemCostPrice] = useState(0);
   const [newItemSellingPrice, setNewItemSellingPrice] = useState(0);
   const [savingNewItem, setSavingNewItem] = useState(false);
@@ -108,18 +112,34 @@ export default function PurchaseOrders({
     setIsAddingNewItem(false);
     setNewItemName('');
     setNewItemCategoryKey('');
-    setNewItemUnit('meter');
+    setNewItemUnit('piece');
+    setNewItemRollContent(0);
+    setNewItemContentUnit('yard');
     setNewItemCostPrice(0);
     setNewItemSellingPrice(0);
   };
 
+  const newItemUnitForm = {
+    category: newItemCategoryKey,
+    unit: newItemUnit,
+    conversionRate: 1,
+    rollContent: newItemRollContent,
+    contentUnit: newItemContentUnit,
+  };
+  const newItemNeedsRollContent = needsRollContent(newItemUnitForm);
+  const newItemIncomplete =
+    !newItemName.trim() || !newItemCategoryKey || newItemCostPrice <= 0 || newItemSellingPrice <= 0 ||
+    (newItemNeedsRollContent && !(newItemRollContent > 0));
+  const newItemUnitChoices = isFabricCategory(newItemCategoryKey) ? ['roll', 'meter', 'yard'] : ['piece', 'box'];
+
   const handleSaveNewItem = async () => {
-    if (!newItemName.trim() || !newItemCategoryKey || newItemCostPrice <= 0 || newItemSellingPrice <= 0) {
+    if (newItemIncomplete) {
       toastError(t('inventory.missing_fields_prompt', { fields: t('inventory.item_name') }));
       return;
     }
     setSavingNewItem(true);
     try {
+      const unitColumns = resolveUnitColumns(newItemUnitForm);
       const { data: branches } = await supabase.from('branches').select('id, is_main').eq('tenant_id', tenantId);
       const sku = Math.floor(10000000 + Math.random() * 90000000).toString();
       const { data: item, error: itemError } = await supabase
@@ -129,7 +149,7 @@ export default function PurchaseOrders({
           category: mapCategoryKeyToLegacyCategory(newItemCategoryKey),
           category_key: newItemCategoryKey,
           unit: newItemUnit,
-          conversion_rate: 1,
+          ...unitColumns,
           min_threshold: 10,
           price_per_unit: newItemSellingPrice,
           description: encodeInventoryDescription(newItemCostPrice, 'exclusive', ''),
@@ -164,8 +184,8 @@ export default function PurchaseOrders({
         name: item.name,
         quantity,
         unit: item.unit,
-        conversionRate: 1,
-        baseQuantity: quantity,
+        conversionRate: unitColumns.conversion_rate,
+        baseQuantity: safeRound(quantity * unitColumns.conversion_rate, 4),
         pricePerUnit,
         total: quantity * pricePerUnit,
       };
@@ -230,13 +250,37 @@ export default function PurchaseOrders({
     fetchBranchAndStaff();
   }, [tenantId]);
 
+  // A fabric bought by the roll: this shipment's roll content starts from the
+  // item's own and can be changed for this line only -- it never rewrites the item.
+  const selectedInvItem: any = inventory.find(i => i.id === selectedItem);
+  const lineIsRoll = !!selectedInvItem && needsRollContent({
+    category: selectedInvItem.category_key || selectedInvItem.category,
+    unit: selectedInvItem.unit,
+  });
+  const [lineRollContent, setLineRollContent] = useState(0);
+  const [lineContentUnit, setLineContentUnit] = useState<ContentUnit>('yard');
+  useEffect(() => {
+    if (!selectedInvItem) return;
+    const defaults = unitFieldsFromItem({
+      conversion_rate: selectedInvItem.conversionRate ?? selectedInvItem.conversion_rate,
+      content_unit: selectedInvItem.contentUnit ?? selectedInvItem.content_unit,
+    });
+    setLineRollContent(defaults.rollContent);
+    setLineContentUnit(defaults.contentUnit);
+  }, [selectedItem]);
+  const lineRate = lineIsRoll
+    ? contentToMeters(lineRollContent, lineContentUnit)
+    : Number(selectedInvItem?.conversionRate || selectedInvItem?.conversion_rate || 1);
+  const lineRateInvalid = lineIsRoll && !(lineRollContent > 0);
+
   const handleAddItem = () => {
     const invItem = inventory.find(i => i.id === selectedItem);
     if (!invItem) return;
     if (selectedItemVariants.length > 0 && !selectedVariantId) return;
+    if (lineRateInvalid) return;
     const variant = selectedVariantId ? selectedItemVariants.find(v => v.id === selectedVariantId) : undefined;
 
-    const rate = Number(invItem.conversionRate || (invItem as any).conversion_rate || 1);
+    const rate = lineRate;
     const newItem: PurchaseOrderItem = {
       itemId: invItem.id,
       variantId: variant?.id,
@@ -244,7 +288,7 @@ export default function PurchaseOrders({
       quantity,
       unit: invItem.unit,
       conversionRate: rate,
-      baseQuantity: quantity * rate,
+      baseQuantity: safeRound(quantity * rate, 4),
       pricePerUnit,
       total: quantity * pricePerUnit
     };
@@ -847,7 +891,7 @@ export default function PurchaseOrders({
                     <div key={index} className="p-3 flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <div className="text-sm font-bold text-content truncate">{item.name}</div>
-                        <div className="text-xs text-content-muted mt-0.5">{item.quantity} {item.unit} &times; <PriceDisplay amount={item.pricePerUnit} /></div>
+                        <div className="text-xs text-content-muted mt-0.5">{item.quantity} {t(`inventory.unit_${item.unit}`, item.unit)} &times; <PriceDisplay amount={item.pricePerUnit} /></div>
                       </div>
                       <div className="text-sm font-black text-brand shrink-0"><PriceDisplay amount={item.total} /></div>
                     </div>
@@ -1011,7 +1055,10 @@ export default function PurchaseOrders({
                     )}
                   </div>
                   <div className="space-y-2">
-                    <label className="block text-xs font-black text-content-muted uppercase tracking-widest">{t('procurement.quantity', 'الكمية')}</label>
+                    <label className="block text-xs font-black text-content-muted uppercase tracking-widest">
+                      {t('procurement.quantity', 'الكمية')}
+                      {selectedInvItem && ` (${t(`inventory.unit_${selectedInvItem.unit}`, selectedInvItem.unit)})`}
+                    </label>
                     <input
                       type="number"
                       placeholder="0"
@@ -1037,6 +1084,54 @@ export default function PurchaseOrders({
                   </div>
                 </div>
 
+                {lineIsRoll && modalType === 'purchase' && (
+                  <div className="space-y-2">
+                    <label htmlFor="po-line-roll-content" className="block text-xs font-black text-content-muted uppercase tracking-widest">
+                      {t('inventory.roll_content_this_shipment')}
+                    </label>
+                    <div className="flex gap-2 max-w-xs">
+                      <input
+                        id="po-line-roll-content"
+                        type="number"
+                        step="any"
+                        min="0"
+                        inputMode="decimal"
+                        value={lineRollContent || ''}
+                        onChange={(e) => setLineRollContent(e.target.value === '' ? 0 : Number(e.target.value))}
+                        className="min-w-0 flex-1 px-4 py-2 bg-surface border border-border rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand text-content font-bold text-sm"
+                      />
+                      <div className="flex shrink-0 p-1 bg-surface border border-border rounded-xl">
+                        {(['yard', 'meter'] as ContentUnit[]).map((u) => (
+                          <button
+                            key={u}
+                            type="button"
+                            aria-pressed={lineContentUnit === u}
+                            onClick={() => setLineContentUnit(u)}
+                            className={cn(
+                              'px-3 rounded-lg text-xs font-black transition-all',
+                              lineContentUnit === u ? 'bg-brand text-white' : 'text-content-muted hover:bg-surface-muted'
+                            )}
+                          >
+                            {t(`inventory.unit_${u}`)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {quantity > 0 && lineRollContent > 0 && (
+                      <p className="text-xs font-bold text-content-muted" dir="auto">
+                        {t('inventory.roll_total_line', {
+                          count: quantity,
+                          rollUnit: t(`inventory.unit_${selectedInvItem.unit}`),
+                          content: lineRollContent,
+                          contentUnit: t(`inventory.unit_${lineContentUnit}`),
+                          total: safeRound(quantity * lineRollContent, 2),
+                          meters: safeRound(quantity * lineRate, 2).toFixed(2),
+                        })}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {isAddingNewItem && (
                   <div className="p-4 rounded-xl border-2 border-brand/40 bg-brand/5 space-y-3">
                     <h4 className="text-xs font-black text-brand uppercase tracking-widest">{t('procurement.add_new_item_option', '+ إضافة منتج جديد')}</h4>
@@ -1057,6 +1152,7 @@ export default function PurchaseOrders({
                               return;
                             }
                             setNewItemCategoryKey(val);
+                            setNewItemUnit(isFabricCategory(val) ? 'roll' : 'piece');
                           }}
                           placeholder={t('inventory.category', 'الفئة')}
                           options={[
@@ -1075,7 +1171,7 @@ export default function PurchaseOrders({
                             />
                             <button
                               type="button"
-                              onClick={() => newItemCategoryPicker.confirmAdd((key) => setNewItemCategoryKey(key)).catch(() => {})}
+                              onClick={() => newItemCategoryPicker.confirmAdd((key) => { setNewItemCategoryKey(key); setNewItemUnit(isFabricCategory(key) ? 'roll' : 'piece'); }).catch(() => {})}
                               disabled={!newItemCategoryPicker.newLabel.trim() || newItemCategoryPicker.saving}
                               className="min-h-[28px] px-2 rounded-lg bg-brand text-white font-bold text-[10px] disabled:opacity-50"
                             >
@@ -1087,16 +1183,40 @@ export default function PurchaseOrders({
                       <SmartSelect
                         value={newItemUnit}
                         onChange={(val) => setNewItemUnit(val)}
-                        options={[
-                          { value: 'meter', label: t('inventory.unit_meter', 'متر') },
-                          { value: 'yard', label: t('inventory.unit_yard', 'يارد') },
-                          { value: 'roll', label: t('inventory.unit_roll', 'لفّة') },
-                          { value: 'bolt', label: t('inventory.unit_bolt', 'بالة') },
-                          { value: 'piece', label: t('inventory.unit_piece', 'قطعة') },
-                          { value: 'box', label: t('inventory.unit_box', 'صندوق') },
-                        ]}
+                        options={newItemUnitChoices.map((u) => ({ value: u, label: t(`inventory.unit_${u}`) }))}
                       />
                     </div>
+                    {newItemNeedsRollContent && (
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          step="any"
+                          min="0"
+                          inputMode="decimal"
+                          aria-label={t('inventory.roll_content')}
+                          value={newItemRollContent || ''}
+                          onChange={(e) => setNewItemRollContent(e.target.value === '' ? 0 : Number(e.target.value))}
+                          placeholder={t('inventory.roll_content')}
+                          className="min-w-0 flex-1 px-4 py-2 bg-surface border border-border rounded-xl outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold text-sm"
+                        />
+                        <div className="flex shrink-0 p-1 bg-surface border border-border rounded-xl">
+                          {(['yard', 'meter'] as ContentUnit[]).map((u) => (
+                            <button
+                              key={u}
+                              type="button"
+                              aria-pressed={newItemContentUnit === u}
+                              onClick={() => setNewItemContentUnit(u)}
+                              className={cn(
+                                'px-3 rounded-lg text-xs font-black transition-all',
+                                newItemContentUnit === u ? 'bg-brand text-white' : 'text-content-muted hover:bg-surface-muted'
+                              )}
+                            >
+                              {t(`inventory.unit_${u}`)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <div className="grid grid-cols-2 gap-3">
                       <input
                         type="number"
@@ -1119,7 +1239,7 @@ export default function PurchaseOrders({
                       <button
                         type="button"
                         onClick={handleSaveNewItem}
-                        disabled={savingNewItem || !newItemName.trim() || !newItemCategoryKey || newItemCostPrice <= 0 || newItemSellingPrice <= 0}
+                        disabled={savingNewItem || newItemIncomplete}
                         className="flex-1 bg-brand text-white py-2.5 rounded-xl font-bold text-xs disabled:opacity-50"
                       >
                         {savingNewItem ? t('common.saving', 'جارٍ الحفظ...') : t('procurement.create_and_add_item', 'إنشاء وإضافة للقائمة')}
@@ -1137,7 +1257,7 @@ export default function PurchaseOrders({
 
                 <button
                   onClick={handleAddItem}
-                  disabled={!selectedItem || quantity <= 0 || pricePerUnit <= 0 || (selectedItemVariants.length > 0 && !selectedVariantId)}
+                  disabled={!selectedItem || quantity <= 0 || pricePerUnit <= 0 || lineRateInvalid || (selectedItemVariants.length > 0 && !selectedVariantId)}
                   className="w-full bg-brand/10 text-brand py-3 rounded-xl font-bold text-xs hover:bg-brand hover:text-white transition-all disabled:opacity-50"
                 >
                   {t('procurement.add_item_to_doc_list', 'أضف الصنف لقائمة المستند')}
@@ -1152,7 +1272,7 @@ export default function PurchaseOrders({
                       <div key={idx} className="p-3 flex items-center justify-between gap-2">
                         <div className="min-w-0">
                           <div className="text-sm font-bold truncate">{item.name}</div>
-                          <div className="text-xs text-content-muted mt-0.5">{item.quantity} {item.unit} &times; <PriceDisplay amount={item.pricePerUnit} /></div>
+                          <div className="text-xs text-content-muted mt-0.5">{item.quantity} {t(`inventory.unit_${item.unit}`, item.unit)} &times; <PriceDisplay amount={item.pricePerUnit} /></div>
                           <div className="text-sm font-black text-brand mt-0.5"><PriceDisplay amount={item.total} /></div>
                         </div>
                         <button
@@ -1179,7 +1299,7 @@ export default function PurchaseOrders({
                           {items.map((item, idx) => (
                             <tr key={idx} className="hover:bg-surface-muted/30">
                               <td className="p-3 text-sm font-bold">{item.name}</td>
-                              <td className="p-3 text-xs font-bold">{item.quantity} {item.unit}</td>
+                              <td className="p-3 text-xs font-bold">{item.quantity} {t(`inventory.unit_${item.unit}`, item.unit)}</td>
                               <td className="p-3 text-xs font-bold"><PriceDisplay amount={item.pricePerUnit} /></td>
                               <td className="p-3 text-sm font-black text-brand"><PriceDisplay amount={item.total} /></td>
                               <td className="p-3 text-left">

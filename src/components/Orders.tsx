@@ -1,4 +1,5 @@
 "use client";
+import { formatItemStock } from '../utils/fabricUomConverter';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { formatSaudiPhone } from '../utils/phoneUtils';
 import { fuzzyIncludes } from '../utils/fuzzySearch';
@@ -3639,7 +3640,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                   )}
                                   options={[
                                     { value: '', label: t('orders.choose_fabric') },
-                                    ...inventory.map(item => ({ value: item.name, label: `${item.name} (${item.quantity} ${item.unit})` })),
+                                    ...inventory.map(item => ({ value: item.name, label: `${item.name} (${formatItemStock(item, item.quantity)})` })),
                                     { value: 'custom', label: t('orders.external_fabric') }
                                   ]}
                                 />

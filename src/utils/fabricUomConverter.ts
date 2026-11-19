@@ -14,6 +14,22 @@ export interface UomConfig {
   isBase: boolean;
 }
 
+/** Single source for the yard<->meter factor; import it instead of retyping 0.9144. */
+export const METERS_PER_YARD = 0.9144;
+
+/** The unit a shop types a roll's content in. Stock itself is always stored in meters. */
+export type ContentUnit = 'meter' | 'yard';
+
+export function contentToMeters(content: number, unit: ContentUnit): number {
+  if (!Number.isFinite(content)) return 0;
+  return safeRound(unit === 'yard' ? content * METERS_PER_YARD : content, 4);
+}
+
+export function metersToContent(meters: number, unit: ContentUnit): number {
+  if (!Number.isFinite(meters)) return 0;
+  return safeRound(unit === 'yard' ? meters / METERS_PER_YARD : meters, 2);
+}
+
 export interface ItemConversion {
   id: string;
   itemId: string;
@@ -108,9 +124,15 @@ export function formatSmartStockDisplay(
   largeUnitKey: string,
   baseUnitKey: string,
   conversionRate: number,
-  locale?: string
+  locale?: string,
+  contentUnit?: ContentUnit | null
 ): string {
   const roundedQty = safeRound(quantityInBase, 3);
+  // A fabric whose roll content was entered in yards shows its loose remainder
+  // in yards too ("3 طاقة و 12 ياردة"); the stored balance is still meters.
+  const inYards = contentUnit === 'yard' && baseUnitKey === 'meter';
+  const smallKey = inYards ? 'yard' : baseUnitKey;
+  const toSmall = (m: number) => (inYards ? metersToContent(m, 'yard') : m);
 
   if (roundedQty === 0) {
     return i18n.t('units.zero_meters', { lng: locale, defaultValue: '0 m' });
@@ -119,28 +141,45 @@ export function formatSmartStockDisplay(
   // A negative balance used to render as "0 m", hiding a shortage exactly where staff
   // look for it. Show it explicitly so the deficit is visible.
   if (roundedQty < 0) {
-    return `${roundedQty} ${getUnitLabel(baseUnitKey, locale)}`;
+    return `${toSmall(roundedQty)} ${getUnitLabel(smallKey, locale)}`;
   }
 
   // If rate is 1 (or unusable), just return the base units
   if (!isValidRate(conversionRate) || conversionRate <= 1) {
-    const baseLabel = getUnitLabel(baseUnitKey, locale);
-    return `${roundedQty} ${baseLabel}`;
+    const baseLabel = getUnitLabel(smallKey, locale);
+    return `${toSmall(roundedQty)} ${baseLabel}`;
   }
 
   const { largeUnits, remainingBase } = splitStockByUom(roundedQty, conversionRate);
   const largeLabel = getUnitLabel(largeUnitKey, locale);
-  const baseLabel = getUnitLabel(baseUnitKey, locale);
+  const baseLabel = getUnitLabel(smallKey, locale);
+  const remainder = toSmall(remainingBase);
 
-  if (largeUnits > 0 && remainingBase > 0) {
+  if (largeUnits > 0 && remainder > 0) {
     // i18n: the conjunction differs per language (و / & / اور)
     const join = i18n.t('units.and_join', { lng: locale, defaultValue: '&' });
-    return `${largeUnits} ${largeLabel} ${join} ${remainingBase} ${baseLabel}`;
+    return `${largeUnits} ${largeLabel} ${join} ${remainder} ${baseLabel}`;
   } else if (largeUnits > 0) {
     return `${largeUnits} ${largeLabel}`;
   } else {
-    return `${remainingBase} ${baseLabel}`;
+    return `${remainder} ${baseLabel}`;
   }
+}
+
+/**
+ * Stock label for an inventory row in either shape (raw snake_case or mapped
+ * camelCase): the balance is meters, shown as rolls + remainder in the unit
+ * the shop typed the roll content in.
+ */
+export function formatItemStock(item: any, quantityInBase: number, locale?: string): string {
+  return formatSmartStockDisplay(
+    Number(quantityInBase) || 0,
+    item.unit,
+    item.baseUnit || item.base_unit || 'meter',
+    Number(item.conversionRate ?? item.conversion_rate) || 1,
+    locale,
+    item.contentUnit ?? item.content_unit
+  );
 }
 
 /**

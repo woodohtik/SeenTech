@@ -1,3 +1,4 @@
+import { formatItemStock } from '../utils/fabricUomConverter';
 import { ThermalInvoice, StandardInvoice, InvoiceData } from "./printing/InvoiceReceipt";
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { formatSaudiPhone } from '../utils/phoneUtils';
@@ -3273,7 +3274,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                       className="w-full"
                       options={[
                         { value: '', label: t('orders.choose_fabric') },
-                        ...inventory.filter(i => i.category === 'fabric').map(item => ({ value: item.id, label: `${item.name} (${item.quantity} ${item.unit})` })),
+                        ...inventory.filter(i => i.category === 'fabric').map(item => ({ value: item.id, label: `${item.name} (${formatItemStock(item, branchStock[item.id] ?? item.quantity)})` })),
                         { value: 'custom', label: t('orders.external_fabric') }
                       ]}
                     />
