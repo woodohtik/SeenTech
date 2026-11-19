@@ -4614,7 +4614,8 @@
       "syncing": "Syncing...",
       "title": "Tax Compliance",
       "trn": "Tax Registration Number (TRN - 15 digits)",
-      "vat_rate": "Standard VAT Rate"
+      "vat_rate": "Standard VAT Rate",
+      "vat_rate_hint": "The rate cannot be zero. To charge no tax on tailoring, choose \"Tax exempt\" below."
     },
     "title": "Settings",
     "whatsapp": {
@@ -5175,7 +5176,8 @@
     "pin_four_digits": "Must be 4 digits.",
     "required": "This field is required",
     "tax_number_format": "Tax number must be 15 digits",
-    "commercial_register_format": "Commercial register number must be 10 digits"
+    "commercial_register_format": "Commercial register number must be 10 digits",
+    "vat_rate_positive": "The tax rate must be above zero. To charge no tax, choose \"Tax exempt\"."
   },
   "whatsapp": {
     "default_template": "Hello {customer_name}, your order {order_id} has been received. Total: {total_amount} SAR. You can track your order status here: {invoice_url}",

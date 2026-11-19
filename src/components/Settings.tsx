@@ -253,7 +253,10 @@ export default function Settings({ tenantId }: SettingsProps) {
         enabled: rawTax.enabled ?? (hasVat || Boolean(rawTax.trn)),
         trn: rawTax.trn || data.vat_number || '',
         legalName: rawTax.legalName || data.name || '',
-        vatRate: rawTax.vatRate ?? 15,
+        // A stored 0 has always meant "not set" (every reader falls back to 15),
+        // and the field no longer accepts 0, so load it as the default instead
+        // of as a value that would block saving while the field is hidden.
+        vatRate: Number(rawTax.vatRate) > 0 ? rawTax.vatRate : 15,
         tailoringTaxType: rawTax.tailoringTaxType || 'exclusive'
       } : {
         enabled: hasVat,
@@ -997,8 +1000,9 @@ export default function Settings({ tenantId }: SettingsProps) {
                               {...register('taxSettings.vatRate')}
                               endIcon={<span className="font-black text-content-muted">%</span>}
                               error={errors.taxSettings?.vatRate?.message}
-                              min="0" max="100"
+                              min="0.01" max="100" step="any"
                             />
+                            <p className="text-[11px] text-content-muted font-bold px-1">{t('settings_page.tax.vat_rate_hint')}</p>
                           </div>
 
                           <div className="space-y-3 sm:col-span-2 border-t border-border/50 pt-4">

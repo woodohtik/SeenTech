@@ -222,7 +222,10 @@ export const settingsSchema = z.object({
     enabled: z.boolean(),
     trn: z.string().optional().or(z.literal('')),
     legalName: z.string().optional(),
-    vatRate: z.coerce.number().min(0).max(100),
+    // Zero is not a way to switch tax off: every reader of this rate (the
+    // order form, create_tailoring_order, the settings save itself) treats 0
+    // as "not set" and falls back to 15. Exemption is the tax type 'exempt'.
+    vatRate: z.coerce.number().gt(0, t('validation.vat_rate_positive')).max(100),
     tailoringTaxType: z.enum(['inclusive', 'exclusive', 'exempt']).optional().default('exclusive')
   }).optional(),
   notificationSettings: z.object({
