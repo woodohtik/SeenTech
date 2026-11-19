@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { parseShiftCashBalance, previewCashLines, type ShiftCashBalance } from '../utils/shiftCash';
 import { motion } from 'motion/react';
 import { X, Calculator, AlertTriangle, CheckCircle2, FileText, Printer } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
@@ -64,6 +65,8 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
   // (handleSubmit) -- كانت totals تُحسَب مرة واحدة فقط عند فتح النافذة، فأي
   // بيعة تتم أثناء بقاء نافذة الإغلاق مفتوحة (وردية مشتركة، أو الكاشير أخذ
   // وقته قبل الضغط على تأكيد) تُستبعَد بصمت من إجمالي الوردية المُغلَقة.
+  const [serverCash, setServerCash] = useState<ShiftCashBalance | null>(null);
+
   const fetchShiftData = async (): Promise<ShiftTotals> => {
       try {
         const { data: orders, error } = await supabase
@@ -162,6 +165,13 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
           productBreakdown
         };
         setTotals(fresh);
+
+        // The cash lines the dialog shows come from the server, by the same
+        // rules close_shift settles on (payments on the shift). The sums above
+        // only see orders stamped with this shift, which leaves out a
+        // tailoring deposit or a later settlement.
+        const { data: cashData, error: cashErr } = await supabase.rpc('get_shift_cash_balance', { p_shift_id: shift.id });
+        setServerCash(cashErr ? null : parseShiftCashBalance(cashData));
         return fresh;
       } catch (error) {
         handleError(error as any, OperationType.GET, 'orders');
@@ -178,7 +188,14 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
   // من يحسب كل الأرقام الحقيقية من SQL عند الإغلاق الفعلي (seen-cto-code-
   // review-2026-11-13.md CASH-07/CASH-12: لا حساب أو كتابة من المتصفح بعد
   // الآن للأرقام المالية).
-  const expectedCash = shift.openingBalance + totals.cash + totals.totalDeposits - totals.cashReturns - totals.expenses;
+  const cashLines = previewCashLines(serverCash, {
+    opening: shift.openingBalance,
+    cash: totals.cash,
+    deposits: totals.totalDeposits,
+    cashReturns: totals.cashReturns,
+    withdrawals: totals.expenses,
+  });
+  const expectedCash = cashLines.expected;
   const discrepancy = actualCash ? Number(actualCash) - expectedCash : 0;
   const hasDiscrepancy = actualCash !== '' && discrepancy !== 0;
 
@@ -289,23 +306,23 @@ export default function ShiftClosingModal({ shift, tenantId, onClose, onClosed }
             <div className="bg-surface-muted p-4 rounded-2xl space-y-2">
               <div className="flex justify-between text-xs sm:text-sm font-bold text-content-muted">
                 <span>{t('shift_closing.opening_balance')}</span>
-                <span><PriceDisplay amount={shift.openingBalance} /></span>
+                <span><PriceDisplay amount={cashLines.opening} /></span>
               </div>
               <div className="flex justify-between text-xs sm:text-sm font-bold text-content-muted">
                 <span>{t('shift_closing.cash_sales')}</span>
-                <span className="text-success">+<PriceDisplay amount={totals.cash} /></span>
+                <span className="text-success">+<PriceDisplay amount={cashLines.cash} /></span>
               </div>
               <div className="flex justify-between text-xs sm:text-sm font-bold text-content-muted">
                 <span>{t('shift_closing.cash_returns')}</span>
-                <span className="text-danger">-<PriceDisplay amount={totals.cashReturns} /></span>
+                <span className="text-danger">-<PriceDisplay amount={cashLines.cashReturns} /></span>
               </div>
               <div className="flex justify-between text-xs sm:text-sm font-bold text-content-muted">
                 <span>{t('shift_closing.cash_deposits')}</span>
-                <span className="text-success">+<PriceDisplay amount={totals.totalDeposits} /></span>
+                <span className="text-success">+<PriceDisplay amount={cashLines.deposits} /></span>
               </div>
               <div className="flex justify-between text-xs sm:text-sm font-bold text-content-muted">
                 <span>{t('shift_closing.cash_withdrawals')}</span>
-                <span className="text-danger">-<PriceDisplay amount={totals.expenses} /></span>
+                <span className="text-danger">-<PriceDisplay amount={cashLines.withdrawals} /></span>
               </div>
               <div className="pt-2 border-t border-border flex justify-between text-sm sm:text-base font-black text-content">
                 <span>{t('shift_closing.expected_cash')}</span>

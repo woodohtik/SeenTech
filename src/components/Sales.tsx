@@ -180,10 +180,26 @@ export default function Sales({ tenantId }: { tenantId: string }) {
       })
       .subscribe();
 
+    // The balance is summed from payments on the shift, and a tailoring
+    // deposit or a debt settlement writes a payment without touching any
+    // order of this shift, so the orders listener alone would miss it.
+    const paymentsChannel = supabase
+      .channel(`sales-header-payments-${activeShift.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'payments',
+        filter: `shift_id=eq.${activeShift.id}`
+      }, () => {
+        fetchCashDrawerBalance();
+      })
+      .subscribe();
+
     return () => {
       ordersChannel.unsubscribe();
       shiftsChannel.unsubscribe();
       shiftEntriesChannel.unsubscribe();
+      paymentsChannel.unsubscribe();
     };
   }, [activeShift?.id]);
 
