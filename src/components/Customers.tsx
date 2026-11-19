@@ -3,6 +3,7 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
 import { useFabricEstimateSettings } from '../hooks/useFabricEstimateSettings';
 import { cmToDisplayUnit, unitLabelKey, type MeasurementUnit } from '../utils/measurementUnits';
+import { MEASUREMENT_KEYS, measurementLabelKey, measurementRows } from '../constants/measurementFields';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import DateTimeDisplay from './DateTimeDisplay';
@@ -615,13 +616,11 @@ export default function Customers({ tenantId }: CustomersProps) {
           [t('customers.balance_status')]: balanceStatus,
           [t('onboarding.fields.city')]: c.styles?.city || c.city || '-',
           [t('procurement.address')]: c.styles?.address || c.address || '-',
-          [t('customers.export_col_length')]: formatMeasurementCell(c.measurements?.length),
-          [t('customers.export_col_shoulder')]: formatMeasurementCell(c.measurements?.shoulder),
-          [t('customers.export_col_chest')]: formatMeasurementCell(c.measurements?.chest),
-          [t('customers.export_col_waist')]: formatMeasurementCell(c.measurements?.waist),
-          [t('customers.export_col_hips')]: formatMeasurementCell(c.measurements?.hips),
-          [t('customers.export_col_sleeve')]: formatMeasurementCell(c.measurements?.sleeve),
-          [t('customers.export_col_neck')]: formatMeasurementCell(c.measurements?.neck),
+          // One column per approved measurement, in list order.
+          ...Object.fromEntries(MEASUREMENT_KEYS.map((key) => [
+            t('customers.export_col_measurement', { label: t(measurementLabelKey(key)) }),
+            formatMeasurementCell(c.measurements?.[key]),
+          ])),
           [t('common.notes')]: c.notes || '-',
           [t('saas.tenants.registration_date')]: c.createdAt ? new Date(c.createdAt).toLocaleDateString(localeOf(i18n.language)) : '-'
         };
@@ -643,13 +642,7 @@ export default function Customers({ tenantId }: CustomersProps) {
         { wch: 20 }, // Balance status
         { wch: 15 }, // City
         { wch: 25 }, // Address
-        { wch: 12 }, // Length
-        { wch: 12 }, // Shoulder
-        { wch: 12 }, // Chest
-        { wch: 12 }, // Waist
-        { wch: 12 }, // Hips
-        { wch: 12 }, // Sleeve
-        { wch: 12 }, // Neck
+        ...MEASUREMENT_KEYS.map(() => ({ wch: 16 })), // Measurements
         { wch: 25 }, // Notes
         { wch: 15 }, // Date
       ];
@@ -2111,18 +2104,9 @@ const CustomerDetailsModal = ({
           {/* Measurements Section */}
           <DetailSection title={t('customers.current_measurements')} icon={Ruler}>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-              {[
-                { label: t('customers.length'), value: customer.measurements?.length, icon: <ArrowUpDown size={14} />, color: 'bg-info/10 text-info' },
-                { label: t('customers.shoulder'), value: customer.measurements?.shoulder, icon: <ArrowLeftRight size={14} />, color: 'bg-brand/10 text-brand' },
-                { label: t('customers.chest'), value: customer.measurements?.chest, icon: <Users size={14} />, color: 'bg-success/10 text-success' },
-                { label: t('customers.waist'), value: customer.measurements?.waist, icon: <Filter size={14} />, color: 'bg-warning/10 text-warning', hideIfEmpty: true },
-                { label: t('customers.hips'), value: customer.measurements?.hips, icon: <ChevronDown size={14} />, color: 'bg-danger/10 text-danger', hideIfEmpty: true },
-                { label: t('customers.sleeve'), value: customer.measurements?.sleeve, icon: <Scissors size={14} />, color: 'bg-info/10 text-info' },
-                { label: t('customers.neck'), value: customer.measurements?.neck, icon: <User size={14} />, color: 'bg-brand/10 text-brand' },
-                { label: t('measurements.handWidth'), value: customer.measurements?.handWidth, icon: <ArrowLeftRight size={14} />, color: 'bg-brand/10 text-brand' },
-                { label: t('measurements.midSleeveWidth'), value: customer.measurements?.midSleeveWidth, icon: <ArrowLeftRight size={14} />, color: 'bg-info/10 text-info' },
-                { label: t('measurements.cuffLength'), value: customer.measurements?.cuffLength, icon: <Scissors size={14} />, color: 'bg-success/10 text-success' },
-              ].filter((m: any) => !(m.hideIfEmpty && !m.value)).map((m) => {
+              {measurementRows(customer.measurements, true).map((row) => ({
+                label: t(row.labelKey), value: row.value, icon: <Ruler size={14} />, color: 'bg-brand/10 text-brand',
+              })).map((m) => {
                 const displayValue = typeof m.value === 'number' ? cmToDisplayUnit(m.value, measurementUnit) : m.value;
                 return (
                   <div key={m.label} className="bg-surface p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-border hover:border-brand/20 transition-all group shadow-sm">

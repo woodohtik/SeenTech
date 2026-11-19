@@ -18,6 +18,7 @@
 import i18n from 'i18next';
 
 import type { Measurements } from '../types';
+import { ALL_NUMERIC_MEASUREMENT_KEYS, measurementLabelKey, type MeasurementKey } from '../constants/measurementFields';
 import { cmToDisplayUnit, unitLabelKey, type MeasurementUnit } from '../utils/measurementUnits';
 
 export interface MeasurementFlag {
@@ -178,15 +179,6 @@ function isNum(v: unknown): v is number {
   return typeof v === 'number' && !Number.isNaN(v);
 }
 function labelOf(field: keyof Measurements | string): string {
-  const map: Record<string, string> = {
-    length: 'measurements.label.length', shoulder: 'measurements.label.shoulder',
-    chest: 'measurements.label.chest', waist: 'measurements.label.waist',
-    hips: 'measurements.label.hips', sleeve: 'measurements.label.sleeve',
-    neck: 'measurements.label.neck',
-    handWidth: 'measurements.label.handWidth',
-    midSleeveWidth: 'measurements.label.midSleeveWidth',
-    cuffLength: 'measurements.label.cuffLength',
-  };
-  const key = map[field as string];
-  return key ? i18n.t(key) : (field as string);
+  const known = (ALL_NUMERIC_MEASUREMENT_KEYS as readonly string[]).includes(field as string);
+  return known ? i18n.t(measurementLabelKey(field as MeasurementKey)) : (field as string);
 }

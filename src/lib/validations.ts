@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MEASUREMENT_FIELDS, LEGACY_MEASUREMENT_FIELDS, type MeasurementKey, type LegacyMeasurementKey } from '../constants/measurementFields';
 import i18n from '../i18n/config';
 import { formatSaudiPhone } from '../utils/phoneUtils';
 
@@ -10,6 +11,10 @@ const t = (key: string, options?: any) => i18n.t(key, options) as string;
 const phoneField = z.string().transform((val) => formatSaudiPhone(val)).pipe(
   z.string().regex(phoneRegex, t('validation.phone_format'))
 );
+
+const numericMeasurementShape = Object.fromEntries(
+  [...MEASUREMENT_FIELDS, ...LEGACY_MEASUREMENT_FIELDS].map((f) => [f.key, z.coerce.number().min(0).max(f.maxCm).optional()])
+) as Record<MeasurementKey | LegacyMeasurementKey, z.ZodOptional<z.ZodNumber>>;
 
 export const customerSchema = z.object({
   name: z.string().min(2, t('validation.min_length', { count: 2 })).max(100, t('validation.max_length', { count: 100 })),
@@ -31,17 +36,10 @@ export const customerSchema = z.object({
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   measurements: z.object({
-    length: z.coerce.number().min(0).max(300).optional(),
-    shoulder: z.coerce.number().min(0).max(100).optional(),
-    chest: z.coerce.number().min(0).max(200).optional(),
-    waist: z.coerce.number().min(0).max(200).optional(),
-    hips: z.coerce.number().min(0).max(200).optional(),
-    sleeve: z.coerce.number().min(0).max(150).optional(),
-    neck: z.coerce.number().min(0).max(100).optional(),
-    bottomWidth: z.coerce.number().min(0).max(200).optional(),
-    handWidth: z.coerce.number().min(0).max(100).optional(),
-    midSleeveWidth: z.coerce.number().min(0).max(100).optional(),
-    cuffLength: z.coerce.number().min(0).max(100).optional(),
+    // Every numeric measurement comes from the one list in
+    // constants/measurementFields.ts. zod strips unknown keys, so a key
+    // missing here is erased from the customer on the next save (CM-01 below).
+    ...numericMeasurementShape,
     collarType: z.string().optional(),
     cuffType: z.string().optional(),
     pocketType: z.string().optional(),

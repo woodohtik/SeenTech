@@ -1,9 +1,9 @@
 import type { Measurements } from '../types';
+import { ALL_NUMERIC_MEASUREMENT_KEYS } from '../constants/measurementFields';
 
-const NUMERIC_FIELDS = [
-  'length', 'shoulder', 'chest', 'waist', 'hips', 'sleeve', 'neck',
-  'bottomWidth', 'handWidth', 'midSleeveWidth', 'cuffLength',
-] as const;
+// The one measurement list. An unknown key rejects the whole payload below, so
+// this must never fall behind what the form sends.
+const NUMERIC_FIELDS = ALL_NUMERIC_MEASUREMENT_KEYS;
 
 const THOBE_NUMERIC_FIELDS = [
   'collar', 'chest', 'shoulders', 'sleeves', 'length', 'bottomWidth',

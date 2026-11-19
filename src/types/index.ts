@@ -21,6 +21,13 @@ export interface Measurements {
   handWidth?: number;
   midSleeveWidth?: number;
   cuffLength?: number;
+  // Added with the approved fifteen-measurement list (constants/measurementFields.ts)
+  sleeveCuff?: number;
+  sleeveTopWidth?: number;
+  sleeveHem?: number;
+  cuffWidth?: number;
+  bottomHem?: number;
+  neckFold?: number;
   // Visual/Sector specific fields
   collarType?: string; // الياقة
   cuffType?: string;   // الكبك

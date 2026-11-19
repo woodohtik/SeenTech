@@ -79,6 +79,7 @@ import VariantPickerModal from './ui/VariantPickerModal';
 import { isRtlLang } from '../lib/direction';
 import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
 import { cmToDisplayUnit, unitLabelKey, type MeasurementUnit } from '../utils/measurementUnits';
+import { ALL_NUMERIC_MEASUREMENT_KEYS, measurementRows } from '../constants/measurementFields';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import { useTenantCategoryPicker } from '../hooks/useTenantCategoryPicker';
 import { LEGACY_INVENTORY_CATEGORY_SEED } from '../services/categoryService';
@@ -94,29 +95,10 @@ function buildInvoiceMeasurements(
   measurementUnit: MeasurementUnit
 ): { label: string; value: string | number }[] | undefined {
   if (item.type !== 'custom' || !customer?.measurements) return undefined;
-  const m = customer.measurements;
-  const fields: Array<[string, keyof typeof m]> = [
-    ['length', 'length'],
-    ['shoulder', 'shoulder'],
-    ['chest', 'chest'],
-    ['waist', 'waist'],
-    ['hips', 'hips'],
-    ['sleeve', 'sleeve'],
-    ['neck', 'neck'],
-    ['bottomWidth', 'bottomWidth'],
-    ['handWidth', 'handWidth'],
-    ['midSleeveWidth', 'midSleeveWidth'],
-    ['cuffLength', 'cuffLength'],
-  ];
-  const list = fields
-    .filter(([, key]) => m[key] !== undefined && m[key] !== null && m[key] !== ('' as any))
-    .map(([labelKey, key]) => {
-      const raw = m[key] as any;
-      const value = typeof raw === 'number'
-        ? `${cmToDisplayUnit(raw, measurementUnit)} ${t(unitLabelKey(measurementUnit))}`
-        : raw;
-      return { label: t(`measurements.${labelKey}`), value };
-    });
+  const list = measurementRows(customer.measurements).map((row) => ({
+    label: t(row.labelKey),
+    value: `${cmToDisplayUnit(row.value, measurementUnit)} ${t(unitLabelKey(measurementUnit))}`,
+  }));
   return list.length > 0 ? list : undefined;
 }
 
@@ -1133,7 +1115,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     }
 
     // Separate numeric measurements and styling fields
-    const measurementKeys = ['neck', 'chest', 'waist', 'hips', 'shoulder', 'sleeve', 'length', 'bottomWidth', 'handWidth', 'midSleeveWidth', 'cuffLength'];
+    const measurementKeys: readonly string[] = ALL_NUMERIC_MEASUREMENT_KEYS;
     
     const numericMeasurements: any = {};
     const stylingFields: any = {};

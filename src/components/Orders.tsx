@@ -8,6 +8,7 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
 import { useFabricEstimateSettings } from '../hooks/useFabricEstimateSettings';
 import { cmToDisplayUnit, unitLabelKey } from '../utils/measurementUnits';
+import { measurementRows } from '../constants/measurementFields';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
@@ -2219,19 +2220,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 </h3>
                 <div className="bg-brand/5 p-6 rounded-3xl border border-brand/10">
                   <div className="grid grid-cols-3 gap-4">
-                    {[
-                      { label: t('measurements.neck'), value: customers.find(c => c.id === order.customerId)?.measurements?.neck },
-                      { label: t('measurements.chest'), value: customers.find(c => c.id === order.customerId)?.measurements?.chest },
-                      { label: t('measurements.waist'), value: customers.find(c => c.id === order.customerId)?.measurements?.waist },
-                      { label: t('measurements.hips'), value: customers.find(c => c.id === order.customerId)?.measurements?.hips },
-                      { label: t('measurements.shoulder'), value: customers.find(c => c.id === order.customerId)?.measurements?.shoulder },
-                      { label: t('measurements.sleeve'), value: customers.find(c => c.id === order.customerId)?.measurements?.sleeve },
-                      { label: t('measurements.length'), value: customers.find(c => c.id === order.customerId)?.measurements?.length },
-                      { label: t('measurements.bottomWidth'), value: customers.find(c => c.id === order.customerId)?.measurements?.bottomWidth },
-                      { label: t('measurements.handWidth'), value: customers.find(c => c.id === order.customerId)?.measurements?.handWidth },
-                      { label: t('measurements.midSleeveWidth'), value: customers.find(c => c.id === order.customerId)?.measurements?.midSleeveWidth },
-                      { label: t('measurements.cuffLength'), value: customers.find(c => c.id === order.customerId)?.measurements?.cuffLength },
-                    ].filter(m => m.value).map((m, i) => {
+                    {measurementRows(customers.find(c => c.id === order.customerId)?.measurements).map((row) => ({ label: t(row.labelKey), value: row.value })).map((m, i) => {
                       const displayValue = typeof m.value === 'number' ? cmToDisplayUnit(m.value, measurementUnit) : m.value;
                       return (
                         <div key={i} className="text-center">
@@ -3421,19 +3410,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
                           {!isEditingMeasurements ? (
                             <>
-                              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
-                                {[
-                                  { label: t('measurements.length'), value: selectedCustomer.measurements?.length },
-                                  { label: t('measurements.shoulder'), value: selectedCustomer.measurements?.shoulder },
-                                  { label: t('measurements.chest'), value: selectedCustomer.measurements?.chest },
-                                  { label: t('measurements.waist'), value: selectedCustomer.measurements?.waist, hideIfEmpty: true },
-                                  { label: t('measurements.hips'), value: selectedCustomer.measurements?.hips, hideIfEmpty: true },
-                                  { label: t('measurements.sleeve'), value: selectedCustomer.measurements?.sleeve },
-                                  { label: t('measurements.neck'), value: selectedCustomer.measurements?.neck },
-                                  { label: t('measurements.handWidth'), value: selectedCustomer.measurements?.handWidth },
-                                  { label: t('measurements.midSleeveWidth'), value: selectedCustomer.measurements?.midSleeveWidth },
-                                  { label: t('measurements.cuffLength'), value: selectedCustomer.measurements?.cuffLength },
-                                ].filter((m: any) => !(m.hideIfEmpty && !m.value)).map((m) => {
+                              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                                {measurementRows(selectedCustomer.measurements, true).map((row) => ({ label: t(row.labelKey), value: row.value })).map((m) => {
                                   const displayValue = typeof m.value === 'number' ? cmToDisplayUnit(m.value, measurementUnit) : m.value;
                                   return (
                                     <div key={m.label} className="bg-surface p-2 rounded-xl border border-brand/10 text-center">

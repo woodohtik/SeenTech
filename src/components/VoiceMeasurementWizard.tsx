@@ -8,7 +8,7 @@ import { Measurements } from '../types';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { parseArabicNumber } from '../utils/parseArabicNumber';
 import { ThobePart, getNextMeasurementStep } from '../utils/measurementWizardSteps';
-import { PART_LABELS } from './ThobeMeasurementSelector';
+import { measurementLabelKey } from '../constants/measurementFields';
 import { MeasurementUnit, displayUnitToCm, cmToDisplayUnit } from '../utils/measurementUnits';
 import { FractionPicker } from './ui/FractionPicker';
 
@@ -58,6 +58,10 @@ export default function VoiceMeasurementWizard({ values, onChange, onClose, meas
   // re-render, and it never needs to flip back to false on this instance —
   // a fresh wizard mount gets a fresh ref (initialized false) via useRef.
   const closingRef = useRef(false);
+  // Which prompt is current. Skipping cancels the prompt being spoken, and
+  // cancel() still fires that utterance's onend; without this check the old
+  // prompt would start listening on top of the next one.
+  const promptIdRef = useRef(0);
 
   const part = getNextMeasurementStep(stepIndex);
 
@@ -81,19 +85,20 @@ export default function VoiceMeasurementWizard({ values, onChange, onClose, meas
       return;
     }
 
-    const promptText = 'قل مقاس ' + arabicT(PART_LABELS[nextPart]);
+    const promptText = 'قل مقاس ' + arabicT(measurementLabelKey(nextPart));
     const utterance = new SpeechSynthesisUtterance(promptText);
     utterance.lang = 'ar-SA';
+    const promptId = ++promptIdRef.current;
     // Guarded: speechSynthesis.cancel() (called by handleCancel/unmount)
     // still asynchronously fires onend/onerror for the utterance that was
     // in flight. Once closingRef is true the wizard is logically torn down,
     // so these must not start a new recognition session behind it.
     utterance.onend = () => {
-      if (closingRef.current) return;
+      if (closingRef.current || promptIdRef.current !== promptId) return;
       start();
     };
     utterance.onerror = () => {
-      if (closingRef.current) return;
+      if (closingRef.current || promptIdRef.current !== promptId) return;
       start(); // graceful degradation per spec: skip straight to listening
     };
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -167,6 +172,20 @@ export default function VoiceMeasurementWizard({ values, onChange, onClose, meas
     start();
   };
 
+  // Leaves the current measurement as it is and moves to the next one.
+  const handleSkip = () => {
+    if (advanceTimeoutRef.current) {
+      clearTimeout(advanceTimeoutRef.current);
+      advanceTimeoutRef.current = null;
+    }
+    promptIdRef.current += 1;
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    stop();
+    setStepIndex((i) => i + 1);
+  };
+
   const handleCancel = () => {
     // Same ordering reason as the unmount cleanup above: set the guard
     // before cancel() so the late onend/onerror it triggers is a no-op.
@@ -231,7 +250,7 @@ export default function VoiceMeasurementWizard({ values, onChange, onClose, meas
           >
             <Mic size={28} />
           </div>
-          <p className="text-sm font-bold text-content-muted">{t(PART_LABELS[part])}</p>
+          <p className="text-sm font-bold text-content-muted">{t(measurementLabelKey(part))}</p>
         </div>
 
         {manualEditPart && (
@@ -276,7 +295,7 @@ export default function VoiceMeasurementWizard({ values, onChange, onClose, meas
             onClick={handleTapResult}
             className="w-full py-3 rounded-xl bg-success/10 text-success font-bold hover:bg-success/20 transition-colors"
           >
-            ✓ {t(PART_LABELS[lastResult.part])}: {lastResult.value}
+            ✓ {t(measurementLabelKey(lastResult.part))}: {lastResult.value}
           </button>
         )}
 
@@ -303,13 +322,22 @@ export default function VoiceMeasurementWizard({ values, onChange, onClose, meas
           </div>
         )}
 
-        <button
-          type="button"
-          onClick={handleCancel}
-          className="w-full py-2 text-sm font-bold text-content-muted hover:text-content transition-colors"
-        >
-          {t('measurements.voice_wizard_cancel', 'إلغاء')}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleSkip}
+            className="flex-1 py-2.5 rounded-xl border border-border text-sm font-bold text-content hover:bg-surface-muted transition-colors"
+          >
+            {t('measurements.voice_wizard_skip')}
+          </button>
+          <button
+            type="button"
+            onClick={handleCancel}
+            className="flex-1 py-2.5 text-sm font-bold text-content-muted hover:text-content transition-colors"
+          >
+            {t('measurements.voice_wizard_cancel', 'إلغاء')}
+          </button>
+        </div>
       </motion.div>
     </div>
   );

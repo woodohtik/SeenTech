@@ -1,17 +1,9 @@
-// Duplicated verbatim from the ThobePart union in src/components/ThobeMeasurementSelector.tsx
-// (that union is not exported there).
-export type ThobePart = 'neck' | 'chest' | 'shoulder' | 'sleeve' | 'length' | 'handWidth' | 'midSleeveWidth' | 'cuffLength';
+import { MEASUREMENT_KEYS, type MeasurementKey } from '../constants/measurementFields';
 
-export const MEASUREMENT_WIZARD_ORDER: ThobePart[] = [
-  'length',
-  'shoulder',
-  'sleeve',
-  'chest',
-  'neck',
-  'handWidth',
-  'midSleeveWidth',
-  'cuffLength',
-];
+export type ThobePart = MeasurementKey;
+
+/** The approved list, in the founder's order: Tab and the voice wizard both follow it. */
+export const MEASUREMENT_WIZARD_ORDER: readonly ThobePart[] = MEASUREMENT_KEYS;
 
 export function getNextMeasurementStep(currentIndex: number): ThobePart | null {
   return MEASUREMENT_WIZARD_ORDER[currentIndex + 1] ?? null;
