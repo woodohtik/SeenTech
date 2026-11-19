@@ -8,9 +8,13 @@ import { cn } from '../../lib/utils';
 export interface VoiceMicButtonProps {
   onResult: (transcript: string) => void;
   ariaLabel?: string; // defaults to a translated, sensible label if omitted
+  /** Extra classes for the button, e.g. a larger touch target. */
+  className?: string;
+  /** Icon size in px (default 18). */
+  iconSize?: number;
 }
 
-export function VoiceMicButton({ onResult, ariaLabel }: VoiceMicButtonProps) {
+export function VoiceMicButton({ onResult, ariaLabel, className, iconSize = 18 }: VoiceMicButtonProps) {
   const { t } = useTranslation();
   const { error: toastError } = useToast();
   const { isSupported, isListening, transcript, error, start, stop } = useSpeechRecognition();
@@ -44,9 +48,9 @@ export function VoiceMicButton({ onResult, ariaLabel }: VoiceMicButtonProps) {
       type="button"
       onClick={isListening ? stop : start}
       aria-label={ariaLabel ?? t('common.voice_input', 'إدخال صوتي')}
-      className={cn('cursor-pointer transition-colors', isListening && 'text-brand animate-pulse')}
+      className={cn('cursor-pointer transition-colors', className, isListening && 'text-brand animate-pulse')}
     >
-      <Mic size={18} />
+      <Mic size={iconSize} />
     </button>
   );
 }

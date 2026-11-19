@@ -214,7 +214,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
   return (
     <VerticalConfigProvider tenantId={tenantId}>
     <div
-      className={cn("flex min-h-[100dvh] bg-surface-muted font-sans overflow-hidden w-full transition-all duration-300", isLocked && "blur-xl select-none pointer-events-none scale-98")}
+      className={cn("flex min-h-[100dvh] bg-surface-muted font-sans overflow-hidden w-full transition-all duration-300 xl:pe-[var(--assistant-dock,0px)]", isLocked && "blur-xl select-none pointer-events-none scale-98")}
       style={{
         height: impersonationTenantId ? `calc(100dvh - ${IMPERSONATION_BANNER_HEIGHT}px)` : '100dvh',
         marginTop: impersonationTenantId ? IMPERSONATION_BANNER_HEIGHT : 0,
@@ -654,6 +654,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
             tenantId={tenantId}
             userName={currentStaff?.name || dbUser?.display_name || dbUser?.email || ''}
             userRole={effectiveRole ?? undefined}
+            can={(permission) => hasPermission(permission as Parameters<typeof hasPermission>[0])}
           />
         </ErrorBoundary>
       </div>

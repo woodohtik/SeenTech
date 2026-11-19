@@ -1,825 +1,132 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Bot, Sparkles, X, Send, AlertTriangle, TrendingUp, FileText, Users, PackageSearch, Compass, ArrowRight, StopCircle, RefreshCw, MessageSquarePlus } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence } from 'motion/react';
+import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useDirection } from '../lib/direction';
-import { supabase } from '../lib/supabase/client';
-import { cn } from '../lib/utils';
-import { PriceDisplay } from './PriceDisplay';
 import { startTargetedTour } from './OnboardingTour';
-
-interface ToolResult {
-  name: string;
-  result: any;
-}
-
-interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-  toolResults?: ToolResult[];
-}
+import { AssistantMark } from './assistant/parts';
+import { AssistantPanel, PANEL_WIDTH, PANEL_WIDTH_EXPANDED, useMediaQuery } from './assistant/AssistantPanel';
+import { isAssistantAdminRole, type AssistantAccess } from './assistant/catalog';
+import { useAssistantChat, useAssistantEnabled } from './assistant/useAssistantChat';
 
 interface SeenAIFabProps {
   userName?: string;
   userRole?: string;
   tenantId?: string | null;
+  /** The app's permission check, so suggestions match what this person may ask. */
+  can?: (permission: string) => boolean;
 }
 
-// seen-ai-assistant-zatca-cr-task.md #1: مهلة زمنية قصوى لطلب الدردشة --
-// بدونها، أي تعلّق في الخادم (مزوّد لا يرجع خطأ صريح) يُبقي الواجهة في وضع
-// "يكتب..." للأبد بلا أي وسيلة خروج غير تحديث الصفحة بالكامل.
-const REQUEST_TIMEOUT_MS = 40_000;
+const EXPANDED_KEY = 'seen_ai_panel_expanded';
+/** Read by Layout's root: the width the docked panel takes from the page at 1280px and up. */
+const DOCK_VAR = '--assistant-dock';
 
-// #3: يُرسَل آخر هذا العدد من الرسائل فقط مع كل طلب، لا السجل كاملاً --
-// يحد استهلاك التوكنات/التكلفة مع طول المحادثة بدل أن يكبر بلا حدود. السجل
-// المعروض محلياً للمستخدم يبقى كاملاً، هذا يحد فقط ما يُرسَل فعلياً للخادم.
-const MAX_HISTORY_MESSAGES = 20;
-
-function chatStorageKey(tenantId: string): string {
-  return `seen_ai_chat_${tenantId}`;
+function readExpanded(): boolean {
+  try {
+    return localStorage.getItem(EXPANDED_KEY) === '1';
+  } catch {
+    return false;
+  }
 }
 
-async function getAuthHeader(): Promise<Record<string, string>> {
-  const { data: { session } } = await supabase.auth.getSession();
-  const token = session?.access_token;
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
-export default function SeenAIFab({ userName, userRole, tenantId }: SeenAIFabProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isEnabled, setIsEnabled] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState('');
-  const [isSending, setIsSending] = useState(false);
-  const [statusText, setStatusText] = useState<string | null>(null);
-  const [bannerMessage, setBannerMessage] = useState<string | null>(null);
-  const [canRetry, setCanRetry] = useState(false);
+/**
+ * The assistant: a launcher in the corner and the panel it opens. The pieces
+ * live in ./assistant; this file only holds what is open and wires them.
+ */
+export default function SeenAIFab({ userName, userRole, tenantId, can }: SeenAIFabProps) {
   const { t } = useTranslation();
-  const { dir, isRtl } = useDirection();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const statusTextRef = useRef<string | null>(null);
-  const pendingTourTopicRef = useRef<string | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const manualCancelRef = useRef(false);
-  const lastRequestMessagesRef = useRef<ChatMessage[] | null>(null);
-  const hydratedTenantRef = useRef<string | null>(null);
+  const { pathname } = useLocation();
+  const isEnabled = useAssistantEnabled(tenantId);
+  const [isOpen, setIsOpen] = useState(false);
+  const [expanded, setExpanded] = useState(readExpanded);
+  const [input, setInput] = useState('');
+  const launcherRef = useRef<HTMLButtonElement>(null);
+  const isDocked = useMediaQuery('(min-width: 1280px)');
+
+  const close = useCallback(() => {
+    setIsOpen(false);
+    // Focus returns to where it came from.
+    window.setTimeout(() => launcherRef.current?.focus(), 0);
+  }, []);
 
   const launchGuidedTour = useCallback((topic: string) => {
     setIsOpen(false);
     window.setTimeout(() => startTargetedTour(topic), 300);
   }, []);
 
-  // اهتزاز خفيف (جوال) + نغمة قصيرة مولَّدة عبر Web Audio (لا ملف صوتي
-  // جديد) عند اكتمال رد المساعد فعلياً -- لا تُستدعى عند الأخطاء أو رسائل
-  // البانر (403/429/503)، لأنها تُرجِع قبل الوصول لنقطة الاستدعاء.
-  const notifyNewReply = useCallback(() => {
-    try {
-      navigator.vibrate?.(40);
-    } catch {
-      // اهتزاز غير مدعوم (سطح المكتب غالباً) -- تجاهل
-    }
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = 880;
-      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.15);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.16);
-      osc.onended = () => ctx.close();
-    } catch {
-      // سياسات تشغيل الصوت التلقائي أو AudioContext غير مدعوم -- تجاهل
-    }
-  }, []);
+  const chat = useAssistantChat({ tenantId, userName, userRole, onTourRequested: launchGuidedTour });
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!tenantId) return;
+  const access = useMemo<AssistantAccess>(() => ({
+    isAdmin: isAssistantAdminRole(userRole),
+    can: (permission) => (can ? can(permission) : false),
+  }), [userRole, can]);
+
+  const toggleExpanded = useCallback(() => {
+    setExpanded((value) => {
       try {
-        const authHeader = await getAuthHeader();
-        if (!authHeader.Authorization) return;
-        const res = await fetch('/api/assistant-settings/status', { headers: authHeader });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!cancelled) setIsEnabled(Boolean(data.isEnabled));
+        localStorage.setItem(EXPANDED_KEY, value ? '0' : '1');
       } catch {
-        // fail silently — no assistant button is a safe default
+        // No storage (private window): the choice lasts for this visit only.
       }
-    })();
-    return () => { cancelled = true; };
-  }, [tenantId]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isSending]);
-
-  // #2: استرجاع المحادثة من sessionStorage عند توفر tenantId -- مرة واحدة
-  // فقط لكل تبويب/جلسة متصفح، لا localStorage (لا داعٍ لبقاء المحادثة بعد
-  // إغلاق المتصفح، وsessionStorage يعزل تلقائياً بين تبويبات/مستخدمين
-  // مختلفين على نفس الجهاز بلا أي منطق إضافي).
-  useEffect(() => {
-    if (!tenantId || hydratedTenantRef.current === tenantId) return;
-    hydratedTenantRef.current = tenantId;
-    try {
-      const raw = sessionStorage.getItem(chatStorageKey(tenantId));
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed);
-      }
-    } catch {
-      // تخزين تالف أو غير متاح (وضع التصفح الخاص) -- يبدأ بمحادثة فارغة فقط
-    }
-  }, [tenantId]);
-
-  useEffect(() => {
-    if (!tenantId) return;
-    try {
-      if (messages.length === 0) {
-        sessionStorage.removeItem(chatStorageKey(tenantId));
-      } else {
-        sessionStorage.setItem(chatStorageKey(tenantId), JSON.stringify(messages));
-      }
-    } catch {
-      // مساحة التخزين ممتلئة أو غير متاحة -- المحادثة ببساطة لن تنجو من تحديث الصفحة
-    }
-  }, [messages, tenantId]);
-
-  const startNewConversation = useCallback(() => {
-    setMessages([]);
-    setBannerMessage(null);
-    setCanRetry(false);
-    lastRequestMessagesRef.current = null;
+      return !value;
+    });
   }, []);
 
-  // تعطيل الحقل (disabled={isSending} أدناه) يزيل تركيز المتصفح منه قسرياً
-  // فوراً إن كان هو العنصر الذي يحمل التركيز -- لا يُعاد التركيز تلقائياً
-  // حين يُعاد تفعيله، فيضطر المستخدم للنقر يدوياً قبل كل رسالة تالية.
+  // At 1280px and up the panel sits beside the page instead of over it.
   useEffect(() => {
-    if (!isSending) inputRef.current?.focus();
-  }, [isSending]);
+    const root = document.documentElement;
+    if (isOpen && isDocked) root.style.setProperty(DOCK_VAR, `${expanded ? PANEL_WIDTH_EXPANDED : PANEL_WIDTH}px`);
+    else root.style.removeProperty(DOCK_VAR);
+    return () => { root.style.removeProperty(DOCK_VAR); };
+  }, [isOpen, isDocked, expanded]);
 
-  // استُخرجت من sendMessage لتُستدعى أيضاً من زر "إعادة المحاولة" (#7) بنفس
-  // requestMessages الفاشلة تماماً دون إضافة رسالة مستخدم مكررة -- sendMessage
-  // نفسها تُلحق رسالة جديدة دائماً، وهذا ما لا يصح فعله عند إعادة محاولة طلب
-  // فشل بعد أن رسالته أُلحقت بالفعل.
-  const performRequest = useCallback(async (requestMessages: ChatMessage[]) => {
-    setIsSending(true);
-    statusTextRef.current = t('ai.thinking');
-    setStatusText(statusTextRef.current);
-    setBannerMessage(null);
-    setCanRetry(false);
-    manualCancelRef.current = false;
-
-    // #1: مهلة زمنية قصوى + إمكانية إلغاء يدوي (handleCancel أدناه) عبر نفس
-    // AbortController -- كلاهما يصل لنفس catch، يُفرَّقان عبر manualCancelRef.
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-    const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
-    try {
-      const authHeader = await getAuthHeader();
-      if (!authHeader.Authorization) throw new Error('no_session');
-
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeader },
-        body: JSON.stringify({ messages: requestMessages.slice(-MAX_HISTORY_MESSAGES), userName, userRole }),
-        signal: controller.signal,
-      });
-
-      if (res.status === 403) {
-        const data = await res.json().catch(() => ({}));
-        setBannerMessage(data.message || t('ai.assistant_disabled_message'));
-        setIsSending(false);
-        setStatusText(null);
-        setTimeout(() => setIsOpen(false), 2500);
-        return;
-      }
-      if (res.status === 429) {
-        const data = await res.json().catch(() => ({}));
-        setBannerMessage(data.message || t('ai.daily_limit_reached'));
-        setIsSending(false);
-        setStatusText(null);
-        return;
-      }
-      if (res.status === 503) {
-        const data = await res.json().catch(() => ({}));
-        setBannerMessage(data.message || t('ai.not_configured_message'));
-        setIsSending(false);
-        setStatusText(null);
-        return;
-      }
-      if (!res.ok || !res.body) {
-        throw new Error('request_failed');
-      }
-
-      setMessages(prev => [...prev, { role: 'assistant', content: '', toolResults: [] }]);
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let textAcc = '';
-      const toolResultsAcc: ToolResult[] = [];
-      let lineBuffer = '';
-      pendingTourTopicRef.current = null;
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        lineBuffer += decoder.decode(value, { stream: true });
-        const lines = lineBuffer.split('\n');
-        lineBuffer = lines.pop() || ''; // آخر سطر قد يكون غير مكتمل بعد
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          try {
-            const part = JSON.parse(line);
-            if (part.t === 'text') {
-              if (statusTextRef.current !== null) { statusTextRef.current = null; setStatusText(null); }
-              textAcc += part.v;
-            } else if (part.t === 'status') {
-              statusTextRef.current = t('ai.fetching_data');
-              setStatusText(statusTextRef.current);
-            } else if (part.t === 'tool') {
-              toolResultsAcc.push({ name: part.name, result: part.result });
-              if (part.name === 'guidedTour' && part.result?.action === 'start' && part.result?.topic) {
-                pendingTourTopicRef.current = part.result.topic;
-              }
-            }
-          } catch {
-            // سطر NDJSON غير صالح (نادر) — تجاهله بدل كسر المحادثة كاملة
-          }
-        }
-        const textSnapshot = textAcc;
-        const toolsSnapshot = [...toolResultsAcc];
-        setMessages(prev => {
-          const copy = [...prev];
-          copy[copy.length - 1] = { role: 'assistant', content: textSnapshot, toolResults: toolsSnapshot };
-          return copy;
-        });
-      }
-
-      notifyNewReply();
-
-      // المستخدم وافق نصياً على جولة تعليمية عُرضت سابقاً — بعد اكتمال رد
-      // المساعد كاملاً (النص الختامي مرئي أولاً)، أغلق نافذة الدردشة وابدأ
-      // الجولة على الموضوع المطلوب مباشرة.
-      if (pendingTourTopicRef.current) {
-        const topic = pendingTourTopicRef.current;
-        pendingTourTopicRef.current = null;
-        window.setTimeout(() => launchGuidedTour(topic), 500);
-      }
-    } catch (err: any) {
-      if (err?.name === 'AbortError') {
-        if (manualCancelRef.current) {
-          setBannerMessage(t('ai.request_cancelled'));
-        } else {
-          setBannerMessage(t('ai.request_timeout'));
-          lastRequestMessagesRef.current = requestMessages;
-          setCanRetry(true);
-        }
-      } else {
-        console.error('SeenAI chat error:', err);
-        lastRequestMessagesRef.current = requestMessages;
-        setBannerMessage(t('ai.error_generic'));
-        setCanRetry(true);
-      }
-    } finally {
-      window.clearTimeout(timeoutId);
-      abortControllerRef.current = null;
-      setIsSending(false);
-      statusTextRef.current = null;
-      setStatusText(null);
-    }
-  }, [userName, userRole, t, launchGuidedTour, notifyNewReply]);
-
-  const sendMessage = useCallback((overrideText?: string) => {
-    const text = (overrideText ?? input).trim();
-    if (!text || isSending) return;
-    const nextMessages: ChatMessage[] = [...messages, { role: 'user', content: text }];
-    setMessages(nextMessages);
-    setInput('');
-    void performRequest(nextMessages);
-  }, [input, isSending, messages, performRequest]);
-
-  // #1: زر "إلغاء" يدوي -- يستخدم نفس AbortController الخاص بالمهلة الزمنية،
-  // manualCancelRef يُفرِّق رسالة "تم الإلغاء" عن رسالة "انتهت المهلة" في catch أعلاه.
-  const handleCancel = useCallback(() => {
-    manualCancelRef.current = true;
-    abortControllerRef.current?.abort();
-  }, []);
-
-  // #7: إعادة محاولة بنفس requestMessages الفاشلة تماماً -- لا عبر sendMessage
-  // (التي كانت ستُلحق رسالة مستخدم مكررة فوق الرسالة الفاشلة الموجودة أصلاً).
-  const handleRetry = useCallback(() => {
-    if (lastRequestMessagesRef.current) void performRequest(lastRequestMessagesRef.current);
-  }, [performRequest]);
+  const send = useCallback((text?: string) => {
+    if (chat.sendMessage(text ?? input) && text === undefined) setInput('');
+  }, [chat, input]);
 
   if (!isEnabled) return null;
 
   return (
     <>
-      {/* POS.tsx's mobile cart FAB (POS.tsx ~1794) is pinned at a hardcoded
-          bottom-6 left-6, not RTL-aware -- below lg this button used to land
-          on the exact same corner in RTL (Arabic, the app's primary
-          language), overlapping it. Forcing right-6 below lg keeps this
-          button on the opposite corner from the cart FAB regardless of
-          language; lg+ has no cart FAB in play, so the original RTL-aware
-          placement resumes there. */}
-      <div
-        id="tour-ai-fab"
-        data-tour="ai-fab"
-        className={cn(
-          "fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-6 z-50 flex flex-col items-center gap-2",
-          isRtl && "lg:left-6 lg:right-auto"
-        )}
-      >
+      {!isOpen && (
         <button
+          ref={launcherRef}
+          type="button"
+          id="tour-ai-fab"
+          data-tour="ai-fab"
           onClick={() => setIsOpen(true)}
-          className="w-14 h-14 bg-brand rounded-2xl shadow-lg flex items-center justify-center text-white hover:shadow-xl hover:scale-105 transition-all relative group"
+          aria-label={t('ai.launcher')}
+          aria-haspopup="dialog"
+          className="h-14 min-w-14 px-0 sm:ps-5 sm:pe-6 inline-flex items-center justify-center gap-2.5 rounded-[12px] bg-brand text-white text-lg font-semibold shadow-[0_2px_8px_rgba(14,42,66,.08),0_1px_2px_rgba(14,42,66,.06)] hover:bg-brand/90"
         >
-          {!isOpen && <span className="absolute inset-0 rounded-2xl bg-brand animate-ping opacity-20 pointer-events-none" />}
-          <Sparkles className="absolute top-2 right-2 w-3 h-3 text-white/70 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <Bot size={28} />
+          <AssistantMark size={24} className="sm:w-6 sm:h-6 w-[26px] h-[26px]" />
+          <span className="hidden sm:inline">{t('ai.launcher')}</span>
         </button>
-      </div>
+      )}
 
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed inset-0 z-50" dir={dir}>
-            {/* موبايل: خلفية معتمة + ورقة سفلية بعرض الشاشة. سطح المكتب: طبقة شفافة
-                لإغلاق النافذة بالنقر خارجها فقط، بلا تعتيم — النافذة ترتكز بجانب
-                الزر العائم نفسه (يمين الشاشة دوماً دون lg لمطابقة موضع الزر
-                نفسه، ثم يسار عربي/أردو أو يمين إنجليزي عند lg+). */}
-            <div
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm sm:bg-transparent sm:backdrop-blur-none"
-              onClick={() => setIsOpen(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              className={cn(
-                "absolute inset-x-0 bottom-0 bg-surface w-full h-[85vh] rounded-t-3xl shadow-2xl overflow-hidden border border-border flex flex-col",
-                "sm:inset-x-auto sm:bottom-24 sm:h-[600px] sm:w-full sm:max-w-sm sm:rounded-3xl sm:right-6",
-                "lg:h-[70vh] lg:max-h-[760px] lg:max-w-md",
-                isRtl && "lg:left-6 lg:right-auto"
-              )}
-            >
-              <div className="p-4 border-b border-border flex justify-between items-center bg-gradient-to-br from-brand/10 via-brand/5 to-transparent shrink-0">
-                <div className="flex items-center gap-2.5">
-                  <div className="relative w-9 h-9 bg-brand rounded-xl flex items-center justify-center shrink-0">
-                    <Bot className="text-white" size={20} />
-                    <span className="absolute -bottom-0.5 -end-0.5 w-2.5 h-2.5 bg-success rounded-full border-2 border-surface" />
-                  </div>
-                  <div className="min-w-0">
-                    <h2 className="text-sm font-black text-content leading-tight">{t('ai.assistant_title')}</h2>
-                    <p className="text-[10px] font-bold text-content-muted leading-tight">{t('ai.assistant_subtitle')}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  {messages.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={startNewConversation}
-                      title={t('ai.new_conversation', 'محادثة جديدة')}
-                      className="p-2 hover:bg-black/5 rounded-full text-content-muted transition-colors"
-                    >
-                      <MessageSquarePlus size={18} />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setIsOpen(false)}
-                    className="p-2 hover:bg-black/5 rounded-full text-content-muted transition-colors"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                {messages.length === 0 && !bannerMessage && (
-                  <div className="h-full flex flex-col items-center justify-center text-center gap-4 px-4">
-                    <div className="relative w-20 h-20 flex items-center justify-center">
-                      <span className="absolute inset-0 rounded-full bg-brand/10 animate-ping [animation-duration:2.5s]" />
-                      <div className="relative w-16 h-16 bg-brand/10 rounded-full flex items-center justify-center">
-                        <Bot size={32} className="text-brand" />
-                        <Sparkles size={14} className="absolute -top-1 -end-1 text-brand/60 animate-pulse" />
-                      </div>
-                    </div>
-                    <p className="text-content-muted font-bold text-sm">
-                      {t('ai.empty_state_greeting', { name: userName || '' })}
-                    </p>
-                    <div className="flex flex-wrap justify-center gap-2 max-w-[280px]">
-                      {[
-                        t('ai.suggestion_sales_today'),
-                        t('ai.suggestion_add_customer'),
-                        t('ai.suggestion_low_stock'),
-                        t('ai.suggestion_new_order'),
-                      ].map((suggestion, i) => (
-                        <button
-                          key={i}
-                          onClick={() => sendMessage(suggestion)}
-                          disabled={isSending}
-                          className="text-xs font-bold text-brand bg-brand/10 hover:bg-brand/15 rounded-full px-3.5 py-2 transition-colors disabled:opacity-50"
-                        >
-                          {suggestion}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* رسائل المستخدم دائماً في اليمين الفعلي للشاشة (كما في واتساب/تيليجرام)
-                    بغض النظر عن اتجاه الصفحة — لذا نعكس justify-end/start عبر rtl: */}
-                {messages.map((m, i) => (
-                  <div key={i} className={`flex flex-col gap-2 ${m.role === 'user' ? 'items-end' : 'items-start'} ${m.role === 'user' ? 'rtl:items-start' : 'rtl:items-end'}`}>
-                    {m.toolResults?.map((tr, ti) => (
-                      <ToolResultCard key={ti} name={tr.name} result={tr.result} onStartTour={launchGuidedTour} />
-                    ))}
-                    {m.content && (
-                      <div
-                        className={
-                          m.role === 'user'
-                            ? 'max-w-[80%] bg-brand text-white rounded-2xl rounded-tr-md px-4 py-2.5 text-sm font-medium whitespace-pre-wrap shadow-sm'
-                            : 'max-w-[80%] bg-surface-muted text-content rounded-2xl rounded-tl-md px-4 py-2.5 text-sm font-medium whitespace-pre-wrap shadow-sm'
-                        }
-                      >
-                        {m.content}
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {isSending && statusText && (
-                  <div className="flex items-center gap-2 justify-start rtl:justify-end">
-                    <div className="bg-surface-muted rounded-2xl rounded-tl-md px-4 py-3 flex items-center gap-2">
-                      <span className="w-2 h-2 bg-brand/70 rounded-full animate-bounce [animation-delay:-0.3s] [animation-duration:0.9s]" />
-                      <span className="w-2 h-2 bg-brand/70 rounded-full animate-bounce [animation-delay:-0.15s] [animation-duration:0.9s]" />
-                      <span className="w-2 h-2 bg-brand/70 rounded-full animate-bounce [animation-duration:0.9s]" />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleCancel}
-                      className="flex items-center gap-1 text-content-muted hover:text-danger text-[10px] font-bold transition-colors shrink-0"
-                    >
-                      <StopCircle size={13} /> {t('ai.cancel_request')}
-                    </button>
-                  </div>
-                )}
-
-                {bannerMessage && (
-                  <div className="bg-warning/10 text-warning text-xs font-bold rounded-xl px-4 py-3 text-center space-y-2">
-                    <p>{bannerMessage}</p>
-                    {canRetry && (
-                      <button
-                        type="button"
-                        onClick={handleRetry}
-                        className="inline-flex items-center gap-1.5 bg-warning/15 hover:bg-warning/25 text-warning rounded-lg px-3 py-1.5 transition-colors"
-                      >
-                        <RefreshCw size={12} /> {t('common.retry', 'إعادة المحاولة')}
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                <div ref={messagesEndRef} />
-              </div>
-
-              <div className="p-3 border-t border-border shrink-0">
-                <div className="flex items-center gap-2 bg-surface-muted rounded-2xl border border-border px-3 py-1 focus-within:ring-2 focus-within:ring-brand/20 focus-within:border-brand transition-all">
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                    placeholder={t('ai.type_message_placeholder')}
-                    disabled={isSending}
-                    className="flex-1 bg-transparent border-none outline-none focus:ring-0 py-2.5 text-sm font-medium text-content placeholder:text-content-muted/60"
-                  />
-                  <button
-                    onClick={() => sendMessage()}
-                    disabled={isSending || !input.trim()}
-                    className="w-8 h-8 shrink-0 bg-brand text-white rounded-xl flex items-center justify-center disabled:opacity-40 transition-all hover:bg-brand/90"
-                  >
-                    <Send size={16} className="rtl:-scale-x-100" />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
+          <AssistantPanel
+            onClose={close}
+            expanded={expanded}
+            onToggleExpanded={toggleExpanded}
+            userName={userName}
+            pathname={pathname}
+            access={access}
+            messages={chat.messages}
+            isSending={chat.isSending}
+            progress={chat.progress}
+            notice={chat.notice}
+            announcement={chat.announcement}
+            input={input}
+            onInputChange={setInput}
+            onSend={send}
+            onStop={chat.cancel}
+            onRetry={chat.retry}
+            onNewConversation={chat.startNewConversation}
+            onStartTour={launchGuidedTour}
+          />
         )}
       </AnimatePresence>
     </>
   );
-}
-
-function EmptyCard({ text }: { text: string }) {
-  return (
-    <div className="max-w-[90%] w-full bg-surface-muted border border-border rounded-2xl px-4 py-3 text-xs font-bold text-content-muted text-center">
-      {text}
-    </div>
-  );
-}
-
-// بطاقة "جولة تعليمية مخصّصة" — تظهر بعد شرح المساعد لأي "كيف أضيف/أنشئ..."
-// (guidedTour tool, action="offer") بزر توجيه فعلي للمستخدم، أو كإشعار
-// تلقائي عابر عندما يوافق المستخدم نصياً على عرض سابق (action="start").
-function GuidedTourCard({ topic, action, onStartTour }: { topic: string; action: string; onStartTour: (topic: string) => void }) {
-  const { t } = useTranslation();
-  const [choice, setChoice] = useState<'pending' | 'accepted' | 'dismissed'>('pending');
-  const title = t(`tour.steps.${topic}.title`, topic);
-
-  if (action === 'start') {
-    return (
-      <div className="max-w-[90%] w-full bg-brand/5 border border-brand/20 rounded-2xl px-4 py-3 flex items-center gap-2.5">
-        <Compass size={16} className="text-brand shrink-0 animate-pulse" />
-        <span className="text-xs font-bold text-content">{t('ai.guided_tour_starting')}</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="max-w-[90%] w-full bg-surface border border-brand/20 rounded-2xl overflow-hidden">
-      <div className="flex items-center gap-2 text-xs font-black text-brand uppercase tracking-widest p-3 border-b border-border">
-        <Compass size={14} /> {title}
-      </div>
-      <div className="p-3 space-y-2.5">
-        <p className="text-xs font-bold text-content-muted">{t('ai.guided_tour_question')}</p>
-        {choice === 'pending' && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => { setChoice('accepted'); onStartTour(topic); }}
-              className="flex-1 flex items-center justify-center gap-1.5 bg-brand text-white text-xs font-black rounded-xl px-3 py-2 hover:bg-brand/90 transition-all"
-            >
-              {t('ai.guided_tour_yes')} <ArrowRight size={14} className="rtl:-scale-x-100" />
-            </button>
-            <button
-              onClick={() => setChoice('dismissed')}
-              className="text-xs font-bold text-content-muted hover:text-content px-3 py-2 transition-colors"
-            >
-              {t('ai.guided_tour_no')}
-            </button>
-          </div>
-        )}
-        {choice === 'accepted' && (
-          <span className="text-xs font-bold text-brand">{t('ai.guided_tour_starting')}</span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// عرض توليدي (Generative UI) بسيط: كل أداة بيانات تُعرض كبطاقة/جدول مصغّر
-// حسب نوعها بدل نص خام فقط، مبني على toolName + result القادمين من بروتوكول
-// NDJSON في server.ts (streamAssistantReply).
-function ToolResultCard({ name, result, onStartTour }: { name: string; result: any; onStartTour: (topic: string) => void }) {
-  const { t } = useTranslation();
-  if (!result) return null;
-
-  if (result.denied) {
-    return (
-      <div className="max-w-[90%] w-full bg-warning/10 border border-warning/20 rounded-2xl px-4 py-3 text-xs font-bold text-warning flex items-center gap-2">
-        <AlertTriangle size={16} className="shrink-0" />
-        {result.message || t('ai.card_access_denied')}
-      </div>
-    );
-  }
-
-  switch (name) {
-    case 'guidedTour':
-      return <GuidedTourCard topic={result.topic} action={result.action} onStartTour={onStartTour} />;
-    case 'getSalesSummary':
-    case 'getRevenueReport':
-    case 'getDailyClosingReport': {
-      const stats: { label: string; value: number }[] = [
-        { label: t('ai.card_total_sales'), value: Number(result.totalSales) || 0 },
-        { label: t('ai.card_collected'), value: Number(result.totalRevenueCollected) || 0 },
-      ];
-      if (result.totalTax !== undefined) stats.push({ label: t('ai.card_tax'), value: Number(result.totalTax) || 0 });
-      if (result.totalDiscount !== undefined) stats.push({ label: t('ai.card_discount'), value: Number(result.totalDiscount) || 0 });
-      return (
-        <div className="max-w-[90%] w-full bg-surface border border-border rounded-2xl p-4 space-y-3">
-          <div className="flex items-center gap-2 text-xs font-black text-brand uppercase tracking-widest">
-            <TrendingUp size={14} /> {t('ai.card_summary')}
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {stats.map((s, i) => (
-              <div key={i}>
-                <div className="text-[10px] text-content-muted font-bold">{s.label}</div>
-                <div className="text-sm font-black text-content"><PriceDisplay amount={s.value} /></div>
-              </div>
-            ))}
-          </div>
-          {typeof result.invoiceCount === 'number' && (
-            <div className="text-[10px] text-content-muted font-bold pt-2 border-t border-border">
-              {t('ai.card_invoice_count')}: {result.invoiceCount}
-            </div>
-          )}
-        </div>
-      );
-    }
-    case 'searchInvoices': {
-      const invoices = result.invoices || [];
-      if (invoices.length === 0) return <EmptyCard text={t('ai.card_no_results')} />;
-      return (
-        <div className="max-w-[90%] w-full bg-surface border border-border rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-2 text-xs font-black text-brand uppercase tracking-widest p-3 border-b border-border">
-            <FileText size={14} /> {t('ai.card_invoices')} ({invoices.length})
-          </div>
-          <div className="divide-y divide-border max-h-52 overflow-y-auto">
-            {invoices.map((inv: any, i: number) => (
-              <div key={i} className="p-3 flex items-center justify-between gap-2 text-xs">
-                <div className="min-w-0">
-                  <div className="font-bold text-content truncate">#{inv.order_number} — {inv.customer_name}</div>
-                  <div className="text-content-muted">{String(inv.order_date || '').slice(0, 10)}</div>
-                </div>
-                <div className="font-black text-content shrink-0"><PriceDisplay amount={Number(inv.total_amount) || 0} /></div>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-    case 'getTopSellingItems': {
-      const items = result.items || [];
-      if (items.length === 0) return <EmptyCard text={t('ai.card_no_sales_data')} />;
-      return (
-        <div className="max-w-[90%] w-full bg-surface border border-border rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-2 text-xs font-black text-brand uppercase tracking-widest p-3 border-b border-border">
-            <TrendingUp size={14} /> {t('ai.card_top_selling')}
-          </div>
-          <div className="divide-y divide-border">
-            {items.map((it: any, i: number) => (
-              <div key={i} className="p-3 flex items-center justify-between text-xs">
-                <span className="font-bold text-content">{it.name}</span>
-                <span className="text-content-muted font-black">{it.total_quantity}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-    case 'getLowStockAlerts': {
-      const items = result.items || [];
-      if (items.length === 0) return <EmptyCard text={t('ai.card_no_low_stock')} />;
-      return (
-        <div className="max-w-[90%] w-full bg-danger/5 border border-danger/20 rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-2 text-xs font-black text-danger uppercase tracking-widest p-3 border-b border-danger/20">
-            <AlertTriangle size={14} /> {t('ai.card_low_stock')}
-          </div>
-          <div className="divide-y divide-danger/10">
-            {items.map((it: any, i: number) => (
-              <div key={i} className="p-3 flex items-center justify-between text-xs">
-                <span className="font-bold text-content">{it.name}</span>
-                <span className="text-danger font-black">{it.current_quantity} / {it.min_threshold}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-    case 'getInventoryStatus': {
-      const items = result.items || [];
-      if (!result.found || items.length === 0) return <EmptyCard text={t('ai.card_item_not_found')} />;
-      return (
-        <div className="max-w-[90%] w-full bg-surface border border-border rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-2 text-xs font-black text-brand uppercase tracking-widest p-3 border-b border-border">
-            <PackageSearch size={14} /> {t('ai.card_inventory_status')}
-          </div>
-          <div className="divide-y divide-border">
-            {items.map((it: any, i: number) => (
-              <div key={i} className="p-3 text-xs space-y-1">
-                <div className="font-bold text-content">{it.name}</div>
-                <div className="flex items-center justify-between text-content-muted">
-                  <span>{it.currentQuantity} {it.unit}</span>
-                  <PriceDisplay amount={Number(it.pricePerUnit) || 0} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-    case 'getCustomerHistory': {
-      const customers = result.customers || [];
-      if (!result.found || customers.length === 0) return <EmptyCard text={t('ai.card_customer_not_found')} />;
-      return (
-        <div className="max-w-[90%] w-full bg-surface border border-border rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-2 text-xs font-black text-brand uppercase tracking-widest p-3 border-b border-border">
-            <Users size={14} /> {t('ai.card_customer_history')}
-          </div>
-          {customers.map((c: any, ci: number) => (
-            <div key={ci} className="divide-y divide-border">
-              <div className="p-3 text-xs font-black text-content bg-surface-muted/50">{c.name} — {c.phone}</div>
-              {(c.orders || []).map((o: any, oi: number) => (
-                <div key={oi} className="p-3 flex items-center justify-between text-xs">
-                  <span className="text-content-muted">#{o.order_number}</span>
-                  <PriceDisplay amount={Number(o.total_amount) || 0} />
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      );
-    }
-    case 'getPendingOrders': {
-      const orders = result.orders || [];
-      if (orders.length === 0) return <EmptyCard text={t('ai.card_no_pending_orders')} />;
-      return (
-        <div className="max-w-[90%] w-full bg-surface border border-border rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-2 text-xs font-black text-brand uppercase tracking-widest p-3 border-b border-border">
-            <FileText size={14} /> {t('ai.card_pending_orders')} ({orders.length})
-          </div>
-          <div className="divide-y divide-border max-h-52 overflow-y-auto">
-            {orders.map((o: any, i: number) => (
-              <div key={i} className="p-3 flex items-center justify-between gap-2 text-xs">
-                <span className="font-bold text-content truncate">#{o.order_number} — {o.customer_name}</span>
-                <span className="text-content-muted shrink-0">{o.status}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-    case 'getSupplierBalance': {
-      const suppliers = result.suppliers || [];
-      if (!result.found || suppliers.length === 0) return <EmptyCard text={t('ai.card_supplier_not_found')} />;
-      return (
-        <div className="max-w-[90%] w-full bg-surface border border-border rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-2 text-xs font-black text-brand uppercase tracking-widest p-3 border-b border-border">
-            <FileText size={14} /> {t('ai.card_supplier_balance')}
-          </div>
-          <div className="divide-y divide-border">
-            {suppliers.map((s: any, i: number) => (
-              <div key={i} className="p-3 text-xs space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-content">{s.name}</span>
-                  <PriceDisplay amount={Number(s.balanceOwed) || 0} />
-                </div>
-                {s.pendingPurchaseOrders > 0 && (
-                  <div className="text-content-muted">{t('ai.card_pending_pos', { count: s.pendingPurchaseOrders })}</div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-    case 'comparePeriods': {
-      if (!result.periodA || !result.periodB) return null;
-      const up = Number(result.changeAmount) >= 0;
-      return (
-        <div className="max-w-[90%] w-full bg-surface border border-border rounded-2xl p-4 space-y-3">
-          <div className="flex items-center gap-2 text-xs font-black text-brand uppercase tracking-widest">
-            <TrendingUp size={14} /> {t('ai.card_period_comparison')}
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <div className="text-[10px] text-content-muted font-bold">{result.periodA.startDate} → {result.periodA.endDate}</div>
-              <div className="text-sm font-black text-content"><PriceDisplay amount={Number(result.periodA.totalSales) || 0} /></div>
-            </div>
-            <div>
-              <div className="text-[10px] text-content-muted font-bold">{result.periodB.startDate} → {result.periodB.endDate}</div>
-              <div className="text-sm font-black text-content"><PriceDisplay amount={Number(result.periodB.totalSales) || 0} /></div>
-            </div>
-          </div>
-          <div className={cn("text-xs font-black pt-2 border-t border-border", up ? "text-success" : "text-danger")}>
-            {up ? '▲' : '▼'} <PriceDisplay amount={Math.abs(Number(result.changeAmount) || 0)} />
-            {result.changePercent !== null && ` (${result.changePercent > 0 ? '+' : ''}${result.changePercent}%)`}
-          </div>
-        </div>
-      );
-    }
-    case 'getCustomerStats': {
-      return (
-        <div className="max-w-[90%] w-full bg-surface border border-border rounded-2xl p-4 space-y-3">
-          <div className="flex items-center gap-2 text-xs font-black text-brand uppercase tracking-widest">
-            <Users size={14} /> {t('ai.card_customer_stats')}
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <div className="text-[10px] text-content-muted font-bold">{t('ai.card_total_customers')}</div>
-              <div className="text-sm font-black text-content">{result.totalCustomers}</div>
-            </div>
-            {typeof result.newCustomersInPeriod === 'number' && (
-              <div>
-                <div className="text-[10px] text-content-muted font-bold">{t('ai.card_new_customers')}</div>
-                <div className="text-sm font-black text-content">{result.newCustomersInPeriod}</div>
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    }
-    default:
-      return null;
-  }
 }
