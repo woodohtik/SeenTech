@@ -461,24 +461,34 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       // order_items existing at all for an order IS the POS-sale signal
       // (only create_pos_sale ever inserts there), so fetch that set once
       // here and let applyOrders use it instead of guessing from items.
-      const { data: itemRows, error: itemsError } = await supabase
-        .from('order_items')
-        .select('order_id')
-        .eq('tenant_id', tenantId);
+      // The three reads below do not depend on each other or on the orders
+      // themselves, so they go out together.
+      //  - order ids that have any order_items row: a ready-made POS sale.
+      //  - custom-type rows in full: the tailoring lines. They live in
+      //    order_items since create_tailoring_order (and always did for a
+      //    tailoring line sold through the old POS cart), so "has order_items
+      //    rows" alone no longer means a ready-made sale.
+      //  - order_history of tailoring-kind orders, which keep their history
+      //    there rather than in notes.
+      const [
+        { data: itemRows, error: itemsError },
+        { data: customRows, error: customError },
+        { data: historyRows, error: historyError },
+      ] = await Promise.all([
+        supabase.from('order_items').select('order_id').eq('tenant_id', tenantId),
+        supabase.from('order_items').select('*').eq('tenant_id', tenantId).eq('type', 'custom'),
+        supabase
+          .from('order_history')
+          .select('order_id, status, notes, updated_at, updated_by_name, updated_by_staff, orders!inner(kind)')
+          .eq('tenant_id', tenantId)
+          .eq('orders.kind', 'tailoring')
+          .order('updated_at', { ascending: true }),
+      ]);
       if (itemsError) throw itemsError;
+      if (customError) throw customError;
+      if (historyError) console.warn('[Orders] order history unavailable:', historyError);
       const ordersWithItemRows = new Set((itemRows || []).map((r) => r.order_id));
 
-      // Tailoring lines live in order_items too since create_tailoring_order
-      // (and always did for a tailoring line sold through the old POS cart),
-      // so "has order_items rows" alone no longer means a ready-made sale.
-      // Custom-type rows are the tailoring lines: read them in full and show
-      // their orders here.
-      const { data: customRows, error: customError } = await supabase
-        .from('order_items')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .eq('type', 'custom');
-      if (customError) throw customError;
       const linesByOrder = new Map<string, any[]>();
       (customRows || []).forEach((row: any) => {
         const list = linesByOrder.get(row.order_id) || [];
@@ -486,14 +496,6 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         linesByOrder.set(row.order_id, list);
       });
 
-      // A tailoring-kind order keeps its history in order_history, not in notes.
-      const { data: historyRows, error: historyError } = await supabase
-        .from('order_history')
-        .select('order_id, status, notes, updated_at, updated_by_name, updated_by_staff, orders!inner(kind)')
-        .eq('tenant_id', tenantId)
-        .eq('orders.kind', 'tailoring')
-        .order('updated_at', { ascending: true });
-      if (historyError) console.warn('[Orders] order history unavailable:', historyError);
       const historyByOrder = new Map<string, OrderHistory[]>();
       (historyRows || []).forEach((row: any) => {
         const list = historyByOrder.get(row.order_id) || [];
@@ -823,6 +825,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       currentStatus: legacyOrderStatusFor(order.status, workflowStages),
       targetStatus: legacyOrderStatusFor(status, workflowStages),
       fabricDeductedAt: (order as any).fabricDeductedAt,
+      kind: (order as any).kind,
     });
     if (deductionDue && fabricLines.length > 0) {
       setCuttingPrompt({ id, status, notes, lines: fabricLines });
@@ -880,7 +883,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         ? {
             ...o, status, history: updatedHistory,
             ...(fabricLines ? {
-              fabricDeductedAt: new Date().toISOString(),
+              // Mirrors the server: stamped only when something was deducted.
+              ...(fabricLines.some((l) => l.meters > 0) ? { fabricDeductedAt: new Date().toISOString() } : {}),
               items: (o.items || []).map((item: any, index: number) => {
                 const line = fabricLines.find((l) => l.lineKey === (item.id ? String(item.id) : `idx-${index}`));
                 return line ? { ...item, consumedMeters: line.meters } : item;

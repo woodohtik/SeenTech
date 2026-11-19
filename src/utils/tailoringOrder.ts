@@ -201,11 +201,17 @@ export function isFabricDeductionDue(input: {
   currentStatus: string;
   targetStatus: string;
   fabricDeductedAt?: string | null;
+  /** 'tailoring' for an order saved through create_tailoring_order. */
+  kind?: string | null;
 }): boolean {
   if (input.fabricDeductedAt) return false;
   const target = STAGE_RANK[input.targetStatus];
   if (target === undefined || target < STAGE_RANK.cutting) return false;
-  // An order already at or past cutting had its fabric handled when it got there.
+  // The server stamps a tailoring-kind order only after a real deduction, so
+  // one that passed cutting with no figure entered is still due at its next move.
+  if (input.kind === 'tailoring') return true;
+  // An older order carries no stamp: its fabric was handled when it reached
+  // cutting, so only the move that first takes it there is due.
   const current = STAGE_RANK[input.currentStatus];
   return current === undefined || current < STAGE_RANK.cutting;
 }

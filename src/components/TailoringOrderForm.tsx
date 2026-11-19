@@ -446,7 +446,8 @@ function TailoringOrderFormBody({
     (async () => {
       try {
         const [{ data: custData }, { data: fabricData }, { data: staffData }, { data: tenantRow }, { data: mainBranch }] = await Promise.all([
-          supabase.from('customers').select('*').eq('tenant_id', tenantId),
+          // Only what the form shows: the picker's name and the measurements panel.
+          supabase.from('customers').select('id, name, phone, measurements').eq('tenant_id', tenantId),
           supabase.from('inventory_items').select('*').eq('tenant_id', tenantId).eq('category', 'fabric'),
           supabase.from('staff').select('id, name, role, status').eq('tenant_id', tenantId).eq('role', 'tailor'),
           supabase.from('tenants').select('*').eq('id', tenantId).maybeSingle(),
@@ -454,9 +455,7 @@ function TailoringOrderFormBody({
         ]);
         if (cancelled) return;
 
-        setCustomers((custData || []).map((c: any) => ({
-          ...c, isTest: c.is_test, isB2B: c.is_b2b, createdAt: c.created_at, tenantId: c.tenant_id,
-        }) as unknown as Customer));
+        setCustomers((custData || []) as unknown as Customer[]);
         setFabrics(fabricData || []);
         setTailors((staffData || []).map((s: any) => ({ id: s.id, name: s.name })));
         setTax(resolveTailoringTax(tenantRow));

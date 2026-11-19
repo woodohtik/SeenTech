@@ -1,4 +1,5 @@
 import { supabase } from '../supabase/client';
+import i18n from 'i18next';
 import { offlineDb, type OutboxEntry } from './db';
 import { requestPersistentStorage } from './persistentStorage';
 import { onConnectivityChange, checkConnectivityNow } from './connectivity';
@@ -169,8 +170,29 @@ async function syncEntry(entry: OutboxEntry): Promise<'synced' | 'failed'> {
       if (error) throw error;
     } else if (entry.type === 'tailoring_order') {
       const payload = entry.payload as { p_operation_id: string; p_order: unknown; p_items: unknown };
-      const { error } = await supabase.rpc('create_tailoring_order', payload);
+      const { data, error } = await supabase.rpc('create_tailoring_order', payload);
       if (error) throw error;
+      // The staff member took a deposit while offline, but by the time this
+      // synced they had no open shift, so the server saved the order without
+      // it. Nobody is looking at a form now: leave a notification on the shop.
+      if (data?.deposit_skipped && !data?.replayed && data?.order?.tenant_id) {
+        try {
+          await supabase.from('notifications').insert({
+            tenant_id: data.order.tenant_id,
+            title: i18n.t('orders.deposit_needs_shift_title'),
+            message: i18n.t('orders.deposit_skipped_on_sync', {
+              number: data.order.order_number || '',
+              customer: data.order.customer_name || '',
+            }),
+            type: 'order',
+            status: 'unread',
+            created_at: new Date().toISOString(),
+            metadata: { order_id: data.order.id },
+          });
+        } catch (notifyErr) {
+          console.warn('[outbox] could not record the skipped-deposit notice:', notifyErr);
+        }
+      }
     } else if (entry.type === 'order_create') {
       // Legacy: queued by the direct-insert path before create_tailoring_order.
       // Nothing enqueues this type any more; it stays so old entries still drain.

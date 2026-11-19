@@ -154,6 +154,15 @@ describe('isFabricDeductionDue', () => {
     expect(isFabricDeductionDue({ currentStatus: 'sewing', targetStatus: 'cutting' })).toBe(false);
   });
 
+  it('stays due for a tailoring-kind order until something was actually deducted', () => {
+    // It reached cutting with no fabric figure, so the server left it unstamped.
+    expect(isFabricDeductionDue({ currentStatus: 'cutting', targetStatus: 'sewing', kind: 'tailoring' })).toBe(true);
+    expect(isFabricDeductionDue({
+      currentStatus: 'cutting', targetStatus: 'sewing', kind: 'tailoring', fabricDeductedAt: '2026-11-19T10:00:00Z',
+    })).toBe(false);
+    expect(isFabricDeductionDue({ currentStatus: 'cutting', targetStatus: 'cancelled', kind: 'tailoring' })).toBe(false);
+  });
+
   it('is never due for a cancellation or a stage before cutting', () => {
     expect(isFabricDeductionDue({ currentStatus: 'measurements_taken', targetStatus: 'cancelled' })).toBe(false);
     expect(isFabricDeductionDue({ currentStatus: 'measurements_taken', targetStatus: 'measurements_taken' })).toBe(false);

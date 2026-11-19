@@ -1971,7 +1971,8 @@
     "cutting_fabric_line": "{{garment}} × {{count}} قطع",
     "cutting_fabric_input_label": "كمية {{fabric}} بالمتر",
     "cutting_fabric_total": "المجموع: {{meters}} متر ({{yards}} ياردة)",
-    "cutting_fabric_confirm": "خصم ونقل الطلب"
+    "cutting_fabric_confirm": "خصم ونقل الطلب",
+    "deposit_skipped_on_sync": "الطلب {{number}} للعميل {{customer}} أُدخل بدون اتصال ومعه عربون، وعند المزامنة لم تكن هناك وردية مفتوحة فحُفظ بدون العربون. افتح وردية ثم سجّل الدفعة من شاشة الطلب."
   },
   "permissions": {
     "access_denied_desc": "غير محدد",
