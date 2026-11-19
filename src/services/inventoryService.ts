@@ -61,11 +61,13 @@ export async function checkStockAvailability(
     targetBranchId = branches.id;
   }
 
-  // Previously one round trip per item to resolve inventory_items.id by
-  // name, plus one more per item to read its branch_inventory quantity --
-  // an order with N lines meant 2N sequential queries. Batch both lookups
-  // into two queries total and do the per-item comparison in JS.
-  const fabricNames = [...new Set(items.map(item => item.fabric))];
+  // Lines on the customer's own cloth take nothing from stock.
+  const stockLines = items.filter(item => item.fabric && item.fabric !== 'custom' && item.fabricId !== 'custom');
+
+  // Two queries for the whole order: resolve the fabrics (by id when the line
+  // carries one, by name for older callers), then read their branch stock.
+  const fabricIds = [...new Set(stockLines.map(item => item.fabricId).filter(Boolean))] as string[];
+  const fabricNames = [...new Set(stockLines.filter(item => !item.fabricId).map(item => item.fabric))];
   const { data: inventoryItems } = fabricNames.length
     ? await supabase
         .from('inventory_items')
@@ -75,7 +77,7 @@ export async function checkStockAvailability(
     : { data: [] as { id: string; name: string }[] };
 
   const itemIdByName = new Map((inventoryItems ?? []).map(row => [row.name, row.id]));
-  const itemIds = [...new Set(itemIdByName.values())];
+  const itemIds = [...new Set([...fabricIds, ...itemIdByName.values()])];
 
   const { data: branchInventory } = itemIds.length
     ? await supabase
@@ -85,20 +87,30 @@ export async function checkStockAvailability(
         .in('item_id', itemIds)
     : { data: [] as { item_id: string; quantity: number }[] };
 
-  const quantityByItemId = new Map((branchInventory ?? []).map(row => [row.item_id, row.quantity]));
+  const quantityByItemId = new Map((branchInventory ?? []).map(row => [row.item_id, Number(row.quantity) || 0]));
 
-  for (const item of items) {
-    const inventoryItemId = itemIdByName.get(item.fabric);
+  // Meters needed per fabric: two lines on the same cloth add up.
+  const neededByItemId = new Map<string, { meters: number; label: string }>();
+  for (const item of stockLines) {
+    const inventoryItemId = item.fabricId || itemIdByName.get(item.fabric);
     if (!inventoryItemId) {
-      missingItems.push(item.fabric);
+      if (!missingItems.includes(item.fabric)) missingItems.push(item.fabric);
       continue;
     }
+    // A tailoring line counts pieces, so only its fabric figure is comparable;
+    // older lines without one still fall back to quantity x unit.
+    const meters = Number(item.consumedMeters)
+      || (item.quantityUnit === 'piece' ? 0 : convertToMeters(item.quantity, item.selectedUnit || 'meter'));
+    const entry = neededByItemId.get(inventoryItemId) ?? { meters: 0, label: item.fabric };
+    entry.meters += meters;
+    neededByItemId.set(inventoryItemId, entry);
+  }
 
-    const deductionAmount = item.consumedMeters || convertToMeters(item.quantity, item.selectedUnit || 'meter');
+  for (const [inventoryItemId, needed] of neededByItemId) {
+    if (!needed.meters) continue;
     const availableQuantity = quantityByItemId.get(inventoryItemId);
-
-    if (availableQuantity === undefined || availableQuantity < deductionAmount) {
-      missingItems.push(item.fabric);
+    if (availableQuantity === undefined || availableQuantity < needed.meters) {
+      missingItems.push(needed.label);
     }
   }
 
@@ -150,7 +162,9 @@ export async function deductStock(
     const inventoryItemId = itemIdByName.get(item.fabric);
     if (!inventoryItemId) continue;
 
-    const deductionAmount = item.consumedMeters || convertToMeters(item.quantity, item.selectedUnit || 'meter');
+    // A line that counts pieces has no meaningful quantity-as-fabric fallback.
+    const deductionAmount = item.consumedMeters
+      || ((item as any).quantityUnit === 'piece' ? 0 : convertToMeters(item.quantity, item.selectedUnit || 'meter'));
     if (!deductionAmount) continue;
 
     /* --------------------------------------------------------------------

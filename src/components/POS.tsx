@@ -1,4 +1,3 @@
-import { formatItemStock } from '../utils/fabricUomConverter';
 import { ThermalInvoice, StandardInvoice, InvoiceData } from "./printing/InvoiceReceipt";
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { formatSaudiPhone } from '../utils/phoneUtils';
@@ -62,8 +61,7 @@ import { useConfirm } from '../contexts/ConfirmContext';
 import { notifyNewOrderForStaff } from '../utils/orderNotify';
 import { submitZatcaInvoice } from '../utils/zatcaSubmit';
 import { generateZatcaQR } from '../lib/zatca';
-import VisualMeasurements from './VisualMeasurements';
-import ThobeMeasurementSelector from './ThobeMeasurementSelector';
+import TailoringOrderForm from './TailoringOrderForm';
 import Branding from './Branding';
 import { downloadInvoicePDF, shareOrDownloadInvoicePDF } from '../utils/pdfGenerator';
 import { buildWhatsAppMessage, getWhatsAppTemplate } from '../utils/whatsapp';
@@ -79,7 +77,7 @@ import VariantPickerModal from './ui/VariantPickerModal';
 import { isRtlLang } from '../lib/direction';
 import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
 import { cmToDisplayUnit, unitLabelKey, type MeasurementUnit } from '../utils/measurementUnits';
-import { ALL_NUMERIC_MEASUREMENT_KEYS, measurementRows } from '../constants/measurementFields';
+import { measurementRows } from '../constants/measurementFields';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import { useTenantCategoryPicker } from '../hooks/useTenantCategoryPicker';
 import { LEGACY_INVENTORY_CATEGORY_SEED } from '../services/categoryService';
@@ -1067,86 +1065,6 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       };
       reader.readAsDataURL(file);
     }
-  };
-
-  const [customItemForm, setCustomItemForm] = useState<Partial<OrderItem>>({
-    garmentType: 'ثوب سعودي',
-    price: 0,
-    quantity: 1,
-    fabric: '',
-    fabricId: ''
-  });
-  
-  const [customMeasurements, setCustomMeasurements] = useState<any>({});
-
-  const handleAddCustomItem = async () => {
-    if (!selectedCustomer) {
-      toastError(t('common.error'), t('pos.customer_required_custom_order'));
-      return;
-    }
-
-    if (!customItemForm.garmentType || !customItemForm.price || customItemForm.price <= 0) {
-      toastError(t('common.invalid_data'), t('pos.enter_garment_type_and_price'));
-      return;
-    }
-
-    // Merge measurements: if the customer has existing measurements, and the user provided new ones, combine them
-    const mergedMeasurements = {
-      ...(selectedCustomer.measurements || {}),
-      ...customMeasurements
-    };
-
-    // If there are measurements provided in the modal that weren't in the customer record, update the customer
-    if (Object.keys(customMeasurements).length > 0) {
-      try {
-        await supabase
-          .from('customers')
-          .update({ measurements: mergedMeasurements })
-          .eq('id', selectedCustomer.id);
-        
-        // Update local state so it reflects immediately
-        setSelectedCustomer({
-          ...selectedCustomer,
-          measurements: mergedMeasurements
-        });
-      } catch (error) {
-        console.error('Error updating customer measurements:', error);
-      }
-    }
-
-    // Separate numeric measurements and styling fields
-    const measurementKeys: readonly string[] = ALL_NUMERIC_MEASUREMENT_KEYS;
-    
-    const numericMeasurements: any = {};
-    const stylingFields: any = {};
-
-    for (const [key, value] of Object.entries(mergedMeasurements)) {
-      if (measurementKeys.includes(key)) {
-        numericMeasurements[key] = value;
-      } else {
-        stylingFields[key] = value;
-      }
-    }
-
-    setCart(prev => [...prev, {
-      id: Math.random().toString(36).substr(2, 9),
-      ...customItemForm,
-      ...stylingFields,
-      measurements: numericMeasurements,
-      type: 'custom',
-      status: 'measurements_taken'
-    } as any]);
-    setIsCustomOrderModalOpen(false);
-    
-    // Reset form
-    setCustomItemForm({
-      garmentType: 'ثوب سعودي',
-      price: 0,
-      quantity: 1,
-      fabric: '',
-      fabricId: ''
-    });
-    setCustomMeasurements({});
   };
 
   const removeFromCart = (id: string) => {
@@ -3098,264 +3016,16 @@ const invoiceData: InvoiceData | null = completedOrder ? {
         )}
       </AnimatePresence>
 
-      {/* Custom Order Modal Refactored to Bottom Sheet */}
-      <AnimatePresence>
-        {isCustomOrderModalOpen && (
-          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto font-sans">
-            <motion.div 
-              initial={shouldReduceMotion ? false : { scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={shouldReduceMotion ? undefined : { scale: 0.95, opacity: 0, y: 20 }}
-              transition={shouldReduceMotion ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-[clamp(320px,94vw,1100px)] max-h-[90vh] rounded-[var(--radius-card)] bg-[var(--surface)] shadow-2xl flex flex-col my-auto border border-border z-10 overflow-hidden" 
-              dir={isRtl ? 'rtl' : 'ltr'}
-            >
-              {/* Header (Fixed) */}
-              <div className="sticky top-0 z-10 flex items-center justify-between p-4 sm:p-6 border-b border-[var(--border)] bg-[var(--surface)] shrink-0 bg-brand/5">
-                <h2 className="text-base sm:text-lg lg:text-xl font-black text-content flex items-center gap-3">
-                  <div className="p-2.5 bg-brand text-white rounded-2xl shrink-0 shadow-sm">
-                    <Scissors size={20} />
-                  </div>
-                  {t('pos.custom_tailor')}
-                </h2>
-                <button onClick={() => setIsCustomOrderModalOpen(false)} aria-label={t('common.close')} className="p-2 hover:bg-surface-muted rounded-full transition-colors shadow-sm text-content-muted">
-                  <X size={20} />
-                </button>
-              </div>
-              
-              {/* Body (Scrollable) */}
-              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-                {/* Customer Selector inside Modal */}
-                <div className="bg-brand/5 p-4 rounded-xl border border-brand/10 space-y-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-sm font-black text-content flex items-center gap-2">
-                      <User size={18} className="text-brand" />
-                      {t('common.customer')}
-                    </label>
-                    {!selectedCustomer && (
-                      <span className="text-xs text-danger font-bold">
-                        {t('pos.customer_required_for_custom')}
-                      </span>
-                    )}
-                  </div>
-                  
-                  <div className="flex gap-2 relative z-50">
-                    <Combobox value={selectedCustomer} onChange={(customer: Customer | null) => {
-                      setSelectedCustomer(customer);
-                      if (customer) {
-                         setIsB2B(customer.isB2B || !!customer.companyName || !!customer.trn);
-                         setB2bData({
-                            companyName: customer.companyName || '',
-                            trn: customer.trn || ''
-                         });
-                         // Auto-fill measurements if exist
-                         if (customer.measurements) {
-                           setCustomMeasurements(customer.measurements);
-                         } else {
-                           setCustomMeasurements({});
-                         }
-                      } else {
-                         setIsB2B(false);
-                         setB2bData({ companyName: '', trn: '' });
-                         setCustomMeasurements({});
-                      }
-                    }}>
-                      <div className="relative flex-1">
-                        <Combobox.Input
-                          className="w-full p-3 bg-surface text-content border border-border rounded-xl focus:ring-2 focus:ring-brand focus:border-brand shadow-sm font-medium rtl:pr-10 ltr:pl-10"
-                          placeholder={t('pos.search_customer')}
-                          displayValue={(person: Customer) => person?.name || ''}
-                          onChange={(event) => setCustomerQuery(event.target.value)}
-                        />
-                        <Combobox.Button className="absolute inset-y-0 ltr:right-0 rtl:left-0 flex items-center px-3">
-                          <User className="w-5 h-5 text-content-muted" aria-hidden="true" />
-                        </Combobox.Button>
-                        <Transition
-                          as={React.Fragment}
-                          leave="transition ease-in duration-100"
-                          leaveFrom="opacity-100"
-                          leaveTo="opacity-0"
-                          afterLeave={() => setCustomerQuery('')}
-                        >
-                          <Combobox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-xl bg-surface border border-border text-content py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-[100]">
-                            {customers
-                              .filter((person) =>
-                                person.name.toLowerCase().includes(customerQuery.toLowerCase()) ||
-                                person.phone.includes(customerQuery)
-                              )
-                              .map((person) => (
-                              <Combobox.Option
-                                key={person.id}
-                                className={({ active }) =>
-                                  `relative cursor-pointer select-none py-2 px-4 ${
-                                    active ? 'bg-brand text-white' : 'text-content'
-                                  }`
-                                }
-                                value={person}
-                              >
-                                <span className="block truncate font-medium">{person.name}</span>
-                                <span className="block text-xs opacity-75">{person.phone}</span>
-                              </Combobox.Option>
-                            ))}
-                          </Combobox.Options>
-                        </Transition>
-                      </div>
-                    </Combobox>
-                    <button 
-                      onClick={() => setIsAddCustomerModalOpen(true)}
-                      className="px-3 bg-[var(--surface)] border border-border rounded-xl text-brand hover:bg-brand hover:text-white transition-all flex items-center justify-center shrink-0 shadow-sm"
-                      title={t('pos.add_new_customer')}
-                    >
-                      <UserPlus size={20} />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                  <IconInput
-                    type="text"
-                    label={t('pos.garment_type_label')}
-                    value={customItemForm.garmentType}
-                    onChange={(e) => setCustomItemForm({...customItemForm, garmentType: e.target.value})}
-                  />
-                  <div>
-                    <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">{t('orders.price')}</label>
-                    <div className="flex items-center bg-surface border border-border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-brand/20 focus-within:border-brand transition-all">
-                      <button
-                        type="button"
-                        onClick={() => setCustomItemForm({...customItemForm, price: Math.max(0, (customItemForm.price || 0) - 1)})}
-                        aria-label={t('pos.decrease_quantity')}
-                        className="w-10 h-10 shrink-0 flex items-center justify-center text-content-muted hover:bg-surface-muted hover:text-content transition-colors"
-                      >-</button>
-                      <input
-                        type="number"
-                        value={customItemForm.price || ''}
-                        onChange={(e) => setCustomItemForm({...customItemForm, price: e.target.value === '' ? 0 : Number(e.target.value)})}
-                        className="w-full min-w-0 flex-1 bg-transparent border-none outline-none focus:ring-0 p-2.5 sm:p-3 text-center text-sm sm:text-base font-semibold text-content"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setCustomItemForm({...customItemForm, price: (customItemForm.price || 0) + 1})}
-                        aria-label={t('pos.increase_quantity')}
-                        className="w-10 h-10 shrink-0 flex items-center justify-center text-content-muted hover:bg-surface-muted hover:text-content transition-colors"
-                      >+</button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">{t('orders.fabric')}</label>
-                    <SmartSelect
-                      value={customItemForm.fabricId || ''}
-                      onChange={(val) => {
-                        const fabric = inventory.find(i => i.id === val);
-                        setCustomItemForm({
-                          ...customItemForm,
-                          fabricId: val,
-                          fabric: fabric?.name || ''
-                        });
-                      }}
-                      className="w-full"
-                      options={[
-                        { value: '', label: t('orders.choose_fabric') },
-                        ...inventory.filter(i => i.category === 'fabric').map(item => ({ value: item.id, label: `${item.name} (${formatItemStock(item, branchStock[item.id] ?? item.quantity)})` })),
-                        { value: 'custom', label: t('orders.external_fabric') }
-                      ]}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest mb-2">{t('common.quantity')}</label>
-                    <div className="flex items-center bg-surface border border-border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-brand/20 focus-within:border-brand transition-all">
-                      <button
-                        type="button"
-                        onClick={() => setCustomItemForm({...customItemForm, quantity: Math.max(1, (customItemForm.quantity || 1) - 1)})}
-                        aria-label={t('pos.decrease_quantity')}
-                        className="w-10 h-10 shrink-0 flex items-center justify-center text-content-muted hover:bg-surface-muted hover:text-content transition-colors"
-                      >-</button>
-                      <input
-                        type="number"
-                        value={customItemForm.quantity || ''}
-                        onChange={(e) => setCustomItemForm({...customItemForm, quantity: e.target.value === '' ? 0 : Number(e.target.value)})}
-                        className="w-full min-w-0 flex-1 bg-transparent border-none outline-none focus:ring-0 p-2.5 sm:p-3 text-center text-sm sm:text-base font-semibold text-content"
-                        min="1"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setCustomItemForm({...customItemForm, quantity: (customItemForm.quantity || 1) + 1})}
-                        aria-label={t('pos.increase_quantity')}
-                        className="w-10 h-10 shrink-0 flex items-center justify-center text-content-muted hover:bg-surface-muted hover:text-content transition-colors"
-                      >+</button>
-                    </div>
-                  </div>
-                </div>
-
-                {selectedCustomer && (
-                  <div className="bg-brand/5 p-4 rounded-xl border border-brand/10 space-y-4">
-                    <div className="flex items-center gap-2 text-brand mb-2">
-                      <Ruler size={18} />
-                      <h4 className="font-bold text-sm">{t('pos.customer_saved_measurements')}</h4>
-                    </div>
-                    <div className="grid grid-cols-4 gap-2">
-                      {[
-                        { label: t('measurements.length'), value: selectedCustomer.measurements?.length },
-                        { label: t('measurements.shoulder'), value: selectedCustomer.measurements?.shoulder },
-                        { label: t('measurements.chest'), value: selectedCustomer.measurements?.chest },
-                        { label: t('measurements.sleeve'), value: selectedCustomer.measurements?.sleeve },
-                      ].map((m) => {
-                        const displayValue = typeof m.value === 'number' ? cmToDisplayUnit(m.value, measurementUnit) : m.value;
-                        return (
-                          <div key={m.label} className="bg-surface p-2 rounded-lg border border-brand/10 text-center">
-                            <p className="text-[10px] text-content-muted">{m.label}</p>
-                            <p className="text-sm font-bold text-brand">
-                              {displayValue ? <>{displayValue} <span className="text-[9px] text-content-muted">{t(unitLabelKey(measurementUnit))}</span></> : '-'}
-                            </p>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <p className="text-xs text-content-muted mt-2 flex items-center gap-1">
-                      <Zap size={12} />
-                      {t('pos.measurements_auto_attached_note')}
-                    </p>
-                  </div>
-                )}
-
-                <div className="space-y-4 border-t border-border pt-6">
-                  <h4 className="text-xs sm:text-sm font-black text-content-muted uppercase tracking-widest flex items-center gap-2">
-                    <Zap size={16} />
-                    {t('pos.visual_details_interactive_measurements')}
-                  </h4>
-                  <VisualMeasurements 
-                    values={customMeasurements} 
-                    onChange={(field, val) => setCustomMeasurements({...customMeasurements, [field]: val})} 
-                  />
-                  
-                  <div className="mt-8 pt-8 border-t border-border">
-                    <h3 className="text-sm font-black text-content flex items-center gap-2 mb-4">
-                      <div className="w-1.5 h-4 bg-brand rounded-full" />
-                      {t('pos.interactive_visual_measurement_selector')}
-                    </h3>
-                    <ThobeMeasurementSelector
-                      values={customMeasurements as any || {}}
-                      onChange={(newMeasurements) => setCustomMeasurements({...customMeasurements, ...newMeasurements})}
-                      measurementUnit={measurementUnit}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer (Fixed) */}
-              <div className="sticky bottom-0 z-10 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6 sm:pt-6 sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))] border-t border-[var(--border)] bg-[var(--surface)] shrink-0">
-                <button
-                  onClick={handleAddCustomItem}
-                  className="w-full py-3 sm:py-3.5 bg-brand text-white rounded-xl font-bold hover:bg-brand/90 transition-all shadow-lg shadow-brand/20 flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer"
-                >
-                  <Plus size={18} />
-                  {t('pos.add_to_cart_btn')}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* New tailoring order: the same form the Orders page opens. It saves
+          the order directly and shows its receipt; a tailoring order no longer
+          goes through the cart (ready-made items still do). */}
+      <TailoringOrderForm
+        open={isCustomOrderModalOpen}
+        onClose={() => setIsCustomOrderModalOpen(false)}
+        tenantId={tenantId}
+        initialCustomerId={selectedCustomer?.id}
+        showReceipt
+      />
 
       {/* Add Customer Modal Refactored to Bottom Sheet */}
       <Transition appear show={isAddCustomerModalOpen} as={React.Fragment}>

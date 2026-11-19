@@ -1,12 +1,8 @@
 "use client";
-import { formatItemStock } from '../utils/fabricUomConverter';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { formatSaudiPhone } from '../utils/phoneUtils';
 import { fuzzyIncludes } from '../utils/fuzzySearch';
-import { calculateItemTax } from '../utils/b2bHelper';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
-import { useFabricEstimateSettings } from '../hooks/useFabricEstimateSettings';
 import { cmToDisplayUnit, unitLabelKey } from '../utils/measurementUnits';
 import { measurementRows } from '../constants/measurementFields';
 import { createPortal } from 'react-dom';
@@ -36,7 +32,6 @@ import {
   User,
   X,
   History,
-  Image as ImageIcon,
   Scissors,
   CheckSquare,
   Package,
@@ -45,31 +40,26 @@ import {
   Info,
   Filter,
   Zap,
-  UserPlus,
   Ruler,
   ChevronLeft,
   Shield,
   FileSpreadsheet,
-  Edit2,
-  Check,
   FileText
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase/client';
-import { handleFirestoreError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
+import { handleFirestoreError, OperationType } from '../lib/firebase';
 import { refreshOrdersCache, getCachedOrders } from '../lib/offline/cacheSync';
-import { isNetworkFailure, enqueueOrderCreate } from '../lib/offline/outbox';
-import { checkConnectivityNow } from '../lib/offline/connectivity';
-import { Order, Customer, OrderStatus, OrderHistory, InventoryItem, PaymentMethod, OrderItem, Staff, Tenant, Measurements, TaxInvoice } from '../types';
+import { isNetworkFailure } from '../lib/offline/outbox';
+import { Order, Customer, OrderStatus, OrderHistory, PaymentMethod, Staff, Tenant, TaxInvoice } from '../types';
 import { TaxInvoiceDocument } from './printing/TaxInvoiceModal';
 import { fetchTaxInvoiceForOrder, issueTaxInvoiceForOrder, syncTaxInvoicePaidAmount } from '../services/taxInvoiceService';
-import { cn, generateOrderNumber } from '../lib/utils';
+import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import PageSkeleton from "./PageSkeleton";
 import Header from './Header';
-import VisualMeasurements from './VisualMeasurements';
-import ThobeMeasurementSelector from './ThobeMeasurementSelector';
+import TailoringOrderForm from './TailoringOrderForm';
 import { motion, AnimatePresence } from 'motion/react';
 import { usePermissions } from '../hooks/usePermissions';
 import { useTranslation } from 'react-i18next';
@@ -77,12 +67,9 @@ import DateTimeDisplay from './DateTimeDisplay';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../contexts/ConfirmContext';
 import { useAuth } from '../contexts/AuthContext';
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { orderSchema, customerSchema } from '../lib/validations';
 import * as XLSX from 'xlsx';
 import { buildWhatsAppMessage, getWhatsAppTemplate, sendWhatsAppMessage } from '../utils/whatsapp';
-import { notifyOrderStatusChange, notifyNewOrderForStaff } from '../utils/orderNotify';
+import { notifyOrderStatusChange } from '../utils/orderNotify';
 import WhatsAppPhoneModal from './ui/WhatsAppPhoneModal';
 import ScannerModal from './ScannerModal';
 import { SmartSelect } from './ui/SmartSelect';
@@ -91,12 +78,12 @@ import { DatePicker } from './ui/DatePicker';
 import { IconInput } from './ui/IconInput';
 import { VoiceMicButton } from './ui/VoiceMicButton';
 import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
-import { checkStockAvailability, deductStock } from '../services/inventoryService';
+import { deductStock } from '../services/inventoryService';
 import { useStaff } from '../contexts/StaffContext';
 import { useBranding } from '../contexts/BrandingContext';
 import { analytics, AnalyticsEvent } from '../services/analyticsService';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
-import type { WorkflowStage, FieldSchema } from '../types/expansion';
+import type { WorkflowStage } from '../types/expansion';
 import { legacyOrderStatusFor } from '../services/verticalService';
 
 import { isRtlLang, localeOf } from '../lib/direction';
@@ -238,74 +225,6 @@ const PAYMENT_METHODS = [
   { id: 'partial', labelKey: 'common.payment_methods.partial', icon: Clock },
 ];
 
-/**
- * حقول تخصيص الصنف لأي نشاط غير mens_tailoring — بديل VisualMeasurements/padding/
- * additions/embroidery الثابتة، مصدرها getFieldSchemas(vertical, 'order_item')
- * (عبر useVerticalConfig). تُخزَّن القيم في items[index].attributes بدل أعمدة سمّاها
- * بالاسم مباشرة، لأن كل نشاط له حقوله الخاصة تماماً (انظر MIGRATION_extensibility).
- */
-const DynamicOrderItemFields = ({
-  index, fields, watch, setValue,
-}: {
-  index: number;
-  fields: FieldSchema[];
-  watch: (name: any) => any;
-  setValue: (name: any, value: any) => void;
-}) => {
-  const { t } = useTranslation();
-  if (fields.length === 0) return null;
-
-  return (
-    <div className="md:col-span-4 mt-4 pt-4 border-t border-border grid grid-cols-1 md:grid-cols-3 gap-4">
-      {fields.map((f) => {
-        const path = `items.${index}.attributes.${f.field_key}`;
-        const value = watch(path);
-        if (f.field_type === 'select') {
-          return (
-            <div key={f.field_key} className="space-y-1">
-              <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{f.label_ar}</label>
-              <SmartSelect
-                value={value ?? ''}
-                onChange={(val) => setValue(path, val)}
-                className="w-full bg-surface rounded-xl shadow-sm"
-                options={[{ value: '', label: t('orders.choose_option') }, ...(f.options || []).map((o) => ({ value: o, label: o }))]}
-              />
-            </div>
-          );
-        }
-        if (f.field_type === 'bool') {
-          return (
-            <div key={f.field_key} className="space-y-1">
-              <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{f.label_ar}</label>
-              <button
-                type="button"
-                onClick={() => setValue(path, !value)}
-                className={cn(
-                  "w-full px-3 py-2.5 rounded-xl border-2 text-xs font-bold transition-all",
-                  value ? "border-brand bg-brand/10 text-brand" : "border-border bg-surface text-content-muted"
-                )}
-              >
-                {value ? t('common.yes') : t('common.no')}
-              </button>
-            </div>
-          );
-        }
-        return (
-          <div key={f.field_key} className="space-y-1">
-            <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{f.label_ar}</label>
-            <input
-              type={f.field_type === 'number' ? 'number' : 'text'}
-              value={value ?? ''}
-              onChange={(e) => setValue(path, f.field_type === 'number' ? (e.target.value === '' ? '' : Number(e.target.value)) : e.target.value)}
-              className="w-full bg-surface border border-border rounded-xl p-3 text-xs font-bold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
-            />
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
 export default function Orders({ tenantId }: { tenantId: string }) {
   const { t, i18n } = useTranslation();
   // Unsupported browsers render VoiceMicButton as null -- without this
@@ -319,14 +238,12 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const { error: toastError, success: toastSuccess, warning: toastWarning, handleError } = useToast();
   const { confirm } = useConfirm();
   const measurementUnit = useMeasurementUnit(tenantId);
-  const fabricEstimateSettings = useFabricEstimateSettings(tenantId);
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [unpaidOrders, setUnpaidOrders] = useState<Order[]>([]);
   const [dueDetailsCustomer, setDueDetailsCustomer] = useState<Customer | null>(null);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [search, setSearch] = useState('');
@@ -335,10 +252,6 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   // وحدها تستخدم القيمة المؤجَّلة.
   const debouncedSearch = useDebouncedValue(search, 250);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
-  const [isEditingMeasurements, setIsEditingMeasurements] = useState(false);
-  const [tempMeasurements, setTempMeasurements] = useState<Measurements>({});
-  const [isSavingMeasurements, setIsSavingMeasurements] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   // Bug report (2026-11-16): InvoiceModal used to reconstruct a fake
@@ -405,7 +318,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const [searchParams] = useSearchParams();
   const { currentStaff } = useStaff();
   const { user: currentAuthUser } = useAuth();
-  const { workflowStages, orderItemFields, isLegacyVertical } = useVerticalConfig();
+  const { workflowStages, isLegacyVertical } = useVerticalConfig();
   const { hasPermission, checkPermission } = usePermissions(currentStaff);
 
   // قائمة مفاتيح الحالة المتاحة للاختيار (شريط التحديث السريع + قوائم الحالة المنسدلة
@@ -423,149 +336,34 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const canRefund = hasPermission('action.refund');
   const canDiscount = hasPermission('action.discount');
 
-  const defaultOrderValues = useMemo(() => ({
-    customerId: '',
-    deliveryDate: '',
-    assignedTailorId: '',
-    items: [{
-      // نص "ثوب" افتراضي منطقي فقط لمستأجري mens_tailoring؛ لأي نشاط آخر يبقى فارغاً
-      // ليدخل المستخدم وصف صنفه الفعلي بدل رؤية مصطلح خياطة لا يخصه.
-      garmentType: isLegacyVertical ? 'ثوب' : '',
-      quantity: 1,
-      price: 0,
-      fabric: '',
-      fabricId: '',
-      selectedUnit: 'meter',
-      consumedMeters: 0,
-      closureType: 'buttons' as const,
-      closureVisibility: 'visible' as const,
-      collarType: 'plain' as const,
-      cuffType: 'plain' as const,
-      pocketType: 'single' as const,
-      chestStyle: 'plain' as const,
-      collarPadding: 'soft' as const,
-      additions: '',
-      embroidery: ''
-    }],
-    // مرحلة البدء الافتراضية: أول مرحلة عمل فعلية للنشاط، أو 'measurements_taken'
-    // الثابتة لمستأجري mens_tailoring — انظر onSubmit لنفس المنطق عند الحفظ الفعلي.
-    status: (isLegacyVertical || workflowStages.length === 0 ? 'measurements_taken' : workflowStages[0].stage_key) as any,
-    paidAmount: 0,
-    paymentMethod: 'cash' as const,
-    discountAmount: 0,
-    notes: '',
-    internalNotes: '',
-    images: [] as string[],
-    isTest: false
-  }), [isLegacyVertical, workflowStages]);
-
-  const { register, control, handleSubmit, reset, watch, setValue, getValues, formState: { errors, isSubmitting, isValid } } = useForm({
-    resolver: zodResolver(orderSchema),
-    defaultValues: defaultOrderValues as any
-  });
+  // The new-order form itself is the shared TailoringOrderForm; this page only
+  // opens it (optionally with a customer preselected) and lists what it saves.
+  const [newOrderCustomerId, setNewOrderCustomerId] = useState<string | undefined>(undefined);
 
   const handleOpenModal = useCallback((customCustId?: string) => {
-    reset({
-      ...defaultOrderValues,
-      customerId: customCustId || ''
-    });
+    setNewOrderCustomerId(customCustId || undefined);
     setIsModalOpen(true);
-  }, [reset, defaultOrderValues]);
+  }, []);
 
   const handleCloseModal = useCallback(() => {
     setIsModalOpen(false);
-    setIsEditingMeasurements(false);
-    reset(defaultOrderValues);
-  }, [reset, defaultOrderValues]);
+  }, []);
 
   // Escape closes whichever of this page's modals/drawers is currently open,
-  // topmost (most recently opened) first -- none of these hand-rolled
-  // overlays previously had a keyboard way out.
+  // topmost (most recently opened) first. The new-order form handles its own.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
+      if (isModalOpen) return;
       if (isConfirmDeliveryOpen) { setIsConfirmDeliveryOpen(false); return; }
       if (isPaymentModalOpen) { setIsPaymentModalOpen(false); return; }
       if (isInvoiceOpen) { setIsInvoiceOpen(false); return; }
       if (isDetailsOpen) { setIsDetailsOpen(false); return; }
       if (dueDetailsCustomer) { setDueDetailsCustomer(null); return; }
-      if (isQuickAddOpen) { setIsQuickAddOpen(false); return; }
-      if (isModalOpen) { handleCloseModal(); return; }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isConfirmDeliveryOpen, isPaymentModalOpen, isInvoiceOpen, isDetailsOpen, dueDetailsCustomer, isQuickAddOpen, isModalOpen, handleCloseModal]);
-
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "items" as any
-  });
-
-  const watchItems = watch("items" as any);
-  const watchCustomerId = watch("customerId");
-  const selectedCustomer = customers.find(c => c.id === watchCustomerId);
-
-  useEffect(() => {
-    setIsEditingMeasurements(false);
-    if (selectedCustomer?.measurements) {
-      setTempMeasurements(selectedCustomer.measurements);
-    } else {
-      setTempMeasurements({});
-    }
-  }, [watchCustomerId, selectedCustomer]);
-
-  const onInvalidSubmit = useCallback((formErrors: any) => {
-    const missingFields: string[] = [];
-
-    if (formErrors.customerId) {
-      missingFields.push(t('common.customer'));
-    }
-    if (formErrors.deliveryDate) {
-      missingFields.push(t('orders.expected_delivery_date'));
-    }
-    if (formErrors.items) {
-      if (Array.isArray(formErrors.items)) {
-        formErrors.items.forEach((itemErr: any, idx: number) => {
-          if (!itemErr) return;
-          const itemNum = idx + 1;
-          if (itemErr.garmentType) missingFields.push(t('orders.missing_item_field', { field: t('orders.item_type'), index: itemNum }));
-          if (itemErr.fabric) missingFields.push(t('orders.missing_item_field', { field: t('orders.fabric'), index: itemNum }));
-          if (itemErr.price) missingFields.push(t('orders.missing_item_field', { field: t('orders.price'), index: itemNum }));
-          if (itemErr.quantity) missingFields.push(t('orders.missing_item_field', { field: t('common.quantity'), index: itemNum }));
-        });
-      } else {
-        missingFields.push(t('orders.required_items'));
-      }
-    }
-
-    const errorMessage = missingFields.length > 0
-      ? t('orders.complete_following_fields', { fields: missingFields.join(t('common.list_separator')) })
-      : t('orders.fill_required_fields');
-
-    toastError(errorMessage);
-
-    setTimeout(() => {
-      const errorTarget = document.querySelector('.border-danger, [aria-invalid="true"]');
-      if (errorTarget) {
-        errorTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 100);
-  }, [t, toastError]);
-  const totalAmount = watchItems?.reduce((acc: number, item: any) => acc + (Number(item.price) * Number(item.quantity) || 0), 0) || 0;
-
-  // Dynamic Tax Calculations for Custom Thobe Orders
-  const isTaxEnabled = !!tenant?.taxSettings?.enabled;
-  const vatRatePercentage = Number(tenant?.taxSettings?.vatRate || 15);
-  const vatRate = vatRatePercentage / 100;
-  const tailoringTaxType = tenant?.taxSettings?.tailoringTaxType || 'exclusive';
-
-  // مراجعة-الفريق-التقني-الكامل-2026-10-19.md (بنية): كانت هذه الصيغة
-  // الرياضية (شامل/غير شامل/معفى) معاد كتابتها هنا يدوياً بدل استدعاء
-  // calculateItemTax المشتركة -- نفس نمط التكرار الذي أدى سابقاً لفروق بين
-  // الرقم المعروض في الطلبات والرقم المطبوع في الفاتورة. isTaxEnabled=false
-  // يعادل 'exempt' هنا (كانت تحسب calculatedVat=0 دون تغيير المجموع).
-  const { basePrice: roundedSubtotal, taxAmount: roundedVat, finalPrice: roundedGrandTotal } =
-    calculateItemTax(totalAmount, isTaxEnabled ? tailoringTaxType : 'exempt', vatRate, 1);
+  }, [isConfirmDeliveryOpen, isPaymentModalOpen, isInvoiceOpen, isDetailsOpen, dueDetailsCustomer, isModalOpen]);
 
   const mapOrderData = useCallback((o: any): Order => {
     if (!o) return o;
@@ -728,9 +526,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         // of these four reads depends on another's result -- they were
         // fetched sequentially before, adding three extra network round
         // trips before this screen could finish loading.
-        const [{ data: custData }, { data: invData }, { data: staffData }, { data: tenantData }] = await Promise.all([
+        const [{ data: custData }, { data: staffData }, { data: tenantData }] = await Promise.all([
           supabase.from('customers').select('*').eq('tenant_id', tenantId),
-          supabase.from('inventory_items').select('*').eq('tenant_id', tenantId).eq('category', 'fabric'),
           // pin_hash intentionally excluded — never expose bcrypt PIN hashes
           // in a multi-row listing (see security note in Staff.tsx).
           supabase.from('staff').select('id, tenant_id, uid, name, email, phone, role, role_id, branch_id, status, must_change_pin, is_test, commission_type, commission_value, has_seen_onboarding, created_at, updated_at').eq('tenant_id', tenantId),
@@ -745,8 +542,6 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           tenantId: c.tenant_id
         }) as unknown as Customer);
         setCustomers(mappedCusts);
-
-        setInventory(invData as InventoryItem[] || []);
 
         setStaff((staffData as unknown as Staff[]) || []);
 
@@ -911,477 +706,17 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     </div>
   );
 
-  const QuickAddCustomerModal = () => {
-    const { register: regCust, handleSubmit: handleCustSubmit, reset: resetCust, watch: watchCust, setValue: setCustValue, formState: { errors: custErrors, isSubmitting: custSubmitting } } = useForm({
-      resolver: zodResolver(customerSchema),
-      defaultValues: {
-        name: '',
-        phone: '',
-        email: '',
-        companyName: '',
-        trn: '',
-        notes: '',
-        isTest: false,
-        isB2B: false,
-        address: '',
-        city: '',
-        measurements: {
-          length: 0,
-          shoulder: 0,
-          chest: 0,
-          waist: 0,
-          hips: 0,
-          sleeve: 0,
-          neck: 0,
-          collarType: 'classic',
-          cuffType: 'square',
-          pocketType: 'hidden',
-          chestStyle: 'plain',
-          shoulderStyle: 'plain'
-        },
-        styles: {
-          neckShape: 'round',
-          sleeveStyle: 'normal',
-          pocketType: 'none'
-        }
-      }
-    });
-
-    const watchCustMeasurements = watchCust('measurements');
-
-    const onQuickAddInvalid = (errs: any) => {
-      const missing: string[] = [];
-      if (errs.name) missing.push(t('login.full_name'));
-      if (errs.phone) missing.push(t('onboarding.fields.phone'));
-      
-      const msg = missing.length > 0 
-        ? t('orders.complete_customer_fields', { fields: missing.join(t('common.list_separator')) })
-        : t('orders.customer_name_phone_invalid');
-      toastError(msg);
-    };
-
-    const onQuickAddSubmit = async (data: any) => {
-      if (!tenantId) {
-        toastError(t('orders.error_store_not_found'));
-        return;
-      }
-
-      const { 
-        address, 
-        city, 
-        latitude, 
-        longitude, 
-        companyName, 
-        trn, 
-        isB2B, 
-        isTest, 
-        ...restData 
-      } = data;
-
-      // Nest the geographical data inside styles so we don't need a DB migration
-      const updatedStyles = {
-          ...(data.styles || {}),
-          address,
-          city,
-          latitude,
-          longitude
-      };
-
-      const customerData: any = {
-        name: data.name,
-        phone: formatSaudiPhone(data.phone),
-        email: data.email || null,
-        notes: data.notes || null,
-        measurements: data.measurements || {},
-        styles: updatedStyles,
-        company_name: companyName ? companyName : null,
-        vat_number: trn ? trn : null,
-        tenant_id: tenantId,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        is_test: !!isTest
-      };
-
-      try {
-        const { data: newCust, error } = await supabase
-          .from('customers')
-          .insert(customerData)
-          .select()
-          .single();
-        
-        if (error) throw error;
-
-        const mappedCust = {
-          ...newCust,
-          companyName: newCust.company_name,
-          trn: newCust.vat_number,
-          isTest: newCust.is_test,
-          isB2B: !!newCust.company_name,
-          createdAt: newCust.created_at,
-          tenantId: newCust.tenant_id
-        } as unknown as Customer;
-
-        setCustomers(prev => [mappedCust, ...prev]);
-        setValue('customerId', mappedCust.id);
-        toastSuccess(t('orders.customer_added_success'));
-        setIsQuickAddOpen(false);
-        resetCust();
-      } catch (error: any) {
-        console.error(error);
-        toastError(error ? getFriendlyErrorMessage(error) : t('orders.customer_add_failed'));
-      }
-    };
-
-    return (
-      <div
-        className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto font-sans"
-        onClick={() => setIsQuickAddOpen(false)}
-      >
-        <motion.div
-          role="dialog"
-          aria-modal="true"
-          aria-label={t('pos.add_new_customer')}
-          onClick={(e) => e.stopPropagation()}
-          initial={{ scale: 0.95, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.95, opacity: 0, y: 20 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="relative w-full max-w-[clamp(320px,94vw,1100px)] max-h-[90vh] rounded-[var(--radius-card)] bg-[var(--surface)] shadow-2xl flex flex-col my-auto border border-border overflow-hidden text-start"
-          dir={isRtlLang(i18n.language) ? 'rtl' : 'ltr'}
-        >
-          {/* Header (Fixed) */}
-          <div className="sticky top-0 z-10 flex items-center justify-between p-4 sm:p-6 border-b border-[var(--border)] bg-[var(--surface)] shrink-0 bg-brand/5">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-brand text-white rounded-2xl shrink-0 shadow-sm">
-                <UserPlus size={20} />
-              </div>
-              <h3 className="text-base sm:text-lg lg:text-xl font-black text-content">{t('pos.add_new_customer')}</h3>
-            </div>
-            <button type="button" onClick={() => setIsQuickAddOpen(false)} aria-label={t('common.close')} className="p-2 hover:bg-surface-muted rounded-full transition-colors shadow-sm text-content-muted">
-              <X size={20} />
-            </button>
-          </div>
-          
-          <form onSubmit={handleCustSubmit(onQuickAddSubmit, onQuickAddInvalid)} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-content-muted">{t('login.full_name')}</label>
-                <input {...regCust('name')} className="w-full bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand" />
-                {custErrors.name && <p className="text-[10px] text-danger font-bold">{custErrors.name.message}</p>}
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-content-muted">{t('onboarding.fields.phone')}</label>
-                <input
-                  {...regCust('phone')}
-                  onBlur={(e) => {
-                    const formatted = formatSaudiPhone(e.target.value);
-                    setCustValue('phone', formatted);
-                  }}
-                  className="w-full bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
-                />
-                {custErrors.phone && <p className="text-[10px] text-danger font-bold">{custErrors.phone.message}</p>}
-              </div>
-            </div>
-
-            <h4 className="text-lg font-bold text-content mb-4 pt-4 border-t border-border flex items-center gap-2">
-              <ShoppingBag size={20} className="text-brand" />
-              {t('orders.b2b_data_title')}
-            </h4>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-4 border-b border-border">
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-content-muted">{t('orders.company_name_label')} <span className="opacity-70 text-xs">{t('common.optional')}</span></label>
-                <input 
-                  type="text"
-                  {...regCust('companyName')} 
-                  className="w-full bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
-                  placeholder={t('orders.company_name_placeholder')}
-                />
-                {custErrors.companyName && <p className="text-xs text-danger font-bold">{custErrors.companyName.message}</p>}
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-content-muted">{t('orders.company_trn_label')} <span className="opacity-70 text-xs">{t('common.optional')}</span></label>
-                <input 
-                  type="text"
-                  {...regCust('trn')} 
-                  className="w-full bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
-                  dir="ltr"
-                  placeholder="300000000000003"
-                />
-                {custErrors.trn && <p className="text-xs text-danger font-bold">{custErrors.trn.message}</p>}
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h4 className="text-sm font-black text-content-muted uppercase tracking-widest flex items-center gap-2">
-                <Zap size={16} />
-                {t('orders.visual_details_title')}
-              </h4>
-              <VisualMeasurements 
-                values={watchCustMeasurements || {}} 
-                onChange={(field, val) => setCustValue(`measurements.${field}` as any, val)} 
-              />
-              
-              <div className="mt-8 pt-8 border-t border-border">
-                <h3 className="text-sm font-black text-content flex items-center gap-2 mb-4">
-                  <div className="w-1.5 h-4 bg-brand rounded-full" />
-                  {t('orders.visual_measurement_selector')}
-                </h3>
-                <ThobeMeasurementSelector
-                  values={(watchCustMeasurements as Measurements) || {}}
-                  onChange={(newMeasurements) => {
-                    Object.entries(newMeasurements).forEach(([key, value]) => {
-                      setCustValue(`measurements.${key}` as any, value);
-                    });
-                  }}
-                  measurementUnit={measurementUnit}
-                  fabricEstimate={{ settings: fabricEstimateSettings }}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2 pt-8 border-t border-border">
-              <label className="text-sm font-bold text-content-muted">{t('orders.extra_notes')}</label>
-              <textarea {...regCust('notes')} className="w-full bg-surface border border-border rounded-xl p-3 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold h-24 text-content" />
-            </div>
-
-            {/* isTest Flag */}
-            <div className="flex items-center gap-3 p-4 bg-warning/5 rounded-2xl border border-warning/10">
-              <input
-                type="checkbox"
-                id="isTest"
-                {...regCust('isTest')}
-                className="w-5 h-5 text-brand border-border rounded focus:ring-brand"
-              />
-              <label htmlFor="isTest" className="text-sm font-bold text-warning flex items-center gap-2">
-                <Zap size={16} />
-                {t('common.test_data')}
-              </label>
-            </div>
-
-            {/* Footer (Fixed) */}
-            <div className="sticky bottom-0 z-10 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6 sm:pt-6 sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))] border-t border-[var(--border)] bg-[var(--surface)] shrink-0 flex items-center justify-between gap-3 shadow-md">
-              <div>
-                {Object.keys(custErrors).length > 0 && (
-                  <p className="text-xs text-danger font-bold flex items-center gap-1">
-                    <AlertCircle size={14} />
-                    <span>{t('orders.customer_name_phone_required')}</span>
-                  </p>
-                )}
-              </div>
-              <div className="flex items-center gap-3">
-                <button type="button" onClick={() => setIsQuickAddOpen(false)} className="px-6 py-2.5 sm:px-8 sm:py-3.5 text-content-muted font-bold hover:text-content transition-colors text-sm sm:text-base">{t('common.cancel')}</button>
-                <button type="submit" disabled={custSubmitting} className="bg-brand text-white px-8 py-2.5 sm:px-12 sm:py-3.5 rounded-xl font-bold hover:bg-brand/90 shadow-lg shadow-brand/20 transition-all hover:scale-102 active:scale-98 disabled:opacity-50 text-sm sm:text-base">
-                  {custSubmitting ? t('common.saving') : t('orders.confirm_add_customer')}
-                </button>
-              </div>
-            </div>
-          </form>
-        </motion.div>
-      </div>
-    );
-  };
-
-  useEffect(() => {
-    // Strategy already handled in main useEffect
-  }, [tenantId]);
-
-// Toast effect removed as global toast handles it
-
-  const onSubmit = async (data: any) => {
-    if (!tenantId) {
-      toastError(t('orders.error_store_code_not_found'));
-      return;
+  // What the shared form reports after a save: show the new order in the lists
+  // right away, the same optimistic update the old in-page save did.
+  const handleOrderCreated = (row: Record<string, any>, { queuedOffline }: { queuedOffline: boolean }) => {
+    const mappedNewOrder = mapOrderData(row);
+    if (mappedNewOrder.items.some((item: any) => item.type === 'custom' || !item.type)) {
+      setOrders(prev => [mappedNewOrder, ...prev.filter(o => o.id !== mappedNewOrder.id)]);
     }
-
-    if (tenantStrategy === 'decentralized' && !currentStaff?.branchId) {
-      toastError(t('orders.error_staff_branch_required'));
-      return;
+    if (mappedNewOrder.remainingAmount > 0 && mappedNewOrder.status !== 'cancelled') {
+      setUnpaidOrders(prev => [mappedNewOrder, ...prev.filter(o => o.id !== mappedNewOrder.id)]);
     }
-
-    // مرحلة البدء: أول مرحلة عمل لنشاط هذا المستأجر إن كان نشاطاً ديناميكياً (غير
-    // mens_tailoring)، وإلا نفس 'measurements_taken' الثابت كما كان دوماً.
-    const initialStageKey: string = data.status
-      || (!isLegacyVertical && workflowStages.length > 0 ? workflowStages[0].stage_key : 'measurements_taken');
-
-    const initialHistory: OrderHistory = {
-      status: initialStageKey,
-      updatedAt: new Date().toISOString(),
-      updatedBy: currentStaff?.name || t('common.owner'),
-      updatedByUid: currentStaff?.id || currentAuthUser?.id,
-      notes: t('orders.order_created_note')
-    };
-
-    const isUuid = (val: string | undefined | null) =>
-      val ? /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val) : false;
-
-    const orderData = {
-      tenant_id: tenantId,
-      branch_id: (currentStaff?.branchId && isUuid(currentStaff.branchId)) ? currentStaff.branchId : null,
-      customer_id: isUuid(data.customerId) ? data.customerId : null,
-      customer_name: selectedCustomer?.name || t('orders.unknown_customer'),
-      order_number: generateOrderNumber(),
-      status: legacyOrderStatusFor(initialStageKey, workflowStages),
-      status_key: initialStageKey,
-      payment_method: data.paymentMethod || 'cash',
-      total_amount: roundedGrandTotal,
-      paid_amount: Number(data.paidAmount || 0),
-      tax_rate: isTaxEnabled ? (tailoringTaxType === 'exempt' ? 0 : vatRatePercentage) : 0,
-      tax_amount: roundedVat,
-      discount_amount: Number(data.discountAmount || 0),
-      order_date: new Date().toISOString(),
-      delivery_date: data.deliveryDate ? new Date(data.deliveryDate).toISOString() : new Date().toISOString(),
-      qr_code: `tailor-order-${Date.now()}`,
-      images: data.images || [],
-      notes: data.notes || '',
-      created_by: (currentStaff?.id && isUuid(currentStaff.id)) ? currentStaff.id : null,
-      is_test: !!data.isTest,
-      assigned_tailor_id: isUuid(data.assignedTailorId) ? data.assignedTailorId : null,
-      // Pass virtual items & history so encodeOrderRow interceptor can serialise them into notes field safely
-      items: data.items,
-      history: [initialHistory]
-    };
-
-    try {
-      // 1. Check Stock Availability -- skipped entirely while offline: it's
-      // a network call itself (branches + per-item inventory_items
-      // lookups), so it can't actually be verified right now, and letting
-      // it run would show a misleading "المستودع الرئيسي غير موجود" stock
-      // -shortage prompt when the real problem is just connectivity.
-      // A fresh ping (not the up-to-20s-stale cached connectivity flag)
-      // -- checkStockAvailability itself swallows its own network errors
-      // into that exact misleading "not found" result rather than
-      // throwing, so there's no way to distinguish the two after the
-      // fact; this has to be caught before calling it.
-      if (await checkConnectivityNow()) {
-        const { available, missingItems } = await checkStockAvailability(
-          data.items,
-          currentStaff?.branchId || '',
-          tenantId,
-          tenantStrategy
-        );
-
-        if (!available) {
-          if (!(await confirm(t('orders.stock_shortage_confirm', { items: missingItems.join(', ') })))) {
-            toastWarning(t('orders.order_cancelled_low_stock'));
-            return;
-          }
-        }
-      }
-
-      // Client-generated id (seen-offline-coverage-and-performance-task.md
-      // follow-up): included in orderData itself so a later offline-queued
-      // insert is idempotent the same way POS.tsx's operation_id is -- a
-      // retried sync after a dropped response hits a primary-key conflict
-      // instead of creating a duplicate order (see enqueueOrderCreate).
-      const orderId = globalThis.crypto.randomUUID();
-      (orderData as any).id = orderId;
-
-      let queuedOffline = false;
-      let newOrder: any;
-
-      try {
-        const { data: insertedOrder, error } = await supabase
-          .from('orders')
-          .insert(orderData)
-          .select()
-          .single();
-        if (error) throw error;
-        newOrder = insertedOrder;
-      } catch (insertErr) {
-        if (!isNetworkFailure(insertErr)) throw insertErr;
-        await enqueueOrderCreate(orderId, orderData);
-        queuedOffline = true;
-        newOrder = orderData;
-      }
-
-      if (!queuedOffline) {
-        void notifyNewOrderForStaff(newOrder.id);
-
-        // seen-status-fix-regressions-task.md item 5: an upfront deposit
-        // entered at order creation was written straight into
-        // orders.paid_amount with no `payments` row at all -- this order's
-        // shift_id is always NULL (Orders.tsx has no POS checkout
-        // context), so close_shift's orders-table sum never saw it either.
-        // The deposit was completely invisible to till reconciliation.
-        if (Number(orderData.paid_amount) > 0) {
-          try {
-            const shiftId = await getOpenShiftId(tenantId, currentStaff?.id);
-            await supabase.from('payments').insert({
-              tenant_id: tenantId,
-              order_id: newOrder.id,
-              invoice_id: null,
-              shift_id: shiftId,
-              amount: orderData.paid_amount,
-              method: orderData.payment_method,
-              received_by: (currentStaff?.id && isUuid(currentStaff.id)) ? currentStaff.id : null,
-              notes: t('orders.deposit_note', 'عربون عند إنشاء الطلب')
-            });
-          } catch (depositErr) {
-            console.warn('Failed to record order-creation deposit as a payments row:', depositErr);
-          }
-        }
-
-        // Insert order notification
-        try {
-          await supabase.from('notifications').insert({
-            tenant_id: tenantId,
-            title: t('orders.notification_new_order_title'),
-            message: t('orders.notification_new_order_message', { number: newOrder.order_number || '', customer: newOrder.customer_name || t('pos.walk_in_customer'), amount: newOrder.total_amount || 0 }),
-            type: 'order',
-            status: 'unread',
-            created_at: new Date().toISOString(),
-            metadata: { order_id: newOrder.id }
-          });
-        } catch (notifErr) {
-          console.warn('Failed to insert order notification:', notifErr);
-        }
-      }
-
-      const mappedNewOrder = mapOrderData(newOrder);
-      if (mappedNewOrder.items.some((item: any) => item.type === 'custom' || !item.type)) {
-        setOrders(prev => [mappedNewOrder, ...prev.filter(o => o.id !== mappedNewOrder.id)]);
-      }
-      if (mappedNewOrder.remainingAmount > 0 && mappedNewOrder.status !== 'cancelled') {
-        setUnpaidOrders(prev => [mappedNewOrder, ...prev.filter(o => o.id !== mappedNewOrder.id)]);
-      }
-
-      // Track Order Created
-      analytics.track(AnalyticsEvent.ORDER_CREATED, {
-        order_id: newOrder.id,
-        customer_id: orderData.customer_id || (orderData as any).customerId,
-        total_amount: orderData.total_amount,
-        items_count: orderData.items.length,
-        payment_method: orderData.payment_method
-      });
-
-      // Track Measurements Added (if customer is selected)
-      if (selectedCustomer?.measurements) {
-        analytics.track(AnalyticsEvent.MEASUREMENTS_ADDED, {
-          order_id: newOrder.id,
-          customer_id: orderData.customer_id || (orderData as any).customerId,
-          measurements: selectedCustomer.measurements
-        });
-      }
-
-      handleCloseModal();
-      if (queuedOffline) {
-        toastSuccess(
-          t('orders.order_queued_offline_title', 'سُجِّل الطلب محلياً'),
-          t('orders.order_queued_offline_desc', 'لا يوجد اتصال حالياً — سيُرفَع تلقائياً للخادم فور عودة الإنترنت.')
-        );
-        // Printing doesn't need the server round trip -- handlePrintOrder
-        // only reads local order data, so the cashier gets a receipt in
-        // hand immediately instead of waiting for connectivity to return.
-        void handlePrintOrder(mappedNewOrder);
-      } else {
-        router.refresh();
-        toastSuccess(t('orders.order_added_success'));
-      }
-    } catch (error: any) {
-      console.error('Order submission error:', error);
-      handleFirestoreError(error, OperationType.WRITE, 'orders');
-    }
+    if (!queuedOffline) router.refresh();
   };
 
   const updateStatus = async (id: string, status: string, notes?: string) => {
@@ -3138,7 +2473,6 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       <AnimatePresence>
         {isDetailsOpen && selectedOrder && <OrderDetailsDrawer order={selectedOrder} />}
       </AnimatePresence>
-      {isQuickAddOpen && <QuickAddCustomerModal />}
       {isConfirmDeliveryOpen && <ConfirmDeliveryModal />}
       {isPaymentModalOpen && selectedOrder && (
         <PaymentModal 
@@ -3265,600 +2599,19 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         )}
       </AnimatePresence>
 
-      {/* Create Order Modal Refactored to Bottom Sheet */}
-      {typeof document !== 'undefined' && createPortal(
-        <AnimatePresence>
-          {isModalOpen && (
-            <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center lg:p-4 overflow-hidden">
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={handleCloseModal}
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-              />
-              <motion.div
-              role="dialog"
-              aria-modal="true"
-              aria-label={t('orders.create_new_order')}
-              initial={{ y: '100%', opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: '100%', opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className={cn("relative w-full lg:max-w-4xl rounded-t-3xl lg:rounded-3xl shadow-2xl z-10 overflow-hidden h-[95vh] lg:h-auto lg:max-h-[90vh] flex flex-col border border-border bg-surface", isRtlLang(i18n.language) ? "text-right" : "text-left")}
-              dir={isRtlLang(i18n.language) ? "rtl" : "ltr"}
-            >
-              {/* Header (Fixed) */}
-              <div className="sticky top-0 z-10 flex items-center justify-between p-4 sm:p-6 border-b border-[var(--border)] bg-[var(--surface)] shrink-0 bg-brand/5">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-brand text-white rounded-2xl shrink-0 shadow-sm">
-                    <Plus size={20} />
-                  </div>
-                  <h3 className="text-base sm:text-lg lg:text-xl font-black text-content">{t('orders.create_new_order')}</h3>
-                </div>
-                <button type="button" onClick={handleCloseModal} aria-label={t('common.close')} className="p-2 hover:bg-surface-muted rounded-full transition-colors shadow-sm text-content-muted">
-                  <X size={20} />
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit(onSubmit, onInvalidSubmit)} className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-                  <OrderStepper
-                    currentStatus={isLegacyVertical || workflowStages.length === 0 ? 'measurements_taken' : workflowStages[0].stage_key}
-                    stages={isLegacyVertical ? undefined : workflowStages}
-                  />
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* Customer Selection & Info */}
-                    <div className="space-y-6">
-                      <div className="space-y-2">
-                        <label className="text-sm font-black text-content-muted uppercase tracking-widest">{t('common.customer')}</label>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 min-w-0">
-                            <Controller 
-                              name="customerId"
-                              control={control}
-                              render={({ field }) => (
-                                <SmartSelect 
-                                  value={field.value}
-                                  onChange={field.onChange}
-                                  options={[
-                                    { value: '', label: t('orders.choose_customer') },
-                                    ...customers.map(c => ({ value: c.id, label: c.name }))
-                                  ]}
-                                  error={!!errors.customerId}
-                                  className=""
-                                />
-                              )}
-                            />
-                          </div>
-                          <button 
-                            type="button" 
-                            onClick={() => setIsQuickAddOpen(true)}
-                            title={t('orders.add_new_customer')}
-                            className="w-12 h-12 bg-brand text-white rounded-2xl flex items-center justify-center hover:bg-brand/90 transition-all shrink-0 shadow-sm active:scale-95"
-                          >
-                            <UserPlus size={20} />
-                          </button>
-                        </div>
-                        {errors.customerId && <p className="text-xs text-danger font-bold mt-1">{String(errors.customerId.message)}</p>}
-                      </div>
-
-                      {selectedCustomer && (
-                        <motion.div 
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="bg-brand/5 p-5 rounded-3xl border border-brand/10 space-y-4"
-                        >
-                          <div className="flex items-center justify-between text-brand mb-1">
-                            <div className="flex items-center gap-2">
-                              <Ruler size={18} />
-                              <h4 className="font-black text-sm uppercase tracking-wider">{t('orders.customer_measurements_auto')}</h4>
-                            </div>
-                            {!isEditingMeasurements ? (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setTempMeasurements(selectedCustomer.measurements || {});
-                                  setIsEditingMeasurements(true);
-                                }}
-                                className="text-xs font-bold text-brand bg-surface border border-brand/20 hover:bg-brand hover:text-white px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
-                              >
-                                <Edit2 size={13} />
-                                <span>{t('common.edit')}</span>
-                              </button>
-                            ) : (
-                              <div className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => setIsEditingMeasurements(false)}
-                                  className="text-xs font-bold text-content-muted bg-surface hover:bg-surface-muted px-2.5 py-1 rounded-xl transition-all"
-                                >
-                                  {t('common.cancel')}
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={isSavingMeasurements}
-                                  onClick={async () => {
-                                    if (!selectedCustomer) return;
-                                    setIsSavingMeasurements(true);
-                                    try {
-                                      const { error } = await supabase
-                                        .from('customers')
-                                        .update({ measurements: tempMeasurements })
-                                        .eq('id', selectedCustomer.id);
-                                      if (error) throw error;
-
-                                      setCustomers(prev => prev.map(c => c.id === selectedCustomer.id ? { ...c, measurements: tempMeasurements } : c));
-                                      toastSuccess(t('orders.measurements_updated_success'));
-                                      setIsEditingMeasurements(false);
-                                    } catch (err) {
-                                      console.error(err);
-                                      toastError(t('orders.measurements_update_failed'));
-                                    } finally {
-                                      setIsSavingMeasurements(false);
-                                    }
-                                  }}
-                                  className="text-xs font-bold text-white bg-brand hover:bg-brand/90 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 shadow-sm active:scale-95 disabled:opacity-50"
-                                >
-                                  <Check size={13} />
-                                  <span>{isSavingMeasurements ? t('common.saving') : t('orders.save_measurements')}</span>
-                                </button>
-                              </div>
-                            )}
-                          </div>
-
-                          {!isEditingMeasurements ? (
-                            <>
-                              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                                {measurementRows(selectedCustomer.measurements, true).map((row) => ({ label: t(row.labelKey), value: row.value })).map((m) => {
-                                  const displayValue = typeof m.value === 'number' ? cmToDisplayUnit(m.value, measurementUnit) : m.value;
-                                  return (
-                                    <div key={m.label} className="bg-surface p-2 rounded-xl border border-brand/10 text-center">
-                                      <p className="text-[10px] text-content-muted font-bold">{m.label}</p>
-                                      <p className="text-sm font-black text-brand">
-                                        {displayValue ? <>{displayValue} <span className="text-[9px] text-content-muted font-bold">{t(unitLabelKey(measurementUnit))}</span></> : '-'}
-                                      </p>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                              
-                              {/* Visual Details Display */}
-                              <div className="pt-3 border-t border-brand/10 grid grid-cols-2 gap-2">
-                                {[
-                                  { label: t('measurements.collarType'), value: selectedCustomer.measurements?.collarType },
-                                  { label: t('measurements.cuffType'), value: selectedCustomer.measurements?.cuffType },
-                                  { label: t('measurements.pocketType'), value: selectedCustomer.measurements?.pocketType },
-                                  { label: t('measurements.chestStyle'), value: selectedCustomer.measurements?.chestStyle },
-                                ].filter(v => v.value).map((v) => (
-                                  <div key={v.label} className="flex items-center gap-2 bg-surface/50 p-2 rounded-lg border border-brand/5">
-                                    <Zap size={12} className="text-brand/40" />
-                                    <span className="text-[10px] font-bold text-content-muted">{v.label}: {v.value}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </>
-                          ) : (
-                            <div className="space-y-3 pt-1">
-                              <ThobeMeasurementSelector
-                                values={tempMeasurements}
-                                onChange={setTempMeasurements}
-                                measurementUnit={measurementUnit}
-                                fabricEstimate={{ settings: fabricEstimateSettings }}
-                              />
-                              <p className="text-xs font-bold text-content-muted pt-2 border-t border-brand/10">{t('orders.edit_style_details')}</p>
-                              <VisualMeasurements
-                                values={tempMeasurements as any}
-                                onChange={(field, val) => setTempMeasurements(prev => ({ ...prev, [field]: val }))}
-                              />
-                            </div>
-                          )}
-                        </motion.div>
-                      )}
-                    </div>
-
-                  {/* Delivery Info */}
-                  <div className="space-y-6">
-                    <div className="space-y-2">
-                      <label className="text-sm font-black text-content-muted uppercase tracking-widest">{t('orders.expected_delivery_date')}</label>
-                      <DatePicker
-                        value={watch('deliveryDate') || ''}
-                        onChange={(val) => setValue('deliveryDate', val, { shouldValidate: true, shouldDirty: true })}
-                      />
-                      {errors.deliveryDate && <p className="text-xs text-danger font-bold mt-1">{String(errors.deliveryDate.message)}</p>}
-                    </div>
-
-                    {/* Bug report (sprint 2 reports engine, 2026-11-17):
-                        nothing in this form ever wrote assigned_tailor_id
-                        -- the order_items-level commission trigger
-                        (20240704_tailor_commissions.sql) and its
-                        order-level replacement here
-                        (20261119000000_order_level_tailor_commission.sql)
-                        both need a tailor actually assigned to compute
-                        anything. One tailor per order (not per item),
-                        same as the commission trigger's own scope. */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-black text-content-muted uppercase tracking-widest">{t('orders.assigned_tailor')}</label>
-                      <SmartSelect
-                        value={watch('assignedTailorId' as any) || ''}
-                        onChange={(v) => setValue('assignedTailorId' as any, v, { shouldDirty: true })}
-                        options={[
-                          { value: '', label: t('orders.assigned_tailor_none') },
-                          ...staff.filter(s => s.role === 'tailor').map(s => ({ value: s.id, label: s.name }))
-                        ]}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-black text-content-muted uppercase tracking-widest">{t('orders.general_notes')}</label>
-                      <div className="relative">
-                        <textarea
-                          {...register('notes')}
-                          placeholder={t('orders.additional_instructions')}
-                          className="w-full bg-surface border border-border rounded-xl p-4 pe-10 outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand font-semibold h-32 resize-none text-content"
-                        />
-                        {voiceSupported && (
-                          <div className="absolute top-2 end-2">
-                            <VoiceMicButton onResult={(text) => setValue('notes', [getValues('notes'), text].filter(Boolean).join(' '))} />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Items Section */}
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h4 className="text-sm font-black text-content-muted uppercase tracking-widest flex items-center gap-2">
-                      <ShoppingBag size={16} />
-                      {t('orders.required_items')}
-                    </h4>
-                    <button 
-                      type="button" 
-                      onClick={() => append({ garmentType: isLegacyVertical ? 'ثوب' : '', quantity: 1, price: 0, fabric: '' })}
-                      className="bg-brand/5 text-brand px-4 py-2 rounded-xl text-xs font-black hover:bg-brand/10 transition-all flex items-center gap-2"
-                    >
-                      <Plus size={14} /> {t('orders.add_item')}
-                    </button>
-                  </div>
-                  
-                    <div className="space-y-4">
-                      {fields.map((field, index) => (
-                        <motion.div 
-                          initial={{ opacity: 0, x: 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          key={field.id} 
-                          className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-surface-muted p-6 rounded-2xl relative group border border-transparent hover:border-brand/10 transition-all"
-                        >
-                          <div className="space-y-1">
-                            <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.item_type')}</label>
-                            <input 
-                              {...register(`items.${index}.garmentType` as any)} 
-                              className={cn(
-                                "w-full bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand",
-                                (errors.items as any)?.[index]?.garmentType && "ring-2 ring-danger border-danger"
-                              )}
-                              placeholder={t(isLegacyVertical ? 'orders.item_type_placeholder' : 'orders.item_type_placeholder_generic')}
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.fabric')}</label>
-                            <Controller
-                              name={`items.${index}.fabric` as any}
-                              control={control}
-                              render={({ field }) => (
-                                <SmartSelect
-                                  value={field.value}
-                                  onChange={(val) => {
-                                    field.onChange(val);
-                                    const selectedFabric = inventory.find(i => i.name === val);
-                                    if (selectedFabric) {
-                                      setValue(`items.${index}.fabricId` as any, selectedFabric.id);
-                                      setValue(`items.${index}.selectedUnit` as any, selectedFabric.unit);
-                                      // Trigger calculation
-                                      const qty = watch(`items.${index}.quantity` as any) || 0;
-                                      setValue(`items.${index}.consumedMeters` as any, qty * (selectedFabric.conversionRate || 1));
-                                    }
-                                  }}
-                                  className={cn(
-                                    "w-full bg-surface rounded-xl shadow-sm",
-                                    (errors.items as any)?.[index]?.fabric && "ring-2 ring-danger"
-                                  )}
-                                  options={[
-                                    { value: '', label: t('orders.choose_fabric') },
-                                    ...inventory.map(item => ({ value: item.name, label: `${item.name} (${formatItemStock(item, item.quantity)})` })),
-                                    { value: 'custom', label: t('orders.external_fabric') }
-                                  ]}
-                                />
-                              )}
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.qty_and_unit')}</label>
-                            <div className="flex gap-1">
-                              <input 
-                                type="number" 
-                                step="0.01"
-                                {...register(`items.${index}.quantity` as any)} 
-                                onChange={(e) => {
-                                  const qty = Number(e.target.value);
-                                  const fabricName = watch(`items.${index}.fabric` as any);
-                                  const selectedFabric = inventory.find(i => i.name === fabricName);
-                                  if (selectedFabric) {
-                                    setValue(`items.${index}.consumedMeters` as any, qty * (selectedFabric.conversionRate || 1));
-                                  }
-                                  register(`items.${index}.quantity` as any).onChange(e);
-                                }}
-                                className={cn(
-                                  "w-2/3 bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand",
-                                  (errors.items as any)?.[index]?.quantity && "ring-2 ring-danger border-danger"
-                                )}
-                              />
-                              <div className="w-1/3">
-                                <Controller
-                                  name={`items.${index}.selectedUnit` as any}
-                                  control={control}
-                                  render={({ field }) => (
-                                    <SmartSelect
-                                      {...field}
-                                      className="w-full bg-surface rounded-xl text-xs font-bold shadow-sm"
-                                      options={[
-                                        { value: 'meter', label: t('inventory.unit_meter') },
-                                        { value: 'yard', label: t('inventory.unit_yard') },
-                                        { value: 'roll', label: t('orders.roll') },
-                                        { value: 'bolt', label: t('orders.bolt') }
-                                      ]}
-                                    />
-                                  )}
-                                />
-                              </div>
-                            </div>
-                            {watch(`items.${index}.consumedMeters` as any) > 0 && (
-                              <p className="text-[10px] text-brand font-bold mt-1">
-                                {t('orders.equivalent_meters', { meters: Number(watch(`items.${index}.consumedMeters` as any)).toFixed(2) })}
-                              </p>
-                            )}
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.price')}</label>
-                            <input 
-                              type="number" 
-                              {...register(`items.${index}.price` as any)} 
-                              className={cn(
-                                "w-full bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand",
-                                (errors.items as any)?.[index]?.price && "ring-2 ring-danger border-danger"
-                              )}
-                            />
-                          </div>
-
-                          {/* Visual Customization UI */}
-                          {isLegacyVertical ? (
-                            <div className="md:col-span-4 mt-4 pt-4 border-t border-border space-y-6">
-                              <VisualMeasurements
-                                values={watch(`items.${index}` as any)}
-                                onChange={(field, val) => setValue(`items.${index}.${field}` as any, val)}
-                              />
-
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                  <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.other_additions')}</label>
-                                  <input
-                                    {...register(`items.${index}.additions` as any)}
-                                    placeholder={t('orders.other_additions_placeholder')}
-                                    className="w-full bg-surface border border-border rounded-xl p-3 text-xs font-bold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
-                                  />
-                                </div>
-
-                                <div className="space-y-2">
-                                  <label className="text-[10px] text-content-muted font-bold uppercase tracking-wider">{t('orders.embroidery_label')}</label>
-                                  <input
-                                    {...register(`items.${index}.embroidery` as any)}
-                                    placeholder={t('orders.embroidery_placeholder')}
-                                    className="w-full bg-surface border border-border rounded-xl p-3 text-xs font-bold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            <DynamicOrderItemFields index={index} fields={orderItemFields} watch={watch} setValue={setValue} />
-                          )}
-
-                          {index > 0 && (
-                            <button 
-                              type="button" 
-                              onClick={() => remove(index)}
-                              className="absolute -right-2 -top-2 bg-danger text-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          )}
-                        </motion.div>
-                      ))}
-                    </div>
-                </div>
-
-                {/* Financials & Images */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="bg-brand text-white p-8 rounded-2xl shadow-2xl shadow-brand/10 space-y-6 relative overflow-hidden">
-                      <div className="absolute top-0 right-0 p-8 opacity-10 -rotate-12 scale-150">
-                        <ShoppingBag size={120} />
-                      </div>
-                      <div className="relative z-10 space-y-4">
-                        {isTaxEnabled ? (
-                          <>
-                            <div className="flex justify-between items-center text-sm border-b border-white/10 pb-2">
-                              <span className="text-white/70 font-medium">{t('orders.subtotal')}</span>
-                              <span className="font-bold text-white"><PriceDisplay amount={roundedSubtotal} /></span>
-                            </div>
-                            <div className="flex justify-between items-center text-sm border-b border-white/10 pb-2">
-                              <span className="text-white/70 font-medium">{t('orders.vat_label')} ({vatRatePercentage}%)</span>
-                              <span className="font-bold text-white"><PriceDisplay amount={roundedVat} /></span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-white/90 font-black text-sm uppercase tracking-widest">{t('orders.grand_total')}</span>
-                              <span className="text-3xl font-black text-white"><PriceDisplay amount={roundedGrandTotal} /></span>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="flex justify-between items-center">
-                            <span className="text-white/80 font-bold text-sm uppercase tracking-widest">{t('orders.grand_total')}</span>
-                            <span className="text-3xl font-black text-white"><PriceDisplay amount={roundedGrandTotal} /></span>
-                          </div>
-                        )}
-                        
-                        <div className="space-y-3 mt-6">
-                          <label className="text-xs font-bold text-white/60 uppercase tracking-widest">{t('orders.payment_method_label')}</label>
-                          <div className="grid grid-cols-2 gap-2">
-                            {PAYMENT_METHODS.map((method) => (
-                              <button
-                                key={method.id}
-                                type="button"
-                                onClick={() => setValue('paymentMethod' as any, method.id)}
-                                className={cn(
-                                  "flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-xs font-bold",
-                                  watch('paymentMethod' as any) === method.id ? "border-surface bg-surface text-brand shadow-lg" : "border-surface/20 bg-surface/10 text-surface"
-                                )}
-                              >
-                                <method.icon size={16} />
-                                {t(method.labelKey)}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="space-y-3 pt-6 border-t border-white/10 mt-6">
-                          <label className="text-xs font-bold text-white/60 uppercase tracking-widest">{t('orders.amount_paid')}</label>
-                          <div className="relative">
-                            <CreditCard className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40" size={20} />
-                            <input 
-                              type="number" 
-                              {...register('paidAmount')} 
-                              className="w-full bg-surface/10 border border-surface/20 rounded-xl p-4 pr-12 font-black text-surface placeholder:text-surface/30 focus:ring-2 focus:ring-surface/40 focus:border-surface/40 outline-none transition-all"
-                            />
-                          </div>
-                          <div className="flex justify-between text-xs font-bold pt-2">
-                            <span className="text-white/80">{t('orders.remaining_label')}</span>
-                            <span className="text-white bg-danger px-2 py-0.5 rounded-lg"><PriceDisplay amount={Number(roundedGrandTotal) - Number(watch('paidAmount') || 0)} /></span>
-                          </div>
-                        </div>
-                      </div>
-
-                    {/* isTest Flag */}
-                    <div className="flex items-center gap-3 p-4 bg-surface/5 rounded-2xl border border-surface/10 mt-6">
-                      <input
-                        type="checkbox"
-                        id="isTest"
-                        {...register('isTest')}
-                        className="w-5 h-5 text-brand border-white/20 rounded focus:ring-brand bg-transparent"
-                      />
-                      <label htmlFor="isTest" className="text-sm font-bold text-warning flex items-center gap-2">
-                        <Zap size={16} className="text-warning" />
-                        {t('common.test_data')}
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h4 className="text-sm font-black text-content-muted uppercase tracking-widest flex items-center gap-2">
-                      <ImageIcon size={16} />
-                      {t('orders.illustration_images')}
-                    </h4>
-                    <div className="space-y-3">
-                      <div className="flex gap-2">
-                        <input 
-                          type="text" 
-                          id="imageUrlInput"
-                          placeholder={t('orders.image_url_placeholder')}
-                          className="flex-1 bg-surface border border-border rounded-xl p-3 text-sm font-semibold text-content outline-none transition-all focus:ring-2 focus:ring-brand/20 focus:border-brand"
-                        />
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            const input = document.getElementById('imageUrlInput') as HTMLInputElement;
-                            if (input.value) {
-                              const currentImages = watch('images') || [];
-                              setValue('images', [...currentImages, input.value]);
-                              input.value = '';
-                            }
-                          }}
-                          className="bg-brand text-white px-4 rounded-xl font-bold text-xs"
-                        >
-                          {t('common.add')}
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        {watch('images')?.map((img: string, idx: number) => (
-                          <div key={img + idx} className="relative group aspect-square">
-                            <img src={img} className="w-full h-full object-cover rounded-xl border border-border" referrerPolicy="no-referrer" />
-                            <button 
-                              type="button"
-                              onClick={() => {
-                                const currentImages = watch('images') || [];
-                                setValue('images', currentImages.filter((_: string, i: number) => i !== idx));
-                              }}
-                              className="absolute -top-1 -right-1 bg-danger text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <X size={10} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* isTest Flag */}
-                <div className="flex items-center gap-3 p-4 bg-warning/10 rounded-2xl border border-warning/20 mb-8">
-                  <input
-                    type="checkbox"
-                    id="isTestOrder"
-                    {...register('isTest')}
-                    className="w-5 h-5 text-brand border-border rounded focus:ring-brand"
-                  />
-                  <label htmlFor="isTestOrder" className="text-sm font-bold text-warning flex items-center gap-2">
-                    <Zap size={16} />
-                    {t('common.test_data')}
-                  </label>
-                </div>
-
-                </div>
-
-                {/* Footer (Fixed to Modal Bottom) */}
-                <div className="shrink-0 p-4 sm:p-6 border-t border-border bg-surface flex flex-wrap items-center justify-between gap-4 z-20 shadow-md">
-                  <div>
-                    {Object.keys(errors).length > 0 && (
-                      <p className="text-xs text-danger font-bold flex items-center gap-1">
-                        <AlertCircle size={14} />
-                        {t('orders.fill_required_fields')}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex gap-3">
-                    <button 
-                      type="button" 
-                      onClick={handleCloseModal} 
-                      className="px-6 py-2.5 sm:px-8 sm:py-3.5 text-content-muted font-bold hover:text-content transition-colors text-sm sm:text-base rounded-xl hover:bg-surface-muted"
-                    >
-                      {t('common.cancel')}
-                    </button>
-                    <button 
-                      type="submit" 
-                      disabled={isSubmitting}
-                      className="bg-brand text-white px-8 py-2.5 sm:px-12 sm:py-3.5 rounded-xl font-bold hover:bg-brand/90 shadow-lg shadow-brand/20 transition-all hover:scale-102 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-                    >
-                      {isSubmitting ? t('orders.saving') : t('orders.confirm_create_order')}
-                    </button>
-                  </div>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>,
-        document.body
-      )}
+      <TailoringOrderForm
+        open={isModalOpen}
+        onClose={handleCloseModal}
+        tenantId={tenantId}
+        initialCustomerId={newOrderCustomerId}
+        onCreated={handleOrderCreated}
+        topSlot={
+          <OrderStepper
+            currentStatus={isLegacyVertical || workflowStages.length === 0 ? 'measurements_taken' : workflowStages[0].stage_key}
+            stages={isLegacyVertical ? undefined : workflowStages}
+          />
+        }
+      />
     </div>
   );
 }

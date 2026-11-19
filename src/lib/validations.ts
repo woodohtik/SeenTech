@@ -84,9 +84,13 @@ export const orderSchema = z.object({
     garmentType: z.string().min(1, t('validation.required')),
     fabric: z.string().min(1, t('validation.required')),
     fabricId: z.string().optional(),
-    quantity: z.coerce.number().min(0.01, t('validation.required')),
-    selectedUnit: z.string().min(1, t('validation.required')),
-    consumedMeters: z.coerce.number().min(0),
+    // Whole pieces. The fabric a line takes is its own figure (consumedMeters),
+    // never the quantity.
+    quantity: z.coerce.number().int(t('validation.required')).min(1, t('validation.required')),
+    // Total fabric for the line, in meters.
+    consumedMeters: z.coerce.number().min(0).optional(),
+    // The staff member typed that total instead of taking the estimate.
+    fabricManual: z.boolean().optional(),
     price: z.coerce.number().min(0, t('validation.required')),
     closureType: z.enum(['zipper', 'buttons']).optional(),
     closureVisibility: z.enum(['hidden', 'visible']).optional(),

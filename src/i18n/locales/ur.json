@@ -1947,7 +1947,21 @@
     "send_tracking_link": "ٹریکنگ لنک بھیجیں",
     "tracking_link_message": "ہیلو {{customerName}}, آپ اپنے آرڈر کی حیثیت یہاں سے ٹریک کر سکتے ہیں: {{url}}\n- {{storeName}}",
     "tracking_whatsapp_modal_title": "واٹس ایپ کے ذریعے ٹریکنگ لنک بھیجیں",
-    "tracking_whatsapp_modal_desc": "واٹس ایپ کھولنے کے لیے کسٹمر کا فون نمبر درج کریں، آرڈر ٹریکنگ لنک بھیجنے کے لیے تیار ہوگا۔"
+    "tracking_whatsapp_modal_desc": "واٹس ایپ کھولنے کے لیے کسٹمر کا فون نمبر درج کریں، آرڈر ٹریکنگ لنک بھیجنے کے لیے تیار ہوگا۔",
+    "quantity_pieces": "تعداد (عدد)",
+    "piece_price": "فی عدد قیمت",
+    "decrease_quantity": "ایک عدد کم کریں",
+    "increase_quantity": "ایک عدد بڑھائیں",
+    "discount_label": "رعایت",
+    "fabric_line": "فی عدد ≈ {{perPiece}} {{unit}} × {{count}} عدد = {{total}} {{unit}}",
+    "fabric_line_in_meters": "({{meters}} میٹر)",
+    "fabric_total_label": "کپڑے کی کل مقدار ({{unit}})",
+    "fabric_manual_badge": "ترمیم شدہ",
+    "fabric_reset": "اندازے پر واپس",
+    "fabric_external_note": "گاہک کا اپنا کپڑا: اندازہ صرف معلومات کے لیے ہے، اسٹاک سے نہیں کٹے گا",
+    "receipt_title": "سلائی آرڈر کی رسید",
+    "receipt_saved": "آرڈر محفوظ ہو گیا",
+    "receipt_print": "رسید پرنٹ کریں"
   },
   "permissions": {
     "access_denied_desc": "غیر متعین",

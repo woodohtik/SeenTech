@@ -1949,7 +1949,21 @@
     "send_tracking_link": "Send Tracking Link",
     "tracking_link_message": "Hi {{customerName}}, you can track your order status here: {{url}}\n- {{storeName}}",
     "tracking_whatsapp_modal_title": "Send Tracking Link via WhatsApp",
-    "tracking_whatsapp_modal_desc": "Enter the customer's phone number to open WhatsApp with the order tracking link ready to send."
+    "tracking_whatsapp_modal_desc": "Enter the customer's phone number to open WhatsApp with the order tracking link ready to send.",
+    "quantity_pieces": "Quantity (pieces)",
+    "piece_price": "Price per piece",
+    "decrease_quantity": "One piece fewer",
+    "increase_quantity": "One piece more",
+    "discount_label": "Discount",
+    "fabric_line": "Per piece ≈ {{perPiece}} {{unit}} × {{count}} pieces = {{total}} {{unit}}",
+    "fabric_line_in_meters": "({{meters}} m)",
+    "fabric_total_label": "Fabric total ({{unit}})",
+    "fabric_manual_badge": "Edited",
+    "fabric_reset": "Back to the estimate",
+    "fabric_external_note": "Customer's own cloth: the estimate is for information and is not taken from stock",
+    "receipt_title": "Tailoring order receipt",
+    "receipt_saved": "Order saved",
+    "receipt_print": "Print receipt"
   },
   "permissions": {
     "access_denied_desc": "Not specified",

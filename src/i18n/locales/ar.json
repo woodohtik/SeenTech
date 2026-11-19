@@ -1949,7 +1949,21 @@
     "send_tracking_link": "إرسال رابط التتبّع",
     "tracking_link_message": "مرحباً {{customerName}}، يمكنك متابعة حالة طلبك من هنا: {{url}}\n- {{storeName}}",
     "tracking_whatsapp_modal_title": "إرسال رابط التتبّع عبر واتساب",
-    "tracking_whatsapp_modal_desc": "أدخل رقم جوال العميل لفتح واتساب مع رابط تتبّع الطلب جاهزاً للإرسال."
+    "tracking_whatsapp_modal_desc": "أدخل رقم جوال العميل لفتح واتساب مع رابط تتبّع الطلب جاهزاً للإرسال.",
+    "quantity_pieces": "الكمية (قطعة)",
+    "piece_price": "سعر القطعة",
+    "decrease_quantity": "إنقاص قطعة",
+    "increase_quantity": "زيادة قطعة",
+    "discount_label": "الخصم",
+    "fabric_line": "للقطعة ≈ {{perPiece}} {{unit}} × {{count}} قطع = {{total}} {{unit}}",
+    "fabric_line_in_meters": "({{meters}} متر)",
+    "fabric_total_label": "إجمالي القماش ({{unit}})",
+    "fabric_manual_badge": "معدَّل",
+    "fabric_reset": "رجوع للمحسوب",
+    "fabric_external_note": "قماش الزبون: التقدير للمعلومة فقط ولا يُخصم من المخزون",
+    "receipt_title": "إيصال طلب تفصيل",
+    "receipt_saved": "حُفظ الطلب",
+    "receipt_print": "طباعة الإيصال"
   },
   "permissions": {
     "access_denied_desc": "غير محدد",
