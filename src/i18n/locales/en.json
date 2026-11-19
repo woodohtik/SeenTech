@@ -1965,7 +1965,13 @@
     "receipt_saved": "Order saved",
     "receipt_print": "Print receipt",
     "deposit_needs_shift_title": "Order saved without the deposit",
-    "deposit_needs_shift_desc": "You have no open shift, so the deposit was not recorded. Open a shift, then record the payment from the order screen."
+    "deposit_needs_shift_desc": "You have no open shift, so the deposit was not recorded. Open a shift, then record the payment from the order screen.",
+    "cutting_fabric_title": "Fabric to deduct at cutting",
+    "cutting_fabric_desc": "Check the fabric for each line and correct it if needed. On confirming, it is taken from stock and the order moves on.",
+    "cutting_fabric_line": "{{garment}} × {{count}} pieces",
+    "cutting_fabric_input_label": "Meters of {{fabric}}",
+    "cutting_fabric_total": "Total: {{meters}} m ({{yards}} yd)",
+    "cutting_fabric_confirm": "Deduct and move the order"
   },
   "permissions": {
     "access_denied_desc": "Not specified",

@@ -9,7 +9,7 @@ vi.mock('../lib/supabase/client', () => ({
   },
 }));
 
-import { checkStockAvailability, deductStock } from './inventoryService';
+import { checkStockAvailability } from './inventoryService';
 
 // Minimal chainable query-builder stand-in: every chain method returns the
 // same object, and the object itself resolves (as a thenable) to `result`
@@ -60,9 +60,9 @@ test('checkStockAvailability issues exactly one inventory_items query and one br
   });
 
   const items = [
-    { fabric: 'قماش أ', quantity: 1, selectedUnit: 'meter' },
-    { fabric: 'قماش ب', quantity: 1, selectedUnit: 'meter' },
-    { fabric: 'قماش ج', quantity: 1, selectedUnit: 'meter' },
+    { fabric: 'قماش أ', quantity: 1, consumedMeters: 1 },
+    { fabric: 'قماش ب', quantity: 1, consumedMeters: 1 },
+    { fabric: 'قماش ج', quantity: 1, consumedMeters: 1 },
   ];
 
   const result = await checkStockAvailability(items, 'branch-1', 'tenant-1', 'decentralized');
@@ -84,8 +84,8 @@ test('a fabric with no matching inventory_items row is reported missing', async 
   });
 
   const items = [
-    { fabric: 'قماش أ', quantity: 1, selectedUnit: 'meter' },
-    { fabric: 'قماش غير موجود', quantity: 1, selectedUnit: 'meter' },
+    { fabric: 'قماش أ', quantity: 1, consumedMeters: 1 },
+    { fabric: 'قماش غير موجود', quantity: 1, consumedMeters: 1 },
   ];
 
   const result = await checkStockAvailability(items, 'branch-1', 'tenant-1', 'decentralized');
@@ -105,7 +105,7 @@ test('insufficient branch stock is reported missing', async () => {
     throw new Error(`unexpected table: ${table}`);
   });
 
-  const items = [{ fabric: 'قماش أ', quantity: 5, selectedUnit: 'meter' }];
+  const items = [{ fabric: 'قماش أ', quantity: 1, consumedMeters: 5 }];
 
   const result = await checkStockAvailability(items, 'branch-1', 'tenant-1', 'decentralized');
 
@@ -127,7 +127,7 @@ test('centralized strategy resolves the main warehouse first, then still issues 
     throw new Error(`unexpected table: ${table}`);
   });
 
-  const items = [{ fabric: 'قماش أ', quantity: 1, selectedUnit: 'meter' }];
+  const items = [{ fabric: 'قماش أ', quantity: 1, consumedMeters: 1 }];
   const result = await checkStockAvailability(items, 'branch-1', 'tenant-1', 'centralized');
 
   expect(result).toEqual({ available: true, missingItems: [] });
@@ -144,7 +144,7 @@ test('centralized strategy with no main warehouse returns unavailable without qu
     throw new Error(`unexpected table: ${table}`);
   });
 
-  const items = [{ fabric: 'قماش أ', quantity: 1, selectedUnit: 'meter' }];
+  const items = [{ fabric: 'قماش أ', quantity: 1, consumedMeters: 1 }];
   const result = await checkStockAvailability(items, 'branch-1', 'tenant-1', 'centralized');
 
   expect(result.available).toBe(false);
@@ -152,69 +152,40 @@ test('centralized strategy with no main warehouse returns unavailable without qu
   expect(tableCallCount('branch_inventory')).toBe(0);
 });
 
-test('deductStock issues one batched inventory_items query and one apply_stock_movement RPC call per item', async () => {
+test('lines carrying a fabric id skip the name lookup, and two lines on the same cloth add up', async () => {
   fromMock.mockImplementation((table: string) => {
-    if (table === 'inventory_items') {
-      return chain({
-        data: [
-          { id: 'i1', name: 'قماش أ' },
-          { id: 'i2', name: 'قماش ب' },
-        ],
-        error: null,
-      });
+    if (table === 'branch_inventory') {
+      return chain({ data: [{ item_id: 'i1', quantity: 12 }], error: null });
     }
     throw new Error(`unexpected table: ${table}`);
   });
-  rpcMock.mockResolvedValue({ error: null });
 
-  const order = {
-    id: 'order-1',
-    tenantId: 'tenant-1',
-    branchId: 'branch-1',
-    items: [
-      { fabric: 'قماش أ', quantity: 2, selectedUnit: 'meter' },
-      { fabric: 'قماش ب', quantity: 3, selectedUnit: 'meter' },
-    ],
-  } as any;
-  const staff = { branchId: 'branch-1' } as any;
+  // 8 + 6 = 14 m needed against 12 m in stock: each line alone would fit.
+  const items = [
+    { fabric: 'قماش أ', fabricId: 'i1', quantity: 2, consumedMeters: 8 },
+    { fabric: 'قماش أ', fabricId: 'i1', quantity: 2, consumedMeters: 6 },
+  ];
+  const result = await checkStockAvailability(items, 'branch-1', 'tenant-1', 'decentralized');
 
-  await deductStock(order, staff, 'decentralized');
-
-  expect(tableCallCount('inventory_items')).toBe(1);
-  expect(rpcMock).toHaveBeenCalledTimes(2);
-  expect(rpcMock).toHaveBeenCalledWith('apply_stock_movement', expect.objectContaining({
-    p_operation_id: 'order:order-1:item:i1',
-    p_item_id: 'i1',
-    p_delta: -2,
-  }));
-  expect(rpcMock).toHaveBeenCalledWith('apply_stock_movement', expect.objectContaining({
-    p_operation_id: 'order:order-1:item:i2',
-    p_item_id: 'i2',
-    p_delta: -3,
-  }));
+  expect(result).toEqual({ available: false, missingItems: ['قماش أ'] });
+  expect(tableCallCount('inventory_items')).toBe(0);
+  expect(tableCallCount('branch_inventory')).toBe(1);
 });
 
-test('deductStock skips items with no matching inventory_items row, without calling the RPC for them', async () => {
+test("the customer's own cloth and a line with no fabric figure are never reported short", async () => {
   fromMock.mockImplementation((table: string) => {
-    if (table === 'inventory_items') {
-      return chain({ data: [{ id: 'i1', name: 'قماش أ' }], error: null });
+    if (table === 'branch_inventory') {
+      return chain({ data: [{ item_id: 'i1', quantity: 1 }], error: null });
     }
     throw new Error(`unexpected table: ${table}`);
   });
-  rpcMock.mockResolvedValue({ error: null });
 
-  const order = {
-    id: 'order-1',
-    tenantId: 'tenant-1',
-    branchId: 'branch-1',
-    items: [
-      { fabric: 'قماش أ', quantity: 2, selectedUnit: 'meter' },
-      { fabric: 'قماش غير موجود', quantity: 1, selectedUnit: 'meter' },
-    ],
-  } as any;
-  const staff = { branchId: 'branch-1' } as any;
+  const items = [
+    { fabric: 'custom', quantity: 3, consumedMeters: 0 },
+    // Three pieces, no estimate yet: the piece count is not a fabric amount.
+    { fabric: 'قماش أ', fabricId: 'i1', quantity: 3, consumedMeters: 0 },
+  ];
+  const result = await checkStockAvailability(items, 'branch-1', 'tenant-1', 'decentralized');
 
-  await deductStock(order, staff, 'decentralized');
-
-  expect(rpcMock).toHaveBeenCalledTimes(1);
+  expect(result).toEqual({ available: true, missingItems: [] });
 });

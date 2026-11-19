@@ -1963,7 +1963,13 @@
     "receipt_saved": "آرڈر محفوظ ہو گیا",
     "receipt_print": "رسید پرنٹ کریں",
     "deposit_needs_shift_title": "آرڈر پیشگی رقم کے بغیر محفوظ ہوا",
-    "deposit_needs_shift_desc": "آپ کی کوئی شفٹ کھلی نہیں، اس لیے پیشگی رقم درج نہیں ہوئی۔ شفٹ کھولیں، پھر آرڈر اسکرین سے ادائیگی درج کریں۔"
+    "deposit_needs_shift_desc": "آپ کی کوئی شفٹ کھلی نہیں، اس لیے پیشگی رقم درج نہیں ہوئی۔ شفٹ کھولیں، پھر آرڈر اسکرین سے ادائیگی درج کریں۔",
+    "cutting_fabric_title": "کٹائی پر کپڑے کی کٹوتی",
+    "cutting_fabric_desc": "ہر لائن کا کپڑا دیکھیں اور ضرورت ہو تو درست کریں۔ تصدیق پر یہ اسٹاک سے کٹے گا اور آرڈر اگلے مرحلے میں جائے گا۔",
+    "cutting_fabric_line": "{{garment}} × {{count}} عدد",
+    "cutting_fabric_input_label": "{{fabric}} کی مقدار میٹر میں",
+    "cutting_fabric_total": "کل: {{meters}} میٹر ({{yards}} گز)",
+    "cutting_fabric_confirm": "کٹوتی کریں اور آرڈر آگے بڑھائیں"
   },
   "permissions": {
     "access_denied_desc": "غیر متعین",

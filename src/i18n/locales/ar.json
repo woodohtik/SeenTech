@@ -1965,7 +1965,13 @@
     "receipt_saved": "حُفظ الطلب",
     "receipt_print": "طباعة الإيصال",
     "deposit_needs_shift_title": "حُفظ الطلب بدون العربون",
-    "deposit_needs_shift_desc": "لا توجد وردية مفتوحة باسمك، فلم يُسجَّل العربون. افتح وردية ثم سجّل الدفعة من شاشة الطلب."
+    "deposit_needs_shift_desc": "لا توجد وردية مفتوحة باسمك، فلم يُسجَّل العربون. افتح وردية ثم سجّل الدفعة من شاشة الطلب.",
+    "cutting_fabric_title": "خصم القماش عند القص",
+    "cutting_fabric_desc": "راجع كمية القماش لكل سطر وعدّلها إن لزم. بعد التأكيد تُخصم من المخزون وتنتقل حالة الطلب.",
+    "cutting_fabric_line": "{{garment}} × {{count}} قطع",
+    "cutting_fabric_input_label": "كمية {{fabric}} بالمتر",
+    "cutting_fabric_total": "المجموع: {{meters}} متر ({{yards}} ياردة)",
+    "cutting_fabric_confirm": "خصم ونقل الطلب"
   },
   "permissions": {
     "access_denied_desc": "غير محدد",

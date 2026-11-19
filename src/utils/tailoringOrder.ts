@@ -177,3 +177,63 @@ export function orderItemRowToLine(row: Record<string, any>): Record<string, any
   }
   return line;
 }
+
+// ---- fabric deduction at the cutting stage ----
+
+/** The fixed order_status enum, in working order. `cancelled` is not a stage. */
+const STAGE_RANK: Record<string, number> = {
+  measurements_taken: 0,
+  cutting: 1,
+  sewing: 2,
+  embroidery: 3,
+  ironing_packaging: 4,
+  ready: 5,
+  partial_delivered: 6,
+  delivered: 7,
+};
+
+/**
+ * Whether moving an order to `targetStatus` is the move that takes its fabric
+ * from stock: the first time it reaches cutting or any later stage. Both
+ * statuses are the fixed enum values (see legacyOrderStatusFor).
+ */
+export function isFabricDeductionDue(input: {
+  currentStatus: string;
+  targetStatus: string;
+  fabricDeductedAt?: string | null;
+}): boolean {
+  if (input.fabricDeductedAt) return false;
+  const target = STAGE_RANK[input.targetStatus];
+  if (target === undefined || target < STAGE_RANK.cutting) return false;
+  // An order already at or past cutting had its fabric handled when it got there.
+  const current = STAGE_RANK[input.currentStatus];
+  return current === undefined || current < STAGE_RANK.cutting;
+}
+
+export interface CuttingFabricLine {
+  /** order_items id for an order saved through create_tailoring_order; the line's position otherwise. */
+  lineKey: string;
+  fabricId: string;
+  fabricName: string;
+  garmentType: string;
+  pieces: number;
+  /** The figure saved with the line, in meters. */
+  meters: number;
+}
+
+/** The lines of an order that draw cloth from stock, for the cutting dialog. */
+export function cuttingFabricLines(items: ReadonlyArray<Record<string, any>> | null | undefined): CuttingFabricLine[] {
+  return (items || []).flatMap((item, index) => {
+    // The customer's own cloth, and old lines that never recorded which
+    // stock item they used, have nothing to deduct.
+    if (!item?.fabricId || item.fabric === 'custom') return [];
+    return [{
+      lineKey: item.id ? String(item.id) : `idx-${index}`,
+      fabricId: String(item.fabricId),
+      fabricName: item.fabric || '',
+      garmentType: item.garmentType || item.name || '',
+      pieces: Number(item.quantity) || 0,
+      meters: Math.max(0, Number(item.consumedMeters) || 0),
+    }];
+  });
+}

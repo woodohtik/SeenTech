@@ -5,7 +5,8 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
 import { cmToDisplayUnit, unitLabelKey } from '../utils/measurementUnits';
 import { measurementRows } from '../constants/measurementFields';
-import { orderItemRowToLine } from '../utils/tailoringOrder';
+import { orderItemRowToLine, cuttingFabricLines, isFabricDeductionDue, type CuttingFabricLine } from '../utils/tailoringOrder';
+import CuttingFabricDialog from './CuttingFabricDialog';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
@@ -79,7 +80,6 @@ import { DatePicker } from './ui/DatePicker';
 import { IconInput } from './ui/IconInput';
 import { VoiceMicButton } from './ui/VoiceMicButton';
 import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
-import { deductStock } from '../services/inventoryService';
 import { useStaff } from '../contexts/StaffContext';
 import { useBranding } from '../contexts/BrandingContext';
 import { analytics, AnalyticsEvent } from '../services/analyticsService';
@@ -308,7 +308,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
   const [isConfirmDeliveryOpen, setIsConfirmDeliveryOpen] = useState(false);
   const [openStatusDropdownId, setOpenStatusDropdownId] = useState<string | null>(null);
-  const [tenantStrategy, setTenantStrategy] = useState<'centralized' | 'decentralized'>('centralized');
+
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
   const [pendingWhatsAppOrder, setPendingWhatsAppOrder] = useState<Order | null>(null);
   // Which message the pending-phone-number modal below should send once the
@@ -340,6 +340,9 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   // The new-order form itself is the shared TailoringOrderForm; this page only
   // opens it (optionally with a customer preselected) and lists what it saves.
   const [newOrderCustomerId, setNewOrderCustomerId] = useState<string | undefined>(undefined);
+  // The move to cutting waiting on its fabric quantities to be confirmed.
+  const [cuttingPrompt, setCuttingPrompt] = useState<{ id: string; status: string; notes?: string; lines: CuttingFabricLine[] } | null>(null);
+  const [isCuttingBusy, setIsCuttingBusy] = useState(false);
 
   // The measurements an order shows: the snapshot stored on its lines when it
   // has one (orders made through create_tailoring_order), so a later edit to
@@ -405,6 +408,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       orderNumber: decoded.order_number ?? decoded.orderNumber,
       paymentMethod: decoded.payment_method ?? decoded.paymentMethod,
       trackingToken: decoded.tracking_token ?? decoded.trackingToken,
+      kind: decoded.kind,
+      fabricDeductedAt: decoded.fabric_deducted_at ?? decoded.fabricDeductedAt,
       items: Array.isArray(decoded.items) ? decoded.items : [],
       history: Array.isArray(decoded.history) ? decoded.history : []
     } as Order;
@@ -637,7 +642,6 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             customerId: tenantData.customer_id
           } as unknown as Tenant;
           setTenant(mappedTenant);
-          setTenantStrategy(mappedTenant.inventoryStrategy || 'centralized');
         }
       } catch (error) {
         handleFirestoreError(error as any, OperationType.LIST, 'data');
@@ -811,18 +815,26 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       }
     }
 
-    try {
-      // Deduct stock if moving to 'cutting'
-      if (status === 'cutting' && order.status !== 'cutting') {
-        try {
-          await deductStock(order, currentStaff!, tenantStrategy);
-        } catch (err) {
-          console.error('Stock deduction error:', err);
-          toastError(t('inventory.stock_deduction_error') + (err instanceof Error ? err.message : t('orders.unknown_error')));
-          return;
-        }
-      }
+    // The move that first takes the order to cutting (or past it) deducts its
+    // fabric. Show the quantities first; the deduction runs on the server with
+    // the status change once they are confirmed.
+    const fabricLines = cuttingFabricLines(order.items);
+    const deductionDue = isFabricDeductionDue({
+      currentStatus: legacyOrderStatusFor(order.status, workflowStages),
+      targetStatus: legacyOrderStatusFor(status, workflowStages),
+      fabricDeductedAt: (order as any).fabricDeductedAt,
+    });
+    if (deductionDue && fabricLines.length > 0) {
+      setCuttingPrompt({ id, status, notes, lines: fabricLines });
+      return;
+    }
 
+    await performStatusUpdate(order, status, notes);
+  };
+
+  const performStatusUpdate = async (order: Order, status: string, notes?: string, fabricLines?: CuttingFabricLine[]) => {
+    const id = order.id;
+    try {
       const historyEntry: OrderHistory = {
         status,
         updatedAt: new Date().toISOString(),
@@ -842,7 +854,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       // same way the fetch interceptor does for a direct table write, so
       // decodeOrderRow on read still finds them.
       const encodedNotes = encodeOrderRow({ notes: order.notes, history: updatedHistory, items: order.items || [] }).notes;
-      const { error } = await supabase.rpc('update_order_status', {
+      const statusArgs = {
         p_order_id: id,
         // status_key: القيمة الفعلية الحرة لأي نشاط. status: enum قديم ثابت —
         // يبقى دوماً صالحاً عبر legacyOrderStatusFor (انظر تعليق verticalService.ts).
@@ -851,13 +863,34 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         p_notes: encodedNotes,
         p_op_id: globalThis.crypto.randomUUID(),
         p_history_note: historyEntry.notes
-      });
+      };
+      // With reviewed fabric lines the deduction and the status change are one
+      // server transaction: short stock fails both.
+      const { error } = fabricLines
+        ? await supabase.rpc('update_order_status_with_fabric', {
+            ...statusArgs,
+            p_fabric_lines: fabricLines.map((line) => ({ line_key: line.lineKey, fabric_id: line.fabricId, meters: line.meters })),
+          })
+        : await supabase.rpc('update_order_status', statusArgs);
 
       if (error) throw error;
 
       // Realtime local update
-      setOrders(prev => prev.map(o => o.id === id ? { ...o, status, history: updatedHistory } : o));
-      setUnpaidOrders(prev => prev.map(o => o.id === id ? { ...o, status, history: updatedHistory } : o));
+      const patch = (o: Order) => o.id === id
+        ? {
+            ...o, status, history: updatedHistory,
+            ...(fabricLines ? {
+              fabricDeductedAt: new Date().toISOString(),
+              items: (o.items || []).map((item: any, index: number) => {
+                const line = fabricLines.find((l) => l.lineKey === (item.id ? String(item.id) : `idx-${index}`));
+                return line ? { ...item, consumedMeters: line.meters } : item;
+              }),
+            } : {}),
+          } as Order
+        : o;
+      setOrders(prev => prev.map(patch));
+      setUnpaidOrders(prev => prev.map(patch));
+      setCuttingPrompt(null);
 
       void notifyOrderStatusChange(id);
       router.refresh();
@@ -2538,6 +2571,23 @@ export default function Orders({ tenantId }: { tenantId: string }) {
         {isDetailsOpen && selectedOrder && <OrderDetailsDrawer order={selectedOrder} />}
       </AnimatePresence>
       {isConfirmDeliveryOpen && <ConfirmDeliveryModal />}
+      {cuttingPrompt && (
+        <CuttingFabricDialog
+          lines={cuttingPrompt.lines}
+          busy={isCuttingBusy}
+          onCancel={() => setCuttingPrompt(null)}
+          onConfirm={async (lines) => {
+            const order = orders.find(o => o.id === cuttingPrompt.id);
+            if (!order) { setCuttingPrompt(null); return; }
+            setIsCuttingBusy(true);
+            try {
+              await performStatusUpdate(order, cuttingPrompt.status, cuttingPrompt.notes, lines);
+            } finally {
+              setIsCuttingBusy(false);
+            }
+          }}
+        />
+      )}
       {isPaymentModalOpen && selectedOrder && (
         <PaymentModal 
           order={selectedOrder} 

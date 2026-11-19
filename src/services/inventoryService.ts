@@ -1,22 +1,5 @@
 import i18n from 'i18next';
 import { supabase } from '../lib/supabase/client';
-import { METERS_PER_YARD } from '../utils/fabricUomConverter';
-import { Order, Tenant, BranchInventory, InventoryItem, Staff } from '../types';
-
-export const UNIT_CONVERSIONS: Record<string, number> = {
-  'meter': 1,
-  'yard': METERS_PER_YARD,
-  'roll': 22.86, // Average roll is 25 yards
-  'bolt': 36.576, // Average bolt is 40 yards
-  'piece': 1,
-  'spool': 1,
-  'box': 1
-};
-
-export function convertToMeters(quantity: number, unit: string): number {
-  const rate = UNIT_CONVERSIONS[unit] || 1;
-  return quantity * rate;
-}
 
 export interface AdjustmentLineResult {
   varianceQty: number;
@@ -97,10 +80,9 @@ export async function checkStockAvailability(
       if (!missingItems.includes(item.fabric)) missingItems.push(item.fabric);
       continue;
     }
-    // A tailoring line counts pieces, so only its fabric figure is comparable;
-    // older lines without one still fall back to quantity x unit.
-    const meters = Number(item.consumedMeters)
-      || (item.quantityUnit === 'piece' ? 0 : convertToMeters(item.quantity, item.selectedUnit || 'meter'));
+    // A line counts pieces; the fabric it needs is its own figure in meters.
+    // Without one there is nothing to compare.
+    const meters = Number(item.consumedMeters) || 0;
     const entry = neededByItemId.get(inventoryItemId) ?? { meters: 0, label: item.fabric };
     entry.meters += meters;
     neededByItemId.set(inventoryItemId, entry);
@@ -118,79 +100,6 @@ export async function checkStockAvailability(
     available: missingItems.length === 0,
     missingItems
   };
-}
-
-export async function deductStock(
-  order: Order,
-  staff: Staff,
-  strategy: 'centralized' | 'decentralized'
-): Promise<void> {
-  const tenantId = order.tenantId;
-
-  // Determine target branch
-  let targetBranchId = order.branchId || staff.branchId;
-  if (strategy === 'centralized') {
-    const { data: branches, error: branchError } = await supabase
-      .from('branches')
-      .select('id')
-      .eq('tenant_id', tenantId)
-      .eq('is_main', true)
-      .maybeSingle();
-
-    if (branchError || !branches) throw new Error(i18n.t('inventory.main_warehouse_not_found'));
-    targetBranchId = branches.id;
-  }
-
-  if (!targetBranchId) throw new Error(i18n.t('inventory.branch_not_set_for_deduction'));
-
-  // Previously one round trip per order line to resolve inventory_items.id
-  // by fabric name -- batch that lookup into a single query. The
-  // apply_stock_movement RPC below stays one call per item: each is a
-  // discrete, idempotent ledger-write business event keyed on order+item,
-  // not a read that can be batched away.
-  const fabricNames = [...new Set(order.items.map(item => item.fabric))];
-  const { data: inventoryItems } = fabricNames.length
-    ? await supabase
-        .from('inventory_items')
-        .select('id, name')
-        .eq('tenant_id', tenantId)
-        .in('name', fabricNames)
-    : { data: [] as { id: string; name: string }[] };
-  const itemIdByName = new Map((inventoryItems ?? []).map(row => [row.name, row.id]));
-
-  for (const item of order.items) {
-    const inventoryItemId = itemIdByName.get(item.fabric);
-    if (!inventoryItemId) continue;
-
-    // A line that counts pieces has no meaningful quantity-as-fabric fallback.
-    const deductionAmount = item.consumedMeters
-      || ((item as any).quantityUnit === 'piece' ? 0 : convertToMeters(item.quantity, item.selectedUnit || 'meter'));
-    if (!deductionAmount) continue;
-
-    /* --------------------------------------------------------------------
-       Was: read quantity -> compute currentQty - deductionAmount -> write the
-       absolute value, with no negative guard and no check that the update
-       actually applied. Two concurrent sales of the same fabric each wrote
-       their own absolute total, so one of them vanished; and the ledger row
-       was inserted unconditionally, asserting a deduction that may never have
-       happened.
-
-       One transactional server call instead: relative delta, >= 0 enforced,
-       ledger row derived from the real before/after values, idempotent on the
-       order + item key so a retried checkout cannot double-deduct.
-       -------------------------------------------------------------------- */
-    const { error: moveError } = await supabase.rpc('apply_stock_movement', {
-      p_operation_id: `order:${order.id}:item:${inventoryItemId}`,
-      p_branch_id: targetBranchId,
-      p_item_id: inventoryItemId,
-      p_delta: -Math.abs(deductionAmount),
-      p_type: 'deduction',
-      p_reference_id: order.id,
-      p_reference_type: 'order',
-    });
-
-    if (moveError) throw moveError;
-  }
 }
 
 export async function adjustStock({

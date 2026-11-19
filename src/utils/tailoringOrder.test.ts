@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   computeLineFabric,
   computeTailoringTotals,
+  cuttingFabricLines,
+  isFabricDeductionDue,
   fabricFromContentUnit,
   fabricInContentUnit,
   lineToServerItem,
@@ -133,5 +135,52 @@ describe('a line to and from order_items', () => {
       measurements: { length: 145 },
     });
     expect(back).not.toHaveProperty('cuffType');
+  });
+});
+
+describe('isFabricDeductionDue', () => {
+  it('is due when an order first reaches cutting', () => {
+    expect(isFabricDeductionDue({ currentStatus: 'measurements_taken', targetStatus: 'cutting' })).toBe(true);
+  });
+
+  it('is due once when an order skips cutting for a later stage', () => {
+    expect(isFabricDeductionDue({ currentStatus: 'measurements_taken', targetStatus: 'sewing' })).toBe(true);
+    expect(isFabricDeductionDue({ currentStatus: 'measurements_taken', targetStatus: 'delivered' })).toBe(true);
+  });
+
+  it('is not due again once deducted, or for an order already past cutting', () => {
+    expect(isFabricDeductionDue({ currentStatus: 'measurements_taken', targetStatus: 'cutting', fabricDeductedAt: '2026-11-19T10:00:00Z' })).toBe(false);
+    expect(isFabricDeductionDue({ currentStatus: 'cutting', targetStatus: 'sewing' })).toBe(false);
+    expect(isFabricDeductionDue({ currentStatus: 'sewing', targetStatus: 'cutting' })).toBe(false);
+  });
+
+  it('is never due for a cancellation or a stage before cutting', () => {
+    expect(isFabricDeductionDue({ currentStatus: 'measurements_taken', targetStatus: 'cancelled' })).toBe(false);
+    expect(isFabricDeductionDue({ currentStatus: 'measurements_taken', targetStatus: 'measurements_taken' })).toBe(false);
+  });
+});
+
+describe('cuttingFabricLines', () => {
+  it('keeps both lines on the same cloth and keys each by its own row', () => {
+    const lines = cuttingFabricLines([
+      { id: 'row-1', fabric: 'قطن', fabricId: 'f-1', garmentType: 'ثوب', quantity: 3, consumedMeters: 11.4 },
+      { id: 'row-2', fabric: 'قطن', fabricId: 'f-1', garmentType: 'ثوب', quantity: 1, consumedMeters: 3.8 },
+    ]);
+    expect(lines.map((l) => [l.lineKey, l.fabricId, l.meters, l.pieces])).toEqual([
+      ['row-1', 'f-1', 11.4, 3],
+      ['row-2', 'f-1', 3.8, 1],
+    ]);
+  });
+
+  it("leaves out the customer's own cloth and lines with no stock item", () => {
+    const lines = cuttingFabricLines([
+      { fabric: 'custom', fabricId: '', quantity: 1, consumedMeters: 5 },
+      { fabric: 'قماش قديم', quantity: 2, consumedMeters: 2 },
+      { fabric: 'صوف', fabricId: 'f-2', quantity: 2 },
+    ]);
+    expect(lines).toEqual([
+      { lineKey: 'idx-2', fabricId: 'f-2', fabricName: 'صوف', garmentType: '', pieces: 2, meters: 0 },
+    ]);
+    expect(cuttingFabricLines(undefined)).toEqual([]);
   });
 });
