@@ -29,7 +29,7 @@
 -- Run with: npx supabase db query --linked --file <this file>
 -- (supabase test db --linked needs Docker, which is down on this machine.)
 BEGIN;
-SELECT plan(6);
+SELECT plan(8);
 
 -- db query --linked only surfaces the LAST statement's result set, so
 -- collect each assertion's TAP line here and print them all together with
@@ -56,7 +56,11 @@ VALUES
   ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
    'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'Test Admin', 'admin@select-policies-perm.test.invalid', 'admin', NULL, 'active'),
   ('99999999-9999-9999-9999-999999999999', 'ffffffff-ffff-ffff-ffff-ffffffffffff',
-   '88888888-8888-8888-8888-888888888888', 'Test Admin Other Tenant', 'admin-b@select-policies-perm.test.invalid', 'admin', NULL, 'active');
+   '88888888-8888-8888-8888-888888888888', 'Test Admin Other Tenant', 'admin-b@select-policies-perm.test.invalid', 'admin', NULL, 'active'),
+  ('12121212-1212-1212-1212-121212121212', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+   '34343434-3434-3434-3434-343434343434', 'Test Branch Manager', 'branch-manager@select-policies-perm.test.invalid', 'branch_manager', NULL, 'active'),
+  ('56565656-5656-5656-5656-565656565656', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+   '78787878-7878-7878-7878-787878787878', 'Test Warehouse Manager', 'warehouse-manager@select-policies-perm.test.invalid', 'warehouse_manager', NULL, 'active');
 
 INSERT INTO public.suppliers (id, tenant_id, name, phone)
 VALUES ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Test Supplier', '0500000010');
@@ -120,6 +124,30 @@ INSERT INTO test_output (line) SELECT is(
   (SELECT count(*) FROM public.supplier_transactions WHERE tenant_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
   0::bigint,
   'admin from a different tenant (suppliers.manage=true) selecting supplier_transactions -- tenant isolation blocks it, 0 rows'
+);
+
+-- Scenario 7: branch_manager (role_id IS NULL, so suppliers.manage=true via
+-- the default table -- confirmed in Task 1's matrix,
+-- 20261205000000_app_has_permission.sql) selects from suppliers -- sees the
+-- row. branch_manager/warehouse_manager are the two roles whose
+-- suppliers.manage access is the actual behavior change Task 5 introduced
+-- via the RPCs; this proves they can also SELECT the data they can now act
+-- on (I3 gap -- previously only cashier/admin were covered here).
+SET LOCAL request.jwt.claims = '{"sub":"34343434-3434-3434-3434-343434343434"}';
+INSERT INTO test_output (line) SELECT is(
+  (SELECT count(*) FROM public.suppliers WHERE tenant_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
+  1::bigint,
+  'branch_manager (suppliers.manage=true by default) selecting suppliers -- sees the row'
+);
+
+-- Scenario 8: warehouse_manager (role_id IS NULL, so suppliers.manage=true
+-- via the default table) selects from supplier_transactions -- sees the
+-- row.
+SET LOCAL request.jwt.claims = '{"sub":"78787878-7878-7878-7878-787878787878"}';
+INSERT INTO test_output (line) SELECT is(
+  (SELECT count(*) FROM public.supplier_transactions WHERE tenant_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
+  1::bigint,
+  'warehouse_manager (suppliers.manage=true by default) selecting supplier_transactions -- sees the row'
 );
 
 INSERT INTO test_output (line) SELECT * FROM finish();
