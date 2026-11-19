@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { SHIFT_CASH_CHANGED_EVENT } from '../services/tailoringOrderService';
 import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
 import Branding from './Branding';
@@ -195,11 +196,16 @@ export default function Sales({ tenantId }: { tenantId: string }) {
       })
       .subscribe();
 
+    // Same refresh, raised in-app by the tailoring order form after a deposit.
+    const onShiftCashChanged = () => { fetchCashDrawerBalance(); };
+    window.addEventListener(SHIFT_CASH_CHANGED_EVENT, onShiftCashChanged);
+
     return () => {
       ordersChannel.unsubscribe();
       shiftsChannel.unsubscribe();
       shiftEntriesChannel.unsubscribe();
       paymentsChannel.unsubscribe();
+      window.removeEventListener(SHIFT_CASH_CHANGED_EVENT, onShiftCashChanged);
     };
   }, [activeShift?.id]);
 

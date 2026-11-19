@@ -16,6 +16,9 @@ import { lineToServerItem, type TailoringTotals } from '../utils/tailoringOrder'
  * allocates the order number. Nothing here inserts into `orders` directly.
  */
 
+/** Fired on window when a payment is recorded on the open shift. */
+export const SHIFT_CASH_CHANGED_EVENT = 'shift_cash_changed';
+
 export interface TailoringOrderLine {
   garmentType: string;
   /** Fabric name as shown on the order; 'custom' for the customer's own cloth. */
@@ -127,6 +130,11 @@ export async function createTailoringOrder(input: CreateTailoringOrderInput): Pr
     const { data, error } = await supabase.rpc('create_tailoring_order', payload);
     if (error) throw error;
     depositSkipped = Boolean(data?.deposit_skipped);
+    // A deposit just landed on the open shift. The till figure in the sales
+    // header listens for this; it cannot rely on a realtime event for it.
+    if (paidAmount > 0 && !depositSkipped && typeof window !== 'undefined') {
+      window.dispatchEvent(new Event(SHIFT_CASH_CHANGED_EVENT));
+    }
     order = { ...(data?.order || {}), kind: 'tailoring', items: lines, history: [initialHistory] };
   } catch (rpcErr) {
     if (!isNetworkFailure(rpcErr)) throw rpcErr;
