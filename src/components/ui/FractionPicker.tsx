@@ -14,6 +14,8 @@ interface FractionPickerProps {
   /** Called with the whole part plus the selected fraction. */
   onSelect: (newValue: number) => void;
   className?: string;
+  /** Set to -1 to keep the buttons out of the Tab order (mouse/touch only). */
+  buttonTabIndex?: number;
 }
 
 /**
@@ -23,7 +25,7 @@ interface FractionPickerProps {
  * the current value -- the whole part typed into the number field is left
  * untouched.
  */
-export function FractionPicker({ value, onSelect, className }: FractionPickerProps) {
+export function FractionPicker({ value, onSelect, className, buttonTabIndex }: FractionPickerProps) {
   const safeValue = value || 0;
   const whole = Math.floor(safeValue);
   const currentFraction = Math.round((safeValue - whole) * 4) / 4;
@@ -36,6 +38,7 @@ export function FractionPicker({ value, onSelect, className }: FractionPickerPro
           <button
             key={fraction.label}
             type="button"
+            tabIndex={buttonTabIndex}
             aria-pressed={isActive}
             onClick={() => onSelect(whole + fraction.value)}
             className={cn(

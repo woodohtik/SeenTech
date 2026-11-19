@@ -9,6 +9,8 @@ import VoiceMeasurementWizard from './VoiceMeasurementWizard';
 import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
 import { MeasurementUnit, cmToDisplayUnit, displayUnitToCm, unitLabelKey } from '../utils/measurementUnits';
 import { FractionPicker } from './ui/FractionPicker';
+import { useDirection } from '../lib/direction';
+import { MEASUREMENT_WIZARD_ORDER } from '../utils/measurementWizardSteps';
 
 interface ThobeMeasurementSelectorProps {
   values: Measurements;
@@ -30,6 +32,18 @@ export const PART_LABELS: Record<ThobePart, string> = {
   cuffLength: 'measurements.part_label.cuffLength',
 };
 
+// Where each field sits around the figure from 768px up: four on the figure's
+// right, four on its left, each on the row closest to its spot on the drawing.
+// DOM order stays MEASUREMENT_WIZARD_ORDER so Tab follows the measuring order.
+const PART_SIDE: Record<ThobePart, 'right' | 'left'> = {
+  neck: 'right', shoulder: 'right', chest: 'right', length: 'right',
+  sleeve: 'left', midSleeveWidth: 'left', cuffLength: 'left', handWidth: 'left',
+};
+const PART_ROW: Record<ThobePart, string> = {
+  neck: 'md:row-start-1', shoulder: 'md:row-start-2', chest: 'md:row-start-3', length: 'md:row-start-4',
+  sleeve: 'md:row-start-1', midSleeveWidth: 'md:row-start-2', cuffLength: 'md:row-start-3', handWidth: 'md:row-start-4',
+};
+
 const PART_HINTS: Record<ThobePart, string> = {
   length: 'measurements.part_hint.length',
   shoulder: 'measurements.part_hint.shoulder',
@@ -43,6 +57,10 @@ const PART_HINTS: Record<ThobePart, string> = {
 
 export default function ThobeMeasurementSelector({ values, onChange, readOnly = false, measurementUnit }: ThobeMeasurementSelectorProps) {
   const { t } = useTranslation();
+  const { isRtl } = useDirection();
+  // Grid column 1 is the visual right in RTL and the visual left in LTR.
+  const sideColumn = (side: 'right' | 'left') =>
+    (side === 'right') === isRtl ? 'md:col-start-1' : 'md:col-start-3';
   const [activePart, setActivePart] = useState<ThobePart | null>(null);
   const [isInstructionMode, setIsInstructionMode] = useState(false);
   const [activeHint, setActiveHint] = useState<ThobePart | null>(null);
@@ -73,18 +91,54 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
 
   return (
     <div className={cn(
-      "flex flex-col items-center gap-8 bg-surface p-4 sm:p-8 rounded-2xl border border-border shadow-xl shadow-brand/5 w-full",
-      !readOnly ? "lg:flex-row lg:items-start" : "max-w-md mx-auto"
+      "bg-surface rounded-2xl border border-border shadow-xl shadow-brand/5 w-full",
+      readOnly ? "flex flex-col items-center p-4 sm:p-8 max-w-md mx-auto" : "p-3 sm:p-5"
     )}>
+      {!readOnly && (
+        <div className="pb-3 mb-3 border-b border-border flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <h2 className="text-base font-black text-content">{t('measurements.visual_selector_title')}</h2>
+            <p className="text-xs text-content-muted font-bold truncate">{t('measurements.visual_selector_desc')}</p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {isSpeechRecognitionSupported() && (
+              <button
+                type="button"
+                onClick={() => setWizardOpen(true)}
+                className="min-h-[40px] flex items-center justify-center gap-1.5 px-3 rounded-xl border border-brand/30 bg-brand/5 text-brand text-xs font-bold hover:bg-brand/10 transition-colors"
+              >
+                <Mic size={16} /> <span className="hidden sm:inline">{t('measurements.voice_fill_button', 'تعبئة المقاسات بالصوت')}</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setIsInstructionMode(!isInstructionMode)}
+              title={t('measurements.instructions_mode')}
+              aria-pressed={isInstructionMode}
+              className={cn("min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl transition-colors", isInstructionMode ? "bg-warning/10 text-warning" : "bg-surface-muted text-content-muted hover:bg-border")}
+            >
+              <Lightbulb size={20} />
+            </button>
+          </div>
+        </div>
+      )}
+      {wizardOpen && (
+        <VoiceMeasurementWizard values={values} onChange={onChange} onClose={() => setWizardOpen(false)} measurementUnit={measurementUnit} />
+      )}
+
+      <div className={cn(
+        !readOnly && "grid grid-cols-2 gap-2 md:grid-cols-[minmax(0,1fr)_minmax(170px,240px)_minmax(0,1fr)] md:grid-rows-4 md:gap-x-4 md:gap-y-3 md:items-center",
+        readOnly && "w-full"
+      )}>
       {/* Interactive SVG Section */}
-      <div className="relative w-full max-w-[400px] mx-auto flex flex-col items-center select-none touch-none">
-        <svg 
-          viewBox="0 0 400 800" 
-          className="w-full h-auto drop-shadow-lg"
-          style={{ 
-            maxHeight: '70vh',
-            filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.05))'
-          }}
+      <div className={cn(
+        "relative w-full mx-auto flex flex-col items-center select-none touch-none",
+        readOnly ? "max-w-[400px]" : "col-span-2 md:col-span-1 md:col-start-2 md:row-start-1 md:row-span-4"
+      )}>
+        <svg
+          viewBox="0 0 400 800"
+          className={cn("w-auto max-w-full h-auto drop-shadow-lg", readOnly ? "max-h-[70vh]" : "max-h-[40vh] md:max-h-[min(58vh,430px)]")}
+          style={{ filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.05))' }}
         >
           <defs>
             <linearGradient id="thobeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -389,129 +443,114 @@ export default function ThobeMeasurementSelector({ values, onChange, readOnly = 
           </AnimatePresence>
         </svg>
 
-        <div className="mt-8">
+        <div className={readOnly ? "mt-8" : "mt-2"}>
           <Branding className="shrink-0 opacity-70 transition-opacity hover:opacity-100" />
         </div>
       </div>
 
-      {/* Input Form Section */}
-      {!readOnly && (
-        <div className="w-full lg:w-[350px] space-y-6">
-          <div className="pb-4 border-b border-border flex items-center justify-between gap-2">
-            <div>
-              <h2 className="text-xl font-black text-content">{t('measurements.visual_selector_title')}</h2>
-              <p className="text-sm text-content-muted font-bold">{t('measurements.visual_selector_desc')}</p>
+      {/* Input fields, in measuring order; placed around the figure from md up */}
+      {!readOnly && MEASUREMENT_WIZARD_ORDER.map((part) => {
+        const isActive = activePart === part;
+        const stored = (values as any)[part];
+        return (
+          <div
+            key={part}
+            onBlur={(e) => {
+              // Keep the field active while focus moves to its own fraction buttons.
+              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setActivePart(null);
+            }}
+            className={cn(
+              "relative rounded-xl border px-2.5 py-1.5 transition-colors",
+              isActive ? "border-brand bg-brand/5" : "border-border bg-surface hover:border-brand/30",
+              sideColumn(PART_SIDE[part]),
+              PART_ROW[part]
+            )}
+          >
+            <div className="flex items-center justify-between gap-1">
+              <label htmlFor={`thobe-part-${part}`} className="block text-[11px] font-black text-content-muted truncate">
+                {t(PART_LABELS[part])}
+              </label>
+              {isInstructionMode && (
+                <button
+                  type="button"
+                  aria-label={t('measurements.instructions_mode')}
+                  aria-expanded={activeHint === part}
+                  onClick={() => setActiveHint(activeHint === part ? null : part)}
+                  className={cn("p-1 rounded-full transition-colors text-warning", activeHint === part ? "bg-warning/10" : "hover:bg-warning/10")}
+                >
+                  <Lightbulb size={14} />
+                </button>
+              )}
             </div>
-            <button 
-              type="button"
-              onClick={() => setIsInstructionMode(!isInstructionMode)}
-              title={t('measurements.instructions_mode')}
-              className={cn("p-2.5 rounded-xl transition-colors shrink-0", isInstructionMode ? "bg-warning/10 text-warning" : "bg-surface-muted text-content-muted hover:bg-border")}
-            >
-              <Lightbulb size={24} />
-            </button>
-          </div>
 
-          {isSpeechRecognitionSupported() && (
-            <button
-              type="button"
-              onClick={() => setWizardOpen(true)}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-brand/30 bg-brand/5 text-brand font-bold hover:bg-brand/10 transition-colors"
-            >
-              <Mic size={16} /> {t('measurements.voice_fill_button', 'تعبئة المقاسات بالصوت')}
-            </button>
-          )}
-          {wizardOpen && (
-            <VoiceMeasurementWizard values={values} onChange={onChange} onClose={() => setWizardOpen(false)} measurementUnit={measurementUnit} />
-          )}
+            <AnimatePresence>
+              {isInstructionMode && activeHint === part && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <p className="text-xs text-warning bg-warning/10 p-2 my-1 rounded-lg font-bold leading-relaxed border border-warning/20">
+                    {t(PART_HINTS[part])}
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          <div className="grid grid-cols-1 gap-4">
-            {(Object.keys(PART_LABELS) as ThobePart[]).map((part) => (
-              <div 
-                key={part}
-                className={cn(
-                  "p-4 rounded-2xl border-2 transition-all duration-300",
-                  activePart === part 
-                    ? "border-brand bg-brand/5 shadow-lg shadow-brand/5" 
-                    : "border-border bg-surface hover:border-brand/30"
-                )}
+            <div className="flex items-center gap-1.5">
+              <input
+                id={`thobe-part-${part}`}
+                ref={(el) => { inputRefs.current[part] = el; }}
+                type="number"
+                min="0"
+                inputMode="decimal"
+                // No fixed step here on purpose. step="0.1" originally rejected
+                // the FractionPicker's own quarter values (20.75 isn't a
+                // multiple of 0.1) as an HTML5 step mismatch and silently
+                // blocked the whole form's native submit; step="0.25" to match
+                // the picker turned out to be just as fragile, because the
+                // DISPLAYED value isn't only ever a clean quarter -- it's
+                // cmToDisplayUnit() converting whatever was actually stored in
+                // cm, and that inch<->cm round trip routinely lands on an
+                // "ugly" decimal (e.g. 59.06) that matches neither step. Real
+                // range validation already happens server-side and in the zod
+                // schema (min/max); step="any" just stops the browser from
+                // blocking a save over its own unrelated divisibility opinion.
+                step="any"
+                value={
+                  stored
+                    ? (isActive
+                        ? cmToDisplayUnit(stored, measurementUnit)
+                        : cmToDisplayUnit(stored, measurementUnit).toFixed(2))
+                    : ''
+                }
+                onChange={(e) => handleInputChange(part, e.target.value)}
+                onFocus={() => setActivePart(part)}
+                placeholder="0.0"
+                className="w-full min-w-0 h-10 bg-transparent border-none p-0 text-lg font-black text-content focus:ring-0 focus:outline-none placeholder:text-content-muted/30"
+              />
+              <span className="text-xs font-bold text-content-muted shrink-0">{t(unitLabelKey(measurementUnit))}</span>
+            </div>
+            {isActive && (
+              // Floats under the active field only, so the other fields never shift.
+              // preventDefault keeps focus in the input while a fraction is tapped.
+              <div
+                className="absolute inset-x-0 top-full z-20 mt-1 flex justify-center"
+                onMouseDown={(e) => e.preventDefault()}
               >
-                <div className="flex items-center justify-between mb-2">
-                  <label htmlFor={`thobe-part-${part}`} className="block text-[10px] font-black text-content-muted uppercase tracking-widest">
-                    {t(PART_LABELS[part])}
-                  </label>
-                  {isInstructionMode && (
-                    <button 
-                      type="button"
-                      onClick={() => setActiveHint(activeHint === part ? null : part)}
-                      className={cn("p-1.5 rounded-full transition-colors", activeHint === part ? "text-warning bg-warning/10" : "text-warning hover:bg-warning/10")}
-                    >
-                      <Lightbulb size={14} />
-                    </button>
-                  )}
-                </div>
-                
-                <AnimatePresence>
-                  {isInstructionMode && activeHint === part && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden mb-3"
-                    >
-                      <p className="text-xs text-warning bg-warning/10 p-2.5 rounded-xl font-bold leading-relaxed border border-warning/20">
-                        {t(PART_HINTS[part])}
-                      </p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <div className="flex items-center gap-3">
-                  <input
-                    id={`thobe-part-${part}`}
-                    ref={(el) => { inputRefs.current[part] = el; }}
-                    type="number"
-                    min="0"
-                    // No fixed step here on purpose. step="0.1" originally rejected
-                    // the FractionPicker's own quarter values (20.75 isn't a
-                    // multiple of 0.1) as an HTML5 step mismatch and silently
-                    // blocked the whole form's native submit; step="0.25" to match
-                    // the picker turned out to be just as fragile, because the
-                    // DISPLAYED value isn't only ever a clean quarter -- it's
-                    // cmToDisplayUnit() converting whatever was actually stored in
-                    // cm, and that inch<->cm round trip routinely lands on an
-                    // "ugly" decimal (e.g. 59.06) that matches neither step. Real
-                    // range validation already happens server-side and in the zod
-                    // schema (min/max); step="any" just stops the browser from
-                    // blocking a save over its own unrelated divisibility opinion.
-                    step="any"
-                    value={
-                      (values as any)[part]
-                        ? (activePart === part
-                            ? cmToDisplayUnit((values as any)[part], measurementUnit)
-                            : cmToDisplayUnit((values as any)[part], measurementUnit).toFixed(2))
-                        : ''
-                    }
-                    onChange={(e) => handleInputChange(part, e.target.value)}
-                    onFocus={() => setActivePart(part)}
-                    onBlur={() => setActivePart(null)}
-                    placeholder="0.0"
-                    className="w-full bg-transparent border-none p-0 text-3xl font-black text-content focus:ring-0 placeholder:text-content-muted/30"
-                  />
-                  <span className="text-sm font-bold text-content-muted">{t(unitLabelKey(measurementUnit))}</span>
-                </div>
-                {!readOnly && (
-                  <FractionPicker
-                    value={(values as any)[part] ? cmToDisplayUnit((values as any)[part], measurementUnit) : 0}
-                    onSelect={(newValue) => handleInputChange(part, String(newValue))}
-                    className="mt-2"
-                  />
-                )}
+                <FractionPicker
+                  value={stored ? cmToDisplayUnit(stored, measurementUnit) : 0}
+                  onSelect={(newValue) => handleInputChange(part, String(newValue))}
+                  className="bg-surface border border-border rounded-xl p-1 shadow-lg"
+                  buttonTabIndex={-1}
+                />
               </div>
-            ))}
+            )}
           </div>
-        </div>
-      )}
+        );
+      })}
+      </div>
     </div>
   );
 }

@@ -2112,14 +2112,14 @@ const CustomerDetailsModal = ({
                 { label: t('customers.length'), value: customer.measurements?.length, icon: <ArrowUpDown size={14} />, color: 'bg-info/10 text-info' },
                 { label: t('customers.shoulder'), value: customer.measurements?.shoulder, icon: <ArrowLeftRight size={14} />, color: 'bg-brand/10 text-brand' },
                 { label: t('customers.chest'), value: customer.measurements?.chest, icon: <Users size={14} />, color: 'bg-success/10 text-success' },
-                { label: t('customers.waist'), value: customer.measurements?.waist, icon: <Filter size={14} />, color: 'bg-warning/10 text-warning' },
-                { label: t('customers.hips'), value: customer.measurements?.hips, icon: <ChevronDown size={14} />, color: 'bg-danger/10 text-danger' },
+                { label: t('customers.waist'), value: customer.measurements?.waist, icon: <Filter size={14} />, color: 'bg-warning/10 text-warning', hideIfEmpty: true },
+                { label: t('customers.hips'), value: customer.measurements?.hips, icon: <ChevronDown size={14} />, color: 'bg-danger/10 text-danger', hideIfEmpty: true },
                 { label: t('customers.sleeve'), value: customer.measurements?.sleeve, icon: <Scissors size={14} />, color: 'bg-info/10 text-info' },
                 { label: t('customers.neck'), value: customer.measurements?.neck, icon: <User size={14} />, color: 'bg-brand/10 text-brand' },
                 { label: t('measurements.handWidth'), value: customer.measurements?.handWidth, icon: <ArrowLeftRight size={14} />, color: 'bg-brand/10 text-brand' },
                 { label: t('measurements.midSleeveWidth'), value: customer.measurements?.midSleeveWidth, icon: <ArrowLeftRight size={14} />, color: 'bg-info/10 text-info' },
                 { label: t('measurements.cuffLength'), value: customer.measurements?.cuffLength, icon: <Scissors size={14} />, color: 'bg-success/10 text-success' },
-              ].map((m) => {
+              ].filter((m: any) => !(m.hideIfEmpty && !m.value)).map((m) => {
                 const displayValue = typeof m.value === 'number' ? cmToDisplayUnit(m.value, measurementUnit) : m.value;
                 return (
                   <div key={m.label} className="bg-surface p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-border hover:border-brand/20 transition-all group shadow-sm">

@@ -6,7 +6,7 @@ import { fuzzyIncludes } from '../utils/fuzzySearch';
 import { calculateItemTax } from '../utils/b2bHelper';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
-import { cmToDisplayUnit, displayUnitToCm, unitLabelKey } from '../utils/measurementUnits';
+import { cmToDisplayUnit, unitLabelKey } from '../utils/measurementUnits';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
@@ -88,7 +88,6 @@ import { Pagination } from './ui/Pagination';
 import { DatePicker } from './ui/DatePicker';
 import { IconInput } from './ui/IconInput';
 import { VoiceMicButton } from './ui/VoiceMicButton';
-import { FractionPicker } from './ui/FractionPicker';
 import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
 import { checkStockAvailability, deductStock } from '../services/inventoryService';
 import { useStaff } from '../contexts/StaffContext';
@@ -3424,14 +3423,14 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                                   { label: t('measurements.length'), value: selectedCustomer.measurements?.length },
                                   { label: t('measurements.shoulder'), value: selectedCustomer.measurements?.shoulder },
                                   { label: t('measurements.chest'), value: selectedCustomer.measurements?.chest },
-                                  { label: t('measurements.waist'), value: selectedCustomer.measurements?.waist },
-                                  { label: t('measurements.hips'), value: selectedCustomer.measurements?.hips },
+                                  { label: t('measurements.waist'), value: selectedCustomer.measurements?.waist, hideIfEmpty: true },
+                                  { label: t('measurements.hips'), value: selectedCustomer.measurements?.hips, hideIfEmpty: true },
                                   { label: t('measurements.sleeve'), value: selectedCustomer.measurements?.sleeve },
                                   { label: t('measurements.neck'), value: selectedCustomer.measurements?.neck },
                                   { label: t('measurements.handWidth'), value: selectedCustomer.measurements?.handWidth },
                                   { label: t('measurements.midSleeveWidth'), value: selectedCustomer.measurements?.midSleeveWidth },
                                   { label: t('measurements.cuffLength'), value: selectedCustomer.measurements?.cuffLength },
-                                ].map((m) => {
+                                ].filter((m: any) => !(m.hideIfEmpty && !m.value)).map((m) => {
                                   const displayValue = typeof m.value === 'number' ? cmToDisplayUnit(m.value, measurementUnit) : m.value;
                                   return (
                                     <div key={m.label} className="bg-surface p-2 rounded-xl border border-brand/10 text-center">
@@ -3461,69 +3460,16 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                             </>
                           ) : (
                             <div className="space-y-3 pt-1">
-                              <p className="text-xs font-bold text-content-muted">{t('orders.edit_main_measurements')}</p>
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                {[
-                                  { key: 'length', label: t('measurements.length') },
-                                  { key: 'shoulder', label: t('measurements.shoulder') },
-                                  { key: 'chest', label: t('measurements.chest') },
-                                  { key: 'sleeve', label: t('measurements.sleeve') },
-                                  { key: 'neck', label: t('measurements.neck') },
-                                  { key: 'handWidth', label: t('measurements.handWidth') },
-                                  { key: 'midSleeveWidth', label: t('measurements.midSleeveWidth') },
-                                  { key: 'cuffLength', label: t('measurements.cuffLength') },
-                                ].map((item) => {
-                                  const rawValue = (tempMeasurements as any)[item.key];
-                                  const displayValue = typeof rawValue === 'number' ? cmToDisplayUnit(rawValue, measurementUnit) : rawValue;
-                                  return (
-                                    <div key={item.key} className="bg-surface p-2 rounded-xl border border-brand/10">
-                                      <label className="text-[10px] text-content-muted font-bold block mb-1">{item.label} <span className="text-content-muted/70">({t(unitLabelKey(measurementUnit))})</span></label>
-                                      <input
-                                        type="number"
-                                        step="0.1"
-                                        min="0"
-                                        value={displayValue ?? ''}
-                                        onChange={(e) => setTempMeasurements(prev => ({
-                                          ...prev,
-                                          [item.key]: e.target.value === '' ? '' : displayUnitToCm(Number(e.target.value), measurementUnit)
-                                        }))}
-                                        className="w-full bg-surface text-sm font-bold text-brand text-center p-1.5 rounded-xl outline-none border border-border focus:border-brand focus:ring-2 focus:ring-brand/20"
-                                      />
-                                      <FractionPicker
-                                        value={typeof displayValue === 'number' ? displayValue : 0}
-                                        onSelect={(newValue) => setTempMeasurements(prev => ({
-                                          ...prev,
-                                          [item.key]: displayUnitToCm(newValue, measurementUnit)
-                                        }))}
-                                        className="mt-1.5 justify-center"
-                                      />
-                                    </div>
-                                  );
-                                })}
-                              </div>
-
+                              <ThobeMeasurementSelector
+                                values={tempMeasurements}
+                                onChange={setTempMeasurements}
+                                measurementUnit={measurementUnit}
+                              />
                               <p className="text-xs font-bold text-content-muted pt-2 border-t border-brand/10">{t('orders.edit_style_details')}</p>
-                              <div className="grid grid-cols-2 gap-2">
-                                {[
-                                  { key: 'collarType', label: t('measurements.collarType') },
-                                  { key: 'cuffType', label: t('measurements.cuffType') },
-                                  { key: 'pocketType', label: t('measurements.pocketType') },
-                                  { key: 'chestStyle', label: t('measurements.chestStyle') },
-                                ].map((styleItem) => (
-                                  <div key={styleItem.key} className="bg-surface p-2 rounded-xl border border-brand/10">
-                                    <label className="text-[10px] text-content-muted font-bold block mb-1">{styleItem.label}</label>
-                                    <input
-                                      type="text"
-                                      value={(tempMeasurements as any)[styleItem.key] ?? ''}
-                                      onChange={(e) => setTempMeasurements(prev => ({
-                                        ...prev,
-                                        [styleItem.key]: e.target.value
-                                      }))}
-                                      className="w-full bg-surface text-xs font-bold text-content p-1.5 rounded-xl outline-none border border-border focus:border-brand focus:ring-2 focus:ring-brand/20"
-                                    />
-                                  </div>
-                                ))}
-                              </div>
+                              <VisualMeasurements
+                                values={tempMeasurements as any}
+                                onChange={(field, val) => setTempMeasurements(prev => ({ ...prev, [field]: val }))}
+                              />
                             </div>
                           )}
                         </motion.div>
