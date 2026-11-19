@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_FABRIC_ESTIMATE_SETTINGS,
+  fabricInputFromMeasurements,
   estimateFabricCm,
   estimateFabricMeters,
   metersToYards,
@@ -14,6 +15,32 @@ describe('estimateFabricCm / estimateFabricMeters', () => {
     const meters = estimateFabricMeters({ lengthCm: 145, sleeveCm: 62, fabricWidthCm: 150 });
     expect(meters).toBe(3.8);
     expect(metersToYards(meters!)).toBe(4.16);
+  });
+
+  it('adds the bottom hem to the length and the sleeve hem to the plain sleeve', () => {
+    // 2*(145+5) + (62+3) + 25 = 390
+    const input = { lengthCm: 145, bottomHemCm: 5, sleeveCm: 62, sleeveHemCm: 3, fabricWidthCm: 150 };
+    expect(estimateFabricCm(input)).toBe(390);
+    expect(estimateFabricMeters(input)).toBe(3.9);
+  });
+
+  it('cuts the sleeve at the larger of the cuffed length and the plain length with its hem', () => {
+    // cuffed 60 against plain 62+3 -> 65
+    expect(estimateFabricCm({ lengthCm: 145, sleeveCuffCm: 60, sleeveCm: 62, sleeveHemCm: 3 })).toBe(380);
+    // cuffed 70 wins: 290 + 70 + 25 = 385
+    expect(estimateFabricCm({ lengthCm: 145, sleeveCuffCm: 70, sleeveCm: 62, sleeveHemCm: 3 })).toBe(385);
+    // only the cuffed sleeve entered: 290 + 60 + 25 = 375
+    expect(estimateFabricCm({ lengthCm: 145, sleeveCuffCm: 60 })).toBe(375);
+  });
+
+  it('reads its inputs from a stored measurements object', () => {
+    const input = fabricInputFromMeasurements(
+      { length: 145, bottomHem: 5, sleeve: 62, sleeveHem: 3, sleeveCuff: 0 },
+      112
+    );
+    // narrow cloth: 300 + 2*65 + 25 = 455
+    expect(estimateFabricCm(input)).toBe(455);
+    expect(estimateFabricCm(fabricInputFromMeasurements(null))).toBeNull();
   });
 
   it('narrow cloth: a full sleeve length per sleeve', () => {
@@ -34,8 +61,10 @@ describe('estimateFabricCm / estimateFabricMeters', () => {
     expect(estimateFabricCm({ lengthCm: 145, sleeveCm: 62 }, narrowShop)).toBe(440);
   });
 
-  it('returns null when length or sleeve is missing', () => {
+  it('returns null when the length or both sleeve lengths are missing', () => {
     expect(estimateFabricCm({ lengthCm: 145 })).toBeNull();
+    expect(estimateFabricCm({ lengthCm: 145, sleeveHemCm: 3, bottomHemCm: 5 })).toBeNull();
+    expect(estimateFabricCm({ sleeveCuffCm: 60, sleeveCm: 62 })).toBeNull();
     expect(estimateFabricCm({ sleeveCm: 62 })).toBeNull();
     expect(estimateFabricCm({ lengthCm: 0, sleeveCm: 62 })).toBeNull();
     expect(estimateFabricMeters({ lengthCm: null, sleeveCm: null })).toBeNull();
