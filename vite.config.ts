@@ -68,6 +68,45 @@ export default defineConfig(({mode}) => {
             // pre-rendered pages, not part of the app shell -- no reason to
             // precache every one of them into every tenant's SW install.
             'blog/**',
+            // seen-performance-first-open-login-task.md Phase 6: the heavy,
+            // rarely used files no longer download in the background on a
+            // first visit (they competed with the app's own requests). Each
+            // is cached on first use instead (runtimeCaching below), so it
+            // still works offline after that. PDF/Excel/scanner/charts, the
+            // Firebase SDK (push only), the English/Urdu language files
+            // (Arabic stays), and the TTF fonts now that WOFF2 is served.
+            '**/assets/html2pdf-*.js',
+            '**/assets/html2canvas*.js',
+            '**/assets/xlsx-*.js',
+            '**/assets/pdfGenerator-*.js',
+            '**/assets/ScannerModal-*.js',
+            '**/assets/CartesianChart-*.js',
+            '**/assets/AreaChart-*.js',
+            '**/assets/BarChart-*.js',
+            '**/assets/PieChart-*.js',
+            '**/assets/index.es-*.js',
+            '**/assets/purify.es-*.js',
+            '**/assets/vendor-firebase-*.js',
+            '**/assets/en-*.js',
+            '**/assets/ur-*.js',
+            '**/fonts/*.ttf',
+            // Two big pages outside the founder's offline core (POS, sales,
+            // orders, customers, dashboard stay precached): cached on their
+            // first open instead, and offline-capable after that.
+            '**/assets/Settings-*.js',
+            '**/assets/InventoryManager-*.js',
+          ],
+          runtimeCaching: [
+            {
+              urlPattern: ({ url }) =>
+                url.origin === self.location.origin &&
+                /\/assets\/(html2pdf|html2canvas|xlsx|pdfGenerator|ScannerModal|CartesianChart|AreaChart|BarChart|PieChart|index\.es|purify\.es|vendor-firebase|en|ur|Settings|InventoryManager)[-.][^/]*\.js$/.test(url.pathname),
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'seen-on-demand-chunks',
+                expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 60 },
+              },
+            },
           ],
           // Even after seen-offline-coverage-and-performance-task.md Phase
           // 6 (lazy-loaded locale files, vendor chunk splitting) the

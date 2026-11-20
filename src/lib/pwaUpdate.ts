@@ -35,6 +35,19 @@ export function initPwaUpdates(): void {
   if (initialized) return;
   initialized = true;
 
+  // seen-performance-first-open-login-task.md Phase 6: registering the
+  // service worker starts the precache download, which used to compete
+  // with the first screen's own requests. Registered once the page has
+  // loaded and the browser is idle (at most ~5 seconds later) instead.
+  const register = () => {
+    const idle = (window as any).requestIdleCallback as ((cb: () => void, opts?: { timeout: number }) => number) | undefined;
+    if (idle) idle(registerNow, { timeout: 5000 }); else window.setTimeout(registerNow, 3000);
+  };
+  if (document.readyState === 'complete') register();
+  else window.addEventListener('load', register, { once: true });
+}
+
+function registerNow(): void {
   applyUpdate = registerSW({
     immediate: true,
     onRegisteredSW(_swUrl, registration) {

@@ -25,6 +25,9 @@ async function setup() {
   const mod = await import('./pwaUpdate');
   const registration = makeRegistration();
   mod.initPwaUpdates();
+  // Registration waits for load + idle (seen-performance-first-open-login-
+  // task.md Phase 6); jsdom has no requestIdleCallback, so a 3s timer.
+  vi.advanceTimersByTime(5_000);
   const options = registerSWMock.mock.calls[0][0];
   options.onRegisteredSW('/sw.js', registration);
   // Registration itself fires an immediate check (tested on its own below)
@@ -36,10 +39,21 @@ async function setup() {
   return { mod, registration, options };
 }
 
+test('does not register the service worker during the first render, only after load + idle', async () => {
+  const mod = await import('./pwaUpdate');
+  mod.initPwaUpdates();
+  expect(registerSWMock).not.toHaveBeenCalled();
+  vi.advanceTimersByTime(5_000);
+  expect(registerSWMock).toHaveBeenCalledTimes(1);
+});
+
 test('checks for an update immediately once registration succeeds', async () => {
   const mod = await import('./pwaUpdate');
   const registration = makeRegistration();
   mod.initPwaUpdates();
+  // Registration waits for load + idle (seen-performance-first-open-login-
+  // task.md Phase 6); jsdom has no requestIdleCallback, so a 3s timer.
+  vi.advanceTimersByTime(5_000);
   const options = registerSWMock.mock.calls[0][0];
   options.onRegisteredSW('/sw.js', registration);
   expect(registration.update).toHaveBeenCalledTimes(1);
