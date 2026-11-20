@@ -30,6 +30,30 @@ import { saveLastKnown, getLastKnown } from '../lib/offline/lastKnownCache';
 import { isNetworkFailure } from '../lib/offline/outbox';
 import { Customer, Order, InventoryItem, AppNotification, OrderStatus, Tenant, BranchInventory } from '../types';
 
+/** PostgREST's answer when an RPC does not exist on this database yet. */
+function isMissingFunctionError(error: any): boolean {
+  const code = String(error?.code || '');
+  return code === 'PGRST202' || code === '42883';
+}
+
+/** numeric columns arrive as numbers, but make sure. */
+function normalizeStatsResult(d: any): DashboardStatsResult {
+  const num = (v: any) => Number(v) || 0;
+  return {
+    ranges: (d.ranges || []).map((r: any) => ({ orders: num(r.orders), paid: num(r.paid), pending: num(r.pending), customers: num(r.customers) })),
+    filtered: {
+      orders: num(d.filtered?.orders), paid: num(d.filtered?.paid), remaining: num(d.filtered?.remaining),
+      pending: num(d.filtered?.pending), customers: num(d.filtered?.customers),
+      completion_hours: num(d.filtered?.completion_hours), completion_count: num(d.filtered?.completion_count),
+      active_customers: num(d.filtered?.active_customers), customers_with_orders: num(d.filtered?.customers_with_orders),
+      repeat_customers: num(d.filtered?.repeat_customers), status_counts: d.filtered?.status_counts || {},
+    },
+    totals: { orders: num(d.totals?.orders), in_progress: num(d.totals?.in_progress), measurements_taken: num(d.totals?.measurements_taken), ready: num(d.totals?.ready) },
+    low_stock: num(d.low_stock),
+    customers_total: num(d.customers_total),
+  };
+}
+
 interface DashboardStatsData {
   customers: Customer[];
   orders: Order[];
@@ -37,6 +61,7 @@ interface DashboardStatsData {
   bInv: BranchInventory[];
 }
 import { STATUS_CONFIG, getOrderStatusDisplay } from './orderStatusConfig';
+import { buildDashboardPlan, figuresFrom, planRanges, statsFromRows, type ChartLabel, type DashboardFigures, type DashboardStatsResult } from './dashboard/dashboardStats';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
@@ -266,102 +291,147 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
   const [isTrialPlan, setIsTrialPlan] = useState<boolean>(true);
 
   const queryClient = useQueryClient();
-  // Phase 3 of seen-offline-coverage-and-performance-task.md: dashboard
-  // stats now come from react-query. initialData seeds synchronously from
-  // the same lastKnownCache (localStorage) snapshot Phase 2 already wrote
-  // here -- same pattern as Suppliers.tsx/Reports.tsx. The cache always
-  // stores orders UNfiltered by branch (see queryFn below) so switching
-  // branches can reuse it too, applying the same filter on the way out.
   const isUuidTenantId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId || '');
-  const dashboardStatsQuery = useQuery<DashboardStatsData>({
-    queryKey: ['dashboard_stats', tenantId, selectedBranchId],
+
+  // seen-performance-first-open-login-task.md Phase 4.3: the cards, chart
+  // and status bars come from public.get_dashboard_stats, which sums in the
+  // database the very boundaries this page always used (dashboard/
+  // dashboardStats.ts builds them). The page used to download every
+  // customer, order and stock row for this -- and PostgREST stopped at 1000
+  // rows, so big shops saw wrong numbers.
+  //
+  // Full rows are now read only for the drill-down lists, when one is
+  // opened (getDashboardRows), paged past that 1000-row cap -- and as the
+  // fallback where the function is not deployed yet.
+  const loadDashboardRows = React.useCallback(async (): Promise<DashboardStatsData> => {
+    const PAGE = 1000;
+    const readAll = async (make: () => any): Promise<any[]> => {
+      const out: any[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await make().range(from, from + PAGE - 1);
+        if (error) throw error;
+        out.push(...(data || []));
+        if (!data || data.length < PAGE) return out;
+      }
+    };
+    const [customersRows, ordersRows, inventoryRows, branchInvRows] = await Promise.all([
+      readAll(() => supabase.from('customers').select('*').eq('tenant_id', tenantId).order('id')),
+      readAll(() => supabase.from('orders').select('*').eq('tenant_id', tenantId).order('id')),
+      readAll(() => supabase.from('inventory_items').select('*').eq('tenant_id', tenantId).order('id')),
+      readAll(() => supabase.from('branch_inventory').select('*').eq('tenant_id', tenantId).order('id')),
+    ]);
+
+    const customers = customersRows.map(d => ({
+      ...d,
+      tenantId: d.tenant_id,
+      createdAt: d.created_at
+    }) as unknown as Customer);
+
+    const allOrdersUnfiltered = ordersRows.map(d => ({
+      ...d,
+      // status_key (نص حر لأي نشاط) يتقدّم على status (enum قديم) متى وُجد — انظر Orders.tsx.
+      status: d.status_key || d.status,
+      customerId: d.customer_id || '',
+      customerName: d.customer_name || '',
+      orderDate: d.order_date || new Date().toISOString(),
+      totalAmount: d.total_amount || 0,
+      paidAmount: d.paid_amount || 0,
+      remainingAmount: d.remaining_amount || 0,
+      branchId: d.branch_id || '',
+      orderNumber: d.order_number || '',
+      createdAt: d.created_at,
+      updatedAt: d.updated_at
+    }) as unknown as Order);
+
+    const orders = selectedBranchId !== 'all'
+      ? allOrdersUnfiltered.filter(o => o.branchId === selectedBranchId)
+      : allOrdersUnfiltered;
+
+    const inventory = inventoryRows.map(d => ({
+      id: d.id,
+      name: d.name,
+      minThreshold: d.min_threshold || 0,
+      tenantId: d.tenant_id,
+      quantity: d.quantity || 0,
+      unit: d.unit,
+    } as InventoryItem));
+
+    const bInv = branchInvRows.map(d => ({
+      id: d.id,
+      itemId: d.item_id,
+      branchId: d.branch_id,
+      quantity: d.quantity || 0,
+      tenantId: d.tenant_id
+    } as BranchInventory));
+
+    return { customers, orders, inventory, bInv };
+  }, [tenantId, selectedBranchId]);
+
+  const getDashboardRows = React.useCallback(
+    () => queryClient.fetchQuery({ queryKey: ['dashboard_rows', tenantId, selectedBranchId], queryFn: loadDashboardRows, staleTime: 30_000 }),
+    [queryClient, tenantId, selectedBranchId, loadDashboardRows],
+  );
+
+  const figuresKey = [tenantId, selectedBranchId, selectedTimeframe, customStartDate, customEndDate, revenueRange].join('|');
+  const dashboardFiguresQuery = useQuery<DashboardFigures>({
+    queryKey: ['dashboard_stats', tenantId, selectedBranchId, selectedTimeframe, customStartDate, customEndDate, revenueRange],
     queryFn: async () => {
-      const [customersRes, ordersRes, inventoryRes, branchInvRes] = await Promise.all([
-        supabase.from('customers').select('*').eq('tenant_id', tenantId),
-        supabase.from('orders').select('*').eq('tenant_id', tenantId),
-        supabase.from('inventory_items').select('*').eq('tenant_id', tenantId),
-        supabase.from('branch_inventory').select('*').eq('tenant_id', tenantId)
-      ]);
-
-      if (customersRes.error) console.error('Customers query error:', customersRes.error);
-      if (ordersRes.error) console.error('Orders query error:', ordersRes.error);
-      if (inventoryRes.error) console.error('Inventory query error:', inventoryRes.error);
-      if (branchInvRes.error) console.error('Branch Inventory query error:', branchInvRes.error);
-
-      const customers = (customersRes.data || []).map(d => ({
-        ...d,
-        tenantId: d.tenant_id,
-        createdAt: d.created_at
-      }) as unknown as Customer);
-
-      const allOrdersUnfiltered = (ordersRes.data || []).map(d => ({
-        ...d,
-        // status_key (نص حر لأي نشاط) يتقدّم على status (enum قديم) متى وُجد — انظر Orders.tsx.
-        status: d.status_key || d.status,
-        customerId: d.customer_id || '',
-        customerName: d.customer_name || '',
-        orderDate: d.order_date || new Date().toISOString(),
-        totalAmount: d.total_amount || 0,
-        paidAmount: d.paid_amount || 0,
-        remainingAmount: d.remaining_amount || 0,
-        branchId: d.branch_id || '',
-        orderNumber: d.order_number || '',
-        createdAt: d.created_at,
-        updatedAt: d.updated_at
-      }) as unknown as Order);
-
-      const orders = selectedBranchId !== 'all'
-        ? allOrdersUnfiltered.filter(o => o.branchId === selectedBranchId)
-        : allOrdersUnfiltered;
-
-      const inventory = (inventoryRes.data || []).map(d => ({
-        id: d.id,
-        name: d.name,
-        minThreshold: d.min_threshold || 0,
-        tenantId: d.tenant_id,
-        quantity: d.quantity || 0
-      } as InventoryItem));
-
-      const bInv = (branchInvRes.data || []).map(d => ({
-        id: d.id,
-        itemId: d.item_id,
-        branchId: d.branch_id,
-        quantity: d.quantity || 0,
-        tenantId: d.tenant_id
-      } as BranchInventory));
-
-      // This tab doesn't need real offline writes (no financial operation
-      // happens here while disconnected), just an honest "stale data"
-      // notice instead of a blank dashboard on a failed refresh.
-      saveLastKnown(tenantId, 'dashboard_stats', { customers, orders: allOrdersUnfiltered, inventory, bInv });
-      return { customers, orders, inventory, bInv };
+      const plan = buildDashboardPlan({ timeframe: selectedTimeframe, customStartDate, customEndDate, revenueRange });
+      const { data, error } = await supabase.rpc('get_dashboard_stats' as any, {
+        p_tenant_id: tenantId,
+        p_branch_id: selectedBranchId !== 'all' ? selectedBranchId : null,
+        p_ranges: planRanges(plan),
+        p_filter: plan.filter,
+        p_active_since: plan.activeSince,
+      });
+      let result: DashboardStatsResult;
+      if (!error && data && typeof data === 'object' && !Array.isArray(data)) {
+        result = normalizeStatsResult(data);
+      } else if (error && !isMissingFunctionError(error)) {
+        throw error;
+      } else {
+        // The function is not on this database yet: the same figures from the rows.
+        result = statsFromRows(plan, await getDashboardRows());
+      }
+      const figures = figuresFrom(plan, result);
+      // An honest "last known" view when offline -- now a few KB of figures, not every row.
+      saveLastKnown(tenantId, 'dashboard_figures', { key: figuresKey, figures });
+      return figures;
     },
     enabled: !!tenantId && isUuidTenantId,
     staleTime: 30_000,
     initialData: () => {
       if (!tenantId) return undefined;
-      const cached = getLastKnown<DashboardStatsData>(tenantId, 'dashboard_stats')?.data;
-      if (!cached) return undefined;
-      return {
-        ...cached,
-        orders: selectedBranchId !== 'all' ? cached.orders.filter(o => o.branchId === selectedBranchId) : cached.orders,
-      };
+      const cached = getLastKnown<{ key: string; figures: DashboardFigures }>(tenantId, 'dashboard_figures')?.data;
+      return cached && cached.key === figuresKey ? cached.figures : undefined;
     },
+    // The saved figures show at once but count as already stale, so they are
+    // refreshed on every open. (The old rows cache counted as fresh for 30s,
+    // which kept a stale "0 orders" on screen after a reload.)
+    initialDataUpdatedAt: 0,
   });
-  const allCustomers = dashboardStatsQuery.data?.customers ?? [];
-  const allOrders = dashboardStatsQuery.data?.orders ?? [];
-  const allInventory = dashboardStatsQuery.data?.inventory ?? [];
-  const branchInventory = dashboardStatsQuery.data?.bInv ?? [];
-  const isLoading = dashboardStatsQuery.isLoading;
+  const dashboardTotals = dashboardFiguresQuery.data?.totals;
+  const isLoading = dashboardFiguresQuery.isLoading;
 
-  useEffect(() => {
-    if (!dashboardStatsQuery.error) return;
-    console.error('Dashboard Stats Error:', dashboardStatsQuery.error);
-    if (isNetworkFailure(dashboardStatsQuery.error) && dashboardStatsQuery.data) {
+  // A drill-down list needs the rows themselves; they are read when one is opened.
+  const openDrill = React.useCallback(async (build: (rows: DashboardStatsData) => { type: string; title: string; data: any[] }) => {
+    try {
+      setDrillDown(build(await getDashboardRows()));
+    } catch (err) {
+      console.error('Dashboard drill-down rows failed:', err);
       setToast({ message: t('offline.showing_cached_dashboard', 'يتم عرض بيانات مخزَّنة من آخر اتصال، قد لا تكون محدَّثة.'), type: 'info' });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dashboardStatsQuery.error]);
+  }, [getDashboardRows]);
+
+  useEffect(() => {
+    if (!dashboardFiguresQuery.error) return;
+    console.error('Dashboard Stats Error:', dashboardFiguresQuery.error);
+    if (isNetworkFailure(dashboardFiguresQuery.error) && dashboardFiguresQuery.data) {
+      setToast({ message: t('offline.showing_cached_dashboard', 'يتم عرض بيانات مخزَّنة من آخر اتصال، قد لا تكون محدَّثة.'), type: 'info' });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dashboardFiguresQuery.error]);
 
   const markAsRead = async (id: string) => {
     try {
@@ -534,7 +604,10 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
     // Dashboard stats themselves are owned by the useQuery above; the three
     // call sites below just invalidate its cache instead of re-running a
     // local fetch function.
-    const invalidateStats = () => queryClient.invalidateQueries({ queryKey: ['dashboard_stats', tenantId, selectedBranchId] });
+    const invalidateStats = () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard_stats', tenantId] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard_rows', tenantId] });
+    };
     let orderChangeTimer: number | null = null;
 
     const fetchRecentOrders = async () => {
@@ -685,447 +758,29 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
     };
   }, [tenantId, revenueRange, currentStaff?.branchId, selectedBranchId]);
 
+  // The figures (cards, chart, status bars) as the page shows them. The
+  // numbers come from get_dashboard_stats; labels are made here, as before.
   useEffect(() => {
-    const now = new Date();
-    let currentPeriodStart: Date | null = null;
-    let currentPeriodEnd: Date | null = null;
-    let previousPeriodStart: Date | null = null;
-    let previousPeriodEnd: Date | null = null;
-
-    if (selectedTimeframe === 'daily') {
-      currentPeriodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-      currentPeriodEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-      previousPeriodStart = new Date(currentPeriodStart);
-      previousPeriodStart.setDate(previousPeriodStart.getDate() - 1);
-      previousPeriodEnd = new Date(currentPeriodEnd);
-      previousPeriodEnd.setDate(previousPeriodEnd.getDate() - 1);
-    } else if (selectedTimeframe === 'weekly') {
-      currentPeriodStart = new Date();
-      currentPeriodStart.setDate(currentPeriodStart.getDate() - 7);
-      currentPeriodStart.setHours(0, 0, 0, 0);
-      currentPeriodEnd = now;
-
-      previousPeriodStart = new Date(currentPeriodStart);
-      previousPeriodStart.setDate(previousPeriodStart.getDate() - 7);
-      previousPeriodEnd = new Date(currentPeriodStart);
-      previousPeriodEnd.setMilliseconds(previousPeriodEnd.getMilliseconds() - 1);
-    } else if (selectedTimeframe === 'monthly') {
-      currentPeriodStart = new Date();
-      currentPeriodStart.setDate(currentPeriodStart.getDate() - 30);
-      currentPeriodStart.setHours(0, 0, 0, 0);
-      currentPeriodEnd = now;
-
-      previousPeriodStart = new Date(currentPeriodStart);
-      previousPeriodStart.setDate(previousPeriodStart.getDate() - 30);
-      previousPeriodEnd = new Date(currentPeriodStart);
-      previousPeriodEnd.setMilliseconds(previousPeriodEnd.getMilliseconds() - 1);
-    } else if (selectedTimeframe === 'quarterly') {
-      currentPeriodStart = new Date();
-      currentPeriodStart.setDate(currentPeriodStart.getDate() - 90);
-      currentPeriodStart.setHours(0, 0, 0, 0);
-      currentPeriodEnd = now;
-
-      previousPeriodStart = new Date(currentPeriodStart);
-      previousPeriodStart.setDate(previousPeriodStart.getDate() - 90);
-      previousPeriodEnd = new Date(currentPeriodStart);
-      previousPeriodEnd.setMilliseconds(previousPeriodEnd.getMilliseconds() - 1);
-    } else if (selectedTimeframe === 'yearly') {
-      currentPeriodStart = new Date();
-      currentPeriodStart.setDate(currentPeriodStart.getDate() - 365);
-      currentPeriodStart.setHours(0, 0, 0, 0);
-      currentPeriodEnd = now;
-
-      previousPeriodStart = new Date(currentPeriodStart);
-      previousPeriodStart.setDate(previousPeriodStart.getDate() - 365);
-      previousPeriodEnd = new Date(currentPeriodStart);
-      previousPeriodEnd.setMilliseconds(previousPeriodEnd.getMilliseconds() - 1);
-    } else if (selectedTimeframe === 'custom') {
-      if (customStartDate && customEndDate) {
-        currentPeriodStart = new Date(customStartDate);
-        currentPeriodStart.setHours(0, 0, 0, 0);
-        currentPeriodEnd = new Date(customEndDate);
-        currentPeriodEnd.setHours(23, 59, 59, 999);
-
-        const diffMs = currentPeriodEnd.getTime() - currentPeriodStart.getTime();
-        previousPeriodStart = new Date(currentPeriodStart.getTime() - diffMs);
-        previousPeriodEnd = new Date(currentPeriodStart.getTime() - 1);
-      } else {
-        currentPeriodStart = new Date();
-        currentPeriodStart.setDate(currentPeriodStart.getDate() - 30);
-        currentPeriodStart.setHours(0, 0, 0, 0);
-        currentPeriodEnd = now;
-
-        previousPeriodStart = new Date(currentPeriodStart);
-        previousPeriodStart.setDate(previousPeriodStart.getDate() - 30);
-        previousPeriodEnd = new Date(currentPeriodStart);
-        previousPeriodEnd.setMilliseconds(previousPeriodEnd.getMilliseconds() - 1);
+    const figures = dashboardFiguresQuery.data;
+    if (!figures) return;
+    const locale = localeOf(i18n.language);
+    const chartLabel = (label: ChartLabel): string => {
+      switch (label.kind) {
+        case 'interval': return t(INTERVAL_LABEL_KEYS[label.key]);
+        case 'weekday': return new Date(label.date).toLocaleDateString(locale, { weekday: 'short' });
+        case 'dayMonth': return new Date(label.date).toLocaleDateString(locale, { day: 'numeric', month: 'short' });
+        case 'week': return t('dashboard.chart.week_n', { n: label.n });
+        case 'month': return new Date(label.date).toLocaleDateString(locale, { month: 'short' });
+        case 'monthYear': return new Date(label.date).toLocaleDateString(locale, { month: 'short', year: '2-digit' });
       }
-    }
-
-    const dispRevenue = selectedTimeframe === 'all'
-      ? allOrders.reduce((acc, o) => acc + (o.paidAmount || 0), 0)
-      : allOrders.filter(o => {
-          const d = new Date(o.orderDate || '');
-          return d >= currentPeriodStart! && d <= currentPeriodEnd!;
-        }).reduce((acc, o) => acc + (o.paidAmount || 0), 0);
-
-    const dispCustomers = selectedTimeframe === 'all'
-      ? allCustomers.length
-      : allCustomers.filter(c => {
-          const d = new Date(c.createdAt || '');
-          return d >= currentPeriodStart! && d <= currentPeriodEnd!;
-        }).length;
-
-    const dispOrders = selectedTimeframe === 'all'
-      ? allOrders.length
-      : allOrders.filter(o => {
-          const d = new Date(o.orderDate || '');
-          return d >= currentPeriodStart! && d <= currentPeriodEnd!;
-        }).length;
-
-    const dispPending = selectedTimeframe === 'all'
-      ? allOrders.filter(o => !['delivered', 'ready'].includes(o.status)).length
-      : allOrders
-          .filter(o => !['delivered', 'ready'].includes(o.status))
-          .filter(o => {
-            const d = new Date(o.orderDate || '');
-            return d >= currentPeriodStart! && d <= currentPeriodEnd!;
-          }).length;
-
-    let curStart = currentPeriodStart;
-    let curEnd = currentPeriodEnd;
-    let prevStart = previousPeriodStart;
-    let prevEnd = previousPeriodEnd;
-
-    if (selectedTimeframe === 'all') {
-      curStart = new Date();
-      curStart.setDate(curStart.getDate() - 30);
-      curStart.setHours(0, 0, 0, 0);
-      curEnd = now;
-
-      prevStart = new Date(curStart);
-      prevStart.setDate(prevStart.getDate() - 30);
-      prevEnd = new Date(curStart);
-      prevEnd.setMilliseconds(prevEnd.getMilliseconds() - 1);
-    }
-
-    const curRevenue = allOrders
-      .filter(o => {
-        const d = new Date(o.orderDate || '');
-        return d >= curStart! && d <= curEnd!;
-      })
-      .reduce((acc, o) => acc + (o.paidAmount || 0), 0);
-
-    const prevRevenue = allOrders
-      .filter(o => {
-        const d = new Date(o.orderDate || '');
-        return d >= prevStart! && d <= prevEnd!;
-      })
-      .reduce((acc, o) => acc + (o.paidAmount || 0), 0);
-
-    const curCustomersCount = allCustomers.filter(c => {
-      const d = new Date(c.createdAt || '');
-      return d >= curStart! && d <= curEnd!;
-    }).length;
-
-    const prevCustomersCount = allCustomers.filter(c => {
-      const d = new Date(c.createdAt || '');
-      return d >= prevStart! && d <= prevEnd!;
-    }).length;
-
-    const curOrdersCount = allOrders.filter(o => {
-      const d = new Date(o.orderDate || '');
-      return d >= curStart! && d <= curEnd!;
-    }).length;
-
-    const prevOrdersCount = allOrders.filter(o => {
-      const d = new Date(o.orderDate || '');
-      return d >= prevStart! && d <= prevEnd!;
-    }).length;
-
-    const curPendingCount = allOrders
-      .filter(o => !['delivered', 'ready'].includes(o.status))
-      .filter(o => {
-        const d = new Date(o.orderDate || '');
-        return d >= curStart! && d <= curEnd!;
-      }).length;
-
-    const prevPendingCount = allOrders
-      .filter(o => !['delivered', 'ready'].includes(o.status))
-      .filter(o => {
-        const d = new Date(o.orderDate || '');
-        return d >= prevStart! && d <= prevEnd!;
-      }).length;
-
-    const calcGrowth = (curr: number, prev: number) => {
-      if (prev > 0) {
-        return Number((((curr - prev) / prev) * 100).toFixed(1));
-      }
-      return curr > 0 ? 100 : 0;
     };
 
-    const customersGrowthRate = calcGrowth(curCustomersCount, prevCustomersCount);
-    const ordersGrowthRate = calcGrowth(curOrdersCount, prevOrdersCount);
-    const pendingGrowthRate = calcGrowth(curPendingCount, prevPendingCount);
-    const revenueGrowthRate = calcGrowth(curRevenue, prevRevenue);
-
-    const filteredOrders = selectedTimeframe === 'all'
-      ? allOrders
-      : allOrders.filter(o => {
-          const d = new Date(o.orderDate || '');
-          return d >= currentPeriodStart! && d <= currentPeriodEnd!;
-        });
-
-    const lowStock = allInventory.filter(item => {
-      const itemBranchInv = branchInventory.filter(bi => bi.itemId === item.id);
-      const totalQty = itemBranchInv.reduce((sum, bi) => sum + bi.quantity, 0);
-      return totalQty <= item.minThreshold;
-    }).length;
-
-    const receivables = filteredOrders.reduce((acc, order) => acc + (order.remainingAmount || 0), 0);
-
-    const completedOrders = filteredOrders.filter(o => ['delivered', 'ready'].includes(o.status));
-    let totalTimeMs = 0;
-    let completionCount = 0;
-    completedOrders.forEach(o => {
-      const finalHistory = Array.isArray(o.history) 
-        ? [...o.history].reverse().find((h: any) => h && ['delivered', 'ready'].includes(h.status))
-        : null;
-      if (finalHistory) {
-        const startTime = new Date(o.orderDate || '').getTime();
-        const endTime = new Date(finalHistory.updatedAt || '').getTime();
-        if (endTime > startTime) {
-          totalTimeMs += (endTime - startTime);
-          completionCount++;
-        }
-      }
-    });
-    const avgCompletionTime = completionCount > 0 ? (totalTimeMs / (1000 * 60 * 60 * completionCount)) : 0;
-
-    const sixtyDaysAgo = new Date();
-    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-    const activeCustomerIds = new Set(
-      filteredOrders
-        .filter(o => o.orderDate && new Date(o.orderDate) >= sixtyDaysAgo)
-        .map(o => o.customerId)
-    );
-    const activeCustomers = activeCustomerIds.size;
-
-    const customerOrderCounts: Record<string, number> = {};
-    filteredOrders.forEach(o => {
-      if (o.customerId) {
-        customerOrderCounts[o.customerId] = (customerOrderCounts[o.customerId] || 0) + 1;
-      }
-    });
-    const totalCustomersWithOrders = Object.keys(customerOrderCounts).length;
-    const repeatCustomersCount = Object.values(customerOrderCounts).filter(count => count > 1).length;
-    const retentionRate = totalCustomersWithOrders > 0 ? (repeatCustomersCount / totalCustomersWithOrders) * 100 : 0;
-
-    setStats({
-      customers: dispCustomers,
-      customersGrowthRate,
-      prevCustomers: prevCustomersCount,
-      orders: dispOrders,
-      ordersGrowthRate,
-      prevOrders: prevOrdersCount,
-      pending: dispPending,
-      pendingGrowthRate,
-      prevPending: prevPendingCount,
-      revenue: dispRevenue,
-      revenueGrowthRate,
-      prevRevenue,
-      lowStock,
-      receivables,
-      avgCompletionTime,
-      activeCustomers,
-      retentionRate
-    });
-
-    setGrowthRate(revenueGrowthRate);
-
-    // --- Chart generation ---
-    let chartDataPoints: any[] = [];
-    if (selectedTimeframe === 'daily') {
-      const intervals = [
-        { label: '12 AM - 4 AM', startHour: 0, endHour: 4 },
-        { label: '4 AM - 8 AM', startHour: 4, endHour: 8 },
-        { label: '8 AM - 12 PM', startHour: 8, endHour: 12 },
-        { label: '12 PM - 4 PM', startHour: 12, endHour: 16 },
-        { label: '4 PM - 8 PM', startHour: 16, endHour: 20 },
-        { label: '8 PM - 12 AM', startHour: 20, endHour: 24 }
-      ];
-      chartDataPoints = intervals.map(interval => {
-        const label = t(INTERVAL_LABEL_KEYS[interval.label]);
-        const periodOrders = allOrders.filter(o => {
-          const d = new Date(o.orderDate || '');
-          const isToday = d.toDateString() === now.toDateString();
-          if (!isToday) return false;
-          const h = d.getHours();
-          return h >= interval.startHour && h < interval.endHour;
-        });
-        return {
-          date: label,
-          revenue: periodOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
-          ordersCount: periodOrders.length
-        };
-      });
-    } else if (selectedTimeframe === 'weekly') {
-      const daysOfWeek = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        return d.toISOString().split('T')[0];
-      }).reverse();
-      chartDataPoints = daysOfWeek.map(date => {
-        const dayOrders = allOrders.filter(o => {
-          const dStr = typeof o.orderDate === 'string' ? o.orderDate : '';
-          return dStr.startsWith(date);
-        });
-        return {
-          date: new Date(date).toLocaleDateString(localeOf(i18n.language), { weekday: 'short' }),
-          revenue: dayOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
-          ordersCount: dayOrders.length
-        };
-      });
-    } else if (selectedTimeframe === 'monthly' || selectedTimeframe === 'all') {
-      const rangeDays = selectedTimeframe === 'all' ? revenueRange : 30;
-      const days = Array.from({ length: rangeDays }, (_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        return d.toISOString().split('T')[0];
-      }).reverse();
-      chartDataPoints = days.map(date => {
-        const dayOrders = allOrders.filter(o => {
-          const dStr = typeof o.orderDate === 'string' ? o.orderDate : '';
-          return dStr.startsWith(date);
-        });
-        return {
-          date: rangeDays > 7 
-            ? new Date(date).toLocaleDateString(localeOf(i18n.language), { day: 'numeric', month: 'short' })
-            : new Date(date).toLocaleDateString(localeOf(i18n.language), { weekday: 'short' }),
-          revenue: dayOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
-          ordersCount: dayOrders.length
-        };
-      });
-    } else if (selectedTimeframe === 'quarterly') {
-      chartDataPoints = Array.from({ length: 12 }, (_, i) => {
-        const startW = new Date();
-        startW.setDate(startW.getDate() - (12 - i) * 7);
-        const endW = new Date(startW);
-        endW.setDate(endW.getDate() + 7);
-        const periodOrders = allOrders.filter(o => {
-          const d = new Date(o.orderDate || '');
-          return d >= startW && d < endW;
-        });
-        return {
-          date: t('dashboard.chart.week_n', { n: i + 1 }),
-          revenue: periodOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
-          ordersCount: periodOrders.length
-        };
-      });
-    } else if (selectedTimeframe === 'yearly') {
-      chartDataPoints = Array.from({ length: 12 }, (_, i) => {
-        const d = new Date();
-        d.setMonth(d.getMonth() - (11 - i));
-        const year = d.getFullYear();
-        const month = d.getMonth();
-        const periodOrders = allOrders.filter(o => {
-          const od = new Date(o.orderDate || '');
-          return od.getMonth() === month && od.getFullYear() === year;
-        });
-        return {
-          date: d.toLocaleDateString(localeOf(i18n.language), { month: 'short' }),
-          revenue: periodOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
-          ordersCount: periodOrders.length
-        };
-      });
-    } else if (selectedTimeframe === 'custom') {
-      if (currentPeriodStart && currentPeriodEnd) {
-        const diffDays = Math.ceil((currentPeriodEnd.getTime() - currentPeriodStart.getTime()) / (1000 * 60 * 60 * 24));
-        if (diffDays <= 1) {
-          const intervals = [
-            { label: '12 AM - 4 AM', startHour: 0, endHour: 4 },
-            { label: '4 AM - 8 AM', startHour: 4, endHour: 8 },
-            { label: '8 AM - 12 PM', startHour: 8, endHour: 12 },
-            { label: '12 PM - 4 PM', startHour: 12, endHour: 16 },
-            { label: '4 PM - 8 PM', startHour: 16, endHour: 20 },
-            { label: '8 PM - 12 AM', startHour: 20, endHour: 24 }
-          ];
-          chartDataPoints = intervals.map(interval => {
-            const label = t(INTERVAL_LABEL_KEYS[interval.label]);
-            const periodOrders = allOrders.filter(o => {
-              const d = new Date(o.orderDate || '');
-              if (d < currentPeriodStart! || d > currentPeriodEnd!) return false;
-              const h = d.getHours();
-              return h >= interval.startHour && h < interval.endHour;
-            });
-            return {
-              date: label,
-              revenue: periodOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
-              ordersCount: periodOrders.length
-            };
-          });
-        } else if (diffDays <= 14) {
-          const days = [];
-          const curr = new Date(currentPeriodStart);
-          while (curr <= currentPeriodEnd) {
-            days.push(curr.toISOString().split('T')[0]);
-            curr.setDate(curr.getDate() + 1);
-          }
-          chartDataPoints = days.map(date => {
-            const dayOrders = allOrders.filter(o => {
-              const dStr = typeof o.orderDate === 'string' ? o.orderDate : '';
-              return dStr.startsWith(date);
-            });
-            return {
-              date: new Date(date).toLocaleDateString(localeOf(i18n.language), { day: 'numeric', month: 'short' }),
-              revenue: dayOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
-              ordersCount: dayOrders.length
-            };
-          });
-        } else if (diffDays <= 60) {
-          const weeksCount = Math.ceil(diffDays / 7);
-          chartDataPoints = Array.from({ length: weeksCount }, (_, i) => {
-            const startW = new Date(currentPeriodStart!.getTime());
-            startW.setDate(startW.getDate() + i * 7);
-            const endW = new Date(startW.getTime());
-            endW.setDate(endW.getDate() + 7);
-            const periodOrders = allOrders.filter(o => {
-              const d = new Date(o.orderDate || '');
-              return d >= startW && d < endW && d <= currentPeriodEnd!;
-            });
-            return {
-              date: t('dashboard.chart.week_n', { n: i + 1 }),
-              revenue: periodOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
-              ordersCount: periodOrders.length
-            };
-          });
-        } else {
-          const monthsCount = Math.ceil(diffDays / 30);
-          chartDataPoints = Array.from({ length: monthsCount }, (_, i) => {
-            const startM = new Date(currentPeriodStart!.getTime());
-            startM.setDate(startM.getDate() + i * 30);
-            const endM = new Date(startM.getTime());
-            endM.setDate(endM.getDate() + 30);
-            const periodOrders = allOrders.filter(o => {
-              const d = new Date(o.orderDate || '');
-              return d >= startM && d < endM && d <= currentPeriodEnd!;
-            });
-            return {
-              date: startM.toLocaleDateString(localeOf(i18n.language), { month: 'short', year: '2-digit' }),
-              revenue: periodOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0),
-              ordersCount: periodOrders.length
-            };
-          });
-        }
-      }
-    }
-    setChartData(chartDataPoints);
+    setStats(figures.stats);
+    setGrowthRate(figures.stats.revenueGrowthRate);
+    setChartData(figures.chart.map((c) => ({ date: chartLabel(c.label), revenue: c.revenue, ordersCount: c.ordersCount })));
 
     // --- Status Distribution ---
-    const statusCounts = filteredOrders.reduce((acc: any, order) => {
-      acc[order.status] = (acc[order.status] || 0) + 1;
-      return acc;
-    }, {});
+    const statusCounts: Record<string, number> = figures.statusCounts || {};
     // لمستأجري mens_tailoring: نفس القائمة الثابتة حرفياً. لأي نشاط آخر: من
     // مراحل عمله الفعلية غير الختامية (workflowStages)، بدل قائمة الخياطة الثابتة.
     const dist = isLegacyVertical || workflowStages.length === 0 ? [
@@ -1144,13 +799,14 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
     })();
     setStatusDistribution(dist);
 
-  }, [selectedTimeframe, customStartDate, customEndDate, allOrders, allCustomers, allInventory, branchInventory, revenueRange, i18n.language, isLegacyVertical, workflowStages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dashboardFiguresQuery.data, i18n.language, isLegacyVertical, workflowStages]);
 
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState('all');
 
-  const activeOrdersCount = allOrders.filter(o => !['delivered', 'ready', 'cancelled'].includes(o.status)).length;
-  const measurementsCount = allOrders.filter(o => o.status === 'measurements_taken').length;
+  const activeOrdersCount = dashboardTotals?.in_progress ?? 0;
+  const measurementsCount = dashboardTotals?.measurements_taken ?? 0;
 
   const gridItems = [
     { 
@@ -1232,9 +888,9 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
 
         // Optimistically clean local state immediately
         setRecentOrders(prev => prev.filter(o => !(o as any).isTest && !(o as any).is_test));
-        queryClient.setQueryData(['dashboard_stats', tenantId, selectedBranchId], (prev?: DashboardStatsData) =>
-          prev ? { ...prev, orders: prev.orders.filter(o => !(o as any).isTest && !(o as any).is_test) } : prev
-        );
+        // The figures are recounted by the database (the data_cleared handler refetches them).
+        queryClient.invalidateQueries({ queryKey: ['dashboard_stats', tenantId] });
+        queryClient.invalidateQueries({ queryKey: ['dashboard_rows', tenantId] });
         setNotifications(prev => prev.filter(n => !(n as any).isTest && !(n as any).is_test));
 
         // Notify app components to refresh data without forcing a full page reload
@@ -1301,11 +957,11 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       comparisonLabel: getComparisonLabel(),
       prevValue: stats.prevCustomers !== undefined ? t('dashboard.prev_customers_value', { n: stats.prevCustomers }) : undefined,
       visible: hasCustomersPermission,
-      onClick: () => setDrillDown({ 
+      onClick: () => openDrill((r) => ({ 
         type: 'customers', 
         title: t('dashboard.total_customers'), 
-        data: allCustomers.map(c => ({ id: c.id, [t('common.name')]: c.name, [t('common.phone')]: c.phone, [t('common.date')]: formatDate(c.createdAt) }))
-      })
+        data: r.customers.map(c => ({ id: c.id, [t('common.name')]: c.name, [t('common.phone')]: c.phone, [t('common.date')]: formatDate(c.createdAt) }))
+      }))
     },
     { 
       label: t('dashboard.total_revenue'), 
@@ -1316,11 +972,11 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       comparisonLabel: getComparisonLabel(),
       prevValue: stats.prevRevenue !== undefined ? <PriceDisplay amount={stats.prevRevenue} /> : undefined,
       visible: hasRevenuePermission,
-      onClick: () => setDrillDown({ 
+      onClick: () => openDrill((r) => ({ 
         type: 'revenue', 
         title: t('dashboard.total_revenue'), 
-        data: allOrders.map(o => ({ id: o.id, [t('common.customers')]: o.customerName, [t('common.amount')]: o.paidAmount, [t('common.date')]: formatDate(o.orderDate), [t('common.status')]: o.status, [t('common.method')]: o.paymentMethod }))
-      })
+        data: r.orders.map(o => ({ id: o.id, [t('common.customers')]: o.customerName, [t('common.amount')]: o.paidAmount, [t('common.date')]: formatDate(o.orderDate), [t('common.status')]: o.status, [t('common.method')]: o.paymentMethod }))
+      }))
     },
     { 
       label: t('dashboard.receivables'), 
@@ -1329,11 +985,11 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       color: 'bg-danger', 
       trend: t('dashboard.trend.collect', 'تحصيل'),
       visible: hasRevenuePermission,
-      onClick: () => setDrillDown({ 
+      onClick: () => openDrill((r) => ({ 
         type: 'receivables', 
         title: t('dashboard.receivables'), 
-        data: allOrders.filter(o => (o.remainingAmount || 0) > 0).map(o => ({ id: o.id, [t('common.customers')]: o.customerName, [t('common.remaining')]: o.remainingAmount, [t('common.total')]: o.totalAmount, [t('common.date')]: formatDate(o.orderDate) }))
-      })
+        data: r.orders.filter(o => (o.remainingAmount || 0) > 0).map(o => ({ id: o.id, [t('common.customers')]: o.customerName, [t('common.remaining')]: o.remainingAmount, [t('common.total')]: o.totalAmount, [t('common.date')]: formatDate(o.orderDate) }))
+      }))
     },
     { 
       label: t('dashboard.active_orders'), 
@@ -1344,11 +1000,11 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       comparisonLabel: getComparisonLabel(),
       prevValue: stats.prevPending !== undefined ? t('dashboard.prev_orders_value', { n: stats.prevPending }) : undefined,
       visible: hasOrdersPermission,
-      onClick: () => setDrillDown({ 
+      onClick: () => openDrill((r) => ({ 
         type: 'pending_orders', 
         title: t('dashboard.active_orders'), 
-        data: allOrders.filter(o => !['delivered', 'ready'].includes(o.status)).map(o => ({ id: o.id, [t('common.customers')]: o.customerName, [t('common.status')]: o.status, [t('common.date')]: formatDate(o.orderDate) }))
-      })
+        data: r.orders.filter(o => !['delivered', 'ready'].includes(o.status)).map(o => ({ id: o.id, [t('common.customers')]: o.customerName, [t('common.status')]: o.status, [t('common.date')]: formatDate(o.orderDate) }))
+      }))
     },
     { 
       label: t('dashboard.avg_completion_time'), 
@@ -1357,15 +1013,15 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       color: 'bg-info', 
       trend: t('dashboard.trend.performance', 'أداء'),
       visible: hasOrdersPermission,
-      onClick: () => setDrillDown({ 
+      onClick: () => openDrill((r) => ({ 
         type: 'completion_time', 
         title: t('dashboard.avg_completion_time'), 
-        data: allOrders.filter(o => ['delivered', 'ready'].includes(o.status)).map(o => {
+        data: r.orders.filter(o => ['delivered', 'ready'].includes(o.status)).map(o => {
           const finalHistory = o.history && [...o.history].reverse().find(h => ['delivered', 'ready'].includes(h.status));
           const hours = finalHistory ? (new Date(finalHistory.updatedAt).getTime() - new Date(o.orderDate).getTime()) / (1000 * 60 * 60) : 0;
           return { id: o.id, [t('common.customers')]: o.customerName, [t('common.date')]: formatDate(o.orderDate), [t('dashboard.completion_time_value')]: hours.toFixed(1) };
         })
-      })
+      }))
     },
     { 
       label: t('dashboard.active_customers'), 
@@ -1377,11 +1033,13 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       onClick: () => {
         const sixtyDaysAgo = new Date();
         sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-        const activeIds = new Set(allOrders.filter(o => new Date(o.orderDate) >= sixtyDaysAgo).map(o => o.customerId));
-        setDrillDown({ 
+        openDrill((r) => {
+          const activeIds = new Set(r.orders.filter(o => new Date(o.orderDate) >= sixtyDaysAgo).map(o => o.customerId));
+          return ({ 
           type: 'active_customers', 
           title: t('dashboard.active_customers'), 
-          data: allCustomers.filter(c => activeIds.has(c.id)).map(c => ({ id: c.id, [t('common.name')]: c.name, [t('common.phone')]: c.phone, [t('common.date')]: formatDate(c.createdAt) }))
+          data: r.customers.filter(c => activeIds.has(c.id)).map(c => ({ id: c.id, [t('common.name')]: c.name, [t('common.phone')]: c.phone, [t('common.date')]: formatDate(c.createdAt) }))
+          });
         });
       }
     },
@@ -1393,14 +1051,16 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       trend: t('dashboard.trend.loyalty', 'ولاء'),
       visible: hasCustomersPermission,
       onClick: () => {
-        const customerOrderCounts: Record<string, number> = {};
-        allOrders.forEach(o => {
-          customerOrderCounts[o.customerId] = (customerOrderCounts[o.customerId] || 0) + 1;
-        });
-        setDrillDown({ 
-          type: 'retention', 
-          title: t('dashboard.customer_retention'), 
-          data: allCustomers.filter(c => (customerOrderCounts[c.id] || 0) > 1).map(c => ({ id: c.id, [t('common.name')]: c.name, [t('common.phone')]: c.phone, [t('dashboard.orders_count')]: customerOrderCounts[c.id] }))
+        openDrill((r) => {
+          const customerOrderCounts: Record<string, number> = {};
+          r.orders.forEach(o => {
+            customerOrderCounts[o.customerId] = (customerOrderCounts[o.customerId] || 0) + 1;
+          });
+          return ({ 
+            type: 'retention', 
+            title: t('dashboard.customer_retention'), 
+            data: r.customers.filter(c => (customerOrderCounts[c.id] || 0) > 1).map(c => ({ id: c.id, [t('common.name')]: c.name, [t('common.phone')]: c.phone, [t('dashboard.orders_count')]: customerOrderCounts[c.id] }))
+          });
         });
       }
     },
@@ -1412,11 +1072,11 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       trend: stats.lowStock > 0 ? t('dashboard.trend.critical', 'هام') : t('dashboard.trend.stable', 'مستقر'),
       isAlert: stats.lowStock > 0,
       visible: hasInventoryPermission,
-      onClick: () => setDrillDown({ 
+      onClick: () => openDrill((r) => ({ 
         type: 'low_stock', 
         title: t('dashboard.inventory_alerts'), 
-        data: allInventory.flatMap(i => {
-          const itemBranchInv = branchInventory.filter(bi => bi.itemId === i.id);
+        data: r.inventory.flatMap(i => {
+          const itemBranchInv = r.bInv.filter(bi => bi.itemId === i.id);
           return itemBranchInv
             .filter(bi => bi.quantity <= i.minThreshold)
             .map(bi => ({
@@ -1428,7 +1088,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
               [t('common.unit')]: i.unit
             }));
         })
-      })
+      }))
     },
   ];
 
@@ -2112,7 +1772,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
               <h3 className="text-xl font-black text-content mb-2">{t('dashboard.status_distribution')}</h3>
               <p className="text-sm text-content-muted font-medium mb-8">{t('dashboard.status_distribution_desc', 'مراحل العمل الحالية في المشغل')}</p>
               
-              {allOrders.length === 0 ? (
+              {(dashboardTotals?.orders ?? 0) === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <div className="p-4 bg-brand/5 text-brand rounded-full mb-3 border border-brand/10 mx-auto">
                     <Clock size={28} />
@@ -2133,17 +1793,17 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                         key={status.id} 
                         whileHover={{ x: -5 }}
                         className="group cursor-pointer" 
-                        onClick={() => setDrillDown({ 
+                        onClick={() => openDrill((r) => ({ 
                           type: status.id, 
                           title: `${t('common.orders')}: ${status.name}`,
-                          data: allOrders.filter(o => o.status === status.id).map(o => ({
+                          data: r.orders.filter(o => o.status === status.id).map(o => ({
                             id: o.id,
                             [t('common.customers')]: o.customerName,
                             [t('common.amount')]: o.totalAmount,
                             [t('common.date')]: formatDate(o.orderDate),
                             [t('common.status')]: o.status
                           }))
-                        })}
+                        }))}
                       >
                         <div className="flex justify-between items-center mb-2">
                           <div className="flex items-center gap-3">
@@ -2181,7 +1841,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
               </div>
               <div className="bg-success/10 p-4 rounded-2xl">
                 <p className="text-[10px] font-black text-success uppercase tracking-widest">{t('dashboard.ready', 'جاهز')}</p>
-                <p className="text-xl font-black text-success">{allOrders.filter(o => o.status === 'ready').length.toLocaleString(localeOf(i18n.language))}</p>
+                <p className="text-xl font-black text-success">{(dashboardTotals?.ready ?? 0).toLocaleString(localeOf(i18n.language))}</p>
               </div>
             </div>
           </div>
@@ -2195,11 +1855,11 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             <div className="p-4 sm:p-6 md:p-8 border-b border-border flex justify-between items-center">
               <h3 className="text-lg sm:text-xl font-black text-content">{t('dashboard.recent_orders')}</h3>
               <button 
-                onClick={() => setDrillDown({ 
+                onClick={() => openDrill((r) => ({ 
                   type: 'all_orders', 
                   title: t('dashboard.all_orders', 'جميع الطلبات'), 
-                  data: allOrders.map(o => ({ id: o.id, [t('common.customers')]: o.customerName, [t('common.amount')]: o.totalAmount, [t('common.date')]: formatDate(o.orderDate), [t('common.status')]: o.status }))
-                })}
+                  data: r.orders.map(o => ({ id: o.id, [t('common.customers')]: o.customerName, [t('common.amount')]: o.totalAmount, [t('common.date')]: formatDate(o.orderDate), [t('common.status')]: o.status }))
+                }))}
                 className="text-brand text-sm font-bold hover:underline"
               >
                 {t('dashboard.view_all')}

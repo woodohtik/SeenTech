@@ -106,6 +106,22 @@ function tableData(table, url) {
         user: tableData('users', '')[0], staff: { ...staffRow }, tenant: tenantRow, saas_user: null,
         tailor_request: null, referral_partner: null, role_key: null, has_staff_with_pin: false }) });
     }
+    if (u.pathname === '/rest/v1/rpc/get_dashboard_stats') {
+      // Phase 4.3: the dashboard's figures, summed by the database. The
+      // shape and size of a real answer; the values come from the mock rows.
+      let body = {};
+      try { body = JSON.parse(req.postData() || '{}'); } catch {}
+      const n = Array.isArray(body.p_ranges) ? body.p_ranges.length : 0;
+      const orders = tableData('orders', '');
+      const customers = tableData('customers', '');
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+        ranges: Array.from({ length: n }, () => ({ orders: 0, paid: 0, pending: 0, customers: 0 })),
+        filtered: { orders: orders.length, paid: 0, remaining: 0, pending: orders.length, customers: customers.length,
+          completion_hours: 0, completion_count: 0, active_customers: 0, customers_with_orders: 0, repeat_customers: 0,
+          status_counts: orders.length ? { sewing: orders.length } : {} },
+        totals: { orders: orders.length, in_progress: orders.length, measurements_taken: 0, ready: 0 },
+        low_stock: 0, customers_total: customers.length }) });
+    }
     if (u.pathname.startsWith('/rest/v1/rpc/')) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
     if (u.pathname.startsWith('/rest/v1/')) {
       const table = u.pathname.split('/')[3];
