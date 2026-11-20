@@ -6,6 +6,9 @@ import { saveLastKnown, getLastKnown } from '../lib/offline/lastKnownCache';
 import { isNetworkFailure } from '../lib/offline/outbox';
 import { Order, Customer, InventoryItem, Staff, Shift, Role, PurchaseOrder, Supplier } from '../types';
 import { decodeOrderRow } from '../utils/orderHistoryHelper';
+import { computeVatSummary } from '../utils/vatReport';
+import { resolveTailoringTax, type TailoringTax } from '../utils/tailoringOrder';
+import { readTenantRow } from '../lib/tenantRow';
 
 interface ReportsData {
   orders: Order[];
@@ -16,7 +19,7 @@ interface ReportsData {
   purchaseOrders: PurchaseOrder[];
   suppliers: Supplier[];
   shiftPayouts: { amount: number; occurred_at: string; reason: string }[];
-  salesReturns: { refunded_amount: number; returned_at: string }[];
+  salesReturns: { refunded_amount: number; returned_at: string; order_id?: string | null }[];
 }
 import { 
   BarChart, 
@@ -142,7 +145,7 @@ export default function Reports({ tenantId }: { tenantId: string }) {
         supabase.from('purchase_orders').select('*, purchase_order_items(*)').eq('tenant_id', tenantId),
         supabase.from('suppliers').select('*').eq('tenant_id', tenantId),
         supabase.from('shift_entries').select('amount, occurred_at, reason').eq('tenant_id', tenantId).eq('entry_type', 'payout'),
-        supabase.from('sales_returns').select('refunded_amount, returned_at').eq('tenant_id', tenantId),
+        supabase.from('sales_returns').select('refunded_amount, returned_at, order_id').eq('tenant_id', tenantId),
         // Bug report (sprint 2 reports engine, 2026-11-17): orders has no
         // `items` column at all -- a POS sale's items live only in
         // order_items (this query), a تفصيل order created directly in
@@ -566,20 +569,38 @@ export default function Reports({ tenantId }: { tenantId: string }) {
     return { totalPurchases, totalPurchaseReturns, supplierBreakdown, totalOutstandingBalance, purchasesTrend, purchasesOnly, returnsOnly };
   }, [filteredPurchaseOrders, suppliers, excludeTestData]);
 
-  // VAT: purchase totals aren't tracked with a separate tax line, so input
-  // VAT is estimated the same way the rest of the app treats order totals --
-  // VAT-inclusive at 15% (see SalesRecord.tsx's subtotal/VAT split).
-  const vatStats = useMemo(() => {
-    const totalRefunded = filteredSalesReturns.reduce((sum, r) => sum + Number(r.refunded_amount || 0), 0);
-    const refundedVat = totalRefunded - (totalRefunded / 1.15);
-    const outputVat = financialStats.totalTax - refundedVat;
-    const inputVatOnPurchases = supplierStats.totalPurchases - (supplierStats.totalPurchases / 1.15);
-    const inputVatOnReturns = supplierStats.totalPurchaseReturns - (supplierStats.totalPurchaseReturns / 1.15);
-    const netInputVat = inputVatOnPurchases - inputVatOnReturns;
-    const netVatDue = outputVat - netInputVat;
+  // The shop's tax settings (rate, on/off) for the VAT summary -- the shared
+  // tenants read (lib/tenantRow), usually already in hand from the identity.
+  const taxQuery = useQuery({
+    queryKey: ['tenant_tax', tenantId],
+    queryFn: async (): Promise<TailoringTax> => resolveTailoringTax((await readTenantRow(tenantId)).data),
+    enabled: !!tenantId,
+    staleTime: 60_000,
+  });
 
-    return { outputVat, inputVat: netInputVat, netVatDue };
-  }, [financialStats, supplierStats, filteredSalesReturns]);
+  // VAT: purchases carry no tax line of their own (VAT-inclusive); refunds
+  // take their original order's stored rate. The shop's rate and on/off come
+  // from its settings, no longer a fixed 15% (team review M-17) -- see
+  // utils/vatReport.ts. Until the settings are read, 15% on, as before.
+  const vatStats = useMemo(() => {
+    const orderTaxRate = new Map<string, number | null | undefined>();
+    orders.forEach((o: any) => {
+      if (!o?.id) return;
+      const rate = o.taxRate ?? o.tax_rate;
+      // tax_rate defaults to 0: a 0 next to a stored tax amount is an old
+      // row that never set it, so its rate is unknown (the shop's is used).
+      const taxed = Number(o.taxAmount ?? o.tax_amount ?? 0) > 0;
+      orderTaxRate.set(o.id, Number(rate) === 0 && taxed ? null : rate);
+    });
+    return computeVatSummary({
+      outputTaxOnSales: financialStats.totalTax,
+      refunds: filteredSalesReturns,
+      orderTaxRate,
+      purchasesTotal: supplierStats.totalPurchases,
+      purchaseReturnsTotal: supplierStats.totalPurchaseReturns,
+      tax: taxQuery.data ?? { enabled: true, vatRatePercentage: 15, taxType: 'exclusive' },
+    });
+  }, [financialStats, supplierStats, filteredSalesReturns, orders, taxQuery.data]);
 
   // Order Stats
   const orderStats = useMemo(() => {

@@ -515,10 +515,17 @@ export default function SalesRecord({ tenantId, shiftId, filterStatus }: { tenan
               // fraction (0.15), Orders.tsx writes the tenant's configured
               // percentage (e.g. 15) directly -- normalize defensively rather
               // than assume either scale.
+              // A stored 0 with no stored tax is an order sold without tax (tax
+              // off / exempt): no VAT line, rather than the 15% fallback it used
+              // to get (team review M-17). tax_rate defaults to 0, so a 0 next
+              // to a stored tax amount is an old row: 15% as before.
               const rawTaxRate = Number((selectedOrder as any).taxRate);
-              const vatRateFraction = Number.isFinite(rawTaxRate) && rawTaxRate > 0
-                ? (rawTaxRate > 1 ? rawTaxRate / 100 : rawTaxRate)
-                : 0.15;
+              const soldWithoutTax = rawTaxRate === 0 && !(Number((selectedOrder as any).taxAmount) > 0);
+              const vatRateFraction = soldWithoutTax
+                ? 0
+                : Number.isFinite(rawTaxRate) && rawTaxRate > 0
+                  ? (rawTaxRate > 1 ? rawTaxRate / 100 : rawTaxRate)
+                  : 0.15;
 
               const formattedItems = (selectedOrder.items || []).map((item: any) => ({
                 name: item.type === 'custom' ? item.garmentType || t('orders.custom_thobe', 'تفصيل ثوب') : item.name || t('orders.ready_made', 'صنف جاهز'),
