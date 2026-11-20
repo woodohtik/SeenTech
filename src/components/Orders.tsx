@@ -2075,7 +2075,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 bg-surface p-4 rounded-3xl border border-border shadow-sm">
+        {/* No card around the filters: they sit on the same line and at the
+            same 48px height as the search box (founder, 2026-11-20). The
+            padded card made this block 81px tall next to a 48px field. */}
+        <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2 min-w-[180px]">
             <SmartSelect
               value={statusFilter}
