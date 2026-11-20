@@ -4,6 +4,7 @@ import React, {
     useContext,
     useEffect,
     useMemo,
+    useRef,
     useState,
     type ReactNode,
 } from 'react';
@@ -15,6 +16,7 @@ import { setLoggerUserContext } from '../lib/logger';
 import { getDeviceSessionId } from '../utils/session';
 import { getIsOnline } from '../lib/offline/connectivity';
 import { cacheIdentitySnapshot, getCachedIdentitySnapshot } from '../lib/offline/identityCache';
+import { fetchSessionIdentity, STAFF_IDENTITY_COLUMNS } from '../lib/sessionIdentity';
 import type { Database } from '../types/supabase';
 import type { UserRole, Staff as StaffType } from '../types';
 
@@ -92,68 +94,13 @@ interface AuthContextValue extends ResolvedAppState {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-async function fetchDbUser(uid: string, email?: string): Promise<DbUser | null> {
-    const [
-        { data: userRow, error: userErr },
-        { data: staffRow, error: staffErr },
-        { data: saasRow, error: saasErr }
-    ] = await Promise.all([
-        supabase.from('users').select('*').eq('id', uid).maybeSingle(),
-        supabase
-            .from('staff')
-            .select('id, uid, name, email, phone, role, role_id, branch_id, status, must_change_pin, is_test, tenant_id, created_at, updated_at, commission_type, commission_value, has_seen_onboarding, commission_balance')
-            .eq('uid', uid)
-            .eq('status', 'active')
-            .limit(1)
-            .maybeSingle(),
-        supabase
-            .from('saas_users')
-            .select('*')
-            .eq('uid', uid)
-            .maybeSingle()
-    ]);
-
-    if (userErr) throw userErr;
-    if (staffErr) throw staffErr;
-    if (saasErr) throw saasErr;
-    if (!userRow) return null;
-
-    let actualRole = (staffRow as any)?.role ?? null;
-
-    // SaaS Role takes precedence over tenant staff roles. super_admin is
-    // resolved ONLY from an actual saas_users row — never from an email
-    // string match, which would let anyone who registers with that literal
-    // address self-grant platform-wide admin.
-    // seen-cto-code-review-2026-11-13.md AUTH-06: a deactivated saas_users
-    // row (is_active=false) used to still resolve to its role here, so the
-    // admin UI kept rendering client-side for a disabled account (data
-    // calls only failed on RLS-guarded tables, not the UI gate itself).
-    if (saasRow && saasRow.is_active !== false) {
-        actualRole = saasRow.role;
-    } else if (staffRow && (staffRow as any).role_id) {
-        const { data: roleRow } = await supabase
-            .from('roles')
-            .select('role_key')
-            .eq('id', (staffRow as any).role_id)
-            .single();
-        if (roleRow) {
-            actualRole = roleRow.role_key;
-        }
-    }
-
-    return {
-        ...(userRow as UserRow),
-        role:      actualRole,
-        tenant_id: (staffRow as any)?.tenant_id ?? null,
-        staff_id:  (staffRow as any)?.id        ?? null,
-    };
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [session, setSession] = useState<Session | null>(null);
     const [dbUser, setDbUser] = useState<DbUser | null>(null);
     const [loading, setLoading] = useState(true);
     const [conflictUser, setConflictUser] = useState<ConflictState | null>(null);
+    // Whose identity is currently resolved and on screen (Phase 3.3/3.4).
+    const resolvedUidRef = useRef<string | null>(null);
     // لا تُبذَر isApproved/userRole/tenantId من localStorage هنا -- loading
     // يبدأ true وAppContent (App.tsx ~457) يعرض MainSkeleton طالما loading
     // true، فلا يقرأ أي مكوّن appState قبل أن يُحسَم فعلياً عبر
@@ -230,6 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const user = nextSession?.user ?? null;
 
         if (!user) {
+            resolvedUidRef.current = null;
             localStorage.removeItem('setup_complete');
             localStorage.removeItem('user_role');
             localStorage.removeItem('tenant_id');
@@ -274,23 +222,84 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
         }
 
+        /* --------------------------------------------------------------
+           seen-performance-first-open-login-task.md Phase 3.3 (stale-while-
+           revalidate): someone coming back on this device sees the app
+           straight away from the identity cached at their last visit, while
+           the real resolution below runs. Display only, exactly like the
+           offline path above -- every read and write still goes through
+           RLS -- and the result below replaces it (a device conflict opens
+           the usual window, a suspended shop or changed role takes the
+           usual path).
+           -------------------------------------------------------------- */
+        const shownFromCache = (() => {
+            if (resolvedUidRef.current === uid) return false; // already showing the real thing
+            const cached = getCachedIdentitySnapshot(uid);
+            if (!cached) return false;
+            setAppState({
+                isApproved: cached.isApproved,
+                userRole: cached.userRole as UserRole | null,
+                tenantId: cached.tenantId,
+                onboardingStep: cached.onboardingStep,
+                hasStaffWithPin: cached.hasStaffWithPin,
+                currentUserStaff: cached.currentUserStaff as StaffType | null,
+                hasNoProfile: false,
+                resolveError: null,
+            });
+            setLoading(false);
+            return true;
+        })();
+
+        // Phase 3: one request for every identity row (get_session_identity),
+        // instead of five in a row. Its rows feed the same decisions below.
+        let identity: Awaited<ReturnType<typeof fetchSessionIdentity>>;
         try {
-            const next = await fetchDbUser(uid, email);
-            setDbUser(next);
-            const isSuperAdmin = next?.role === 'super_admin';
-            if (!isSuperAdmin) {
+            identity = await fetchSessionIdentity(uid);
+        } catch (error: any) {
+            if (shownFromCache) {
+                // Keep the cached view rather than replace a working screen
+                // with an error for a passing network blip; the next auth
+                // event or the 60-second check tries again.
+                console.warn('[AuthContext] identity refresh failed; keeping the cached view', error);
+                return;
+            }
+            console.error('[CRITICAL] Auth verification failed:', error);
+            setDbUser(null);
+            setAppState(prev => ({
+                ...prev,
+                isApproved: false,
+                hasNoProfile: false,
+                resolveError: error?.message || String(error),
+            }));
+            setLoading(false);
+            return;
+        }
+
+        resolvedUidRef.current = uid;
+
+        {
+            // What fetchDbUser used to build: the users row plus the role
+            // (an active saas_users row first, then the custom role's key,
+            // then staff.role) and the active staff row's tenant.
+            const activeStaff = identity.staff?.status === 'active' ? identity.staff : null;
+            let role: any = activeStaff?.role ?? null;
+            const saas = identity.saas_user;
+            if (saas && saas.is_active !== false) role = saas.role;
+            else if (activeStaff?.role_id && identity.role_key) role = identity.role_key;
+            const next = identity.user
+                ? { ...(identity.user as UserRow), role, tenant_id: activeStaff?.tenant_id ?? null, staff_id: activeStaff?.id ?? null }
+                : null;
+            setDbUser(next as DbUser | null);
+            if (next?.role !== 'super_admin') {
                 localStorage.removeItem('impersonatedTenantId');
                 setImpersonationTenantId(null);
             }
-        } catch (err) {
-            console.error('[AuthContext] Failed to fetch DB user:', err);
-            setDbUser(null);
         }
 
         try {
             // Device-session-conflict check (single-active-device-per-account)
             const currentSessionId = getDeviceSessionId();
-            const { data: userRow } = await supabase.from('users').select('photo_url').eq('id', uid).maybeSingle();
+            const userRow = identity.user as { photo_url?: string | null } | null;
 
             if (userRow?.photo_url && userRow.photo_url !== currentSessionId) {
                 setConflictUser({ uid, email, currentSessionId });
@@ -299,8 +308,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
             setConflictUser(null);
 
-            if (userRow) {
-                await supabase.from('users').update({ photo_url: currentSessionId }).eq('id', uid);
+            // Claiming the device session no longer holds up the app: it is
+            // sent and not awaited (Phase 3.2). Only when it is not already ours.
+            if (userRow && userRow.photo_url !== currentSessionId) {
+                void supabase.from('users').update({ photo_url: currentSessionId }).eq('id', uid)
+                    .then(({ error }) => { if (error) console.error('[AuthContext] claiming the device session failed', error); });
             }
 
             // Super admin is resolved below via the normal saas_users lookup
@@ -312,17 +324,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // must already have (or be manually given) a saas_users row —
             // see supabase/migrations for the one-time seed script.
 
-            // 1. Resolve profile: staff -> saas_users -> tailor_requests
-            const [staffRes, requestRes, saasOverrideRes] = await Promise.all([
-                supabase.from('staff').select('id, uid, name, email, phone, role, role_id, branch_id, status, must_change_pin, is_test, tenant_id, created_at, updated_at, commission_type, commission_value, has_seen_onboarding, commission_balance, has_pin, tenant:tenants(*)').eq('uid', uid).maybeSingle(),
-                supabase.from('tailor_requests').select('*').eq('uid', uid).maybeSingle(),
-                supabase.from('saas_users').select('role, is_active').eq('uid', uid).maybeSingle()
-            ]);
+            // 1. Resolve profile: staff -> saas_users -> tailor_requests (all
+            // already in `identity`; the same shapes the separate reads gave)
+            const requestRes = { data: identity.tailor_request as any };
+            const saasOverrideRes = { data: identity.saas_user as any };
 
-            let staffData: any = staffRes.data;
+            let staffData: any = identity.staff ? { ...identity.staff, tenant: identity.tenant } : null;
+            let staffFromEmail = false;
             if (!staffData && email) {
-                const { data: staffByEmail } = await supabase.from('staff').select('id, uid, name, email, phone, role, role_id, branch_id, status, must_change_pin, is_test, tenant_id, created_at, updated_at, commission_type, commission_value, has_seen_onboarding, commission_balance, has_pin, tenant:tenants(*)').eq('email', email).maybeSingle();
+                const { data: staffByEmail } = await supabase.from('staff').select(`${STAFF_IDENTITY_COLUMNS}, tenant:tenants(*)`).eq('email', email).maybeSingle();
                 staffData = staffByEmail;
+                staffFromEmail = Boolean(staffByEmail);
                 if (staffData && !staffData.uid) {
                     await supabase.from('staff').update({ uid }).eq('id', staffData.id);
                 }
@@ -358,24 +370,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 // below for a fresh-signup's cold tailor_requests read.
                 let tenantRow: any = staffData.tenant ?? null;
                 if (!tenantRow && staffData.tenant_id) {
-                    // 3 attempts (max ~2.4s extra wait) wasn't a wide enough
-                    // window for this race in practice -- reported as "account
-                    // not active" reliably on first login on both staging and
-                    // production, resolved every time by a manual retry
-                    // (which is this exact same loop, just re-run after the
-                    // user has spent a few more seconds reading the screen).
-                    // Widening it here means they never see that screen at
-                    // all; the user only sees the ordinary loading skeleton
-                    // for a bit longer while `loading` stays true.
-                    for (let attempt = 0; attempt < 6 && !tenantRow; attempt++) {
-                        await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
-                        const { data: fetchedTenant } = await supabase
-                            .from('tenants')
-                            .select('*')
-                            .eq('id', staffData.tenant_id)
-                            .maybeSingle();
-                        tenantRow = fetchedTenant ?? null;
-                    }
+                    // Phase 3.1: one direct retry instead of a loop of six
+                    // (worst case ~8s behind the skeleton). The race this
+                    // covered -- a fresh session's claims not yet visible to
+                    // the tenants RLS on a pooled connection -- is far rarer
+                    // now that the identity is a single read.
+                    await new Promise((r) => setTimeout(r, 600));
+                    const { data: fetchedTenant } = await supabase
+                        .from('tenants')
+                        .select('*')
+                        .eq('id', staffData.tenant_id)
+                        .maybeSingle();
+                    tenantRow = fetchedTenant ?? null;
                     if (tenantRow) staffData.tenant = tenantRow;
                 }
 
@@ -383,14 +389,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 const approved = tenantStatus === 'active' || tenantStatus === 'approved' || tenantStatus === 'onboarding';
                 const isPending = tenantStatus === 'pending';
 
-                let staffPinCount = false;
-                try {
-                    // pin_hash نفسها لم تعد قابلة للقراءة عبر PostgREST مباشرة
-                    // (SELECT على العمود مسحوب من anon/authenticated) -- هذا
-                    // فحص "وجود فقط" عبر RPC مخصَّص، لا يُرجع القيمة إطلاقاً.
-                    const { data: pinIds } = await supabase.rpc('staff_ids_with_pin_set', { p_tenant_id: staffData.tenant_id });
-                    staffPinCount = !!(pinIds && pinIds.length > 0);
-                } catch (e) { console.error('Error checking staff pins:', e); }
+                let staffPinCount = identity.has_staff_with_pin;
+                if (staffFromEmail) {
+                    try {
+                        // pin_hash نفسها لم تعد قابلة للقراءة عبر PostgREST مباشرة
+                        // (SELECT على العمود مسحوب من anon/authenticated) -- هذا
+                        // فحص "وجود فقط" عبر RPC مخصَّص، لا يُرجع القيمة إطلاقاً.
+                        const { data: pinIds } = await supabase.rpc('staff_ids_with_pin_set', { p_tenant_id: staffData.tenant_id });
+                        staffPinCount = !!(pinIds && pinIds.length > 0);
+                    } catch (e) { console.error('Error checking staff pins:', e); }
+                }
 
                 const mappedStaff = {
                     ...staffData,
@@ -461,7 +469,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // here used to still resolve as a fully approved saas_users
             // session; now treated the same as no row at all, falling
             // through to the no-profile path below.
-            const { data: saasUser } = await supabase.from('saas_users').select('role, is_active').eq('uid', uid).maybeSingle();
+            const saasUser = identity.saas_user;
             if (saasUser && saasUser.is_active !== false) {
                 setAppState({
                     isApproved: true,
@@ -484,7 +492,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // and before the tailor_requests fallback, so someone who already
             // has a tenant/staff/saas identity always resolves as that, never
             // flips into the partner UI.
-            const { data: partnerRow } = await supabase.from('referral_partners').select('id, status').eq('uid', uid).maybeSingle();
+            const partnerRow = identity.referral_partner;
             if (partnerRow) {
                 setAppState({
                     isApproved: partnerRow.status === 'active',
@@ -605,6 +613,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setSession(nextSession);
             setCurrentAuthSessionInfo({ userId: nextSession?.user?.id ?? null, email: nextSession?.user?.email ?? null });
             if (event === 'TOKEN_REFRESHED') return; // session state above is enough; no need to re-resolve identity
+            // Phase 3.4: supabase-js re-emits SIGNED_IN every time the tab
+            // becomes visible again (its visibility handler), which used to
+            // re-run the whole resolution -- ~12 requests per tab switch.
+            // Same person already resolved: nothing to do. A different
+            // person, USER_UPDATED and SIGNED_OUT still resolve as before.
+            if (event === 'SIGNED_IN' && nextSession?.user?.id && nextSession.user.id === resolvedUidRef.current) return;
             resolveIdentity(nextSession);
         });
         return () => sub.subscription.unsubscribe();
@@ -646,11 +660,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
         };
 
-        const interval = setInterval(checkSession, 5000);
-        window.addEventListener('focus', checkSession);
+        // seen-performance-first-open-login-task.md Phase 3.5: this used to
+        // read users.photo_url every 5 seconds from every open tab, hidden
+        // or not. Now:
+        //  - Realtime on this person's own users row (migration
+        //    20261228000001 publishes it): another device claiming the
+        //    account shows the window within a moment;
+        //  - one check when the tab becomes visible again (debounced);
+        //  - a 60-second fallback while the tab is visible, in case the
+        //    Realtime connection is down.
+        const onRowChange = (payload: any) => {
+            const photo = payload?.new?.photo_url;
+            if (window.location.pathname === '/reset-password') return;
+            if (photo && photo !== currentSessionId) {
+                console.log('[SESSION] Another device claimed this account (realtime), prompting user.');
+                setConflictUser({ uid, email, currentSessionId });
+            }
+        };
+        const channel = supabase
+            .channel(`device-session-${uid}`)
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${uid}` }, onRowChange)
+            .subscribe();
+
+        let visibleTimer: number | null = null;
+        const onVisible = () => {
+            if (document.visibilityState !== 'visible') return;
+            if (visibleTimer) window.clearTimeout(visibleTimer);
+            visibleTimer = window.setTimeout(() => { visibleTimer = null; void checkSession(); }, 400);
+        };
+        const interval = window.setInterval(() => {
+            if (document.visibilityState === 'visible') void checkSession();
+        }, 60_000);
+        document.addEventListener('visibilitychange', onVisible);
+        window.addEventListener('focus', onVisible);
         return () => {
-            clearInterval(interval);
-            window.removeEventListener('focus', checkSession);
+            window.clearInterval(interval);
+            if (visibleTimer) window.clearTimeout(visibleTimer);
+            document.removeEventListener('visibilitychange', onVisible);
+            window.removeEventListener('focus', onVisible);
+            void supabase.removeChannel(channel);
         };
     }, [session?.user?.id, session?.user?.email, conflictUser]);
 
