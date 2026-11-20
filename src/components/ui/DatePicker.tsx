@@ -11,9 +11,11 @@ interface DatePickerProps {
   className?: string;
   /** Shown on the trigger button when no date is selected yet, e.g. "من" / "إلى". */
   placeholder?: string;
+  /** Extra classes for the trigger button, e.g. to match a neighbouring field. */
+  triggerClassName?: string;
 }
 
-export function DatePicker({ value, onChange, id, className, placeholder }: DatePickerProps) {
+export function DatePicker({ value, onChange, id, className, placeholder, triggerClassName }: DatePickerProps) {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'ar';
   const [isOpen, setIsOpen] = useState(false);
@@ -170,6 +172,7 @@ export function DatePicker({ value, onChange, id, className, placeholder }: Date
         }}
         className={cn(
           "flex items-center gap-2.5 w-full bg-surface-muted/50 hover:bg-surface-muted/80 border border-border rounded-2xl px-4 h-12 text-sm font-bold text-content transition-all shadow-inner shadow-black/5 outline-none cursor-pointer text-right justify-between",
+          triggerClassName,
           isOpen && "border-brand/40 bg-surface"
         )}
       >

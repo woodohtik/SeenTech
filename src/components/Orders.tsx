@@ -2090,17 +2090,18 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   label: t(getOrderStatusDisplay(status, workflowStages).labelKey)
                 }))
               ]}
-              className="bg-surface-muted"
+              // Same look as the search box beside it.
+              className="bg-surface rounded-xl shadow-none"
             />
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <div className="min-w-[140px]">
-              <DatePicker value={startDate} onChange={setStartDate} placeholder={t('common.from', 'من')} />
+              <DatePicker value={startDate} onChange={setStartDate} placeholder={t('common.from', 'من')} triggerClassName="bg-surface hover:bg-surface border-border rounded-xl shadow-none" />
             </div>
             <span className="text-content-muted text-xs">{t('orders.to')}</span>
             <div className="min-w-[140px]">
-              <DatePicker value={endDate} onChange={setEndDate} placeholder={t('common.to', 'إلى')} />
+              <DatePicker value={endDate} onChange={setEndDate} placeholder={t('common.to', 'إلى')} triggerClassName="bg-surface hover:bg-surface border-border rounded-xl shadow-none" />
             </div>
           </div>
 
