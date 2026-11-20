@@ -1731,18 +1731,26 @@ app.get("/api/assistant-settings/status", authenticate, async (req: any, res) =>
     // today. The counter (increment_assistant_usage) keys on the database's
     // current_date, which is UTC on Supabase -- the same date is read here.
     const usageDate = new Date().toISOString().slice(0, 10);
-    const [{ data, error }, { data: tenant, error: tenantErr }, { data: usage, error: usageErr }] = await Promise.all([
-      supabaseAdmin.from("assistant_settings").select("is_enabled, daily_message_limit").eq("id", "global").maybeSingle(),
+    const [{ data, error }, { data: tenant, error: tenantErr }, { data: usage, error: usageErr }, { data: creds, error: credsErr }] = await Promise.all([
+      supabaseAdmin.from("assistant_settings").select("is_enabled, daily_message_limit, active_provider, fallback_order").eq("id", "global").maybeSingle(),
       req.user?.tenantId
         ? supabaseAdmin.from("tenants").select("assistant_enabled").eq("id", req.user.tenantId).maybeSingle()
         : Promise.resolve({ data: null, error: null }),
       req.user?.tenantId
         ? supabaseAdmin.from("assistant_usage_daily").select("message_count").eq("tenant_id", req.user.tenantId).eq("usage_date", usageDate).maybeSingle()
         : Promise.resolve({ data: null, error: null }),
+      // Only whether a key is saved -- never the key itself.
+      supabaseAdmin.from("assistant_provider_credentials").select("provider_key, is_configured, api_key_encrypted"),
     ]);
     if (error) return internalError(res, "Error in GET /api/assistant-settings/status:", error);
     if (tenantErr) return internalError(res, "Error in GET /api/assistant-settings/status:", tenantErr);
-    const isEnabled = Boolean(data?.is_enabled) && tenant?.assistant_enabled !== false;
+    if (credsErr) return internalError(res, "Error in GET /api/assistant-settings/status:", credsErr);
+    // The launcher shows only when a question could be answered: switched on
+    // for the platform and this shop, and a provider the chat route would
+    // use has a saved key. Without one every question got the 503
+    // "not configured" reply (production, 2026-11-20).
+    const { hasReadyProvider } = await import("./src/server/assistantReadiness.ts");
+    const isEnabled = Boolean(data?.is_enabled) && tenant?.assistant_enabled !== false && hasReadyProvider(data || {}, creds);
     // No limit configured (0) means unlimited: the counts are left out.
     const dailyLimit = Number(data?.daily_message_limit) || 0;
     if (usageErr) logger.error({ err: usageErr }, "assistant usage read failed");
@@ -2140,10 +2148,9 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
     // ترتيب المرشّحين: المزوّد النشط أولاً، ثم الترتيب الاحتياطي (بدون
     // تكرار المزوّد النشط)، بعد استبعاد أي مزوّد بلا مفتاح محفوظ فعلياً.
     const { PROVIDERS } = await import("./src/server/aiProviderRegistry.ts");
-    const candidateKeys = Array.from(new Set([
-      settings.active_provider,
-      ...(Array.isArray(settings.fallback_order) ? settings.fallback_order : []),
-    ].filter(Boolean)));
+    // The same list the status route uses to decide whether to show the launcher.
+    const { candidateProviderKeys } = await import("./src/server/assistantReadiness.ts");
+    const candidateKeys = candidateProviderKeys(settings);
 
     const { data: credRows } = await supabaseAdmin
       .from("assistant_provider_credentials")
