@@ -2149,16 +2149,21 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 key={order.id}
                 className={cn(
                   "p-3.5 sm:p-4 lg:p-6 rounded-2xl sm:rounded-3xl border transition-all duration-200 group relative overflow-visible z-10 hover:z-30",
-                  selectedOrder?.id === order.id 
-                    ? "bg-brand/5 border-brand ring-2 sm:ring-4 ring-brand/20 shadow-xl shadow-brand/10" 
+                  // Selected: one brand-coloured border on the same white card,
+                  // not a grey fill with a ring and a heavy shadow (founder, 2026-11-20).
+                  selectedOrder?.id === order.id
+                    ? "bg-surface border-brand shadow-sm"
                     : "bg-surface border-border shadow-sm hover:border-brand/30"
                 )}
               >
-                {/* Selection indicator */}
+                {/* Selection indicator: a short bar inside the card's start edge.
+                    It used to run the full height at the physical right with
+                    square corners, so it stuck out past the rounded card. */}
                 {selectedOrder?.id === order.id && (
-                  <motion.div 
+                  <motion.div
                     layoutId="selected-indicator"
-                    className="absolute right-0 top-0 bottom-0 w-1.5 bg-brand rounded-r-2xl rtl:rounded-l-2xl rtl:rounded-r-none"
+                    aria-hidden="true"
+                    className="absolute start-0 inset-y-4 w-1 rounded-e-full bg-brand"
                   />
                 )}
 
