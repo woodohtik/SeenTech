@@ -13,6 +13,16 @@ const REQUEST_TIMEOUT_MS = 40_000;
 // المعروض محلياً للمستخدم يبقى كاملاً، هذا يحد فقط ما يُرسَل فعلياً للخادم.
 const MAX_HISTORY_MESSAGES = 20;
 
+/** A random id for a reply; the server accepts 8-64 letters, digits, - and _. */
+export function newReplyId(): string {
+  try {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  } catch {
+    // randomUUID needs a secure context; fall through
+  }
+  return `r${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`;
+}
+
 function chatStorageKey(tenantId: string): string {
   return `seen_ai_chat_${tenantId}`;
 }
@@ -152,9 +162,11 @@ export function useAssistantChat({ tenantId, userName, userRole, page, onTourReq
     const toolErrorsAcc: string[] = [];
 
     // The last message is the reply being written; replace it with the latest snapshot.
+    const replyId = newReplyId();
     const writeReply = (extra: Partial<ChatMessage> = {}) => {
       const snapshot: ChatMessage = {
         role: 'assistant',
+        id: replyId,
         content: textAcc,
         toolResults: [...toolResultsAcc],
         ...(toolErrorsAcc.length ? { toolErrors: [...toolErrorsAcc] } : {}),
@@ -203,7 +215,7 @@ export function useAssistantChat({ tenantId, userName, userRole, page, onTourReq
       }
       if (!res.ok || !res.body) throw new Error('request_failed');
 
-      setMessages((prev) => [...prev, { role: 'assistant', content: '', toolResults: [] }]);
+      setMessages((prev) => [...prev, { role: 'assistant', id: replyId, content: '', toolResults: [] }]);
       startedReply = true;
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -320,5 +332,47 @@ export function useAssistantChat({ tenantId, userName, userRole, page, onTourReq
     lastRequestMessagesRef.current = null;
   }, []);
 
-  return { messages, isSending, progress, notice, announcement, sendMessage, cancel, retry, startNewConversation };
+  /**
+   * Rates a finished reply (2-1). The mark shows at once; if the request
+   * fails it is taken back, so the person can try again.
+   */
+  const rate = useCallback(async (messageId: string, rating: 'up' | 'down', comment?: string | null) => {
+    const index = messages.findIndex((m) => m.id === messageId);
+    if (index < 0) return false;
+    const reply = messages[index];
+    const question = [...messages.slice(0, index)].reverse().find((m) => m.role === 'user')?.content ?? null;
+    const before = { rating: reply.rating, ratingClosed: reply.ratingClosed };
+    const patchReply = (fields: Partial<ChatMessage>) =>
+      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, ...fields } : m)));
+
+    patchReply({ rating, ratingClosed: rating === 'up' || comment !== undefined });
+    try {
+      const authHeader = await getAuthHeader();
+      const res = await fetch('/api/assistant-feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({
+          messageKey: messageId,
+          rating,
+          comment: comment ?? null,
+          question,
+          toolNames: (reply.toolResults || []).map((r) => r.name),
+          page,
+        }),
+      });
+      if (!res.ok) throw new Error(`feedback ${res.status}`);
+      return true;
+    } catch (err) {
+      console.error('SeenAI feedback error:', err);
+      patchReply(before);
+      return false;
+    }
+  }, [messages, page]);
+
+  /** Closes the "what went wrong?" box without a comment. */
+  const closeRating = useCallback((messageId: string) => {
+    setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, ratingClosed: true } : m)));
+  }, []);
+
+  return { messages, isSending, progress, notice, announcement, sendMessage, cancel, retry, startNewConversation, rate, closeRating };
 }

@@ -6,7 +6,7 @@ import { cn } from '../../lib/utils';
 import { useDirection } from '../../lib/direction';
 import { AssistantMark, CatalogIcon, IconButton } from './parts';
 import { Composer } from './Composer';
-import { MessageList } from './MessageList';
+import { MessageList, type RateReply } from './MessageList';
 import { markdownToPlainText } from './markdown';
 import { pageKeyForPath, suggestionsFor, type AssistantAccess } from './catalog';
 import type { ChatMessage, ChatNotice, ChatProgress } from './types';
@@ -94,6 +94,8 @@ export interface AssistantPanelProps {
   onStartTour: (topic: string) => void;
   /** Messages left today, or null when there is no limit. */
   remainingToday?: number | null;
+  onRate: RateReply;
+  onCloseRating: (id: string) => void;
 }
 
 /**
@@ -105,7 +107,7 @@ export interface AssistantPanelProps {
 export function AssistantPanel(props: AssistantPanelProps) {
   const {
     onClose, expanded, onToggleExpanded, userName, pathname, access, messages, isSending, progress, notice,
-    announcement, input, onInputChange, onSend, onStop, onRetry, onNewConversation, onStartTour, remainingToday,
+    announcement, input, onInputChange, onSend, onStop, onRetry, onNewConversation, onStartTour, remainingToday, onRate, onCloseRating,
   } = props;
   const { t } = useTranslation();
   const { dir, isRtl } = useDirection();
@@ -231,6 +233,8 @@ export function AssistantPanel(props: AssistantPanelProps) {
             onRetry={onRetry}
             onNavigate={handleNavigate}
             onStartTour={onStartTour}
+            onRate={onRate}
+            onCloseRating={onCloseRating}
           />
         )}
 

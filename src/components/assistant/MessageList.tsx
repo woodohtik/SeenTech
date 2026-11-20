@@ -1,7 +1,8 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Check, Copy, LoaderCircle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Check, Copy, LoaderCircle, RefreshCw, ThumbsDown, ThumbsUp } from 'lucide-react';
 import { localeOf } from '../../lib/direction';
+import { cn } from '../../lib/utils';
 import { AssistantMark, IconButton, Markdown } from './parts';
 import { ToolResultCard } from './DataCard';
 import { TOOLS, followUpsFor, progressKeyFor, type AssistantAccess } from './catalog';
@@ -56,14 +57,95 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
+export type RateReply = (messageId: string, rating: 'up' | 'down', comment?: string | null) => Promise<boolean>;
+
+/** "Useful / not useful" under a reply. */
+function RatingButtons({ message, onRate }: { message: ChatMessage; onRate: RateReply }) {
+  const { t } = useTranslation();
+  const rating = message.rating;
+  return (
+    <>
+      <IconButton
+        size={44}
+        label={t('ai.rate_up')}
+        aria-pressed={rating === 'up'}
+        onClick={() => { if (rating !== 'up') void onRate(message.id!, 'up'); }}
+        className={cn(rating === 'up' && 'text-success hover:text-success')}
+      >
+        <ThumbsUp size={20} aria-hidden="true" fill={rating === 'up' ? 'currentColor' : 'none'} />
+      </IconButton>
+      <IconButton
+        size={44}
+        label={t('ai.rate_down')}
+        aria-pressed={rating === 'down'}
+        onClick={() => { if (rating !== 'down') void onRate(message.id!, 'down'); }}
+        className={cn(rating === 'down' && 'text-danger hover:text-danger')}
+      >
+        <ThumbsDown size={20} aria-hidden="true" fill={rating === 'down' ? 'currentColor' : 'none'} />
+      </IconButton>
+    </>
+  );
+}
+
+/** The optional "what went wrong?" after "not useful". */
+function RatingComment({ message, onRate, onClose }: { message: ChatMessage; onRate: RateReply; onClose: (id: string) => void }) {
+  const { t } = useTranslation();
+  const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  const send = async () => {
+    if (!text.trim()) return;
+    setSending(true);
+    await onRate(message.id!, 'down', text.trim());
+    setSending(false);
+  };
+
+  return (
+    <div className="rounded-[12px] border border-border p-3 flex flex-col gap-2">
+      <label htmlFor={`rate-${message.id}`} className="text-sm font-semibold text-content">{t('ai.rate_down_question')}</label>
+      <textarea
+        id={`rate-${message.id}`}
+        ref={inputRef}
+        rows={2}
+        maxLength={500}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder={t('ai.rate_down_placeholder')}
+        className="w-full min-h-0 resize-none rounded-[10px] border border-content-muted/60 bg-surface px-3 py-2 text-[15px] leading-[1.6] text-content placeholder:text-content-muted focus:border-brand focus:outline-none"
+      />
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={send}
+          disabled={!text.trim() || sending}
+          className="min-h-11 px-4 rounded-[12px] bg-brand text-white text-sm font-semibold hover:bg-brand/90 disabled:bg-border disabled:text-content-muted"
+        >
+          {t('ai.rate_send')}
+        </button>
+        <button
+          type="button"
+          onClick={() => onClose(message.id!)}
+          className="min-h-11 px-3 rounded-[12px] text-sm font-semibold text-content-muted hover:bg-surface-muted hover:text-content"
+        >
+          {t('ai.rate_skip')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function AssistantReply({
-  message, isStreaming, access, onNavigate, onStartTour,
+  message, isStreaming, access, onNavigate, onStartTour, onRate, onCloseRating,
 }: {
   message: ChatMessage;
   isStreaming: boolean;
   access: AssistantAccess;
   onNavigate: () => void;
   onStartTour: (topic: string) => void;
+  onRate: RateReply;
+  onCloseRating: (id: string) => void;
 }) {
   const { t, i18n } = useTranslation();
   const results = message.toolResults || [];
@@ -97,8 +179,18 @@ function AssistantReply({
           <span className="text-sm text-content-muted">
             {hasShopData && t('ai.source_line', { time: t('ai.day.until', { time: clockTime(message.at!, localeOf(i18n.language)) }) })}
           </span>
-          {message.content && <CopyButton text={markdownToPlainText(message.content)} />}
+          <div className="flex items-center shrink-0">
+            {message.id && <RatingButtons message={message} onRate={onRate} />}
+            {message.content && <CopyButton text={markdownToPlainText(message.content)} />}
+          </div>
         </div>
+      )}
+
+      {isDone && message.id && message.rating === 'down' && !message.ratingClosed && (
+        <RatingComment message={message} onRate={onRate} onClose={onCloseRating} />
+      )}
+      {isDone && message.rating && message.ratingClosed && (
+        <p role="status" className="m-0 text-sm text-content-muted">{t('ai.rate_thanks')}</p>
       )}
     </div>
   );
@@ -114,10 +206,12 @@ export interface MessageListProps {
   onRetry: () => void;
   onNavigate: () => void;
   onStartTour: (topic: string) => void;
+  onRate: RateReply;
+  onCloseRating: (id: string) => void;
 }
 
 export function MessageList({
-  messages, isSending, progress, notice, access, onAsk, onRetry, onNavigate, onStartTour,
+  messages, isSending, progress, notice, access, onAsk, onRetry, onNavigate, onStartTour, onRate, onCloseRating,
 }: MessageListProps) {
   const { t } = useTranslation();
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -188,6 +282,8 @@ export function MessageList({
             access={access}
             onNavigate={onNavigate}
             onStartTour={onStartTour}
+            onRate={onRate}
+            onCloseRating={onCloseRating}
           />
         );
       })}

@@ -13,6 +13,7 @@ import { useConfirm } from '../contexts/ConfirmContext';
 import { SmartSelect } from './ui/SmartSelect';
 import { IconInput } from './ui/IconInput';
 import { cn } from '../lib/utils';
+import SaaSAssistantFeedback from './SaaSAssistantFeedback';
 
 const DEFAULT_SYSTEM_PROMPT =
   'أنت مساعد سين الذكي، نظام نقاط بيع لإدارة المحلات التجارية. مهمتك مساعدة صاحب المحل أو الكاشير بأسلوب ودود ومهني، الإجابة باختصار، وتوجيههم لكيفية إنشاء فواتير أو جرد المخزون.';
@@ -661,6 +662,9 @@ export default function SaaSAssistantSettings() {
               </button>
             </div>
           </div>
+
+          {/* Ratings on the assistant's answers (2-1) */}
+          <SaaSAssistantFeedback />
 
           {/* Save */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-4">

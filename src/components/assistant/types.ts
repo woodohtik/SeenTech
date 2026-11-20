@@ -11,6 +11,12 @@ export interface ChatMessage {
   toolErrors?: string[];
   /** When the reply finished, for "from your shop's data · 3:42". Absent while streaming. */
   at?: number;
+  /** The reply's own id, for rating it. Absent on replies kept from before ratings existed. */
+  id?: string;
+  /** How the person rated this reply, once they have. */
+  rating?: 'up' | 'down';
+  /** Set once a "not useful" comment was sent or skipped, so the box closes. */
+  ratingClosed?: boolean;
 }
 
 /**

@@ -193,7 +193,14 @@
       "now": "just now",
       "until": "as of {{time}}"
     },
-    "remaining_today": "Messages left today: {{count}}"
+    "remaining_today": "Messages left today: {{count}}",
+    "rate_up": "Useful answer",
+    "rate_down": "Not useful",
+    "rate_down_question": "What was wrong? (optional)",
+    "rate_down_placeholder": "For example: the figure doesn't match the report",
+    "rate_send": "Send note",
+    "rate_skip": "Skip",
+    "rate_thanks": "Thanks, your rating was received."
   },
   "billing": {
     "billing_status_title": "Billing & Renewal Status",
@@ -3850,7 +3857,19 @@
     "wipe_warning_desc": "You are about to delete all records (orders, customers, invoices) for the subscriber",
     "withdrawals_subtitle": "Review, wire to IBAN, then click 'Transferred'. Rejection returns amount to wallet.",
     "withdrawals_title": "Referral Withdrawal Requests",
-    "wrong_current_password": "The current temporary password is incorrect"
+    "wrong_current_password": "The current temporary password is incorrect",
+    "assistant_feedback": {
+      "title": "Assistant answer ratings",
+      "desc": "The latest 100 ratings from shops. Only the question and tool names are kept, not the answer.",
+      "totals": "Last 30 days: {{up}} useful · {{down}} not useful",
+      "only_down": "Not useful only",
+      "all": "All",
+      "empty": "No ratings yet.",
+      "up": "Useful",
+      "down": "Not useful",
+      "no_question": "(no question kept)",
+      "load_error": "Could not load the ratings."
+    }
   },
   "sales": {
     "active_shift": "Active Shift",

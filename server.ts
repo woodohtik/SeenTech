@@ -1599,6 +1599,75 @@ async function streamAssistantReply(
   }
 }
 
+// seen-ai-assistant-redesign-task.md 2-1: "useful / not useful" on a reply.
+// Any signed-in shop user may rate; the row is theirs and their shop's, and
+// rating the same reply again replaces the earlier rating. Only the question
+// and the tool names are kept, not the answer (founder's decision).
+app.post("/api/assistant-feedback", authenticate, async (req: any, res) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId || !req.user?.uid) return res.status(401).json({ error: 'Unauthorized' });
+    const { parseFeedback } = await import("./src/server/assistantFeedback.ts");
+    const parsed = parseFeedback(req.body);
+    if (!parsed.ok) return res.status(400).json({ error: parsed.error });
+    const f = parsed.value;
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+    const { error } = await supabaseAdmin.from("assistant_feedback").upsert({
+      tenant_id: tenantId,
+      user_id: req.user.uid,
+      message_key: f.messageKey,
+      rating: f.rating,
+      comment: f.comment,
+      question: f.question,
+      tool_names: f.toolNames,
+      page: f.page,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,message_key' });
+    if (error) return internalError(res, "Error in POST /api/assistant-feedback:", error);
+    res.json({ ok: true });
+  } catch (err: any) {
+    internalError(res, "Error in POST /api/assistant-feedback:", err);
+  }
+});
+
+// The super admin's view of the ratings: the latest 100 (optionally only
+// "not useful"), with the shop's name, and the last 30 days' totals.
+app.get("/api/super-admin/assistant-feedback", authenticate, authorize(['super_admin']), async (req: any, res) => {
+  try {
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+    const onlyDown = req.query?.rating === 'down';
+    let list = supabaseAdmin
+      .from("assistant_feedback")
+      .select("id, rating, comment, question, tool_names, page, updated_at, tenants(name)")
+      .order("updated_at", { ascending: false })
+      .limit(100);
+    if (onlyDown) list = list.eq("rating", -1);
+    const since = new Date(Date.now() - 30 * 86_400_000).toISOString();
+    const [{ data, error }, up, down] = await Promise.all([
+      list,
+      supabaseAdmin.from("assistant_feedback").select("id", { count: 'exact', head: true }).eq("rating", 1).gte("updated_at", since),
+      supabaseAdmin.from("assistant_feedback").select("id", { count: 'exact', head: true }).eq("rating", -1).gte("updated_at", since),
+    ]);
+    if (error) return internalError(res, "Error in GET /api/super-admin/assistant-feedback:", error);
+    if (up.error || down.error) return internalError(res, "Error in GET /api/super-admin/assistant-feedback:", up.error || down.error);
+    res.json({
+      totals: { up: up.count || 0, down: down.count || 0 },
+      items: (data || []).map((r: any) => ({
+        id: r.id,
+        rating: r.rating === 1 ? 'up' : 'down',
+        comment: r.comment,
+        question: r.question,
+        toolNames: r.tool_names || [],
+        page: r.page,
+        at: r.updated_at,
+        shopName: r.tenants?.name || null,
+      })),
+    });
+  } catch (err: any) {
+    internalError(res, "Error in GET /api/super-admin/assistant-feedback:", err);
+  }
+});
+
 // خفيف ومتاح لأي مستخدم مسجّل دخول (Admin/Cashier) — الـ Widget يسأله فقط
 // "هل أعرض الزر العائم أصلاً؟"، بلا أي بيانات حساسة. يجمع بين المفتاح العام
 // (assistant_settings.is_enabled، يُطفئ المساعد للمنصة بأكملها) وتعطيل خاص
