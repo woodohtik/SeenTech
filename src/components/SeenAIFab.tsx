@@ -106,10 +106,12 @@ export default function SeenAIFab({ userName, userRole, tenantId, can }: SeenAIF
           onClick={() => setIsOpen(true)}
           aria-label={t('ai.launcher')}
           aria-haspopup="dialog"
-          className="h-14 min-w-14 px-0 sm:ps-5 sm:pe-6 inline-flex items-center justify-center gap-2.5 rounded-[12px] bg-brand text-white text-[15px] font-semibold shadow-[0_2px_8px_rgba(14,42,66,.08),0_1px_2px_rgba(14,42,66,.06)] hover:bg-brand/90"
+          title={t('ai.launcher')}
+          // Icon only, at every width (founder, 2026-11-20); the name stays
+          // for screen readers and as the hover tooltip.
+          className="w-14 h-14 inline-flex items-center justify-center rounded-[12px] bg-brand text-white shadow-[0_2px_8px_rgba(14,42,66,.08),0_1px_2px_rgba(14,42,66,.06)] hover:bg-brand/90"
         >
-          <AssistantMark size={24} className="sm:w-6 sm:h-6 w-[26px] h-[26px]" />
-          <span className="hidden sm:inline">{t('ai.launcher')}</span>
+          <AssistantMark size={26} />
         </button>
       )}
 
