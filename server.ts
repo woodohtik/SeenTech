@@ -10,6 +10,7 @@ import { registerPrintRelay } from "./src/server/printRelay.ts";
 import { initServerLogger, captureServerException, logger } from "./src/server/logger.ts";
 import { isValidMeasurementUnit } from "./src/utils/measurementUnits.ts";
 import { normalizeFabricEstimateSettings } from "./src/utils/fabricEstimate.ts";
+import { resolveTaxSettings } from "./src/utils/taxSettings.ts";
 import { listArticles, getArticle, createArticle, updateArticle, deleteArticle, previewArticle, fetchAllArticles } from "./src/server/blogAdmin.ts";
 import { triggerBlogRebuild } from "./src/server/blogDeployHook.ts";
 import { validateMeasurementsPayload } from "./src/server/validateMeasurementsPayload.ts";
@@ -1318,23 +1319,12 @@ app.get("/api/tenant/settings", authenticate, authorize(['owner', 'admin', 'mana
       }
     }
 
-    const hasVat = Boolean(tenant.vat_number && tenant.vat_number.trim().length > 0);
-    const rawTax = parsedMeta.tax_settings || parsedMeta;
-
-    const taxSettings = rawTax ? {
-      ...rawTax,
-      enabled: rawTax.enabled ?? (hasVat || Boolean(rawTax.trn)),
-      trn: rawTax.trn || tenant.vat_number || '',
-      legalName: rawTax.legalName || tenant.name || '',
-      vatRate: rawTax.vatRate ?? 15,
-      tailoringTaxType: rawTax.tailoringTaxType || 'exclusive'
-    } : {
-      enabled: hasVat,
-      trn: tenant.vat_number || '',
-      legalName: tenant.name || '',
-      vatRate: 15,
-      tailoringTaxType: 'exclusive'
-    };
+    // tenants.tax_settings (migration 20261230000000) is the source; legacy_id
+    // only for an older database. One reading: src/utils/taxSettings.ts.
+    const rawTax = (tenant.tax_settings && typeof tenant.tax_settings === 'object')
+      ? tenant.tax_settings
+      : (parsedMeta.tax_settings || parsedMeta);
+    const taxSettings = resolveTaxSettings({ ...tenant, tax_settings: null }, rawTax);
 
     const notificationSettings = rawTax?.notificationSettings || parsedMeta?.notificationSettings || {
       lowStock: true,
@@ -1419,7 +1409,10 @@ app.post("/api/tenant/settings", authenticate, authorize(['owner', 'admin']), as
       vat_number: data.taxSettings?.trn || '',
       is_tax_enabled: Boolean(data.taxSettings?.enabled),
       default_tax_rate: data.taxSettings?.vatRate || 15,
-      legacy_id: JSON.stringify(tax_settings), // Store the complete JSON metadata in legacy_id
+      // The settings document goes to tenants.tax_settings; the database trigger
+      // tenants_tax_settings_sync copies it to legacy_id for older app versions
+      // (migration 20261230000000 -- apply it before this code).
+      tax_settings,
       updated_at: new Date().toISOString()
     };
 

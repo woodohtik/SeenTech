@@ -1,4 +1,5 @@
 import { calculateItemTax } from './b2bHelper';
+import { resolveTaxSettings } from './taxSettings';
 import { contentToMeters, metersToContent, type ContentUnit } from './fabricUomConverter';
 
 /** Pure helpers behind the tailoring order form: tax, totals, and each line's fabric. */
@@ -10,16 +11,14 @@ export interface TailoringTax {
   taxType: 'inclusive' | 'exclusive' | 'exempt';
 }
 
-/** A shop's tailoring tax rules out of its `tenants` row (same rules the Orders page always used). */
+/**
+ * A shop's tailoring tax rules out of its `tenants` row: utils/taxSettings.ts
+ * resolveTaxSettings, the same rules as the database's tenant_tax_rules that
+ * create_tailoring_order applies.
+ */
 export function resolveTailoringTax(tenantRow: any): TailoringTax {
-  const raw = tenantRow?.tax_settings;
-  const hasVat = Boolean(tenantRow?.vat_number && String(tenantRow.vat_number).trim().length > 0);
-  const enabled = raw ? Boolean(raw.enabled ?? (hasVat || Boolean(raw.trn))) : hasVat;
-  return {
-    enabled,
-    vatRatePercentage: Number(raw?.vatRate ?? 15) || 15,
-    taxType: raw?.tailoringTaxType || 'exclusive',
-  };
+  const s = resolveTaxSettings(tenantRow);
+  return { enabled: s.enabled, vatRatePercentage: s.vatRate, taxType: s.tailoringTaxType };
 }
 
 export interface TailoringTotals {

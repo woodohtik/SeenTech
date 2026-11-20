@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase/client';
+import { resolveTaxSettings } from '../utils/taxSettings';
 import { Tenant } from '../types';
 import { useTranslation } from 'react-i18next';
 import { Calendar } from 'lucide-react';
@@ -56,22 +57,8 @@ export default function Header({ tenantId, title, subtitle, children }: HeaderPr
           .maybeSingle();
         
         if (data && !error) {
-          const hasVat = Boolean(data.vat_number && data.vat_number.trim().length > 0);
-          const rawTax = data.tax_settings;
-          const resolvedTax = rawTax ? {
-            ...rawTax,
-            enabled: rawTax.enabled ?? (hasVat || Boolean(rawTax.trn)),
-            trn: rawTax.trn || data.vat_number || '',
-            legalName: rawTax.legalName || data.name || '',
-            vatRate: rawTax.vatRate ?? 15,
-            tailoringTaxType: rawTax.tailoringTaxType || 'exclusive'
-          } : {
-            enabled: hasVat,
-            trn: data.vat_number || '',
-            legalName: data.name || '',
-            vatRate: 15,
-            tailoringTaxType: 'exclusive'
-          };
+          // One reading of the shop's tax settings (utils/taxSettings.ts).
+          const resolvedTax = resolveTaxSettings(data);
 
           setTenant({
             ...data,

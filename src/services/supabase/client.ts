@@ -175,8 +175,12 @@ export const supabase: SupabaseClient<any> =
                                     if (!text) return res;
                                     let parsed = JSON.parse(text);
 
+                                    // tenants.tax_settings is a real column since migration
+                                    // 20261230000000; legacy_id is parsed only when it is
+                                    // absent (an older database).
                                     const mapTenantRow = (row: any) => {
-                                        if (row && row.legacy_id && row.legacy_id.startsWith('{')) {
+                                        const hasColumn = row && row.tax_settings && typeof row.tax_settings === 'object';
+                                        if (row && !hasColumn && row.legacy_id && row.legacy_id.startsWith('{')) {
                                             try {
                                                 const parsedMeta = JSON.parse(row.legacy_id);
                                                 if (parsedMeta) {

@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase/client';
+import { resolveTaxSettings } from '../utils/taxSettings';
 import { Tenant, TaxInvoice } from '../types';
 import { decodeInvoiceExtendedNotes } from '../utils/b2bHelper';
 import { decodeOrderRow } from '../utils/orderHistoryHelper';
@@ -73,22 +74,8 @@ export async function fetchTaxInvoiceForOrder(
     creatorName = staffRow?.name;
   }
 
-  const hasVat = Boolean(tenantData?.vat_number && tenantData.vat_number.trim().length > 0);
-  const rawTax = tenantData?.tax_settings;
-  const resolvedTax = rawTax ? {
-    ...rawTax,
-    enabled: rawTax.enabled ?? (hasVat || Boolean(rawTax.trn)),
-    trn: rawTax.trn || tenantData?.vat_number || '',
-    legalName: rawTax.legalName || tenantData?.name || '',
-    vatRate: rawTax.vatRate ?? 15,
-    tailoringTaxType: rawTax.tailoringTaxType || 'exclusive',
-  } : {
-    enabled: hasVat,
-    trn: tenantData?.vat_number || '',
-    legalName: tenantData?.name || '',
-    vatRate: 15,
-    tailoringTaxType: 'exclusive',
-  };
+  // One reading of the shop's tax settings (utils/taxSettings.ts).
+  const resolvedTax = resolveTaxSettings(tenantData);
 
   const tenant = {
     ...tenantData,

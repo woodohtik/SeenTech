@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { formatSaudiPhone } from '../utils/phoneUtils';
 import { Store, MapPin, Phone, Globe, Bell, Shield, CreditCard, MessageSquare, CheckCircle2, AlertCircle, AlertTriangle, ChevronRight, ExternalLink, Zap, Upload, X as CloseIcon, Database, Trash2, ShieldCheck, Palette, FileText, HelpCircle, Layout, Mail, Printer, Hash, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
+import { resolveTaxSettings } from '../utils/taxSettings';
 import { handleError, OperationType } from '../lib/appErrors';
 import { saveLastKnown, getLastKnown } from '../lib/offline/lastKnownCache';
 import { isNetworkFailure } from '../lib/offline/outbox';
@@ -236,7 +237,6 @@ export default function Settings({ tenantId }: SettingsProps) {
       if (error) throw error;
       if (!data) return null;
 
-      const hasVat = Boolean(data.vat_number && data.vat_number.trim().length > 0);
       let rawTax = data.tax_settings as any;
       if (!rawTax) {
         try {
@@ -248,23 +248,9 @@ export default function Settings({ tenantId }: SettingsProps) {
           console.error('Failed to load tax_settings from localStorage:', e);
         }
       }
-      const loadedTaxSettings = rawTax ? {
-        ...rawTax,
-        enabled: rawTax.enabled ?? (hasVat || Boolean(rawTax.trn)),
-        trn: rawTax.trn || data.vat_number || '',
-        legalName: rawTax.legalName || data.name || '',
-        // A stored 0 has always meant "not set" (every reader falls back to 15),
-        // and the field no longer accepts 0, so load it as the default instead
-        // of as a value that would block saving while the field is hidden.
-        vatRate: Number(rawTax.vatRate) > 0 ? rawTax.vatRate : 15,
-        tailoringTaxType: rawTax.tailoringTaxType || 'exclusive'
-      } : {
-        enabled: hasVat,
-        trn: data.vat_number || '',
-        legalName: data.name || '',
-        vatRate: 15,
-        tailoringTaxType: 'exclusive'
-      };
+      // One reading of the shop's tax settings (utils/taxSettings.ts); the
+      // localStorage copy is only a fallback from the old direct-save path.
+      const loadedTaxSettings = resolveTaxSettings(data, rawTax);
 
       const loadedNotificationSettings = rawTax?.notificationSettings || {
         lowStock: true,
