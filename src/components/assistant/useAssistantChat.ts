@@ -123,6 +123,7 @@ export function useAssistantChat({ tenantId, userName, userRole, onTourRequested
 
     let startedReply = false;
     let textAcc = '';
+    let afterTool = false;
     const toolResultsAcc: ToolResult[] = [];
     const toolErrorsAcc: string[] = [];
 
@@ -197,15 +198,21 @@ export function useAssistantChat({ tenantId, userName, userRole, onTourRequested
             if (part.t === 'text') {
               // The words themselves now show the work; the progress line goes.
               setProgress(null);
+              // Text written after a tool call is a new paragraph, not a
+              // continuation of the sentence before the call.
+              if (afterTool && textAcc && !/\s$/.test(textAcc) && !/^\s/.test(part.v)) textAcc += '\n\n';
+              afterTool = false;
               textAcc += part.v;
             } else if (part.t === 'status') {
               setProgress({ tool: typeof part.name === 'string' ? part.name : null });
             } else if (part.t === 'tool') {
+              afterTool = true;
               toolResultsAcc.push({ name: part.name, result: part.result });
               if (part.name === 'guidedTour' && part.result?.action === 'start' && part.result?.topic) {
                 pendingTourTopicRef.current = part.result.topic;
               }
             } else if (part.t === 'tool-error') {
+              afterTool = true;
               toolErrorsAcc.push(typeof part.name === 'string' ? part.name : '');
             }
           } catch {

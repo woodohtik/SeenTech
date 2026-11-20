@@ -13,7 +13,8 @@ export type Inline =
 export type Block =
   | { type: 'paragraph'; children: Inline[] }
   | { type: 'heading'; children: Inline[] }
-  | { type: 'list'; ordered: boolean; items: Inline[][] };
+  /** `start`: the number the first item carries, so a list split by a nested bullet list keeps counting. */
+  | { type: 'list'; ordered: boolean; start: number; items: Inline[][] };
 
 /** Only paths inside the app become links; an outside URL stays plain text. */
 export function isInternalHref(href: string): boolean {
@@ -71,7 +72,7 @@ const HEADING = /^\s*#{1,6}\s+(.*)$/;
 export function parseMarkdown(source: string): Block[] {
   const blocks: Block[] = [];
   let paragraph: string[] = [];
-  let list: { ordered: boolean; items: string[] } | null = null;
+  let list: { ordered: boolean; start: number; items: string[] } | null = null;
 
   const flushParagraph = () => {
     if (paragraph.length) {
@@ -81,7 +82,7 @@ export function parseMarkdown(source: string): Block[] {
   };
   const flushList = () => {
     if (list) {
-      blocks.push({ type: 'list', ordered: list.ordered, items: list.items.map(parseInline) });
+      blocks.push({ type: 'list', ordered: list.ordered, start: list.start, items: list.items.map(parseInline) });
       list = null;
     }
   };
@@ -101,7 +102,7 @@ export function parseMarkdown(source: string): Block[] {
       flushParagraph();
       const isOrdered = Boolean(ordered);
       if (list && list.ordered !== isOrdered) flushList();
-      if (!list) list = { ordered: isOrdered, items: [] };
+      if (!list) list = { ordered: isOrdered, start: ordered ? Number(ordered[1]) || 1 : 1, items: [] };
       list.items.push((ordered ? ordered[2] : bullet![1]).trim());
       continue;
     }
@@ -136,7 +137,7 @@ export function markdownToPlainText(source: string): string {
   return parseMarkdown(source)
     .map((block) => {
       if (block.type === 'list') {
-        return block.items.map((item, i) => `${block.ordered ? `${i + 1}.` : '•'} ${inlineText(item)}`).join('\n');
+        return block.items.map((item, i) => `${block.ordered ? `${block.start + i}.` : '•'} ${inlineText(item)}`).join('\n');
       }
       return inlineText(block.children);
     })

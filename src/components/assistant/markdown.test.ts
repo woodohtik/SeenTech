@@ -49,10 +49,17 @@ describe('parseMarkdown', () => {
     const blocks = parseMarkdown('- أول\n* ثانٍ\n• ثالث');
     expect(blocks).toEqual([
       {
-        type: 'list', ordered: false,
+        type: 'list', ordered: false, start: 1,
         items: [[{ type: 'text', text: 'أول' }], [{ type: 'text', text: 'ثانٍ' }], [{ type: 'text', text: 'ثالث' }]],
       },
     ]);
+  });
+
+  it('keeps counting when a nested bullet list splits a numbered list', () => {
+    const blocks = parseMarkdown('1. انتقل للمخزون.\n2. اضغط «إضافة».\n3. أدخل التفاصيل:\n- الاسم\n- السعر\n4. اضغط حفظ.');
+    expect(blocks.map((b) => b.type)).toEqual(['list', 'list', 'list']);
+    expect(blocks[2]).toMatchObject({ type: 'list', ordered: true, start: 4 });
+    expect(markdownToPlainText('1. أ\n- ب\n2. ج')).toBe('1. أ\n\n• ب\n\n2. ج');
   });
 
   it('separates paragraphs on a blank line and keeps a soft line break inside one', () => {

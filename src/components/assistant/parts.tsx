@@ -86,7 +86,7 @@ export function Markdown({ source, onNavigate }: { source: string; onNavigate?: 
         if (block.type === 'list') {
           const Tag = block.ordered ? 'ol' : 'ul';
           return (
-            <Tag key={i} className={cn("m-0 ps-6 flex flex-col gap-0.5", block.ordered ? "list-decimal" : "list-disc")}>
+            <Tag key={i} start={block.ordered && block.start !== 1 ? block.start : undefined} className={cn("m-0 ps-6 flex flex-col gap-0.5", block.ordered ? "list-decimal" : "list-disc")}>
               {block.items.map((item, j) => <li key={j}>{renderInline(item, onNavigate)}</li>)}
             </Tag>
           );
