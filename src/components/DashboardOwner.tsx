@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
   Users, 
@@ -80,18 +80,9 @@ import DashboardGridCard from './DashboardGridCard';
 // xlsx (~425KB) loads only when an export is asked for (seen-performance-
 // first-open-login-task.md Phase 4) -- see exportToExcel.
 
-import { 
-  ComposedChart,
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  Bar,
-  Cell,
-  Legend
-} from 'recharts';
+// recharts (~340KB) loads with the chart only, after the page has drawn
+// (seen-performance-first-open-login-task.md, "charts on demand").
+const RevenueChart = lazy(() => import('./dashboard/RevenueChart'));
 import { localeOf } from '../lib/direction';
 import i18n from '../i18n/config';
 
@@ -1618,157 +1609,17 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
                   </div>
                 )}
 
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={chartData} margin={{ top: 15, right: 10, left: 10, bottom: 5 }}>
-                    <defs>
-                      {/* The revenue area's fade-to-transparent is this screen's one deliberate
-                          gradient (seen-design-professionalization-task.md Phase 2 #5); the
-                          orders bar below uses a flat fill instead of a second gradient. */}
-                      <linearGradient id="colorRevenueGlow" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--brand)" stopOpacity={0.4}/>
-                        <stop offset="50%" stopColor="var(--brand)" stopOpacity={0.12}/>
-                        <stop offset="100%" stopColor="var(--brand)" stopOpacity={0.0}/>
-                      </linearGradient>
-                    </defs>
-                    
-                    <CartesianGrid 
-                      strokeDasharray="4 4" 
-                      vertical={false} 
-                      stroke="var(--border)" 
-                      opacity={0.5} 
-                    />
-
-                    <XAxis 
-                      dataKey="date" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fill: 'var(--content-muted)', fontSize: 11, fontWeight: 700 }}
-                      dy={10}
-                    />
-
-                    <YAxis 
-                      yAxisId="left"
-                      hide={chartViewMode === 'orders'}
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fill: 'var(--content-muted)', fontSize: 11, fontWeight: 700 }}
-                      tickFormatter={(value) => {
-                        if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
-                        if (value >= 1000) return `${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}k`;
-                        return value;
-                      }}
-                      dx={isRtl ? 10 : -10}
-                    />
-
-                    <YAxis 
-                      yAxisId="right"
-                      orientation="right"
-                      hide={chartViewMode === 'revenue'}
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fill: 'var(--content-muted)', fontSize: 11, fontWeight: 700 }}
-                      allowDecimals={false}
-                      dx={isRtl ? -10 : 10}
-                    />
-
-                    <Tooltip 
-                      cursor={{ stroke: 'var(--brand)', strokeWidth: 1.5, strokeDasharray: '4 4', opacity: 0.6 }}
-                      content={({ active, payload, label }) => {
-                        if (active && payload && payload.length) {
-                          const revVal = payload.find(p => p.dataKey === 'revenue')?.value as number || 0;
-                          const ordersVal = payload.find(p => p.dataKey === 'ordersCount')?.value as number || 0;
-                          const isPeak = revVal > 0 && revVal === maxRevenueDay?.revenue;
-                          const sharePct = totalPeriodRevenue > 0 ? ((revVal / totalPeriodRevenue) * 100).toFixed(1) : '0';
-                          const avgOrderVal = ordersVal > 0 ? Math.round(revVal / ordersVal) : 0;
-
-                          return (
-                            <div className="bg-surface/95 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-border text-right min-w-[220px] animate-in fade-in zoom-in-95 duration-150">
-                              <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-border/60">
-                                <span className="text-xs font-black text-content">{label}</span>
-                                {isPeak ? (
-                                  <span className="text-[10px] font-black bg-success/15 text-success px-2 py-0.5 rounded-full flex items-center gap-1">
-                                    🔥 {t('dashboard.peak_day_badge', 'أعلى مبيعات')}
-                                  </span>
-                                ) : revVal > avgDailyRevenue && revVal > 0 ? (
-                                  <span className="text-[10px] font-bold bg-brand/10 text-brand px-2 py-0.5 rounded-full">
-                                    📈 {t('dashboard.above_avg', 'فوق المتوسط')}
-                                  </span>
-                                ) : null}
-                              </div>
-
-                              <div className="space-y-2.5">
-                                {(chartViewMode === 'both' || chartViewMode === 'revenue') && (
-                                  <div className="flex flex-col gap-0.5">
-                                    <div className="flex items-center justify-between gap-4 text-xs font-bold">
-                                      <div className="flex items-center gap-1.5 text-content-muted">
-                                        <span className="w-2.5 h-2.5 rounded-full bg-brand shrink-0"></span>
-                                        <span>{t('dashboard.revenue', 'المبيعات')}:</span>
-                                      </div>
-                                      <span className="font-black text-brand text-sm">
-                                        <PriceDisplay amount={revVal} />
-                                      </span>
-                                    </div>
-                                    {totalPeriodRevenue > 0 && (
-                                      <div className="text-[10px] font-semibold text-content-muted text-left">
-                                        {sharePct}% {t('dashboard.of_total_period', 'من إجمالي الفترة')}
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-
-                                {(chartViewMode === 'both' || chartViewMode === 'orders') && (
-                                  <div className="flex flex-col gap-0.5">
-                                    <div className="flex items-center justify-between gap-4 text-xs font-bold">
-                                      <div className="flex items-center gap-1.5 text-content-muted">
-                                        <span className="w-2.5 h-2.5 rounded-full bg-info shrink-0"></span>
-                                        <span>{t('dashboard.orders', 'الطلبات')}:</span>
-                                      </div>
-                                      <span className="font-black text-info text-sm">
-                                        {ordersVal} {t('common.order', 'طلب')}
-                                      </span>
-                                    </div>
-                                    {ordersVal > 0 && (
-                                      <div className="text-[10px] font-semibold text-content-muted text-left">
-                                        {t('dashboard.avg_basket', 'متوسط الطلب')}: <PriceDisplay amount={avgOrderVal} />
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-
-                    {(chartViewMode === 'both' || chartViewMode === 'orders') && (
-                      <Bar 
-                        yAxisId="right"
-                        name={t('dashboard.orders', 'الطلبات')}
-                        dataKey="ordersCount"
-                        fill="var(--info)"
-                        fillOpacity={0.75}
-                        radius={[6, 6, 0, 0]}
-                        barSize={18}
-                      />
-                    )}
-
-                    {(chartViewMode === 'both' || chartViewMode === 'revenue') && (
-                      <Area 
-                        yAxisId="left"
-                        name={t('dashboard.revenue', 'المبيعات')}
-                        type="monotone" 
-                        dataKey="revenue" 
-                        stroke="var(--brand)" 
-                        strokeWidth={3.5}
-                        fillOpacity={1} 
-                        fill="url(#colorRevenueGlow)"
-                        activeDot={{ r: 7, strokeWidth: 3, stroke: 'var(--surface)', fill: 'var(--brand)' }}
-                      />
-                    )}
-                  </ComposedChart>
-                </ResponsiveContainer>
+                <Suspense fallback={null}>
+                  <RevenueChart
+                    chartData={chartData}
+                    chartViewMode={chartViewMode}
+                    isRtl={isRtl}
+                    maxRevenueDay={maxRevenueDay}
+                    totalPeriodRevenue={totalPeriodRevenue}
+                    avgDailyRevenue={avgDailyRevenue}
+                    t={t}
+                  />
+                </Suspense>
               </div>
             </div>
           );
