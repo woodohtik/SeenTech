@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase/client';
+import { readTenantRow } from '../lib/tenantRow';
 import { TOUR_CHECKLIST, type TourChecklistItem } from '../config/tourSteps';
 import { useRealtimeSync } from './useRealtimeSync';
 
@@ -40,7 +41,7 @@ export function useSetupChecklist(tenantId?: string | null, items: TourChecklist
     setLoading(true);
     try {
       const [tenantRes, inventoryRes, customerRes, ordersRes, invoicesRes] = await Promise.all([
-        supabase.from('tenants').select('address, phone, vat_number').eq('id', tenantId).maybeSingle(),
+        readTenantRow(tenantId), // shared read (lib/tenantRow)
         supabase.from('inventory_items').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
         supabase.from('customers').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
         supabase.from('orders').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),

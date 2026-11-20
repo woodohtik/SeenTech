@@ -4,14 +4,10 @@ import { test, expect, vi } from 'vitest';
 import { useMeasurementUnit } from './useMeasurementUnit';
 
 const maybeSingle = vi.fn();
-vi.mock('../lib/supabase/client', () => ({
-  supabase: {
-    from: () => ({
-      select: () => ({
-        eq: () => ({ maybeSingle }),
-      }),
-    }),
-  },
+// The hook reads the row through the shared lib/tenantRow (which caches it
+// for a few seconds); mocked here so each test sees its own answer.
+vi.mock('../lib/tenantRow', () => ({
+  readTenantRow: () => maybeSingle(),
 }));
 
 test('defaults to inch before the fetch resolves', () => {

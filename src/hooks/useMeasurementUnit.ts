@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase/client';
+import { readTenantRow } from '../lib/tenantRow';
 import { isValidMeasurementUnit, type MeasurementUnit } from '../utils/measurementUnits';
 
 export function useMeasurementUnit(tenantId: string): MeasurementUnit {
@@ -9,11 +9,8 @@ export function useMeasurementUnit(tenantId: string): MeasurementUnit {
     let cancelled = false;
     setUnit('inch');
 
-    supabase
-      .from('tenants')
-      .select('measurement_unit')
-      .eq('id', tenantId)
-      .maybeSingle()
+    // Shared read (lib/tenantRow, seen-performance-first-open-login-task.md Phase 4.5).
+    readTenantRow(tenantId)
       .then(({ data, error }: { data: { measurement_unit?: unknown } | null; error: unknown }) => {
         if (cancelled || error) return;
         if (isValidMeasurementUnit(data?.measurement_unit)) {

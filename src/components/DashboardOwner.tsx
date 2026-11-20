@@ -23,6 +23,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
+import { readTenantRow } from '../lib/tenantRow';
 import { deleteTestDataForTenant } from '../services/trialService';
 import { handleFirestoreError, OperationType } from '../lib/appErrors';
 import { saveLastKnown, getLastKnown } from '../lib/offline/lastKnownCache';
@@ -35,7 +36,7 @@ interface DashboardStatsData {
   inventory: InventoryItem[];
   bInv: BranchInventory[];
 }
-import { STATUS_CONFIG, getOrderStatusDisplay } from './Orders';
+import { STATUS_CONFIG, getOrderStatusDisplay } from './orderStatusConfig';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
@@ -51,7 +52,8 @@ import { useNavigate } from 'react-router-dom';
 import Branding from './Branding';
 import { useTranslation } from 'react-i18next';
 import DashboardGridCard from './DashboardGridCard';
-import * as XLSX from 'xlsx';
+// xlsx (~425KB) loads only when an export is asked for (seen-performance-
+// first-open-login-task.md Phase 4) -- see exportToExcel.
 
 import { 
   ComposedChart,
@@ -487,7 +489,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         // for no reason. Promise.all matches the pattern already used a
         // few lines below in fetchStats.
         const [tenantRes, branchesRes] = await Promise.all([
-          supabase.from('tenants').select('*').eq('id', tenantId).single(),
+          readTenantRow(tenantId), // shared read (lib/tenantRow)
           supabase.from('branches').select('*').eq('tenant_id', tenantId),
         ]);
         const { data: tenantData } = tenantRes;
@@ -533,6 +535,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
     // call sites below just invalidate its cache instead of re-running a
     // local fetch function.
     const invalidateStats = () => queryClient.invalidateQueries({ queryKey: ['dashboard_stats', tenantId, selectedBranchId] });
+    let orderChangeTimer: number | null = null;
 
     const fetchRecentOrders = async () => {
       if (!hasPermission('orders.view') && !hasPermission('dashboard.orders')) return;
@@ -652,9 +655,16 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
     // Real-time listeners for Recent Orders and Notifications
     const ordersSubscription = supabase
       .channel('dashboard_updates')
+      // Phase 4 of seen-performance-first-open-login-task.md: a burst of order
+      // changes (a sale writes several rows) refreshes once, two seconds
+      // after the last one, instead of reloading everything per change.
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `tenant_id=eq.${tenantId}` }, () => {
-        invalidateStats();
-        fetchRecentOrders();
+        if (orderChangeTimer) window.clearTimeout(orderChangeTimer);
+        orderChangeTimer = window.setTimeout(() => {
+          orderChangeTimer = null;
+          invalidateStats();
+          fetchRecentOrders();
+        }, 2000);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `tenant_id=eq.${tenantId}` }, () => {
         fetchNotifications();
@@ -669,6 +679,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
     window.addEventListener('data_cleared', handleDataCleared);
 
     return () => {
+      if (orderChangeTimer) window.clearTimeout(orderChangeTimer);
       supabase.removeChannel(ordersSubscription);
       window.removeEventListener('data_cleared', handleDataCleared);
     };
@@ -1185,7 +1196,8 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
     { id: 'urgent', label: t('common.urgent', 'عاجل') },
   ];
 
-  const exportToExcel = (data: any[], filename: string) => {
+  const exportToExcel = async (data: any[], filename: string) => {
+    const XLSX = await import('xlsx');
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Data");

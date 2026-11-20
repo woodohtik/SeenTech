@@ -17,6 +17,7 @@ import { getDeviceSessionId } from '../utils/session';
 import { getIsOnline } from '../lib/offline/connectivity';
 import { cacheIdentitySnapshot, getCachedIdentitySnapshot } from '../lib/offline/identityCache';
 import { fetchSessionIdentity, STAFF_IDENTITY_COLUMNS } from '../lib/sessionIdentity';
+import { primeTenantRow } from '../lib/tenantRow';
 import type { Database } from '../types/supabase';
 import type { UserRole, Staff as StaffType } from '../types';
 
@@ -276,6 +277,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         resolvedUidRef.current = uid;
+        // The shop's row is in the identity response; components opening
+        // next read it from here instead of asking again (lib/tenantRow).
+        primeTenantRow(identity.staff?.tenant_id, identity.tenant);
 
         {
             // What fetchDbUser used to build: the users row plus the role

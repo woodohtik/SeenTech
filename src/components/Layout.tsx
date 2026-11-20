@@ -22,6 +22,7 @@ import OfflineBanner from './OfflineBanner';
 const OfflineStatusIndicator = React.lazy(() => import('./OfflineStatusIndicator'));
 import UpdateAvailableBanner from './UpdateAvailableBanner';
 import { supabase } from '../lib/supabase/client';
+import { readTenantRow } from '../lib/tenantRow';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../contexts/ThemeContext';
@@ -88,11 +89,8 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
     const fetchTenant = async () => {
       if (tenantId && tenantId !== 'saas_management') {
         try {
-          const { data, error } = await supabase
-            .from('tenants')
-            .select('*')
-            .eq('id', tenantId)
-            .maybeSingle();
+          // Shared read (lib/tenantRow): usually already in hand from the identity request.
+          const { data, error } = await readTenantRow(tenantId);
 
           if (data && !error) {
             setTenantLogo(data.logo_url || null);

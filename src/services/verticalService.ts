@@ -6,6 +6,7 @@
  */
 
 import { supabase } from '../lib/supabase/client';
+import { readTenantRow } from '../lib/tenantRow';
 import type {
   Vertical, WorkflowStage, FieldSchema, InventoryCategoryConfig, ModuleKey, VerticalKey,
 } from '../types/expansion';
@@ -21,7 +22,7 @@ export async function listVerticals(): Promise<Vertical[]> {
 
 /** نشاط المحل + موديولاته المفعّلة (مع رجوع آمن للافتراضات). */
 export async function getTenantVertical(tenantId: string): Promise<{ vertical: VerticalKey; modules: ModuleKey[] }> {
-  const { data } = await supabase.from('tenants').select('vertical, enabled_modules').eq('id', tenantId).maybeSingle();
+  const { data } = await readTenantRow(tenantId); // shared read (lib/tenantRow)
   return {
     vertical: (data?.vertical as VerticalKey) || DEFAULT_VERTICAL,
     modules: (data?.enabled_modules as ModuleKey[]) || DEFAULT_MODULES,
