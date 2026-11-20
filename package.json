@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit && eslint .",
+    "size": "node scripts/check-bundle-size.mjs dist",
     "lint:fix": "eslint . --fix",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:verify-pos-sale": "tsx scripts/verify-pos-sale.ts",

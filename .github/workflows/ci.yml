@@ -47,6 +47,11 @@ jobs:
       - name: Build (main app)
         run: npm run build
 
+      # Startup JS <= 250KB gzip, no vendor-firebase at startup, core language
+      # file <= 40KB (seen-performance-first-open-login-task.md Phase 2.5).
+      - name: Startup JS budget
+        run: npm run size
+
       - name: Build (customer app)
         run: npm run build:customer
 
