@@ -1,4 +1,3 @@
-import * as Sentry from '@sentry/node';
 import pino from 'pino';
 
 // seen-structured-logging-task.md: 44 console.*/server.ts+src/server/*.ts
@@ -47,14 +46,32 @@ export const logger = pino({
  * anyone. Mirrors the client logger's own pattern: a safe no-op until a DSN
  * is actually set, so nothing breaks for anyone who hasn't configured one.
  */
+//
+// seen-performance-first-open-login-task.md Phase 7: @sentry/node took
+// about half of the server's start-up (cold start before the first
+// request, e.g. the phone-number login lookup). It is now loaded right
+// after start, without holding it up; errors reported before it finishes
+// loading wait for it and are still sent. Only Sentry's automatic request
+// tracing (10% sampling) is lost, since that needs Sentry loaded before
+// express -- error reporting is unchanged.
+let sentryLoad: Promise<typeof import('@sentry/node')> | null = null;
+function loadSentry() {
+  if (!sentryLoad) sentryLoad = import('@sentry/node');
+  return sentryLoad;
+}
+
 export function initServerLogger(): void {
   const dsn = process.env.SENTRY_DSN;
   if (!dsn) return;
-  Sentry.init({
-    dsn,
-    environment: process.env.VERCEL_ENV || process.env.NODE_ENV || 'development',
-    tracesSampleRate: 0.1,
-  });
+  void loadSentry()
+    .then((Sentry) => {
+      Sentry.init({
+        dsn,
+        environment: process.env.VERCEL_ENV || process.env.NODE_ENV || 'development',
+        tracesSampleRate: 0.1,
+      });
+    })
+    .catch((err) => logger.error({ err }, '[sentry] failed to load'));
 }
 
 // seen-cto-sprint4-design-quality-task.md item 1: the two call sites that
@@ -69,7 +86,7 @@ const TAG_KEYS = ['tenantId', 'orderId', 'invoiceId'] as const;
 
 export function captureServerException(error: unknown, context?: Record<string, unknown>): void {
   if (!process.env.SENTRY_DSN) return;
-  Sentry.withScope((scope) => {
+  void loadSentry().then((Sentry) => Sentry.withScope((scope) => {
     if (context) {
       for (const [key, value] of Object.entries(context)) {
         if ((TAG_KEYS as readonly string[]).includes(key) && value != null) {
@@ -79,5 +96,5 @@ export function captureServerException(error: unknown, context?: Record<string, 
       }
     }
     Sentry.captureException(error instanceof Error ? error : new Error(String(error)));
-  });
+  })).catch(() => { /* reported to the log by the call site already */ });
 }
