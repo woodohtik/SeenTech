@@ -6,3 +6,7 @@ DROP FUNCTION IF EXISTS public.get_dashboard_stats(uuid, uuid, jsonb, jsonb, tim
 DROP FUNCTION IF EXISTS public.dashboard_order_rows(uuid, uuid);
 DROP FUNCTION IF EXISTS public.dashboard_order_completed_at(text);
 DELETE FROM supabase_migrations.schema_migrations WHERE version = '20261229000000';
+
+-- 20261229000001_get_low_stock_items.sql
+DROP FUNCTION IF EXISTS public.get_low_stock_items(uuid, int);
+DELETE FROM supabase_migrations.schema_migrations WHERE version = '20261229000001';

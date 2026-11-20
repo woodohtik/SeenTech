@@ -636,21 +636,31 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
 
     const fetchNotifications = async () => {
       try {
-        // 1. Scan for any real low stock items to create real low stock notifications
-        const [invItemsRes, branchInvRes] = await Promise.all([
-          supabase.from('inventory_items').select('*').eq('tenant_id', tenantId),
-          supabase.from('branch_inventory').select('*').eq('tenant_id', tenantId)
-        ]);
+        // 1. Scan for any real low stock items to create real low stock notifications.
+        // Only the low items come back (get_low_stock_items, seen-performance-
+        // first-open-login-task.md Phase 4.3) instead of every stock row; the
+        // old two full reads remain the fallback where it is not deployed yet.
+        let lowStockItems: Array<{ id: string; name: string; unit?: string; min_threshold: number; quantity: number }> | null = null;
+        const lowRes = await supabase.rpc('get_low_stock_items' as any, { p_tenant_id: tenantId, p_limit: 500 });
+        if (!lowRes.error && Array.isArray(lowRes.data)) {
+          lowStockItems = (lowRes.data as any[]).map((r) => ({ ...r, min_threshold: Number(r.min_threshold) || 0, quantity: Number(r.quantity) || 0 }));
+        } else if (lowRes.error && isMissingFunctionError(lowRes.error)) {
+          const [invItemsRes, branchInvRes] = await Promise.all([
+            supabase.from('inventory_items').select('*').eq('tenant_id', tenantId),
+            supabase.from('branch_inventory').select('*').eq('tenant_id', tenantId)
+          ]);
+          if (invItemsRes.data) {
+            const branchInv = branchInvRes.data || [];
+            lowStockItems = invItemsRes.data
+              .map((item: any) => ({
+                ...item,
+                quantity: branchInv.filter((bi: any) => bi.item_id === item.id).reduce((sum: number, bi: any) => sum + bi.quantity, 0),
+              }))
+              .filter((item: any) => item.quantity <= item.min_threshold);
+          }
+        }
 
-        if (invItemsRes.data) {
-          const invItems = invItemsRes.data;
-          const branchInv = branchInvRes.data || [];
-          
-          const lowStockItems = invItems.filter(item => {
-            const itemBranchInv = branchInv.filter(bi => bi.item_id === item.id);
-            const totalQty = itemBranchInv.reduce((sum, bi) => sum + bi.quantity, 0);
-            return totalQty <= item.min_threshold;
-          });
+        if (lowStockItems) {
 
           // Fetch existing inventory notifications to avoid duplicates
           const { data: existingNotifs } = await supabase
@@ -660,8 +670,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
             .eq('type', 'inventory');
 
           for (const item of lowStockItems) {
-            const itemBranchInv = branchInv.filter(bi => bi.item_id === item.id);
-            const totalQty = itemBranchInv.reduce((sum, bi) => sum + bi.quantity, 0);
+            const totalQty = item.quantity;
             
             const title = t('dashboard.inventory_alert_title', { item: item.name });
             const message = t('dashboard.inventory_alert_message', {
