@@ -10,3 +10,7 @@ DELETE FROM supabase_migrations.schema_migrations WHERE version = '2026122900000
 -- 20261229000001_get_low_stock_items.sql
 DROP FUNCTION IF EXISTS public.get_low_stock_items(uuid, int);
 DELETE FROM supabase_migrations.schema_migrations WHERE version = '20261229000001';
+
+-- 20261229000002_get_setup_progress.sql
+DROP FUNCTION IF EXISTS public.get_setup_progress(uuid);
+DELETE FROM supabase_migrations.schema_migrations WHERE version = '20261229000002';

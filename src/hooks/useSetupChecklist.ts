@@ -4,6 +4,44 @@ import { readTenantRow } from '../lib/tenantRow';
 import { TOUR_CHECKLIST, type TourChecklistItem } from '../config/tourSteps';
 import { useRealtimeSync } from './useRealtimeSync';
 
+type SetupProgress = { has_stock: boolean; has_customers: boolean; has_orders: boolean; has_invoices: boolean };
+
+function isMissingFunction(error: { code?: string } | null | undefined): boolean {
+  return error?.code === 'PGRST202' || error?.code === '42883';
+}
+
+/**
+ * Whether the shop has any stock items, customers, orders and tax invoices:
+ * one request (get_setup_progress, EXISTS under the caller's RLS --
+ * seen-performance-first-open-login-task.md Phase 4.6) instead of four exact
+ * counts. Where the function is not deployed yet, the four counts as before.
+ */
+export async function readSetupProgress(tenantId: string): Promise<SetupProgress> {
+  const { data, error } = await supabase.rpc('get_setup_progress' as any, { p_tenant_id: tenantId });
+  if (!error && data && typeof data === 'object') {
+    const d = data as Record<string, unknown>;
+    return {
+      has_stock: d.has_stock === true,
+      has_customers: d.has_customers === true,
+      has_orders: d.has_orders === true,
+      has_invoices: d.has_invoices === true,
+    };
+  }
+  if (error && !isMissingFunction(error)) throw error;
+  const [inventoryRes, customerRes, ordersRes, invoicesRes] = await Promise.all([
+    supabase.from('inventory_items').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
+    supabase.from('customers').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
+    supabase.from('orders').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
+    supabase.from('tax_invoices').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
+  ]);
+  return {
+    has_stock: !!(inventoryRes.count && inventoryRes.count > 0),
+    has_customers: !!(customerRes.count && customerRes.count > 0),
+    has_orders: !!(ordersRes.count && ordersRes.count > 0),
+    has_invoices: !!(invoicesRes.count && invoicesRes.count > 0),
+  };
+}
+
 interface CompletionState {
   shop_profile: boolean;
   add_stock: boolean;
@@ -40,20 +78,17 @@ export function useSetupChecklist(tenantId?: string | null, items: TourChecklist
     }
     setLoading(true);
     try {
-      const [tenantRes, inventoryRes, customerRes, ordersRes, invoicesRes] = await Promise.all([
+      const [tenantRes, progress] = await Promise.all([
         readTenantRow(tenantId), // shared read (lib/tenantRow)
-        supabase.from('inventory_items').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
-        supabase.from('customers').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
-        supabase.from('orders').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
-        supabase.from('tax_invoices').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
+        readSetupProgress(tenantId),
       ]);
 
       setCompletion({
         shop_profile: !!(tenantRes.data && (tenantRes.data.address || tenantRes.data.phone || tenantRes.data.vat_number)),
-        add_stock: !!(inventoryRes.count && inventoryRes.count > 0),
-        add_customer: !!(customerRes.count && customerRes.count > 0),
-        first_order: !!(ordersRes.count && ordersRes.count > 0),
-        first_sale: !!(invoicesRes.count && invoicesRes.count > 0),
+        add_stock: progress.has_stock,
+        add_customer: progress.has_customers,
+        first_order: progress.has_orders,
+        first_sale: progress.has_invoices,
       });
     } catch (err) {
       console.error('Error fetching setup checklist completion:', err);
