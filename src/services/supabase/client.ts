@@ -8,7 +8,19 @@ if (supabaseUrl?.endsWith('/')) {
 }
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
 
-const isPlaceholder = !supabaseUrl || (supabaseUrl && supabaseUrl.includes('placeholder')) || !supabaseUrl.startsWith('http');
+// The order columns that are packed into the encoded `notes` value
+// (utils/orderHistoryHelper.ts encodeOrderRow).
+const ORDER_PACKED_COLUMNS = ['notes', 'history', 'items', 'subtotal_amount'];
+
+// Responses: every orders response is decoded here (parse, decodeOrderPayload,
+// re-serialise) so that every reader gets items / history / subtotal_amount
+// and the real notes. Measured (Phase 8): ~28ms extra for 2,400 orders, paid
+// only when a full order list loads (Orders, Customers, Reports) -- the app
+// open reads 5 orders since get_dashboard_stats. Decoding in each of the ~15
+// readers instead would save part of that at the risk of one of them showing
+// the encoded text, so it stays here.
+
+const isPlaceholder =!supabaseUrl || (supabaseUrl && supabaseUrl.includes('placeholder')) || !supabaseUrl.startsWith('http');
 
 if (isPlaceholder) {
     console.error(
@@ -54,8 +66,16 @@ export const supabase: SupabaseClient<any> =
                             const rawBody = typeof options.body === 'string' ? options.body : new TextDecoder().decode(options.body as any);
                             const parsedBody = JSON.parse(rawBody);
 
-                            // If PATCH or PUT, dynamically retrieve existing order to merge virtual columns and prevent data loss
-                            if (options.method === 'PATCH' || options.method === 'PUT') {
+                            // If PATCH or PUT, dynamically retrieve existing order to merge virtual columns and prevent data loss.
+                            //
+                            // Why the read is needed (seen-performance-first-open-login-task.md Phase 8):
+                            // items / history / subtotal_amount and the real notes all live in ONE encoded
+                            // `notes` value. A write that sets any of them rewrites that whole value, so the
+                            // others must be read first or they are lost. A PATCH that touches none of them
+                            // (status, payment, dates...) never sends `notes`, so the row is left as is and
+                            // the read is skipped. PUT replaces the row, so it always merges.
+                            const touchesPackedColumns = ORDER_PACKED_COLUMNS.some((k) => k in parsedBody);
+                            if (options.method === 'PUT' || (options.method === 'PATCH' && touchesPackedColumns)) {
                                 let orderId = parsedBody.id;
                                 if (!orderId) {
                                     const match = urlStr.match(/orders\?id=eq\.([a-f0-9-]{36})/i);
