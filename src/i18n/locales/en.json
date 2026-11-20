@@ -3336,7 +3336,7 @@
     "total_purchases": "Total Purchases",
     "total_returns_value": "Total Returns Value",
     "total_tax": "Total Tax",
-    "vat_estimate_disclaimer": "Estimate only: input VAT is calculated assuming supplier invoices are VAT-inclusive at 15%, not extracted from an actual tax invoice per purchase. Check original supplier invoices before filing the official VAT return.",
+    "vat_estimate_disclaimer": "Estimate only: input VAT is calculated assuming supplier invoices are VAT-inclusive at your shop's VAT rate (Settings), not extracted from an actual tax invoice per purchase. Check original supplier invoices before filing the official VAT return.",
     "vat_input": "Input VAT (on purchases)",
     "vat_input_desc": "Estimated VAT on supplier purchases",
     "vat_net_due": "Net VAT",
