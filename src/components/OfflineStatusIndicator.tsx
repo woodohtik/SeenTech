@@ -42,7 +42,8 @@ export default function OfflineStatusIndicator({ tenantId }: { tenantId?: string
       }
     };
     void check();
-    const interval = setInterval(check, 30000);
+    // Only while the tab is visible (seen-performance-first-open-login-task.md Phase 5).
+    const interval = setInterval(() => { if (document.visibilityState === 'visible') void check(); }, 30000);
     return () => { cancelled = true; clearInterval(interval); };
   }, [tenantId, pendingCount]);
 

@@ -55,12 +55,18 @@ export default function SupportConsentModal({ tenantId }: Props) {
       })
       .subscribe();
       
-    // Polling fallback - every 3 seconds for fast responsiveness
-    const interval = setInterval(fetchPendingRequests, 3000);
+    // Fallback for a dropped Realtime connection: every 60 seconds while
+    // the tab is visible. It used to poll every 3 seconds from every open
+    // tab, hidden or not (seen-performance-first-open-login-task.md
+    // Phase 5); new requests arrive through the channel above within a
+    // moment.
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === 'visible') fetchPendingRequests();
+    }, 60_000);
 
     return () => {
       subscription.unsubscribe();
-      clearInterval(interval);
+      window.clearInterval(interval);
     };
   }, [tenantId, isAuthorizedToApprove]);
 

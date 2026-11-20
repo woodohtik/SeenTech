@@ -156,7 +156,7 @@ app.use(helmet({
 // MemoryStore -- ineffective on Vercel serverless, each function instance
 // keeps its own counter. Now backed by Upstash Redis (fail-open on Upstash
 // errors, see src/server/rateLimiter.ts).
-app.use(globalRateLimiter((req) => req.path === '/api/health'));
+app.use(globalRateLimiter((req) => req.path === '/api/health' || req.path === '/api/ping'));
 
 // حجم كبير لأن بيانات الرسم النقطي للفاتورة قد تصل لعدة ميغابايت
 app.use(express.json({ limit: '25mb' }));
@@ -831,6 +831,15 @@ app.post("/api/orders/:id/notify-new-order", authenticate, asyncHandler(async (r
 // seen-deep-technical-audit.md -- حرج #8: كان يُرجع "ok" دائماً حتى لو
 // قاعدة البيانات معطوبة بالكامل، فلا قيمة فعلية لربطه بمراقبة توقف خارجية.
 // فحص حقيقي الآن: استعلام خفيف فعلي (بلا بيانات، head فقط) بمهلة قصيرة.
+// seen-performance-first-open-login-task.md Phase 5: the client's
+// connectivity check. Answers at once without touching the database, so a
+// tab checking "am I online" no longer queries Supabase each time;
+// /api/health below keeps the database check for server monitoring.
+app.get("/api/ping", (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ ok: true });
+});
+
 app.get("/api/health", async (req, res) => {
   try {
     const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");

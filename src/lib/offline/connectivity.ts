@@ -8,8 +8,15 @@
  * outbox queue reacts to.
  */
 
-const PING_URL = '/api/health';
-const PING_INTERVAL_MS = 20000;
+// seen-performance-first-open-login-task.md Phase 5: /api/ping answers
+// without touching the database (/api/health queries Supabase and stays
+// for server monitoring), checked every 60 seconds only while the tab is
+// visible -- plus at start, when the tab comes back, on the browser's
+// online event, and whenever a request fails (outbox / services call
+// checkConnectivityNow). It used to be /api/health every 20 seconds from
+// every tab, hidden or not.
+const PING_URL = '/api/ping';
+const PING_INTERVAL_MS = 60000;
 // seen-ux-fixes-batch-task.md #3: 5000ms could time out on a genuinely slow
 // (not dead) network, producing the same false "offline" the task reports.
 const PING_TIMEOUT_MS = 8000;
@@ -34,7 +41,15 @@ async function pingServer(): Promise<boolean> {
   }
 }
 
-export async function checkConnectivityNow(): Promise<boolean> {
+// Calls that overlap share one check (start-up used to send two at once).
+let inFlight: Promise<boolean> | null = null;
+
+export function checkConnectivityNow(): Promise<boolean> {
+  if (!inFlight) inFlight = runCheck().finally(() => { inFlight = null; });
+  return inFlight;
+}
+
+async function runCheck(): Promise<boolean> {
   const wasOnline = isOnline;
   let nowOnline = await pingServer();
   if (!nowOnline) {
@@ -56,8 +71,13 @@ export function startConnectivityMonitor(): void {
   if (started) return;
   started = true;
   void checkConnectivityNow();
-  intervalHandle = setInterval(checkConnectivityNow, PING_INTERVAL_MS);
-  window.addEventListener('online', checkConnectivityNow);
+  intervalHandle = setInterval(() => {
+    if (document.visibilityState === 'visible') void checkConnectivityNow();
+  }, PING_INTERVAL_MS);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') void checkConnectivityNow();
+  });
+  window.addEventListener('online', () => { void checkConnectivityNow(); });
   window.addEventListener('offline', () => {
     isOnline = false;
     listeners.forEach(listener => listener(false));

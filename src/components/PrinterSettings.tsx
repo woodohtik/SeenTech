@@ -448,7 +448,9 @@ export default function PrinterSettings() {
    */
   useEffect(() => {
     if (!isRelayPaired()) return;
-    const timer = setInterval(() => void refreshRelay(), 20_000);
+    // Every 30 seconds while the tab is visible (was 20s, hidden or not --
+    // seen-performance-first-open-login-task.md Phase 5).
+    const timer = setInterval(() => { if (document.visibilityState === 'visible') void refreshRelay(); }, 30_000);
     return () => clearInterval(timer);
   }, [refreshRelay, station?.stationId]);
 

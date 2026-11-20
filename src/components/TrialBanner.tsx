@@ -33,7 +33,8 @@ export default function TrialBanner({ subscriptionStatus, trialEndsAt, onSubscri
   const { t, dir } = useDirection();
   const [, force] = useState(0);
   useEffect(() => {
-    const t = setInterval(() => force((n) => n + 1), 60000); // تحديث كل دقيقة
+    // تحديث كل دقيقة والتبويب ظاهر فقط
+    const t = setInterval(() => { if (document.visibilityState === 'visible') force((n) => n + 1); }, 60000);
     return () => clearInterval(t);
   }, []);
 
