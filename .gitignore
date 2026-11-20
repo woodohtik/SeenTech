@@ -43,3 +43,5 @@ perf-build.log
 perf-preview.log
 perf-out-*.log
 perf-out-*.err
+dist-perf-server/
+dist-perf-server2/

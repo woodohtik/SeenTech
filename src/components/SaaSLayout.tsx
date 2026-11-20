@@ -36,7 +36,7 @@ import { logSaaSSecurityEvent } from '../services/saasSecurityService';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase/client';
 import { useTranslation } from 'react-i18next';
-import { getFriendlyErrorMessage } from '../lib/firebase';
+import { getFriendlyErrorMessage } from '../lib/appErrors';
 import UserPreferencesMenu from './UserPreferencesMenu';
 import ImpersonationBanner, { IMPERSONATION_BANNER_HEIGHT } from './ImpersonationBanner';
 import { logImpersonationStart, endImpersonation } from '../services/impersonationService';
