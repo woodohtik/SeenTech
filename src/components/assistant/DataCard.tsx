@@ -22,7 +22,7 @@ function Money({ amount, className, unitClassName }: { amount: unknown; classNam
   const isAr = normalizeLang(i18n.language) === 'ar';
   return (
     <span className={cn("inline-flex items-baseline gap-1.5 tabular-nums", className)} dir={isAr ? 'rtl' : 'ltr'}>
-      {!isAr && <span className={cn("text-base font-medium text-content-muted", unitClassName)}>SAR</span>}
+      {!isAr && <span className={cn("text-sm font-medium text-content-muted", unitClassName)}>SAR</span>}
       <span>{formatAmount(amount)}</span>
       {isAr && <CurrencySymbol className={cn("h-[0.7em] w-auto shrink-0 self-center text-content-muted", unitClassName)} />}
     </span>
@@ -56,14 +56,14 @@ function CardFrame({
   const { t } = useTranslation();
   const hasFooter = Boolean(footerText || footerAction || route);
   return (
-    <section className="border border-border rounded-[12px] overflow-hidden bg-surface text-lg leading-[1.7] text-content">
+    <section className="border border-border rounded-[12px] overflow-hidden bg-surface text-[15px] leading-[1.65] text-content">
       <header className="flex items-center justify-between gap-2 px-4 py-3 border-b border-surface-muted">
-        <h4 className="m-0 flex items-center gap-2 font-sans text-lg font-semibold min-w-0">
+        <h4 className="m-0 flex items-center gap-2 font-sans text-[15px] font-semibold min-w-0">
           <CatalogIcon name={icon} size={20} className="shrink-0 text-content-muted" />
           <span className="truncate">{title}</span>
         </h4>
         {scope && (
-          <span className="shrink-0 inline-flex items-center h-7 px-2.5 rounded-[6px] bg-surface-muted text-base font-medium">
+          <span className="shrink-0 inline-flex items-center h-7 px-2.5 rounded-[6px] bg-surface-muted text-sm font-medium">
             {scope}
           </span>
         )}
@@ -72,13 +72,13 @@ function CardFrame({
       {hasFooter && (
         <footer className="flex items-center justify-between gap-2 ps-2 pe-2 py-1 border-t border-surface-muted">
           <div className="min-w-0">
-            {footerAction ?? (footerText && <span className="ps-2 text-base text-content-muted">{footerText}</span>)}
+            {footerAction ?? (footerText && <span className="ps-2 text-sm text-content-muted">{footerText}</span>)}
           </div>
           {route && (
             <Link
               to={route.path}
               onClick={onNavigate}
-              className="shrink-0 inline-flex items-center gap-1 min-h-11 px-2 rounded-[12px] text-lg font-semibold text-brand hover:bg-surface-muted"
+              className="shrink-0 inline-flex items-center gap-1 min-h-11 px-2 rounded-[12px] text-[15px] font-semibold text-brand hover:bg-surface-muted"
             >
               <span>{t('ai.open_in', { page: t(`ai.page.${route.page}`) })}</span>
               <ArrowUpLeft size={18} className="ltr:-scale-x-100" aria-hidden="true" />
@@ -93,10 +93,10 @@ function CardFrame({
 function Kpi({ label, children, primary }: { label: string; children: React.ReactNode; primary?: boolean }) {
   return (
     <div className="flex flex-col min-w-0">
-      <span className="text-base leading-normal text-content-muted">{label}</span>
+      <span className="text-sm leading-normal text-content-muted">{label}</span>
       <span className={primary
-        ? "font-heading font-bold text-[28px] leading-[1.3] tabular-nums"
-        : "font-semibold text-xl leading-normal tabular-nums"}>
+        ? "font-heading font-bold text-[22px] leading-[1.3] tabular-nums"
+        : "font-semibold text-base leading-normal tabular-nums"}>
         {children}
       </span>
     </div>
@@ -119,7 +119,7 @@ function Row({ title, subtitle, end }: Omit<RowData, 'key'>) {
     <li className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-surface-muted last:border-b-0">
       <div className="min-w-0 flex flex-col">
         <span className="font-semibold leading-normal truncate">{title}</span>
-        {subtitle && <span className="text-base leading-normal text-content-muted tabular-nums">{subtitle}</span>}
+        {subtitle && <span className="text-sm leading-normal text-content-muted tabular-nums">{subtitle}</span>}
       </div>
       {end && <div className="shrink-0">{end}</div>}
     </li>
@@ -147,7 +147,7 @@ function useExpandableRows(rows: RowData[]) {
       aria-expanded={expanded}
       aria-controls={listId}
       onClick={() => setExpanded((v) => !v)}
-      className="min-h-11 px-2 rounded-[12px] text-base font-semibold text-content hover:bg-surface-muted"
+      className="min-h-11 px-2 rounded-[12px] text-sm font-semibold text-content hover:bg-surface-muted"
     >
       {expanded ? t('ai.show_less') : t('ai.show_rest', { count: hidden })}
     </button>
@@ -198,7 +198,7 @@ function Chip({ tone, icon, children }: { tone: 'neutral' | 'info' | 'warning' |
     danger: 'bg-danger/10 text-danger',
   } as const;
   return (
-    <span className={cn("inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-base font-medium whitespace-nowrap", tones[tone])}>
+    <span className={cn("inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-sm font-medium whitespace-nowrap", tones[tone])}>
       {icon}
       {children}
     </span>
@@ -241,7 +241,7 @@ function GuidedTourCard({ topic, action, onStartTour }: { topic: string; action:
 
   if (action === 'start' || choice === 'accepted') {
     return (
-      <div role="status" className="border border-border rounded-[12px] px-4 py-3.5 flex items-center gap-3 text-lg font-semibold text-content">
+      <div role="status" className="border border-border rounded-[12px] px-4 py-3.5 flex items-center gap-3 text-[15px] font-semibold text-content">
         <Compass size={22} className="shrink-0 text-brand" aria-hidden="true" />
         <span>{t('ai.guided_tour_starting')}</span>
       </div>
@@ -250,8 +250,8 @@ function GuidedTourCard({ topic, action, onStartTour }: { topic: string; action:
   if (choice === 'dismissed') return null;
 
   return (
-    <section className="border border-border rounded-[12px] p-4 flex flex-col gap-3 text-lg text-content">
-      <h4 className="m-0 flex items-center gap-2 font-sans text-lg font-semibold">
+    <section className="border border-border rounded-[12px] p-4 flex flex-col gap-3 text-[15px] text-content">
+      <h4 className="m-0 flex items-center gap-2 font-sans text-[15px] font-semibold">
         <Compass size={22} className="shrink-0 text-brand" aria-hidden="true" />
         <span>{t('ai.tour_question')}</span>
       </h4>
@@ -259,14 +259,14 @@ function GuidedTourCard({ topic, action, onStartTour }: { topic: string; action:
         <button
           type="button"
           onClick={() => { setChoice('accepted'); onStartTour(topic); }}
-          className="min-h-12 px-5 rounded-[12px] bg-brand text-white text-lg font-semibold hover:bg-brand/90"
+          className="min-h-12 px-5 rounded-[12px] bg-brand text-white text-[15px] font-semibold hover:bg-brand/90"
         >
           {t('ai.guided_tour_yes')}
         </button>
         <button
           type="button"
           onClick={() => setChoice('dismissed')}
-          className="min-h-12 px-4 rounded-[12px] text-lg font-semibold text-brand hover:bg-surface-muted"
+          className="min-h-12 px-4 rounded-[12px] text-[15px] font-semibold text-brand hover:bg-surface-muted"
         >
           {t('ai.guided_tour_no')}
         </button>
@@ -278,7 +278,7 @@ function GuidedTourCard({ topic, action, onStartTour }: { topic: string; action:
 function DeniedCard({ message }: { message?: string }) {
   const { t } = useTranslation();
   return (
-    <div className="border border-border rounded-[12px] px-4 py-3.5 flex gap-3 text-lg text-content">
+    <div className="border border-border rounded-[12px] px-4 py-3.5 flex gap-3 text-[15px] text-content">
       <Lock size={22} className="shrink-0 mt-1 text-content-muted" aria-hidden="true" />
       <span>{message || t('ai.denied_default')}</span>
     </div>

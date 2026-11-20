@@ -39,7 +39,7 @@ export function Composer({ value, onChange, onSend, onStop, isSending, limitMess
   return (
     <footer className="shrink-0 px-4 pt-3 pb-[calc(0.875rem+env(safe-area-inset-bottom))] border-t border-border flex flex-col gap-2">
       {isLimited && (
-        <div role="status" className="flex items-center gap-2 rounded-[12px] bg-warning/10 px-3 py-2.5 text-base font-medium leading-normal text-content">
+        <div role="status" className="flex items-center gap-2 rounded-[12px] bg-warning/10 px-3 py-2.5 text-sm font-medium leading-normal text-content">
           <AlertTriangle size={20} className="shrink-0 text-warning" aria-hidden="true" />
           <span>{limitMessage}</span>
         </div>
@@ -69,13 +69,13 @@ export function Composer({ value, onChange, onSend, onStop, isSending, limitMess
             }
           }}
           placeholder={t(isLimited ? 'ai.input_placeholder_limit' : isSending ? 'ai.input_placeholder_busy' : 'ai.input_placeholder')}
-          className="flex-1 min-w-0 min-h-0 self-center resize-none bg-transparent border-0 p-0 py-2 text-lg leading-[1.7] text-content placeholder:text-content-muted outline-none focus:ring-0 focus:outline-none disabled:text-content-muted"
+          className="flex-1 min-w-0 min-h-0 self-center resize-none bg-transparent border-0 p-0 py-2 text-[15px] leading-[1.65] text-content placeholder:text-content-muted outline-none focus:ring-0 focus:outline-none disabled:text-content-muted"
         />
 
         {!isLimited && (
           <VoiceMicButton
             ariaLabel={t('ai.voice')}
-            iconSize={24}
+            iconSize={20}
             className="shrink-0 w-12 h-12 flex items-center justify-center rounded-[12px] text-content-muted hover:bg-surface-muted hover:text-content"
             onResult={(text) => onChange([value, text].filter(Boolean).join(' '))}
           />
@@ -103,12 +103,12 @@ export function Composer({ value, onChange, onSend, onStop, isSending, limitMess
               canSend ? "bg-brand text-white hover:bg-brand/90" : "bg-border text-content-muted"
             )}
           >
-            <ArrowUp size={24} aria-hidden="true" />
+            <ArrowUp size={20} aria-hidden="true" />
           </button>
         )}
       </div>
 
-      <p className="m-0 text-center text-base leading-normal text-content-muted">{t('ai.disclaimer')}</p>
+      <p className="m-0 text-center text-sm leading-normal text-content-muted">{t('ai.disclaimer')}</p>
     </footer>
   );
 }

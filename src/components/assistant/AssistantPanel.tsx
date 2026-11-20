@@ -38,30 +38,30 @@ function WelcomeScreen({
   const name = (userName || '').trim();
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-5 pt-7 pb-4 flex flex-col gap-5">
+    <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-5 pt-5 pb-4 flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <h3 className="m-0 text-[28px] leading-[1.3] font-extrabold text-content">
+        <h3 className="m-0 text-[22px] leading-[1.3] font-extrabold text-content">
           {name ? t('ai.welcome_greeting', { name }) : t('ai.welcome_greeting_plain')}
         </h3>
-        <p className="m-0 text-lg leading-[1.7] text-content-muted">{t('ai.welcome_intro')}</p>
+        <p className="m-0 text-[15px] leading-[1.65] text-content-muted">{t('ai.welcome_intro')}</p>
       </div>
 
-      <div className="self-start inline-flex items-center gap-2 h-9 px-3 rounded-full bg-surface-muted text-base font-medium text-content">
+      <div className="self-start inline-flex items-center gap-2 h-9 px-3 rounded-full bg-surface-muted text-sm font-medium text-content">
         <MapPin size={18} className="shrink-0 text-content-muted" aria-hidden="true" />
         <span>{t('ai.you_are_in', { page: t(`ai.page.${pageKeyForPath(pathname)}`) })}</span>
       </div>
 
       {suggestions.length > 0 && (
         <div className="flex flex-col gap-2">
-          <div className="text-base font-semibold text-content-muted">{t('ai.try_asking')}</div>
+          <div className="text-sm font-semibold text-content-muted">{t('ai.try_asking')}</div>
           {suggestions.map((question) => (
             <button
               key={question.id}
               type="button"
               onClick={() => onAsk(t(question.textKey))}
-              className="min-h-14 w-full flex items-center gap-3 px-4 py-2 rounded-[12px] bg-surface border border-border text-lg text-content text-start hover:border-content-muted/60 hover:bg-surface-muted"
+              className="min-h-12 w-full flex items-center gap-3 px-4 py-2 rounded-[12px] bg-surface border border-border text-[15px] text-content text-start hover:border-content-muted/60 hover:bg-surface-muted"
             >
-              <CatalogIcon name={question.icon} size={24} className="shrink-0 text-brand" />
+              <CatalogIcon name={question.icon} size={20} className="shrink-0 text-brand" />
               <span className="flex-1">{t(question.textKey)}</span>
               <ChevronLeft size={20} className="shrink-0 text-content-muted ltr:-scale-x-100" aria-hidden="true" />
             </button>
@@ -187,24 +187,24 @@ export function AssistantPanel(props: AssistantPanelProps) {
           </div>
         )}
 
-        <header className={cn("shrink-0 flex items-center justify-between ps-4 pe-2 border-b border-border", isPanel ? "h-16" : "h-14")}>
+        <header className={cn("shrink-0 flex items-center justify-between ps-4 pe-2 border-b border-border", isPanel ? "h-14" : "h-12")}>
           <div className="flex items-center gap-3 min-w-0">
-            <span className="w-9 h-9 shrink-0 rounded-[12px] bg-brand text-white flex items-center justify-center">
-              <AssistantMark size={22} />
+            <span className="w-8 h-8 shrink-0 rounded-[10px] bg-brand text-white flex items-center justify-center">
+              <AssistantMark size={18} />
             </span>
-            <h2 className="m-0 text-[22px] leading-[1.3] font-extrabold truncate">{t('ai.name')}</h2>
+            <h2 className="m-0 text-lg leading-[1.3] font-extrabold truncate">{t('ai.name')}</h2>
           </div>
           <div className="flex items-center shrink-0">
             <IconButton label={t('ai.new_conversation', 'محادثة جديدة')} onClick={onNewConversation} disabled={messages.length === 0 && !notice}>
-              <SquarePen size={24} aria-hidden="true" />
+              <SquarePen size={20} aria-hidden="true" />
             </IconButton>
             {canExpand && (
               <IconButton label={t(expanded ? 'ai.collapse' : 'ai.expand')} aria-pressed={expanded} onClick={onToggleExpanded}>
-                {expanded ? <Minimize2 size={24} aria-hidden="true" /> : <Maximize2 size={24} aria-hidden="true" />}
+                {expanded ? <Minimize2 size={20} aria-hidden="true" /> : <Maximize2 size={20} aria-hidden="true" />}
               </IconButton>
             )}
             <IconButton label={t('ai.close')} onClick={onClose}>
-              <X size={24} aria-hidden="true" />
+              <X size={20} aria-hidden="true" />
             </IconButton>
           </div>
         </header>

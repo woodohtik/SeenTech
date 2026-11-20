@@ -81,7 +81,7 @@ function renderInline(nodes: Inline[], onNavigate?: () => void): React.ReactNode
 export function Markdown({ source, onNavigate }: { source: string; onNavigate?: () => void }) {
   const blocks = React.useMemo(() => parseMarkdown(source), [source]);
   return (
-    <div className="flex flex-col gap-2 text-lg leading-[1.7] text-content break-words">
+    <div className="flex flex-col gap-2 text-[15px] leading-[1.65] text-content break-words">
       {blocks.map((block, i) => {
         if (block.type === 'list') {
           const Tag = block.ordered ? 'ol' : 'ul';

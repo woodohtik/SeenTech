@@ -15,14 +15,14 @@ function SystemLine({ text, onRetry }: { text: string; onRetry?: () => void }) {
   return (
     <div role="status" className="rounded-[12px] bg-warning/10 p-4 flex flex-col gap-3">
       <div className="flex gap-3 text-warning">
-        <AlertTriangle size={24} className="shrink-0 mt-0.5" aria-hidden="true" />
-        <span className="text-lg font-medium text-content">{text}</span>
+        <AlertTriangle size={20} className="shrink-0 mt-0.5" aria-hidden="true" />
+        <span className="text-[15px] font-medium text-content">{text}</span>
       </div>
       {onRetry && (
         <button
           type="button"
           onClick={onRetry}
-          className="self-start min-h-12 px-5 inline-flex items-center gap-2 rounded-[12px] bg-surface border border-content-muted/60 text-lg font-semibold text-content hover:bg-surface-muted"
+          className="self-start min-h-12 px-5 inline-flex items-center gap-2 rounded-[12px] bg-surface border border-content-muted/60 text-[15px] font-semibold text-content hover:bg-surface-muted"
         >
           <RefreshCw size={20} aria-hidden="true" />
           <span>{t('common.retry', 'إعادة المحاولة')}</span>
@@ -72,7 +72,7 @@ function AssistantReply({
 
   return (
     <div className="flex flex-col gap-2.5">
-      <div className="flex items-center gap-2 text-base font-semibold text-content-muted">
+      <div className="flex items-center gap-2 text-sm font-semibold text-content-muted">
         <span className="w-6 h-6 rounded-[6px] bg-brand text-white flex items-center justify-center">
           <AssistantMark size={15} />
         </span>
@@ -94,7 +94,7 @@ function AssistantReply({
 
       {isDone && (message.content || hasShopData) && (
         <div className="flex items-center justify-between gap-2 min-h-11">
-          <span className="text-base text-content-muted">
+          <span className="text-sm text-content-muted">
             {hasShopData && t('ai.source_line', { time: t('ai.day.until', { time: clockTime(message.at!, localeOf(i18n.language)) }) })}
           </span>
           {message.content && <CopyButton text={markdownToPlainText(message.content)} />}
@@ -174,7 +174,7 @@ export function MessageList({
             <div
               key={i}
               ref={i === lastUserIndex ? lastUserRef : undefined}
-              className="self-end rtl:self-start max-w-[85%] rounded-[12px] bg-surface-muted px-4 py-2.5 text-lg leading-[1.7] text-content whitespace-pre-wrap break-words scroll-mt-5"
+              className="self-end rtl:self-start max-w-[85%] rounded-[12px] bg-surface-muted px-4 py-2.5 text-[15px] leading-[1.65] text-content whitespace-pre-wrap break-words scroll-mt-5"
             >
               {m.content}
             </div>
@@ -193,15 +193,15 @@ export function MessageList({
       })}
 
       {isSending && progress && (
-        <div role="status" className="flex items-center gap-3 text-lg font-medium text-content">
-          <LoaderCircle size={24} className="shrink-0 text-brand animate-spin motion-reduce:animate-none" aria-hidden="true" />
+        <div role="status" className="flex items-center gap-3 text-[15px] font-medium text-content">
+          <LoaderCircle size={20} className="shrink-0 text-brand animate-spin motion-reduce:animate-none" aria-hidden="true" />
           <span>{t(progressKeyFor(progress.tool))}</span>
         </div>
       )}
 
       {notice && notice.kind !== 'limit' && (
         notice.kind === 'cancelled'
-          ? <p role="status" className="m-0 text-base text-content-muted">{notice.message}</p>
+          ? <p role="status" className="m-0 text-sm text-content-muted">{notice.message}</p>
           : <SystemLine text={notice.message} onRetry={notice.canRetry ? onRetry : undefined} />
       )}
 
@@ -212,7 +212,7 @@ export function MessageList({
               key={question.id}
               type="button"
               onClick={() => onAsk(t(question.textKey))}
-              className="min-h-11 px-4 rounded-full bg-surface border border-content-muted/60 text-base font-medium text-content hover:bg-surface-muted"
+              className="min-h-11 px-4 rounded-full bg-surface border border-content-muted/60 text-sm font-medium text-content hover:bg-surface-muted"
             >
               {t(question.shortKey || question.textKey)}
             </button>
