@@ -51,7 +51,7 @@ import {
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase/client';
-import { handleFirestoreError, OperationType } from '../lib/firebase';
+import { handleFirestoreError, OperationType } from '../lib/appErrors';
 import { refreshOrdersCache, getCachedOrders } from '../lib/offline/cacheSync';
 import { isNetworkFailure } from '../lib/offline/outbox';
 import { Order, Customer, OrderStatus, OrderHistory, PaymentMethod, Staff, Tenant, TaxInvoice } from '../types';

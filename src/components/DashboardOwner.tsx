@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { deleteTestDataForTenant } from '../services/trialService';
-import { auth, handleFirestoreError, OperationType } from '../lib/firebase';
+import { handleFirestoreError, OperationType } from '../lib/appErrors';
 import { saveLastKnown, getLastKnown } from '../lib/offline/lastKnownCache';
 import { isNetworkFailure } from '../lib/offline/outbox';
 import { Customer, Order, InventoryItem, AppNotification, OrderStatus, Tenant, BranchInventory } from '../types';

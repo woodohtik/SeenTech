@@ -17,7 +17,9 @@ import {
 } from 'lucide-react';
 import { Icon } from './ui/Icon';
 import OfflineBanner from './OfflineBanner';
-import OfflineStatusIndicator from './OfflineStatusIndicator';
+// Lazy: it reads the offline queue through Dexie, which then stays out of the
+// startup download (seen-performance-first-open-login-task.md Phase 2).
+const OfflineStatusIndicator = React.lazy(() => import('./OfflineStatusIndicator'));
 import UpdateAvailableBanner from './UpdateAvailableBanner';
 import { supabase } from '../lib/supabase/client';
 import { cn } from '../lib/utils';
@@ -34,11 +36,13 @@ import { VerticalConfigProvider } from '../hooks/useVerticalConfig';
 import UserPreferencesMenu from './UserPreferencesMenu';
 import ImpersonationBanner, { IMPERSONATION_BANNER_HEIGHT } from './ImpersonationBanner';
 import { endImpersonation } from '../services/impersonationService';
-import SupportConsentModal from './SupportConsentModal';
+// Phase 2 of seen-performance-first-open-login-task.md: the next three load
+// after the shell is on screen instead of in the startup bundle.
+const SupportConsentModal = React.lazy(() => import('./SupportConsentModal'));
 import StaffTutorialModal from './StaffTutorialModal';
-import SeenAIFab from './SeenAIFab';
+const SeenAIFab = React.lazy(() => import('./SeenAIFab'));
 import ErrorBoundary from './ErrorBoundary';
-import OnboardingTour from './OnboardingTour';
+const OnboardingTour = React.lazy(() => import('./OnboardingTour'));
 import SetupChecklistBar from './SetupChecklistBar';
 import NewOrderAlert from './NewOrderAlert';
 
@@ -232,7 +236,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
       <div className="fixed left-0 right-0 z-[190] flex flex-col" style={{ top: impersonationTenantId ? IMPERSONATION_BANNER_HEIGHT : 0 }}>
         <OfflineBanner />
       </div>
-      <OfflineStatusIndicator tenantId={tenantId || undefined} />
+      <React.Suspense fallback={null}><OfflineStatusIndicator tenantId={tenantId || undefined} /></React.Suspense>
       <UpdateAvailableBanner />
       {/* Mobile Drawer Overlay */}
       {isMobileMenuOpen && (
@@ -650,15 +654,18 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
           so the crash-fallback position here never lands on top of it. */}
       <div className={cn("fixed bottom-6 right-6 z-50", isRtl && "lg:left-6 lg:right-auto")}>
         <ErrorBoundary variant="inline" inlineLabel={t('errors.assistant_unavailable')}>
+          <React.Suspense fallback={null}>
           <SeenAIFab
             tenantId={tenantId}
             userName={currentStaff?.name || dbUser?.display_name || dbUser?.email || ''}
             userRole={effectiveRole ?? undefined}
             can={(permission) => hasPermission(permission as Parameters<typeof hasPermission>[0])}
           />
+          </React.Suspense>
         </ErrorBoundary>
       </div>
 
+      <React.Suspense fallback={null}>
       <OnboardingTour
         role={effectiveRole}
         tenantId={tenantId}
@@ -671,8 +678,9 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
         ready={!permissionsLoading && !isActingAsSaaS}
         hasSeenOnboardingDb={currentStaff?.has_seen_onboarding}
       />
+      </React.Suspense>
 
-      {tenantId && <SupportConsentModal tenantId={tenantId} />}
+      {tenantId && <React.Suspense fallback={null}><SupportConsentModal tenantId={tenantId} /></React.Suspense>}
 
       {tenantId && !isActingAsSaaS && (
         <NewOrderAlert tenantId={tenantId} enabled={hasPermission('orders.view')} currentStaffId={currentStaff?.id} />

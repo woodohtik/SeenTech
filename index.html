@@ -3,23 +3,39 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <!-- Tajawal/IBM Plex Sans Arabic now hosted locally (public/fonts/,
-         src/index.css @font-face) instead of Google Fonts -- seen-design-
-         system-v5.1-task.md item 1: a cashier screen that may run
-         partially offline shouldn't depend on a Google Fonts round-trip
-         for its core Arabic typeface. -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Urdu needs Nastaliq/Naskh coverage (no local file for it); Latin UI uses Inter. Both stay on Google Fonts. -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" crossorigin="anonymous">
+    <!-- Tajawal/IBM Plex Sans Arabic are hosted locally (public/fonts/,
+         src/index.css @font-face) -- seen-design-system-v5.1-task.md item 1.
+         seen-performance-first-open-login-task.md Phase 1: the Google Fonts
+         stylesheet (Noto Nastaliq Urdu + Noto Naskh Arabic + Inter, 15
+         weights) used to sit here and block the first paint for every
+         visitor, while the Arabic UI never uses those families. It is now
+         injected only when the language is Urdu or English
+         (src/lib/direction.ts ensureLanguageFonts). -->
+    <link rel="preload" href="/fonts/IBMPlexSansArabic-Regular.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/Logo.svg" />
     <meta name="theme-color" content="#1F3A5F" />
     <title>نظام سين | Seen System</title>
+    <!-- The splash inside #root below: painted from the first bytes of the
+         page, replaced by React's first render. Plain CSS, no web font. -->
+    <style>
+      #seen-splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:#EBEDEF;color:#0F6E96;font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif}
+      #seen-splash .mark{width:72px;height:72px;border-radius:20px;background:#0F6E96;display:flex;align-items:center;justify-content:center}
+      #seen-splash .name{font-size:22px;font-weight:700;color:#0E2A42}
+      #seen-splash .bar{width:120px;height:4px;border-radius:4px;background:rgba(15,110,150,.15);overflow:hidden}
+      #seen-splash .bar i{display:block;width:40%;height:100%;border-radius:4px;background:#0F6E96;animation:seen-splash 1.1s ease-in-out infinite}
+      @keyframes seen-splash{0%{transform:translateX(160%)}100%{transform:translateX(-260%)}}
+      @media (prefers-reduced-motion:reduce){#seen-splash .bar i{animation:none;width:100%;opacity:.4}}
+      html.dark #seen-splash{background:#0F172A}
+      html.dark #seen-splash .name{color:#F8FAFC}
+    </style>
+    <script>
+      // next-themes keeps the choice under "theme"; match the splash to it.
+      try { if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark'); } catch (e) {}
+    </script>
   </head>
   <body class="min-h-screen overflow-x-hidden antialiased flex flex-col w-full">
-    <div id="root"></div>
+    <div id="root"><div id="seen-splash" role="status" aria-label="جاري تحميل نظام سين"><div class="mark"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><path d="M8 25c4 5 10 6 15 3 4-2 6-6 5-10-1-3-4-5-7-4-3 1-4 4-3 7 1 4 6 6 10 4 3-1 5-4 6-7" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="name">سِين</div><div class="bar"><i></i></div></div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

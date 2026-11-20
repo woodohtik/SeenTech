@@ -54,8 +54,6 @@ const LandingRedirect = () => {
   );
 };
 import { logError } from './lib/logger';
-import Layout from './components/Layout';
-import LockScreen from './components/LockScreen';
 import Login from './components/Login';
 import { PermissionGuard } from './components/PermissionGuard';
 
@@ -67,6 +65,26 @@ const lazyWithPreload = <T extends React.ComponentType<any>>(
   (Component as any).preload = factory;
   return Component as React.LazyExoticComponent<T> & { preload: () => Promise<{ default: T }> };
 };
+
+// seen-performance-first-open-login-task.md Phase 2: the app shell is not in
+// the login screen's download. Someone already signed in (a saved Supabase
+// session) starts fetching it immediately, in parallel with everything else,
+// so opening the app does not wait an extra round trip for it.
+const LayoutLazy = lazyWithPreload(() => import('./components/Layout'));
+try {
+  if (typeof window !== 'undefined' && Object.keys(localStorage).some((k) => k.startsWith('sb-') && k.endsWith('-auth-token'))) {
+    void LayoutLazy.preload();
+  }
+} catch {
+  // no storage access: it loads when first rendered instead
+}
+function Layout(props: React.ComponentProps<typeof LayoutLazy>) {
+  return (
+    <React.Suspense fallback={<MainSkeleton />}>
+      <LayoutLazy {...props} />
+    </React.Suspense>
+  );
+}
 
 // Lazy loaded core tenant components with pre-fetching capability
 const Dashboard = lazyWithPreload(() => import('./components/Dashboard'));
@@ -83,9 +101,13 @@ const Onboarding = React.lazy(() => import('./components/Onboarding'));
 const ResetPassword = React.lazy(() => import('./components/ResetPassword'));
 const PublicInvoice = React.lazy(() => import('./pages/PublicInvoice'));
 
-import PinLogin from './components/PinLogin';
-import ForcePinSetup from './components/ForcePinSetup';
-import StaffPinSetup from './components/StaffPinSetup';
+// seen-performance-first-open-login-task.md Phase 2: screens only some
+// people ever see load on demand instead of in every visitor's first
+// download. The PIN screens are fetched ahead as soon as AuthContext says
+// the shop uses PINs (effect in AppContent), so they still open at once.
+const PinLogin = lazyWithPreload(() => import('./components/PinLogin'));
+const ForcePinSetup = lazyWithPreload(() => import('./components/ForcePinSetup'));
+const LockScreen = lazyWithPreload(() => import('./components/LockScreen'));
 import MainSkeleton from './components/MainSkeleton';
 import PageSkeleton from './components/PageSkeleton';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -104,12 +126,11 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { ConfirmProvider } from './contexts/ConfirmContext';
 import { analytics, AnalyticsEvent } from './services/analyticsService';
-import { startConnectivityMonitor } from './lib/offline/connectivity';
-import { initOutboxSync } from './lib/offline/outbox';
 import { useTranslation } from 'react-i18next';
+import { useFullTranslations } from './i18n/config';
 import { useDirection, localeOf } from './lib/direction';
 
-import SaaSLayout from './components/SaaSLayout';
+const SaaSLayout = React.lazy(() => import('./components/SaaSLayout'));
 import RoleGuard from './components/RoleGuard';
 import ProtectedRoute from './components/ProtectedRoute';
 import AccessDenied from './components/AccessDenied';
@@ -125,9 +146,10 @@ const SaaSAssistantSettings = React.lazy(() => import('./components/SaaSAssistan
 const SaaSWithdrawals = React.lazy(() => import('./components/SaaSWithdrawals'));
 const SubscriptionRequestsAdminManager = React.lazy(() => import('./components/SubscriptionRequestsAdminManager'));
 const AdminBlogEditor = React.lazy(() => import('./components/AdminBlogEditor'));
-import SaaSTeamManagement from './components/SaaSTeamManagement';
-import TenantAnalyticsDashboard from './components/TenantAnalyticsDashboard';
-import { RolePermissionsSettings } from './components/RolePermissionsSettings';
+const SaaSTeamManagement = React.lazy(() => import('./components/SaaSTeamManagement'));
+const TenantAnalyticsDashboard = React.lazy(() => import('./components/TenantAnalyticsDashboard'));
+const RolePermissionsSettings = React.lazy(() =>
+  import('./components/RolePermissionsSettings').then((m) => ({ default: m.RolePermissionsSettings })));
 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
@@ -196,6 +218,21 @@ function AccountIssueScreen({ variant, email, detail, onRetry, onLogout }: {
 
 function AppContent() {
   const { t, i18n } = useTranslation();
+  // seen-performance-first-open-login-task.md Phase 1: the first render has
+  // only the core of the language file (login, PIN, errors). Everything
+  // past the login screen waits for the rest so no raw key is ever shown.
+  const translationsReady = useFullTranslations();
+
+  // The PIN and lock screens are lazy (Phase 2): fetch them ahead the moment
+  // we know this shop uses PINs, so they open without a wait.
+  const { hasStaffWithPin: shopUsesPins, currentUserStaff: staffForPins } = useAuth();
+  useEffect(() => {
+    if (shopUsesPins || (staffForPins as any)?.must_change_pin) {
+      void PinLogin.preload();
+      void ForcePinSetup.preload();
+      void LockScreen.preload();
+    }
+  }, [shopUsesPins, staffForPins]);
   const { dir, isRtl } = useDirection();
   const { currentStaff, setCurrentStaff } = useStaff();
   const {
@@ -224,9 +261,24 @@ function AppContent() {
   // one real-connectivity monitor + outbox drain loop for the whole app,
   // not per-screen -- a sale queued while on POS must still sync once the
   // cashier has navigated elsewhere and connectivity actually returns.
+  //
+  // seen-performance-first-open-login-task.md Phase 2: started once the
+  // first screen is up and the browser is idle (well under a second), and
+  // loaded then too, so Dexie and the outbox are not in the startup
+  // download. What they do once started is unchanged.
   useEffect(() => {
-    startConnectivityMonitor();
-    initOutboxSync();
+    let cancelled = false;
+    const start = () => {
+      if (cancelled) return;
+      void import('./lib/offline/connectivity').then((m) => { if (!cancelled) m.startConnectivityMonitor(); });
+      void import('./lib/offline/outbox').then((m) => { if (!cancelled) m.initOutboxSync(); });
+    };
+    const idle = (window as any).requestIdleCallback as ((cb: () => void, opts?: { timeout: number }) => number) | undefined;
+    const handle = idle ? idle(start, { timeout: 2000 }) : window.setTimeout(start, 500);
+    return () => {
+      cancelled = true;
+      if (idle) (window as any).cancelIdleCallback?.(handle); else window.clearTimeout(handle);
+    };
   }, []);
 
   const [showAccountIssue, setShowAccountIssue] = useState(false);
@@ -521,6 +573,10 @@ function AppContent() {
     return <MainSkeleton />;
   }
 
+  if (!translationsReady && (user || isPublicRoute)) {
+    return <MainSkeleton />;
+  }
+
   // Trial or Subscription expiration lock interception
   if ((isTrialExpired || isSubscriptionExpired) && user && !isSaaSStaff && !isPublicRoute) {
     return (
@@ -588,20 +644,24 @@ function AppContent() {
   // Intercept for PIN setups
   if (needsPinSetup && !isPublicRoute) {
     return (
-      <ForcePinSetup
-        tenantId={tenantId!}
-        onSuccess={() => refreshDbUser()}
-      />
+      <React.Suspense fallback={<MainSkeleton />}>
+        <ForcePinSetup
+          tenantId={tenantId!}
+          onSuccess={() => refreshDbUser()}
+        />
+      </React.Suspense>
     );
   }
 
   if (showPinLogin && !isPublicRoute) {
     return (
-      <PinLogin
-        tenantId={tenantId!}
-        currentUserStaff={currentUserStaff as any}
-        onLogin={(staff) => setCurrentStaff(staff)}
-      />
+      <React.Suspense fallback={<MainSkeleton />}>
+        <PinLogin
+          tenantId={tenantId!}
+          currentUserStaff={currentUserStaff as any}
+          onLogin={(staff) => setCurrentStaff(staff)}
+        />
+      </React.Suspense>
     );
   }
 
@@ -637,6 +697,7 @@ function AppContent() {
             path="/admin/*" 
             element={
               isSaaSStaff ? (
+                <React.Suspense fallback={<MainSkeleton />}>
                 <SaaSLayout userRole={userRole}>
                   <React.Suspense fallback={<PageSkeleton />}>
                     <Routes>
@@ -740,6 +801,7 @@ function AppContent() {
                     </Routes>
                   </React.Suspense>
                 </SaaSLayout>
+                </React.Suspense>
               ) : <Navigate to="/login" />
             }
           />
@@ -901,7 +963,8 @@ function AppContent() {
                         </Layout>
                         <AnimatePresence>
                           {isLocked && (
-                            <LockScreen 
+                            <React.Suspense fallback={null}>
+                              <LockScreen 
                               currentStaff={currentStaff} 
                               onUnlock={() => setIsLocked(false)} 
                               tenantId={effectiveTenantId || undefined}
@@ -910,6 +973,7 @@ function AppContent() {
                                 setIsLocked(false);
                               }}
                             />
+                            </React.Suspense>
                           )}
                         </AnimatePresence>
                       </>
@@ -1020,7 +1084,8 @@ function AppContent() {
                     </Layout>
                     <AnimatePresence>
                       {isLocked && (
-                        <LockScreen 
+                        <React.Suspense fallback={null}>
+                          <LockScreen 
                           currentStaff={currentStaff} 
                           onUnlock={() => setIsLocked(false)} 
                           tenantId={effectiveTenantId || undefined}
@@ -1029,6 +1094,7 @@ function AppContent() {
                             setIsLocked(false);
                           }}
                         />
+                        </React.Suspense>
                       )}
                     </AnimatePresence>
                   </>

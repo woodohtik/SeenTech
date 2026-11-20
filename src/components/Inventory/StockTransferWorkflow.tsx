@@ -18,7 +18,7 @@ import {
   X
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase/client';
-import { handleError, OperationType } from '../../lib/firebase';
+import { handleError, OperationType } from '../../lib/appErrors';
 import { useAuth } from '../../contexts/AuthContext';
 import { StockTransfer, Branch, BranchInventory, StockLedger, InventoryItem } from '../../types';
 import { useTranslation } from 'react-i18next';

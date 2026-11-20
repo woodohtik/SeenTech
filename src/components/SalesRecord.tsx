@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase/client';
-import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
+import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/appErrors';
 import { Order } from '../types';
 import { cn } from '../lib/utils';
 import { decodeOrderB2BNotes } from '../utils/b2bHelper';

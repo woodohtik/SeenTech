@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase/client';
-import { handleError, OperationType } from '../lib/firebase';
+import { handleError, OperationType } from '../lib/appErrors';
 import { saveLastKnown, getLastKnown } from '../lib/offline/lastKnownCache';
 import { isNetworkFailure } from '../lib/offline/outbox';
 import { Order, Customer, InventoryItem, Staff, Shift, Role, PurchaseOrder, Supplier } from '../types';
@@ -79,7 +79,7 @@ import { downloadInvoicePDF } from '../utils/pdfGenerator';
 import { useStaff } from '../contexts/StaffContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { useDirection } from '../lib/direction';
-import { getFriendlyErrorMessage } from '../lib/firebase';
+import { getFriendlyErrorMessage } from '../lib/appErrors';
 
 // First four map to this app's semantic tokens (brand/success/warning/danger); the
 // remaining three are purely categorical (purple/pink/cyan) with no matching token --

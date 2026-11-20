@@ -39,7 +39,7 @@ import {
 import { supabase } from '../lib/supabase/client';
 import { refreshCustomersCache, refreshInventoryCache, refreshBranchStockCache, getCachedCustomers, getCachedInventory, getCachedBranchStock } from '../lib/offline/cacheSync';
 import { enqueuePosSale, isNetworkFailure, decidePosSaleFailureAction } from '../lib/offline/outbox';
-import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
+import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/appErrors';
 import { Combobox, Transition, Dialog } from '@headlessui/react';
 import { Customer, InventoryItem, OrderItem, Order, PaymentMethod, OrderStatus, ProductVariant, TaxInvoice, Tenant } from '../types';
 import { TaxInvoiceDocument } from './printing/TaxInvoiceModal';

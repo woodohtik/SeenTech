@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getFriendlyErrorMessage } from '../lib/firebase';
+import { getFriendlyErrorMessage } from '../lib/appErrors';
 import { cn, formatCurrency } from '../lib/utils';
 import { 
   CreditCard, 

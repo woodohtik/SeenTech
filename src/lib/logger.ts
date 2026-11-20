@@ -1,6 +1,6 @@
 import i18n from 'i18next';
 import * as Sentry from '@sentry/react';
-import { OperationType } from './firebase';
+import { OperationType } from './appErrors';
 
 /**
  * Sentry activates only once VITE_SENTRY_DSN is actually set (Vercel env

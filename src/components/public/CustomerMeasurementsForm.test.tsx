@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { test, expect, vi, afterEach, beforeAll } from 'vitest';
-import { ready } from '../../i18n/config';
+import { fullReady as ready } from '../../i18n/config';
 import CustomerMeasurementsForm from './CustomerMeasurementsForm';
 
 // react-i18next needs an initialized i18next instance before any `t()` call

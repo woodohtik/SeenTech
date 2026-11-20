@@ -8,40 +8,43 @@
    (public/fonts/) بدل Google Fonts CDN، مهم لشاشة كاشير قد تعمل أوفلاين
    جزئياً. Tajawal فقط للعناوين والأرقام الكبيرة (700/800/900) — المتن
    بالكامل أصبح IBM Plex Sans Arabic (400/500/600) بدل Tajawal للكل كما
-   كان سابقاً. */
+   كان سابقاً.
+   seen-performance-first-open-login-task.md المرحلة 1: WOFF2 مقصوص على
+   العربية واللاتينية الأساسية (Plex ~58KB بدل ~240KB، Tajawal ~18KB بدل
+   ~56KB)، والـ TTF الكامل يبقى احتياطاً لمتصفح لا يدعم WOFF2 فقط. */
 @font-face {
   font-family: "Tajawal";
-  src: url("/fonts/Tajawal-Bold.ttf") format("truetype");
+  src: url("/fonts/Tajawal-Bold.woff2") format("woff2"), url("/fonts/Tajawal-Bold.ttf") format("truetype");
   font-weight: 700;
   font-display: swap;
 }
 @font-face {
   font-family: "Tajawal";
-  src: url("/fonts/Tajawal-ExtraBold.ttf") format("truetype");
+  src: url("/fonts/Tajawal-ExtraBold.woff2") format("woff2"), url("/fonts/Tajawal-ExtraBold.ttf") format("truetype");
   font-weight: 800;
   font-display: swap;
 }
 @font-face {
   font-family: "Tajawal";
-  src: url("/fonts/Tajawal-Black.ttf") format("truetype");
+  src: url("/fonts/Tajawal-Black.woff2") format("woff2"), url("/fonts/Tajawal-Black.ttf") format("truetype");
   font-weight: 900;
   font-display: swap;
 }
 @font-face {
   font-family: "IBM Plex Sans Arabic";
-  src: url("/fonts/IBMPlexSansArabic-Regular.ttf") format("truetype");
+  src: url("/fonts/IBMPlexSansArabic-Regular.woff2") format("woff2"), url("/fonts/IBMPlexSansArabic-Regular.ttf") format("truetype");
   font-weight: 400;
   font-display: swap;
 }
 @font-face {
   font-family: "IBM Plex Sans Arabic";
-  src: url("/fonts/IBMPlexSansArabic-Medium.ttf") format("truetype");
+  src: url("/fonts/IBMPlexSansArabic-Medium.woff2") format("woff2"), url("/fonts/IBMPlexSansArabic-Medium.ttf") format("truetype");
   font-weight: 500;
   font-display: swap;
 }
 @font-face {
   font-family: "IBM Plex Sans Arabic";
-  src: url("/fonts/IBMPlexSansArabic-SemiBold.ttf") format("truetype");
+  src: url("/fonts/IBMPlexSansArabic-SemiBold.woff2") format("woff2"), url("/fonts/IBMPlexSansArabic-SemiBold.ttf") format("truetype");
   font-weight: 600;
   font-display: swap;
 }

@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useCallback, ReactNode } fr
 import { AnimatePresence, motion } from 'motion/react';
 import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { getFriendlyErrorMessage } from '../lib/firebase';
+import { getFriendlyErrorMessage } from '../lib/appErrors';
 import { logError } from '../lib/logger';
 import { useTranslation } from 'react-i18next';
 import { useDirection } from '../lib/direction';

@@ -258,15 +258,27 @@ export default function Login() {
       return () => { cancelled = true; };
     }
 
-    const script = document.createElement('script');
-    script.id = 'google-identity-script';
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    script.onload = renderGoogleButton;
-    document.body.appendChild(script);
+    // seen-performance-first-open-login-task.md Phase 1: fetched once the
+    // form is on screen and the browser is idle, so the Google script does
+    // not compete with the form's own first paint (the button area keeps its
+    // space meanwhile, so nothing shifts when it appears).
+    const loadScript = () => {
+      if (cancelled || document.getElementById('google-identity-script')) return;
+      const script = document.createElement('script');
+      script.id = 'google-identity-script';
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.onload = renderGoogleButton;
+      document.body.appendChild(script);
+    };
+    const idle = (window as any).requestIdleCallback as ((cb: () => void, opts?: { timeout: number }) => number) | undefined;
+    const handle = idle ? idle(loadScript, { timeout: 1500 }) : window.setTimeout(loadScript, 300);
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (idle) (window as any).cancelIdleCallback?.(handle); else window.clearTimeout(handle);
+    };
   }, [view, handleGoogleCredentialResponse]);
 
   // Phone Formatting Logic

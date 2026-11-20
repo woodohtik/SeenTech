@@ -4,12 +4,14 @@ import path from 'path';
 import {defineConfig} from 'vite';
 import {VitePWA} from 'vite-plugin-pwa';
 import {visualizer} from 'rollup-plugin-visualizer';
+import {i18nCorePlugin} from './scripts/vite-i18n-core';
 
 export default defineConfig(({mode}) => {
   return {
     plugins: [
       react(),
       tailwindcss(),
+      i18nCorePlugin(__dirname),
       // Bundle composition report (seen-offline-coverage-and-performance-
       // task.md Phase 6) -- opt-in via `ANALYZE=true npm run build` rather
       // than every build, since it's a diagnostic tool, not something a
@@ -121,6 +123,11 @@ export default defineConfig(({mode}) => {
             if (/[\\/]node_modules[\\/](@firebase|firebase)[\\/]/.test(id)) return 'vendor-firebase';
             if (/[\\/]node_modules[\\/](motion|framer-motion|motion-dom|motion-utils)[\\/]/.test(id)) return 'vendor-motion';
             if (/[\\/]node_modules[\\/]dexie[\\/]/.test(id)) return 'vendor-dexie';
+            // seen-performance-first-open-login-task.md Phase 2: with the app
+            // shell lazy, Rollup split every shared lucide icon into its own
+            // tiny file (~35 requests before the shell could render). One
+            // icons chunk instead.
+            if (/[\\/]node_modules[\\/]lucide-react[\\/]/.test(id)) return 'vendor-icons';
             return undefined;
           },
         },

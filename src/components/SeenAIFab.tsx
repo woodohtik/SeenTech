@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence } from 'motion/react';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { startTargetedTour } from './OnboardingTour';
+import { startTargetedTour } from '../lib/tourEvents';
 import { AssistantMark } from './assistant/parts';
 import { AssistantPanel, PANEL_WIDTH, PANEL_WIDTH_EXPANDED, useMediaQuery } from './assistant/AssistantPanel';
 import { isAssistantAdminRole, pageKeyForPath, type AssistantAccess } from './assistant/catalog';

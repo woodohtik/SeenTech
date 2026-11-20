@@ -29,7 +29,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
-import { handleFirestoreError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
+import { handleFirestoreError, OperationType, getFriendlyErrorMessage } from '../lib/appErrors';
 import { useAuth } from '../contexts/AuthContext';
 import { Order, Staff as StaffMemberType, AuditLog, Role, Branch, PermissionKey, PermissionsMap } from '../types';
 import { Controller, useForm } from 'react-hook-form';

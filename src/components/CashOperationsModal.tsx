@@ -4,7 +4,7 @@ import { X, ArrowDownRight, ArrowUpRight, User, Banknote, CheckCircle2, Clock, H
 import { supabase } from '../lib/supabase/client';
 import { Shift } from '../types';
 import { cn, formatCurrency, getCurrencySymbol } from '../lib/utils';
-import { handleError, OperationType } from '../lib/firebase';
+import { handleError, OperationType } from '../lib/appErrors';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import { useTranslation } from 'react-i18next';
 import DateTimeDisplay from './DateTimeDisplay';

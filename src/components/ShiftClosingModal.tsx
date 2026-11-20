@@ -3,7 +3,7 @@ import { parseShiftCashBalance, previewCashLines, type ShiftCashBalance } from '
 import { motion } from 'motion/react';
 import { X, Calculator, AlertTriangle, CheckCircle2, FileText, Printer } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
-import { handleError, OperationType } from '../lib/firebase';
+import { handleError, OperationType } from '../lib/appErrors';
 import { Shift, Order, ShiftTotals } from '../types';
 import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';

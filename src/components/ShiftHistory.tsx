@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase/client';
-import { handleError, OperationType } from '../lib/firebase';
+import { handleError, OperationType } from '../lib/appErrors';
 import { Shift } from '../types';
 import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';

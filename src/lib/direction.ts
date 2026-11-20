@@ -81,6 +81,32 @@ export function applyDocumentDirection(lang?: string | null): void {
   root.dir = dirOf(normalized);
   root.setAttribute('data-lang', normalized);
   root.style.setProperty('--font-sans', fontFamilyOf(normalized));
+  ensureLanguageFonts(normalized);
+}
+
+/**
+ * Google Fonts stylesheets, only for the languages that use them
+ * (seen-performance-first-open-login-task.md Phase 1). Arabic uses the local
+ * Tajawal / IBM Plex Sans Arabic files, so an Arabic visitor downloads none
+ * of this; it used to be a render-blocking <link> in index.html for everyone.
+ * display=swap: text shows in a fallback font until the web font arrives.
+ */
+const LANGUAGE_FONT_CSS: Partial<Record<AppLang, string>> = {
+  ur: 'https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap',
+  en: 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap',
+};
+
+export function ensureLanguageFonts(lang: AppLang): void {
+  const href = LANGUAGE_FONT_CSS[lang];
+  if (!href || typeof document === 'undefined') return;
+  const id = `seen-fonts-${lang}`;
+  if (document.getElementById(id)) return;
+  const link = document.createElement('link');
+  link.id = id;
+  link.rel = 'stylesheet';
+  link.href = href;
+  link.crossOrigin = 'anonymous';
+  document.head.appendChild(link);
 }
 
 /**

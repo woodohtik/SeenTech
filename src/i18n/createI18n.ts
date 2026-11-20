@@ -42,8 +42,15 @@ type SupportedLang = 'ar' | 'en' | 'ur';
 type Loader = (lang: SupportedLang) => Promise<any>;
 
 export function createI18n(
-  resourcesOrLoader: { ar: object; en: object; ur: object } | Loader
-): { i18n: typeof i18n; ready: Promise<void> } {
+  resourcesOrLoader: { ar: object; en: object; ur: object } | Loader,
+  /**
+   * Loader mode only (seen-performance-first-open-login-task.md Phase 1):
+   * a small slice of the active language to render with first. When given,
+   * `ready` waits for it alone, and `fullReady` for the whole file merged
+   * over it. Without it both resolve together, as before.
+   */
+  coreLoader?: Loader,
+): { i18n: typeof i18n; ready: Promise<void>; fullReady: Promise<void> } {
   // Get and normalize the language choice, default to 'ar'
   let defaultLanguage: string = DEFAULT_LANG;
   if (typeof window !== 'undefined') {
@@ -148,6 +155,9 @@ export function createI18n(
     // fetches it on demand at that point too, it just isn't preloaded.
     chain = chain.use(resourcesToBackend((lang: string) => resourcesOrLoader(lang as SupportedLang)));
     baseOptions.react = {
+      // The full file is added after the first render (addResourceBundle
+      // below); components already on screen re-render with it.
+      bindI18nStore: 'added',
       // No Suspense boundary exists at the app root, and adding one there
       // is a bigger, separately-scoped change -- with this off, a language
       // switch to a not-yet-loaded language shows the raw key for the
@@ -165,7 +175,33 @@ export function createI18n(
     };
   }
 
-  const ready: Promise<void> = chain.init(baseOptions).then(() => undefined);
+  let ready: Promise<void>;
+  let fullReady: Promise<void>;
+  if (isLazy && coreLoader) {
+    const lng = normalizeLang(defaultLanguage) as SupportedLang;
+    const unwrap = (m: any) => (m && typeof m === 'object' && 'default' in m ? m.default : m);
+    // The core is handed to i18next as an already-present bundle, so the
+    // backend does not fetch the active language at init (it still fetches
+    // any fallback language that has no bundle, exactly as before).
+    ready = coreLoader(lng)
+      .then((core) => {
+        baseOptions.resources = { [lng]: { translation: unwrap(core) } };
+        baseOptions.partialBundledLanguages = true;
+        return chain.init(baseOptions);
+      })
+      .then(() => undefined);
+    fullReady = ready
+      .then(() => (resourcesOrLoader as Loader)(lng))
+      .then((full) => { i18n.addResourceBundle(lng, 'translation', unwrap(full), true, true); })
+      .catch((err) => {
+        // Offline with an empty cache: keep the core rather than leave the
+        // app waiting forever; the missing sections show their keys.
+        console.error('[i18n] full language file failed to load', err);
+      });
+  } else {
+    ready = chain.init(baseOptions).then(() => undefined);
+    fullReady = ready;
+  }
 
   // Synchronize <html lang/dir/font> immediately on load AND on every language
   // change. Centralizing it here means no component has to touch the DOM, and
@@ -183,5 +219,5 @@ export function createI18n(
     });
   }
 
-  return { i18n, ready };
+  return { i18n, ready, fullReady };
 }

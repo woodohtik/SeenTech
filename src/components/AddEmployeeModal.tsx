@@ -10,7 +10,7 @@ import { supabase } from '../lib/supabase/client';
 import { useAuth } from '../contexts/AuthContext';
 import { generateSecurePin, hashPin } from '../services/staffService';
 import { useDirection } from '../lib/direction';
-import { getFriendlyErrorMessage } from '../lib/firebase';
+import { getFriendlyErrorMessage } from '../lib/appErrors';
 import { IconInput } from './ui/IconInput';
 import { VoiceMicButton } from './ui/VoiceMicButton';
 import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';

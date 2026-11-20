@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
 import { logImpersonationStart } from '../services/impersonationService';
-import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
+import { handleError, OperationType, getFriendlyErrorMessage } from '../lib/appErrors';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { TailorRequest, Tenant, Plan, Order } from '../types';
 import { motion, AnimatePresence } from 'motion/react';

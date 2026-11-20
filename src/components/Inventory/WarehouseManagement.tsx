@@ -14,7 +14,7 @@ import {
   ArrowRightLeft
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase/client';
-import { handleFirestoreError, OperationType } from '../../lib/firebase';
+import { handleFirestoreError, OperationType } from '../../lib/appErrors';
 import { Branch } from '../../types';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';

@@ -9,7 +9,7 @@ import {
   Printer, RotateCcw, Ruler, ShoppingBag, Trash2, Truck, UserPlus, X, Zap,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
-import { handleFirestoreError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
+import { handleFirestoreError, OperationType, getFriendlyErrorMessage } from '../lib/appErrors';
 import { cn } from '../lib/utils';
 import { isRtlLang } from '../lib/direction';
 import { orderSchema, customerSchema } from '../lib/validations';

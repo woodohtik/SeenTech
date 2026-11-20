@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase/client';
-import { auth, handleFirestoreError, OperationType, getFriendlyErrorMessage } from '../lib/firebase';
+import { handleFirestoreError, OperationType, getFriendlyErrorMessage } from '../lib/appErrors';
 import { Tenant, TaxInvoice, CreditNote } from '../types';
 import { decodeInvoiceExtendedNotes } from '../utils/b2bHelper';
 import { logEmployeeAction } from '../services/employeeAuditService';

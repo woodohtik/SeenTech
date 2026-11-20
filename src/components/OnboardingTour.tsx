@@ -36,9 +36,8 @@ export function restartOnboardingTour() {
  * available for the current user/device (permission, mobile drop, …) this
  * is a silent no-op, matching how the full tour already drops such steps.
  */
-export function startTargetedTour(topic: string) {
-  window.dispatchEvent(new CustomEvent('start_targeted_tour', { detail: { topic } }));
-}
+// Moved to ../lib/tourEvents so callers need not load this file; re-exported for existing imports.
+export { startTargetedTour } from '../lib/tourEvents';
 
 type TourStatus = 'idle' | 'running' | 'completed' | 'skipped';
 

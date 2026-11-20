@@ -35,3 +35,11 @@ print-agent/dist/
 
 # production DB backups (sensitive customer/financial data -- never commit)
 /backups/
+
+# perf probe output (docs/perf/seen-perf-probe.cjs)
+perf-out/
+dist-perf/
+perf-build.log
+perf-preview.log
+perf-out-*.log
+perf-out-*.err

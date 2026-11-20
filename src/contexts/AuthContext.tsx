@@ -10,7 +10,7 @@ import React, {
 import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 
 import { supabase } from '../lib/supabase/client';
-import { setCurrentAuthSessionInfo } from '../lib/firebase';
+import { setCurrentAuthSessionInfo } from '../lib/appErrors';
 import { setLoggerUserContext } from '../lib/logger';
 import { getDeviceSessionId } from '../utils/session';
 import { getIsOnline } from '../lib/offline/connectivity';

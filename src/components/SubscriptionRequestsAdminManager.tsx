@@ -27,7 +27,7 @@ import {
   SubscriptionRequest 
 } from '../services/subscriptionRequestService';
 import { useDirection } from '../lib/direction';
-import { getFriendlyErrorMessage } from '../lib/firebase';
+import { getFriendlyErrorMessage } from '../lib/appErrors';
 import { useConfirm } from '../contexts/ConfirmContext';
 
 export default function SubscriptionRequestsAdminManager() {

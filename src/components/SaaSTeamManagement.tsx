@@ -23,7 +23,7 @@ import { SmartSelect } from './ui/SmartSelect';
 import { SaasUser, SaasUserRole } from '../types/supabase';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
-import { getFriendlyErrorMessage } from '../lib/firebase';
+import { getFriendlyErrorMessage } from '../lib/appErrors';
 import { useConfirm } from '../contexts/ConfirmContext';
 
 import { isRtlLang } from '../lib/direction';

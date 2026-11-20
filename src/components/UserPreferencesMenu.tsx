@@ -23,7 +23,7 @@ import { Staff } from '../types';
 import { cn } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { subscribeStaffToNewOrderNotifications } from '../lib/pushNotificationsStaff';
+// Loaded on use: it pulls in the Firebase SDK (seen-performance-first-open-login-task.md Phase 2).
 
 import { isRtlLang, changeAppLanguage } from '../lib/direction';
 
@@ -83,6 +83,7 @@ export default function UserPreferencesMenu({
     }
 
     setNewOrderPushLoading(true);
+    const { subscribeStaffToNewOrderNotifications } = await import('../lib/pushNotificationsStaff');
     const result = await subscribeStaffToNewOrderNotifications();
     setNewOrderPushLoading(false);
 

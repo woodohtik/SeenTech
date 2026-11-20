@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, ExternalLink, Trash2, X } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
-import { handleError, OperationType } from '../lib/firebase';
+import { handleError, OperationType } from '../lib/appErrors';
 import { addSupplierTransaction } from '../services/supplierAccountsService';
 import { Supplier, PurchaseReturn, InventoryItem, PurchaseOrderItem } from '../types';
 import { cn } from '../lib/utils';

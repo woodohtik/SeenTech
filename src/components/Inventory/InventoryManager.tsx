@@ -48,7 +48,7 @@ import {
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase/client";
-import { handleFirestoreError, OperationType } from "../../lib/firebase";
+import { handleFirestoreError, OperationType } from "../../lib/appErrors";
 import { getCachedInventory } from "../../lib/offline/cacheSync";
 import { isNetworkFailure } from "../../lib/offline/outbox";
 import { useAuth } from "../../contexts/AuthContext";
@@ -65,7 +65,7 @@ import ProductImageUploader from "./ProductImageUploader";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useStaff } from "../../contexts/StaffContext";
 import { useTranslation } from "react-i18next";
-import { getFriendlyErrorMessage } from "../../lib/firebase";
+import { getFriendlyErrorMessage } from "../../lib/appErrors";
 import { useDirection } from "../../lib/direction";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../../lib/utils";

@@ -53,7 +53,7 @@ import * as XLSX from 'xlsx';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase/client';
-import { handleFirestoreError, OperationType } from '../lib/firebase';
+import { handleFirestoreError, OperationType } from '../lib/appErrors';
 import { getCachedCustomers } from '../lib/offline/cacheSync';
 import { isNetworkFailure } from '../lib/offline/outbox';
 import { Customer, Measurements, Styles, Order, ThobeMeasurements } from '../types';
