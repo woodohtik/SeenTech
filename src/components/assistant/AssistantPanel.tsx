@@ -1,12 +1,14 @@
-import React, { useEffect, useRef, useSyncExternalStore } from 'react';
+import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeft, MapPin, Maximize2, Minimize2, SquarePen, X } from 'lucide-react';
+import { ChevronLeft, History, MapPin, Maximize2, Minimize2, SquarePen, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useDirection } from '../../lib/direction';
 import { AssistantMark, CatalogIcon, IconButton } from './parts';
 import { Composer } from './Composer';
 import { MessageList, type RateReply } from './MessageList';
+import { HistoryView } from './HistoryView';
+import type { ConversationSummary } from './useAssistantChat';
 import { markdownToPlainText } from './markdown';
 import { pageKeyForPath, suggestionsFor, type AssistantAccess } from './catalog';
 import type { ChatMessage, ChatNotice, ChatProgress } from './types';
@@ -96,6 +98,10 @@ export interface AssistantPanelProps {
   remainingToday?: number | null;
   onRate: RateReply;
   onCloseRating: (id: string) => void;
+  conversationId: string;
+  onListConversations: () => Promise<ConversationSummary[]>;
+  onOpenConversation: (id: string) => Promise<void>;
+  onDeleteConversation: (id: string) => Promise<void>;
 }
 
 /**
@@ -108,7 +114,9 @@ export function AssistantPanel(props: AssistantPanelProps) {
   const {
     onClose, expanded, onToggleExpanded, userName, pathname, access, messages, isSending, progress, notice,
     announcement, input, onInputChange, onSend, onStop, onRetry, onNewConversation, onStartTour, remainingToday, onRate, onCloseRating,
+    conversationId, onListConversations, onOpenConversation, onDeleteConversation,
   } = props;
+  const [showHistory, setShowHistory] = useState(false);
   const { t } = useTranslation();
   const { dir, isRtl } = useDirection();
   const reduceMotion = useReducedMotion();
@@ -206,7 +214,19 @@ export function AssistantPanel(props: AssistantPanelProps) {
             <h2 className="m-0 text-lg leading-[1.3] font-extrabold truncate">{t('ai.name')}</h2>
           </div>
           <div className="flex items-center shrink-0">
-            <IconButton label={t('ai.new_conversation', 'محادثة جديدة')} onClick={onNewConversation} disabled={messages.length === 0 && !notice}>
+            <IconButton
+              label={t('ai.history')}
+              aria-pressed={showHistory}
+              onClick={() => setShowHistory((v) => !v)}
+              className={cn(showHistory && 'text-brand bg-brand/10 hover:text-brand')}
+            >
+              <History size={20} aria-hidden="true" />
+            </IconButton>
+            <IconButton
+              label={t('ai.new_conversation', 'محادثة جديدة')}
+              onClick={() => { onNewConversation(); setShowHistory(false); }}
+              disabled={messages.length === 0 && !notice && !showHistory}
+            >
               <SquarePen size={20} aria-hidden="true" />
             </IconButton>
             {canExpand && (
@@ -220,7 +240,15 @@ export function AssistantPanel(props: AssistantPanelProps) {
           </div>
         </header>
 
-        {messages.length === 0 && !notice ? (
+        {showHistory ? (
+          <HistoryView
+            currentId={conversationId}
+            onList={onListConversations}
+            onOpen={onOpenConversation}
+            onDelete={onDeleteConversation}
+            onDone={() => { setShowHistory(false); inputRef.current?.focus(); }}
+          />
+        ) : messages.length === 0 && !notice ? (
           <WelcomeScreen userName={userName} pathname={pathname} access={access} onAsk={handleAsk} />
         ) : (
           <MessageList

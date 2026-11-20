@@ -200,7 +200,18 @@
     "rate_down_placeholder": "مثلاً: الرقم لا يطابق التقرير",
     "rate_send": "إرسال الملاحظة",
     "rate_skip": "تخطٍّ",
-    "rate_thanks": "شكراً، وصل تقييمك."
+    "rate_thanks": "شكراً، وصل تقييمك.",
+    "history": "المحادثات السابقة",
+    "history_title": "المحادثات السابقة",
+    "history_back": "رجوع للمحادثة",
+    "history_note": "تُحفظ محادثاتك 30 يوماً من آخر رسالة، ولا يراها غيرك.",
+    "history_loading": "جاري تحميل المحادثات…",
+    "history_empty": "لا محادثات سابقة بعد. ستظهر هنا بعد أول سؤال.",
+    "history_error": "تعذّر الوصول للمحادثات السابقة.",
+    "history_delete": "حذف المحادثة",
+    "history_delete_named": "حذف المحادثة: {{title}}",
+    "history_delete_title": "حذف المحادثة؟",
+    "history_delete_confirm": "ستُحذف «{{title}}» نهائياً ولا يمكن استرجاعها."
   },
   "billing": {
     "billing_status_title": "حالة الفوترة والتجديد",

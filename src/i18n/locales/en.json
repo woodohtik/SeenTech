@@ -200,7 +200,18 @@
     "rate_down_placeholder": "For example: the figure doesn't match the report",
     "rate_send": "Send note",
     "rate_skip": "Skip",
-    "rate_thanks": "Thanks, your rating was received."
+    "rate_thanks": "Thanks, your rating was received.",
+    "history": "Past conversations",
+    "history_title": "Past conversations",
+    "history_back": "Back to the conversation",
+    "history_note": "Your conversations are kept for 30 days after the last message, and no one else can see them.",
+    "history_loading": "Loading conversations…",
+    "history_empty": "No past conversations yet. They appear here after your first question.",
+    "history_error": "Could not reach your past conversations.",
+    "history_delete": "Delete conversation",
+    "history_delete_named": "Delete conversation: {{title}}",
+    "history_delete_title": "Delete this conversation?",
+    "history_delete_confirm": "\"{{title}}\" will be deleted for good and cannot be brought back."
   },
   "billing": {
     "billing_status_title": "Billing & Renewal Status",

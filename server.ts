@@ -1526,7 +1526,10 @@ async function streamAssistantReply(
   buildResult: (model: any, maxOutputTokensOverride?: number) => any,
   res: any,
   onFallback: (failedProviderKey: string, reason: string, nextProviderKey: string | null) => Promise<void>,
-) {
+): Promise<{ text: string; toolResults: Array<{ name: string; result: unknown }>; toolErrors: string[] } | null> {
+  // What the person was actually sent, returned so the chat route can keep
+  // it in the conversation history (2-4). Null when nothing was sent.
+  let collected = { text: '', toolResults: [] as Array<{ name: string; result: unknown }>, toolErrors: [] as string[] };
   res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
   const { buildModelForProvider } = await import('./src/server/aiProviderRegistry.ts');
 
@@ -1539,29 +1542,33 @@ async function streamAssistantReply(
     let maxOutputTokensOverride: number | undefined;
     for (let attempt = 0; attempt < 2; attempt++) {
       let wroteAny = false;
+      collected = { text: '', toolResults: [], toolErrors: [] };
       try {
         const model = await buildModelForProvider(candidate.providerKey, candidate.modelName, candidate.apiKey);
         const result = buildResult(model, maxOutputTokensOverride);
         for await (const part of result.fullStream) {
           if (part.type === 'text-delta') {
             wroteAny = true;
+            collected.text += part.text;
             res.write(JSON.stringify({ t: 'text', v: part.text }) + '\n');
           } else if (part.type === 'tool-call') {
             wroteAny = true;
             res.write(JSON.stringify({ t: 'status', name: part.toolName }) + '\n');
           } else if (part.type === 'tool-result') {
             wroteAny = true;
+            collected.toolResults.push({ name: part.toolName, result: part.output });
             res.write(JSON.stringify({ t: 'tool', name: part.toolName, result: part.output }) + '\n');
           } else if (part.type === 'tool-error') {
             wroteAny = true;
             logger.error({ err: part.error, tool: part.toolName }, '[assistant-tool-error]');
+            collected.toolErrors.push(part.toolName);
             res.write(JSON.stringify({ t: 'tool-error', name: part.toolName, message: 'تعذّر تنفيذ الأداة' }) + '\n');
           } else if (part.type === 'error') {
             throw part.error instanceof Error ? part.error : new Error(String(part.error));
           }
         }
         res.end();
-        return;
+        return collected;
       } catch (err: any) {
         // المستخدم النهائي (Admin/Cashier في الـ Widget) لا يرى تفاصيل الخطأ
         // البرمجي أبداً (رسائل SDK/مزوّد الذكاء الاصطناعي الخام مثل quota/rate
@@ -1572,7 +1579,8 @@ async function streamAssistantReply(
           // بدأ العميل بالفعل يستلم جزءاً من الرد -- لا تبديل ممكن الآن.
           res.write(JSON.stringify({ t: 'text', v: `\n\n${ASSISTANT_FRIENDLY_ERROR}` }) + '\n');
           res.end();
-          return;
+          collected.text += `\n\n${ASSISTANT_FRIENDLY_ERROR}`;
+          return collected;
         }
 
         if (attempt === 0) {
@@ -1597,7 +1605,50 @@ async function streamAssistantReply(
   } else {
     res.end();
   }
+  return null;
 }
+
+// seen-ai-assistant-redesign-task.md 2-4: the signed-in person's own past
+// conversations (30 days). Never anyone else's: every query is filtered by
+// their uid and shop inside assistantHistory.ts.
+app.get("/api/assistant/conversations", authenticate, async (req: any, res) => {
+  try {
+    if (!req.user?.tenantId || !req.user?.uid) return res.status(401).json({ error: 'Unauthorized' });
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+    const { listConversations } = await import("./src/server/assistantHistory.ts");
+    res.json({ conversations: await listConversations(supabaseAdmin, { tenantId: req.user.tenantId, userId: req.user.uid }) });
+  } catch (err: any) {
+    internalError(res, "Error in GET /api/assistant/conversations:", err);
+  }
+});
+
+app.get("/api/assistant/conversations/:id", authenticate, async (req: any, res) => {
+  try {
+    if (!req.user?.tenantId || !req.user?.uid) return res.status(401).json({ error: 'Unauthorized' });
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+    const { isConversationId, readConversation } = await import("./src/server/assistantHistory.ts");
+    if (!isConversationId(req.params.id)) return res.status(404).json({ error: 'not_found' });
+    const conversation = await readConversation(supabaseAdmin, { tenantId: req.user.tenantId, userId: req.user.uid }, req.params.id);
+    if (!conversation) return res.status(404).json({ error: 'not_found' });
+    res.json(conversation);
+  } catch (err: any) {
+    internalError(res, "Error in GET /api/assistant/conversations/:id:", err);
+  }
+});
+
+app.delete("/api/assistant/conversations/:id", authenticate, async (req: any, res) => {
+  try {
+    if (!req.user?.tenantId || !req.user?.uid) return res.status(401).json({ error: 'Unauthorized' });
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+    const { isConversationId, deleteConversation } = await import("./src/server/assistantHistory.ts");
+    if (!isConversationId(req.params.id)) return res.status(404).json({ error: 'not_found' });
+    const deleted = await deleteConversation(supabaseAdmin, { tenantId: req.user.tenantId, userId: req.user.uid }, req.params.id);
+    if (!deleted) return res.status(404).json({ error: 'not_found' });
+    res.json({ ok: true });
+  } catch (err: any) {
+    internalError(res, "Error in DELETE /api/assistant/conversations/:id:", err);
+  }
+});
 
 // seen-ai-assistant-redesign-task.md 2-1: "useful / not useful" on a reply.
 // Any signed-in shop user may rate; the row is theirs and their shop's, and
@@ -2068,7 +2119,7 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
       }
     }
 
-    const { messages, userName, page } = req.body || {};
+    const { messages, userName, page, conversationId, replyId } = req.body || {};
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: "Missing 'messages'" });
     }
@@ -2133,7 +2184,26 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
       .slice(-MAX_HISTORY_MESSAGES)
       .map((m: any) => ({ role: m.role === 'assistant' ? 'assistant' as const : 'user' as const, content: String(m.content || '') }));
 
-    await streamAssistantReply(
+    // seen-ai-assistant-redesign-task.md 2-4: keep the conversation for this
+    // person. A failure here never stops the answer -- history is a
+    // convenience, the reply is the point.
+    const history = await import('./src/server/assistantHistory.ts');
+    const lastQuestion = [...conversationMessages].reverse().find((m) => m.role === 'user')?.content || '';
+    let historyId: string | null = null;
+    if (history.isConversationId(conversationId) && lastQuestion && req.user?.uid) {
+      try {
+        const owned = await history.storeQuestion(supabaseAdmin, { tenantId, userId: req.user.uid }, conversationId, lastQuestion);
+        if (owned) historyId = conversationId;
+        else logger.warn({ tenantId }, '[assistant-history] conversation id belongs to someone else; not stored');
+      } catch (historyErr) {
+        logger.error({ err: historyErr }, '[assistant-history] storing the question failed');
+      }
+    }
+    // A reply the person stopped is not kept: they never saw the rest of it.
+    let clientGone = false;
+    res.on('close', () => { if (!res.writableFinished) clientGone = true; });
+
+    const reply = await streamAssistantReply(
       candidates,
       (model, maxOutputTokensOverride) => streamText({
         model,
@@ -2160,6 +2230,14 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
         }
       },
     );
+
+    if (historyId && reply && !clientGone) {
+      try {
+        await history.storeReply(supabaseAdmin, historyId, reply, history.isReplyId(replyId) ? replyId : null);
+      } catch (historyErr) {
+        logger.error({ err: historyErr }, '[assistant-history] storing the reply failed');
+      }
+    }
   } catch (err: any) {
     logger.error({ err }, "Error in POST /api/chat");
     if (!res.headersSent) {

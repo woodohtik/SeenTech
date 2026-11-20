@@ -200,7 +200,18 @@
     "rate_down_placeholder": "مثلاً: عدد رپورٹ سے میل نہیں کھاتا",
     "rate_send": "نوٹ بھیجیں",
     "rate_skip": "چھوڑیں",
-    "rate_thanks": "شکریہ، آپ کی رائے مل گئی۔"
+    "rate_thanks": "شکریہ، آپ کی رائے مل گئی۔",
+    "history": "پچھلی گفتگو",
+    "history_title": "پچھلی گفتگو",
+    "history_back": "گفتگو پر واپس",
+    "history_note": "آپ کی گفتگو آخری پیغام سے 30 دن تک محفوظ رہتی ہے، اور کوئی اور اسے نہیں دیکھ سکتا۔",
+    "history_loading": "گفتگو لوڈ ہو رہی ہے…",
+    "history_empty": "ابھی کوئی پچھلی گفتگو نہیں۔ پہلے سوال کے بعد یہاں نظر آئے گی۔",
+    "history_error": "پچھلی گفتگو تک رسائی نہیں ہو سکی۔",
+    "history_delete": "گفتگو حذف کریں",
+    "history_delete_named": "گفتگو حذف کریں: {{title}}",
+    "history_delete_title": "یہ گفتگو حذف کریں؟",
+    "history_delete_confirm": "«{{title}}» ہمیشہ کے لیے حذف ہو جائے گی اور واپس نہیں آ سکے گی۔"
   },
   "billing": {
     "billing_status_title": "بلنگ اور تجدید کی حالت",

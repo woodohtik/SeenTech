@@ -23,6 +23,24 @@ export function newReplyId(): string {
   return `r${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`;
 }
 
+/** A version-4 UUID for a new conversation (the server only accepts UUIDs). */
+export function newConversationId(): string {
+  try {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  } catch {
+    // randomUUID needs a secure context; fall through
+  }
+  const hex = (n: number) => Array.from({ length: n }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+  const variant = '89ab'[Math.floor(Math.random() * 4)];
+  return `${hex(8)}-${hex(4)}-4${hex(3)}-${variant}${hex(3)}-${hex(12)}`;
+}
+
+export interface ConversationSummary {
+  id: string;
+  title: string;
+  updatedAt: string;
+}
+
 function chatStorageKey(tenantId: string): string {
   return `seen_ai_chat_${tenantId}`;
 }
@@ -106,6 +124,10 @@ export function useAssistantChat({ tenantId, userName, userRole, page, onTourReq
   const [notice, setNotice] = useState<ChatNotice | null>(null);
   /** The text of the reply that just finished, for the screen reader. Set once per reply. */
   const [announcement, setAnnouncement] = useState('');
+  /** The id the server keeps this conversation under (2-4). A new one per new conversation. */
+  const [conversationId, setConversationId] = useState<string>(newConversationId);
+  const conversationIdRef = useRef(conversationId);
+  conversationIdRef.current = conversationId;
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const manualCancelRef = useRef(false);
@@ -124,7 +146,12 @@ export function useAssistantChat({ tenantId, userName, userRole, page, onTourReq
       const raw = sessionStorage.getItem(chatStorageKey(tenantId));
       if (raw) {
         const parsed = JSON.parse(raw);
+        // Before 2-4 only the messages were kept, as a bare array.
         if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed);
+        else if (parsed && Array.isArray(parsed.messages)) {
+          setMessages(parsed.messages);
+          if (typeof parsed.conversationId === 'string') setConversationId(parsed.conversationId);
+        }
       }
     } catch {
       // تخزين تالف أو غير متاح (وضع التصفح الخاص) -- يبدأ بمحادثة فارغة فقط
@@ -135,11 +162,11 @@ export function useAssistantChat({ tenantId, userName, userRole, page, onTourReq
     if (!tenantId) return;
     try {
       if (messages.length === 0) sessionStorage.removeItem(chatStorageKey(tenantId));
-      else sessionStorage.setItem(chatStorageKey(tenantId), JSON.stringify(messages));
+      else sessionStorage.setItem(chatStorageKey(tenantId), JSON.stringify({ conversationId, messages }));
     } catch {
       // مساحة التخزين ممتلئة أو غير متاحة -- المحادثة ببساطة لن تنجو من تحديث الصفحة
     }
-  }, [messages, tenantId]);
+  }, [messages, tenantId, conversationId]);
 
   // استُخرجت من sendMessage لتُستدعى أيضاً من زر "إعادة المحاولة" (#7) بنفس
   // requestMessages الفاشلة تماماً دون إضافة رسالة مستخدم مكررة.
@@ -192,6 +219,8 @@ export function useAssistantChat({ tenantId, userName, userRole, page, onTourReq
           userName,
           userRole,
           page,
+          conversationId: conversationIdRef.current,
+          replyId,
         }),
         signal: controller.signal,
       });
@@ -326,6 +355,7 @@ export function useAssistantChat({ tenantId, userName, userRole, page, onTourReq
   }, [performRequest]);
 
   const startNewConversation = useCallback(() => {
+    setConversationId(newConversationId());
     setMessages([]);
     setNotice(null);
     setAnnouncement('');
@@ -374,5 +404,38 @@ export function useAssistantChat({ tenantId, userName, userRole, page, onTourReq
     setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, ratingClosed: true } : m)));
   }, []);
 
-  return { messages, isSending, progress, notice, announcement, sendMessage, cancel, retry, startNewConversation, rate, closeRating };
+  /** This person's past conversations (last 30 days), newest first. Throws on failure. */
+  const listConversations = useCallback(async (): Promise<ConversationSummary[]> => {
+    const res = await fetch('/api/assistant/conversations', { headers: await getAuthHeader() });
+    if (!res.ok) throw new Error(`history ${res.status}`);
+    return (await res.json()).conversations || [];
+  }, []);
+
+  /** Opens a past conversation in place of the current one. Throws on failure. */
+  const openConversation = useCallback(async (id: string) => {
+    const res = await fetch(`/api/assistant/conversations/${encodeURIComponent(id)}`, { headers: await getAuthHeader() });
+    if (!res.ok) throw new Error(`history ${res.status}`);
+    const data = await res.json();
+    if (abortControllerRef.current) {
+      manualCancelRef.current = true;
+      abortControllerRef.current.abort();
+    }
+    setConversationId(data.id);
+    setMessages(Array.isArray(data.messages) ? data.messages : []);
+    setNotice(null);
+    setAnnouncement('');
+    lastRequestMessagesRef.current = null;
+  }, []);
+
+  /** Deletes a past conversation; if it is the open one, a new one starts. Throws on failure. */
+  const deleteConversation = useCallback(async (id: string) => {
+    const res = await fetch(`/api/assistant/conversations/${encodeURIComponent(id)}`, { method: 'DELETE', headers: await getAuthHeader() });
+    if (!res.ok && res.status !== 404) throw new Error(`history ${res.status}`);
+    if (id === conversationIdRef.current) startNewConversation();
+  }, [startNewConversation]);
+
+  return {
+    messages, isSending, progress, notice, announcement, sendMessage, cancel, retry, startNewConversation, rate, closeRating,
+    conversationId, listConversations, openConversation, deleteConversation,
+  };
 }

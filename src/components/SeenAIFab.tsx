@@ -137,6 +137,10 @@ export default function SeenAIFab({ userName, userRole, tenantId, can }: SeenAIF
             remainingToday={status.remaining}
             onRate={chat.rate}
             onCloseRating={chat.closeRating}
+            conversationId={chat.conversationId}
+            onListConversations={chat.listConversations}
+            onOpenConversation={chat.openConversation}
+            onDeleteConversation={chat.deleteConversation}
           />
         )}
       </AnimatePresence>
