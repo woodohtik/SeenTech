@@ -1,0 +1,92 @@
+{
+ "login-cold 4g": {
+  "marks": {
+   "root_rendered": 1713,
+   "fcp": 2936,
+   "lcp": 4552,
+   "skeleton_seen": 3687,
+   "login_form": 4035
+  },
+  "tbtMs": 3668,
+  "supabaseRequests": 1,
+  "jsKB": 348,
+  "pageBytesKB": 478,
+  "swBytesKB": 1010
+ },
+ "app-open-cold 4g": {
+  "marks": {
+   "root_rendered": 2461,
+   "fcp": 3045,
+   "lcp": 5904,
+   "skeleton_seen": 3907,
+   "app_shell": 4885,
+   "app_shell_no_skeleton": 10875
+  },
+  "tbtMs": 5791,
+  "supabaseRequests": 24,
+  "jsKB": 449,
+  "pageBytesKB": 593,
+  "swBytesKB": 1512
+ },
+ "app-open-warm 4g": {
+  "marks": {
+   "root_rendered": 889,
+   "skeleton_seen": 969,
+   "fcp": 1224,
+   "app_shell": 1832,
+   "lcp": 2052,
+   "app_shell_no_skeleton": 4027
+  },
+  "tbtMs": 3941,
+  "supabaseRequests": 19,
+  "jsKB": 0,
+  "pageBytesKB": 95,
+  "swBytesKB": 0
+ },
+ "app-open-cold wifi": {
+  "marks": {
+   "root_rendered": 396,
+   "fcp": 492,
+   "lcp": 1200,
+   "skeleton_seen": 628,
+   "app_shell": 1160,
+   "app_shell_no_skeleton": 1800
+  },
+  "tbtMs": 45,
+  "supabaseRequests": 24,
+  "jsKB": 641,
+  "pageBytesKB": 785,
+  "swBytesKB": 1412
+ },
+ "app-open-cold 4g DATA=big": {
+  "marks": {
+   "root_rendered": 1979,
+   "fcp": 3155,
+   "lcp": 5496,
+   "skeleton_seen": 3851,
+   "app_shell": 5300,
+   "app_shell_no_skeleton": 11576
+  },
+  "tbtMs": 5613,
+  "supabaseRequests": 24,
+  "jsKB": 410,
+  "pageBytesKB": 3438,
+  "swBytesKB": 1513
+ },
+ "app-open-warm wifi REFOCUS=1": {
+  "marks": {
+   "root_rendered": 119,
+   "skeleton_seen": 119,
+   "fcp": 144,
+   "app_shell": 317,
+   "lcp": 352,
+   "app_shell_no_skeleton": 690
+  },
+  "tbtMs": 26,
+  "supabaseRequests": 20,
+  "jsKB": 0,
+  "pageBytesKB": 95,
+  "swBytesKB": 101,
+  "refocusSupabase": 1
+ }
+}
