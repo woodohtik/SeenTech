@@ -36,9 +36,8 @@
 
 -- When the order became ready/delivered, from the history kept inside notes
 -- (src/utils/orderHistoryHelper.ts decodeOrderRow). Never raises: anything
--- unreadable is simply "no completion time". In public on purpose: signed-in
--- users must not get USAGE on app_private (it holds apply_stock_movement_core);
--- this one only parses the text it is given.
+-- unreadable is simply "no completion time". It only parses the text it is
+-- given, so it lives in public with the other dashboard helper.
 CREATE OR REPLACE FUNCTION public.dashboard_order_completed_at(p_notes text)
 RETURNS timestamptz
 LANGUAGE plpgsql
