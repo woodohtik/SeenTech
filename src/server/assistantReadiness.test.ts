@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { candidateProviderKeys, hasReadyProvider } from './assistantReadiness';
+import { candidateProviderKeys, hasReadyProvider, isShopTenantId } from './assistantReadiness';
 
 const settings = { active_provider: 'openai', fallback_order: ['groq', 'openai', 'gemini'] };
 
@@ -25,5 +25,14 @@ describe('hasReadyProvider', () => {
   it('counts a fallback provider, but not one outside the chosen list', () => {
     expect(hasReadyProvider(settings, [{ provider_key: 'gemini', is_configured: true, api_key_encrypted: 'x' }])).toBe(true);
     expect(hasReadyProvider(settings, [{ provider_key: 'anthropic', is_configured: true, api_key_encrypted: 'x' }])).toBe(false);
+  });
+});
+
+describe('isShopTenantId', () => {
+  it('accepts a shop id and refuses the platform team marker', () => {
+    expect(isShopTenantId('3f2b8c1e-9a4d-4c7e-8b21-5d6f7a8b9c0d')).toBe(true);
+    expect(isShopTenantId('saas_management')).toBe(false);
+    expect(isShopTenantId(undefined)).toBe(false);
+    expect(isShopTenantId(null)).toBe(false);
   });
 });

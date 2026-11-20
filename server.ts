@@ -1726,6 +1726,11 @@ app.get("/api/super-admin/assistant-feedback", authenticate, authorize(['super_a
 // مشترك على حدة من لوحة إدارة المشتركين) -- كلاهما يجب أن يكون مفعّلاً.
 app.get("/api/assistant-settings/status", authenticate, async (req: any, res) => {
   try {
+    // The platform team's accounts have no shop (tenantId "saas_management"),
+    // so no assistant -- answered quietly instead of a 500 from comparing
+    // that marker with the uuid tenant ids below.
+    const { hasReadyProvider, isShopTenantId } = await import("./src/server/assistantReadiness.ts");
+    if (!isShopTenantId(req.user?.tenantId)) return res.json({ isEnabled: false });
     const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
     // seen-ai-assistant-redesign-task.md 2-3: also how many messages are left
     // today. The counter (increment_assistant_usage) keys on the database's
@@ -1749,7 +1754,6 @@ app.get("/api/assistant-settings/status", authenticate, async (req: any, res) =>
     // for the platform and this shop, and a provider the chat route would
     // use has a saved key. Without one every question got the 503
     // "not configured" reply (production, 2026-11-20).
-    const { hasReadyProvider } = await import("./src/server/assistantReadiness.ts");
     const isEnabled = Boolean(data?.is_enabled) && tenant?.assistant_enabled !== false && hasReadyProvider(data || {}, creds);
     // No limit configured (0) means unlimited: the counts are left out.
     const dailyLimit = Number(data?.daily_message_limit) || 0;

@@ -19,3 +19,15 @@ export function hasReadyProvider(
   const keys = new Set(candidateProviderKeys(settings));
   return (credRows || []).some((c) => keys.has(c.provider_key) && Boolean(c.is_configured) && Boolean(c.api_key_encrypted));
 }
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Whether the signed-in person belongs to a shop the assistant can serve.
+ * Shops have UUID ids; the platform team's accounts carry the marker
+ * "saas_management" instead, which has no shop data and would fail every
+ * uuid comparison (22P02) -- so they simply get no assistant.
+ */
+export function isShopTenantId(tenantId: unknown): tenantId is string {
+  return typeof tenantId === 'string' && UUID.test(tenantId);
+}
