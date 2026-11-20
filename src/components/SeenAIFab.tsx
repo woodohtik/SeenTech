@@ -5,8 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { startTargetedTour } from './OnboardingTour';
 import { AssistantMark } from './assistant/parts';
 import { AssistantPanel, PANEL_WIDTH, PANEL_WIDTH_EXPANDED, useMediaQuery } from './assistant/AssistantPanel';
-import { isAssistantAdminRole, type AssistantAccess } from './assistant/catalog';
-import { useAssistantChat, useAssistantEnabled } from './assistant/useAssistantChat';
+import { isAssistantAdminRole, pageKeyForPath, type AssistantAccess } from './assistant/catalog';
+import { useAssistantChat, useAssistantStatus } from './assistant/useAssistantChat';
 
 interface SeenAIFabProps {
   userName?: string;
@@ -35,7 +35,7 @@ function readExpanded(): boolean {
 export default function SeenAIFab({ userName, userRole, tenantId, can }: SeenAIFabProps) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
-  const isEnabled = useAssistantEnabled(tenantId);
+  const status = useAssistantStatus(tenantId);
   const [isOpen, setIsOpen] = useState(false);
   const [expanded, setExpanded] = useState(readExpanded);
   const [input, setInput] = useState('');
@@ -53,7 +53,7 @@ export default function SeenAIFab({ userName, userRole, tenantId, can }: SeenAIF
     window.setTimeout(() => startTargetedTour(topic), 300);
   }, []);
 
-  const chat = useAssistantChat({ tenantId, userName, userRole, onTourRequested: launchGuidedTour });
+  const chat = useAssistantChat({ tenantId, userName, userRole, page: pageKeyForPath(pathname), onTourRequested: launchGuidedTour });
 
   const access = useMemo<AssistantAccess>(() => ({
     isAdmin: isAssistantAdminRole(userRole),
@@ -79,11 +79,21 @@ export default function SeenAIFab({ userName, userRole, tenantId, can }: SeenAIF
     return () => { root.style.removeProperty(DOCK_VAR); };
   }, [isOpen, isDocked, expanded]);
 
+  // The counts change with every message: re-read them when the panel opens
+  // and when a reply (or a refusal) finishes.
+  const { refresh } = status;
+  const wasSending = useRef(false);
+  useEffect(() => {
+    if (wasSending.current && !chat.isSending) refresh();
+    wasSending.current = chat.isSending;
+  }, [chat.isSending, refresh]);
+  useEffect(() => { if (isOpen) refresh(); }, [isOpen, refresh]);
+
   const send = useCallback((text?: string) => {
     if (chat.sendMessage(text ?? input) && text === undefined) setInput('');
   }, [chat, input]);
 
-  if (!isEnabled) return null;
+  if (!status.isEnabled) return null;
 
   return (
     <>
@@ -124,6 +134,7 @@ export default function SeenAIFab({ userName, userRole, tenantId, can }: SeenAIF
             onRetry={chat.retry}
             onNewConversation={chat.startNewConversation}
             onStartTour={launchGuidedTour}
+            remainingToday={status.remaining}
           />
         )}
       </AnimatePresence>

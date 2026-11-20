@@ -192,7 +192,8 @@
       "range": "{{from}} – {{to}}",
       "now": "just now",
       "until": "as of {{time}}"
-    }
+    },
+    "remaining_today": "Messages left today: {{count}}"
   },
   "billing": {
     "billing_status_title": "Billing & Renewal Status",

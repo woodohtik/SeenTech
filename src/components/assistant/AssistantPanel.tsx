@@ -10,6 +10,7 @@ import { MessageList } from './MessageList';
 import { markdownToPlainText } from './markdown';
 import { pageKeyForPath, suggestionsFor, type AssistantAccess } from './catalog';
 import type { ChatMessage, ChatNotice, ChatProgress } from './types';
+import { REMAINING_WARNING_AT } from './useAssistantChat';
 
 export const PANEL_WIDTH = 440;
 export const PANEL_WIDTH_EXPANDED = 640;
@@ -91,6 +92,8 @@ export interface AssistantPanelProps {
   onRetry: () => void;
   onNewConversation: () => void;
   onStartTour: (topic: string) => void;
+  /** Messages left today, or null when there is no limit. */
+  remainingToday?: number | null;
 }
 
 /**
@@ -102,7 +105,7 @@ export interface AssistantPanelProps {
 export function AssistantPanel(props: AssistantPanelProps) {
   const {
     onClose, expanded, onToggleExpanded, userName, pathname, access, messages, isSending, progress, notice,
-    announcement, input, onInputChange, onSend, onStop, onRetry, onNewConversation, onStartTour,
+    announcement, input, onInputChange, onSend, onStop, onRetry, onNewConversation, onStartTour, remainingToday,
   } = props;
   const { t } = useTranslation();
   const { dir, isRtl } = useDirection();
@@ -148,7 +151,13 @@ export function AssistantPanel(props: AssistantPanelProps) {
   // The panel sits on the side away from the sidebar: inline-end, which is the left in RTL.
   const offscreen = isPanel ? { x: isRtl ? '-100%' : '100%' } : { y: '100%' };
   const width = expanded && canExpand ? PANEL_WIDTH_EXPANDED : PANEL_WIDTH;
-  const limitMessage = notice?.kind === 'limit' ? (notice.message || t('ai.limit_strip')) : null;
+  // Out of messages: from a refusal just now, or from the counts read on opening.
+  const limitMessage = notice?.kind === 'limit'
+    ? (notice.message || t('ai.limit_strip'))
+    : remainingToday === 0 ? t('ai.limit_strip') : null;
+  const remainingNote = typeof remainingToday === 'number' && remainingToday > 0 && remainingToday <= REMAINING_WARNING_AT
+    ? t('ai.remaining_today', { count: remainingToday })
+    : null;
 
   return (
     <div dir={dir} className={cn("fixed z-50", isPanel ? "inset-y-0 end-0" : "inset-0")}>
@@ -232,6 +241,7 @@ export function AssistantPanel(props: AssistantPanelProps) {
           onStop={onStop}
           isSending={isSending}
           limitMessage={limitMessage}
+          remainingNote={remainingNote}
           inputRef={inputRef}
         />
 

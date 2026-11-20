@@ -1607,16 +1607,28 @@ async function streamAssistantReply(
 app.get("/api/assistant-settings/status", authenticate, async (req: any, res) => {
   try {
     const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
-    const [{ data, error }, { data: tenant, error: tenantErr }] = await Promise.all([
-      supabaseAdmin.from("assistant_settings").select("is_enabled").eq("id", "global").maybeSingle(),
+    // seen-ai-assistant-redesign-task.md 2-3: also how many messages are left
+    // today. The counter (increment_assistant_usage) keys on the database's
+    // current_date, which is UTC on Supabase -- the same date is read here.
+    const usageDate = new Date().toISOString().slice(0, 10);
+    const [{ data, error }, { data: tenant, error: tenantErr }, { data: usage, error: usageErr }] = await Promise.all([
+      supabaseAdmin.from("assistant_settings").select("is_enabled, daily_message_limit").eq("id", "global").maybeSingle(),
       req.user?.tenantId
         ? supabaseAdmin.from("tenants").select("assistant_enabled").eq("id", req.user.tenantId).maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+      req.user?.tenantId
+        ? supabaseAdmin.from("assistant_usage_daily").select("message_count").eq("tenant_id", req.user.tenantId).eq("usage_date", usageDate).maybeSingle()
         : Promise.resolve({ data: null, error: null }),
     ]);
     if (error) return internalError(res, "Error in GET /api/assistant-settings/status:", error);
     if (tenantErr) return internalError(res, "Error in GET /api/assistant-settings/status:", tenantErr);
     const isEnabled = Boolean(data?.is_enabled) && tenant?.assistant_enabled !== false;
-    res.json({ isEnabled });
+    // No limit configured (0) means unlimited: the counts are left out.
+    const dailyLimit = Number(data?.daily_message_limit) || 0;
+    if (usageErr) logger.error({ err: usageErr }, "assistant usage read failed");
+    if (dailyLimit <= 0 || usageErr) return res.json({ isEnabled });
+    const usedToday = Math.max(0, Number(usage?.message_count) || 0);
+    res.json({ isEnabled, dailyLimit, usedToday, remaining: Math.max(0, dailyLimit - usedToday) });
   } catch (err: any) {
     internalError(res, "Error in GET /api/assistant-settings/status:", err);
   }
@@ -1987,7 +1999,7 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
       }
     }
 
-    const { messages, userName } = req.body || {};
+    const { messages, userName, page } = req.body || {};
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: "Missing 'messages'" });
     }
@@ -2000,7 +2012,10 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
     const toolsAddendum = `
 
 لديك أدوات وصول لبيانات حقيقية من نظام المتجر (مبيعات، فواتير، مخزون، عملاء، طلبات). استخدمها دائماً عندما يسأل المستخدم عن أرقام أو بيانات فعلية، بدل التخمين أو الإجابة من معرفة عامة. لخّص نتائج الأدوات بلغة عربية واضحة وودية، لا تكتفِ بإرجاع أرقام جافة فقط. أدواتك قراءة فقط تماماً: إذا طلب المستخدم تعديل أو حذف أي بيانات، وجّهه لاستخدام واجهة النظام العادية بدل محاولة تنفيذ ذلك. بعض الأدوات (التقارير المالية التفصيلية) متاحة فقط لأدوار الإدارة — إذا رفضتها الأداة، أخبر المستخدم بذلك بأدب دون محاولة الإلحاح أو الالتفاف على القيد مهما أعاد صياغة الطلب. إن أخطأت أداة أثناء التنفيذ (لا رفض صلاحية، بل خطأ فعلي)، قل للمستخدم صراحة أن البيانات تعذّر جلبها الآن وأن يحاول مرة أخرى — لا تُخمّن الرقم أو تُقدّره بنفسك مهما بدا قريباً من المعقول.`;
-    const contextualSystemPrompt = `${ASSISTANT_PERSONA_AND_KNOWLEDGE}\n\n${settings.system_prompt}${toolsAddendum}\n\nيتحدث معك الآن: ${userName || ''} (${roleLabel}).`;
+    // seen-ai-assistant-redesign-task.md 2-2: today's date in Riyadh and the
+    // page the person has open (matched against a fixed list, never copied).
+    const { buildMomentContext } = await import('./src/server/assistantContext.ts');
+    const contextualSystemPrompt = `${ASSISTANT_PERSONA_AND_KNOWLEDGE}\n\n${settings.system_prompt}${toolsAddendum}\n\nيتحدث معك الآن: ${userName || ''} (${roleLabel}).\n${buildMomentContext(page)}`;
 
     // ترتيب المرشّحين: المزوّد النشط أولاً، ثم الترتيب الاحتياطي (بدون
     // تكرار المزوّد النشط)، بعد استبعاد أي مزوّد بلا مفتاح محفوظ فعلياً.

@@ -23,9 +23,25 @@ async function getAuthHeader(): Promise<Record<string, string>> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-/** Whether the assistant is switched on for this shop (/api/assistant-settings/status). */
-export function useAssistantEnabled(tenantId: string | null | undefined): boolean {
-  const [isEnabled, setIsEnabled] = useState(false);
+export interface AssistantStatus {
+  isEnabled: boolean;
+  /** Messages left today; null when there is no daily limit or it is unknown. */
+  remaining: number | null;
+  dailyLimit: number | null;
+}
+
+/** Below this many messages left, the box says how many remain. */
+export const REMAINING_WARNING_AT = 5;
+
+/**
+ * Whether the assistant is switched on for this shop, and how many messages
+ * are left today (/api/assistant-settings/status). `refresh` re-reads it,
+ * after each reply and whenever the panel opens.
+ */
+export function useAssistantStatus(tenantId: string | null | undefined): AssistantStatus & { refresh: () => void } {
+  const [status, setStatus] = useState<AssistantStatus>({ isEnabled: false, remaining: null, dailyLimit: null });
+  const [tick, setTick] = useState(0);
+  const refresh = useCallback(() => setTick((n) => n + 1), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -37,21 +53,29 @@ export function useAssistantEnabled(tenantId: string | null | undefined): boolea
         const res = await fetch('/api/assistant-settings/status', { headers: authHeader });
         if (!res.ok) return;
         const data = await res.json();
-        if (!cancelled) setIsEnabled(Boolean(data.isEnabled));
+        if (cancelled) return;
+        setStatus({
+          isEnabled: Boolean(data.isEnabled),
+          remaining: typeof data.remaining === 'number' ? data.remaining : null,
+          dailyLimit: typeof data.dailyLimit === 'number' ? data.dailyLimit : null,
+        });
       } catch {
-        // fail silently — no assistant button is a safe default
+        // fail silently — no assistant button is a safe default, and a
+        // failed refresh keeps the last known counts
       }
     })();
     return () => { cancelled = true; };
-  }, [tenantId]);
+  }, [tenantId, tick]);
 
-  return isEnabled;
+  return { ...status, refresh };
 }
 
 interface UseAssistantChatOptions {
   tenantId?: string | null;
   userName?: string;
   userRole?: string;
+  /** The page key (catalog.pageKeyForPath) sent so the model knows where the person is. */
+  page?: string;
   /** A reply finished and asked for a guided tour to start (the user agreed in words). */
   onTourRequested: (topic: string) => void;
 }
@@ -64,7 +88,7 @@ interface UseAssistantChatOptions {
  * window, cancel and retry on one AbortController, sessionStorage, and what
  * 403 / 429 / 503 mean.
  */
-export function useAssistantChat({ tenantId, userName, userRole, onTourRequested }: UseAssistantChatOptions) {
+export function useAssistantChat({ tenantId, userName, userRole, page, onTourRequested }: UseAssistantChatOptions) {
   const { t } = useTranslation();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isSending, setIsSending] = useState(false);
@@ -155,6 +179,7 @@ export function useAssistantChat({ tenantId, userName, userRole, onTourRequested
           messages: requestMessages.slice(-MAX_HISTORY_MESSAGES).map(({ role, content, toolResults }) => ({ role, content, toolResults })),
           userName,
           userRole,
+          page,
         }),
         signal: controller.signal,
       });
@@ -260,7 +285,7 @@ export function useAssistantChat({ tenantId, userName, userRole, onTourRequested
       setIsSending(false);
       setProgress(null);
     }
-  }, [userName, userRole, t, onTourRequested]);
+  }, [userName, userRole, page, t, onTourRequested]);
 
   /** Sends a new question. Returns false when there is nothing to send or a reply is still coming. */
   const sendMessage = useCallback((text: string): boolean => {

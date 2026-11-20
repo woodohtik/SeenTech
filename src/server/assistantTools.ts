@@ -1,5 +1,6 @@
 import { supabaseAdmin } from './supabase-admin.ts';
 import { logger } from './logger.ts';
+import { shopToday } from './assistantContext.ts';
 
 // ملاحظة بناء: 'ai' و'zod' كلاهما حزمتان ESM-only فقط (package.json: "type":
 // "module"). هذا الملف يُحزَّم ضمن server.ts بصيغة CJS عبر esbuild
@@ -137,8 +138,10 @@ function clampDateRange(startDate: string, endDate: string): { start: string; en
   return { start: startDate, end: endDate };
 }
 
+// The shop's day, not UTC's: between midnight and 3am in Riyadh the UTC
+// date is still yesterday, and "today's sales" would show the wrong day.
 function todayStr(): string {
-  return new Date().toISOString().slice(0, 10);
+  return shopToday();
 }
 
 export async function buildAssistantTools(ctx: AssistantToolContext) {

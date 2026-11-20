@@ -14,6 +14,8 @@ export interface ComposerProps {
   isSending: boolean;
   /** Set when today's message limit is reached: shown above the box, and typing stops. */
   limitMessage?: string | null;
+  /** "Messages left today: 3", shown when few remain. */
+  remainingNote?: string | null;
   inputRef: React.RefObject<HTMLTextAreaElement | null>;
 }
 
@@ -21,7 +23,7 @@ export interface ComposerProps {
  * The question box. Typing stays possible while a reply is coming (only
  * sending waits), so the field never loses focus between questions.
  */
-export function Composer({ value, onChange, onSend, onStop, isSending, limitMessage, inputRef }: ComposerProps) {
+export function Composer({ value, onChange, onSend, onStop, isSending, limitMessage, remainingNote, inputRef }: ComposerProps) {
   const { t } = useTranslation();
   const inputId = useId();
   const isLimited = Boolean(limitMessage);
@@ -108,7 +110,12 @@ export function Composer({ value, onChange, onSend, onStop, isSending, limitMess
         )}
       </div>
 
-      <p className="m-0 text-center text-sm leading-normal text-content-muted">{t('ai.disclaimer')}</p>
+      <p className="m-0 text-center text-sm leading-normal text-content-muted">
+        {!isLimited && remainingNote && (
+          <><span role="status" className="font-semibold text-warning">{remainingNote}</span>{' · '}</>
+        )}
+        {t('ai.disclaimer')}
+      </p>
     </footer>
   );
 }

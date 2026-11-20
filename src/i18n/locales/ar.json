@@ -192,7 +192,8 @@
       "range": "{{from}} – {{to}}",
       "now": "الآن",
       "until": "حتى {{time}}"
-    }
+    },
+    "remaining_today": "الرسائل المتبقية اليوم: {{count}}"
   },
   "billing": {
     "billing_status_title": "حالة الفوترة والتجديد",

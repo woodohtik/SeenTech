@@ -192,7 +192,8 @@
       "range": "{{from}} – {{to}}",
       "now": "ابھی",
       "until": "{{time}} تک"
-    }
+    },
+    "remaining_today": "آج باقی پیغامات: {{count}}"
   },
   "billing": {
     "billing_status_title": "بلنگ اور تجدید کی حالت",
