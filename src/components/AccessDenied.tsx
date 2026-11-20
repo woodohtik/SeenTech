@@ -1,7 +1,6 @@
 import React from 'react';
 import { ShieldAlert, ArrowRight, Home, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { useDirection } from '../lib/direction';
 
@@ -31,25 +30,20 @@ export default function AccessDenied({ userRole, requiredRoles, redirectPath }: 
 
   return (
     <div className="min-h-[75vh] flex flex-col items-center justify-center p-6 text-center select-none" dir={dir}>
-      <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 200, damping: 15 }}
-        className="relative mb-6"
-      >
+      {/* CSS enter animations: this screen can show before the motion library
+          has loaded (seen-performance-first-open-login-task.md Phase 2.4). */}
+      <div className="seen-enter-pop relative mb-6">
         <div className="w-28 h-28 md:w-32 md:h-32 bg-danger/10 text-danger rounded-3xl flex items-center justify-center shadow-xl shadow-danger/10 border border-danger/20">
           <ShieldAlert size={56} className="animate-pulse" />
         </div>
         <div className="absolute -bottom-2 -right-2 bg-surface p-2 rounded-2xl shadow-md border border-border text-danger">
           <Lock size={20} />
         </div>
-      </motion.div>
+      </div>
 
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.1 }}
-        className="max-w-md mx-auto space-y-3"
+      <div
+        className="seen-enter-rise max-w-md mx-auto space-y-3"
+        style={{ ['--seen-rise' as string]: '20px', animationDelay: '0.1s' }}
       >
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-danger/10 text-danger text-xs font-black tracking-wide border border-danger/20">
           <span>{t('permissions.error_403_forbidden')}</span>
@@ -86,7 +80,7 @@ export default function AccessDenied({ userRole, requiredRoles, redirectPath }: 
             <span>{t('common.previous_page')}</span>
           </button>
         </div>
-      </motion.div>
+      </div>
 
       {/* Backend Security Assurance Notice */}
       <div className="mt-12 text-[11px] text-content-muted/60 max-w-sm border-t border-border/50 pt-4">

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle, LogOut, AlertCircle, RefreshCw } from 'lucide-react';
 import {
   BrowserRouter as Router,
@@ -180,10 +179,8 @@ function AccountIssueScreen({ variant, email, detail, onRetry, onLogout }: {
   }[variant];
   return (
     <div className={`min-h-screen flex items-center justify-center bg-surface-muted ${isRtl ? 'text-right' : 'text-left'} p-6 font-sans`} dir={dir}>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="max-w-md w-full bg-surface rounded-3xl shadow-2xl p-10 border border-warning/20 text-center relative overflow-hidden"
+      <div
+        className="seen-enter-zoom max-w-md w-full bg-surface rounded-3xl shadow-2xl p-10 border border-warning/20 text-center relative overflow-hidden"
       >
         <div className="absolute top-0 right-0 w-32 h-32 bg-warning/10 rounded-full blur-3xl opacity-50 -mr-16 -mt-16" />
         <div className="w-20 h-20 bg-warning/10 text-warning rounded-3xl flex items-center justify-center mx-auto mb-6 border border-warning/20">
@@ -211,7 +208,7 @@ function AccountIssueScreen({ variant, email, detail, onRetry, onLogout }: {
             {t('common.logout_from_account')}
           </button>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }
@@ -532,10 +529,8 @@ function AppContent() {
   if (conflictUser && !isPublicRoute) {
     return (
       <div className={`min-h-screen flex items-center justify-center bg-slate-900/65 backdrop-blur-md ${isRtl ? 'text-right' : 'text-left'} p-6 font-sans select-none`} dir={dir}>
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md w-full bg-surface rounded-3xl shadow-2xl p-8 md:p-10 border border-border relative overflow-hidden"
+        <div
+          className="seen-enter-zoom max-w-md w-full bg-surface rounded-3xl shadow-2xl p-8 md:p-10 border border-border relative overflow-hidden"
         >
           {/* Decorative accents */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-warning/5 rounded-full blur-3xl -mr-16 -mt-16" />
@@ -564,7 +559,7 @@ function AppContent() {
               {t('login.multi_device_reject')}
             </button>
           </div>
-        </motion.div>
+        </div>
       </div>
     );
   }
@@ -581,10 +576,8 @@ function AppContent() {
   if ((isTrialExpired || isSubscriptionExpired) && user && !isSaaSStaff && !isPublicRoute) {
     return (
       <div className={`min-h-screen flex items-center justify-center bg-gray-950 ${isRtl ? 'text-right' : 'text-left'} p-6 font-sans select-none`} dir={dir}>
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="max-w-xl w-full bg-slate-900 rounded-3xl shadow-2xl p-10 md:p-14 border border-red-500/15 relative overflow-hidden"
+        <div
+          className="seen-enter-zoom max-w-xl w-full bg-slate-900 rounded-3xl shadow-2xl p-10 md:p-14 border border-red-500/15 relative overflow-hidden"
         >
           {/* Visual Accents */}
           <div className="absolute top-0 right-0 w-44 h-44 bg-red-500/5 rounded-full blur-3xl -mr-20 -mt-20" />
@@ -636,7 +629,7 @@ function AppContent() {
               {t('common.logout_from_account')}
             </button>
           </div>
-        </motion.div>
+        </div>
       </div>
     );
   }
@@ -667,7 +660,8 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-surface-muted font-sans" dir={i18n.language === 'en' ? 'ltr' : 'rtl'}>
-      <AnimatePresence mode="wait">
+      {/* An AnimatePresence used to wrap <Routes>; with no keyed motion child it
+          animated nothing, and it kept the motion library on the startup path. */}
         <Routes>
           {/* Public order tracking (no auth) */}
           {/* Public Digital Invoice Route */}
@@ -961,7 +955,7 @@ function AppContent() {
                             </Routes>
                           </React.Suspense>
                         </Layout>
-                        <AnimatePresence>
+                        {/* LockScreen has no exit animation on its root, so no AnimatePresence here. */}
                           {isLocked && (
                             <React.Suspense fallback={null}>
                               <LockScreen 
@@ -975,7 +969,6 @@ function AppContent() {
                             />
                             </React.Suspense>
                           )}
-                        </AnimatePresence>
                       </>
                     ) : (
                       <Navigate to="/dashboard" />
@@ -1082,7 +1075,7 @@ function AppContent() {
                         </Routes>
                       </React.Suspense>
                     </Layout>
-                    <AnimatePresence>
+                    {/* LockScreen has no exit animation on its root, so no AnimatePresence here. */}
                       {isLocked && (
                         <React.Suspense fallback={null}>
                           <LockScreen 
@@ -1096,14 +1089,12 @@ function AppContent() {
                         />
                         </React.Suspense>
                       )}
-                    </AnimatePresence>
                   </>
                 )
               ) : <Navigate to="/login" />
             } 
           />
         </Routes>
-      </AnimatePresence>
     </div>
   );
 }

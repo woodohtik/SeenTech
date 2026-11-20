@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { formatSaudiPhone, validateSaudiPhone } from '../utils/phoneUtils';
 import { supabase } from '../lib/supabase/client';
 import {
@@ -16,11 +16,11 @@ import {
   Globe,
   Home,
   Terminal,
-  Shield,
-  Shirt,
-  Sofa
+  Shield
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+// The brand panel's animated decoration (and with it the motion library)
+// loads after the form has drawn (seen-performance-first-open-login-task.md Phase 2.4).
+const LoginHeroDecor = lazy(() => import('./LoginHeroDecor'));
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -49,7 +49,6 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
-  const [hoveredVertical, setHoveredVertical] = useState<null | 'clothing' | 'tailoring' | 'upholstery'>(null);
 
   // Form States
   const [loginId, setLoginId] = useState(''); // Email or Phone
@@ -618,13 +617,9 @@ export default function Login() {
             <span className="text-sm font-bold text-content">{currentLanguage.name}</span>
           </button>
 
-          <AnimatePresence>
-            {isLangMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className="absolute top-full mt-2 right-0 bg-surface rounded-xl shadow-xl border border-border overflow-hidden min-w-[140px]"
+          {isLangMenuOpen && (
+              <div
+                className="seen-enter-rise absolute top-full mt-2 right-0 bg-surface rounded-xl shadow-xl border border-border overflow-hidden min-w-[140px]"
               >
                 {languages.map((lang) => (
                   <button
@@ -639,9 +634,8 @@ export default function Login() {
                     {i18n.language === lang.code && <div className="w-1.5 h-1.5 rounded-full bg-brand" />}
                   </button>
                 ))}
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
         </div>
       </div>
 
@@ -661,91 +655,9 @@ export default function Login() {
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full translate-x-1/2 translate-y-1/2 blur-3xl" />
         </div>
 
-        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          <motion.path
-            d="M 15 15 L 84 21 Q 95 95 21 84 L 15 15"
-            fill="none"
-            stroke="white"
-            strokeOpacity={0.35}
-            strokeWidth={0.4}
-            strokeDasharray="2 2"
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1, strokeDashoffset: [0, -8] }}
-            transition={{
-              pathLength: { duration: 1.5, ease: 'easeOut' },
-              strokeDashoffset: { duration: 3, repeat: Infinity, ease: 'linear', delay: 1.5 },
-            }}
-          />
-        </svg>
-
-        <div className="absolute top-[10%] left-[10%] flex flex-col items-center gap-2">
-          <motion.div
-            animate={{ y: [0, -14, 0] }}
-            whileHover={{ scale: 1.15, rotate: -6, transition: { duration: 0.2 } }}
-            onHoverStart={() => setHoveredVertical('clothing')}
-            onHoverEnd={() => setHoveredVertical(null)}
-            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-            className={cn(
-              "w-24 h-24 bg-white/15 backdrop-blur-xl rounded-3xl border border-white/30 flex items-center justify-center shadow-2xl cursor-pointer transition-shadow duration-300",
-              hoveredVertical === 'clothing' && "shadow-[0_0_30px_rgba(255,255,255,0.4)]"
-            )}
-          >
-            <Shirt size={40} strokeWidth={1.75} className="text-white" />
-          </motion.div>
-          <motion.span
-            animate={{ opacity: hoveredVertical === 'clothing' ? 1 : 0, y: hoveredVertical === 'clothing' ? 0 : 4 }}
-            transition={{ duration: 0.2 }}
-            className="text-white text-xs font-bold bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full whitespace-nowrap pointer-events-none"
-          >
-            {t('login.vertical_clothing')}
-          </motion.span>
-        </div>
-
-        <div className="absolute top-[15%] right-[10%] flex flex-col items-center gap-2">
-          <motion.div
-            animate={{ y: [0, 14, 0] }}
-            whileHover={{ scale: 1.15, rotate: 6, transition: { duration: 0.2 } }}
-            onHoverStart={() => setHoveredVertical('tailoring')}
-            onHoverEnd={() => setHoveredVertical(null)}
-            transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
-            className={cn(
-              "w-28 h-28 bg-white/15 backdrop-blur-xl rounded-3xl border border-white/30 flex items-center justify-center shadow-2xl cursor-pointer transition-shadow duration-300",
-              hoveredVertical === 'tailoring' && "shadow-[0_0_30px_rgba(255,255,255,0.4)]"
-            )}
-          >
-            <Scissors size={48} strokeWidth={1.75} className="text-white" />
-          </motion.div>
-          <motion.span
-            animate={{ opacity: hoveredVertical === 'tailoring' ? 1 : 0, y: hoveredVertical === 'tailoring' ? 0 : 4 }}
-            transition={{ duration: 0.2 }}
-            className="text-white text-xs font-bold bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full whitespace-nowrap pointer-events-none"
-          >
-            {t('login.vertical_tailoring')}
-          </motion.span>
-        </div>
-
-        <div className="absolute bottom-[10%] left-[15%] flex flex-col items-center gap-2">
-          <motion.div
-            animate={{ y: [0, -12, 0] }}
-            whileHover={{ scale: 1.15, rotate: -6, transition: { duration: 0.2 } }}
-            onHoverStart={() => setHoveredVertical('upholstery')}
-            onHoverEnd={() => setHoveredVertical(null)}
-            transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-            className={cn(
-              "w-28 h-28 bg-white/15 backdrop-blur-xl rounded-3xl border border-white/30 flex items-center justify-center shadow-2xl cursor-pointer transition-shadow duration-300",
-              hoveredVertical === 'upholstery' && "shadow-[0_0_30px_rgba(255,255,255,0.4)]"
-            )}
-          >
-            <Sofa size={48} strokeWidth={1.75} className="text-white" />
-          </motion.div>
-          <motion.span
-            animate={{ opacity: hoveredVertical === 'upholstery' ? 1 : 0, y: hoveredVertical === 'upholstery' ? 0 : 4 }}
-            transition={{ duration: 0.2 }}
-            className="text-white text-xs font-bold bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full whitespace-nowrap pointer-events-none"
-          >
-            {t('login.vertical_upholstery')}
-          </motion.span>
-        </div>
+        <Suspense fallback={null}>
+          <LoginHeroDecor />
+        </Suspense>
 
         <div className="relative z-10 text-white max-w-lg text-center">
           <h1 className="text-4xl font-black mb-4 leading-tight">{t('login.title')}</h1>
@@ -757,10 +669,8 @@ export default function Login() {
 
       {/* Right Side - Forms */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 md:p-12">
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="w-full max-w-md space-y-8"
+        <div
+          className="seen-enter-slide w-full max-w-md space-y-8"
         >
           <div className="text-center lg:text-right">
             <div className="lg:hidden inline-block p-4 bg-brand/10 rounded-2xl text-brand mb-6">
@@ -781,38 +691,34 @@ export default function Login() {
           </div>
 
           {searchParams.get('conflict') === 'true' && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-warning/10 border border-warning/20 text-warning p-4 rounded-2xl flex items-start gap-3 text-sm font-bold"
+            <div
+              style={{ ['--seen-rise' as string]: '-10px' }}
+              className="seen-enter-rise bg-warning/10 border border-warning/20 text-warning p-4 rounded-2xl flex items-start gap-3 text-sm font-bold"
             >
               <AlertCircle size={18} className="shrink-0 mt-0.5" />
               <span>{t('login.session_conflict_logout')}</span>
-            </motion.div>
+            </div>
           )}
 
           {error && (
-            <motion.div
+            <div
               role="alert"
               aria-live="polite"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-danger/10 border border-danger/20 text-danger p-4 rounded-2xl flex items-center gap-3 text-sm font-bold"
+              style={{ ['--seen-rise' as string]: '-10px' }}
+              className="seen-enter-rise bg-danger/10 border border-danger/20 text-danger p-4 rounded-2xl flex items-center gap-3 text-sm font-bold"
             >
               <AlertCircle size={18} />
               <span>{error}</span>
-            </motion.div>
+            </div>
           )}
 
-          <AnimatePresence mode="wait">
+          {/* One form at a time; each enters with a CSS animation (it used to fade
+              out first through motion's AnimatePresence -- Phase 2.4). */}
             {view === 'login' && (
-              <motion.form
+              <form
                 key="login"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
                 onSubmit={handleEmailLogin}
-                className="space-y-5"
+                className="seen-enter-rise space-y-5"
               >
                 <IconInput
                   required
@@ -891,17 +797,14 @@ export default function Login() {
                 <div className="pt-4 flex flex-col items-center gap-3">
                   <Branding className="opacity-50 mt-1" />
                 </div>
-              </motion.form>
+              </form>
             )}
 
             {view === 'register' && (
-              <motion.form
+              <form
                 key="register"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
                 onSubmit={handleRegister}
-                className="space-y-4"
+                className="seen-enter-rise space-y-4"
               >
                 <IconInput
                   required
@@ -1019,15 +922,12 @@ export default function Login() {
                     {t('login.login_button')}
                   </button>
                 </p>
-              </motion.form>
+              </form>
             )}
 
             {view === 'forgot-password' && (
-              <motion.form
+              <form
                 key="forgot"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
                 onSubmit={async (e) => {
                   e.preventDefault();
                   setLoading(true);
@@ -1043,7 +943,7 @@ export default function Login() {
                     setLoading(false);
                   }
                 }}
-                className="space-y-6"
+                className="seen-enter-rise space-y-6"
               >
                 <IconInput
                   required
@@ -1068,15 +968,13 @@ export default function Login() {
                 >
                   {t('login.cancel_and_back')}
                 </Button>
-              </motion.form>
+              </form>
             )}
 
             {view === 'reset-sent' && (
-              <motion.div
+              <div
                 key="reset-sent"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center space-y-6 py-4"
+                className="seen-enter-zoom text-center space-y-6 py-4"
               >
                 <div className="inline-flex items-center justify-center w-20 h-20 bg-success/10 text-success rounded-full">
                   <CheckCircle size={40} />
@@ -1084,10 +982,9 @@ export default function Login() {
                 <Button type="button" onClick={() => setView('login')} className="w-full h-14 text-lg">
                   {t('login.login_button')}
                 </Button>
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

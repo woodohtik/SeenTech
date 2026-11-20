@@ -1,20 +1,10 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
-import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react';
-import { cn } from '../lib/utils';
+import React, { createContext, useContext, useState, useCallback, useEffect, lazy, Suspense, ReactNode } from 'react';
+import { ToastStaticStack, type Toast, type ToastType } from './ToastStack';
+import { whenIdle } from '../lib/whenIdle';
 import { getFriendlyErrorMessage } from '../lib/appErrors';
 import { logError } from '../lib/logger';
 import { useTranslation } from 'react-i18next';
 import { useDirection } from '../lib/direction';
-
-type ToastType = 'success' | 'error' | 'info' | 'warning';
-
-interface Toast {
-  id: string;
-  type: ToastType;
-  message: string;
-  description?: string;
-}
 
 interface ToastContextType {
   showToast: (type: ToastType, message: string, description?: string) => void;
@@ -27,10 +17,20 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
+// The animated stack (motion library) loads off the startup path: fetched
+// when the browser is idle, mounted from the first toast on (kept mounted so
+// exit animations play). Until it is there -- or if it cannot load -- the
+// same cards show without animation (ToastStack.tsx).
+const loadToastMotionStack = () => import('./ToastMotionStack');
+const ToastMotionStack = lazy(() => loadToastMotionStack().catch(() => ({ default: ToastStaticStack })));
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const { dir } = useDirection();
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [stackMounted, setStackMounted] = useState(false);
+
+  useEffect(() => whenIdle(() => { loadToastMotionStack().catch(() => {}); }), []);
 
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
@@ -39,6 +39,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const showToast = useCallback((type: ToastType, message: string, description?: string) => {
     const id = Math.random().toString(36).substring(2, 9);
     setToasts((prev) => [...prev, { id, type, message, description }]);
+    setStackMounted(true);
     
     // Auto remove after 5 seconds
     setTimeout(() => removeToast(id), 5000);
@@ -76,63 +77,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ showToast, success, error, info, warning, handleError }}>
       {children}
-      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none" dir={dir}>
-        <AnimatePresence>
-          {toasts.map((toast) => (
-            <ToastItem 
-              key={toast.id} 
-              toast={toast} 
-              onClose={() => removeToast(toast.id)} 
-            />
-          ))}
-        </AnimatePresence>
-      </div>
-    </ToastContext.Provider>
-  );
-}
-
-function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void; key?: React.Key }) {
-  const icons = {
-    success: <CheckCircle2 className="text-success" size={20} />,
-    error: <AlertCircle className="text-danger" size={20} />,
-    info: <Info className="text-info" size={20} />,
-    warning: <AlertTriangle className="text-warning" size={20} />,
-  };
-
-  const bgColors = {
-    success: 'bg-success/10 border-success/20',
-    error: 'bg-danger/10 border-danger/20',
-    info: 'bg-info/10 border-info/20',
-    warning: 'bg-warning/10 border-warning/20',
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 50, scale: 0.9 }}
-      animate={{ opacity: 1, x: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-      layout
-      className={cn(
-        "pointer-events-auto flex gap-4 min-w-[320px] max-w-[420px] p-4 rounded-2xl border shadow-xl bg-surface",
-        bgColors[toast.type]
+      {stackMounted && (
+        <Suspense fallback={<ToastStaticStack toasts={toasts} onClose={removeToast} dir={dir} />}>
+          <ToastMotionStack toasts={toasts} onClose={removeToast} dir={dir} />
+        </Suspense>
       )}
-    >
-      <div className="mt-0.5">{icons[toast.type]}</div>
-      <div className="flex-1">
-        <h4 className="text-sm font-black text-content">{toast.message}</h4>
-        {toast.description && (
-          <p className="mt-1 text-xs font-bold text-content-muted leading-relaxed">
-            {toast.description}
-          </p>
-        )}
-      </div>
-      <button 
-        onClick={onClose}
-        className="h-fit p-1 text-content-muted hover:text-content transition-colors rounded-lg hover:bg-black/5"
-      >
-        <X size={16} />
-      </button>
-    </motion.div>
+    </ToastContext.Provider>
   );
 }
 

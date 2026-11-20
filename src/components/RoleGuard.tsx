@@ -2,7 +2,6 @@ import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { SaasUserRole } from '../types/supabase';
 import { ShieldAlert } from 'lucide-react';
-import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 
 interface RoleGuardProps {
@@ -31,13 +30,10 @@ export default function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
   if (!userRole || !hasAllowedRole) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-6">
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          className="w-32 h-32 bg-danger/10 text-danger rounded-full flex items-center justify-center mb-8"
-        >
+        {/* CSS pop: no motion library on the startup path (Phase 2.4). */}
+        <div className="seen-enter-grow w-32 h-32 bg-danger/10 text-danger rounded-full flex items-center justify-center mb-8">
           <ShieldAlert size={64} />
-        </motion.div>
+        </div>
         <h2 className="text-4xl font-black text-content mb-4">{t('permissions.role_guard_title')}</h2>
         <p className="text-xl text-content-muted max-w-md mx-auto leading-relaxed">
           {t('permissions.role_guard_desc')}

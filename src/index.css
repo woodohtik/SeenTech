@@ -825,3 +825,30 @@ html[lang="ur"] body, html[data-lang="ur"] body {
 html[lang="en"], html[data-lang="en"] {
   --font-sans: "Inter", "Tajawal", ui-sans-serif, system-ui, sans-serif;
 }
+
+/* Enter animations for the screens that draw before the app has loaded
+   (login, access denied, account / device / subscription notices). They
+   used the motion library, which then had to download (~41KB gzip) before
+   the first screen could draw (seen-performance-first-open-login-task.md
+   Phase 2.4). Same movements, in CSS: fade + slight zoom, fade + rise, pop. */
+@keyframes seen-enter-zoom { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: none; } }
+@keyframes seen-enter-pop  { from { opacity: 0; transform: scale(0.8); }  to { opacity: 1; transform: none; } }
+@keyframes seen-enter-grow { from { transform: scale(0); }                 to { transform: none; } }
+@keyframes seen-enter-rise { from { opacity: 0; transform: translateY(var(--seen-rise, 10px)); } to { opacity: 1; transform: none; } }
+.seen-enter-zoom { animation: seen-enter-zoom 0.3s ease-out both; }
+.seen-enter-pop  { animation: seen-enter-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.seen-enter-grow { animation: seen-enter-grow 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.seen-enter-rise { animation: seen-enter-rise 0.3s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .seen-enter-zoom, .seen-enter-pop, .seen-enter-grow, .seen-enter-rise { animation: none; }
+}
+@keyframes seen-enter-fade   { from { opacity: 0; } to { opacity: 1; } }
+@keyframes seen-enter-dialog { from { opacity: 0; transform: translateY(10px) scale(0.95); } to { opacity: 1; transform: none; } }
+.seen-enter-fade   { animation: seen-enter-fade 0.2s ease-out both; }
+.seen-enter-dialog { animation: seen-enter-dialog 0.25s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .seen-enter-fade, .seen-enter-dialog { animation: none; }
+}
+@keyframes seen-enter-slide { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: none; } }
+.seen-enter-slide { animation: seen-enter-slide 0.3s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .seen-enter-slide { animation: none; } }
