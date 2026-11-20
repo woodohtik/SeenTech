@@ -2131,7 +2131,10 @@
     "cutting_fabric_input_label": "{{fabric}} کی مقدار میٹر میں",
     "cutting_fabric_total": "کل: {{meters}} میٹر ({{yards}} گز)",
     "cutting_fabric_confirm": "کٹوتی کریں اور آرڈر آگے بڑھائیں",
-    "deposit_skipped_on_sync": "آرڈر {{number}} ({{customer}}) آف لائن پیشگی رقم کے ساتھ درج ہوا۔ ہم وقت سازی کے وقت کوئی شفٹ کھلی نہیں تھی، اس لیے یہ پیشگی رقم کے بغیر محفوظ ہوا۔ شفٹ کھولیں، پھر آرڈر اسکرین سے ادائیگی درج کریں۔"
+    "deposit_skipped_on_sync": "آرڈر {{number}} ({{customer}}) آف لائن پیشگی رقم کے ساتھ درج ہوا۔ ہم وقت سازی کے وقت کوئی شفٹ کھلی نہیں تھی، اس لیے یہ پیشگی رقم کے بغیر محفوظ ہوا۔ شفٹ کھولیں، پھر آرڈر اسکرین سے ادائیگی درج کریں۔",
+    "customer_label": "گاہک",
+    "phone_label": "موبائل",
+    "order_date_label": "آرڈر کی تاریخ"
   },
   "permissions": {
     "access_denied_desc": "غیر متعین",

@@ -2133,7 +2133,10 @@
     "cutting_fabric_input_label": "Meters of {{fabric}}",
     "cutting_fabric_total": "Total: {{meters}} m ({{yards}} yd)",
     "cutting_fabric_confirm": "Deduct and move the order",
-    "deposit_skipped_on_sync": "Order {{number}} for {{customer}} was entered offline with a deposit. No shift was open when it synced, so it was saved without the deposit. Open a shift, then record the payment from the order screen."
+    "deposit_skipped_on_sync": "Order {{number}} for {{customer}} was entered offline with a deposit. No shift was open when it synced, so it was saved without the deposit. Open a shift, then record the payment from the order screen.",
+    "customer_label": "Customer",
+    "phone_label": "Mobile",
+    "order_date_label": "Order date"
   },
   "permissions": {
     "access_denied_desc": "Not specified",

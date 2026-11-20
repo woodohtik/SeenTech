@@ -46,7 +46,8 @@ import {
   ChevronLeft,
   Shield,
   FileSpreadsheet,
-  FileText
+  FileText,
+  Phone
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase/client';
@@ -163,7 +164,9 @@ const OrderStepper = ({ currentStatus, stages }: { currentStatus: string; stages
     <div className="relative bg-surface p-6 rounded-2xl border border-border shadow-sm mb-8">
       <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-surface to-transparent rounded-e-[2rem] z-20" />
       <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-surface to-transparent rounded-s-[2rem] z-20" />
-      <div ref={scrollRef} className="overflow-x-auto">
+      {/* overflow-x-auto also clips vertically: the padding keeps the active
+          stage's ring and scale inside the scroller instead of cut off. */}
+      <div ref={scrollRef} className="overflow-x-auto pt-3 pb-1">
       <div className="relative flex justify-between items-start min-w-[600px] px-4">
         {/* Progress Line */}
         <div className="absolute top-5 right-10 left-10 h-0.5 bg-surface-muted -z-0" />
@@ -1459,25 +1462,56 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           animate={{ x: 0, y: 0 }}
           exit={{ x: '100%', y: '100%' }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className={cn("bg-surface w-full lg:max-w-md h-[95vh] lg:h-full shadow-2xl relative z-10 flex flex-col lg:rounded-none rounded-t-[3rem] overflow-hidden", isRtlLang(i18n.language) ? "text-right" : "text-left")}
+          className={cn("bg-surface w-full lg:max-w-lg h-[95vh] lg:h-full shadow-2xl relative z-10 flex flex-col lg:rounded-none rounded-t-[3rem] overflow-hidden", isRtlLang(i18n.language) ? "text-right" : "text-left")}
           dir={isRtlLang(i18n.language) ? "rtl" : "ltr"}
         >
-          <div className="p-6 border-b border-border flex justify-between items-center bg-brand/5">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-brand text-white rounded-2xl">
-                <Info size={24} />
+          <div className="px-6 py-4 border-b border-border flex justify-between items-center gap-3 bg-brand/5">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="p-3 bg-brand text-white rounded-xl shrink-0">
+                <Info size={22} />
               </div>
-              <div>
-                <h2 className="text-xl font-black text-content">{t('orders.order_details')}</h2>
-                <p className="text-xs text-content-muted font-bold">#{order.id.slice(-6).toUpperCase()}</p>
+              <div className="min-w-0">
+                {/* The order number the list shows (#5), not a slice of the internal id. */}
+                <h2 className="text-lg font-black text-content truncate">
+                  {t('orders.order_details')}{' '}
+                  <span className="tabular-nums">#{order.orderNumber ?? order.id.slice(-6).toUpperCase()}</span>
+                </h2>
+                <p className="text-sm text-content-muted font-bold truncate">{order.customerName || t('orders.unknown_customer')}</p>
               </div>
             </div>
-            <button onClick={() => setIsDetailsOpen(false)} aria-label={t('common.close')} className="p-2 hover:bg-surface rounded-full transition-colors shadow-sm">
-              <X size={24} className="text-content-muted" />
+            <button onClick={() => setIsDetailsOpen(false)} aria-label={t('common.close')} className="w-11 h-11 shrink-0 flex items-center justify-center hover:bg-surface rounded-xl transition-colors">
+              <X size={22} className="text-content-muted" />
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-8">
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            {/* Who and when, before anything else. */}
+            <section className="grid grid-cols-2 gap-x-4 gap-y-3 bg-surface p-4 rounded-2xl border border-border text-sm">
+              <div className="min-w-0">
+                <p className="text-content-muted font-bold">{t('orders.customer_label', 'العميل')}</p>
+                <p className="font-black text-content truncate">{order.customerName || t('orders.unknown_customer')}</p>
+              </div>
+              <div className="min-w-0">
+                <p className="text-content-muted font-bold">{t('orders.phone_label', 'الجوال')}</p>
+                {order.customerPhone ? (
+                  <a href={`tel:${order.customerPhone}`} dir="ltr" className="inline-flex items-center gap-1.5 font-black text-brand tabular-nums hover:underline">
+                    <Phone size={14} aria-hidden="true" />
+                    {order.customerPhone}
+                  </a>
+                ) : (
+                  <p className="font-bold text-content-muted">—</p>
+                )}
+              </div>
+              <div>
+                <p className="text-content-muted font-bold">{t('orders.order_date_label', 'تاريخ الطلب')}</p>
+                <p className="font-black text-content tabular-nums">{order.orderDate ? new Date(order.orderDate).toLocaleDateString(localeOf(i18n.language)) : '—'}</p>
+              </div>
+              <div>
+                <p className="text-content-muted font-bold">{t('orders.expected_delivery_date')}</p>
+                <p className="font-black text-content tabular-nums">{order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString(localeOf(i18n.language)) : '—'}</p>
+              </div>
+            </section>
+
             <OrderStepper currentStatus={order.status} stages={isLegacyVertical ? undefined : workflowStages} />
 
             {/* Quick Status Updater */}
@@ -1716,20 +1750,21 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             </section>
           </div>
 
-          <div className="p-6 bg-surface-muted border-t border-border grid grid-cols-2 gap-3">
+          {/* Two rows of 48px buttons at most, so the details keep the room. */}
+          <div className="px-4 py-3 bg-surface-muted border-t border-border grid grid-cols-2 gap-2">
             <button
               onClick={() => {
                 setIsDetailsOpen(false);
                 void handlePrintOrder(order);
               }}
-              className="flex items-center justify-center gap-2 bg-surface text-content py-4 rounded-2xl font-bold border border-border hover:bg-surface-muted transition-all text-sm"
+              className="min-h-12 flex items-center justify-center gap-2 bg-surface text-content rounded-xl font-bold border border-border hover:bg-surface-muted transition-all text-sm"
             >
               <Printer size={18} />
               <span>{t('orders.print')}</span>
             </button>
             <button
               onClick={() => sendToWhatsApp(order)}
-              className="flex items-center justify-center gap-2 bg-success text-white py-4 rounded-2xl font-bold hover:bg-success/90 transition-all shadow-lg shadow-success/10 text-sm"
+              className="min-h-12 flex items-center justify-center gap-2 bg-success text-white rounded-xl font-bold hover:bg-success/90 transition-all text-sm"
             >
               <MessageSquare size={18} />
               <span>{t('orders.whatsapp')}</span>
@@ -1737,7 +1772,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             <button
               onClick={handleViewInvoice}
               disabled={isLoadingInvoice}
-              className="col-span-2 flex items-center justify-center gap-2 bg-brand/10 text-brand py-4 rounded-2xl font-bold border border-brand/20 hover:bg-brand/15 transition-all text-sm disabled:opacity-50"
+              className={cn(
+                "min-h-12 flex items-center justify-center gap-2 bg-brand/10 text-brand rounded-xl font-bold border border-brand/20 hover:bg-brand/15 transition-all text-sm disabled:opacity-50",
+                !order.trackingToken && "col-span-2"
+              )}
             >
               <FileText size={18} />
               <span>{isLoadingInvoice ? t('common.loading') : t('tax_invoices.view_invoice')}</span>
@@ -1745,7 +1783,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             {order.trackingToken && (
               <button
                 onClick={() => sendTrackingLink(order)}
-                className="col-span-2 flex items-center justify-center gap-2 bg-brand/10 text-brand py-4 rounded-2xl font-bold border border-brand/20 hover:bg-brand/15 transition-all text-sm"
+                className="min-h-12 flex items-center justify-center gap-2 bg-brand/10 text-brand rounded-xl font-bold border border-brand/20 hover:bg-brand/15 transition-all text-sm"
               >
                 <Truck size={18} />
                 <span>{t('orders.send_tracking_link')}</span>
