@@ -122,6 +122,12 @@ function tableData(table, url) {
         totals: { orders: orders.length, in_progress: orders.length, measurements_taken: 0, ready: 0 },
         low_stock: 0, customers_total: customers.length }) });
     }
+    if (u.pathname === '/rest/v1/rpc/get_setup_progress') {
+      const has = (n) => n > 0;
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+        has_stock: has(tableData('inventory_items', '').length), has_customers: has(tableData('customers', '').length),
+        has_orders: has(tableData('orders', '').length), has_invoices: false }) });
+    }
     if (u.pathname.startsWith('/rest/v1/rpc/')) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
     if (u.pathname.startsWith('/rest/v1/')) {
       const table = u.pathname.split('/')[3];
