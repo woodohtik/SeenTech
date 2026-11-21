@@ -39,7 +39,8 @@ export const ACTION_RULES: Record<string, { label: string; needs: string[] | 'al
   'inventory.edit': { label: 'تعديل صنف', needs: ['inventory.edit'] },
   'inventory.reconcile': { label: 'اعتماد جرد', needs: ['inventory.reconcile'] },
   'inventory.transfer': { label: 'تحويل مخزون', needs: ['inventory.transfer'] },
-  'shifts.close': { label: 'إغلاق وردية', needs: ['shifts.manage'] },
+  // Closing one's own shift: shifts.manage or payments.collect (20270101000003).
+  'shifts.close': { label: 'إغلاق وردية (ورديته)', needs: ['shifts.manage', 'payments.collect'], anyOf: true },
   'read.financial_summary': { label: 'قراءة الملخص المالي', needs: ['dashboard.revenue', 'reports.financial'], anyOf: true },
   'read.dashboard_money': { label: 'مبالغ اللوحة', needs: ['dashboard.revenue', 'reports.financial'], anyOf: true },
   'read.customers_page': { label: 'صفحة العملاء', needs: ['customers.view'] },
@@ -48,6 +49,9 @@ export const ACTION_RULES: Record<string, { label: string; needs: string[] | 'al
   'suppliers.manage': { label: 'إضافة مورد', needs: ['suppliers.manage'] },
   'supplier.payment': { label: 'سند صرف لمورد', needs: ['suppliers.manage'] },
   'settings.billing': { label: 'طلب اشتراك (الفوترة)', needs: ['settings.billing'] },
+  'settings.direct_edit': { label: 'تعديل إعدادات المحل مباشرة', needs: ['settings.edit'] },
+  'settings.direct_tax': { label: 'تعديل الرقم الضريبي مباشرة', needs: ['settings.edit', 'settings.tax'] },
+  'customers.save_measurements': { label: 'حفظ مقاسات من نموذج الطلب', needs: ['customers.edit', 'orders.create'], anyOf: true },
   'isolation.other_shop_customer_edit': { label: 'تعديل عميل محل آخر', needs: 'never' },
 };
 

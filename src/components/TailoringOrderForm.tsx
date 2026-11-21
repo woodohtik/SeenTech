@@ -706,7 +706,13 @@ function TailoringOrderFormBody({
     if (!selectedCustomer) return;
     setIsSavingMeasurements(true);
     try {
-      const { error } = await supabase.from('customers').update({ measurements: tempMeasurements }).eq('id', selectedCustomer.id);
+      // seen-permissions-fix-task.md Phase 3: allowed to whoever may create an
+      // order, and it changes the measurements only (editing the rest of a
+      // customer needs customers.edit).
+      const { error } = await supabase.rpc('save_customer_measurements', {
+        p_customer_id: selectedCustomer.id,
+        p_measurements: tempMeasurements,
+      });
       if (error) throw error;
       setCustomers((prev) => prev.map((c) => (c.id === selectedCustomer.id ? { ...c, measurements: tempMeasurements } : c)));
       toastSuccess(t('orders.measurements_updated_success'));

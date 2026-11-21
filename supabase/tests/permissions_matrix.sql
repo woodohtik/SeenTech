@@ -105,6 +105,12 @@ DECLARE
       $q$SELECT public.issue_supplier_payment(gen_random_uuid(), :S, 10, 'cash', :SHIFT)$q$),
     jsonb_build_object('k','settings.billing','kind','exec','q',
       $q$SELECT public.create_subscription_request(:T, (SELECT id FROM public.plans WHERE is_active ORDER BY price DESC LIMIT 1), 'bank_transfer')$q$),
+    jsonb_build_object('k','settings.direct_edit','kind','rows','q',
+      $q$UPDATE public.tenants SET name = name WHERE id = :T$q$),
+    jsonb_build_object('k','settings.direct_tax','kind','rows','q',
+      $q$UPDATE public.tenants SET vat_number = '300000000000003' WHERE id = :T$q$),
+    jsonb_build_object('k','customers.save_measurements','kind','exec','q',
+      $q$SELECT public.save_customer_measurements(:C, '{"length": 150}'::jsonb)$q$),
     jsonb_build_object('k','isolation.other_shop_customer_edit','kind','rows','q',
       $q$UPDATE public.customers SET name = name WHERE tenant_id = :T2$q$)
   );
@@ -112,8 +118,9 @@ BEGIN
   -- ---------- Fixtures (as the system, triggers off) ----------
   SET LOCAL session_replication_role = replica;
   INSERT INTO public.tenants (id, name, owner_email, phone, status, owner_uid, is_test)
-  VALUES (T,  'مصفوفة الصلاحيات', 'matrix-owner@example.invalid', '0500000090', 'active', OWNER_UID, true),
-         (T2, 'مصفوفة — محل آخر', 'matrix-other@example.invalid', '0500000091', 'active', 'a0000000-0000-4000-8000-00000000f999', true);
+  -- owner_uid stays NULL: it references a real user (the owner is the 'owner' staff row below).
+  VALUES (T,  'مصفوفة الصلاحيات', 'matrix-owner@example.invalid', '0500000090', 'active', NULL, true),
+         (T2, 'مصفوفة — محل آخر', 'matrix-other@example.invalid', '0500000091', 'active', NULL, true);
   INSERT INTO public.branches (id, tenant_id, name, location, is_main)
   VALUES (B, T, 'الرئيسي', 'الرياض', true), (B2, T, 'الثاني', 'جدة', false);
   INSERT INTO public.customers (id, tenant_id, name, phone, is_test)

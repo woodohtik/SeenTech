@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import helmet from "helmet";
 import { globalRateLimiter } from "./src/server/rateLimiter.ts";
 import { authenticate, authorize } from "./src/server/middleware/authMiddleware.ts";
+import { requirePermission, hasPermission, taxFingerprint } from './src/server/middleware/requirePermission.ts';
 import { registerPrintRelay } from "./src/server/printRelay.ts";
 import { initServerLogger, captureServerException, logger } from "./src/server/logger.ts";
 import { isValidMeasurementUnit } from "./src/utils/measurementUnits.ts";
@@ -1018,7 +1019,7 @@ app.post("/api/saas/complete-temp-password", authenticate, async (req: any, res)
 // service-role key, which must never reach the browser. Replaces the old
 // client-side "spin up a secondary Firebase app" trick used by
 // SaaSTeamManagement.tsx / AddEmployeeModal.tsx / Staff.tsx.
-app.post("/api/staff/create-account", authenticate, authorize(['super_admin', 'owner', 'admin', 'manager']), async (req: any, res) => {
+app.post("/api/staff/create-account", authenticate, requirePermission('staff.create'), async (req: any, res) => {
   try {
     const { email, password, name } = req.body;
     if (!email || !password) {
@@ -1176,9 +1177,9 @@ app.post("/api/staff/verify-pin", authenticate, async (req: any, res) => {
     // counter below, so checking uniqueness repeatedly while picking a PIN
     // can't lock out that admin's own login attempts, or vice versa).
     if (mode === 'check-unique') {
-      let authorized = false;
-      await authorize(['owner', 'admin', 'manager'])(req, res, () => { authorized = true; });
-      if (!authorized) return; // authorize() already sent the 403 response
+      // seen-permissions-fix-task.md Phase 3: whoever adds or edits staff sets their PIN.
+      const mayCheck = (await hasPermission(req, 'staff.create')) || (await hasPermission(req, 'staff.edit'));
+      if (!mayCheck) return res.status(403).json({ error: 'forbidden', permission: 'staff.create|staff.edit' });
 
       // seen-status-fix-regressions-task.md item 8: this mode returns
       // before the failure-recording block below ever runs, so nothing
@@ -1357,7 +1358,7 @@ app.delete("/api/admin/blog/articles/:slug", authenticate, authorize(['super_adm
 app.post("/api/admin/blog/preview", authenticate, authorize(['super_admin']), asyncHandler(previewArticle));
 
 // Example Protected Route: Accessible by Owners and Admins (and managers for GET)
-app.get("/api/tenant/settings", authenticate, authorize(['owner', 'admin', 'manager']), async (req: any, res) => {
+app.get("/api/tenant/settings", authenticate, requirePermission('settings.view'), async (req: any, res) => {
   try {
     const tenantId = req.user?.tenantId;
     if (!tenantId) {
@@ -1416,7 +1417,7 @@ app.get("/api/tenant/settings", authenticate, authorize(['owner', 'admin', 'mana
   }
 });
 
-app.post("/api/tenant/settings", authenticate, authorize(['owner', 'admin']), async (req: any, res) => {
+app.post("/api/tenant/settings", authenticate, requirePermission('settings.edit'), async (req: any, res) => {
   try {
     const tenantId = req.user?.tenantId;
     if (!tenantId) {
@@ -1496,6 +1497,18 @@ app.post("/api/tenant/settings", authenticate, authorize(['owner', 'admin']), as
       }
       const { roundToCm: _roundToCm, ...stored } = normalizeFabricEstimateSettings(fe);
       updatePayload.fabric_estimate_settings = stored;
+    }
+
+    // seen-permissions-fix-task.md Phase 3: the screen sends the tax document
+    // on every save; actually changing it needs settings.tax.
+    const { data: currentTax } = await supabaseAdmin
+      .from("tenants")
+      .select("vat_number, is_tax_enabled, default_tax_rate, tax_settings")
+      .eq("id", tenantId)
+      .maybeSingle();
+    const taxChanged = taxFingerprint(currentTax || {}) !== taxFingerprint(updatePayload);
+    if (taxChanged && !(await hasPermission(req, 'settings.tax'))) {
+      return res.status(403).json({ error: 'forbidden', permission: 'settings.tax' });
     }
 
     const { error } = await supabaseAdmin
@@ -2840,7 +2853,7 @@ function zatcaTestEnvironment(): 'sandbox' | 'simulation' {
   return raw === 'simulation' ? 'simulation' : 'sandbox';
 }
 
-app.get("/api/zatca/onboarding-status", authenticate, authorize(['owner', 'admin']), asyncHandler(async (req: any, res) => {
+app.get("/api/zatca/onboarding-status", authenticate, requirePermission('settings.tax'), asyncHandler(async (req: any, res) => {
   const tenantId = req.user?.tenantId;
   if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -2857,7 +2870,7 @@ app.get("/api/zatca/onboarding-status", authenticate, authorize(['owner', 'admin
   });
 }));
 
-app.post("/api/zatca/generate-csr", authenticate, authorize(['owner', 'admin']), asyncHandler(async (req: any, res) => {
+app.post("/api/zatca/generate-csr", authenticate, requirePermission('settings.tax'), asyncHandler(async (req: any, res) => {
   const tenantId = req.user?.tenantId;
   if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -2914,7 +2927,7 @@ app.post("/api/zatca/generate-csr", authenticate, authorize(['owner', 'admin']),
   res.json({ csrBase64 });
 }));
 
-app.post("/api/zatca/request-compliance-csid", authenticate, authorize(['owner', 'admin']), asyncHandler(async (req: any, res) => {
+app.post("/api/zatca/request-compliance-csid", authenticate, requirePermission('settings.tax'), asyncHandler(async (req: any, res) => {
   const tenantId = req.user?.tenantId;
   const otp = typeof req.body?.otp === 'string' ? req.body.otp.trim() : '';
   if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
@@ -2959,7 +2972,7 @@ app.post("/api/zatca/request-compliance-csid", authenticate, authorize(['owner',
   }
 }));
 
-app.post("/api/zatca/run-compliance-tests", authenticate, authorize(['owner', 'admin']), asyncHandler(async (req: any, res) => {
+app.post("/api/zatca/run-compliance-tests", authenticate, requirePermission('settings.tax'), asyncHandler(async (req: any, res) => {
   const tenantId = req.user?.tenantId;
   if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -3036,7 +3049,7 @@ app.post("/api/zatca/run-compliance-tests", authenticate, authorize(['owner', 'a
   res.json({ ok: results.every(r => !r.error), results });
 }));
 
-app.post("/api/zatca/request-production-csid", authenticate, authorize(['owner', 'admin']), asyncHandler(async (req: any, res) => {
+app.post("/api/zatca/request-production-csid", authenticate, requirePermission('settings.tax'), asyncHandler(async (req: any, res) => {
   const tenantId = req.user?.tenantId;
   if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
 
