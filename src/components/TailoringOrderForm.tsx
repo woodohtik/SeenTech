@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  AlertCircle, Check, CheckCircle2, Clock, CreditCard, Edit2, Image as ImageIcon, Minus, Plus,
+  AlertCircle, Check, CheckCircle2, Clock, CreditCard, Edit2, Image as ImageIcon, Loader2, Minus, Plus,
   Printer, RotateCcw, Ruler, ShoppingBag, Trash2, Truck, UserPlus, X, Zap,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase/client';
@@ -25,6 +25,7 @@ import { useFabricEstimateSettings } from '../hooks/useFabricEstimateSettings';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
 import { legacyOrderStatusFor } from '../services/verticalService';
+import { lengthCategoryKeyList } from '../utils/itemUnits';
 import { createTailoringOrder } from '../services/tailoringOrderService';
 import { formatItemStock, type ContentUnit } from '../utils/fabricUomConverter';
 import { formatSaudiPhone } from '../utils/phoneUtils';
@@ -80,8 +81,54 @@ export default function TailoringOrderForm(props: TailoringOrderFormProps) {
   if (typeof document === 'undefined') return null;
   // The body mounts only while open, so every opening starts from a clean form.
   return createPortal(
-    <AnimatePresence>{props.open && <TailoringOrderFormBody {...props} />}</AnimatePresence>,
+    <AnimatePresence>{props.open && <TailoringOrderFormGate {...props} />}</AnimatePresence>,
     document.body
+  );
+}
+
+/**
+ * seen-verticals-readiness-task.md Phase 1.6: the form opens only once the
+ * shop's activity settings are loaded -- its defaults (garment type, stages,
+ * fields) are computed once when it mounts, so opening it earlier used to fill
+ * a furniture order with men's-tailoring values. When the settings cannot be
+ * loaded at all (offline, nothing saved, not a men's shop) no order is
+ * created with defaults: the staff member is told why.
+ */
+function TailoringOrderFormGate(props: TailoringOrderFormProps) {
+  const { loading, unavailable } = useVerticalConfig();
+  const { t } = useTranslation();
+  if (!loading && !unavailable) return <TailoringOrderFormBody {...props} />;
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm font-sans"
+      role="dialog"
+      aria-modal="true"
+      onClick={props.onClose}
+    >
+      <div className="bg-surface rounded-3xl shadow-2xl w-full max-w-sm border border-border p-6 space-y-4 text-center" onClick={(e) => e.stopPropagation()}>
+        {loading ? (
+          <>
+            <Loader2 size={28} className="mx-auto animate-spin text-brand" />
+            <p className="text-sm font-bold text-content">{t('verticals.loading_settings', 'جارٍ تحميل إعدادات نشاطك...')}</p>
+          </>
+        ) : (
+          <>
+            <AlertCircle size={28} className="mx-auto text-danger" />
+            <h3 className="font-black text-content">{t('verticals.settings_unavailable_title', 'تعذّر تحميل إعدادات نشاطك')}</h3>
+            <p className="text-xs text-content-muted font-bold leading-relaxed">
+              {t('verticals.settings_unavailable_desc', 'لا يمكن إنشاء طلب الآن بإعدادات صحيحة لنشاطك. اتصل بالإنترنت ثم أعد المحاولة.')}
+            </p>
+          </>
+        )}
+        <button
+          type="button"
+          onClick={props.onClose}
+          className="w-full bg-surface-muted text-content py-3 rounded-2xl font-black text-sm hover:bg-border transition-colors"
+        >
+          {t('common.close')}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -448,7 +495,9 @@ function TailoringOrderFormBody({
         const [{ data: custData }, { data: fabricData }, { data: staffData }, { data: tenantRow }, { data: mainBranch }] = await Promise.all([
           // Only what the form shows: the picker's name and the measurements panel.
           supabase.from('customers').select('id, name, phone, measurements').eq('tenant_id', tenantId),
-          supabase.from('inventory_items').select('*').eq('tenant_id', tenantId).eq('category', 'fabric'),
+          // The shop's length categories (Phase 1): men's tailoring -> `fabric` only, as before.
+          supabase.from('inventory_items').select('*').eq('tenant_id', tenantId)
+            .or(`category.eq.fabric,category_key.in.(${lengthCategoryKeyList().join(',')})`),
           supabase.from('staff').select('id, name, role, status').eq('tenant_id', tenantId).eq('role', 'tailor'),
           supabase.from('tenants').select('*').eq('id', tenantId).maybeSingle(),
           supabase.from('branches').select('id').eq('tenant_id', tenantId).eq('is_main', true).maybeSingle(),

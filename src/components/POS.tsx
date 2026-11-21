@@ -898,7 +898,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     () =>
       isLegacyVertical
         ? LEGACY_INVENTORY_CATEGORY_SEED
-        : inventoryCategories.map((c) => ({ category_key: c.category_key, label_ar: c.label_ar })),
+        : inventoryCategories.map((c) => ({ category_key: c.category_key, label_ar: c.label_ar, measure_kind: c.measure_kind })),
     [isLegacyVertical, inventoryCategories]
   );
   const categoryPicker = useTenantCategoryPicker(tenantId, 'inventory', posCategorySeed);

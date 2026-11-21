@@ -96,7 +96,7 @@ export default function PurchaseOrders({
   const { inventoryCategories, isLegacyVertical } = useVerticalConfig();
   const newItemCategorySeed = isLegacyVertical
     ? LEGACY_INVENTORY_CATEGORY_SEED
-    : inventoryCategories.map((c: any) => ({ category_key: c.category_key, label_ar: c.label_ar }));
+    : inventoryCategories.map((c: any) => ({ category_key: c.category_key, label_ar: c.label_ar, measure_kind: c.measure_kind }));
   const newItemCategoryPicker = useTenantCategoryPicker(tenantId, 'inventory', newItemCategorySeed);
   const [isAddingNewItem, setIsAddingNewItem] = useState(false);
   const [newItemName, setNewItemName] = useState('');

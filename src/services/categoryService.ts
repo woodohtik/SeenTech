@@ -22,16 +22,20 @@ export interface TenantCategory {
   display_order: number;
   is_hidden: boolean;
   is_custom: boolean;
+  /** length | count (seen-verticals-readiness-task.md Phase 1); absent on an older database. */
+  measure_kind?: 'length' | 'count';
 }
 
 export interface CategorySeed {
   category_key: string;
   label_ar: string;
+  /** Copied to the shop's category; absent = count (the column's default). */
+  measure_kind?: 'length' | 'count';
 }
 
 /** القائمة الثابتة القديمة -- تُستخدم فقط لتبذير الصفوف أول مرة لنشاط mens_tailoring (الافتراضي). */
 export const LEGACY_INVENTORY_CATEGORY_SEED: CategorySeed[] = [
-  { category_key: 'fabric', label_ar: 'أقمشة' },
+  { category_key: 'fabric', label_ar: 'أقمشة', measure_kind: 'length' },
   { category_key: 'ready_made', label_ar: 'جاهز' },
   { category_key: 'thread', label_ar: 'خيوط' },
   { category_key: 'button', label_ar: 'أزرار' },
@@ -74,11 +78,20 @@ export async function listCategories(
     label_ar: c.label_ar,
     display_order: i,
     is_custom: false,
+    // Only sent when known, so an older database (no column) still accepts the insert.
+    ...(c.measure_kind ? { measure_kind: c.measure_kind } : {}),
   }));
-  const { data: inserted, error: insertError } = await supabase
+  let { data: inserted, error: insertError } = await supabase
     .from('tenant_categories')
     .insert(rows)
     .select('*');
+  if (insertError && (insertError as { code?: string }).code === 'PGRST204') {
+    // A database before 20261231000001 has no measure_kind column: seed without it.
+    ({ data: inserted, error: insertError } = await supabase
+      .from('tenant_categories')
+      .insert(rows.map(({ measure_kind: _m, ...r }: any) => r))
+      .select('*'));
+  }
   if (insertError) {
     // سباق محتمل: تبذير آخر (تبويب آخر مفتوح لنفس المستأجر) سبقنا -- فقط أعد الجلب.
     const { data: retry } = await supabase

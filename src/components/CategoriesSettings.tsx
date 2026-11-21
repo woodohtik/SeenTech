@@ -40,7 +40,7 @@ export default function CategoriesSettings({ tenantId }: CategoriesSettingsProps
         icon={Tag}
         title={t('settings_page.categories.inventory_title', 'فئات المخزون')}
         subtitle={t('settings_page.categories.inventory_subtitle', 'تظهر هذه الفئات في نماذج إضافة/تعديل عناصر المخزون')}
-        seed={isLegacyVertical ? LEGACY_INVENTORY_CATEGORY_SEED : inventoryCategories.map((c) => ({ category_key: c.category_key, label_ar: c.label_ar }))}
+        seed={isLegacyVertical ? LEGACY_INVENTORY_CATEGORY_SEED : inventoryCategories.map((c) => ({ category_key: c.category_key, label_ar: c.label_ar, measure_kind: c.measure_kind }))}
         onToast={toastSuccess}
         onError={handleError}
         dir={dir}

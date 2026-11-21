@@ -101,6 +101,9 @@ import {
 import { useTenantCategoryPicker, ADD_NEW_CATEGORY_VALUE } from "../../hooks/useTenantCategoryPicker";
 import { LEGACY_INVENTORY_CATEGORY_SEED } from "../../services/categoryService";
 import ProductFormFields, { isFabricCategory, needsRollContent, resolveUnitColumns, unitFieldsFromItem } from "./ProductFormFields";
+// Length items (fabric by the old category, or any length category of the shop's
+// vertical -- seen-verticals-readiness-task.md Phase 1).
+import { isLengthItem } from "../../utils/itemUnits";
 import ProductVariantsSection from "./ProductVariantsSection";
 import { listVariantsForTenant, listVariants, createVariant } from "../../services/variantService";
 import VariantAttributeBuilder, { type GeneratedRow } from "./VariantAttributeBuilder";
@@ -136,7 +139,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
     () =>
       isLegacyVertical
         ? LEGACY_INVENTORY_CATEGORY_SEED
-        : inventoryCategories.map((c) => ({ category_key: c.category_key, label_ar: c.label_ar })),
+        : inventoryCategories.map((c) => ({ category_key: c.category_key, label_ar: c.label_ar, measure_kind: c.measure_kind })),
     [isLegacyVertical, inventoryCategories]
   );
   const inventoryCategoryPicker = useTenantCategoryPicker(tenantId, "inventory", inventoryCategorySeed);
@@ -886,7 +889,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                           <p className="text-xs sm:text-sm font-black text-content">
                             {totalStock} {t(`inventory.unit_${item.baseUnit || item.unit}`)}
                           </p>
-                          {item.category === "fabric" && item.conversionRate > 1 && (
+                          {isLengthItem(item) && item.conversionRate > 1 && (
                             <span className="text-[9px] text-brand font-black block mt-0.5">
                               {formatSmartStockDisplay(totalStock, item.unit, item.baseUnit || "meter", item.conversionRate, undefined, item.contentUnit)}
                             </span>
@@ -968,7 +971,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                     )}
                                   </Menu.Item>
                                 )}
-                                {item.category === "fabric" && hasPermission("inventory.create") && (
+                                {isLengthItem(item) && hasPermission("inventory.create") && (
                                   <Menu.Item>
                                     {({ active }) => (
                                       <button
@@ -1250,7 +1253,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                   {t(`inventory.unit_${item.baseUnit || item.unit}`)}
                                 </p>
                               </div>
-                              {item.category === "fabric" && item.conversionRate > 1 && (
+                              {isLengthItem(item) && item.conversionRate > 1 && (
                                 <span className="text-[10px] text-brand font-black block mt-0.5">
                                   {formatSmartStockDisplay(totalStock, item.unit, item.baseUnit || "meter", item.conversionRate, undefined, item.contentUnit)}
                                 </span>
@@ -1354,7 +1357,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ tenantId }) => {
                                         )}
                                       </Menu.Item>
                                     )}
-                                    {item.category === "fabric" && hasPermission("inventory.create") && (
+                                    {isLengthItem(item) && hasPermission("inventory.create") && (
                                       <Menu.Item>
                                         {({ active }) => (
                                           <button
@@ -1792,7 +1795,7 @@ const AddItemModal = ({ onClose, tenantId, branches }: any) => {
     () =>
       isLegacyVertical
         ? LEGACY_INVENTORY_CATEGORY_SEED
-        : inventoryCategories.map((c: any) => ({ category_key: c.category_key, label_ar: c.label_ar })),
+        : inventoryCategories.map((c: any) => ({ category_key: c.category_key, label_ar: c.label_ar, measure_kind: c.measure_kind })),
     [isLegacyVertical, inventoryCategories]
   );
   const categoryPicker = useTenantCategoryPicker(tenantId, "inventory", categorySeed);
@@ -3148,7 +3151,7 @@ const ProductImportModal = ({
     () =>
       isLegacyVertical
         ? LEGACY_INVENTORY_CATEGORY_SEED
-        : inventoryCategories.map((c: any) => ({ category_key: c.category_key, label_ar: c.label_ar })),
+        : inventoryCategories.map((c: any) => ({ category_key: c.category_key, label_ar: c.label_ar, measure_kind: c.measure_kind })),
     [isLegacyVertical, inventoryCategories]
   );
   const categoryPicker = useTenantCategoryPicker(tenantId, "inventory", categorySeed);
@@ -3464,7 +3467,7 @@ const InventoryReports = ({ tenantId, items, branches, branchStock }: any) => {
   const categoryData = [
     {
       name: t("inventory.category_fabric"),
-      value: items.filter((i: any) => i.category === "fabric").length,
+      value: items.filter((i: any) => isLengthItem(i)).length,
     },
     {
       name: t("inventory.category_thread"),
@@ -3782,7 +3785,7 @@ const EditItemModal = ({ onClose, tenantId, item, branches }: any) => {
     () =>
       isLegacyVertical
         ? LEGACY_INVENTORY_CATEGORY_SEED
-        : inventoryCategories.map((c: any) => ({ category_key: c.category_key, label_ar: c.label_ar })),
+        : inventoryCategories.map((c: any) => ({ category_key: c.category_key, label_ar: c.label_ar, measure_kind: c.measure_kind })),
     [isLegacyVertical, inventoryCategories]
   );
   const categoryPicker = useTenantCategoryPicker(tenantId, "inventory", categorySeed);

@@ -5454,5 +5454,10 @@
     "review_reason": "Reason",
     "review_retry": "Send again",
     "review_hint": "Money was collected for these operations. Send them again; if one is rejected again, create the order by hand with the same details and keep this record."
+  },
+  "verticals": {
+    "loading_settings": "Loading your activity's settings...",
+    "settings_unavailable_title": "Your activity's settings could not be loaded",
+    "settings_unavailable_desc": "An order cannot be created with the right settings for your activity right now. Connect to the internet and try again."
   }
 }

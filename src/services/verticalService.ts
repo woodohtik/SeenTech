@@ -8,7 +8,7 @@
 import { supabase } from '../lib/supabase/client';
 import { readTenantRow } from '../lib/tenantRow';
 import type {
-  Vertical, WorkflowStage, FieldSchema, InventoryCategoryConfig, ModuleKey, VerticalKey,
+  Vertical, WorkflowStage, FieldSchema, InventoryCategoryConfig, ModuleKey, VerticalKey, VerticalCapabilities, OrderPhase,
 } from '../types/expansion';
 
 export const DEFAULT_VERTICAL: VerticalKey = 'mens_tailoring';
@@ -22,7 +22,10 @@ export async function listVerticals(): Promise<Vertical[]> {
 
 /** نشاط المحل + موديولاته المفعّلة (مع رجوع آمن للافتراضات). */
 export async function getTenantVertical(tenantId: string): Promise<{ vertical: VerticalKey; modules: ModuleKey[] }> {
-  const { data } = await readTenantRow(tenantId); // shared read (lib/tenantRow)
+  const { data, error } = await readTenantRow(tenantId); // shared read (lib/tenantRow)
+  // Unreadable is not "men's tailoring": the caller decides (useVerticalConfig
+  // keeps the shop's saved settings instead -- task file bug 6).
+  if (error || !data) throw error || new Error('tenant row not found');
   return {
     vertical: (data?.vertical as VerticalKey) || DEFAULT_VERTICAL,
     modules: (data?.enabled_modules as ModuleKey[]) || DEFAULT_MODULES,
@@ -34,9 +37,30 @@ export function isModuleEnabled(modules: ModuleKey[], key: ModuleKey): boolean {
   return Array.isArray(modules) && modules.includes(key);
 }
 
-/** مراحل العمل لنشاط معيّن (مرتّبة) — تُستخدم بدل enum order_status. */
+/**
+ * The men's-tailoring capabilities: what the app always did. Used for a
+ * database before 20261231000001 (no capabilities column yet).
+ */
+export const MENS_CAPABILITIES: VerticalCapabilities = {
+  body_measurements: 'thobe', fabric_consumption: true, sells_by_length: true, order_dimensions: false,
+  orders_module: true, workshop_term: 'tailor', item_term: 'thobe',
+};
+
+/**
+ * A vertical's row (names + capabilities). Throws when it cannot be read, so
+ * useVerticalConfig can tell "no connection" from "no data" (it used to fall
+ * back to men's tailoring silently -- seen-verticals-readiness-task.md bug 6).
+ */
+export async function getVertical(vertical: VerticalKey): Promise<Vertical | null> {
+  const { data, error } = await supabase.from('verticals').select('*').eq('key', vertical).maybeSingle();
+  if (error) throw error;
+  return (data as Vertical) || null;
+}
+
+/** مراحل العمل لنشاط معيّن (مرتّبة) — تُستخدم بدل enum order_status. Throws when unreadable. */
 export async function getWorkflowStages(vertical: VerticalKey): Promise<WorkflowStage[]> {
-  const { data } = await supabase.from('vertical_workflow_stages').select('*').eq('vertical_key', vertical).order('sort');
+  const { data, error } = await supabase.from('vertical_workflow_stages').select('*').eq('vertical_key', vertical).order('sort');
+  if (error) throw error;
   return (data || []) as WorkflowStage[];
 }
 
@@ -44,8 +68,9 @@ export async function getWorkflowStages(vertical: VerticalKey): Promise<Workflow
 export async function getFieldSchemas(
   vertical: VerticalKey, appliesTo: FieldSchema['applies_to'] = 'order_item',
 ): Promise<FieldSchema[]> {
-  const { data } = await supabase.from('vertical_field_schemas')
+  const { data, error } = await supabase.from('vertical_field_schemas')
     .select('*').eq('vertical_key', vertical).eq('applies_to', appliesTo).order('sort');
+  if (error) throw error;
   return (data || []).map((r: any) => ({
     ...r, options: typeof r.options === 'string' ? safeParse(r.options) : r.options,
   })) as FieldSchema[];
@@ -53,11 +78,47 @@ export async function getFieldSchemas(
 
 /** فئات المخزون لنشاط معيّن — تُستخدم بدل enum inventory_category. */
 export async function getInventoryCategories(vertical: VerticalKey): Promise<InventoryCategoryConfig[]> {
-  const { data } = await supabase.from('vertical_inventory_categories').select('*').eq('vertical_key', vertical).order('sort');
+  const { data, error } = await supabase.from('vertical_inventory_categories').select('*').eq('vertical_key', vertical).order('sort');
+  if (error) throw error;
   return (data || []) as InventoryCategoryConfig[];
 }
 
 function safeParse(s: string): any { try { return JSON.parse(s); } catch { return null; } }
+
+/** A row's label in the screen's language (label_en / label_ur), Arabic otherwise. */
+export function localizedLabel(
+  row: { label_ar: string; label_en?: string | null; label_ur?: string | null } | null | undefined,
+  lang: string,
+): string {
+  if (!row) return '';
+  if (lang === 'en' && row.label_en) return row.label_en;
+  if (lang === 'ur' && row.label_ur) return row.label_ur;
+  return row.label_ar;
+}
+
+/** A vertical's name in the screen's language. */
+export function localizedVerticalName(v: Pick<Vertical, 'name_ar' | 'name_en' | 'name_ur'> | null | undefined, lang: string): string {
+  if (!v) return '';
+  if (lang === 'en' && v.name_en) return v.name_en;
+  if (lang === 'ur' && v.name_ur) return v.name_ur;
+  return v.name_ar;
+}
+
+/**
+ * A select field's options as { value, label }: the value stays the stored
+ * Arabic option, the label follows the screen's language when translated.
+ */
+export function localizedOptions(field: Pick<FieldSchema, 'options' | 'options_i18n'>, lang: string): { value: string; label: string }[] {
+  const values = Array.isArray(field.options) ? field.options : [];
+  const translated = lang === 'en' ? field.options_i18n?.en : lang === 'ur' ? field.options_i18n?.ur : undefined;
+  return values.map((v, i) => ({ value: v, label: (translated && translated[i]) || v }));
+}
+
+/** The phase of a stage key in a vertical's stages (null when unknown or on an older database). */
+export function stagePhase(stageKey: string | null | undefined, stages: WorkflowStage[]): OrderPhase | null {
+  if (!stageKey) return null;
+  return stages.find((s) => s.stage_key === stageKey)?.phase ?? null;
+}
 
 // -----------------------------------------------------------------------------
 // توافق عكسي: orders.status و inventory_items.category أعمدة enum حقيقية في
@@ -76,10 +137,15 @@ const INVENTORY_CATEGORY_ENUM = new Set([
   'fabric', 'thread', 'button', 'lining', 'accessories', 'ready_made', 'other',
 ]);
 
-/** يحوّل stage_key (حر) إلى أقرب قيمة صالحة لعمود orders.status/order_items.status القديم. */
+/**
+ * The order_status value for a stage key when the stage's own legacy_status is
+ * not known (a database before 20261231000001). An enum stage key is itself;
+ * any other is "received" -- never 'ready' any more: a sofa at design approval
+ * used to be stored as ready (seen-verticals-readiness-task.md bug 1).
+ */
 export function mapStageKeyToLegacyStatus(stageKey: string, isTerminal: boolean): string {
   if (ORDER_STATUS_ENUM.has(stageKey)) return stageKey;
-  return isTerminal ? 'delivered' : 'ready';
+  return isTerminal ? 'delivered' : 'measurements_taken';
 }
 
 /** يحوّل category_key (حر) إلى أقرب قيمة صالحة لعمود inventory_items.category القديم. */
@@ -94,5 +160,9 @@ export function mapCategoryKeyToLegacyCategory(categoryKey: string): string {
  */
 export function legacyOrderStatusFor(stageKey: string, workflowStages: WorkflowStage[]): string {
   const stage = workflowStages.find((s) => s.stage_key === stageKey);
-  return mapStageKeyToLegacyStatus(stageKey, stage?.is_terminal ?? false);
+  // The stage says which status it writes (Phase 1); men's stages are the enum itself.
+  if (stage?.legacy_status) return stage.legacy_status;
+  if (ORDER_STATUS_ENUM.has(stageKey)) return stageKey;
+  if (stage) return mapStageKeyToLegacyStatus(stageKey, stage.is_terminal);
+  throw new Error(`Unknown order stage "${stageKey}" for this shop's activity`);
 }

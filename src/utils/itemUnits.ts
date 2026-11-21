@@ -11,8 +11,49 @@ export interface ItemUnitForm {
   contentUnit: ContentUnit;
 }
 
-export const isFabricCategory = (categoryKey: string) =>
-  mapCategoryKeyToLegacyCategory(categoryKey) === "fabric";
+/**
+ * Categories measured by length (metre / yard / roll) for the current shop:
+ * the `measure_kind = 'length'` categories of its vertical
+ * (seen-verticals-readiness-task.md Phase 1), set by VerticalConfigProvider
+ * once the settings are loaded. Until then -- and for men's tailoring, whose
+ * only length category is `fabric` -- the old rule: `fabric` only.
+ */
+let lengthCategoryKeys: ReadonlySet<string> = new Set(["fabric"]);
+
+export function setLengthCategories(categories: ReadonlyArray<{ category_key: string; measure_kind?: string | null }>): void {
+  const keys = categories.filter((c) => c.measure_kind === "length").map((c) => c.category_key);
+  lengthCategoryKeys = new Set(keys.length > 0 ? keys : ["fabric"]);
+}
+
+/**
+ * Whether a category is sold / stocked by length. An explicit list (with
+ * measure_kind) decides when it knows the key; otherwise the shop's length
+ * categories; otherwise the old rule (the legacy `fabric` category).
+ */
+export function isLengthCategory(
+  categoryKey: string,
+  categories?: ReadonlyArray<{ category_key: string; measure_kind?: string | null }>,
+): boolean {
+  const known = categories?.find((c) => c.category_key === categoryKey);
+  if (known?.measure_kind) return known.measure_kind === "length";
+  if (lengthCategoryKeys.has(categoryKey)) return true;
+  return mapCategoryKeyToLegacyCategory(categoryKey) === "fabric";
+}
+
+/** An inventory item measured by length: its legacy category is fabric, or its category_key is a length category. */
+export function isLengthItem(item: { category?: string | null; category_key?: string | null; categoryKey?: string | null }): boolean {
+  if (item.category === "fabric") return true;
+  const key = item.category_key || item.categoryKey;
+  return !!key && isLengthCategory(key);
+}
+
+/** Kept for the existing callers: the same as isLengthCategory. */
+export const isFabricCategory = (categoryKey: string) => isLengthCategory(categoryKey);
+
+/** The shop's length category keys (for queries such as the order form's fabric list). */
+export function lengthCategoryKeyList(): string[] {
+  return Array.from(lengthCategoryKeys);
+}
 
 const isRollUnit = (unit: string) => unit === "roll" || unit === "bolt";
 
