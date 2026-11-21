@@ -1246,7 +1246,10 @@ app.post("/api/staff/verify-pin", authenticate, async (req: any, res) => {
       return res.status(404).json({ matched: false, hasLegacyPins: hasLegacyHash });
     }
 
-    if (attemptKey) await supabaseAdmin.rpc('reset_pin_verify_attempts', { p_key: attemptKey });
+    // seen-readiness-fixes-task.md SECURITY-05: a correct PIN no longer resets
+    // the failure count -- a cashier who knows her own PIN could otherwise
+    // alternate guesses at the owner's PIN with her own and never be locked.
+    // Failures expire after 15 quiet minutes instead (record_pin_verify_failure).
 
     // seen-permissions-fix-task.md Phase 2: from now on this device's
     // requests are this employee's (12 hours at most, ended on logout, lock

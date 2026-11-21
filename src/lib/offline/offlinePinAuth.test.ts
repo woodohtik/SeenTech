@@ -41,6 +41,14 @@ describe('tryOfflinePinVerify: matching', () => {
     expect(lockout).toBeUndefined();
   });
 
+  it('an offline match does not clear earlier failures (SECURITY-05)', async () => {
+    await cacheStaffPinAfterOnlineVerify(TENANT_ID, STAFF_ID, PIN, { name: 'Cashier' });
+    await offlineDb.offlinePinLockout.put({ tenantId: TENANT_ID, failedCount: 3, lockUntil: null });
+
+    expect(await tryOfflinePinVerify(TENANT_ID, PIN)).toEqual({ outcome: 'matched', staff: { name: 'Cashier' } });
+    expect((await offlineDb.offlinePinLockout.get(TENANT_ID))?.failedCount).toBe(3);
+  });
+
   it('rejects a wrong PIN against a real cached entry', async () => {
     await cacheStaffPinAfterOnlineVerify(TENANT_ID, STAFF_ID, PIN, { name: 'Cashier' });
     const result = await tryOfflinePinVerify(TENANT_ID, '9999');

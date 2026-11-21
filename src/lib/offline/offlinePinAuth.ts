@@ -130,7 +130,8 @@ export async function tryOfflinePinVerify(tenantId: string, pin: string): Promis
   }
 
   if (match) {
-    await offlineDb.offlinePinLockout.delete(tenantId);
+    // SECURITY-05: a correct PIN does not clear earlier failures (it would let
+    // a known PIN be used to keep guessing another); the lock still expires.
     return { outcome: 'matched', staff: match.staff };
   }
 
