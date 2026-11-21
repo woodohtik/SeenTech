@@ -3855,7 +3855,14 @@
       "trial_extend_failed": "مدت بڑھانے میں ناکامی۔",
       "trial_extended": "ٹرائل مدت مزید 14 دن بڑھا دی گئی۔",
       "trials_ending_soon": "جلد ختم ہونے والے ٹرائلز",
-      "view_shop_ui": "دکان کا انٹرفیس دیکھیں"
+      "view_shop_ui": "دکان کا انٹرفیس دیکھیں",
+      "all_verticals": "تمام سرگرمیاں",
+      "col_vertical": "سرگرمی",
+      "vertical_change_hint": "صرف بغیر آرڈرز والی دکان کے لیے اجازت ہے؛ آڈٹ لاگ میں درج ہوتا ہے۔",
+      "vertical_change_title": "دکان کی سرگرمی تبدیل کریں",
+      "vertical_change_confirm": "«{{shop}}» کی سرگرمی «{{from}}» سے «{{to}}» میں تبدیل کریں؟",
+      "vertical_change_has_orders": "جس دکان کے آرڈرز ہوں اس کی سرگرمی تبدیل نہیں ہو سکتی۔",
+      "vertical_changed": "دکان کی سرگرمی تبدیل کر دی گئی"
     },
     "test_data_delete_error": "ٹیسٹ ڈیٹا حذف کرتے وقت ایک خرابی پیش آئی۔",
     "test_data_delete_error_with_message": "ٹیسٹ ڈیٹا حذف کرتے وقت ایک خرابی پیش آئی: {{error}}",

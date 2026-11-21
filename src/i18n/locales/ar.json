@@ -3870,7 +3870,14 @@
       "trial_extend_failed": "فشل تمديد الفترة",
       "trial_extended": "تم تمديد الفترة التجريبية لـ 14 يوماً إضافياً",
       "trials_ending_soon": "تجارب توشك على الانتهاء",
-      "view_shop_ui": "عرض واجهة المحل"
+      "view_shop_ui": "عرض واجهة المحل",
+      "all_verticals": "كل الأنشطة",
+      "col_vertical": "النشاط",
+      "vertical_change_hint": "يُسمح بالتغيير فقط لمحل بلا طلبات، ويُسجَّل في سجل التدقيق.",
+      "vertical_change_title": "تغيير نشاط المحل",
+      "vertical_change_confirm": "تغيير نشاط «{{shop}}» من «{{from}}» إلى «{{to}}»؟",
+      "vertical_change_has_orders": "لا يمكن تغيير نشاط محل لديه طلبات.",
+      "vertical_changed": "تم تغيير نشاط المحل"
     },
     "test_data_delete_error": "حدث خطأ أثناء حذف بيانات الاختبار",
     "test_data_delete_error_with_message": "حدث خطأ أثناء حذف بيانات الاختبار: {{error}}",

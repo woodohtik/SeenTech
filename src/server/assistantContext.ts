@@ -56,3 +56,24 @@ export function buildMomentContext(page: unknown, now: Date = new Date()): strin
   }
   return lines.join('\n');
 }
+
+/**
+ * The shop's activity and its order stages, appended to the system prompt
+ * (seen-verticals-readiness-task.md Phase 7.3), so "كم طلب في مرحلة
+ * التنجيد؟" is answered with the shop's own stage names, and the stage key
+ * the tools return is translated back to the name the shop sees.
+ */
+export function buildVerticalContext(
+  verticalName: string | null | undefined,
+  stages: ReadonlyArray<{ stage_key: string; label_ar: string; phase?: string | null }>,
+): string {
+  if (!verticalName && stages.length === 0) return '';
+  const lines: string[] = [];
+  if (verticalName) lines.push(`نشاط هذا المحل: «${verticalName}».`);
+  const work = stages.filter((s) => s.phase !== 'cancelled');
+  if (work.length > 0) {
+    const list = work.map((s) => `${s.label_ar} (${s.stage_key})`).join('، ');
+    lines.push(`مراحل الطلب في هذا المحل بالترتيب: ${list}. استعمل هذه التسميات بالضبط عند الحديث عن مراحل الطلبات، وحوّل أي مفتاح مرحلة تعيده الأدوات إلى تسميته.`);
+  }
+  return lines.join('\n');
+}

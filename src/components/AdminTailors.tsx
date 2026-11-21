@@ -45,6 +45,8 @@ import { cn } from '../lib/utils';
 import { autoSeed } from '../services/seedService';
 import { IconInput } from './ui/IconInput';
 import { SmartSelect } from './ui/SmartSelect';
+import type { Vertical } from '../types/expansion';
+import { localizedVerticalName } from '../utils/verticalLabels';
 import { useAuth } from '../contexts/AuthContext';
 import { useConfirm } from '../contexts/ConfirmContext';
 import { useTranslation } from 'react-i18next';
@@ -72,7 +74,17 @@ export default function AdminTailors() {
   const { dir } = useDirection();
   const { dbUser } = useAuth();
   const userRole = dbUser?.role;
-  const { promptText } = useConfirm();
+  const { promptText, confirm } = useConfirm();
+  const { i18n: i18nInst } = useTranslation();
+  // seen-verticals-readiness-task.md Phase 7: the shops' activities.
+  const [verticals, setVerticals] = useState<Vertical[]>([]);
+  const [verticalFilter, setVerticalFilter] = useState('all');
+  const [changingVertical, setChangingVertical] = useState(false);
+  useEffect(() => {
+    supabase.from('verticals').select('*').order('sort').then(({ data }) => setVerticals((data || []) as Vertical[]));
+  }, []);
+  const verticalName = (key?: string | null) =>
+    localizedVerticalName(verticals.find((v) => v.key === (key || 'mens_tailoring')), i18nInst.language) || key || '';
   const navigate = useNavigate();
   const location = useLocation();
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -380,6 +392,31 @@ export default function AdminTailors() {
     localStorage.setItem('impersonatedTenantId', tenantId);
     localStorage.setItem('tenant_id', tenantId);
     window.location.href = '/dashboard';
+  };
+
+  const changeTenantVertical = async (tenant: Tenant, next: string) => {
+    const current = (tenant as any).vertical || 'mens_tailoring';
+    if (next === current) return;
+    const ok = await confirm({
+      title: t('saas.tenants.vertical_change_title', 'تغيير نشاط المحل'),
+      description: t('saas.tenants.vertical_change_confirm', 'تغيير نشاط «{{shop}}» من «{{from}}» إلى «{{to}}»؟', { shop: tenant.name, from: verticalName(current), to: verticalName(next) }),
+    });
+    if (!ok) return;
+    setChangingVertical(true);
+    try {
+      const { error } = await supabase.rpc('admin_change_tenant_vertical' as any, { p_tenant_id: tenant.id, p_vertical: next });
+      if (error) {
+        showToast((error as any).hint === 'tenant_has_orders'
+          ? t('saas.tenants.vertical_change_has_orders', 'لا يمكن تغيير نشاط محل لديه طلبات.')
+          : (error.message || t('common.error')), 'error');
+        return;
+      }
+      setTenants((prev) => prev.map((x) => (x.id === tenant.id ? ({ ...x, vertical: next } as any) : x)));
+      setSelectedTenant((prev) => (prev && prev.id === tenant.id ? ({ ...prev, vertical: next } as any) : prev));
+      showToast(t('saas.tenants.vertical_changed', 'تم تغيير نشاط المحل'), 'success');
+    } finally {
+      setChangingVertical(false);
+    }
   };
 
   const openTenantDrawer = async (tenant: Tenant) => {
@@ -907,6 +944,20 @@ export default function AdminTailors() {
                   { value: 'inactive', label: t('settings_page.staff.permissions.disabled') },
                 ]}
               />
+              {/* By activity, with the number of shops on each (Phase 7). */}
+              <SmartSelect
+                value={verticalFilter}
+                onChange={setVerticalFilter}
+                startIcon={Store}
+                className="w-auto min-w-[180px] rounded-2xl"
+                options={[
+                  { value: 'all', label: `${t('saas.tenants.all_verticals', 'كل الأنشطة')} (${tenants.filter((x) => !x.trashedAt).length})` },
+                  ...verticals.map((v) => ({
+                    value: v.key,
+                    label: `${verticalName(v.key)} (${tenants.filter((x) => !x.trashedAt && ((x as any).vertical || 'mens_tailoring') === v.key).length})`,
+                  })),
+                ]}
+              />
             </div>
             
             <div className="flex gap-2">
@@ -981,6 +1032,7 @@ export default function AdminTailors() {
                   <thead className="bg-surface-muted text-content-muted text-[10px] font-black uppercase tracking-widest border-b border-border">
                     <tr>
                       <th className="px-8 py-5">{t('saas.tenants.col_shop')}</th>
+                      <th className="px-8 py-5">{t('saas.tenants.col_vertical', 'النشاط')}</th>
                       <th className="px-8 py-5">{t('saas.tenants.col_owner_contact')}</th>
                       <th className="px-8 py-5">{t('saas.tenants.col_plan')}</th>
                       <th className="px-8 py-5">{t('common.status')}</th>
@@ -995,7 +1047,8 @@ export default function AdminTailors() {
                                             t.ownerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                             t.phone?.includes(searchTerm);
                         const matchesStatus = statusFilter === 'all' || t.status === statusFilter;
-                        return matchesSearch && matchesStatus;
+                        const matchesVertical = verticalFilter === 'all' || ((t as any).vertical || 'mens_tailoring') === verticalFilter;
+                        return matchesSearch && matchesStatus && matchesVertical;
                       })
                       .map((tenant) => {
                       const isActive = tenant.status === 'active' || tenant.status === 'onboarding';
@@ -1026,6 +1079,11 @@ export default function AdminTailors() {
                                 </div>
                               </div>
                             </div>
+                          </td>
+                          <td className="px-8 py-6">
+                            <span className="px-3 py-1 rounded-full text-[10px] font-black bg-surface-muted text-content border border-border whitespace-nowrap">
+                              {verticalName((tenant as any).vertical)}
+                            </span>
                           </td>
                           <td className="px-8 py-6">
                             <div className="text-sm font-bold text-content">{tenant.ownerEmail}</div>
@@ -1151,6 +1209,20 @@ export default function AdminTailors() {
 
               {/* Scrollable Content */}
               <div className="overflow-y-auto flex-1 p-8 space-y-8 custom-scrollbar">
+
+                {/* The shop's activity -- the platform admin may change it while the
+                    shop has no orders (admin_change_tenant_vertical, logged). */}
+                <div className="flex flex-wrap items-center gap-3 bg-surface-muted p-4 rounded-2xl border border-border">
+                  <span className="text-xs font-bold text-content-muted">{t('saas.tenants.col_vertical', 'النشاط')}</span>
+                  <SmartSelect
+                    value={(selectedTenant as any).vertical || 'mens_tailoring'}
+                    disabled={changingVertical}
+                    onChange={(next) => void changeTenantVertical(selectedTenant, next)}
+                    className="w-auto min-w-[200px] rounded-xl"
+                    options={verticals.map((v) => ({ value: v.key, label: verticalName(v.key) }))}
+                  />
+                  <span className="text-[11px] text-content-muted font-bold">{t('saas.tenants.vertical_change_hint', 'يُسمح بالتغيير فقط لمحل بلا طلبات، ويُسجَّل في سجل التدقيق.')}</span>
+                </div>
                 
                 {/* Statistics Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

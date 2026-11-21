@@ -3867,7 +3867,14 @@
       "trial_extend_failed": "Failed to extend the period.",
       "trial_extended": "Trial extended by 14 more days.",
       "trials_ending_soon": "Trials Ending Soon",
-      "view_shop_ui": "View Shop UI"
+      "view_shop_ui": "View Shop UI",
+      "all_verticals": "All activities",
+      "col_vertical": "Activity",
+      "vertical_change_hint": "Allowed only for a shop with no orders; recorded in the audit log.",
+      "vertical_change_title": "Change the shop's activity",
+      "vertical_change_confirm": "Change “{{shop}}” from “{{from}}” to “{{to}}”?",
+      "vertical_change_has_orders": "A shop that has orders cannot change its activity.",
+      "vertical_changed": "The shop's activity was changed"
     },
     "test_data_delete_error": "An error occurred while deleting the test data.",
     "test_data_delete_error_with_message": "An error occurred while deleting the test data: {{error}}",

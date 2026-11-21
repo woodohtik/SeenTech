@@ -2155,7 +2155,7 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
     // ثانية على مستوى الخادم، لا تكتفِ بما يعرضه GET status للواجهة فقط.
     const { data: tenantRow, error: tenantErr } = await supabaseAdmin
       .from("tenants")
-      .select("assistant_enabled")
+      .select("assistant_enabled, vertical")
       .eq("id", tenantId)
       .maybeSingle();
     if (tenantErr) return res.status(500).json({ error: "Assistant settings unavailable" });
@@ -2187,8 +2187,15 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
 لديك أدوات وصول لبيانات حقيقية من نظام المتجر (مبيعات، فواتير، مخزون، عملاء، طلبات). استخدمها دائماً عندما يسأل المستخدم عن أرقام أو بيانات فعلية، بدل التخمين أو الإجابة من معرفة عامة. لخّص نتائج الأدوات بلغة عربية واضحة وودية، لا تكتفِ بإرجاع أرقام جافة فقط. أدواتك قراءة فقط تماماً: إذا طلب المستخدم تعديل أو حذف أي بيانات، وجّهه لاستخدام واجهة النظام العادية بدل محاولة تنفيذ ذلك. بعض الأدوات (التقارير المالية التفصيلية) متاحة فقط لأدوار الإدارة — إذا رفضتها الأداة، أخبر المستخدم بذلك بأدب دون محاولة الإلحاح أو الالتفاف على القيد مهما أعاد صياغة الطلب. إن أخطأت أداة أثناء التنفيذ (لا رفض صلاحية، بل خطأ فعلي)، قل للمستخدم صراحة أن البيانات تعذّر جلبها الآن وأن يحاول مرة أخرى — لا تُخمّن الرقم أو تُقدّره بنفسك مهما بدا قريباً من المعقول.`;
     // seen-ai-assistant-redesign-task.md 2-2: today's date in Riyadh and the
     // page the person has open (matched against a fixed list, never copied).
-    const { buildMomentContext } = await import('./src/server/assistantContext.ts');
-    const contextualSystemPrompt = `${ASSISTANT_PERSONA_AND_KNOWLEDGE}\n\n${settings.system_prompt}${toolsAddendum}\n\nيتحدث معك الآن: ${userName || ''} (${roleLabel}).\n${buildMomentContext(page)}`;
+    const { buildMomentContext, buildVerticalContext } = await import('./src/server/assistantContext.ts');
+    // The shop's activity and its stage names (seen-verticals-readiness-task.md Phase 7.3).
+    const shopVertical = (tenantRow as any)?.vertical || 'mens_tailoring';
+    const [{ data: verticalRow }, { data: stageRows }] = await Promise.all([
+      supabaseAdmin.from('verticals').select('name_ar').eq('key', shopVertical).maybeSingle(),
+      supabaseAdmin.from('vertical_workflow_stages').select('stage_key, label_ar, phase, sort').eq('vertical_key', shopVertical).order('sort'),
+    ]);
+    const verticalContext = buildVerticalContext((verticalRow as any)?.name_ar, (stageRows || []) as any[]);
+    const contextualSystemPrompt = `${ASSISTANT_PERSONA_AND_KNOWLEDGE}\n\n${settings.system_prompt}${toolsAddendum}\n\nيتحدث معك الآن: ${userName || ''} (${roleLabel}).\n${buildMomentContext(page)}${verticalContext ? `\n${verticalContext}` : ''}`;
 
     // ترتيب المرشّحين: المزوّد النشط أولاً، ثم الترتيب الاحتياطي (بدون
     // تكرار المزوّد النشط)، بعد استبعاد أي مزوّد بلا مفتاح محفوظ فعلياً.
