@@ -2706,7 +2706,14 @@
     "visual_details_interactive_measurements": "التفاصيل البصرية والمقاسات التفاعلية",
     "walk_in_customer": "عميل نقدي",
     "whatsapp_invoice_text": "فاتورة من {{store}}\\nرقم الفاتورة: {{invoiceNumber}}\\nالإجمالي: {{total}} ﷼.",
-    "zatca_invoice_auto_note": "فاتورة زاتكا تطلع تلقائياً"
+    "zatca_invoice_auto_note": "فاتورة زاتكا تطلع تلقائياً",
+    "unit_meter_short": "م",
+    "unit_yard_short": "ياردة",
+    "unit_roll": "طاقة",
+    "per_meter": "للمتر",
+    "length_quantity": "الكمية",
+    "length_unit": "الوحدة",
+    "length_quantity_invalid": "أدخل كمية أكبر من صفر"
   },
   "printing": {
     "agent": {

@@ -79,6 +79,9 @@ import { isRtlLang } from '../lib/direction';
 import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
 import { cmToDisplayUnit, unitLabelKey, type MeasurementUnit } from '../utils/measurementUnits';
 import { measurementRows, measurementSetFor } from '../constants/measurementFields';
+import { isLengthItem } from '../utils/itemUnits';
+import { LENGTH_STEP_METERS, firstLengthQuantity, roundMeters, stepMeters, toMeters, type LengthUnit } from '../utils/lengthSale';
+import LengthQuantityControl from './pos/LengthQuantityControl';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import { useTenantCategoryPicker } from '../hooks/useTenantCategoryPicker';
 import { LEGACY_INVENTORY_CATEGORY_SEED } from '../services/categoryService';
@@ -992,13 +995,18 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     const currentQtyInCart = existingInCart ? existingInCart.quantity : 0;
 
     const displayName = variant ? `${item.name} — ${variant.name}` : item.name;
+    // Sold by length (fabric store, any length category -- Phase 5 of
+    // seen-verticals-readiness-task.md): the quantity is metres, a quarter
+    // metre at a time; stock is kept in metres too.
+    const isLength = isLengthItem(item as any);
+    const addStep = isLength ? LENGTH_STEP_METERS : 1;
 
     if (availableStock <= 0) {
       toastError(t('pos.out_of_stock'), `${displayName} (${t('inventory.available')}: 0)`);
       return;
     }
 
-    if (currentQtyInCart + 1 > availableStock) {
+    if (currentQtyInCart + (isLength && currentQtyInCart === 0 ? firstLengthQuantity(availableStock) : addStep) > availableStock) {
       toastError(t('pos.insufficient_stock'), `${displayName} (${t('inventory.available')}: ${availableStock})`);
       return;
     }
@@ -1006,7 +1014,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     setCart(prev => {
       const existing = prev.find(i => i.type === 'ready_made' && i.itemId === item.id && (i.variantId || undefined) === variant?.id);
       if (existing) {
-        return prev.map(i => i === existing ? { ...i, quantity: i.quantity + 1 } : i);
+        return prev.map(i => i === existing ? { ...i, quantity: isLength ? roundMeters(i.quantity + addStep) : i.quantity + 1 } : i);
       }
       return [...prev, {
         id: Math.random().toString(36).substr(2, 9),
@@ -1018,7 +1026,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
         price: item.pricePerUnit + (variant?.priceAdjustment || 0),
         taxType: item.taxType || 'exclusive',
         image: item.mainImage || item.images?.[0] || '',
-        quantity: 1
+        quantity: isLength ? firstLengthQuantity(availableStock) : 1,
+        ...(isLength ? { isLength: true, conversionRate: Number(item.conversionRate) || 0, lengthUnit: 'meter' as LengthUnit } : {}),
       } as OrderItem];
     });
     // On mobile, maybe show the cart after adding?
@@ -1112,7 +1121,9 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     let stockExceeded = false;
     setCart(prev => prev.map(i => {
       if (i.id === id) {
-        const newQuantity = Math.max(1, i.quantity + delta);
+        const newQuantity = (i as any).isLength
+          ? stepMeters(i.quantity, delta > 0 ? 1 : -1)
+          : Math.max(1, i.quantity + delta);
         if (i.type === 'ready_made' && i.itemId) {
           const availableStock = i.variantId ? (variantStock[i.variantId] || 0) : (branchStock[i.itemId] || 0);
           if (newQuantity > availableStock) {
@@ -1127,6 +1138,24 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
     if (stockExceeded) {
       toastError(t('pos.insufficient_stock'));
     }
+  };
+
+  /** A length line's quantity typed in metres / yards / rolls (Phase 5): stored in metres, checked against the stock in metres. */
+  const setLengthQuantity = (id: string, value: number, unit: LengthUnit) => {
+    let stockExceeded = false;
+    let invalid = false;
+    setCart(prev => prev.map(i => {
+      if (i.id !== id) return i;
+      const meters = toMeters(value, unit, Number((i as any).conversionRate) || 0);
+      if (meters === null) { invalid = true; return i; }
+      if (i.itemId) {
+        const availableStock = i.variantId ? (variantStock[i.variantId] || 0) : (branchStock[i.itemId] || 0);
+        if (meters > availableStock) { stockExceeded = true; return i; }
+      }
+      return { ...i, quantity: meters, lengthUnit: unit } as OrderItem;
+    }));
+    if (stockExceeded) toastError(t('pos.insufficient_stock'));
+    else if (invalid) toastError(t('pos.length_quantity_invalid', 'أدخل كمية أكبر من صفر'));
   };
 
   // مراجعة-الفريق-التقني-الكامل-2026-10-19.md (QA، حرجة): مستخرَج الآن إلى
@@ -1292,7 +1321,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
           fabric: item.fabric || null,
           fabric_id: (item.type === 'custom' && item.fabricId) ? item.fabricId : null,
           quantity: Number(item.quantity) > 0 ? Number(item.quantity) : 1,
-          selected_unit: item.selectedUnit || null,
+          // A length line's quantity is metres (Phase 5).
+          selected_unit: (item as any).isLength ? 'meter' : (item.selectedUnit || null),
           consumed_meters: item.consumedMeters ? Number(item.consumedMeters) : null,
           price: Number(item.price) >= 0 ? Number(item.price) : 0,
           closure_type: item.closureType || null,
@@ -1456,6 +1486,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
          items: cart.map(item => ({
            name: item.name || item.garmentType || 'منتج مخصص',
            quantity: item.quantity,
+           // «2.5 م × السعر» for a line sold by length (Phase 5).
+           quantityUnit: (item as any).isLength ? t('pos.unit_meter_short', 'م') : undefined,
            price: item.price,
            // Was dropped here -- every printed receipt line item rendered
            // as if it were VAT-inclusive regardless of how this product is
@@ -1741,15 +1773,28 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                         {item.type === 'custom' ? item.garmentType : (i18n.language === 'en' && item.nameEn ? item.nameEn : item.name)}
                       </span>
                     </div>
-                    <div className="text-brand font-bold"><PriceDisplay amount={item.price} /></div>
+                    <div className="text-brand font-bold">
+                      <PriceDisplay amount={item.price} />
+                      {(item as any).isLength && <span className="text-xs text-content-muted font-bold"> / {t('pos.per_meter', 'للمتر')}</span>}
+                    </div>
                   </div>
                   
                   <div className="flex items-center gap-3">
+                    {(item as any).isLength ? (
+                      <LengthQuantityControl
+                        meters={item.quantity}
+                        unit={((item as any).lengthUnit as LengthUnit) || 'meter'}
+                        metersPerRoll={Number((item as any).conversionRate) || 0}
+                        onStep={(dir) => updateQuantity(item.id!, dir)}
+                        onCommit={(value, unit) => setLengthQuantity(item.id!, value, unit)}
+                      />
+                    ) : (
                     <div className="flex items-center gap-2 bg-surface-muted border border-border rounded-lg p-1">
                       <button onClick={() => updateQuantity(item.id!, -1)} aria-label={t('pos.decrease_quantity')} className="w-11 h-11 flex items-center justify-center hover:bg-surface-muted rounded transition-colors">-</button>
                       <span className="w-6 text-center font-bold text-content">{item.quantity}</span>
                       <button onClick={() => updateQuantity(item.id!, 1)} aria-label={t('pos.increase_quantity')} className="w-11 h-11 flex items-center justify-center hover:bg-surface-muted rounded transition-colors">+</button>
                     </div>
+                    )}
                     <button onClick={() => removeFromCart(item.id!)} aria-label={t('pos.remove_item')} className="p-3 text-danger hover:bg-danger/10 rounded-lg transition-colors cursor-pointer">
                       <Trash2 size={18} />
                     </button>

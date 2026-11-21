@@ -37,6 +37,8 @@ export interface InvoiceData {
     measurements?: { label: string; value: string | number }[];
     /** The line's specs on one line (seen-verticals-readiness-task.md Phase 3). */
     specs?: string;
+    /** The quantity's unit for a line sold by length, e.g. «م» (Phase 5). */
+    quantityUnit?: string;
   }>;
   subtotal: number;
   vatAmount: number;
@@ -174,6 +176,7 @@ export const ThermalInvoice = ({
     taxType: item.taxType,
     measurements: item.measurements,
     specs: item.specs,
+    quantityUnit: item.quantityUnit,
   }));
 
   const payLabels = formatPaymentMethodLabels(data.paymentMethod);
@@ -272,6 +275,7 @@ export const StandardInvoice = ({
     taxType: item.taxType,
     measurements: item.measurements,
     specs: item.specs,
+    quantityUnit: item.quantityUnit,
   }));
 
   const payLabels = formatPaymentMethodLabels(data.paymentMethod);

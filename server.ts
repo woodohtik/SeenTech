@@ -2378,7 +2378,7 @@ app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any
 
   const { data: items } = await supabaseAdmin
     .from('order_items')
-    .select('name, garment_type, quantity, price')
+    .select('name, garment_type, quantity, price, selected_unit')
     .eq('order_id', orderId)
     .eq('tenant_id', tenantId);
 
@@ -2428,6 +2428,9 @@ app.post("/api/zatca/submit-invoice", authenticate, asyncHandler(async (req: any
       lineExtensionAmount,
       taxPercent: vatPercent,
       taxAmount: lineExtensionAmount * (vatPercent / 100),
+      // A line sold by length carries its unit (2.5 metres); any other line
+      // is written exactly as before (seen-verticals-readiness-task.md Phase 5).
+      ...(item.selected_unit === 'meter' ? { unitCode: 'MTR' } : item.selected_unit === 'yard' ? { unitCode: 'YRD' } : {}),
     };
   });
 

@@ -41,6 +41,12 @@ export interface ZatcaInvoiceLine {
   /** VAT rate as a percentage, e.g. 15 for the standard Saudi rate. */
   taxPercent: number;
   taxAmount: number;
+  /**
+   * UN/ECE unit of the quantity, only for a line sold by length (MTR / YRD --
+   * seen-verticals-readiness-task.md Phase 5). Absent: the element is written
+   * exactly as before, with no unitCode.
+   */
+  unitCode?: string;
 }
 
 export interface ZatcaParty {
@@ -264,7 +270,7 @@ function buildInvoiceXmlCore(
   for (const line of input.lines) {
     const invoiceLine = doc.ele(NS.cac, 'cac:InvoiceLine');
     invoiceLine.ele(NS.cbc, 'cbc:ID').txt(line.id).up();
-    invoiceLine.ele(NS.cbc, 'cbc:InvoicedQuantity').txt(String(line.quantity)).up();
+    invoiceLine.ele(NS.cbc, 'cbc:InvoicedQuantity', line.unitCode ? { unitCode: line.unitCode } : {}).txt(String(line.quantity)).up();
     invoiceLine.ele(NS.cbc, 'cbc:LineExtensionAmount', { currencyID: 'SAR' }).txt(line.lineExtensionAmount.toFixed(2)).up();
     const lineTax = invoiceLine.ele(NS.cac, 'cac:TaxTotal');
     lineTax.ele(NS.cbc, 'cbc:TaxAmount', { currencyID: 'SAR' }).txt(line.taxAmount.toFixed(2)).up();

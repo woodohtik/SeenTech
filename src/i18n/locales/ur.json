@@ -2704,7 +2704,14 @@
     "visual_details_interactive_measurements": "بصری تفصیلات اور انٹرایکٹو ناپ",
     "walk_in_customer": "نقد گاہک",
     "whatsapp_invoice_text": "انوائس از {{store}}\\nانوائس نمبر: {{invoiceNumber}}\\nکل: {{total}} ﷼.",
-    "zatca_invoice_auto_note": "ZATCA انوائس خود بخود جاری ہو جاتی ہے"
+    "zatca_invoice_auto_note": "ZATCA انوائس خود بخود جاری ہو جاتی ہے",
+    "unit_meter_short": "میٹر",
+    "unit_yard_short": "گز",
+    "unit_roll": "رول",
+    "per_meter": "فی میٹر",
+    "length_quantity": "مقدار",
+    "length_unit": "اکائی",
+    "length_quantity_invalid": "صفر سے زیادہ مقدار درج کریں"
   },
   "printing": {
     "agent": {

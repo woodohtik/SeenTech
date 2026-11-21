@@ -157,3 +157,20 @@ describe('buildStandardInvoiceXml', () => {
     expect(xml).toContain('<cac:InvoiceLine>');
   });
 });
+
+// seen-verticals-readiness-task.md Phase 5: fabric sold by the metre.
+describe('a line sold by length', () => {
+  it('writes a decimal quantity with its unit (MTR)', () => {
+    const xml = buildSimplifiedInvoiceXml(sampleInput({
+      lines: [{ id: '1', itemName: 'قماش قطن', quantity: 2.5, unitPrice: 20, lineExtensionAmount: 50, taxPercent: 15, taxAmount: 7.5, unitCode: 'MTR' }],
+      subtotal: 50, taxAmount: 7.5, totalWithTax: 57.5,
+    }));
+    expect(() => create(xml)).not.toThrow();
+    expect(xml).toContain('<cbc:InvoicedQuantity unitCode="MTR">2.5</cbc:InvoicedQuantity>');
+  });
+
+  it('a line without a unit is written exactly as before', () => {
+    const xml = buildSimplifiedInvoiceXml(sampleInput());
+    expect(xml).toContain('<cbc:InvoicedQuantity>1</cbc:InvoicedQuantity>');
+  });
+});

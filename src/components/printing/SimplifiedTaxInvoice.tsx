@@ -21,6 +21,8 @@ export interface SimplifiedInvoiceItem {
   measurements?: { label: string; value: string | number }[];
   /** The line's specs in the shop's own fields, on one line (seen-verticals-readiness-task.md Phase 3). */
   specs?: string;
+  /** The quantity's unit for a line sold by length, e.g. «م» -- printed «× 2.5 م» (Phase 5). */
+  quantityUnit?: string;
 }
 
 export interface SimplifiedSellerInfo {
@@ -323,7 +325,8 @@ export default function SimplifiedTaxInvoice({
               <div key={idx} className="py-0.5 border-b border-solid border-slate-100 last:border-0">
                 <div className="flex justify-between items-start text-[9px] text-slate-900 gap-1">
                   <div className="flex-1 min-w-0 text-right font-bold text-slate-900 leading-tight break-words">
-                    <span className="font-mono text-slate-800 font-bold" dir="ltr">× {item.quantity}</span>{' '}
+                    <span className="font-mono text-slate-800 font-bold" dir="ltr">× {item.quantity}</span>
+                    {item.quantityUnit ? <span className="font-bold text-slate-800"> {item.quantityUnit}</span> : null}{' '}
                     {item.name}
                   </div>
                   <span className="w-12 shrink-0 text-center font-mono font-bold text-slate-800 inline-flex items-center justify-center gap-0.5 whitespace-nowrap">

@@ -2706,7 +2706,14 @@
     "visual_details_interactive_measurements": "Visual Details & Interactive Measurements",
     "walk_in_customer": "Walk-in Customer",
     "whatsapp_invoice_text": "Invoice from {{store}}\\nInvoice No: {{invoiceNumber}}\\nTotal: {{total}} ﷼.",
-    "zatca_invoice_auto_note": "ZATCA invoice is generated automatically"
+    "zatca_invoice_auto_note": "ZATCA invoice is generated automatically",
+    "unit_meter_short": "m",
+    "unit_yard_short": "yd",
+    "unit_roll": "roll",
+    "per_meter": "per m",
+    "length_quantity": "Quantity",
+    "length_unit": "Unit",
+    "length_quantity_invalid": "Enter a quantity above zero"
   },
   "printing": {
     "agent": {
