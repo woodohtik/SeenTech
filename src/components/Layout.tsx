@@ -33,7 +33,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import { UserRole, Staff as StaffType, PermissionKey } from '../types';
 import { getFilteredNavItems } from '../config/navigation';
 import { usePermissions } from '../hooks/usePermissions';
-import { VerticalConfigProvider } from '../hooks/useVerticalConfig';
+import { VerticalConfigProvider, useVerticalConfig } from '../hooks/useVerticalConfig';
+import { isModuleEnabled } from '../services/verticalService';
+import { useVerticalTerms } from '../hooks/useVerticalTerms';
 import UserPreferencesMenu from './UserPreferencesMenu';
 import ImpersonationBanner, { IMPERSONATION_BANNER_HEIGHT } from './ImpersonationBanner';
 import { endImpersonation } from '../services/impersonationService';
@@ -61,7 +63,22 @@ interface LayoutProps {
   isLocked?: boolean;
 }
 
-export default function Layout({ children, role, tenantId, currentStaff, onLock, isLocked = false }: LayoutProps) {
+/**
+ * The shop's activity settings wrap the whole shell, so the menu itself can
+ * follow them (seen-verticals-readiness-task.md Phase 6: a fabric store has
+ * no orders section).
+ */
+export default function Layout(props: LayoutProps) {
+  return (
+    <VerticalConfigProvider tenantId={props.tenantId}>
+      <LayoutShell {...props} />
+    </VerticalConfigProvider>
+  );
+}
+
+function LayoutShell({ children, role, tenantId, currentStaff, onLock, isLocked = false }: LayoutProps) {
+  const { modules: verticalModules } = useVerticalConfig();
+  const tv = useVerticalTerms();
   const navigate = useNavigate();
   const location = useLocation();
   const { t, i18n } = useTranslation();
@@ -166,7 +183,12 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
   const navItems = getFilteredNavItems(effectiveRole, isActingAsSaaS, isImpersonatingSaaS).map(item => ({
     ...item,
     label: t(item.labelKey, item.defaultLabel ?? item.labelKey)
-  })).filter(item => {
+  }))
+  // A section whose module is off for this shop (tenants.enabled_modules,
+  // narrowed by the activity -- a fabric store takes no orders) is hidden.
+  // Not before the settings are known: nothing disappears while loading.
+  .filter(item => !item.module || verticalModules.length === 0 || isModuleEnabled(verticalModules, item.module))
+  .filter(item => {
     // Secondary check for fine-grained permissions if explicitly required
     if (isImpersonatingSaaS || isOwner || effectiveRole === 'super_admin') return true;
     if (item.permissions) return item.permissions.some(p => hasPermission(p as PermissionKey));
@@ -214,7 +236,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
   );
 
   return (
-    <VerticalConfigProvider tenantId={tenantId}>
+    <>
     <div
       className={cn("flex min-h-[100dvh] bg-surface-muted font-sans overflow-hidden w-full transition-all duration-300 xl:pe-[var(--assistant-dock,0px)]", isLocked && "blur-xl select-none pointer-events-none scale-98")}
       style={{
@@ -505,7 +527,7 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
                     : effectiveRole === 'cashier'
                       ? t('common.roles.cashier')
                       : effectiveRole === 'tailor'
-                        ? t('common.roles.tailor')
+                        ? tv('common.roles.tailor')
                         : effectiveRole === 'super_admin'
                           ? t('common.roles.super_admin')
                           : effectiveRole === 'support_tech'
@@ -684,6 +706,6 @@ export default function Layout({ children, role, tenantId, currentStaff, onLock,
         <NewOrderAlert tenantId={tenantId} enabled={hasPermission('orders.view')} currentStaffId={currentStaff?.id} />
       )}
     </div>
-    </VerticalConfigProvider>
+    </>
   );
 }

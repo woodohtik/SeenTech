@@ -67,6 +67,7 @@ import Header from './Header';
 import TailoringOrderForm from './TailoringOrderForm';
 import OrderItemAttributes from './orders/OrderItemAttributes';
 import OrderWorkCard, { WORK_CARD_ELEMENT_ID } from './orders/OrderWorkCard';
+import { useVerticalTerms } from '../hooks/useVerticalTerms';
 import { motion, AnimatePresence } from 'motion/react';
 import { usePermissions } from '../hooks/usePermissions';
 import { useTranslation } from 'react-i18next';
@@ -294,6 +295,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const { currentStaff } = useStaff();
   const { user: currentAuthUser } = useAuth();
   const { workflowStages, isLegacyVertical, orderItemFields, capabilities } = useVerticalConfig();
+  const tv = useVerticalTerms();
   const { hasPermission, checkPermission } = usePermissions(currentStaff);
 
   // قائمة مفاتيح الحالة المتاحة للاختيار (شريط التحديث السريع + قوائم الحالة المنسدلة
@@ -1613,7 +1615,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
                   if (updater) {
                     updaterName = updater.name;
-                    updaterRole = updater.role === 'tailor' ? t('common.roles.tailor') : t('orders.employee');
+                    updaterRole = updater.role === 'tailor' ? tv('common.roles.tailor') : t('orders.employee');
                   } else if (isOwner) {
                     updaterName = tenant.name;
                     updaterRole = t('common.roles.owner');

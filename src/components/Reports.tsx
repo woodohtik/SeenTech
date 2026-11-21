@@ -7,6 +7,9 @@ import { isNetworkFailure } from '../lib/offline/outbox';
 import { Order, Customer, InventoryItem, Staff, Shift, Role, PurchaseOrder, Supplier } from '../types';
 import { decodeOrderRow } from '../utils/orderHistoryHelper';
 import { computeVatSummary } from '../utils/vatReport';
+import { useVerticalConfig } from '../hooks/useVerticalConfig';
+import { isOrdersModuleOn } from '../services/verticalService';
+import { useVerticalTerms } from '../hooks/useVerticalTerms';
 import { resolveTailoringTax, type TailoringTax } from '../utils/tailoringOrder';
 import { readTenantRow } from '../lib/tenantRow';
 
@@ -101,6 +104,9 @@ export default function Reports({ tenantId }: { tenantId: string }) {
   const { t, dir, locale } = useDirection();
   const { currentStaff } = useStaff();
   const { hasPermission, loading: permsLoading } = usePermissions(currentStaff);
+  const { modules: verticalModules } = useVerticalConfig();
+  const ordersModuleOn = isOrdersModuleOn(verticalModules);
+  const tv = useVerticalTerms();
   const { success: toastSuccess, error: toastError, warning: toastWarning } = useToast();
   
   const canViewReports = hasPermission('reports.view');
@@ -848,13 +854,14 @@ export default function Reports({ tenantId }: { tenantId: string }) {
     { id: 'general', label: t('reports.tab_general'), icon: TrendingUp },
     { id: 'financial', label: t('dashboard.grid.finance'), icon: DollarSign },
     { id: 'profit_loss', label: t('reports.tab_profit_loss'), icon: TrendingUp },
-    { id: 'orders', label: t('reports.tab_orders'), icon: ShoppingBag },
+    // A shop that takes no orders (a fabric store) has no orders / tailors tabs (Phase 6).
+    ...(ordersModuleOn ? [{ id: 'orders' as ReportTab, label: t('reports.tab_orders'), icon: ShoppingBag }] : []),
     { id: 'inventory', label: t('inventory.reports'), icon: Package },
     { id: 'staff', label: t('reports.tab_staff_customers'), icon: Users },
     { id: 'suppliers_purchases', label: t('reports.tab_suppliers_purchases'), icon: Truck },
     { id: 'vat', label: t('reports.tab_vat'), icon: Landmark },
     { id: 'zreports', label: t('reports.tab_zreports'), icon: Calculator },
-    { id: 'tailor_commissions', label: t('reports.tab_tailor_commissions'), icon: Scissors },
+    ...(ordersModuleOn ? [{ id: 'tailor_commissions' as ReportTab, label: tv('reports.tab_tailor_commissions'), icon: Scissors }] : []),
   ];
   const activeTabLabel = reportTabs.find(tab => tab.id === activeTab)?.label || '';
 

@@ -12,6 +12,8 @@ export interface NavItemConfig {
   permission?: string;
   permissions?: string[];
   group?: 'saas' | 'tenant';
+  /** The shop module this section belongs to (tenants.enabled_modules); hidden when it is off. */
+  module?: 'pos' | 'orders' | 'inventory' | 'customers';
 }
 
 /**
@@ -65,6 +67,7 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
   },
   {
     id: 'sales',
+    module: 'pos',
     to: '/sales',
     labelKey: 'common.sales',
     icon: 'monitor',
@@ -74,6 +77,7 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
   },
   {
     id: 'orders',
+    module: 'orders',
     to: '/orders',
     labelKey: 'common.orders',
     icon: 'shopping-bag',
@@ -83,6 +87,7 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
   },
   {
     id: 'customers',
+    module: 'customers',
     to: '/customers',
     labelKey: 'common.customers',
     icon: 'user-circle',
@@ -92,6 +97,7 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
   },
   {
     id: 'inventory',
+    module: 'inventory',
     to: '/inventory',
     labelKey: 'common.inventory',
     icon: 'package',

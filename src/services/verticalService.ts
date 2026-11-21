@@ -32,6 +32,21 @@ export async function getTenantVertical(tenantId: string): Promise<{ vertical: V
   };
 }
 
+/**
+ * The shop's modules: tenants.enabled_modules (all of them by default),
+ * narrowed by its activity -- an activity that takes no orders (a fabric
+ * store) has no orders module (seen-verticals-readiness-task.md Phase 6).
+ */
+export function effectiveModules(stored: ModuleKey[] | null | undefined, capabilities: Pick<VerticalCapabilities, 'orders_module'>): ModuleKey[] {
+  const base = Array.isArray(stored) && stored.length > 0 ? stored : DEFAULT_MODULES;
+  return capabilities.orders_module === false ? base.filter((m) => m !== 'orders') : base;
+}
+
+/** True when the orders module is on, or while the shop's modules are not known yet (nothing hidden while loading). */
+export function isOrdersModuleOn(modules: ModuleKey[]): boolean {
+  return modules.length === 0 || modules.includes('orders');
+}
+
 /** هل موديول مفعّل لهذا المحل؟ (لإظهار/إخفاء أقسام الواجهة). */
 export function isModuleEnabled(modules: ModuleKey[], key: ModuleKey): boolean {
   return Array.isArray(modules) && modules.includes(key);

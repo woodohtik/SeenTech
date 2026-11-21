@@ -587,7 +587,8 @@
       "super_admin": "Super Admin",
       "support_tech": "Support Tech",
       "tailor": "Tailor",
-      "user": "User"
+      "user": "User",
+      "tailor__technician": "Technician"
     },
     "sales": "Sales",
     "save": "Save",
@@ -1019,7 +1020,8 @@
       "measurements": "Measurements Appointments",
       "measurements_desc": "{{count}} Appointments Today",
       "tailoring": "Tailoring",
-      "tailoring_desc": "{{count}} Orders In Progress"
+      "tailoring_desc": "{{count}} Orders In Progress",
+      "tailoring__technician": "Order work"
     },
     "growth_rate": "Growth Rate",
     "in_progress": "In Progress",
@@ -2142,7 +2144,10 @@
     "print_work_card": "Print work card",
     "work_card_delivery": "Delivery date",
     "work_card_notes": "Notes",
-    "fabric_enter_manually": "Enter the metres this item uses by hand"
+    "fabric_enter_manually": "Enter the metres this item uses by hand",
+    "assigned_tailor__technician": "Assigned technician",
+    "thobe_custom__piece": "Custom order",
+    "receipt_title__piece": "Order receipt"
   },
   "permissions": {
     "access_denied_desc": "Not specified",
@@ -2713,7 +2718,9 @@
     "per_meter": "per m",
     "length_quantity": "Quantity",
     "length_unit": "Unit",
-    "length_quantity_invalid": "Enter a quantity above zero"
+    "length_quantity_invalid": "Enter a quantity above zero",
+    "custom_tailor__piece": "New order",
+    "type_custom__piece": "Order"
   },
   "printing": {
     "agent": {
@@ -3357,7 +3364,8 @@
     "vat_output_desc": "VAT collected from customers",
     "vat_payable": "Payable to ZATCA",
     "vat_refundable": "Refundable",
-    "view_staff_orders": "View Employee Orders"
+    "view_staff_orders": "View Employee Orders",
+    "tab_tailor_commissions__technician": "Technician commissions"
   },
   "saas": {
     "account_health_score": "Account Health (Health Score)",

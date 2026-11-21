@@ -587,7 +587,8 @@
       "super_admin": "مشرف عام",
       "support_tech": "فني دعم",
       "tailor": "خياط",
-      "user": "مستخدم"
+      "user": "مستخدم",
+      "tailor__technician": "فني"
     },
     "sales": "المبيعات",
     "save": "حفظ",
@@ -1019,7 +1020,8 @@
       "measurements": "مواعيد القياس",
       "measurements_desc": "{{count}} مواعيد اليوم",
       "tailoring": "خياطة وتفصيل",
-      "tailoring_desc": "{{count}} طلب قيد التنفيذ"
+      "tailoring_desc": "{{count}} طلب قيد التنفيذ",
+      "tailoring__technician": "تنفيذ الطلبات"
     },
     "growth_rate": "معدل النمو",
     "in_progress": "قيد التنفيذ",
@@ -2142,7 +2144,10 @@
     "print_work_card": "طباعة بطاقة العمل",
     "work_card_delivery": "تاريخ التسليم",
     "work_card_notes": "ملاحظات",
-    "fabric_enter_manually": "أدخل الأمتار المستهلكة لهذا الصنف يدوياً"
+    "fabric_enter_manually": "أدخل الأمتار المستهلكة لهذا الصنف يدوياً",
+    "assigned_tailor__technician": "الفني المسؤول",
+    "thobe_custom__piece": "طلب خاص",
+    "receipt_title__piece": "إيصال طلب"
   },
   "permissions": {
     "access_denied_desc": "غير محدد",
@@ -2713,7 +2718,9 @@
     "per_meter": "للمتر",
     "length_quantity": "الكمية",
     "length_unit": "الوحدة",
-    "length_quantity_invalid": "أدخل كمية أكبر من صفر"
+    "length_quantity_invalid": "أدخل كمية أكبر من صفر",
+    "custom_tailor__piece": "طلب جديد",
+    "type_custom__piece": "طلب"
   },
   "printing": {
     "agent": {
@@ -3360,7 +3367,8 @@
     "vat_output_desc": "الضريبة المحصّلة من العملاء",
     "vat_payable": "مستحقة الدفع لهيئة الزكاة والضريبة",
     "vat_refundable": "قابلة للاسترداد",
-    "view_staff_orders": "عرض طلبات الموظف"
+    "view_staff_orders": "عرض طلبات الموظف",
+    "tab_tailor_commissions__technician": "عمولات الفنيين"
   },
   "saas": {
     "account_health_score": "صحة الحساب (Health Score)",

@@ -5,6 +5,7 @@ import { useFabricEstimateSettings } from '../hooks/useFabricEstimateSettings';
 import { cmToDisplayUnit, unitLabelKey, type MeasurementUnit } from '../utils/measurementUnits';
 import { MEASUREMENT_KEYS, measurementLabelKey, measurementRows, measurementSetFor } from '../constants/measurementFields';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
+import { useVerticalTerms } from '../hooks/useVerticalTerms';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import DateTimeDisplay from './DateTimeDisplay';
@@ -2286,6 +2287,7 @@ const CustomerStatementModal = ({
   onRefresh: () => void;
   tenantId: string;
 }) => {
+  const tv = useVerticalTerms();
   const { t, i18n } = useTranslation();
   const isRtl = isRtlLang(i18n.language);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
@@ -2377,7 +2379,7 @@ const CustomerStatementModal = ({
             order.items.map((item: any, idx: number) => (
               <div key={idx} className="bg-surface p-2.5 rounded-xl border border-border flex justify-between items-center shadow-sm">
                 <div>
-                  <p className="font-bold text-content">{item.name || item.thobeType || t('orders.thobe_custom')}</p>
+                  <p className="font-bold text-content">{item.name || item.thobeType || tv('orders.thobe_custom')}</p>
                   <p className="text-[10px] text-content-muted">{t('common.quantity')}: {item.quantity || 1}</p>
                 </div>
                 <p className="font-bold text-brand"><PriceDisplay amount={item.price || item.totalPrice} /></p>

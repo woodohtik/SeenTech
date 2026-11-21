@@ -80,6 +80,8 @@ import { useMeasurementUnit } from '../hooks/useMeasurementUnit';
 import { cmToDisplayUnit, unitLabelKey, type MeasurementUnit } from '../utils/measurementUnits';
 import { measurementRows, measurementSetFor } from '../constants/measurementFields';
 import { isLengthItem } from '../utils/itemUnits';
+import { isOrdersModuleOn } from '../services/verticalService';
+import { useVerticalTerms } from '../hooks/useVerticalTerms';
 import { LENGTH_STEP_METERS, firstLengthQuantity, roundMeters, stepMeters, toMeters, type LengthUnit } from '../utils/lengthSale';
 import LengthQuantityControl from './pos/LengthQuantityControl';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
@@ -764,6 +766,8 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   completedOrderRef.current = completedOrder;
   loadingRef.current = loading;
 
+  // Read by the keyboard shortcuts (registered once) -- the current value, not the first render's.
+  const ordersModuleOnRef = React.useRef(true);
   React.useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
       // 1. Show Keyboard Shortcuts with F1 or Ctrl+/
@@ -859,7 +863,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
       }
 
       // 8. Add custom tailor item with F7 or Ctrl+Shift+A
-      if (e.key === 'F7' || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a')) {
+      if (ordersModuleOnRef.current && (e.key === 'F7' || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a'))) {
         e.preventDefault();
         setIsCustomOrderModalOpen(true);
         return;
@@ -896,7 +900,11 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
   // مستأجر (tenant_categories) بدل القيمة الثابتة category -- تبويبات
   // النقطة تقرأ الآن category_key (الحر) مع رجوع آمن لـcategory (enum
   // القديم) للعناصر التي لا تحمل category_key بعد.
-  const { inventoryCategories, isLegacyVertical, capabilities } = useVerticalConfig();
+  const { inventoryCategories, isLegacyVertical, capabilities, modules: verticalModules } = useVerticalConfig();
+  // A shop that takes no orders (a fabric store) has no «تفصيل جديد» (Phase 6).
+  const ordersModuleOn = isOrdersModuleOn(verticalModules);
+  const tv = useVerticalTerms();
+  ordersModuleOnRef.current = ordersModuleOn;
   // Measurements print only for an activity that takes them (Phase 4).
   const hasBodyMeasurements = measurementSetFor(capabilities.body_measurements).length > 0;
   const posCategorySeed = useMemo(
@@ -1761,7 +1769,7 @@ export default function POS({ tenantId, shiftId }: { tenantId: string, shiftId?:
                       {item.type === 'custom' ? (
                         <span className="px-2 py-0.5 bg-brand/10 text-brand text-xs font-bold rounded-md flex items-center gap-1">
                           <Scissors size={12} />
-                          {t('pos.type_custom')}
+                          {tv('pos.type_custom')}
                         </span>
                       ) : (
                         <span className="px-2 py-0.5 bg-content-muted/10 text-content-muted text-xs font-bold rounded-md flex items-center gap-1">
@@ -2100,6 +2108,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               branch below and vanished along with the product grid. */}
           {viewMode === 'grid' ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 w-full">
+                {ordersModuleOn && (
                 <button
                   onClick={() => setIsCustomOrderModalOpen(true)}
                   className="flex flex-col items-center p-3.5 bg-brand/5 border border-brand/40 hover:border-brand rounded-xl transition-all duration-200 group active:scale-95 cursor-pointer text-center w-full"
@@ -2108,9 +2117,10 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                     <Scissors size={26} className="text-brand" />
                   </div>
                   <span className="text-xs sm:text-sm font-bold text-brand text-center line-clamp-2 min-h-[2.25rem] mb-1 w-full flex items-center justify-center">
-                    {t('pos.custom_tailor')}
+                    {tv('pos.custom_tailor')}
                   </span>
                 </button>
+                )}
                 {filteredInventory.map(item => (
                   <button
                     key={item.id}
@@ -2155,6 +2165,7 @@ const invoiceData: InvoiceData | null = completedOrder ? {
               </div>
             ) : (
               <div className="flex flex-col gap-2.5 w-full">
+                {ordersModuleOn && (
                 <button
                   onClick={() => setIsCustomOrderModalOpen(true)}
                   className="flex items-center p-3 sm:p-3.5 bg-brand/5 border border-brand/40 hover:border-brand rounded-xl transition-all duration-200 group active:scale-[0.99] cursor-pointer w-full text-right"
@@ -2164,10 +2175,11 @@ const invoiceData: InvoiceData | null = completedOrder ? {
                   </div>
                   <div className="flex-1 min-w-0 flex flex-col items-start text-start justify-center gap-1">
                     <span className="text-xs sm:text-sm font-bold text-brand line-clamp-1 w-full text-start">
-                      {t('pos.custom_tailor')}
+                      {tv('pos.custom_tailor')}
                     </span>
                   </div>
                 </button>
+                )}
                 {filteredInventory.map(item => (
                   <button
                     key={item.id}

@@ -37,6 +37,8 @@ export const autoSeed = async () => {
         phone: '0540000000',
         status: 'active',
         plan_id: 'free',
+        // The sample data below is men's tailoring (Phase 6 of seen-verticals-readiness-task.md).
+        vertical: 'mens_tailoring',
         created_at: new Date().toISOString()
       });
 

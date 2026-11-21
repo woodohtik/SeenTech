@@ -26,6 +26,7 @@ import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
 import { legacyOrderStatusFor } from '../services/verticalService';
 import { lengthCategoryKeyList } from '../utils/itemUnits';
+import { useVerticalTerms } from '../hooks/useVerticalTerms';
 import { localizedLabel, localizedOptions } from '../utils/verticalLabels';
 import { createTailoringOrder } from '../services/tailoringOrderService';
 import { formatItemStock, type ContentUnit } from '../utils/fabricUomConverter';
@@ -417,6 +418,7 @@ function TailoringOrderFormBody({
   const { user: currentAuthUser } = useAuth();
   const { hasPermission } = usePermissions(currentStaff);
   const { workflowStages, orderItemFields, isLegacyVertical, capabilities } = useVerticalConfig();
+  const tv = useVerticalTerms();
   // Phase 4 of seen-verticals-readiness-task.md: the activity's own
   // measurement set (thobe for men's tailoring, as before; none -- the
   // section is hidden -- for an activity without an approved set).
@@ -723,7 +725,7 @@ function TailoringOrderFormBody({
       const { printElementDetailed, getConfiguredPaperSize } = await import('../utils/printManager');
       const res = await printElementDetailed('tailoring-order-receipt', {
         paperSize: getConfiguredPaperSize('80mm'),
-        title: `${t('orders.receipt_title')} ${savedOrder.order.order_number || ''}`.trim(),
+        title: `${tv('orders.receipt_title')} ${savedOrder.order.order_number || ''}`.trim(),
       });
       if (!res.ok) toastError(t('printing.print_failed'), res.message);
     } catch (e) {
@@ -775,7 +777,7 @@ function TailoringOrderFormBody({
           <div className="flex-1 overflow-y-auto p-4 sm:p-6">
             <div id="tailoring-order-receipt" className="max-w-md mx-auto bg-surface border border-border rounded-2xl p-5 space-y-4 text-content" dir={isRtl ? 'rtl' : 'ltr'}>
               <div className="text-center space-y-1">
-                <h4 className="text-lg font-black">{t('orders.receipt_title')}</h4>
+                <h4 className="text-lg font-black">{tv('orders.receipt_title')}</h4>
                 {savedOrder.order.order_number && (
                   <p className="text-sm font-bold text-content-muted" dir="ltr">{savedOrder.order.order_number}</p>
                 )}
@@ -873,7 +875,7 @@ function TailoringOrderFormBody({
 
               {/* One tailor per order: the commission trigger works at order level. */}
               <div className="space-y-2">
-                <label className={sectionLabelClass}>{t('orders.assigned_tailor')}</label>
+                <label className={sectionLabelClass}>{tv('orders.assigned_tailor')}</label>
                 <SmartSelect
                   value={watch('assignedTailorId' as any) || ''}
                   onChange={(v) => setValue('assignedTailorId' as any, v, { shouldDirty: true })}

@@ -587,7 +587,8 @@
       "super_admin": "سپر ایڈمن",
       "support_tech": "سپورٹ ٹیک",
       "tailor": "درزی",
-      "user": "صارف"
+      "user": "صارف",
+      "tailor__technician": "ٹیکنیشن"
     },
     "sales": "فروخت",
     "save": "محفوظ کریں",
@@ -1017,7 +1018,8 @@
       "measurements": "ناپ کے اوقات",
       "measurements_desc": "{{count}} آج کے اوقات",
       "tailoring": "خیاطی اور سلائی",
-      "tailoring_desc": "{{count}} آرڈر جاری ہیں"
+      "tailoring_desc": "{{count}} آرڈر جاری ہیں",
+      "tailoring__technician": "آرڈرز کی تیاری"
     },
     "growth_rate": "شرح نمو",
     "in_progress": "جاری ہے",
@@ -2140,7 +2142,10 @@
     "print_work_card": "ورک کارڈ پرنٹ کریں",
     "work_card_delivery": "حوالگی کی تاریخ",
     "work_card_notes": "نوٹس",
-    "fabric_enter_manually": "اس آئٹم میں استعمال ہونے والے میٹر خود درج کریں"
+    "fabric_enter_manually": "اس آئٹم میں استعمال ہونے والے میٹر خود درج کریں",
+    "assigned_tailor__technician": "ذمہ دار ٹیکنیشن",
+    "thobe_custom__piece": "خصوصی آرڈر",
+    "receipt_title__piece": "آرڈر رسید"
   },
   "permissions": {
     "access_denied_desc": "غیر متعین",
@@ -2711,7 +2716,9 @@
     "per_meter": "فی میٹر",
     "length_quantity": "مقدار",
     "length_unit": "اکائی",
-    "length_quantity_invalid": "صفر سے زیادہ مقدار درج کریں"
+    "length_quantity_invalid": "صفر سے زیادہ مقدار درج کریں",
+    "custom_tailor__piece": "نیا آرڈر",
+    "type_custom__piece": "آرڈر"
   },
   "printing": {
     "agent": {
@@ -3345,7 +3352,8 @@
     "vat_output_desc": "کسٹمرز سے وصول کردہ VAT",
     "vat_payable": "زکوٰۃ و ٹیکس اتھارٹی کو قابل ادائیگی",
     "vat_refundable": "قابل واپسی",
-    "view_staff_orders": "ملازم کے آرڈرز دیکھیں"
+    "view_staff_orders": "ملازم کے آرڈرز دیکھیں",
+    "tab_tailor_commissions__technician": "ٹیکنیشن کمیشن"
   },
   "saas": {
     "account_health_score": "اکاؤنٹ کی صحت (Health Score)",

@@ -40,6 +40,8 @@ import { isRtlLang, localeOf } from '../lib/direction';
 import { useToast } from '../contexts/ToastContext';
 import { isValidMeasurementUnit, type MeasurementUnit } from '../utils/measurementUnits';
 import { DEFAULT_FABRIC_ESTIMATE_SETTINGS, normalizeFabricEstimateSettings } from '../utils/fabricEstimate';
+import { useVerticalConfig } from '../hooks/useVerticalConfig';
+import { measurementSetFor } from '../constants/measurementFields';
 
 interface SettingsProps {
   tenantId: string;
@@ -64,6 +66,9 @@ interface SettingsData {
 
 export default function Settings({ tenantId }: SettingsProps) {
   const { t, i18n } = useTranslation();
+  const { capabilities: verticalCapabilities } = useVerticalConfig();
+  const hasBodyMeasurements = measurementSetFor(verticalCapabilities.body_measurements).length > 0;
+  const estimatesFabric = verticalCapabilities.body_measurements === 'thobe';
   const { error: toastError, warning: toastWarning } = useToast();
   const isRtl = isRtlLang(i18n.language);
   const queryClient = useQueryClient();
@@ -746,6 +751,8 @@ export default function Settings({ tenantId }: SettingsProps) {
                         dir="ltr"
                       />
                     </div>
+                    {/* Only for an activity that takes body measurements (Phase 6). */}
+                    {hasBodyMeasurements && (
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between px-1">
                         <label className="text-[10px] font-black text-content-muted uppercase tracking-normal sm:tracking-[0.2em]">{t('settings_page.profile.measurement_unit', 'وحدة القياس الافتراضية للمقاسات')}</label>
@@ -759,8 +766,11 @@ export default function Settings({ tenantId }: SettingsProps) {
                         <option value="inch">{t('measurements.unit_inch', 'إنش')}</option>
                       </select>
                     </div>
+                    )}
                   </div>
 
+                  {/* The fabric estimate is the thobe formula: only for an activity that uses it (Phase 6). */}
+                  {estimatesFabric && (
                   <div className="pt-5 border-t border-border space-y-3">
                     <div className="px-1">
                       <h4 className="text-sm font-black text-content">{t('settings_page.fabric_estimate.title')}</h4>
@@ -794,6 +804,7 @@ export default function Settings({ tenantId }: SettingsProps) {
                       ))}
                     </div>
                   </div>
+                  )}
 
                   <div className="pt-5 border-t border-border flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-3 w-full">
                     {saveSuccess && (

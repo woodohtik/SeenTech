@@ -24,7 +24,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   getTenantVertical, getVertical, getWorkflowStages, getFieldSchemas, getInventoryCategories,
-  DEFAULT_VERTICAL, DEFAULT_MODULES, MENS_CAPABILITIES,
+  DEFAULT_VERTICAL, DEFAULT_MODULES, MENS_CAPABILITIES, effectiveModules,
 } from '../services/verticalService';
 import { getLastKnown, saveLastKnown } from '../lib/offline/lastKnownCache';
 import { setLengthCategories } from '../utils/itemUnits';
@@ -80,22 +80,24 @@ function fromSaved(saved: SavedConfig): VerticalConfigValue {
 
 /** Loads a shop's vertical settings (exported for tests). Throws when they cannot be read. */
 export async function loadVerticalConfig(tenantId: string): Promise<SavedConfig> {
-  const { vertical, modules } = await getTenantVertical(tenantId);
+  const { vertical, modules: storedModules } = await getTenantVertical(tenantId);
   const [verticalInfo, workflowStages, orderItemFields, inventoryCategories] = await Promise.all([
     getVertical(vertical),
     getWorkflowStages(vertical),
     getFieldSchemas(vertical, 'order_item'),
     getInventoryCategories(vertical),
   ]);
+  // A database before 20261231000001 has no capabilities: men's tailoring
+  // behaves as it always did; any other vertical gets none of the tailoring
+  // tools rather than the men's ones.
+  const capabilities: VerticalCapabilities = verticalInfo?.capabilities
+    ?? (vertical === DEFAULT_VERTICAL ? MENS_CAPABILITIES : { ...MENS_CAPABILITIES, body_measurements: null, fabric_consumption: false, item_term: 'piece' });
   return {
     vertical,
     verticalInfo,
-    modules,
-    // A database before 20261231000001 has no capabilities: men's tailoring
-    // behaves as it always did; any other vertical gets none of the tailoring
-    // tools rather than the men's ones.
-    capabilities: verticalInfo?.capabilities
-      ?? (vertical === DEFAULT_VERTICAL ? MENS_CAPABILITIES : { ...MENS_CAPABILITIES, body_measurements: null, fabric_consumption: false, item_term: 'piece' }),
+    // The shop's modules narrowed by its activity (Phase 6).
+    modules: effectiveModules(storedModules, capabilities),
+    capabilities,
     workflowStages,
     orderItemFields,
     inventoryCategories,

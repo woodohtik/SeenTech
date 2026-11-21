@@ -63,6 +63,8 @@ interface DashboardStatsData {
 import { STATUS_CONFIG, getOrderStatusDisplay } from './orderStatusConfig';
 import { buildDashboardPlan, figuresFrom, planRanges, statsFromRows, type ChartLabel, type DashboardFigures, type DashboardStatsResult } from './dashboard/dashboardStats';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
+import { isOrdersModuleOn } from '../services/verticalService';
+import { useVerticalTerms } from '../hooks/useVerticalTerms';
 import { getOrderPhase, isFinishedPhase, finishedStageKeys, getStageLabel } from '../utils/orderStage';
 import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
@@ -245,7 +247,8 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
   const { t, i18n } = useTranslation();
   // The shop's stages: the figures count by each order's phase
   // (seen-verticals-readiness-task.md Phase 2).
-  const { workflowStages, isLegacyVertical } = useVerticalConfig();
+  const { workflowStages, isLegacyVertical, modules: verticalModules } = useVerticalConfig();
+  const tv = useVerticalTerms();
   const [stats, setStats] = useState({
     customers: 0,
     customersGrowthRate: 0,
@@ -514,7 +517,8 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
   const { hasPermission } = usePermissions(currentStaff);
 
   const hasRevenuePermission = hasPermission('dashboard.revenue');
-  const hasOrdersPermission = hasPermission('dashboard.orders') || hasPermission('dashboard.view');
+  // A shop that takes no orders (a fabric store) shows no order cards (Phase 6).
+  const hasOrdersPermission = (hasPermission('dashboard.orders') || hasPermission('dashboard.view')) && isOrdersModuleOn(verticalModules);
   const hasInventoryPermission = hasPermission('dashboard.inventory') || hasPermission('dashboard.view');
   const hasCustomersPermission = hasPermission('dashboard.customers') || hasPermission('dashboard.view');
 
@@ -815,7 +819,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
 
   const gridItems = [
     { 
-      title: t('dashboard.grid.tailoring', 'خياطة وتفصيل'),
+      title: tv('dashboard.grid.tailoring', 'خياطة وتفصيل'),
       detail: t('dashboard.grid.tailoring_desc', '{{count}} طلب قيد التنفيذ', { count: activeOrdersCount }),
       icon: 'seen-sewing-machine' as const,
       color: 'bg-brand',

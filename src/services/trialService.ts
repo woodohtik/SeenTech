@@ -45,8 +45,15 @@ export async function captureTrialLead(input: {
   if (error) console.warn('[trialService] lead capture failed:', error.message);
 }
 
-/** يزرع بيانات تجريبية موحّدة داخل tenant التجربة (عميل يبدأ بمنتج غير فارغ). */
+/**
+ * يزرع بيانات تجريبية موحّدة داخل tenant التجربة (عميل يبدأ بمنتج غير فارغ).
+ * Men's tailoring only (thobes, fabric, thobe measurements --
+ * seen-verticals-readiness-task.md Phase 6): a shop on any other activity
+ * gets nothing rather than tailoring data.
+ */
 export async function seedTrialData(tenantId: string): Promise<void> {
+  const { data: tenant } = await supabase.from('tenants').select('vertical').eq('id', tenantId).maybeSingle();
+  if ((tenant?.vertical || 'mens_tailoring') !== 'mens_tailoring') return;
   const now = Date.now();
   const { data: customers } = await supabase.from('customers').insert([
     { name: 'محمد العتيبي', phone: '0599999999', tenant_id: tenantId, measurements: { length: 150, shoulder: 45, chest: 100 }, is_test: true, created_at: new Date().toISOString() },
