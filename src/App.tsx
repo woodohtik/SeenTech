@@ -121,6 +121,7 @@ import { seedGlobalRoles } from './services/permissionService';
 import { Tailor } from './types';
 import { StaffProvider, useStaff } from './contexts/StaffContext';
 import { endActingSession, getActingSession } from './lib/actingSession';
+import { usePermissionsLiveRefresh } from './hooks/usePermissionsLiveRefresh';
 import { BrandingProvider } from './contexts/BrandingContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
@@ -345,6 +346,9 @@ function AppContent() {
     // seen-permissions-fix-task.md Phase 2: locking ends the PIN session (unlocking verifies the PIN again).
     if (isLocked) void endActingSession();
   }, [isLocked]);
+
+  // seen-permissions-fix-task.md Phase 6: permission changes reach this device.
+  usePermissionsLiveRefresh(currentStaff && currentStaff.id !== 'super_admin_mock_id' ? currentStaff.tenantId : null);
 
   // Phase 2: an employee other than this device's account is only on the
   // device through a server-side PIN session. Without one (an offline PIN

@@ -247,6 +247,23 @@ export const checkSaasRole = async (uid: string, allowedRoles: string[]): Promis
 // defaults; then the staff member's overrides. app_has_permission (every
 // guarded RPC and policy) reads it, so editing a role on the settings screen
 // changes the server too. This function mirrors that order for the UI.
+// Phase 6: every usePermissions() re-reads on the same event -- one server
+// call per employee per burst, shared by all of them.
+const inFlight = new Map<string, { at: number; call: Promise<{ data: any; error: any }> }>();
+function myPermissionsOnce(staffId: string): Promise<{ data: any; error: any }> {
+  const now = Date.now();
+  const hit = inFlight.get(staffId);
+  if (hit && now - hit.at < 2000) return hit.call;
+  const call = Promise.resolve(supabase.rpc('get_my_permissions')).then((r: any) => ({ data: r?.data, error: r?.error }));
+  inFlight.set(staffId, { at: now, call });
+  return call;
+}
+
+/** For tests: forget the shared reads. */
+export function resetMyPermissionsReads(): void {
+  inFlight.clear();
+}
+
 export const getEffectivePermissions = async (staff: Staff): Promise<PermissionsMap> => {
   if (staff.role === 'owner' || staff.role === 'super_admin') {
     return DEFAULT_ROLES.owner.permissions;
@@ -273,7 +290,7 @@ export const getEffectivePermissions = async (staff: Staff): Promise<Permissions
   // answer is kept for offline use only. If the server sees someone else
   // (no PIN session yet) or cannot be reached, the same order is applied here.
   try {
-    const { data, error } = await supabase.rpc('get_my_permissions');
+    const { data, error } = await myPermissionsOnce(staff.id);
     if (!error && data) {
       if (data.session_invalid) {
         const { forgetActingSession, ACTING_SESSION_INVALID_EVENT } = await import('../lib/actingSession');

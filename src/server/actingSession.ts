@@ -68,12 +68,3 @@ export async function endActingSession(admin: Admin, args: { authUid: string; to
     .eq('auth_uid', args.authUid)
     .is('revoked_at', null);
 }
-
-/** Revoke every open session of an employee (Phase 6: deactivation). */
-export async function endStaffActingSessions(admin: Admin, staffId: string): Promise<void> {
-  await admin
-    .from('staff_acting_sessions')
-    .update({ revoked_at: new Date().toISOString() })
-    .eq('staff_id', staffId)
-    .is('revoked_at', null);
-}

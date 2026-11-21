@@ -22,7 +22,7 @@ vi.mock('../lib/supabase/client', () => ({
   },
 }));
 
-import { getEffectivePermissions } from './permissionService';
+import { getEffectivePermissions, resetMyPermissionsReads } from './permissionService';
 import type { Staff } from '../types';
 
 const staff = (extra: Partial<Staff> & Record<string, any>): Staff =>
@@ -30,6 +30,7 @@ const staff = (extra: Partial<Staff> & Record<string, any>): Staff =>
 
 beforeEach(() => {
   db.roles = []; db.user_permission_overrides = []; rpcAnswer = null;
+  resetMyPermissionsReads();
   try { localStorage.clear(); } catch { /* no storage in this environment */ }
 });
 
