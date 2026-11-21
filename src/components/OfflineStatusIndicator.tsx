@@ -1,9 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { CloudOff, AlertTriangle, ChevronUp, ChevronDown } from 'lucide-react';
+import { CloudOff, AlertTriangle, ChevronUp, ChevronDown, RotateCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { offlineDb } from '../lib/offline/db';
-import { getZatcaApproachingEntries, getExhaustedOutboxEntries } from '../lib/offline/outbox';
+import {
+  getZatcaApproachingEntries,
+  getExhaustedOutboxEntries,
+  describeOutboxEntry,
+  requeueOutboxEntry,
+  drainOutbox,
+  type OutboxEntryDescription,
+} from '../lib/offline/outbox';
+import { PriceDisplay } from './PriceDisplay';
+import { localeOf } from '../lib/direction';
 import { getStockConflictCount } from '../lib/offline/stockConflicts';
 import { cn } from '../lib/utils';
 
@@ -16,11 +25,16 @@ import { cn } from '../lib/utils';
  * attention" indicator, not permanent chrome.
  */
 export default function OfflineStatusIndicator({ tenantId }: { tenantId?: string }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const [zatcaWarningCount, setZatcaWarningCount] = useState(0);
   const [stockConflictCount, setStockConflictCount] = useState(0);
   const [exhaustedCount, setExhaustedCount] = useState(0);
+  // Team review M-9: the operations that failed for good, with what they were
+  // and why -- staff took money for them, a bare count was not enough.
+  const [exhausted, setExhausted] = useState<OutboxEntryDescription[]>([]);
+  const [retrying, setRetrying] = useState<string | null>(null);
+  const [recheck, setRecheck] = useState(0);
 
   const pendingEntries = useLiveQuery(
     () => offlineDb.outbox.where('status').anyOf('pending', 'syncing', 'failed').toArray(),
@@ -34,8 +48,12 @@ export default function OfflineStatusIndicator({ tenantId }: { tenantId?: string
     const check = async () => {
       const zatcaEntries = await getZatcaApproachingEntries();
       if (!cancelled) setZatcaWarningCount(zatcaEntries.length);
-      const exhausted = await getExhaustedOutboxEntries();
-      if (!cancelled) setExhaustedCount(exhausted.length);
+      const exhaustedEntries = await getExhaustedOutboxEntries();
+      const described = await Promise.all(exhaustedEntries.map(describeOutboxEntry));
+      if (!cancelled) {
+        setExhaustedCount(exhaustedEntries.length);
+        setExhausted(described.sort((a, b) => a.createdAt - b.createdAt));
+      }
       if (tenantId) {
         const conflicts = await getStockConflictCount(tenantId);
         if (!cancelled) setStockConflictCount(conflicts);
@@ -45,7 +63,23 @@ export default function OfflineStatusIndicator({ tenantId }: { tenantId?: string
     // Only while the tab is visible (seen-performance-first-open-login-task.md Phase 5).
     const interval = setInterval(() => { if (document.visibilityState === 'visible') void check(); }, 30000);
     return () => { cancelled = true; clearInterval(interval); };
-  }, [tenantId, pendingCount]);
+  }, [tenantId, pendingCount, recheck]);
+
+  const retry = async (id: string) => {
+    setRetrying(id);
+    try {
+      await requeueOutboxEntry(id);
+      await drainOutbox();
+    } finally {
+      setRetrying(null);
+      setRecheck((n) => n + 1);
+    }
+  };
+
+  const kindLabel = (kind: OutboxEntryDescription['kind']) =>
+    kind === 'pos_sale' ? t('offline.review_kind_pos_sale', 'بيع من نقطة البيع')
+      : kind === 'tailoring_order' || kind === 'order_create' ? t('offline.review_kind_tailoring_order', 'طلب تفصيل')
+        : t('offline.review_kind_other', 'عملية');
 
   const hasAttention = pendingCount > 0 || stockConflictCount > 0;
   if (!hasAttention) return null;
@@ -72,6 +106,45 @@ export default function OfflineStatusIndicator({ tenantId }: { tenantId?: string
               <span>
                 {t('offline.exhausted_warning', '{{count}} عملية فشلت في المزامنة نهائياً ولن تُعاد محاولتها تلقائياً — تحتاج مراجعة يدوية.', { count: exhaustedCount })}
               </span>
+            </div>
+          )}
+          {exhausted.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs text-content-muted font-bold leading-relaxed">
+                {t('offline.review_hint', 'حُصِّل مبلغ لهذه العمليات. أعد إرسالها؛ وإن رُفضت مرة أخرى فأنشئ الطلب يدوياً بنفس البيانات ولا تحذف هذا السجل.')}
+              </p>
+              <ul className="space-y-2 max-h-64 overflow-y-auto">
+                {exhausted.map((op) => (
+                  <li key={op.id} className="border border-danger/30 rounded-xl p-2.5 space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-black text-content text-xs">{kindLabel(op.kind)}</span>
+                      <span className="text-[10px] text-content-muted font-bold" dir="ltr">
+                        {new Date(op.createdAt).toLocaleString(localeOf(i18n.language), { dateStyle: 'short', timeStyle: 'short' })}
+                      </span>
+                    </div>
+                    <div className="text-xs font-bold text-content">
+                      {op.customerName || t('offline.review_unknown_customer', 'عميل غير محدد')}
+                      {op.paid > 0 && (
+                        <span className="text-content-muted"> · {t('offline.review_paid', 'المحصَّل')}: <PriceDisplay amount={op.paid} /></span>
+                      )}
+                    </div>
+                    {op.reason && (
+                      <div className="text-[11px] text-danger font-bold leading-relaxed break-words">
+                        {t('offline.review_reason', 'السبب')}: {op.reason}
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => retry(op.id)}
+                      disabled={retrying !== null}
+                      className="mt-1 w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-surface-muted hover:bg-border text-content text-xs font-black disabled:opacity-60 transition-colors"
+                    >
+                      <RotateCw size={12} className={retrying === op.id ? 'animate-spin' : ''} />
+                      {t('offline.review_retry', 'إعادة الإرسال')}
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
           {zatcaWarningCount > 0 && (

@@ -275,6 +275,56 @@ export async function getExhaustedOutboxEntries(): Promise<OutboxEntry[]> {
 }
 
 /**
+ * What an operation was, for the "needs review" list (team review M-9): an
+ * operation the server rejected for good -- e.g. a tailoring order whose
+ * deposit came out above its total after a tax change -- used to show only
+ * as a count. Staff took money for it, so they need to see which one it was
+ * and why it failed.
+ */
+export interface OutboxEntryDescription {
+  id: string;
+  kind: 'pos_sale' | 'tailoring_order' | 'order_create' | 'other';
+  customerName: string | null;
+  paid: number;
+  createdAt: number;
+  reason: string | null;
+}
+
+export async function describeOutboxEntry(entry: OutboxEntry): Promise<OutboxEntryDescription> {
+  const p = (entry.payload || {}) as Record<string, any>;
+  const order = (p.p_order || p.orderData || {}) as Record<string, any>;
+  let customerName: string | null = order.customer_name || null;
+  if (!customerName && order.customer_id) {
+    try {
+      customerName = (await offlineDb.cachedCustomers.get(String(order.customer_id)))?.name || null;
+    } catch {
+      customerName = null;
+    }
+  }
+  const kind = entry.type === 'pos_sale' || entry.type === 'tailoring_order' || entry.type === 'order_create'
+    ? entry.type
+    : 'other';
+  return {
+    id: entry.id,
+    kind,
+    customerName,
+    paid: Number(order.paid_amount ?? order.paidAmount ?? 0) || 0,
+    createdAt: entry.createdAt,
+    reason: entry.lastError || null,
+  };
+}
+
+/**
+ * Sends a failed operation again: back to pending with its attempts reset,
+ * then a drain. Safe to repeat -- the server functions key on the
+ * operation's id and never create it twice. Nothing is ever deleted here.
+ */
+export async function requeueOutboxEntry(id: string): Promise<void> {
+  await offlineDb.outbox.update(id, { status: 'pending', retries: 0 });
+  await refreshCachedPendingCount();
+}
+
+/**
  * Phase 4's ZATCA clock: a simplified (B2C) invoice must reach the "فاتورة"
  * platform within 24 hours of issuance. That 24-hour clock starts at the
  * moment the sale was made (this entry's createdAt, generated client-side

@@ -5426,5 +5426,32 @@
     "update_available": "A new update is available",
     "update_available_reason": "Tap to apply it now — it won't apply automatically so no sale in progress is lost.",
     "update_now": "Update now"
+  },
+  "offline": {
+    "conflicts_badge": "{{count}} stock conflicts",
+    "exhausted_warning": "{{count}} operations failed to sync for good and will not be retried automatically — they need a manual review.",
+    "ios_install_add_to_home": "Add to Home Screen",
+    "ios_install_then": "then",
+    "no_connection": "No internet connection right now — the system is working locally and will sync automatically when the connection returns.",
+    "pending_count_badge": "{{count}} syncing",
+    "pending_sync": "Operations waiting to sync",
+    "showing_cached_customers": "Showing customers saved from the last connection; they may not be up to date.",
+    "showing_cached_dashboard": "Showing data saved from the last connection; it may not be up to date.",
+    "showing_cached_inventory": "Showing stock saved from the last connection; it may not be up to date.",
+    "showing_cached_orders": "Showing orders saved from the last connection; they may not be up to date.",
+    "showing_cached_purchase_orders": "Showing purchase orders saved from the last connection; they may not be up to date.",
+    "showing_cached_reports": "Showing data saved from the last connection; it may not be up to date.",
+    "showing_cached_settings": "Showing settings saved from the last connection; they may not be up to date. Saving now needs a real connection.",
+    "showing_cached_suppliers": "Showing suppliers saved from the last connection; they may not be up to date.",
+    "stock_conflict_warning": "{{count}} items were sold beyond the stock actually available — they need a manual stock reconciliation.",
+    "zatca_warning": "{{count}} invoices are close to the 24-hour legal limit for reporting to ZATCA and have not synced yet.",
+    "review_kind_pos_sale": "POS sale",
+    "review_kind_tailoring_order": "Tailoring order",
+    "review_kind_other": "Operation",
+    "review_unknown_customer": "Unspecified customer",
+    "review_paid": "Collected",
+    "review_reason": "Reason",
+    "review_retry": "Send again",
+    "review_hint": "Money was collected for these operations. Send them again; if one is rejected again, create the order by hand with the same details and keep this record."
   }
 }

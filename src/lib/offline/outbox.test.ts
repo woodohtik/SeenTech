@@ -7,6 +7,8 @@ import {
   getExhaustedOutboxEntries,
   getPendingOutboxCount,
   decidePosSaleFailureAction,
+  describeOutboxEntry,
+  requeueOutboxEntry,
 } from './outbox';
 
 const HOUR = 60 * 60 * 1000;
@@ -183,5 +185,36 @@ describe('decidePosSaleFailureAction', () => {
     vi.stubGlobal('navigator', { onLine: false });
     const genericError = new Error('some opaque RPC error');
     expect(decidePosSaleFailureAction(genericError, false)).toEqual({ kind: 'queue_offline' });
+  });
+});
+
+// Team review M-9: an operation that failed for good is shown with its
+// details and can be sent again -- it is never dropped.
+describe('failed operations: details and retry', () => {
+  it('describes a tailoring order with its customer, amounts and the reason', async () => {
+    await offlineDb.cachedCustomers.put({ id: 'c1', name: 'سالم', cachedAt: Date.now() } as any);
+    const entry = makeEntry({
+      type: 'tailoring_order', status: 'failed', retries: 5,
+      lastError: 'المبلغ المدفوع (200) أكبر من إجمالي الطلب (115)',
+      payload: { p_operation_id: 'x', p_order: { customer_id: 'c1', paid_amount: 200 }, p_items: [{ quantity: 1, price: 100 }] },
+    });
+    const d = await describeOutboxEntry(entry as any);
+    expect(d).toMatchObject({ kind: 'tailoring_order', customerName: 'سالم', paid: 200, reason: entry.lastError });
+    expect(d.createdAt).toBe(entry.createdAt);
+  });
+
+  it('describes a POS sale with the customer name it carries', async () => {
+    const entry = makeEntry({ type: 'pos_sale', payload: { p_order: { customer_name: 'نورة', paid_amount: 57.5 } } });
+    expect(await describeOutboxEntry(entry as any)).toMatchObject({ kind: 'pos_sale', customerName: 'نورة', paid: 57.5 });
+  });
+
+  it('retry puts the operation back in the queue with its attempts reset', async () => {
+    const entry = makeEntry({ status: 'failed', retries: 5, lastError: 'x' });
+    await offlineDb.outbox.put(entry);
+    expect((await getExhaustedOutboxEntries()).map(e => e.id)).toEqual([entry.id]);
+    await requeueOutboxEntry(entry.id);
+    const after = await offlineDb.outbox.get(entry.id);
+    expect(after).toMatchObject({ status: 'pending', retries: 0 });
+    expect(await getExhaustedOutboxEntries()).toEqual([]);
   });
 });
