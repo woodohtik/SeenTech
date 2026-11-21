@@ -1247,9 +1247,21 @@ app.post("/api/staff/verify-pin", authenticate, async (req: any, res) => {
 
     if (attemptKey) await supabaseAdmin.rpc('reset_pin_verify_attempts', { p_key: attemptKey });
 
+    // seen-permissions-fix-task.md Phase 2: from now on this device's
+    // requests are this employee's (12 hours at most, ended on logout, lock
+    // and idle). Without the session the UI would show them while the
+    // server still saw the device account, so no token -> no switch.
+    const { createActingSession } = await import('./src/server/actingSession.ts');
+    const actingToken = await createActingSession(supabaseAdmin, {
+      tenantId: matched.tenant_id,
+      authUid: req.user.uid,
+      staffId: matched.id,
+    });
+
     const actualRole = matched.role_id ? (rolesMap.get(matched.role_id) || matched.role) : matched.role;
     res.json({
       matched: true,
+      actingToken,
       staff: {
         id: matched.id,
         name: matched.name,
@@ -1271,6 +1283,20 @@ app.post("/api/staff/verify-pin", authenticate, async (req: any, res) => {
     });
   } catch (err: any) {
     internalError(res, "Error verifying staff PIN:", err);
+  }
+});
+
+// seen-permissions-fix-task.md Phase 2: end a PIN session (logout, lock,
+// idle, switching to someone else). Only this device account's own tokens.
+app.post("/api/staff/acting-session/end", authenticate, async (req: any, res) => {
+  try {
+    const token = typeof req.body?.token === 'string' ? req.body.token : '';
+    const { supabaseAdmin } = await import("./src/server/supabase-admin.ts");
+    const { endActingSession } = await import('./src/server/actingSession.ts');
+    await endActingSession(supabaseAdmin, { authUid: req.user.uid, token });
+    res.status(204).end();
+  } catch (err: any) {
+    internalError(res, "Error ending a PIN session:", err);
   }
 });
 

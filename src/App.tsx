@@ -120,6 +120,7 @@ import { autoSeed } from './services/seedService';
 import { seedGlobalRoles } from './services/permissionService';
 import { Tailor } from './types';
 import { StaffProvider, useStaff } from './contexts/StaffContext';
+import { endActingSession, getActingSession } from './lib/actingSession';
 import { BrandingProvider } from './contexts/BrandingContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
@@ -341,7 +342,25 @@ function AppContent() {
 
   useEffect(() => {
     localStorage.setItem('pos_locked', isLocked ? 'true' : 'false');
+    // seen-permissions-fix-task.md Phase 2: locking ends the PIN session (unlocking verifies the PIN again).
+    if (isLocked) void endActingSession();
   }, [isLocked]);
+
+  // Phase 2: an employee other than this device's account is only on the
+  // device through a server-side PIN session. Without one (an offline PIN
+  // switch, a session that ended) and with the network up, the server would
+  // see the account instead -- so ask for the PIN again.
+  useEffect(() => {
+    const check = () => {
+      if (!currentStaff || !currentUserStaff || currentStaff.id === 'super_admin_mock_id') return;
+      if (currentStaff.id === (currentUserStaff as any).id) return;
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+      if (!getActingSession()) setCurrentStaff(null);
+    };
+    check();
+    window.addEventListener('online', check);
+    return () => window.removeEventListener('online', check);
+  }, [currentStaff, currentUserStaff, setCurrentStaff]);
 
   // Auto-login if the authenticated user has no PIN
   useEffect(() => {

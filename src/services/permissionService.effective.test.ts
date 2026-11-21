@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 // A tiny stand-in for the Supabase query builder: rows per table, filtered by eq/is.
@@ -13,7 +14,13 @@ function builder(table: string) {
   };
   return b;
 }
-vi.mock('../lib/supabase/client', () => ({ supabase: { from: (t: string) => builder(t) } }));
+let rpcAnswer: { data: any; error: any } | null = null;
+vi.mock('../lib/supabase/client', () => ({
+  supabase: {
+    from: (t: string) => builder(t),
+    rpc: async () => { if (!rpcAnswer) throw new TypeError('Failed to fetch'); return rpcAnswer; },
+  },
+}));
 
 import { getEffectivePermissions } from './permissionService';
 import type { Staff } from '../types';
@@ -22,7 +29,7 @@ const staff = (extra: Partial<Staff> & Record<string, any>): Staff =>
   ({ id: 's1', name: 'x', email: 'x@example.invalid', phone: '', role: 'cashier', status: 'active', tenantId: 't1', createdAt: '', ...extra }) as Staff;
 
 beforeEach(() => {
-  db.roles = []; db.user_permission_overrides = [];
+  db.roles = []; db.user_permission_overrides = []; rpcAnswer = null;
   try { localStorage.clear(); } catch { /* no storage in this environment */ }
 });
 
@@ -37,7 +44,7 @@ describe('getEffectivePermissions', () => {
     expect(p['action.refund']).toBe(true);
     // Keys the custom role does not mention keep the base role's defaults.
     expect(p['action.discount']).toBe(true);
-    expect(p['payments.collect']).toBe(true);
+    expect((p as Record<string, boolean>)['payments.collect']).toBe(true);
   });
 
   test("without role_id, the shop's row for the role is used (the settings screen's edit)", async () => {
@@ -50,11 +57,37 @@ describe('getEffectivePermissions', () => {
   test('a personal override wins', async () => {
     db.user_permission_overrides = [{ staff_id: 's1', overrides: { 'payments.collect': false } }];
     const p = await getEffectivePermissions(staff({ role: 'cashier' as any }));
-    expect(p['payments.collect']).toBe(false);
+    expect((p as Record<string, boolean>)['payments.collect']).toBe(false);
   });
 
   test('the owner gets everything', async () => {
     const p = await getEffectivePermissions(staff({ role: 'owner' as any }));
     expect(Object.values(p).every(Boolean)).toBe(true);
+  });
+});
+
+// Phase 2: the server's answer (get_my_permissions) decides when it is about this employee.
+describe('getEffectivePermissions -- the server decides', () => {
+  test("the server's map is used when the server sees this employee", async () => {
+    rpcAnswer = { data: { staff_id: 's1', role: 'cashier', permissions: { 'action.refund': true, 'orders.create': false } }, error: null };
+    const p = await getEffectivePermissions(staff({ role: 'cashier' as any }));
+    expect(p['action.refund']).toBe(true);
+    expect(p['orders.create']).toBe(false);
+  });
+
+  test('when the server sees someone else, its map is not trusted for this employee', async () => {
+    rpcAnswer = { data: { staff_id: 'owner-staff', role: 'owner', permissions: { 'action.refund': true } }, error: null };
+    const p = await getEffectivePermissions(staff({ role: 'cashier' as any }));
+    expect(p['action.refund']).toBe(false); // the cashier's own default
+  });
+
+  test('an ended PIN session is announced', async () => {
+    rpcAnswer = { data: { session_invalid: true, permissions: {} }, error: null };
+    let announced = false;
+    const on = () => { announced = true; };
+    window.addEventListener('seen:acting-session-invalid', on);
+    await getEffectivePermissions(staff({ role: 'cashier' as any }));
+    window.removeEventListener('seen:acting-session-invalid', on);
+    expect(announced).toBe(true);
   });
 });

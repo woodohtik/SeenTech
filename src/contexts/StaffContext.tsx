@@ -1,5 +1,8 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { Staff } from '../types';
+import {
+  ACTING_SESSION_INVALID_EVENT, endActingSession, getActingSession, setActorStaffId,
+} from '../lib/actingSession';
 
 interface StaffContextType {
   currentStaff: Staff | null;
@@ -50,6 +53,22 @@ export function StaffProvider({ children }: { children: React.ReactNode }) {
       return next;
     });
   }, []);
+
+  // seen-permissions-fix-task.md Phase 2: the server-side PIN session follows
+  // whoever is on the device. Someone else (or no one) -> the previous
+  // employee's session ends; a matched PIN has already stored the new one.
+  useEffect(() => {
+    setActorStaffId(currentStaff?.id ?? null);
+    const session = getActingSession();
+    if (session && session.staffId !== currentStaff?.id) void endActingSession();
+  }, [currentStaff?.id]);
+
+  // The server said the session is over (expired, revoked, employee stopped): back to the PIN screen.
+  useEffect(() => {
+    const onInvalid = () => setCurrentStaff(null);
+    window.addEventListener(ACTING_SESSION_INVALID_EVENT, onInvalid);
+    return () => window.removeEventListener(ACTING_SESSION_INVALID_EVENT, onInvalid);
+  }, [setCurrentStaff]);
 
   return (
     <StaffContext.Provider value={{ currentStaff, setCurrentStaff }}>

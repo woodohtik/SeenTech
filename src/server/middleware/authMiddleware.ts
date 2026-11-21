@@ -5,6 +5,7 @@ import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { adminAuth } from '../firebase-admin.ts';
 import { supabaseAdmin } from '../supabase-admin.ts';
 import { logger } from '../logger.ts';
+import { ACTING_HEADER, resolveActingSession } from '../actingSession.ts';
 
 // This project's Supabase auth now signs access tokens with an asymmetric
 // ES256 key (not the legacy shared HS256 secret) -- verify against its public
@@ -25,6 +26,8 @@ export interface AuthRequest extends Request {
     tenantId?: string;
     /** staff.id (not staff.uid) -- only set for the staff-table path below, undefined for saas_users. */
     staffId?: string;
+    /** The device account's own staff.id when an employee switched in by PIN (staffId is then theirs). */
+    deviceStaffId?: string;
   };
 }
 
@@ -205,6 +208,23 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       req.user.role = staffRow.role;
       req.user.tenantId = staffRow.tenant_id;
       req.user.staffId = staffRow.id;
+
+      // seen-permissions-fix-task.md Phase 2: an employee switched in by PIN
+      // on this device -- the request is theirs (role, staff id), the same
+      // way the database's app_current_staff_id() resolves it. A token that
+      // is no longer valid is refused, never treated as the device account.
+      const actingToken = req.headers[ACTING_HEADER];
+      const path = String(req.originalUrl || req.url || '').split('?')[0];
+      const sessionFree = path === '/api/staff/verify-pin' || path === '/api/staff/acting-session/end';
+      if (typeof actingToken === 'string' && actingToken && !sessionFree) {
+        const acting = await resolveActingSession(supabaseAdmin, { authUid: decodedToken.uid, token: actingToken });
+        if (!acting || acting.tenantId !== staffRow.tenant_id) {
+          return res.status(401).json({ error: 'acting_session_invalid' });
+        }
+        req.user.deviceStaffId = staffRow.id;
+        req.user.staffId = acting.staffId;
+        req.user.role = acting.role;
+      }
       if ((req as any).log) {
         (req as any).log = (req as any).log.child({ tenantId: staffRow.tenant_id, staffId: staffRow.id });
       }

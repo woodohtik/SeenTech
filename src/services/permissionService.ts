@@ -268,6 +268,33 @@ export const getEffectivePermissions = async (staff: Staff): Promise<Permissions
     }
   }
 
+  // seen-permissions-fix-task.md Phase 2: the server decides (get_my_permissions,
+  // for whoever the server sees -- after a PIN switch, that employee). Its
+  // answer is kept for offline use only. If the server sees someone else
+  // (no PIN session yet) or cannot be reached, the same order is applied here.
+  try {
+    const { data, error } = await supabase.rpc('get_my_permissions');
+    if (!error && data) {
+      if (data.session_invalid) {
+        const { forgetActingSession, ACTING_SESSION_INVALID_EVENT } = await import('../lib/actingSession');
+        forgetActingSession();
+        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(ACTING_SESSION_INVALID_EVENT));
+      } else if (data.staff_id === staff.id && data.permissions && typeof data.permissions === 'object') {
+        const fromServer = { ...createPermissions([]), ...data.permissions } as PermissionsMap;
+        try { localStorage.setItem(`seen_permissions_${staff.id}`, JSON.stringify(fromServer)); } catch { /* no storage */ }
+        return fromServer;
+      }
+    } else if (error && typeof navigator !== 'undefined' && navigator.onLine === false) {
+      const cached = (() => { try { return localStorage.getItem(`seen_permissions_${staff.id}`); } catch { return null; } })();
+      if (cached) return JSON.parse(cached) as PermissionsMap;
+    }
+  } catch {
+    try {
+      const cached = localStorage.getItem(`seen_permissions_${staff.id}`);
+      if (cached) return JSON.parse(cached) as PermissionsMap;
+    } catch { /* fall through to the local order */ }
+  }
+
   const defaults: PermissionsMap = DEFAULT_ROLES[staff.role]
     ? { ...DEFAULT_ROLES[staff.role].permissions }
     : { ...DEFAULT_ROLES.tailor.permissions };

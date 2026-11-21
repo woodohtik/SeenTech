@@ -3,6 +3,7 @@ import i18n from 'i18next';
 import { offlineDb, type OutboxEntry } from './db';
 import { requestPersistentStorage } from './persistentStorage';
 import { onConnectivityChange, checkConnectivityNow } from './connectivity';
+import { getActorStaffId, OFFLINE_ACTOR_HEADER } from '../actingSession';
 
 /**
  * The outbox queue (seen-offline-sync-architecture-task.md Phase 3).
@@ -96,6 +97,7 @@ export async function enqueuePosSale(operationId: string, payload: {
     createdAt: Date.now(),
     status: 'pending',
     retries: 0,
+    actorStaffId: getActorStaffId(),
   });
 
   if (isFirstEver) {
@@ -153,6 +155,7 @@ export async function enqueueTailoringOrder(operationId: string, payload: {
     createdAt: Date.now(),
     status: 'pending',
     retries: 0,
+    actorStaffId: getActorStaffId(),
   });
 
   if (isFirstEver) {
@@ -161,16 +164,28 @@ export async function enqueueTailoringOrder(operationId: string, payload: {
   await refreshCachedPendingCount();
 }
 
+/**
+ * seen-permissions-fix-task.md Phase 2 (founder question 4): a sale or order
+ * made offline is the employee's who made it. The replay names them in
+ * x-seen-offline-actor -- the server uses it for attribution only (created_by,
+ * the shift, "سُجّلت بدون اتصال" in the history), never for permissions, and
+ * only for an active employee of the same shop -- and the PIN session header
+ * is left off this request.
+ */
+function withActor<T extends { setHeader: (name: string, value: string) => T }>(call: T, entry: OutboxEntry): T {
+  return entry.actorStaffId ? call.setHeader(OFFLINE_ACTOR_HEADER, entry.actorStaffId) : call;
+}
+
 async function syncEntry(entry: OutboxEntry): Promise<'synced' | 'failed'> {
   await offlineDb.outbox.update(entry.id, { status: 'syncing' });
   try {
     if (entry.type === 'pos_sale') {
       const payload = entry.payload as { p_operation_id: string; p_order: unknown; p_items: unknown; p_invoice: unknown };
-      const { error } = await supabase.rpc('create_pos_sale', payload);
+      const { error } = await withActor(supabase.rpc('create_pos_sale', payload), entry);
       if (error) throw error;
     } else if (entry.type === 'tailoring_order') {
       const payload = entry.payload as { p_operation_id: string; p_order: unknown; p_items: unknown };
-      const { data, error } = await supabase.rpc('create_tailoring_order', payload);
+      const { data, error } = await withActor(supabase.rpc('create_tailoring_order', payload), entry);
       if (error) throw error;
       // The staff member took a deposit while offline, but by the time this
       // synced they had no open shift, so the server saved the order without

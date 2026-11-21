@@ -28,6 +28,8 @@ export interface OutboxEntry {
   status: OutboxStatus;
   retries: number;
   lastError?: string;
+  /** seen-permissions-fix-task.md Phase 2: the employee who made it (sent as x-seen-offline-actor, attribution only). */
+  actorStaffId?: string | null;
 }
 
 export interface CachedInventoryItem extends InventoryItem {

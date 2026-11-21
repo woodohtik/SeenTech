@@ -9,10 +9,13 @@ import App from './App.tsx';
 import ErrorBoundary from './components/ErrorBoundary';
 import { initLogger } from './lib/logger';
 import { initPwaUpdates } from './lib/pwaUpdate';
+import { installActingSessionFetch } from './lib/actingSession';
 import './index.css';
 
 initLogger();
 initPwaUpdates();
+// seen-permissions-fix-task.md Phase 2: the PIN session header on every backend request.
+installActingSessionFetch(String(import.meta.env.VITE_SUPABASE_URL || ''));
 
 // i18nReady resolves once the active language's core translations have
 // loaded (see i18n/config.ts) -- awaited here so the very first render
