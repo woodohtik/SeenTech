@@ -2,6 +2,12 @@ import i18n from 'i18next';
 import { supabase } from '../lib/supabase/client';
 import { Role, PermissionsMap, Staff, PermissionKey } from '../types';
 import { SYSTEM_PERMISSIONS } from '../constants/permissions';
+// seen-permissions-fix-task.md Phase 1: the eight roles' defaults have one
+// source, shared with the database (role_default_permissions is generated
+// from the same file by scripts/permissions/gen-sql.ts).
+import permissionsMatrix from '../shared/permissionsMatrix.json';
+
+const MATRIX_ROLES = permissionsMatrix.roles as Record<string, string[]>;
 
 const createPermissions = (allowedIds: string[] = []): PermissionsMap => {
   const map: any = {};
@@ -49,7 +55,7 @@ export const DEFAULT_ROLES: Record<string, { name: string; nameKey: string; desc
     description: 'وصول كامل ومطلق لجميع وحدات النظام مع صلاحيات حصرية للإدارة العليا والإشتراكات',
     descriptionKey: 'permissions.roles.owner.description',
     category: 'merchant',
-    permissions: createPermissions(SYSTEM_PERMISSIONS.map(p => p.id))
+    permissions: createPermissions(MATRIX_ROLES.owner)
   },
   admin: {
     name: 'مسؤول النظام (Admin)',
@@ -57,7 +63,7 @@ export const DEFAULT_ROLES: Record<string, { name: string; nameKey: string; desc
     description: 'إدارة تشغيل المتجر والفروع والموظفين والمخزون مع إمكانية تعديل الإعدادات والتقارير',
     descriptionKey: 'permissions.roles.admin.description',
     category: 'merchant',
-    permissions: createPermissions(SYSTEM_PERMISSIONS.filter(p => p.id !== 'system.delete' && p.id !== 'settings.billing').map(p => p.id))
+    permissions: createPermissions(MATRIX_ROLES.admin)
   },
   manager: {
     name: 'المدير العام (Manager)',
@@ -65,7 +71,7 @@ export const DEFAULT_ROLES: Record<string, { name: string; nameKey: string; desc
     description: 'إدارة المبيعات والمخزون والموظفين والتقارير المالية المتقدمة ومتابعة الأداء',
     descriptionKey: 'permissions.roles.manager.description',
     category: 'merchant',
-    permissions: createPermissions(SYSTEM_PERMISSIONS.filter(p => p.id !== 'system.delete' && p.id !== 'settings.billing' && p.id !== 'settings.tax' && p.id !== 'staff.permissions').map(p => p.id))
+    permissions: createPermissions(MATRIX_ROLES.manager)
   },
   branch_manager: {
     name: 'مدير الفرع (Branch Manager)',
@@ -73,16 +79,7 @@ export const DEFAULT_ROLES: Record<string, { name: string; nameKey: string; desc
     description: 'إدارة مبيعات ومخزون وموظفي الفرع ومتابعة الورديات والطلبات اليومية',
     descriptionKey: 'permissions.roles.branch_manager.description',
     category: 'merchant',
-    permissions: createPermissions([
-      'dashboard.view', 'sales.view', 'orders.view', 'customers.view', 'inventory.view', 
-      'suppliers.manage', 'reports.view', 'orders.create', 'orders.view_details', 
-      'orders.update_status', 'orders.edit', 'invoices.view', 'payments.collect', 
-      'payments.view_prices', 'action.discount', 'action.refund', 'shifts.manage', 
-      'inventory.manage', 'inventory.create', 'inventory.edit', 'inventory.reconcile', 
-      'customers.create', 'customers.edit', 'dashboard.revenue', 'dashboard.orders', 
-      'dashboard.inventory', 'dashboard.customers', 'reports.financial', 'reports.export',
-      'staff.view', 'staff.create', 'staff.edit', 'branches.view'
-    ])
+    permissions: createPermissions(MATRIX_ROLES.branch_manager)
   },
   accountant: {
     name: 'المحاسب (Accountant)',
@@ -90,11 +87,7 @@ export const DEFAULT_ROLES: Record<string, { name: string; nameKey: string; desc
     description: 'إدارة التقارير المالية والضرائب والمصروفات والموردين وتصدير البيانات',
     descriptionKey: 'permissions.roles.accountant.description',
     category: 'merchant',
-    permissions: createPermissions([
-      'dashboard.view', 'orders.view', 'suppliers.manage', 'reports.view',
-      'invoices.view', 'reports.financial', 'reports.tax', 'reports.export',
-      'payments.view_prices', 'dashboard.revenue', 'settings.tax', 'action.refund'
-    ])
+    permissions: createPermissions(MATRIX_ROLES.accountant)
   },
   warehouse_manager: {
     name: 'مدير المستودع (Warehouse Manager)',
@@ -102,11 +95,7 @@ export const DEFAULT_ROLES: Record<string, { name: string; nameKey: string; desc
     description: 'إدارة كافة عمليات الأقمشة والمخزون والتوريد والتسويات ومتابعة الجرد والتحويلات',
     descriptionKey: 'permissions.roles.warehouse_manager.description',
     category: 'merchant',
-    permissions: createPermissions([
-      'dashboard.view', 'inventory.view', 'inventory.manage', 'inventory.create', 
-      'inventory.edit', 'inventory.delete', 'inventory.reconcile', 'inventory.transfer', 
-      'suppliers.manage', 'orders.view', 'orders.view_details', 'dashboard.inventory'
-    ])
+    permissions: createPermissions(MATRIX_ROLES.warehouse_manager)
   },
   cashier: {
     name: 'الكاشير (Cashier)',
@@ -114,12 +103,7 @@ export const DEFAULT_ROLES: Record<string, { name: string; nameKey: string; desc
     description: 'إضافة العملاء والطلبات ونقطة البيع وتحصيل المدفوعات وإدارة الورديات والخصومات',
     descriptionKey: 'permissions.roles.cashier.description',
     category: 'merchant',
-    permissions: createPermissions([
-      'dashboard.view', 'sales.view', 'orders.view', 'customers.view', 'inventory.view',
-      'orders.create', 'orders.view_details', 'invoices.view',
-      'payments.collect', 'shifts.manage', 'action.discount',
-      'customers.create', 'dashboard.orders', 'dashboard.customers'
-    ])
+    permissions: createPermissions(MATRIX_ROLES.cashier)
   },
   tailor: {
     name: 'الخياط / الفني (Tailor)',
@@ -127,9 +111,7 @@ export const DEFAULT_ROLES: Record<string, { name: string; nameKey: string; desc
     description: 'عرض الطلبات المحالة وتفاصيل المقاسات وتحديث حالة الإنتاج والتفصيل',
     descriptionKey: 'permissions.roles.tailor.description',
     category: 'merchant',
-    permissions: createPermissions([
-      'orders.view', 'orders.view_details', 'orders.update_status', 'customers.view'
-    ])
+    permissions: createPermissions(MATRIX_ROLES.tailor)
   },
 
   // === أدوار منصة ساس (SaaS Company Roles) ===
@@ -258,24 +240,13 @@ export const checkSaasRole = async (uid: string, allowedRoles: string[]): Promis
   }
 };
 
-// seen-cto-sprint4-permissions-task.md item 3 (CTO review section 6/3):
-// founder decision (2026-11-17), documented here rather than enforced --
-// this function (and `roles` table it reads) is a real, per-tenant,
-// DB-persisted customization, not a cosmetic client-only toggle. BUT no
-// RPC or RLS policy anywhere in this codebase reads `roles.permissions` --
-// every security-relevant check on the server (app_current_role() in
-// create_pos_sale, close_shift, issue_supplier_payment, the RLS policies
-// on orders/payments/supplier_transactions/etc.) gates on the fixed
-// `staff.role` enum only. The actual, enforced security boundary today
-// is that enum, not whatever a merchant configures on the "صلاحيات
-// الأدوار" screen (RolePermissionsSettings.tsx). A merchant who disables
-// e.g. "cashier can issue refunds" here only hides that action from this
-// cashier's UI -- a cashier who calls the same Supabase RPC directly
-// still succeeds, because the RPC never consults this table.
-// Enforcing this for real is a much larger project (every sensitive RPC
-// and RLS policy would need to read role_id/permissions instead of the
-// enum) -- deferred; this function stays UI-only by design until that
-// decision changes.
+// seen-permissions-fix-task.md Phase 1: the server now reads the same roles
+// rows as this function. public.app_effective_permissions decides, in this
+// order: owner -> everything; the role row (staff.role_id, else the shop's
+// row with role_key = staff.role, else the system row) over the role's
+// defaults; then the staff member's overrides. app_has_permission (every
+// guarded RPC and policy) reads it, so editing a role on the settings screen
+// changes the server too. This function mirrors that order for the UI.
 export const getEffectivePermissions = async (staff: Staff): Promise<PermissionsMap> => {
   if (staff.role === 'owner' || staff.role === 'super_admin') {
     return DEFAULT_ROLES.owner.permissions;
@@ -297,9 +268,12 @@ export const getEffectivePermissions = async (staff: Staff): Promise<Permissions
     }
   }
 
-  let permissions: PermissionsMap = DEFAULT_ROLES[staff.role] 
-    ? { ...DEFAULT_ROLES[staff.role].permissions } 
+  const defaults: PermissionsMap = DEFAULT_ROLES[staff.role]
+    ? { ...DEFAULT_ROLES[staff.role].permissions }
     : { ...DEFAULT_ROLES.tailor.permissions };
+  let permissions: PermissionsMap = defaults;
+  // A custom role is named by role_id (staff.role is only its base role).
+  const roleId: string | null = (staff as any).roleId ?? (staff as any).role_id ?? null;
 
   // Check localStorage for immediate local cache
   if (typeof localStorage !== 'undefined' && staff.tenantId && staff.role) {
@@ -320,15 +294,23 @@ export const getEffectivePermissions = async (staff: Staff): Promise<Permissions
   // created, since this `roles` lookup was already the real source of
   // truth the whole time.
   try {
-    const { data: tenantRoleData } = await supabase
-      .from('roles')
-      .select('permissions')
-      .eq('tenant_id', staff.tenantId)
-      .eq('role_key', staff.role)
-      .maybeSingle();
+    let rolePermissions: Partial<PermissionsMap> | null = null;
+    if (roleId) {
+      const { data: byId } = await supabase.from('roles').select('permissions').eq('id', roleId).maybeSingle();
+      rolePermissions = (byId?.permissions as Partial<PermissionsMap>) ?? null;
+    }
+    const { data: tenantRoleData } = rolePermissions
+      ? { data: null }
+      : await supabase
+          .from('roles')
+          .select('permissions')
+          .eq('tenant_id', staff.tenantId)
+          .eq('role_key', staff.role)
+          .maybeSingle();
 
-    if (tenantRoleData?.permissions) {
-      permissions = tenantRoleData.permissions as PermissionsMap;
+    if (rolePermissions || tenantRoleData?.permissions) {
+      // The role's keys win; keys it omits keep the role's defaults (as on the server).
+      permissions = { ...defaults, ...(rolePermissions ?? tenantRoleData!.permissions) } as PermissionsMap;
     } else {
       // Check system roles
       const { data: systemRoleData } = await supabase
@@ -338,7 +320,7 @@ export const getEffectivePermissions = async (staff: Staff): Promise<Permissions
         .eq('role_key', staff.role)
         .maybeSingle();
       if (systemRoleData?.permissions) {
-        permissions = systemRoleData.permissions as PermissionsMap;
+        permissions = { ...defaults, ...systemRoleData.permissions } as PermissionsMap;
       }
     }
   } catch (err) {
@@ -357,7 +339,7 @@ export const getEffectivePermissions = async (staff: Staff): Promise<Permissions
     .from('user_permission_overrides')
     .select('overrides')
     .eq('staff_id', staff.id)
-    .single();
+    .maybeSingle();
   
   if (overrideData) {
     const overrides = overrideData.overrides as Partial<PermissionsMap>;
@@ -384,7 +366,22 @@ export const logUnauthorizedAccess = async (staff: Staff, permission: string, mo
   }
 };
 
-export const createCustomRole = async (tenantId: string, name: string, description: string, permissions: PermissionsMap, performedBy: string | null, performedByEmail: string) => {
+/** The built-in roles a custom role can be based on (roles.base_role). */
+export const BASE_ROLE_KEYS = ['admin', 'manager', 'branch_manager', 'accountant', 'warehouse_manager', 'cashier', 'tailor'];
+
+/**
+ * staff.role to save for a member of the chosen role: the role itself when it
+ * is built in, otherwise the custom role's base_role (Phase 1) -- 'tailor'
+ * only for a custom role made before base_role existed. role_id stays the
+ * deciding one; staff.role only supplies defaults for keys the role omits.
+ */
+export const staffRoleForSave = (roleKey: string, role?: { base_role?: string | null; baseRole?: string | null } | null): string => {
+  if (MERCHANT_ROLE_KEYS.includes(roleKey) || SAAS_ROLE_KEYS.includes(roleKey)) return roleKey;
+  const base = role?.base_role ?? role?.baseRole ?? null;
+  return base && BASE_ROLE_KEYS.includes(base) ? base : 'tailor';
+};
+
+export const createCustomRole = async (tenantId: string, name: string, description: string, permissions: PermissionsMap, performedBy: string | null, performedByEmail: string, baseRole: string = 'tailor') => {
   const roleKey = `custom_${name.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}`;
   
   const { data, error } = await supabase.from('roles').insert({
@@ -394,6 +391,7 @@ export const createCustomRole = async (tenantId: string, name: string, descripti
     tenant_id: tenantId,
     is_default: false,
     role_key: roleKey,
+    base_role: BASE_ROLE_KEYS.includes(baseRole) ? baseRole : 'tailor',
     created_at: new Date().toISOString()
   }).select().single();
 
@@ -609,7 +607,7 @@ export const getStaffPermissionDetails = async (staff: Staff): Promise<Permissio
     .from('user_permission_overrides')
     .select('overrides')
     .eq('staff_id', staff.id)
-    .single();
+    .maybeSingle();
   
   let overrides: Partial<PermissionsMap> = {};
   if (overrideData) {

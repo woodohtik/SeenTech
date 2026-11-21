@@ -16,6 +16,7 @@ import { VoiceMicButton } from './ui/VoiceMicButton';
 import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
 import { PasswordInput } from './ui/PasswordInput';
 import { SmartSelect } from './ui/SmartSelect';
+import { staffRoleForSave } from '../services/permissionService';
 
 const phoneRegex = /^(\+?\d{1,3}[- ]?)?\d{10}$/;
 
@@ -156,7 +157,7 @@ export default function AddEmployeeModal({
         'super_admin', 'support_tech', 'billing_admin', 'owner', 'admin', 'manager', 
         'cashier', 'tailor', 'accountant', 'branch_manager', 'warehouse_manager'
       ];
-      const dbRoleValue = VALID_DB_ROLES.includes(data.role) ? data.role : 'tailor';
+      const dbRoleValue = VALID_DB_ROLES.includes(data.role) ? data.role : staffRoleForSave(data.role, roles.find(r => r.roleKey === data.role) as any);
       const selectedRole = roles.find(r => r.roleKey === data.role);
       const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
       const validRoleId = selectedRole?.id && isUuid(selectedRole.id) ? selectedRole.id : null;

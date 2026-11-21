@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Staff, PermissionsMap, PermissionKey } from '../types';
-// seen-cto-sprint4-permissions-task.md item 3: getEffectivePermissions'
-// own comment has the full explanation -- this hook's hasPermission/
-// checkPermission control the UI only. No server RPC or RLS policy
-// reads the same roles.permissions table, so this is not a security
-// boundary; it only decides what a staff member sees, not what they can
-// ultimately do via a direct API call.
+// This hook decides what a staff member sees. What they can actually do is
+// decided on the server by app_has_permission, which reads the same roles
+// rows in the same order (seen-permissions-fix-task.md Phase 1; see
+// getEffectivePermissions).
 import { getEffectivePermissions, logUnauthorizedAccess } from '../services/permissionService';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';

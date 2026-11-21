@@ -29,7 +29,7 @@ import { supabase } from '../lib/supabase/client';
 import { IconInput } from './ui/IconInput';
 import { Role, PermissionKey, PermissionsMap } from '../types';
 import { SYSTEM_PERMISSIONS } from '../constants/permissions';
-import { DEFAULT_ROLES, updateRolePermissions, createCustomRole, isMerchantRole, isSaaSRole } from '../services/permissionService';
+import { DEFAULT_ROLES, updateRolePermissions, createCustomRole, isMerchantRole, isSaaSRole, BASE_ROLE_KEYS } from '../services/permissionService';
 import { cn } from '../lib/utils';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../contexts/ConfirmContext';
@@ -333,13 +333,18 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
       const initialPerms = selectedRole?.permissions
         ? { ...selectedRole.permissions }
         : DEFAULT_ROLES.cashier.permissions;
+      // The new role starts as a copy of the selected one, so that is its base role.
+      const baseRole = selectedRole
+        ? (BASE_ROLE_KEYS.includes(selectedRole.roleKey) ? selectedRole.roleKey : ((selectedRole as any).base_role ?? 'cashier'))
+        : 'cashier';
       await createCustomRole(
         tenantId,
         newRoleName,
         newRoleDesc,
         initialPerms,
         currentAuthUser?.id || null,
-        currentAuthUser?.email || ''
+        currentAuthUser?.email || '',
+        baseRole
       );
       success(t('permissions.role_created_title'), t('permissions.role_created_desc', { role: newRoleName }));
       setShowCreateRoleModal(false);

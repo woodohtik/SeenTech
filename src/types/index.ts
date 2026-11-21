@@ -246,6 +246,8 @@ export interface Staff {
   email: string;
   phone: string;
   role: UserRole;
+  /** staff.role_id: the role that decides (a custom role's id; role is then its base role). */
+  roleId?: string | null;
   status: 'active' | 'inactive';
   pin?: string;
   mustChangePin?: boolean;

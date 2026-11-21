@@ -408,6 +408,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     ...staffData,
                     tenantId: staffData.tenant_id,
                     branchId: staffData.branch_id,
+                    roleId: staffData.role_id ?? null,
                     pin: staffData.has_pin,
                     mustChangePin: staffData.must_change_pin
                 };

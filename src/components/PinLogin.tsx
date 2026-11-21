@@ -229,6 +229,7 @@ export default function PinLogin({ tenantId, currentUserStaff, onLogin }: PinLog
         ...staffRow,
         tenantId: staffRow.tenant_id,
         branchId: staffRow.branch_id,
+        roleId: staffRow.role_id ?? null,
         pin: staffRow.has_pin,
         mustChangePin: staffRow.must_change_pin,
       } as unknown as Staff);

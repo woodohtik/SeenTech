@@ -43,7 +43,7 @@ import { useStaff } from '../contexts/StaffContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { useSafeMutation } from '../hooks/useSafeMutation';
 import { generateSecurePin, hashPin, isPinUnique } from '../services/staffService';
-import { updateRolePermissions, createCustomRole, DEFAULT_ROLES, updateUserOverrides, seedGlobalRoles, isMerchantRole } from '../services/permissionService';
+import { updateRolePermissions, createCustomRole, DEFAULT_ROLES, updateUserOverrides, seedGlobalRoles, isMerchantRole, staffRoleForSave } from '../services/permissionService';
 import { SYSTEM_PERMISSIONS } from '../constants/permissions';
 import EmployeeActivityLogTab from './EmployeeActivityLog';
 import AddEmployeeModal from './AddEmployeeModal';
@@ -596,7 +596,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
         'cashier', 'tailor', 'accountant', 'branch_manager', 'warehouse_manager'
       ];
       const selectedRole = roles.find(r => r.roleKey === data.role);
-      const dbRoleValue = VALID_DB_ROLES.includes(data.role) ? data.role : 'tailor';
+      const dbRoleValue = VALID_DB_ROLES.includes(data.role) ? data.role : staffRoleForSave(data.role, roles.find(r => r.roleKey === data.role) as any);
       const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
       const validRoleId = selectedRole?.id && isUuid(selectedRole.id) ? selectedRole.id : null;
 
@@ -943,7 +943,8 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
         newRoleDesc,
         defaultPerms,
         currentAuthUser?.id || null,
-        currentAuthUser?.email || ''
+        currentAuthUser?.email || '',
+        'tailor'
       );
       setToast({ message: t('settings_page.staff.permissions.create_success'), type: 'success' });
       setShowCreateRole(false);
