@@ -2272,6 +2272,7 @@ app.post("/api/chat", authenticate, async (req: any, res) => {
       tenantId,
       userId: req.user?.uid,
       userRole: req.user?.role,
+      staffId: req.user?.staffId,
     });
     // seen-ai-assistant-zatca-cr-task.md #3: حد دفاعي على الخادم نفسه، بصرف
     // النظر عمّا يرسله العميل -- SeenAIFab.tsx يقتطع لآخر MAX_HISTORY_MESSAGES

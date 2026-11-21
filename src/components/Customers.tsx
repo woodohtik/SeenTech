@@ -192,6 +192,8 @@ export default function Customers({ tenantId }: CustomersProps) {
   const canCreate = hasPermission('customers.create');
   const canEdit = hasPermission('customers.edit');
   const canDelete = hasPermission('customers.delete');
+  // seen-permissions-fix-task.md Phase 5: exporting the customer list needs reports.export.
+  const canExport = hasPermission('reports.export');
 
   const { register, handleSubmit, reset, setValue, getValues, watch, control, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(customerSchema),
@@ -785,6 +787,7 @@ export default function Customers({ tenantId }: CustomersProps) {
         subtitle={t('customers.subtitle')}
       >
         <div className="flex items-center gap-2">
+          {canExport && (
           <button
             onClick={() => handleExportExcel()}
             className="bg-surface text-content border border-border px-4 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-surface-muted transition-all text-xs sm:text-sm cursor-pointer shadow-sm hover:border-brand/30"
@@ -793,6 +796,7 @@ export default function Customers({ tenantId }: CustomersProps) {
             <FileSpreadsheet size={18} className="text-success" />
             <span className="hidden sm:inline">{t('customers.export_excel')}</span>
           </button>
+          )}
 
           {canCreate && (
             <button
@@ -1700,6 +1704,7 @@ export default function Customers({ tenantId }: CustomersProps) {
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
+              {canExport && (
               <button
                 onClick={() => handleExportExcel()}
                 className="bg-success hover:bg-success/90 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all hover:scale-102 cursor-pointer border border-success/10 shadow-lg shadow-success/10"
@@ -1708,6 +1713,7 @@ export default function Customers({ tenantId }: CustomersProps) {
                 <FileSpreadsheet size={14} />
                 <span className="hidden sm:inline">{t('customers.export_excel_short')}</span>
               </button>
+              )}
 
               {canDelete && (
                 <button

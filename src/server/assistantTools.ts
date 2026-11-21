@@ -29,61 +29,22 @@ export interface AssistantToolContext {
   tenantId: string;
   userId: string;
   userRole: string;
+  /** The employee the request is for (after a PIN switch, theirs) -- seen-permissions-fix-task.md Phase 5. */
+  staffId?: string;
 }
 
-// "Admin" في وثيقة المهمة يقابل هذه الأدوار في نظام سين (نفس القائمة
-// المستخدمة في allowedRoles للتقارير المالية عبر التطبيق، مثل Reports.tsx).
-const ADMIN_ROLES = new Set(['owner', 'admin', 'manager', 'super_admin']);
-
-function isAdminRole(role: string): boolean {
-  return ADMIN_ROLES.has(role);
-}
-
-// (3، seen-comprehensive-review-fixes-task.md): معظم أدوات القراءة هنا كانت
-// بلا أي فحص دور -- أي موظف مسجَّل دخول (حتى لو دوره لا يملك orders.view/
-// customers.view/inventory.view عبر واجهة النظام العادية) كان يقدر يطلب من
-// المساعد نفس البيانات ويحصل عليها، متجاوزاً نظام الصلاحيات بالكامل. الإداري
-// (isAdminRole) يمر دائماً؛ غير ذلك يُقرَأ من جدول roles الفعلي لهذا
-// المستأجر (نفس الجدول الذي يحرّره RolePermissionsSettings.tsx)، تفضيلاً
-// لنسخة المستأجر المخصَّصة على القالب العام (tenant_id IS NULL) إن وُجدت
-// كلتاهما.
+// seen-permissions-fix-task.md Phase 5: the assistant answers with the same
+// permissions as the rest of the system -- the database's
+// app_effective_permissions for the employee the request is for (after a PIN
+// switch, that employee), not a fixed list of "admin" roles nor its own
+// reading of the roles table. The owner and the platform admin may do all.
 async function hasOperationalPermission(ctx: AssistantToolContext, permKey: string): Promise<boolean> {
-  if (isAdminRole(ctx.userRole)) return true;
+  if (ctx.userRole === 'owner' || ctx.userRole === 'super_admin') return true;
+  if (!ctx.staffId) return false;
   try {
-    const { data } = await supabaseAdmin
-      .from('roles')
-      .select('permissions, tenant_id')
-      .eq('role_key', ctx.userRole)
-      .or(`tenant_id.is.null,tenant_id.eq.${ctx.tenantId}`);
-    if (!data || data.length === 0) return false;
-    const tenantRow = data.find((r: any) => r.tenant_id === ctx.tenantId) || data[0];
-    let allowed = !!tenantRow?.permissions?.[permKey];
-
-    // getEffectivePermissions (permissionService.ts) merges a per-staff
-    // override on top of the role default -- an owner can revoke (or grant)
-    // a single permission for one specific staff member via
-    // RolePermissionsSettings without touching the role itself. Without
-    // this, the assistant would ignore that override and keep using
-    // whatever the role's default happened to be (ultra-review finding).
-    const { data: staffRow } = await supabaseAdmin
-      .from('staff')
-      .select('id')
-      .eq('uid', ctx.userId)
-      .eq('tenant_id', ctx.tenantId)
-      .eq('status', 'active')
-      .maybeSingle();
-    if (staffRow?.id) {
-      const { data: overrideRow } = await supabaseAdmin
-        .from('user_permission_overrides')
-        .select('overrides')
-        .eq('staff_id', staffRow.id)
-        .maybeSingle();
-      if (overrideRow?.overrides && permKey in overrideRow.overrides) {
-        allowed = !!overrideRow.overrides[permKey];
-      }
-    }
-
-    return allowed;
+    const { loadEffectivePermissions } = await import('./middleware/requirePermission.ts');
+    const map = await loadEffectivePermissions(ctx.staffId);
+    return map[permKey] === true;
   } catch {
     return false;
   }
@@ -156,7 +117,7 @@ export async function buildAssistantTools(ctx: AssistantToolContext) {
     }),
     execute: async ({ startDate, endDate }) => {
       let start: string; let end: string;
-      if (!isAdminRole(ctx.userRole)) {
+      if (!(await hasOperationalPermission(ctx, 'reports.financial'))) {
         // Cashier وأي دور تشغيلي آخر غير إداري: اليوم الحالي فقط بغض النظر
         // عمّا طُلب — يُطبَّق قبل أي تحقق من صحة النطاق المُدخَل، حتى لا
         // يفشل الطلب بخطأ "نطاق طويل جداً" بدل أن يُقيَّد بصمت لليوم الحالي.
@@ -370,7 +331,7 @@ export async function buildAssistantTools(ctx: AssistantToolContext) {
       endDate: z.string().describe('تاريخ النهاية YYYY-MM-DD'),
     }),
     execute: async ({ startDate, endDate }) => {
-      if (!isAdminRole(ctx.userRole)) {
+      if (!(await hasOperationalPermission(ctx, 'reports.financial'))) {
         await logToolCall(ctx, 'getRevenueReport', { startDate, endDate }, true, 'insufficient_role');
         return { denied: true, message: DENIED_ROLE_MESSAGE };
       }
@@ -390,7 +351,7 @@ export async function buildAssistantTools(ctx: AssistantToolContext) {
       date: z.string().describe('التاريخ المطلوب YYYY-MM-DD'),
     }),
     execute: async ({ date }) => {
-      if (!isAdminRole(ctx.userRole)) {
+      if (!(await hasOperationalPermission(ctx, 'reports.financial'))) {
         await logToolCall(ctx, 'getDailyClosingReport', { date }, true, 'insufficient_role');
         return { denied: true, message: DENIED_ROLE_MESSAGE };
       }
@@ -474,7 +435,7 @@ export async function buildAssistantTools(ctx: AssistantToolContext) {
       periodBEnd: z.string().describe('نهاية الفترة الثانية YYYY-MM-DD'),
     }),
     execute: async ({ periodAStart, periodAEnd, periodBStart, periodBEnd }) => {
-      if (!isAdminRole(ctx.userRole)) {
+      if (!(await hasOperationalPermission(ctx, 'reports.financial'))) {
         await logToolCall(ctx, 'comparePeriods', { periodAStart, periodAEnd, periodBStart, periodBEnd }, true, 'insufficient_role');
         return { denied: true, message: DENIED_ROLE_MESSAGE };
       }
