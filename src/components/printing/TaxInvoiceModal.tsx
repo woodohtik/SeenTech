@@ -1,5 +1,7 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
+import { useVerticalConfig } from '../../hooks/useVerticalConfig';
+import { lineSpecsText } from '../orders/OrderItemAttributes';
 import { Tenant, TaxInvoice } from '../../types';
 import { computePaidRemaining } from '../../utils/cartTotals';
 import { logEmployeeAction } from '../../services/employeeAuditService';
@@ -36,6 +38,7 @@ interface TaxInvoiceModalProps {
 // logic a second time.
 export function TaxInvoiceDocument({ order, tenant, onClose }: TaxInvoiceModalProps) {
   const { t, i18n } = useTranslation();
+  const { orderItemFields } = useVerticalConfig();
   const isRtl = isRtlLang(i18n.language);
   const { error: toastError } = useToast();
 
@@ -180,7 +183,11 @@ export function TaxInvoiceDocument({ order, tenant, onClose }: TaxInvoiceModalPr
     unitPrice: Number(item.price || item.unitPrice || 0),
     taxType: item.taxType,
     vatAmount: Number((item.price || item.unitPrice || 0) * item.quantity - ((item.price || item.unitPrice || 0) * item.quantity) / (1 + vatRate / 100)),
-    total: Number((item.price || item.unitPrice || 0) * item.quantity)
+    total: Number((item.price || item.unitPrice || 0) * item.quantity),
+    // The line's specs in the shop's own fields (Phase 3 of
+    // seen-verticals-readiness-task.md); empty for men's tailoring, whose
+    // options have their own columns. The invoice is printed in Arabic.
+    specs: lineSpecsText(item.attributes, orderItemFields, 'ar') || undefined,
   }));
 
   const sellerInfo = {

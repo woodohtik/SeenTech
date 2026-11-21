@@ -35,6 +35,8 @@ export interface InvoiceData {
     unitPrice: number;
     taxType?: ProductTaxType;
     measurements?: { label: string; value: string | number }[];
+    /** The line's specs on one line (seen-verticals-readiness-task.md Phase 3). */
+    specs?: string;
   }>;
   subtotal: number;
   vatAmount: number;
@@ -72,6 +74,8 @@ export interface InvoiceLayoutSettingsType {
     showUnitPrice?: boolean;
     showDiscount?: boolean;
     showMeasurements?: boolean;
+    /** Print each line's specs (the shop's own fields); default yes. */
+    showItemSpecs?: boolean;
     showBarcode?: boolean;
     showCustomerName?: boolean;
   };
@@ -169,6 +173,7 @@ export const ThermalInvoice = ({
     unitPrice: item.unitPrice,
     taxType: item.taxType,
     measurements: item.measurements,
+    specs: item.specs,
   }));
 
   const payLabels = formatPaymentMethodLabels(data.paymentMethod);
@@ -176,6 +181,7 @@ export const ThermalInvoice = ({
   const showCustomerName = settings?.columns?.showCustomerName !== false;
   const logoBorder = settings?.header?.logoBorder !== false;
   const showMeasurements = settings?.columns?.showMeasurements === true;
+  const showItemSpecs = settings?.columns?.showItemSpecs !== false;
 
   return (
     <SimplifiedTaxInvoice
@@ -194,6 +200,7 @@ export const ThermalInvoice = ({
       showCustomerName={showCustomerName}
       logoBorder={logoBorder}
       showMeasurements={showMeasurements}
+      showItemSpecs={showItemSpecs}
       vatRate={vatRate}
     />
   );
@@ -264,6 +271,7 @@ export const StandardInvoice = ({
     unitPrice: item.unitPrice,
     taxType: item.taxType,
     measurements: item.measurements,
+    specs: item.specs,
   }));
 
   const payLabels = formatPaymentMethodLabels(data.paymentMethod);
@@ -271,6 +279,7 @@ export const StandardInvoice = ({
   const showCustomerName = settings?.columns?.showCustomerName !== false;
   const logoBorder = settings?.header?.logoBorder !== false;
   const showMeasurements = settings?.columns?.showMeasurements === true;
+  const showItemSpecs = settings?.columns?.showItemSpecs !== false;
 
   return (
     <StandardTaxInvoice
@@ -291,6 +300,7 @@ export const StandardInvoice = ({
       showCustomerName={showCustomerName}
       logoBorder={logoBorder}
       showMeasurements={showMeasurements}
+      showItemSpecs={showItemSpecs}
       vatRate={vatRate}
     />
   );

@@ -2137,7 +2137,11 @@
     "deposit_skipped_on_sync": "Order {{number}} for {{customer}} was entered offline with a deposit. No shift was open when it synced, so it was saved without the deposit. Open a shift, then record the payment from the order screen.",
     "customer_label": "Customer",
     "phone_label": "Mobile",
-    "order_date_label": "Order date"
+    "order_date_label": "Order date",
+    "work_card_title": "Work card",
+    "print_work_card": "Print work card",
+    "work_card_delivery": "Delivery date",
+    "work_card_notes": "Notes"
   },
   "permissions": {
     "access_denied_desc": "Not specified",
@@ -4068,7 +4072,8 @@
       "title": "Professional Invoice Layout",
       "whatsapp_number": "Sales WhatsApp Number",
       "zatca_compatibility": "Fully compliant with Phase 2 e-Invoicing",
-      "zatca_qr": "ZATCA QR Code"
+      "zatca_qr": "ZATCA QR Code",
+      "col_item_specs": "Show item specs"
     },
     "notifications": {
       "daily_close_desc": "Summary of profits, losses, and sales immediately upon shift closure.",

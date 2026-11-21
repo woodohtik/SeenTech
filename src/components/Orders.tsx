@@ -24,6 +24,7 @@ import {
   ChevronDown,
   Trash2,
   Printer,
+  ClipboardList,
   Receipt,
   QrCode,
   Barcode,
@@ -64,6 +65,8 @@ import { logEmployeeAction } from '../services/employeeAuditService';
 import PageSkeleton from "./PageSkeleton";
 import Header from './Header';
 import TailoringOrderForm from './TailoringOrderForm';
+import OrderItemAttributes from './orders/OrderItemAttributes';
+import OrderWorkCard, { WORK_CARD_ELEMENT_ID } from './orders/OrderWorkCard';
 import { motion, AnimatePresence } from 'motion/react';
 import { usePermissions } from '../hooks/usePermissions';
 import { useTranslation } from 'react-i18next';
@@ -290,7 +293,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const [searchParams] = useSearchParams();
   const { currentStaff } = useStaff();
   const { user: currentAuthUser } = useAuth();
-  const { workflowStages, isLegacyVertical } = useVerticalConfig();
+  const { workflowStages, isLegacyVertical, orderItemFields, capabilities } = useVerticalConfig();
   const { hasPermission, checkPermission } = usePermissions(currentStaff);
 
   // قائمة مفاتيح الحالة المتاحة للاختيار (شريط التحديث السريع + قوائم الحالة المنسدلة
@@ -1149,6 +1152,21 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     }
   };
 
+  // The workshop's work card for one order (seen-verticals-readiness-task.md Phase 3).
+  const printWorkCard = async (order: Order) => {
+    try {
+      const { printElementDetailed, getConfiguredPaperSize } = await import('../utils/printManager');
+      const res = await printElementDetailed(WORK_CARD_ELEMENT_ID, {
+        paperSize: getConfiguredPaperSize('80mm'),
+        title: t('orders.work_card_title', 'بطاقة عمل') + ' ' + (order.orderNumber || order.id.slice(-6).toUpperCase()),
+      });
+      if (!res.ok) toastError(t('printing.print_failed'), res.message);
+    } catch (e) {
+      console.error('[Orders] work card print failed:', e);
+      toastError(t('printing.print_failed'));
+    }
+  };
+
   const OrderDetailsDrawer = ({ order }: { order: Order }) => {
     const [isPaying, setIsPaying] = useState(false);
     const [payAmount, setPayAmount] = useState(order.remainingAmount || 0);
@@ -1684,6 +1702,9 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                       </div>
                       <span className="text-xs font-black bg-white text-brand px-3 py-1 rounded-full shadow-sm border border-brand/10">x{item.quantity}</span>
                     </div>
+                    {/* Fabric / additions / embroidery: the tailoring block, hidden
+                        for a vertical that uses no fabric (Phase 3). */}
+                    {capabilities.fabric_consumption && (
                     <div className="grid grid-cols-1 gap-2 text-xs text-content-muted font-bold relative z-10">
                       <div className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-brand/30" />
@@ -1698,14 +1719,43 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         <span>{t('orders.embroidery')}: <span className="font-black">{item.embroidery || t('orders.none')}</span></span>
                       </div>
                     </div>
+                    )}
+                    {/* The vertical's own specs of the line (wood type, dimensions,
+                        logo placement...) -- saved by the order form, shown here
+                        since Phase 3 of seen-verticals-readiness-task.md. */}
+                    <OrderItemAttributes attributes={item.attributes} fields={orderItemFields} className="relative z-10" />
                   </motion.div>
                 ))}
               </div>
             </section>
           </div>
 
+          {/* The workshop's work card (Phase 3 of seen-verticals-readiness-task.md):
+              rendered hidden, printed as a copy. Only for a vertical with its
+              own line specs; men's tailoring keeps its current buttons. */}
+          {!isLegacyVertical && (
+            <div className="hidden" aria-hidden="true">
+              <OrderWorkCard
+                order={order as any}
+                shopName={tenant?.name || ''}
+                fields={orderItemFields}
+                stages={workflowStages}
+                showFabric={capabilities.fabric_consumption}
+              />
+            </div>
+          )}
+
           {/* Two rows of 48px buttons at most, so the details keep the room. */}
           <div className="px-4 py-3 bg-surface-muted border-t border-border grid grid-cols-2 gap-2">
+            {!isLegacyVertical && (
+              <button
+                onClick={() => void printWorkCard(order)}
+                className="col-span-2 min-h-12 flex items-center justify-center gap-2 bg-surface text-content rounded-xl font-bold border border-border hover:bg-surface-muted transition-all text-sm"
+              >
+                <ClipboardList size={18} />
+                <span>{t('orders.print_work_card', 'طباعة بطاقة العمل')}</span>
+              </button>
+            )}
             <button
               onClick={() => {
                 setIsDetailsOpen(false);

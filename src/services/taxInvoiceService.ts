@@ -105,9 +105,15 @@ export async function fetchTaxInvoiceForOrder(
   // (these orders have no `type` field of their own -- they are always the
   // tailoring form's own items, so 'custom' is correct here, not a guess).
   const invoiceItems = extNotes.items || invoiceRow.items;
-  const orderOwnItems = Array.isArray(invoiceItems) && invoiceItems.length > 0
+  const baseItems = Array.isArray(invoiceItems) && invoiceItems.length > 0
     ? invoiceItems
     : (decodeOrderRow(orderRow)?.items || []).map((item: any) => ({ type: item.type || 'custom', ...item }));
+  // The order lines' specs (the vertical's own fields), for the prints
+  // (seen-verticals-readiness-task.md Phase 3).
+  const { data: lineRows } = await supabase
+    .from('order_items').select('attributes').eq('tenant_id', tenantId).eq('order_id', orderId).eq('type', 'custom')
+    .order('created_at');
+  const orderOwnItems = attachLineAttributes(baseItems, lineRows || []);
 
   const invoice = {
     id: invoiceRow.id,
@@ -154,3 +160,24 @@ export async function issueTaxInvoiceForOrder(orderId: string): Promise<{ ok: tr
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
+
+/**
+ * Gives each custom (tailoring) line of an invoice the attributes of the
+ * matching order_items row, in order -- only when the counts match, so a
+ * line is never given another line's specs. A line that already carries
+ * attributes keeps them.
+ */
+export function attachLineAttributes<T extends Record<string, any>>(
+  items: T[],
+  rows: Array<{ attributes?: Record<string, unknown> | null }>,
+): T[] {
+  const customIdx = items.map((it, i) => ((it?.type || 'custom') === 'custom' ? i : -1)).filter((i) => i >= 0);
+  if (customIdx.length === 0 || customIdx.length !== rows.length) return items;
+  const out = items.slice();
+  customIdx.forEach((itemIndex, n) => {
+    const item = out[itemIndex];
+    if (item && !item.attributes && rows[n]?.attributes) out[itemIndex] = { ...item, attributes: rows[n].attributes };
+  });
+  return out;
+}
+

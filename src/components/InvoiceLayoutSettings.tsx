@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import { supabase } from '../lib/supabase/client';
 import { handleError, OperationType } from '../lib/appErrors';
 import { cn } from '../lib/utils';
@@ -54,6 +55,8 @@ interface InvoiceSettings {
     showMeasurements: boolean;
     showBarcode: boolean;
     showCustomerName: boolean;
+    /** Each line's specs in the shop's own fields (Phase 3); on by default. */
+    showItemSpecs?: boolean;
   };
   footer: {
     returnPolicy: string;
@@ -64,6 +67,7 @@ interface InvoiceSettings {
 
 export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSettingsProps) {
   const { t, i18n } = useTranslation();
+  const { isLegacyVertical, orderItemFields } = useVerticalConfig();
   const { error: toastError } = useToast();
   const isRtl = isRtlLang(i18n.language);
   const [loading, setLoading] = useState(true);
@@ -91,6 +95,7 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
         showMeasurements: false,
         showBarcode: true,
         showCustomerName: true,
+        showItemSpecs: true,
       },
       footer: {
         returnPolicy: '',
@@ -581,6 +586,12 @@ export default function InvoiceLayoutSettings({ tenantId }: InvoiceLayoutSetting
                 { id: 'showMeasurements', label: t('settings_page.invoice.col_measurements') },
                 { id: 'showBarcode', label: t('settings_page.invoice.col_barcode') },
                 { id: 'showCustomerName', label: t('settings_page.invoice.col_customer_name') },
+                // Only a vertical with its own line fields has specs to print
+                // (seen-verticals-readiness-task.md Phase 3) -- men's tailoring
+                // keeps exactly its current options.
+                ...(!isLegacyVertical && orderItemFields.length > 0
+                  ? [{ id: 'showItemSpecs', label: t('settings_page.invoice.col_item_specs', 'إظهار مواصفات الصنف') }]
+                  : []),
               ].map(col => (
                 <label key={col.id} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-border/50 cursor-pointer hover:border-brand/30 hover:bg-brand/5 shadow-sm transition-all group">
                   <span className="text-sm font-bold text-content group-hover:text-brand">{col.label}</span>

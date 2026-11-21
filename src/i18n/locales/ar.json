@@ -2137,7 +2137,11 @@
     "deposit_skipped_on_sync": "الطلب {{number}} للعميل {{customer}} أُدخل بدون اتصال ومعه عربون، وعند المزامنة لم تكن هناك وردية مفتوحة فحُفظ بدون العربون. افتح وردية ثم سجّل الدفعة من شاشة الطلب.",
     "customer_label": "العميل",
     "phone_label": "الجوال",
-    "order_date_label": "تاريخ الطلب"
+    "order_date_label": "تاريخ الطلب",
+    "work_card_title": "بطاقة عمل",
+    "print_work_card": "طباعة بطاقة العمل",
+    "work_card_delivery": "تاريخ التسليم",
+    "work_card_notes": "ملاحظات"
   },
   "permissions": {
     "access_denied_desc": "غير محدد",
@@ -4071,7 +4075,8 @@
       "title": "تخطيط الفاتورة الاحترافية",
       "whatsapp_number": "رقم واتساب المبيعات",
       "zatca_compatibility": "توافق تام مع المرحلة الثانية من الفوترة الإلكترونية",
-      "zatca_qr": "رمز الاستجابة السريع (ZATCA QR)"
+      "zatca_qr": "رمز الاستجابة السريع (ZATCA QR)",
+      "col_item_specs": "إظهار مواصفات الصنف"
     },
     "notifications": {
       "daily_close_desc": "ملخص بالأرباح والخسائر والمبيعات فور إغلاق الوردية.",

@@ -2135,7 +2135,11 @@
     "deposit_skipped_on_sync": "آرڈر {{number}} ({{customer}}) آف لائن پیشگی رقم کے ساتھ درج ہوا۔ ہم وقت سازی کے وقت کوئی شفٹ کھلی نہیں تھی، اس لیے یہ پیشگی رقم کے بغیر محفوظ ہوا۔ شفٹ کھولیں، پھر آرڈر اسکرین سے ادائیگی درج کریں۔",
     "customer_label": "گاہک",
     "phone_label": "موبائل",
-    "order_date_label": "آرڈر کی تاریخ"
+    "order_date_label": "آرڈر کی تاریخ",
+    "work_card_title": "ورک کارڈ",
+    "print_work_card": "ورک کارڈ پرنٹ کریں",
+    "work_card_delivery": "حوالگی کی تاریخ",
+    "work_card_notes": "نوٹس"
   },
   "permissions": {
     "access_denied_desc": "غیر متعین",
@@ -4056,7 +4060,8 @@
       "title": "پیشہ ورانہ انوائس لے آؤٹ",
       "whatsapp_number": "سیلز واٹس ایپ نمبر",
       "zatca_compatibility": "فیز 2 ای-انوائسنگ کے ساتھ مکمل طور پر مطابقت رکھتا ہے",
-      "zatca_qr": "ZATCA QR کوڈ"
+      "zatca_qr": "ZATCA QR کوڈ",
+      "col_item_specs": "آئٹم کی تفصیلات دکھائیں"
     },
     "notifications": {
       "daily_close_desc": "شفٹ بند ہونے پر فوری طور پر منافع، نقصان اور فروخت کا خلاصہ۔",

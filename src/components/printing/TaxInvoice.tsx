@@ -19,6 +19,8 @@ export interface InvoiceItem {
   vatAmount?: number;
   total?: number;
   measurements?: { label: string; value: string | number }[];
+  /** The line's specs in the shop's own fields, on one line (seen-verticals-readiness-task.md Phase 3). */
+  specs?: string;
 }
 
 export interface SellerInfo {
@@ -69,6 +71,8 @@ export interface TaxInvoiceProps {
   showCustomerName?: boolean;
   logoBorder?: boolean;
   showMeasurements?: boolean;
+  /** Print each line's specs under its name (default: yes). */
+  showItemSpecs?: boolean;
   /** Fraction (e.g. 0.15 for 15%), not a percentage. Defaults to 0.15 (KSA standard rate). */
   vatRate?: number;
 }
@@ -90,6 +94,7 @@ export default function TaxInvoice({
   showCustomerName = true,
   logoBorder = true,
   showMeasurements = false,
+  showItemSpecs = true,
   vatRate = 0.15,
 }: TaxInvoiceProps) {
   const { t } = useTranslation();
@@ -363,6 +368,9 @@ export default function TaxInvoice({
                           prefixing the name would print the quantity twice.
                         */}
                         <p className="font-extrabold text-slate-900 leading-snug">{item.name}</p>
+                        {showItemSpecs && item.specs && (
+                          <p className="text-[10px] text-slate-500 font-bold leading-snug mt-0.5">{item.specs}</p>
+                        )}
                       </td>
                       <td className="p-2.5 text-center font-bold font-mono text-slate-800">{item.quantity}</td>
                       <td className="p-2.5 font-mono text-slate-600">{itemUnitExc.toFixed(2)}</td>

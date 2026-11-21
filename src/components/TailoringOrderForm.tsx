@@ -26,6 +26,7 @@ import { useVerticalConfig } from '../hooks/useVerticalConfig';
 import { isSpeechRecognitionSupported } from '../hooks/useSpeechRecognition';
 import { legacyOrderStatusFor } from '../services/verticalService';
 import { lengthCategoryKeyList } from '../utils/itemUnits';
+import { localizedLabel, localizedOptions } from '../utils/verticalLabels';
 import { createTailoringOrder } from '../services/tailoringOrderService';
 import { formatItemStock, type ContentUnit } from '../utils/fabricUomConverter';
 import { formatSaudiPhone } from '../utils/phoneUtils';
@@ -144,7 +145,7 @@ function DynamicOrderItemFields({
   watch: (name: any) => any;
   setValue: (name: any, value: any) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   if (fields.length === 0) return null;
 
   return (
@@ -155,12 +156,12 @@ function DynamicOrderItemFields({
         if (f.field_type === 'select') {
           return (
             <div key={f.field_key} className="space-y-1">
-              <label className={smallLabelClass}>{f.label_ar}</label>
+              <label className={smallLabelClass}>{localizedLabel(f, i18n.language)}</label>
               <SmartSelect
                 value={value ?? ''}
                 onChange={(val) => setValue(path, val)}
                 className="w-full bg-surface rounded-xl shadow-sm"
-                options={[{ value: '', label: t('orders.choose_option') }, ...(f.options || []).map((o) => ({ value: o, label: o }))]}
+                options={[{ value: '', label: t('orders.choose_option') }, ...localizedOptions(f, i18n.language)]}
               />
             </div>
           );
@@ -168,7 +169,7 @@ function DynamicOrderItemFields({
         if (f.field_type === 'bool') {
           return (
             <div key={f.field_key} className="space-y-1">
-              <label className={smallLabelClass}>{f.label_ar}</label>
+              <label className={smallLabelClass}>{localizedLabel(f, i18n.language)}</label>
               <button
                 type="button"
                 onClick={() => setValue(path, !value)}
@@ -184,7 +185,7 @@ function DynamicOrderItemFields({
         }
         return (
           <div key={f.field_key} className="space-y-1">
-            <label className={smallLabelClass}>{f.label_ar}</label>
+            <label className={smallLabelClass}>{localizedLabel(f, i18n.language)}</label>
             <input
               type={f.field_type === 'number' ? 'number' : 'text'}
               value={value ?? ''}

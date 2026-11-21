@@ -19,6 +19,8 @@ export interface SimplifiedInvoiceItem {
   vatAmount?: number;
   total?: number;
   measurements?: { label: string; value: string | number }[];
+  /** The line's specs in the shop's own fields, on one line (seen-verticals-readiness-task.md Phase 3). */
+  specs?: string;
 }
 
 export interface SimplifiedSellerInfo {
@@ -57,6 +59,8 @@ export interface SimplifiedTaxInvoiceProps {
   showCustomerName?: boolean;
   logoBorder?: boolean;
   showMeasurements?: boolean;
+  /** Print each line's specs under its name (default: yes). */
+  showItemSpecs?: boolean;
   /** Fraction (e.g. 0.15 for 15%), not a percentage. Defaults to 0.15 (KSA standard rate). */
   vatRate?: number;
 }
@@ -79,6 +83,7 @@ export default function SimplifiedTaxInvoice({
   showCustomerName = true,
   logoBorder = true,
   showMeasurements = false,
+  showItemSpecs = true,
   vatRate = 0.15,
 }: SimplifiedTaxInvoiceProps) {
   const { t } = useTranslation();
@@ -338,6 +343,10 @@ export default function SimplifiedTaxInvoice({
                     <span className="whitespace-nowrap">قبل الضريبة: {itemExc.toFixed(2)}</span>
                     <span className="whitespace-nowrap">الضريبة: {itemVat.toFixed(2)}</span>
                   </div>
+                )}
+
+                {showItemSpecs && item.specs && (
+                  <div className="text-[7.5px] text-slate-600 font-bold leading-tight break-words">{item.specs}</div>
                 )}
 
                 {/* Measurement Details (optional) */}
