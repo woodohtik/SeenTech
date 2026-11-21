@@ -1942,7 +1942,8 @@
       "identity_location": "Identity & Location",
       "location": "Location & Branches",
       "preferences": "System & Financial Preferences"
-    }
+    },
+    "vertical_coming_soon": "Coming soon"
   },
   "orders": {
     "active_orders": "Active Orders",

@@ -1942,7 +1942,8 @@
       "identity_location": "الهوية والموقع",
       "location": "الموقع والفروع",
       "preferences": "تفضيلات النظام والمالية"
-    }
+    },
+    "vertical_coming_soon": "قريباً"
   },
   "orders": {
     "active_orders": "الطلبات النشطة",

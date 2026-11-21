@@ -9,7 +9,10 @@ export type ModuleKey =
   | 'pos' | 'orders' | 'inventory' | 'invoicing' | 'customers'
   | 'marketplace_b2c' | 'supplier_marketplace' | string;
 
-export interface Vertical { key: VerticalKey; name_ar: string; name_en?: string; is_active: boolean; sort: number; }
+/** ready: open at sign-up; beta: platform admin only; coming_soon: shown as «قريباً», not selectable
+ *  (seen-verticals-readiness-task.md Phase 0 -- enforced by a database trigger too). */
+export type VerticalReadiness = 'ready' | 'beta' | 'coming_soon';
+export interface Vertical { key: VerticalKey; name_ar: string; name_en?: string; is_active: boolean; sort: number; readiness?: VerticalReadiness; }
 
 export interface WorkflowStage {
   vertical_key: VerticalKey; stage_key: string; label_ar: string; sort: number; is_terminal: boolean;

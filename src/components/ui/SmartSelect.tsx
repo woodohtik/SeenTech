@@ -8,6 +8,10 @@ export interface SelectOption {
   value: string;
   label: string;
   icon?: React.ReactNode;
+  /** Shown, but cannot be chosen (e.g. a vertical that is not ready yet). */
+  disabled?: boolean;
+  /** A short tag after the label, e.g. «قريباً». */
+  badge?: string;
 }
 
 interface SmartSelectProps {
@@ -154,10 +158,11 @@ export function SmartSelect({
                   filteredOptions.map((option) => (
                     <Combobox.Option
                       key={option.value}
+                      disabled={option.disabled}
                       className={({ active }) =>
                         cn(
                           'relative cursor-default select-none py-2 px-3 rounded-lg transition-all mb-0.5 group/item flex items-center justify-between',
-                          active ? 'bg-brand/10 text-brand' : 'text-content hover:bg-surface-muted'
+                          option.disabled ? 'text-content-muted/60 cursor-not-allowed' : active ? 'bg-brand/10 text-brand' : 'text-content hover:bg-surface-muted'
                         )
                       }
                       value={option}
@@ -179,6 +184,9 @@ export function SmartSelect({
                               </span>
                             )}
                             {option.label}
+                            {option.badge && (
+                              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-surface-muted text-content-muted border border-border">{option.badge}</span>
+                            )}
                           </span>
                           {selected ? (
                             <span
@@ -237,10 +245,11 @@ export function SmartSelect({
               {options.map((option) => (
                 <Listbox.Option
                    key={option.value}
+                   disabled={option.disabled}
                    className={({ active }) =>
                      cn(
                        'relative cursor-default select-none py-2 px-3 rounded-lg transition-all mb-0.5 group/item flex items-center justify-between',
-                       active ? 'bg-brand/10 text-brand' : 'text-content hover:bg-surface-muted'
+                       option.disabled ? 'text-content-muted/60 cursor-not-allowed' : active ? 'bg-brand/10 text-brand' : 'text-content hover:bg-surface-muted'
                      )
                    }
                    value={option.value}
@@ -262,6 +271,9 @@ export function SmartSelect({
                           </span>
                         )}
                         {option.label}
+                        {option.badge && (
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-surface-muted text-content-muted border border-border">{option.badge}</span>
+                        )}
                       </span>
                       {selected ? (
                         <span

@@ -635,7 +635,19 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                             <SmartSelect
                               {...field}
                               className="w-full bg-white border border-border focus-within:border-brand rounded-xl py-2.5 sm:py-3 px-3 text-sm sm:text-base font-bold outline-none transition-all shadow-sm"
-                              options={verticals.map((v) => ({ value: v.key, label: v.name_ar }))}
+                              // Only a ready vertical can be chosen (Phase 0 of
+                              // seen-verticals-readiness-task.md; the database
+                              // refuses the others too). A list from an older
+                              // database (no readiness) stays as it was.
+                              options={verticals.map((v) => {
+                                const open = !v.readiness || v.readiness === 'ready';
+                                return {
+                                  value: v.key,
+                                  label: i18n.language === 'ar' ? v.name_ar : (v.name_en || v.name_ar),
+                                  disabled: !open,
+                                  badge: open ? undefined : t('onboarding.vertical_coming_soon', 'قريباً'),
+                                };
+                              })}
                             />
                           )}
                         />
