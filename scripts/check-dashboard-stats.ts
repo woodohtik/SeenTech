@@ -46,7 +46,10 @@ const row = query(`
 select jsonb_build_object(
   'stats', jsonb_build_array(${calls.join(',\n    ')}),
   'orders', (select coalesce(jsonb_agg(jsonb_build_object('customer_id', customer_id, 'order_date', order_date, 'status_key', status_key,
-               'status', status, 'paid_amount', paid_amount, 'remaining_amount', remaining_amount, 'notes', notes)), '[]') from public.orders where tenant_id = '${tenantId}'),
+               'status', status, 'paid_amount', paid_amount, 'remaining_amount', remaining_amount, 'notes', notes,
+               'phase', public.order_phase((select vertical from public.tenants where id = '${tenantId}'), status_key, status::text))), '[]') from public.orders where tenant_id = '${tenantId}'),
+  'finished', (select coalesce(jsonb_agg(s.stage_key), '[]') from public.vertical_workflow_stages s join public.tenants t on t.vertical = s.vertical_key
+                where t.id = '${tenantId}' and s.phase in ('ready', 'delivered')),
   'customers', (select coalesce(jsonb_agg(jsonb_build_object('created_at', created_at)), '[]') from public.customers where tenant_id = '${tenantId}'),
   'inventory', (select coalesce(jsonb_agg(jsonb_build_object('id', id, 'min_threshold', min_threshold)), '[]') from public.inventory_items where tenant_id = '${tenantId}'),
   'binv', (select coalesce(jsonb_agg(jsonb_build_object('item_id', item_id, 'quantity', quantity)), '[]') from public.branch_inventory where tenant_id = '${tenantId}')
@@ -59,6 +62,7 @@ const rows = {
     const d = decodeOrderRow({ notes: o.notes });
     return {
       status: o.status_key || o.status,
+    phase: o.phase,
       orderDate: pgIso(o.order_date) || new Date().toISOString(),
       paidAmount: Number(o.paid_amount) || 0,
       remainingAmount: Number(o.remaining_amount) || 0,
@@ -75,7 +79,7 @@ console.log(`rows: ${rows.orders.length} orders, ${rows.customers.length} custom
 let failures = 0;
 plans.forEach((plan, i) => {
   const fromSql = row.stats[i];
-  const fromRows = statsFromRows(plan, rows);
+  const fromRows = statsFromRows(plan, rows, new Set(['delivered', 'ready', ...row.finished]));
   const norm = (x: any) => JSON.parse(JSON.stringify(x, (_k, v) => (typeof v === 'number' ? Math.round(v * 1e6) / 1e6 : v)));
   const a = norm({ ...fromSql, ranges: fromSql.ranges.map((r: any) => ({ ...r, paid: Number(r.paid) })) });
   a.filtered.paid = Number(a.filtered.paid); a.filtered.remaining = Number(a.filtered.remaining);

@@ -1,3 +1,5 @@
+import { LEGACY_STATUS_PHASE, isFinishedPhase } from '../../utils/orderStage';
+import type { OrderPhase } from '../../types/expansion';
 /**
  * The owner dashboard's figures (seen-performance-first-open-login-task.md
  * Phase 4.3).
@@ -245,6 +247,12 @@ export function figuresFrom(plan: DashboardPlan, r: DashboardStatsResult): Dashb
 export interface RowOrder {
   status: string; orderDate: string; paidAmount: number; remainingAmount: number;
   customerId: string; history?: Array<{ status?: string; updatedAt?: string }>;
+  /**
+   * The order's phase (utils/orderStage getOrderPhase) -- what the counts use
+   * (seen-verticals-readiness-task.md Phase 2). Absent: the old enum's meaning
+   * of `status`, i.e. exactly the old men's-tailoring figures.
+   */
+  phase?: OrderPhase;
 }
 export interface RowCustomer { createdAt?: string | null }
 export interface RowItem { id: string; minThreshold: number }
@@ -258,11 +266,14 @@ const inRange = (t: number, r: TimeRange) => {
 export function statsFromRows(
   plan: DashboardPlan,
   rows: { orders: RowOrder[]; customers: RowCustomer[]; inventory: RowItem[]; bInv: RowBranchItem[] },
+  /** The vertical's ready / delivered stage keys, for the completion time (default: the enum's). */
+  finishedKeys: ReadonlySet<string> = new Set(['delivered', 'ready']),
 ): DashboardStatsResult {
+  const phaseOf = (o: RowOrder): OrderPhase => o.phase ?? LEGACY_STATUS_PHASE[o.status] ?? 'in_progress';
   const orders = rows.orders.map((o) => ({ ...o, t: new Date(o.orderDate || '').getTime() }));
   const custTimes = rows.customers.map((c) => new Date(c.createdAt || '').getTime());
   const sum = (xs: typeof orders, k: 'paidAmount' | 'remainingAmount') => xs.reduce((a, o) => a + (o[k] || 0), 0);
-  const isPending = (o: RowOrder) => !['delivered', 'ready'].includes(o.status);
+  const isPending = (o: RowOrder) => !isFinishedPhase(phaseOf(o));
 
   const ranges = planRanges(plan).map((r) => {
     const os = orders.filter((o) => inRange(o.t, r));
@@ -276,8 +287,8 @@ export function statsFromRows(
 
   const f = plan.filter ? orders.filter((o) => inRange(o.t, plan.filter!)) : orders;
   let hours = 0; let count = 0;
-  f.filter((o) => ['delivered', 'ready'].includes(o.status)).forEach((o) => {
-    const last = Array.isArray(o.history) ? [...o.history].reverse().find((h) => h && ['delivered', 'ready'].includes(h.status || '')) : null;
+  f.filter((o) => isFinishedPhase(phaseOf(o))).forEach((o) => {
+    const last = Array.isArray(o.history) ? [...o.history].reverse().find((h) => h && finishedKeys.has(h.status || '')) : null;
     if (last) {
       const end = new Date(last.updatedAt || '').getTime();
       if (end > o.t) { hours += (end - o.t) / 3_600_000; count++; }
@@ -306,9 +317,9 @@ export function statsFromRows(
     },
     totals: {
       orders: orders.length,
-      in_progress: orders.filter((o) => !['delivered', 'ready', 'cancelled'].includes(o.status)).length,
-      measurements_taken: orders.filter((o) => o.status === 'measurements_taken').length,
-      ready: orders.filter((o) => o.status === 'ready').length,
+      in_progress: orders.filter((o) => { const p = phaseOf(o); return !isFinishedPhase(p) && p !== 'cancelled'; }).length,
+      measurements_taken: orders.filter((o) => phaseOf(o) === 'received').length,
+      ready: orders.filter((o) => phaseOf(o) === 'ready').length,
     },
     low_stock: rows.inventory.filter((i) => {
       const qty = rows.bInv.filter((b) => b.itemId === i.id).reduce((a, b) => a + b.quantity, 0);

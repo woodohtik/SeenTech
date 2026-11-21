@@ -447,7 +447,7 @@ app.get("/api/public/order-tracking/:token", asyncHandler(async (req, res) => {
   // whole point is a fast first load.
   const { data: orderData } = await supabaseAdmin
     .from('orders')
-    .select('order_number, status, status_key, delivery_date, tenant:tenants(name, logo_url)')
+    .select('order_number, status, status_key, delivery_date, tenant:tenants(name, logo_url, vertical)')
     .eq('tracking_token', token)
     .maybeSingle();
 
@@ -464,6 +464,7 @@ app.get("/api/public/order-tracking/:token", asyncHandler(async (req, res) => {
     shop_name: tenantData?.name || '',
     shop_logo_url: tenantData?.logo_url || null,
     delivery_date: orderData.delivery_date,
+    ...(await publicTrackingStages(supabaseAdmin, tenantData?.vertical, (orderData as any).status_key)),
   });
 }));
 
@@ -478,6 +479,28 @@ app.get("/api/public/order-tracking/:token", asyncHandler(async (req, res) => {
 // المعدّل بالأسفل. يعيد tracking_token نفسه عند النجاح فقط -- هذا الاستثناء
 // الوحيد المتعمَّد لإرجاع التوكِن من السيرفر، لأن الطالب أثبت للتو معرفته
 // بسرّين معاً لا سرّاً واحداً مخمَّناً.
+// seen-verticals-readiness-task.md Phase 2: a shop on a vertical other than
+// men's tailoring has its own stages (a sofa goes through «تنجيد», not
+// «خياطة»). The tracking page builds its steps from them; for men's
+// tailoring nothing is added and the page keeps its fixed steps.
+async function publicTrackingStages(supabaseAdmin: any, vertical: string | null | undefined, statusKey: string | null | undefined) {
+  if (!vertical || vertical === 'mens_tailoring') return {};
+  const { data } = await supabaseAdmin
+    .from('vertical_workflow_stages')
+    .select('stage_key, label_ar, label_en, label_ur, phase, sort')
+    .eq('vertical_key', vertical)
+    .order('sort');
+  const stages = (data || []) as Array<{ stage_key: string; label_ar: string; label_en?: string | null; label_ur?: string | null; phase?: string | null }>;
+  if (stages.length === 0 || stages.some((st) => !st.phase)) return {};
+  const current = stages.find((st) => st.stage_key === statusKey);
+  return {
+    phase: current?.phase ?? null,
+    stages: stages
+      .filter((st) => st.phase !== 'cancelled')
+      .map((st) => ({ key: st.stage_key, phase: st.phase, label_ar: st.label_ar, label_en: st.label_en ?? null, label_ur: st.label_ur ?? null })),
+  };
+}
+
 const ORDER_LOOKUP_NUMBER_RE = /^[0-9]{1,10}$/;
 const PHONE_LAST4_RE = /^[0-9]{4}$/;
 
@@ -501,7 +524,7 @@ app.post("/api/public/order-lookup", asyncHandler(async (req, res) => {
 
   const { data: candidates } = await supabaseAdmin
     .from('orders')
-    .select('order_number, status, status_key, delivery_date, tracking_token, tenant:tenants(name, logo_url), customer:customers(phone)')
+    .select('order_number, status, status_key, delivery_date, tracking_token, tenant:tenants(name, logo_url, vertical), customer:customers(phone)')
     .eq('order_number', Number(orderNumber));
 
   // order_number مُتسلسِل لكل مستأجر على حدة، لا فريد على مستوى المنصّة
@@ -528,6 +551,7 @@ app.post("/api/public/order-lookup", asyncHandler(async (req, res) => {
     shop_name: tenantData?.name || '',
     shop_logo_url: tenantData?.logo_url || null,
     delivery_date: orderData.delivery_date,
+    ...(await publicTrackingStages(supabaseAdmin, tenantData?.vertical, (orderData as any).status_key)),
   });
 }));
 
@@ -724,8 +748,23 @@ app.post("/api/orders/:id/notify-status", authenticate, asyncHandler(async (req:
   }
 
   const statusKey = orderData.status_key || orderData.status;
+  // The stage's own name in the shop's vertical (seen-verticals-readiness-task.md
+  // Phase 2) -- a sofa's customer read «الحالة الآن: design_approval». The
+  // tailoring dictionary only when the vertical does not name the stage.
+  const { data: tenantRow } = await supabaseAdmin.from('tenants').select('vertical').eq('id', tenantId).maybeSingle();
+  let stageName: string | null = null;
+  // Men's tailoring keeps the dictionary's texts exactly as before.
+  if (tenantRow?.vertical && tenantRow.vertical !== 'mens_tailoring' && orderData.status_key) {
+    const { data: stage } = await supabaseAdmin
+      .from('vertical_workflow_stages')
+      .select('label_ar')
+      .eq('vertical_key', tenantRow.vertical)
+      .eq('stage_key', orderData.status_key)
+      .maybeSingle();
+    stageName = stage?.label_ar || null;
+  }
   const title = `طلبك رقم ${orderData.order_number}`;
-  const body = `الحالة الآن: ${ORDER_STATUS_LABELS_AR[statusKey] || statusKey}`;
+  const body = `الحالة الآن: ${stageName || ORDER_STATUS_LABELS_AR[statusKey] || statusKey}`;
   const link = `${req.protocol}://${req.get('host')}/track/${orderData.tracking_token}`;
 
   const sent = await sendPushAndPruneDeadTokens(adminMessaging, subs, { title, body }, link, (deadTokens) =>

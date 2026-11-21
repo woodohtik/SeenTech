@@ -63,6 +63,7 @@ interface DashboardStatsData {
 import { STATUS_CONFIG, getOrderStatusDisplay } from './orderStatusConfig';
 import { buildDashboardPlan, figuresFrom, planRanges, statsFromRows, type ChartLabel, type DashboardFigures, type DashboardStatsResult } from './dashboard/dashboardStats';
 import { useVerticalConfig } from '../hooks/useVerticalConfig';
+import { getOrderPhase, isFinishedPhase, finishedStageKeys, getStageLabel } from '../utils/orderStage';
 import { cn } from '../lib/utils';
 import { PriceDisplay } from './PriceDisplay';
 import { CurrencySymbol } from './CurrencySymbol';
@@ -242,6 +243,9 @@ const DrillDownModal = ({
 
 export default function DashboardOwner({ tenantId }: DashboardProps) {
   const { t, i18n } = useTranslation();
+  // The shop's stages: the figures count by each order's phase
+  // (seen-verticals-readiness-task.md Phase 2).
+  const { workflowStages, isLegacyVertical } = useVerticalConfig();
   const [stats, setStats] = useState({
     customers: 0,
     customersGrowthRate: 0,
@@ -322,6 +326,8 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       ...d,
       // status_key (نص حر لأي نشاط) يتقدّم على status (enum قديم) متى وُجد — انظر Orders.tsx.
       status: d.status_key || d.status,
+      // Where the order stands whatever the vertical calls the stage (Phase 2).
+      phase: getOrderPhase({ status_key: d.status_key, status: d.status }, workflowStages),
       customerId: d.customer_id || '',
       customerName: d.customer_name || '',
       orderDate: d.order_date || new Date().toISOString(),
@@ -356,10 +362,10 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
     } as BranchInventory));
 
     return { customers, orders, inventory, bInv };
-  }, [tenantId, selectedBranchId]);
+  }, [tenantId, selectedBranchId, workflowStages]);
 
   const getDashboardRows = React.useCallback(
-    () => queryClient.fetchQuery({ queryKey: ['dashboard_rows', tenantId, selectedBranchId], queryFn: loadDashboardRows, staleTime: 30_000 }),
+    () => queryClient.fetchQuery({ queryKey: ['dashboard_rows', tenantId, selectedBranchId, workflowStages.length], queryFn: loadDashboardRows, staleTime: 30_000 }),
     [queryClient, tenantId, selectedBranchId, loadDashboardRows],
   );
 
@@ -382,7 +388,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
         throw error;
       } else {
         // The function is not on this database yet: the same figures from the rows.
-        result = statsFromRows(plan, await getDashboardRows());
+        result = statsFromRows(plan, await getDashboardRows(), finishedStageKeys(workflowStages));
       }
       const figures = figuresFrom(plan, result);
       // An honest "last known" view when offline -- now a few KB of figures, not every row.
@@ -506,7 +512,6 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
 
   const { currentStaff } = useStaff();
   const { hasPermission } = usePermissions(currentStaff);
-  const { workflowStages, isLegacyVertical } = useVerticalConfig();
 
   const hasRevenuePermission = hasPermission('dashboard.revenue');
   const hasOrdersPermission = hasPermission('dashboard.orders') || hasPermission('dashboard.view');
@@ -1003,7 +1008,7 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       onClick: () => openDrill((r) => ({ 
         type: 'pending_orders', 
         title: t('dashboard.active_orders'), 
-        data: r.orders.filter(o => !['delivered', 'ready'].includes(o.status)).map(o => ({ id: o.id, [t('common.customers')]: o.customerName, [t('common.status')]: o.status, [t('common.date')]: formatDate(o.orderDate) }))
+        data: r.orders.filter(o => !isFinishedPhase(getOrderPhase(o as any, workflowStages))).map(o => ({ id: o.id, [t('common.customers')]: o.customerName, [t('common.status')]: getStageLabel(o.status, workflowStages, i18n.language), [t('common.date')]: formatDate(o.orderDate) }))
       }))
     },
     { 
@@ -1016,8 +1021,9 @@ export default function DashboardOwner({ tenantId }: DashboardProps) {
       onClick: () => openDrill((r) => ({ 
         type: 'completion_time', 
         title: t('dashboard.avg_completion_time'), 
-        data: r.orders.filter(o => ['delivered', 'ready'].includes(o.status)).map(o => {
-          const finalHistory = o.history && [...o.history].reverse().find(h => ['delivered', 'ready'].includes(h.status));
+        data: r.orders.filter(o => isFinishedPhase(getOrderPhase(o as any, workflowStages))).map(o => {
+          const finished = finishedStageKeys(workflowStages);
+          const finalHistory = o.history && [...o.history].reverse().find(h => finished.has(h.status));
           const hours = finalHistory ? (new Date(finalHistory.updatedAt).getTime() - new Date(o.orderDate).getTime()) / (1000 * 60 * 60) : 0;
           return { id: o.id, [t('common.customers')]: o.customerName, [t('common.date')]: formatDate(o.orderDate), [t('dashboard.completion_time_value')]: hours.toFixed(1) };
         })

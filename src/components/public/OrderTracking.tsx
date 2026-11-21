@@ -23,7 +23,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Capacitor } from '@capacitor/core';
 import {
-  ClipboardCheck, Scissors, Shirt, PackageCheck, CheckCircle2, XCircle, Bell, CalendarClock,
+  ClipboardCheck, Scissors, Shirt, PackageCheck, CheckCircle2, XCircle, Bell, CalendarClock, Wrench,
 } from 'lucide-react';
 import { useDirection } from '../../lib/direction';
 import { subscribeToOrderNotifications, type SubscribeResult } from '../../lib/pushNotifications';
@@ -38,13 +38,39 @@ type PublicStatus =
   | 'measurements_taken' | 'cutting' | 'sewing' | 'embroidery'
   | 'ironing_packaging' | 'ready' | 'partial_delivered' | 'delivered' | 'cancelled';
 
+interface PublicStage {
+  key: string;
+  phase: 'received' | 'in_progress' | 'ready' | 'delivered';
+  label_ar: string;
+  label_en?: string | null;
+  label_ur?: string | null;
+}
+
 interface PublicOrder {
   order_number: number;
   status: PublicStatus;
   shop_name: string;
   shop_logo_url?: string | null;
   delivery_date?: string | null;
+  /**
+   * A shop on another vertical than men's tailoring: its own stages and the
+   * order's phase (seen-verticals-readiness-task.md Phase 2). Absent for men's
+   * tailoring, which keeps STEPS below.
+   */
+  phase?: 'received' | 'in_progress' | 'ready' | 'delivered' | 'cancelled' | null;
+  stages?: PublicStage[];
 }
+
+// One generic icon per phase for any vertical -- no scissors or thobe for a sofa.
+const PHASE_ICON: Record<PublicStage['phase'], typeof ClipboardCheck> = {
+  received: ClipboardCheck,
+  in_progress: Wrench,
+  ready: PackageCheck,
+  delivered: CheckCircle2,
+};
+
+const stageLabel = (s: PublicStage, lang: string) =>
+  (lang === 'en' && s.label_en) || (lang === 'ur' && s.label_ur) || s.label_ar;
 
 // مراحل العرض للعميل (نطوي الحالات الداخلية في خطوات بسيطة)، مع أيقونة
 // مميّزة لكل مرحلة بدل رقم مجرّد -- lucide-react (لا Phosphor، انظر تعليق
@@ -88,7 +114,7 @@ function DeliverySkeleton() {
 }
 
 export default function OrderTracking({ token }: { token: string }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { dir, isRtl } = useDirection();
   const [order, setOrder] = useState<PublicOrder | null>(null);
   const [loading, setLoading] = useState(true);
@@ -155,11 +181,20 @@ export default function OrderTracking({ token }: { token: string }) {
     return () => { alive = false; };
   }, [token, t]);
 
-  const activeIdx = order ? activeStepIndex(order.status) : -1;
-  const isDelivered = order?.status === 'delivered';
+  // The vertical's own steps when the server sent them; men's tailoring's fixed ones otherwise.
+  const steps = order?.stages && order.stages.length > 0
+    ? order.stages.map((s) => ({ key: [s.key], label: stageLabel(s, i18n.language), Icon: PHASE_ICON[s.phase] || Wrench }))
+    : STEPS.map((s) => ({ key: s.key as string[], label: t(s.labelKey), Icon: s.Icon }));
+  const activeIdx = order
+    ? (order.stages && order.stages.length > 0
+      ? Math.max(0, steps.findIndex((s) => s.key.includes(order.status)))
+      : activeStepIndex(order.status))
+    : -1;
+  const isDelivered = order?.status === 'delivered' || order?.phase === 'delivered';
+  const isCancelled = order?.status === 'cancelled' || order?.phase === 'cancelled';
 
   let deliveryLabel: string | null = null;
-  if (order?.delivery_date && order.status !== 'cancelled' && !isDelivered) {
+  if (order?.delivery_date && !isCancelled && !isDelivered) {
     const diff = daysUntil(order.delivery_date);
     deliveryLabel = diff <= 0
       ? t('public_tracking.delivery_today')
@@ -192,26 +227,26 @@ export default function OrderTracking({ token }: { token: string }) {
             <h2 style={styles.shop}>{order.shop_name}</h2>
             <p style={styles.muted}>{t('public_tracking.order_number', { number: order.order_number })}</p>
 
-            {order.status === 'cancelled' ? (
+            {isCancelled ? (
               <div style={styles.errorBox}>
                 <XCircle size={32} color={customerColors.dangerText} />
                 <p style={styles.error}>{t('public_tracking.order_cancelled')}</p>
               </div>
             ) : (
               <ol style={{ ...styles.steps, textAlign: isRtl ? 'right' : 'left' }}>
-                {STEPS.map((s, idx) => {
+                {steps.map((s, idx) => {
                   const active = idx <= activeIdx;
                   const isCurrent = idx === activeIdx;
-                  const celebrate = isCurrent && isDelivered && idx === STEPS.length - 1;
+                  const celebrate = isCurrent && isDelivered && idx === steps.length - 1;
                   return (
-                    <li key={s.labelKey} style={{ ...styles.step, ...(active ? styles.stepActive : {}) }}>
+                    <li key={s.key.join('|')} style={{ ...styles.step, ...(active ? styles.stepActive : {}) }}>
                       <span
                         className={celebrate ? 'seen-celebrate' : undefined}
                         style={{ ...styles.dot, ...(active ? styles.dotActive : {}) }}
                       >
                         <s.Icon size={18} strokeWidth={2.25} />
                       </span>
-                      <span>{t(s.labelKey)}</span>
+                      <span>{s.label}</span>
                     </li>
                   );
                 })}
@@ -225,7 +260,7 @@ export default function OrderTracking({ token }: { token: string }) {
               </p>
             )}
 
-            {order.status !== 'cancelled' && order.status !== 'delivered' && (
+            {!isCancelled && !isDelivered && (
               <div style={styles.notifyBox}>
                 {Capacitor.isNativePlatform() ? (
                   // Inside the customer Capacitor app, push is already
