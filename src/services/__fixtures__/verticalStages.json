@@ -1,0 +1,412 @@
+[
+ {
+  "consumes_materials": false,
+  "label_ar": "استلام الطلب",
+  "legacy_status": "measurements_taken",
+  "phase": "received",
+  "sort": 1,
+  "stage_key": "order_received",
+  "vertical_key": "fabric_store",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": true,
+  "label_ar": "قص وقياس بالمتر",
+  "legacy_status": "cutting",
+  "phase": "in_progress",
+  "sort": 2,
+  "stage_key": "cutting_measuring",
+  "vertical_key": "fabric_store",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "جاهز للاستلام",
+  "legacy_status": "ready",
+  "phase": "ready",
+  "sort": 3,
+  "stage_key": "ready_pickup",
+  "vertical_key": "fabric_store",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "تم التسليم",
+  "legacy_status": "delivered",
+  "phase": "delivered",
+  "sort": 4,
+  "stage_key": "delivered",
+  "vertical_key": "fabric_store",
+  "is_terminal": true
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "ملغي",
+  "legacy_status": "cancelled",
+  "phase": "cancelled",
+  "sort": 5,
+  "stage_key": "cancelled",
+  "vertical_key": "fabric_store",
+  "is_terminal": true
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "استلام الطلب",
+  "legacy_status": "measurements_taken",
+  "phase": "received",
+  "sort": 1,
+  "stage_key": "order_received",
+  "vertical_key": "furniture",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "اعتماد التصميم",
+  "legacy_status": "measurements_taken",
+  "phase": "in_progress",
+  "sort": 2,
+  "stage_key": "design_approval",
+  "vertical_key": "furniture",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "تجهيز الهيكل",
+  "legacy_status": "measurements_taken",
+  "phase": "in_progress",
+  "sort": 3,
+  "stage_key": "frame_building",
+  "vertical_key": "furniture",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": true,
+  "label_ar": "تنجيد",
+  "legacy_status": "cutting",
+  "phase": "in_progress",
+  "sort": 4,
+  "stage_key": "upholstery",
+  "vertical_key": "furniture",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "تشطيب",
+  "legacy_status": "sewing",
+  "phase": "in_progress",
+  "sort": 5,
+  "stage_key": "finishing",
+  "vertical_key": "furniture",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "فحص الجودة",
+  "legacy_status": "sewing",
+  "phase": "in_progress",
+  "sort": 6,
+  "stage_key": "quality_check",
+  "vertical_key": "furniture",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "جاهز للتسليم",
+  "legacy_status": "ready",
+  "phase": "ready",
+  "sort": 7,
+  "stage_key": "ready",
+  "vertical_key": "furniture",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "تم التسليم",
+  "legacy_status": "delivered",
+  "phase": "delivered",
+  "sort": 8,
+  "stage_key": "delivered",
+  "vertical_key": "furniture",
+  "is_terminal": true
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "ملغي",
+  "legacy_status": "cancelled",
+  "phase": "cancelled",
+  "sort": 9,
+  "stage_key": "cancelled",
+  "vertical_key": "furniture",
+  "is_terminal": true
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "تم أخذ المقاسات",
+  "legacy_status": "measurements_taken",
+  "phase": "received",
+  "sort": 1,
+  "stage_key": "measurements_taken",
+  "vertical_key": "mens_tailoring",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": true,
+  "label_ar": "قص",
+  "legacy_status": "cutting",
+  "phase": "in_progress",
+  "sort": 2,
+  "stage_key": "cutting",
+  "vertical_key": "mens_tailoring",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "خياطة",
+  "legacy_status": "sewing",
+  "phase": "in_progress",
+  "sort": 3,
+  "stage_key": "sewing",
+  "vertical_key": "mens_tailoring",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "تطريز",
+  "legacy_status": "embroidery",
+  "phase": "in_progress",
+  "sort": 4,
+  "stage_key": "embroidery",
+  "vertical_key": "mens_tailoring",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "كي وتغليف",
+  "legacy_status": "ironing_packaging",
+  "phase": "in_progress",
+  "sort": 5,
+  "stage_key": "ironing_packaging",
+  "vertical_key": "mens_tailoring",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "جاهز",
+  "legacy_status": "ready",
+  "phase": "ready",
+  "sort": 6,
+  "stage_key": "ready",
+  "vertical_key": "mens_tailoring",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "تسليم جزئي",
+  "legacy_status": "partial_delivered",
+  "phase": "in_progress",
+  "sort": 7,
+  "stage_key": "partial_delivered",
+  "vertical_key": "mens_tailoring",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "تم التسليم",
+  "legacy_status": "delivered",
+  "phase": "delivered",
+  "sort": 8,
+  "stage_key": "delivered",
+  "vertical_key": "mens_tailoring",
+  "is_terminal": true
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "ملغي",
+  "legacy_status": "cancelled",
+  "phase": "cancelled",
+  "sort": 9,
+  "stage_key": "cancelled",
+  "vertical_key": "mens_tailoring",
+  "is_terminal": true
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "استلام الطلب",
+  "legacy_status": "measurements_taken",
+  "phase": "received",
+  "sort": 1,
+  "stage_key": "order_received",
+  "vertical_key": "specialty_clothing",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "اعتماد التصميم/الشعار",
+  "legacy_status": "measurements_taken",
+  "phase": "in_progress",
+  "sort": 2,
+  "stage_key": "design_approval",
+  "vertical_key": "specialty_clothing",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": true,
+  "label_ar": "قص",
+  "legacy_status": "cutting",
+  "phase": "in_progress",
+  "sort": 3,
+  "stage_key": "cutting",
+  "vertical_key": "specialty_clothing",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "خياطة",
+  "legacy_status": "sewing",
+  "phase": "in_progress",
+  "sort": 4,
+  "stage_key": "sewing",
+  "vertical_key": "specialty_clothing",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "طباعة/تطريز الشعار",
+  "legacy_status": "embroidery",
+  "phase": "in_progress",
+  "sort": 5,
+  "stage_key": "printing_embroidery",
+  "vertical_key": "specialty_clothing",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "فحص الجودة",
+  "legacy_status": "sewing",
+  "phase": "in_progress",
+  "sort": 6,
+  "stage_key": "quality_check",
+  "vertical_key": "specialty_clothing",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "جاهز",
+  "legacy_status": "ready",
+  "phase": "ready",
+  "sort": 7,
+  "stage_key": "ready",
+  "vertical_key": "specialty_clothing",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "تم التسليم",
+  "legacy_status": "delivered",
+  "phase": "delivered",
+  "sort": 8,
+  "stage_key": "delivered",
+  "vertical_key": "specialty_clothing",
+  "is_terminal": true
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "ملغي",
+  "legacy_status": "cancelled",
+  "phase": "cancelled",
+  "sort": 9,
+  "stage_key": "cancelled",
+  "vertical_key": "specialty_clothing",
+  "is_terminal": true
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "تم أخذ المقاسات",
+  "legacy_status": "measurements_taken",
+  "phase": "received",
+  "sort": 1,
+  "stage_key": "measurements_taken",
+  "vertical_key": "womens_tailoring",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": true,
+  "label_ar": "قص",
+  "legacy_status": "cutting",
+  "phase": "in_progress",
+  "sort": 2,
+  "stage_key": "cutting",
+  "vertical_key": "womens_tailoring",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "خياطة",
+  "legacy_status": "sewing",
+  "phase": "in_progress",
+  "sort": 3,
+  "stage_key": "sewing",
+  "vertical_key": "womens_tailoring",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "تطريز",
+  "legacy_status": "embroidery",
+  "phase": "in_progress",
+  "sort": 4,
+  "stage_key": "embroidery",
+  "vertical_key": "womens_tailoring",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "بروفة/قياس",
+  "legacy_status": "sewing",
+  "phase": "in_progress",
+  "sort": 5,
+  "stage_key": "fitting",
+  "vertical_key": "womens_tailoring",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "كي وتغليف",
+  "legacy_status": "ironing_packaging",
+  "phase": "in_progress",
+  "sort": 6,
+  "stage_key": "ironing_packaging",
+  "vertical_key": "womens_tailoring",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "جاهز",
+  "legacy_status": "ready",
+  "phase": "ready",
+  "sort": 7,
+  "stage_key": "ready",
+  "vertical_key": "womens_tailoring",
+  "is_terminal": false
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "تم التسليم",
+  "legacy_status": "delivered",
+  "phase": "delivered",
+  "sort": 8,
+  "stage_key": "delivered",
+  "vertical_key": "womens_tailoring",
+  "is_terminal": true
+ },
+ {
+  "consumes_materials": false,
+  "label_ar": "ملغي",
+  "legacy_status": "cancelled",
+  "phase": "cancelled",
+  "sort": 9,
+  "stage_key": "cancelled",
+  "vertical_key": "womens_tailoring",
+  "is_terminal": true
+ }
+]
