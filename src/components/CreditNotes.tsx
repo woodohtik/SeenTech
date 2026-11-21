@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase/client';
 import { handleFirestoreError, OperationType, getFriendlyErrorMessage } from '../lib/appErrors';
 import { Tenant, TaxInvoice, CreditNote } from '../types';
 import { decodeInvoiceExtendedNotes } from '../utils/b2bHelper';
+import { ratePercent } from '../utils/vatReport';
 import { logEmployeeAction } from '../services/employeeAuditService';
 import { PriceDisplay } from './PriceDisplay';
 import { IconInput } from './ui/IconInput';
@@ -81,7 +82,9 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
             customerName: data.customer_name,
             items: extNotes.items || data.items || [],
             subTotal: data.subtotal,
-            taxRate: data.tax_rate,
+            // tax_invoices.tax_rate holds both 15 and 0.15 (create_pos_sale
+            // stores a fraction): read as a percentage, 15 when missing.
+            taxRate: ratePercent(data.tax_rate) ?? 15,
             taxAmount: data.tax_amount,
             totalAmount: data.total_amount,
             isB2B: extNotes.is_b2b !== undefined ? extNotes.is_b2b : (data.is_b2b || data.invoice_type === 'standard_b2b' || !!data.vat_number),
@@ -100,9 +103,10 @@ export default function CreditNotes({ tenantId }: { tenantId: string }) {
         // "القيمة 0 فعلياً" و"القيمة غير موجودة أصلاً" (null/undefined)،
         // اللذين ينتجان كلاهما 0 عبر Number() المجرَّدة.
         const invoiceTaxRateMap = new Map((invoicesData || []).map(inv => {
-          const raw = inv.tax_rate;
-          const num = Number(raw);
-          const rate = (raw !== null && raw !== undefined && Number.isFinite(num)) ? num : 15;
+          // 0 is a real rate (exempt); missing means 15. Both stored scales
+          // (15 and 0.15) read as a percentage -- a 0.15 used to give a
+          // credit note's VAT as 0.15% of the refund instead of 15%.
+          const rate = ratePercent(inv.tax_rate) ?? 15;
           return [inv.id, rate];
         }));
         
