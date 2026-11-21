@@ -111,6 +111,9 @@ export default function Reports({ tenantId }: { tenantId: string }) {
   
   const canViewReports = hasPermission('reports.view');
   const canExportReports = hasPermission('reports.export');
+  // seen-permissions-fix-task.md Phase 4: the financial and tax reports follow their own keys.
+  const canFinancialReports = hasPermission('reports.financial');
+  const canTaxReports = hasPermission('reports.tax');
 
   const [activeTab, setActiveTab] = useState<ReportTab>('general');
 
@@ -852,15 +855,17 @@ export default function Reports({ tenantId }: { tenantId: string }) {
 
   const reportTabs = [
     { id: 'general', label: t('reports.tab_general'), icon: TrendingUp },
-    { id: 'financial', label: t('dashboard.grid.finance'), icon: DollarSign },
-    { id: 'profit_loss', label: t('reports.tab_profit_loss'), icon: TrendingUp },
+    ...(canFinancialReports ? [
+      { id: 'financial' as ReportTab, label: t('dashboard.grid.finance'), icon: DollarSign },
+      { id: 'profit_loss' as ReportTab, label: t('reports.tab_profit_loss'), icon: TrendingUp },
+    ] : []),
     // A shop that takes no orders (a fabric store) has no orders / tailors tabs (Phase 6).
     ...(ordersModuleOn ? [{ id: 'orders' as ReportTab, label: t('reports.tab_orders'), icon: ShoppingBag }] : []),
     { id: 'inventory', label: t('inventory.reports'), icon: Package },
     { id: 'staff', label: t('reports.tab_staff_customers'), icon: Users },
     { id: 'suppliers_purchases', label: t('reports.tab_suppliers_purchases'), icon: Truck },
-    { id: 'vat', label: t('reports.tab_vat'), icon: Landmark },
-    { id: 'zreports', label: t('reports.tab_zreports'), icon: Calculator },
+    ...(canTaxReports ? [{ id: 'vat' as ReportTab, label: t('reports.tab_vat'), icon: Landmark }] : []),
+    ...(canFinancialReports ? [{ id: 'zreports' as ReportTab, label: t('reports.tab_zreports'), icon: Calculator }] : []),
     ...(ordersModuleOn ? [{ id: 'tailor_commissions' as ReportTab, label: tv('reports.tab_tailor_commissions'), icon: Scissors }] : []),
   ];
   const activeTabLabel = reportTabs.find(tab => tab.id === activeTab)?.label || '';

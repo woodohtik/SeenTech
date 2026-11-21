@@ -28,7 +28,7 @@ import {
 import { supabase } from '../lib/supabase/client';
 import { IconInput } from './ui/IconInput';
 import { Role, PermissionKey, PermissionsMap } from '../types';
-import { SYSTEM_PERMISSIONS } from '../constants/permissions';
+import { SHOWN_PERMISSIONS } from '../constants/permissions';
 import { DEFAULT_ROLES, updateRolePermissions, createCustomRole, isMerchantRole, isSaaSRole, BASE_ROLE_KEYS } from '../services/permissionService';
 import { cn } from '../lib/utils';
 import { useToast } from '../contexts/ToastContext';
@@ -234,7 +234,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
     if (isReadOnlyRole) return;
     setPermissionsState(prev => {
       const updated = { ...prev };
-      SYSTEM_PERMISSIONS.forEach(p => {
+      SHOWN_PERMISSIONS.forEach(p => {
         if (!category || category === 'all' || p.categoryKey === category) {
           updated[p.id as PermissionKey] = true;
         }
@@ -248,7 +248,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
     if (isReadOnlyRole) return;
     setPermissionsState(prev => {
       const updated = { ...prev };
-      SYSTEM_PERMISSIONS.forEach(p => {
+      SHOWN_PERMISSIONS.forEach(p => {
         if (!category || category === 'all' || p.categoryKey === category) {
           updated[p.id as PermissionKey] = false;
         }
@@ -360,9 +360,9 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
   };
 
   // Filter permissions
-  const categories = Array.from(new Set(SYSTEM_PERMISSIONS.map(p => p.categoryKey)));
+  const categories = Array.from(new Set(SHOWN_PERMISSIONS.map(p => p.categoryKey)));
 
-  const filteredPermissions = SYSTEM_PERMISSIONS.filter(p => {
+  const filteredPermissions = SHOWN_PERMISSIONS.filter(p => {
     const transName = getTransPermName(p.id, p.categoryKey, p.name);
     const transDesc = getTransPermDesc(p.id, p.categoryKey, p.description);
     const matchesSearch = transName.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -374,7 +374,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
 
   const getEnabledCount = (rolePerms?: PermissionsMap) => {
     if (!rolePerms) return 0;
-    return Object.values(rolePerms).filter(Boolean).length;
+    return SHOWN_PERMISSIONS.filter(p => (rolePerms as Record<string, boolean>)[p.id]).length;
   };
 
   if (loading) {
@@ -529,7 +529,7 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                     const isTenantCustom = Boolean(role.tenantId);
                     const isSaas = role.category === 'saas' || isSaaSRole(role.roleKey);
                     const enabledCount = getEnabledCount(role.permissions);
-                    const totalCount = SYSTEM_PERMISSIONS.length;
+                    const totalCount = SHOWN_PERMISSIONS.length;
 
                     return (
                       <button
@@ -719,10 +719,10 @@ export const RolePermissionsSettings: React.FC<RolePermissionsSettingsProps> = (
                         : "bg-surface-muted text-content-muted hover:text-content"
                     )}
                   >
-                    {t('settings.staff.permissions.all_roles')} ({SYSTEM_PERMISSIONS.length})
+                    {t('settings.staff.permissions.all_roles')} ({SHOWN_PERMISSIONS.length})
                   </button>
                   {categories.map(cat => {
-                    const count = SYSTEM_PERMISSIONS.filter(p => p.categoryKey === cat).length;
+                    const count = SHOWN_PERMISSIONS.filter(p => p.categoryKey === cat).length;
                     return (
                       <button
                         key={cat}

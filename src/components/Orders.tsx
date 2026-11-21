@@ -267,6 +267,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   // the click itself, not from a mount effect -- a remount after that has
   // nothing left to trigger.
   const openInvoiceView = (order: Order) => {
+    if (!canViewInvoice) {
+      toastError(t('orders.no_invoice_permission', 'لا تملك صلاحية عرض الفاتورة'));
+      return;
+    }
     setSelectedOrder(order);
     setIsInvoiceOpen(true);
     setInvoiceViewData(null);
@@ -312,6 +316,24 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   const canDelete = hasPermission('orders.delete');
   const canRefund = hasPermission('action.refund');
   const canDiscount = hasPermission('action.discount');
+  // seen-permissions-fix-task.md Phase 4: every action on this page follows
+  // the permission the settings screen shows (the server checks the same).
+  // canRefund/canDiscount have no control on this page: returns live in
+  // Sales > Returns and discounts in the order form/POS, each gated there.
+  void canRefund; void canDiscount; void canEdit;
+  const canUpdateStatus = hasPermission('orders.update_status');
+  const canCollect = hasPermission('payments.collect');
+  const canViewDetails = hasPermission('orders.view_details');
+  const canViewPrices = hasPermission('payments.view_prices');
+  const canViewInvoice = hasPermission('invoices.view');
+  // Amounts for whoever may see prices (by default not the tailor).
+  const money = (amount: number | null | undefined) =>
+    canViewPrices ? <PriceDisplay amount={amount as number} /> : <span className="text-content-muted">—</span>;
+  const openDetails = (order: Order) => {
+    if (!canViewDetails) return;
+    setSelectedOrder(order);
+    setIsDetailsOpen(true);
+  };
 
   // The new-order form itself is the shared TailoringOrderForm; this page only
   // opens it (optionally with a customer preselected) and lists what it saves.
@@ -332,9 +354,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
   };
 
   const handleOpenModal = useCallback((customCustId?: string) => {
+    if (!canCreate) return;
     setNewOrderCustomerId(customCustId || undefined);
     setIsModalOpen(true);
-  }, []);
+  }, [canCreate]);
 
   const handleCloseModal = useCallback(() => {
     setIsModalOpen(false);
@@ -755,6 +778,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
     setOpenStatusDropdownId(null);
     const order = orders.find(o => o.id === id);
     if (!order) return;
+    if (!canUpdateStatus) {
+      toastError(t('orders.no_status_permission', 'لا تملك صلاحية تغيير حالة الطلب'));
+      return;
+    }
 
     // Prevent any changes if order is already delivered (locked)
     if (order.status === 'delivered') {
@@ -767,6 +794,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
       const remaining = Number(order.remainingAmount || 0);
       if (remaining > 0) {
         toastError(t('orders.cannot_deliver_unpaid'));
+        // Settling it first needs payments.collect.
+        if (!canCollect) return;
         setPendingStatusUpdate({ id, status });
         setSelectedOrder(order);
         setIsPaymentModalOpen(true);
@@ -1131,6 +1160,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
    * المستخدم.
    */
   const handlePrintOrder = async (order: Order) => {
+    if (!canViewInvoice) {
+      toastError(t('orders.no_invoice_permission', 'لا تملك صلاحية عرض الفاتورة'));
+      return;
+    }
     setSelectedOrder(order);
     setIsInvoiceOpen(true);
     const result = await loadRealInvoiceForOrder(order);
@@ -1363,15 +1396,15 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 <div className="flex justify-between"><span className="text-content-muted">{t('pos.customer_name')}</span><span className="font-bold">{order.customerName}</span></div>
                 <div className="border-t border-border pt-3 flex justify-between items-center">
                   <span className="text-content-muted">{t('orders.grand_total')}</span>
-                  <span className="font-black"><PriceDisplay amount={order.totalAmount} /></span>
+                  <span className="font-black">{money(order.totalAmount)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-content-muted">{t('pos.paid_amount')}</span>
-                  <span className="font-black text-success"><PriceDisplay amount={order.paidAmount} /></span>
+                  <span className="font-black text-success">{money(order.paidAmount)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-content-muted">{t('orders.remaining_amount')}</span>
-                  <span className="font-black text-danger"><PriceDisplay amount={order.remainingAmount} /></span>
+                  <span className="font-black text-danger">{money(order.remainingAmount)}</span>
                 </div>
               </div>
               <div className="p-6 pt-0 flex flex-col gap-3">
@@ -1495,9 +1528,11 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 <h3 className="font-black text-content text-sm">{t('orders.update_status')}</h3>
               </div>
               
-              {order.status === 'delivered' ? (
+              {order.status === 'delivered' || !canUpdateStatus ? (
                 <div className="bg-surface-muted p-3.5 rounded-2xl border border-border text-center text-xs font-bold text-content-muted">
-                  {t('orders.order_delivered_locked')}
+                  {order.status === 'delivered'
+                    ? t('orders.order_delivered_locked')
+                    : t(getOrderStatusDisplay(order.status, workflowStages).labelKey)}
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -1530,21 +1565,21 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-content-muted">{t('common.total')}:</span>
-                  <span className="font-bold text-content"><PriceDisplay amount={order.totalAmount} /></span>
+                  <span className="font-bold text-content">{money(order.totalAmount)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-content-muted">{t('orders.amount_paid')}:</span>
-                  <span className="font-bold text-success"><PriceDisplay amount={order.paidAmount} /></span>
+                  <span className="font-bold text-success">{money(order.paidAmount)}</span>
                 </div>
                 <div className="flex justify-between text-lg pt-2 border-t border-border/50">
                   <span className="font-bold text-content">{t('orders.remaining_label')}:</span>
                   <span className={cn("font-black", order.remainingAmount > 0 ? "text-danger" : "text-success")}>
-                    <PriceDisplay amount={order.remainingAmount} />
+                    {money(order.remainingAmount)}
                   </span>
                 </div>
               </div>
 
-              {order.remainingAmount > 0 && !isPaying && (
+              {order.remainingAmount > 0 && !isPaying && canCollect && (
                 <button 
                   onClick={() => setIsPaying(true)}
                   className="w-full mt-4 bg-brand text-white py-3 rounded-2xl font-bold hover:bg-brand/90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand/10"
@@ -1921,7 +1956,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
           <div className="p-8 space-y-6">
             <div className="bg-surface-muted p-6 rounded-3xl border border-border text-center">
               <p className="text-xs font-bold text-content-muted uppercase tracking-widest mb-1">{t('orders.remaining_amount')}</p>
-              <p className="text-3xl font-black text-danger"><PriceDisplay amount={order.remainingAmount} /></p>
+              <p className="text-3xl font-black text-danger">{money(order.remainingAmount)}</p>
             </div>
 
             <div className="space-y-2">
@@ -2043,9 +2078,11 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 [t('common.order')]: o.orderNumber || o.id.slice(-6).toUpperCase(),
                 [t('common.customer')]: o.customerName,
                 [t('common.date')]: new Date(o.orderDate).toLocaleDateString(localeOf(i18n.language)),
-                [t('common.total')]: o.totalAmount,
-                [t('orders.amount_paid')]: o.paidAmount,
-                [t('orders.remaining_label')]: o.remainingAmount,
+                ...(canViewPrices ? {
+                  [t('common.total')]: o.totalAmount,
+                  [t('orders.amount_paid')]: o.paidAmount,
+                  [t('orders.remaining_label')]: o.remainingAmount,
+                } : {}),
                 [t('common.status')]: t(getOrderStatusDisplay(o.status, workflowStages).labelKey),
                 [t('orders.payment_method')]: t(`common.payment_methods.${o.paymentMethod}`, o.paymentMethod)
               }));
@@ -2079,6 +2116,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
               {t('orders.completed_orders')}
             </button>
           </div>
+          {canCreate && (
           <button
             id="tour-orders-new-btn"
             data-tour="orders-new-btn"
@@ -2088,6 +2126,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
             <Plus size={20} />
             <span>{t('orders.create_new_order')}</span>
           </button>
+          )}
         </div>
       </Header>
 
@@ -2224,7 +2263,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         {React.createElement(statusDisplay.icon, { size: 20 })}
                       </div>
 
-                      <div className="min-w-0 flex flex-col justify-center cursor-pointer" onClick={() => { setSelectedOrder(order); setIsDetailsOpen(true); }}>
+                      <div className="min-w-0 flex flex-col justify-center cursor-pointer" onClick={() => openDetails(order)}>
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <h3 className="text-sm font-black text-content truncate hover:text-brand transition-colors">
                             {order.customerName}
@@ -2250,7 +2289,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                               className="flex items-center gap-1 bg-danger/10 text-danger border border-danger/20 px-1.5 py-0.5 rounded-md text-[9px] font-black shrink-0 animate-pulse"
                             >
                               <AlertCircle size={10} />
-                              <PriceDisplay amount={totalUnpaid} />
+                              {money(totalUnpaid)}
                             </button>
                           )}
                           {order.isTest && (
@@ -2280,10 +2319,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                       >
                         <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse", statusDisplay.color.replace('text', 'bg'))} />
                         <span>{t(statusDisplay.labelKey)}</span>
-                        {order.status !== 'delivered' && <ChevronDown size={12} className="opacity-60" />}
+                        {order.status !== 'delivered' && canUpdateStatus && <ChevronDown size={12} className="opacity-60" />}
                       </button>
 
-                      {order.status !== 'delivered' && openStatusDropdownId === order.id && (
+                      {order.status !== 'delivered' && canUpdateStatus && openStatusDropdownId === order.id && (
                         <div className={cn(
                           "absolute top-full mt-2 w-48 bg-surface rounded-2xl shadow-2xl border border-border py-2 z-50 backdrop-blur-xl",
                           isRtlLang(i18n.language) ? "left-0" : "right-0"
@@ -2349,7 +2388,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         {t('common.total')}
                       </span>
                       <span className="font-black text-brand text-xs">
-                        <PriceDisplay amount={order.totalAmount} />
+                        {money(order.totalAmount)}
                       </span>
                     </div>
 
@@ -2362,7 +2401,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         {order.remainingAmount > 0 ? (
                           <span className="bg-danger/10 text-danger border border-danger/20 px-2 py-0.5 rounded-md text-[10px] font-black inline-flex items-center gap-1 truncate">
                             <span className="w-1.5 h-1.5 bg-danger rounded-full animate-pulse shrink-0" />
-                            <PriceDisplay amount={order.remainingAmount} />
+                            {money(order.remainingAmount)}
                           </span>
                         ) : (
                           <span className="bg-success/10 text-success border border-success/20 px-2 py-0.5 rounded-md text-[10px] font-black inline-flex items-center gap-1 truncate">
@@ -2377,6 +2416,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                   {/* Footer Actions for Mobile & Tablet */}
                   <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-border/40 text-xs">
                     <div className="flex items-center gap-1.5">
+                      {canViewInvoice && (<>
                       <button 
                         type="button"
                         onClick={(e) => {
@@ -2400,19 +2440,21 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                       >
                         <Printer size={16} />
                       </button>
+                      </>)}
 
+                      {canViewDetails && (
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedOrder(order);
-                          setIsDetailsOpen(true);
+                          openDetails(order);
                         }}
                         className="min-w-[40px] min-h-[40px] flex items-center justify-center text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all border border-border/40"
                         title={t('orders.details')}
                       >
                         <Info size={16} />
                       </button>
+                      )}
                     </div>
 
                     {canDelete && (
@@ -2447,7 +2489,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                     )}>
                       {React.createElement(statusDisplay.icon, { size: 32 })}
                     </div>
-                    <div className="cursor-pointer" onClick={() => { setSelectedOrder(order); setIsDetailsOpen(true); }}>
+                    <div className="cursor-pointer" onClick={() => openDetails(order)}>
                       <div className="flex items-center gap-3 flex-wrap">
                         <h3 className="text-xl font-black text-content">
                           {order.customerName}
@@ -2467,7 +2509,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                             title={t('orders.customer_has_dues')}
                           >
                             <AlertCircle size={14} className="text-danger" />
-                            <span><PriceDisplay amount={totalUnpaid} /></span>
+                            <span>{money(totalUnpaid)}</span>
                           </button>
                         )}
                         <span className="text-[10px] bg-surface-muted text-content-muted px-3 py-1 rounded-full font-black uppercase tracking-widest border border-border">
@@ -2495,7 +2537,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                         </span>
                         <div className="w-1 h-1 bg-border rounded-full hidden sm:block" />
                         <span className="font-black text-brand text-lg">
-                          <PriceDisplay amount={order.totalAmount} />
+                          {money(order.totalAmount)}
                         </span>
                       </div>
                     </div>
@@ -2503,6 +2545,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
 
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-2 bg-surface-muted/50 p-1 rounded-2xl border border-border">
+                      {canViewInvoice && (<>
                       <button
                         onClick={() => {
                           openInvoiceView(order);
@@ -2521,14 +2564,17 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                       >
                         <Printer size={18} />
                       </button>
+                      </>)}
 
+                      {canViewDetails && (
                       <button 
-                        onClick={() => { setSelectedOrder(order); setIsDetailsOpen(true); }}
+                        onClick={() => openDetails(order)}
                         className="p-2 text-content-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all"
                         title={t('orders.details')}
                       >
                         <Info size={18} />
                       </button>
+                      )}
                     </div>
 
                     <div className="relative">
@@ -2562,10 +2608,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                       >
                         <div className={cn("w-2 h-2 rounded-full animate-pulse", statusDisplay.color.replace('text', 'bg'))} />
                         <span>{t(statusDisplay.labelKey)}</span>
-                        {order.status !== 'delivered' && <ChevronDown size={14} className="opacity-50" />}
+                        {order.status !== 'delivered' && canUpdateStatus && <ChevronDown size={14} className="opacity-50" />}
                       </motion.button>
 
-                      {order.status !== 'delivered' && openStatusDropdownId === order.id && (
+                      {order.status !== 'delivered' && canUpdateStatus && openStatusDropdownId === order.id && (
                         <div className={cn(
                           "absolute top-full mt-2 w-56 bg-surface rounded-3xl shadow-2xl border border-border/50 py-3 z-30 animate-in fade-in zoom-in duration-200 backdrop-blur-xl",
                           isRtlLang(i18n.language) ? "right-0" : "left-0"
@@ -2704,7 +2750,7 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                 <div className="p-4 bg-danger/10 border border-danger/20 rounded-2xl flex justify-between items-center">
                   <span className="font-bold text-sm text-danger">{t('orders.total_customer_dues')}</span>
                   <span className="font-mono font-black text-xl text-danger">
-                    <PriceDisplay amount={unpaidOrders.filter(o => o.customerId === dueDetailsCustomer.id).reduce((sum, o) => sum + (o.remainingAmount || 0), 0)} />
+                    {money(unpaidOrders.filter(o => o.customerId === dueDetailsCustomer.id).reduce((sum, o) => sum + (o.remainingAmount || 0), 0))}
                   </span>
                 </div>
 
@@ -2718,9 +2764,8 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                       <div 
                         key={o.id} 
                         onClick={() => {
-                          setSelectedOrder(o);
                           setDueDetailsCustomer(null);
-                          setIsDetailsOpen(true);
+                          openDetails(o);
                         }}
                         className="p-4 bg-surface-muted border border-border rounded-2xl hover:border-brand/40 hover:bg-brand/5 cursor-pointer transition-all flex justify-between items-center gap-4"
                       >
@@ -2743,10 +2788,10 @@ export default function Orders({ tenantId }: { tenantId: string }) {
                             {t('orders.remaining_label')}
                           </div>
                           <div className="font-mono font-black text-base text-danger">
-                            <PriceDisplay amount={o.remainingAmount} />
+                            {money(o.remainingAmount)}
                           </div>
                           <div className="text-[10px] text-content-muted font-bold">
-                            {t('common.total')}: <PriceDisplay amount={o.totalAmount} />
+                            {t('common.total')}: {money(o.totalAmount)}
                           </div>
                         </div>
                       </div>

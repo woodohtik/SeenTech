@@ -97,3 +97,14 @@ export const SYSTEM_PERMISSIONS: Permission[] = [
   definePermission('branches.manage', 'settings.branches_manage', 'permissions.categories.settings'),
   definePermission('system.delete', 'settings.system_delete', 'permissions.categories.settings'),
 ];
+
+/**
+ * seen-permissions-fix-task.md Phase 4 (founder question 3): kept in the data
+ * (and in role_default_permissions) but not shown on the permissions screen
+ * -- inventory.manage is covered by inventory.create/edit/delete, and
+ * system.delete controls nothing a shop does.
+ */
+export const HIDDEN_PERMISSION_KEYS: readonly string[] = ['inventory.manage', 'system.delete'];
+
+/** The permissions the settings screen lists. */
+export const SHOWN_PERMISSIONS: Permission[] = SYSTEM_PERMISSIONS.filter(p => !HIDDEN_PERMISSION_KEYS.includes(p.id));

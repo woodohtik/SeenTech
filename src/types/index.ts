@@ -216,7 +216,14 @@ export type PermissionKey =
   | 'action.refund'
   | 'action.discount'
   | 'suppliers.manage'
-  | 'sales.view';
+  | 'sales.view'
+  // The rest of src/shared/permissionsMatrix.json's keys (seen-permissions-fix-task.md Phase 4).
+  | 'orders.view_details' | 'orders.update_status'
+  | 'invoices.view'
+  | 'payments.collect' | 'payments.view_prices'
+  | 'inventory.manage'
+  | 'reports.financial' | 'reports.tax'
+  | 'system.delete';
 
 export type PermissionsMap = Record<PermissionKey, boolean>;
 

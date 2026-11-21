@@ -2147,7 +2147,9 @@
     "fabric_enter_manually": "Enter the metres this item uses by hand",
     "assigned_tailor__technician": "Assigned technician",
     "thobe_custom__piece": "Custom order",
-    "receipt_title__piece": "Order receipt"
+    "receipt_title__piece": "Order receipt",
+    "no_invoice_permission": "You don't have permission to view the invoice",
+    "no_status_permission": "You don't have permission to change the order's status"
   },
   "permissions": {
     "access_denied_desc": "Not specified",

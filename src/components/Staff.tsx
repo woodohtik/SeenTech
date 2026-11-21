@@ -44,7 +44,7 @@ import { usePermissions } from '../hooks/usePermissions';
 import { useSafeMutation } from '../hooks/useSafeMutation';
 import { generateSecurePin, hashPin, isPinUnique } from '../services/staffService';
 import { updateRolePermissions, createCustomRole, DEFAULT_ROLES, updateUserOverrides, seedGlobalRoles, isMerchantRole, staffRoleForSave } from '../services/permissionService';
-import { SYSTEM_PERMISSIONS } from '../constants/permissions';
+import { SHOWN_PERMISSIONS } from '../constants/permissions';
 import EmployeeActivityLogTab from './EmployeeActivityLog';
 import AddEmployeeModal from './AddEmployeeModal';
 import AdminTailorCommissions from './AdminTailorCommissions';
@@ -243,7 +243,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
 
   useEffect(() => {
     // Expand all categories by default
-    const cats = Array.from(new Set(SYSTEM_PERMISSIONS.map(p => p.categoryKey)));
+    const cats = Array.from(new Set(SHOWN_PERMISSIONS.map(p => p.categoryKey)));
     setExpandedCategories(cats);
   }, []);
 
@@ -1028,7 +1028,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
     }
   };
 
-  const filteredPermissions = SYSTEM_PERMISSIONS.filter(p => {
+  const filteredPermissions = SHOWN_PERMISSIONS.filter(p => {
     const transName = getTransPermName(p.id, p.categoryKey, p.name);
     const transDesc = getTransPermDesc(p.id, p.categoryKey, p.description);
     return transName.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -1741,7 +1741,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                     {/* Permissions Grid Categories */}
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 items-start">
                       {categories.map(category => {
-                        const categoryPerms = SYSTEM_PERMISSIONS.filter(p => {
+                        const categoryPerms = SHOWN_PERMISSIONS.filter(p => {
                           const transName = getTransPermName(p.id, p.categoryKey, p.name);
                           const transDesc = getTransPermDesc(p.id, p.categoryKey, p.description);
                           return p.categoryKey === category && 
@@ -1965,7 +1965,7 @@ export default function Staff({ tenantId, initialViewMode = 'list' }: StaffProps
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 items-start">
                       {categories.map(category => {
                         const isExpanded = expandedCategories.includes(category);
-                        const categoryPerms = SYSTEM_PERMISSIONS.filter(p => {
+                        const categoryPerms = SHOWN_PERMISSIONS.filter(p => {
                           const transName = getTransPermName(p.id, p.categoryKey, p.name);
                           const transDesc = getTransPermDesc(p.id, p.categoryKey, p.description);
                           return p.categoryKey === category && 
@@ -2494,7 +2494,7 @@ const RolePermissionsModal = ({ role, onClose }: { role: Role; onClose: () => vo
   const transCat = (cat: string): string => t(`settings_page.staff.permissions.categories.${getCategoryKey(cat)}`, { defaultValue: cat });
   const transPermName = (permId: string, cat: string, defaultName: string): string => t(`settings_page.staff.permissions.items.${permId}.${getCategoryKey(cat)}.name`, { defaultValue: defaultName });
   const transPermDesc = (permId: string, cat: string, defaultDesc: string): string => t(`settings_page.staff.permissions.items.${permId}.${getCategoryKey(cat)}.description`, { defaultValue: defaultDesc });
-  const categories = Array.from(new Set(SYSTEM_PERMISSIONS.map(p => p.categoryKey)));
+  const categories = Array.from(new Set(SHOWN_PERMISSIONS.map(p => p.categoryKey)));
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
 
   const toggleCategory = (category: string) => {
@@ -2554,7 +2554,7 @@ const RolePermissionsModal = ({ role, onClose }: { role: Role; onClose: () => vo
         <div className="p-8 overflow-y-auto space-y-4">
           {categories.map(category => {
             const isExpanded = expandedCategories.includes(category);
-            const categoryPerms = SYSTEM_PERMISSIONS.filter(p => p.categoryKey === category);
+            const categoryPerms = SHOWN_PERMISSIONS.filter(p => p.categoryKey === category);
             
             return (
               <div key={category} className="bg-surface rounded-2xl border border-border overflow-hidden">

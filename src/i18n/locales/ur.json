@@ -2145,7 +2145,9 @@
     "fabric_enter_manually": "اس آئٹم میں استعمال ہونے والے میٹر خود درج کریں",
     "assigned_tailor__technician": "ذمہ دار ٹیکنیشن",
     "thobe_custom__piece": "خصوصی آرڈر",
-    "receipt_title__piece": "آرڈر رسید"
+    "receipt_title__piece": "آرڈر رسید",
+    "no_invoice_permission": "آپ کو انوائس دیکھنے کی اجازت نہیں ہے",
+    "no_status_permission": "آپ کو آرڈر کی حالت تبدیل کرنے کی اجازت نہیں ہے"
   },
   "permissions": {
     "access_denied_desc": "غیر متعین",

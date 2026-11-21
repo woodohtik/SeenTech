@@ -2147,7 +2147,9 @@
     "fabric_enter_manually": "أدخل الأمتار المستهلكة لهذا الصنف يدوياً",
     "assigned_tailor__technician": "الفني المسؤول",
     "thobe_custom__piece": "طلب خاص",
-    "receipt_title__piece": "إيصال طلب"
+    "receipt_title__piece": "إيصال طلب",
+    "no_invoice_permission": "لا تملك صلاحية عرض الفاتورة",
+    "no_status_permission": "لا تملك صلاحية تغيير حالة الطلب"
   },
   "permissions": {
     "access_denied_desc": "غير محدد",
